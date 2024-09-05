@@ -25,4 +25,17 @@ stdenv.mkDerivation rec {
     license = licenses.ruby;
     platforms = platforms.unix;
   };
+  
+  passthru = rec {
+	inherit version;
+	rubyEngine = "ruby";
+	baseRuby = false;
+	libPath = "lib/${rubyEngine}/${version}";
+	gemPath = "lib/${rubyEngine}/gems/${version}";
+
+	majorVersion = "2";
+	minorVersion = "7";
+	teenyVersion = "0";
+	patchLevel = null;
+  };
 }
