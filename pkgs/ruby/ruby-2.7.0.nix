@@ -25,6 +25,24 @@ stdenv.mkDerivation rec {
 	export GEM_HOME="$out/${passthru.gemPath}"
   '';
 
+  postInstall = ''
+    # Bundler tries to create this directory
+    mkdir -p $out/nix-support
+    cat > $out/nix-support/setup-hook <<EOF
+    addGemPath() {
+      addToSearchPath GEM_PATH \$1/${passthru.gemPath}
+    }
+    addRubyLibPath() {
+      addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby
+      addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${version}
+      addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${version}/${stdenv.targetPlatform.system}
+    }
+
+    addEnvHooks "$hostOffset" addGemPath
+    addEnvHooks "$hostOffset" addRubyLibPath
+    EOF
+  '';
+
   meta = with lib; {
     description = "The Ruby programming language";
     homepage = "https://www.ruby-lang.org/";
