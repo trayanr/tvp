@@ -19,6 +19,12 @@ stdenv.mkDerivation rec {
     "--with-gdbm-dir=${gdbm}"
   ];
 
+  preInstall = ''
+	# Ruby installs gems here itself now.
+	mkdir -pv "$out/${passthru.gemPath}"
+	export GEM_HOME="$out/${passthru.gemPath}"
+  '';
+
   meta = with lib; {
     description = "The Ruby programming language";
     homepage = "https://www.ruby-lang.org/";
