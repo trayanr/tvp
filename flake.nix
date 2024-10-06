@@ -19,7 +19,9 @@
 		# at some point will split the lib and pkgs and create a separate lib
         packages = {
 		  openssl_1_1_1 = pkgs.callPackage ./pkgs/openssl-1.1.1.nix { };
-        } // (import ./pkgs/ruby {inherit pkgs; tvp = self;});
+        } 
+		// (import ./pkgs/ruby {inherit pkgs; tvp = self;})
+		// (import ./pkgs/bundler {inherit pkgs; tvp = self;});
       }
     ); 
 }
