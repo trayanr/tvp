@@ -1,8 +1,16 @@
-{ lib, buildRubyGem, ruby, writeScript, version, sha256}:
+# Serves 1.17.3 onwards.
+{
+  lib,
+  buildRubyGem,
+  writeScript,
 
+  version,
+  sha256,
+
+  ruby,
+}:
 buildRubyGem rec {
   inherit ruby;
-  # ruby = builtins.trace args.ruby.version args.ruby;
   name = "${gemName}-${version}";
   gemName = "bundler";
   inherit version;
@@ -10,8 +18,8 @@ buildRubyGem rec {
   dontPatchShebangs = true;
 
   postFixup = ''
-    sed -i -e "s/activate_bin_path/bin_path/g" $out/bin/bundle
-	# maybe wrapProgram and --set PATH to make sure the ruby version is the one from this file and not the user ENV
+       sed -i -e "s/activate_bin_path/bin_path/g" $out/bin/bundle
+    # maybe wrapProgram and --set PATH to make sure the ruby version is the one from this file and not the user ENV
   '';
 
   passthru = {
@@ -35,5 +43,3 @@ buildRubyGem rec {
     mainProgram = "bundler";
   };
 }
-
-
