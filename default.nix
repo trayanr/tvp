@@ -20,6 +20,20 @@ let
         printf '%s\n' "$manifest" > "$out"
       '';
 
+    # Makes "untested" unrepresentable rather than merely discouraged.
+    every-package-tested =
+      let
+        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) packages;
+      in
+      if untested == { } then
+        pkgs.runCommand "tvp-check-every-package-tested"
+          { tested = toString (builtins.length (builtins.attrNames packages)); }
+          ''
+            printf '%s packages, all with tests\n' "$tested" > "$out"
+          ''
+      else
+        throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+
     # Only .nix files are copied, so local-only files never reach the store.
     formatting =
       let
@@ -43,8 +57,26 @@ let
     }
   ) (pkgs.lib.filterAttrs (_: pkg: pkg ? tests && pkg.tests != { }) packages);
 
+  # Deliberately not in `packages`: that attribute is the canonical package
+  # universe, and tooling in it would also be subject to every-package-tested.
+  tools = {
+    provenance = pkgs.callPackage ./tools/provenance.nix {
+      inherit packages;
+      inherit tvpLib;
+    };
+    upstream = pkgs.callPackage ./tools/upstream.nix {
+      inherit packages;
+      inherit tvpLib;
+    };
+  };
+
   tvp = {
-    inherit packages checks testBatches;
+    inherit
+      packages
+      checks
+      testBatches
+      tools
+      ;
     lib = tvpLib;
   };
 in

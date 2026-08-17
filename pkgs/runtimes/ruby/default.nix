@@ -117,6 +117,34 @@ let
           inherit pkgs tvpLib ruby;
         };
     };
+
+    # The tarball index rather than git tags: the tarball name is what the
+    # source URL is derived from, and Ruby's tags use a different scheme
+    # (v1_8_7_100 for what ships as ruby-1.8.7-p100.tar.gz).
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://cache.ruby-lang.org/pub/ruby/";
+        subdirPattern = "[0-9][^/\"]*";
+        pattern = "ruby-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise =
+          file:
+          if pkgs.lib.hasPrefix "ruby-" file && pkgs.lib.hasSuffix ".tar.gz" file then
+            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "ruby-" file)
+          else
+            null;
+
+        # Patchlevel tarballs (1.8.7-p374) are real releases and stay.
+        include =
+          version:
+          !(
+            pkgs.lib.hasInfix "preview" version
+            || pkgs.lib.hasInfix "-rc" version
+            || pkgs.lib.hasInfix "beta" version
+          );
+      };
+    };
   };
 
   aliases = {

@@ -32,6 +32,16 @@
 
         formatter = pkgs.nixfmt-rfc-style;
 
+        apps.provenance = {
+          type = "app";
+          program = "${tvp.tools.provenance}/bin/tvp-provenance";
+        };
+
+        apps.upstream = {
+          type = "app";
+          program = "${tvp.tools.upstream}/bin/tvp-upstream";
+        };
+
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;

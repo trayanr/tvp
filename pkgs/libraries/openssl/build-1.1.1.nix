@@ -11,6 +11,9 @@
 
   version,
   sha256,
+
+  # Supplied by default.nix. A fork that drops this argument fails to evaluate.
+  mkTests,
 }:
 let
   # An unlisted platform throws rather than silently falling back to ./config.
@@ -71,5 +74,6 @@ stdenv.mkDerivation (finalAttrs: {
   passthru = {
     inherit version;
     tvp.deps = { };
+    tests = mkTests finalAttrs.finalPackage;
   };
 })

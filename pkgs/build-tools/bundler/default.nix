@@ -41,6 +41,29 @@ let
     inherit (pkgs) callPackage;
     pname = "bundler";
     inherit versionTable;
+
+    extraArgs = {
+      mkTests =
+        bundler:
+        import ./tests {
+          inherit pkgs tvpLib bundler;
+        };
+    };
+
+    packageMeta = {
+      upstream = {
+        type = "rubygems";
+        url = "https://rubygems.org/api/v1/versions/bundler.json";
+
+        include =
+          version:
+          !(
+            pkgs.lib.hasInfix "pre" version
+            || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "beta" version
+          );
+      };
+    };
   };
 
   aliases = {

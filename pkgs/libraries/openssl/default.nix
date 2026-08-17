@@ -20,6 +20,44 @@ let
     inherit (pkgs) callPackage;
     pname = "openssl";
     inherit versionTable;
+
+    extraArgs = {
+      mkTests =
+        openssl:
+        import ./tests {
+          inherit pkgs tvpLib openssl;
+        };
+    };
+
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/openssl/openssl";
+
+        # Two tag conventions, split at 3.0: OpenSSL_1_1_1w and openssl-3.0.0.
+        # Anything else (rsaref, the fips branches) is not a release.
+        normalise =
+          tag:
+          if pkgs.lib.hasPrefix "OpenSSL_" tag then
+            pkgs.lib.replaceStrings [ "_" ] [ "." ] (pkgs.lib.removePrefix "OpenSSL_" tag)
+          else if pkgs.lib.hasPrefix "openssl-" tag then
+            pkgs.lib.removePrefix "openssl-" tag
+          else
+            null;
+
+        # "-post-reformat" and friends tag repository maintenance, not releases.
+        include =
+          version:
+          !(
+            pkgs.lib.hasInfix "pre" version
+            || pkgs.lib.hasInfix "alpha" version
+            || pkgs.lib.hasInfix "beta" version
+            || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "-post-" version
+            || pkgs.lib.hasInfix "fips" version
+          );
+      };
+    };
   };
 
   aliases = {

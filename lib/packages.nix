@@ -2,24 +2,39 @@
 {
   # `callPackage` fills in the substrate; everything in `deps` is passed
   # explicitly and is therefore also the seam `.override` needs.
+  # `packageMeta` describes the package rather than a version — one upstream
+  # index serves all nine Rubies. It is written once in the package's
+  # default.nix and copied onto each version's passthru, because the package set
+  # is flat and versions are the only things with a name in it.
   mkVersions =
     {
       callPackage,
       pname,
       versionTable,
       extraArgs ? { },
+      packageMeta ? { },
     }:
     lib.mapAttrs' (
       version: entry:
       lib.nameValuePair (versions.attrName pname version) (
-        callPackage entry.builder (
-          {
-            inherit version;
-            inherit (entry) sha256;
-          }
-          // entry.deps
-          // extraArgs
-        )
+        let
+          pkg = callPackage entry.builder (
+            {
+              inherit version;
+              inherit (entry) sha256;
+            }
+            // entry.deps
+            // extraArgs
+          );
+        in
+        if packageMeta == { } then
+          pkg
+        else
+          pkg.overrideAttrs (old: {
+            passthru = old.passthru // {
+              tvp = (old.passthru.tvp or { }) // packageMeta;
+            };
+          })
       )
     ) versionTable;
 
