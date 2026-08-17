@@ -2,17 +2,17 @@
 let
   tvpLib = tvp.lib;
 
-  line_1_1_1 = {
-    builder = ./build-1.1.1.nix;
-    deps = { };
-  };
-
   versionTable = {
-    "1.1.1u" = line_1_1_1 // {
+    "1.1.1u" = {
+      builder = ./build-1.1.1.nix;
       sha256 = "sha256-4vjYS1I+7NBse+diaDA3AwD7zBU4a/UULXJ1j2lj68Y=";
+      deps = { };
     };
-    "1.1.1w" = line_1_1_1 // {
+
+    "1.1.1w" = {
+      builder = ./build-1.1.1.nix;
       sha256 = "sha256-zzCYlQy02FOtlcCEHx+cbT3BAtzPys1SHZOSUgi3asg=";
+      deps = { };
     };
   };
 

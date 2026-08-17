@@ -118,6 +118,33 @@ versionTable = {
   determinate graph.
 - **Source URLs are derived from the version**, not stored per version.
 
+## Choosing dependency versions
+
+> Take the latest version the upstream release itself declares compatible, read from
+> upstream's own build configuration rather than inferred or copied from another distro.
+
+Ruby 2.7 is the worked example. `ext/openssl/extconf.rb` states the bound, and it moves
+mid-line:
+
+| Ruby | Upstream OpenSSL constraint |
+|---|---|
+| 2.7.0 – 2.7.4 | `>= 1.0.1` |
+| 2.7.5 – 2.7.8 | `>= 1.0.1 and < 3.0.0` |
+
+TVP pins 1.1.1w for all nine — the latest release satisfying both.
+
+The rule selects a pin **once**, when the version is added. The pin is then immutable:
+"latest compatible" evaluated today and in five years give different answers, and a
+canonical graph that changed meaning would break the guarantee that pinning a TVP revision
+pins the whole universe. Moving a pin afterwards is a deliberate rebuild, not an update.
+
+It is not a security claim. TVP does not backport fixes, and availability is not a
+statement that something is safe to deploy.
+
+**A changed constraint is not automatically a builder fork.** 2.7.5 tightened its OpenSSL
+bound without changing how Ruby builds, so it is version data. Fork on a changed *recipe*,
+not a changed *range*.
+
 ## Naming and aliases
 
 - Canonical names are immutable: `ruby_2_7_0` never changes meaning.
