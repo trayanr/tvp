@@ -19,12 +19,12 @@ let
       };
     };
 
-    # 2.5 requires Ruby >= 3.0, which TVP does not have yet.
+    # 2.5 requires Ruby >= 3.0.
     "2.5.11" = {
       builder = ./build-1.17.3.nix;
       sha256 = "sha256-3XhL/lODSzmlbmQtvG4eyhmi5kVOTVOZTLcpgAWsTC4=";
       deps = {
-        ruby = pkgs.ruby;
+        ruby = tvp.packages.ruby_3_3_4;
       };
     };
 
@@ -32,7 +32,7 @@ let
       builder = ./build-1.17.3.nix;
       sha256 = "sha256-g7zLXMxFbjRwiaoFMY7NJ7uYQMqmTtFsFwO1DUmwq5Q=";
       deps = {
-        ruby = pkgs.ruby;
+        ruby = tvp.packages.ruby_3_3_4;
       };
     };
   };

@@ -56,7 +56,34 @@ writeShellApplication {
   ];
   text = ''
     manifest=${manifest}
-    flake="''${1:-.}"
+    flake="."
+    filters=()
+
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --flake) flake="$2"; shift 2 ;;
+        -h|--help)
+          echo "usage: tvp-upstream [--flake REF] [PACKAGE...]"
+          exit 0
+          ;;
+        -*) echo "tvp-upstream: unknown option '$1'" >&2; exit 2 ;;
+        *) filters+=("$1"); shift ;;
+      esac
+    done
+
+    known=$(jq -r '.[].pname' "$manifest" | sort)
+    if [ ''${#filters[@]} -gt 0 ]; then
+      for f in "''${filters[@]}"; do
+        if ! grep -qxF "$f" <<< "$known"; then
+          echo "tvp-upstream: no package '$f'; known: $(tr '\n' ' ' <<< "$known")" >&2
+          exit 2
+        fi
+      done
+      select=$(printf '%s\n' "''${filters[@]}" | jq -R -s 'split("\n") | map(select(length > 0))')
+    else
+      select=null
+    fi
+
     system=$(nix eval --raw --impure --expr 'builtins.currentSystem')
 
     work=$(mktemp -d)
@@ -88,7 +115,9 @@ writeShellApplication {
       esac
     }
 
-    jq -c '.[]' "$manifest" | while read -r row; do
+    jq -c --argjson select "$select" \
+      '.[] | select($select == null or (.pname as $p | $select | index($p)))' \
+      "$manifest" | while read -r row; do
       pname=$(jq -r '.pname' <<< "$row")
       attr=$(jq -r '.attr' <<< "$row")
       type=$(jq -r '.upstream.type' <<< "$row")

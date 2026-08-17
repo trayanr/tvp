@@ -1,4 +1,5 @@
-# Serves 2.7 and 3.0.
+# Serves 3.3 onwards. Upstream retired ext/readline at 3.3 in favour of the pure
+# Ruby reline, so the readline argument goes away.
 {
   lib,
   stdenv,
@@ -8,9 +9,15 @@
   sha256,
 
   openssl,
-  readline,
   zlib,
-  gdbm,
+  libyaml,
+  libffi,
+  rustc,
+
+  # Upstream enables YJIT whenever a usable rustc is present, so true matches
+  # the default build. Stated as a flag rather than left to detection: a
+  # sandbox that happens to lack rustc must not silently ship a JIT-less Ruby.
+  yjit ? true,
 
   # Ruby's ABI directory, not the package version: every 2.7.x uses "2.7.0".
   # Overridden per version where upstream disagrees.
@@ -30,18 +37,19 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     openssl
-    readline
     zlib
-    gdbm
+    libyaml
+    libffi
   ];
+
+  nativeBuildInputs = lib.optional yjit rustc;
 
   # getDev, not .dev, so a dependency need not be output-split.
   configureFlags = [
     "--enable-shared"
     "--with-openssl-dir=${lib.getDev openssl}"
-    "--with-readline-dir=${lib.getDev readline}"
     "--with-zlib-dir=${lib.getDev zlib}"
-    "--with-gdbm-dir=${gdbm}"
+    (if yjit then "--enable-yjit" else "--disable-yjit")
   ];
 
   preInstall = ''
@@ -94,10 +102,14 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.deps = {
       inherit
         openssl
-        readline
         zlib
-        gdbm
+        libyaml
+        libffi
         ;
+    } // lib.optionalAttrs yjit { inherit rustc; };
+
+    tvp.jit = {
+      inherit yjit;
     };
 
     tests = mkTests finalAttrs.finalPackage;

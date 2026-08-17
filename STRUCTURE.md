@@ -19,8 +19,17 @@ pkgs/
 │       └── build-1.1.1.nix   build procedure
 ├── runtimes/                 ruby, php, python, perl, node, jdk …
 │   └── ruby/
-│       ├── default.nix
-│       ├── build-2.7.nix
+│       ├── default.nix       index: merges the version files, aliases, tests
+│       ├── 2.nix             version data, split per major once it outgrew one file
+│       ├── 3/                a major that outgrew one file in turn
+│       │   ├── default.nix   index of the minor lines
+│       │   └── 0.nix … 4.nix
+│       ├── 4.nix
+│       ├── build-2.7.nix     build procedure; one file per start version
+│       ├── build-3.1.nix
+│       ├── build-3.2.nix
+│       ├── build-3.3.nix
+│       ├── build-4.0.nix
 │       └── tests/            the package's own test suite
 ├── build-tools/              cmake, autoconf, bundler, m4, make …
 └── compilers/                gcc, clang, rust …             (not yet populated)
@@ -70,8 +79,9 @@ Rules:
   copy the current builder to a file named for that version and change it there.
 - **Files stay guard-free.** A guard is permitted only when it is a single, obviously
   local line. Anything structural forks a file.
-- **Every fork records why**, in a header comment: what forced it, and what it was copied
-  from.
+- **Every fork records why**, in a header comment: the upstream change that forced it, and
+  the range it serves. Not what it was copied from — `diff` against the adjacent builder
+  answers that exactly.
 - **Keep forked files structurally identical** — same attribute order, same shape — so
   `diff build-2.0.nix build-2.3.nix` is meaningful.
 - **Every meaningful dependency is a function argument.** That is the seam `.override`
@@ -96,27 +106,45 @@ is what the shared test suite is for; see below.
 ## Version data lives in the package's `default.nix`
 
 ```nix
-line_2_7 = {
-  builder = ./build-2.7.nix;
-  deps = {
-    openssl = tvp.packages.openssl_1_1_1w;
-    inherit (pkgs) readline zlib gdbm;
-  };
-};
-
 versionTable = {
-  "2.7.0" = line_2_7 // { sha256 = "sha256-jJmqk7…"; };
-  "2.7.8" = line_2_7 // { sha256 = "sha256-wtq2PL…"; };
+  "2.7.0" = {
+    builder = ./build-2.7.nix;
+    sha256 = "sha256-jJmqk7…";
+    deps = {
+      openssl = tvp.packages.openssl_1_1_1w;
+      readline = pkgs.readline;
+      zlib = pkgs.zlib;
+      gdbm = pkgs.gdbm;
+    };
+  };
+
+  "2.7.8" = {
+    builder = ./build-2.7.nix;
+    sha256 = "sha256-wtq2PL…";
+    deps = {
+      openssl = tvp.packages.openssl_1_1_1w;
+      readline = pkgs.readline;
+      zlib = pkgs.zlib;
+      gdbm = pkgs.gdbm;
+    };
+  };
 };
 ```
 
-- **The table is explicit.** No computed "greatest start-version ≤ v" lookup — this is the
-  file someone opens to find out what `2.7.0` actually is.
-- **Dependencies are declared per line, not per patch.** Every 2.7.x shares one graph;
-  stating it once is smaller *and* more readable than repeating it. A version that
-  genuinely differs overrides at its own entry, so every version still resolves to a fully
-  determinate graph.
+- **Every entry states its whole graph, even when that repeats.** No `line_2_7 // { … }`,
+  no computed "greatest start-version ≤ v" lookup. This is the file someone opens to find
+  out what `2.7.0` actually is, and an entry that inherits half its meaning from elsewhere
+  does not answer that. The repetition is the price and it is worth paying.
+- **Anything a version does differently is stated at that version.** Builder arguments have
+  defaults for the usual case, and an entry overrides one where upstream disagrees — Ruby
+  3.4.0 sets `libDir = "3.4.0+1"` because upstream shipped that tarball with
+  `RUBY_PATCHLEVEL -1`. A changed *value* is version data; only a changed *procedure* forks
+  a builder.
 - **Source URLs are derived from the version**, not stored per version.
+- **When the file passes ~500 lines it splits per major**, and a major that outgrows one
+  file becomes a directory of minor lines — `3/0.nix`, `3/1.nix`. Each level's
+  `default.nix` indexes the next explicitly. Moving entries between files is provably free;
+  prove it with `drvPath` rather than assuming.
 
 ## Choosing dependency versions
 
@@ -174,6 +202,12 @@ fails where an old builder is missing something. Fork the tests and that stops w
 - **Guards select whole tests** (`// lib.optionalAttrs pred { … }`). A guard never edits a
   test body: an attrset guard can only add or omit, but a guard inside a string can
   perturb its neighbour.
+- **Guard on the declared graph, never on a version number.** `gdbm` runs iff the package
+  declares a `gdbm` dependency, not iff the version is below 3.1. A builder that drops a
+  dependency then drops its test automatically, and the two can never disagree.
+- **Test what a failed build would not tell you.** An extension whose `extconf.rb` fails is
+  usually skipped rather than fatal, so the package still builds and still installs, just
+  without that extension. Only a test that actually `require`s it notices.
 - **Tests are attached centrally**, via a required `mkTests` builder argument supplied by
   `default.nix`. A forked builder that drops the argument fails to evaluate, so test
   coverage cannot be silently lost in a copy.

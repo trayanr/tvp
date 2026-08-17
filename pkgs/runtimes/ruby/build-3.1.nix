@@ -1,4 +1,5 @@
-# Serves 2.7 and 3.0.
+# Serves 3.1 onwards. Upstream deleted ext/gdbm, ext/dbm and ext/sdbm at 3.1,
+# so the gdbm argument goes away.
 {
   lib,
   stdenv,
@@ -10,7 +11,6 @@
   openssl,
   readline,
   zlib,
-  gdbm,
 
   # Ruby's ABI directory, not the package version: every 2.7.x uses "2.7.0".
   # Overridden per version where upstream disagrees.
@@ -32,7 +32,6 @@ stdenv.mkDerivation (finalAttrs: {
     openssl
     readline
     zlib
-    gdbm
   ];
 
   # getDev, not .dev, so a dependency need not be output-split.
@@ -41,7 +40,6 @@ stdenv.mkDerivation (finalAttrs: {
     "--with-openssl-dir=${lib.getDev openssl}"
     "--with-readline-dir=${lib.getDev readline}"
     "--with-zlib-dir=${lib.getDev zlib}"
-    "--with-gdbm-dir=${gdbm}"
   ];
 
   preInstall = ''
@@ -96,7 +94,6 @@ stdenv.mkDerivation (finalAttrs: {
         openssl
         readline
         zlib
-        gdbm
         ;
     };
 

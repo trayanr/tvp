@@ -67,6 +67,35 @@ tvpLib.tests.mkSuite {
         expected = "roundtrip-ok";
       };
 
+      # A missing extension library is not a build failure — Ruby drops the
+      # extension and installs anyway. yaml and fiddle are the two that vanish
+      # this way, so only a runtime require catches it.
+      yaml = {
+        script = ''
+          ruby -e 'require "yaml"; print YAML.safe_load(YAML.dump({ "tvp" => [1, 2] }))["tvp"].sum'
+        '';
+        expected = "3";
+      };
+
+      # Calls through libffi rather than only loading the extension.
+      fiddle = {
+        script = ''
+          ruby -e 'require "fiddle"; print Fiddle::Function.new(Fiddle::Handle::DEFAULT["strlen"], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_SIZE_T).call("tvp")'
+        '';
+        expected = "3";
+      };
+
+      gems = {
+        script = ''
+          ruby -e 'require "rubygems"; print Gem.default_dir'
+        '';
+        expected = "${ruby}/${ruby.passthru.gemPath}";
+      };
+    }
+
+    # Upstream retired ext/gdbm at 3.1 and ext/readline at 3.3. The builder for
+    # those lines drops the argument, so the declared graph selects the test.
+    // pkgs.lib.optionalAttrs (deps ? gdbm) {
       # Two processes, so the value is proven to have been written.
       gdbm = {
         script = ''
@@ -75,19 +104,35 @@ tvpLib.tests.mkSuite {
         '';
         expected = "v";
       };
+    }
 
+    // pkgs.lib.optionalAttrs (deps ? readline) {
       readline = {
         script = ''
           ruby -e 'require "readline"; print Readline.respond_to?(:readline) ? "readline-ok" : "MISSING"'
         '';
         expected = "readline-ok";
       };
+    }
 
-      gems = {
+    # Upstream turns these on whenever the toolchain allows, so a build that
+    # quietly lost the toolchain still installs and still passes every other
+    # test. Read from the declared graph, not from a version comparison.
+    // pkgs.lib.optionalAttrs (ruby.passthru.tvp.jit.yjit or false) {
+      yjit = {
         script = ''
-          ruby -e 'require "rubygems"; print Gem.default_dir'
+          ruby --yjit -e 'print RubyVM::YJIT.enabled?'
         '';
-        expected = "${ruby}/${ruby.passthru.gemPath}";
+        expected = "true";
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (ruby.passthru.tvp.jit.zjit or false) {
+      zjit = {
+        script = ''
+          ruby --zjit -e 'print RubyVM::ZJIT.enabled?'
+        '';
+        expected = "true";
       };
     }
 

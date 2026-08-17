@@ -1,4 +1,4 @@
-# Serves 2.7 and 3.0.
+# Serves 4.0 onwards. 4.0 adds a second Rust JIT, ZJIT, alongside YJIT.
 {
   lib,
   stdenv,
@@ -8,9 +8,19 @@
   sha256,
 
   openssl,
-  readline,
   zlib,
-  gdbm,
+  libyaml,
+  libffi,
+  rustc,
+
+  # Upstream enables YJIT whenever a usable rustc is present, so true matches
+  # the default build. Stated as a flag rather than left to detection: a
+  # sandbox that happens to lack rustc must not silently ship a JIT-less Ruby.
+  yjit ? true,
+
+  # Upstream enables ZJIT when rustc understands the 2024 edition, so true
+  # matches the default build.
+  zjit ? true,
 
   # Ruby's ABI directory, not the package version: every 2.7.x uses "2.7.0".
   # Overridden per version where upstream disagrees.
@@ -30,18 +40,24 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     openssl
-    readline
     zlib
-    gdbm
+    libyaml
+    libffi
   ];
+
+  nativeBuildInputs = lib.optional (yjit || zjit) rustc;
+
+  # RDoc reads C sources with the default external encoding, and 4.0.4 carries
+  # a non-ASCII byte that aborts the doc build under the sandbox's empty locale.
+  env.LANG = "C.UTF-8";
 
   # getDev, not .dev, so a dependency need not be output-split.
   configureFlags = [
     "--enable-shared"
     "--with-openssl-dir=${lib.getDev openssl}"
-    "--with-readline-dir=${lib.getDev readline}"
     "--with-zlib-dir=${lib.getDev zlib}"
-    "--with-gdbm-dir=${gdbm}"
+    (if yjit then "--enable-yjit" else "--disable-yjit")
+    (if zjit then "--enable-zjit" else "--disable-zjit")
   ];
 
   preInstall = ''
@@ -94,10 +110,14 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.deps = {
       inherit
         openssl
-        readline
         zlib
-        gdbm
+        libyaml
+        libffi
         ;
+    } // lib.optionalAttrs (yjit || zjit) { inherit rustc; };
+
+    tvp.jit = {
+      inherit yjit zjit;
     };
 
     tests = mkTests finalAttrs.finalPackage;

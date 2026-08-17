@@ -1,4 +1,6 @@
-# Serves 2.7 and 3.0.
+# Serves 3.2 onwards. Upstream stopped vendoring ext/psych/yaml and
+# ext/fiddle/libffi at 3.2, so both become system dependencies, and YJIT was
+# rewritten from C to Rust so it needs a toolchain 3.1 did not.
 {
   lib,
   stdenv,
@@ -10,7 +12,14 @@
   openssl,
   readline,
   zlib,
-  gdbm,
+  libyaml,
+  libffi,
+  rustc,
+
+  # Upstream enables YJIT whenever a usable rustc is present, so true matches
+  # the default build. Stated as a flag rather than left to detection: a
+  # sandbox that happens to lack rustc must not silently ship a JIT-less Ruby.
+  yjit ? true,
 
   # Ruby's ABI directory, not the package version: every 2.7.x uses "2.7.0".
   # Overridden per version where upstream disagrees.
@@ -32,8 +41,11 @@ stdenv.mkDerivation (finalAttrs: {
     openssl
     readline
     zlib
-    gdbm
+    libyaml
+    libffi
   ];
+
+  nativeBuildInputs = lib.optional yjit rustc;
 
   # getDev, not .dev, so a dependency need not be output-split.
   configureFlags = [
@@ -41,7 +53,7 @@ stdenv.mkDerivation (finalAttrs: {
     "--with-openssl-dir=${lib.getDev openssl}"
     "--with-readline-dir=${lib.getDev readline}"
     "--with-zlib-dir=${lib.getDev zlib}"
-    "--with-gdbm-dir=${gdbm}"
+    (if yjit then "--enable-yjit" else "--disable-yjit")
   ];
 
   preInstall = ''
@@ -96,8 +108,13 @@ stdenv.mkDerivation (finalAttrs: {
         openssl
         readline
         zlib
-        gdbm
+        libyaml
+        libffi
         ;
+    } // lib.optionalAttrs yjit { inherit rustc; };
+
+    tvp.jit = {
+      inherit yjit;
     };
 
     tests = mkTests finalAttrs.finalPackage;
