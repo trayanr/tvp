@@ -20,16 +20,20 @@ let
         printf '%s\n' "$manifest" > "$out"
       '';
 
-    # Makes "untested" unrepresentable rather than merely discouraged.
+    # Makes "untested" unrepresentable rather than merely discouraged. A broken
+    # package is exempt because it has no build to test — and it can only be
+    # broken by declaring a reason and a fix, so that exemption is not a hiding
+    # place.
     every-package-tested =
       let
-        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) packages;
+        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") packages;
+        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
       in
       if untested == { } then
         pkgs.runCommand "tvp-check-every-package-tested"
-          { tested = toString (builtins.length (builtins.attrNames packages)); }
+          { tested = toString (builtins.length (builtins.attrNames buildable)); }
           ''
-            printf '%s packages, all with tests\n' "$tested" > "$out"
+            printf '%s buildable packages, all with tests\n' "$tested" > "$out"
           ''
       else
         throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
@@ -49,13 +53,20 @@ let
       '';
   };
 
-  testBatches = builtins.mapAttrs (
-    name: pkg:
-    tvpLib.tests.mkBatch {
-      inherit pkgs name;
-      suite = pkg.tests;
-    }
-  ) (pkgs.lib.filterAttrs (_: pkg: pkg ? tests && pkg.tests != { }) packages);
+  testBatches =
+    builtins.mapAttrs
+      (
+        name: pkg:
+        tvpLib.tests.mkBatch {
+          inherit pkgs name;
+          suite = pkg.tests;
+        }
+      )
+      (
+        pkgs.lib.filterAttrs (
+          _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
+        ) packages
+      );
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
@@ -65,6 +76,10 @@ let
       inherit tvpLib;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
+      inherit packages;
+      inherit tvpLib;
+    };
+    status = pkgs.callPackage ./tools/status.nix {
       inherit packages;
       inherit tvpLib;
     };

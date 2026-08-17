@@ -146,6 +146,37 @@ versionTable = {
   `default.nix` indexes the next explicitly. Moving entries between files is provably free;
   prove it with `drvPath` rather than assuming.
 
+## Package status
+
+A version says what TVP claims about it, in the version table:
+
+```nix
+status = {
+  level = "degraded";
+  reason = "YJIT and ZJIT are disabled; upstream enables both by default.";
+  needs = "rustc >= 1.85 — the JIT crate requires Rust edition 2024.";
+};
+```
+
+| Level | Means |
+|---|---|
+| `ok` | built the way upstream builds it — the default, never written out |
+| `degraded` | builds and passes its tests, but a documented capability is off |
+| `broken` | does not build |
+
+- **`degraded` is why this exists.** `ok` and `broken` announce themselves; a package that
+  builds, installs and passes every test while quietly missing a feature does not.
+- **Anything but `ok` must declare `reason` and `needs`**, enforced at evaluation. `needs`
+  states what would clear the status, so it is also the worklist.
+- **`broken` sets `meta.broken`** and is exempt from `every-package-tested` and
+  `testBatches` — there is no build to test.
+- Status lives in `meta` and `passthru`, so it never changes a derivation.
+
+```sh
+nix run .#status            # inventory, with reasons
+nix run .#status -- --json  # same, for tooling
+```
+
 ## Choosing dependency versions
 
 > Take the latest version the upstream release itself declares compatible, read from

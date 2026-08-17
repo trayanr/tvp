@@ -42,6 +42,11 @@
           program = "${tvp.tools.upstream}/bin/tvp-upstream";
         };
 
+        apps.status = {
+          type = "app";
+          program = "${tvp.tools.status}/bin/tvp-status";
+        };
+
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;
