@@ -8,13 +8,17 @@ let
     "0.9.6" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.gcc13;
-      deps = { };
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
     };
 
     "0.9.8" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.gcc13;
-      deps = { };
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
       opts = {
         hardeningDisable = [ "format" ];
       };
@@ -23,7 +27,9 @@ let
     "1.0.0" = {
       builder = ./build-1.0.nix;
       base = tvp.bases.gcc13;
-      deps = { };
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
     };
 
     # 1.1.0's Configure does `use File::Glob 'glob'`, which perl stopped exporting at 5.30.
@@ -41,13 +47,17 @@ let
     "1.1.1" = {
       builder = ./build-1.1.1.nix;
       base = tvp.bases.gcc13;
-      deps = { };
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
     };
 
     "3.0.0" = {
       builder = ./build-3.0.nix;
       base = tvp.bases.gcc13;
-      deps = { };
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
     };
   };
 
@@ -61,11 +71,8 @@ let
   };
 
   canonical = tvpLib.packages.mkVersions {
-    # perl is still nixpkgs', and every Configure in the catalogue runs under it. The
-    # 1.1.0 line names its own; the rest inherit whatever nixpkgs ships, which is an
-    # M9 worklist entry rather than a settled pin.
     infra = {
-      inherit (pkgs) lib fetchurl perl;
+      inherit (pkgs) lib fetchurl;
     };
     pname = "openssl";
     inherit versionTable;

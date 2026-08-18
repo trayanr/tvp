@@ -5,11 +5,7 @@ let
   defs = {
     "1.17.3" = {
       builder = ./build-1.17.3.nix;
-      # Built by nixpkgs' buildRubyGem rather than by stdenv.mkDerivation, so it
-      # takes no stdenv and there is nothing for a base to substitute. Declared
-      # rather than inferred: this is an M9 worklist entry, and the only package
-      # in TVP that is not on a base.
-      base = null;
+      base = tvp.bases.gcc13;
       deps = {
         ruby = tvp.packages.ruby_2_7_0;
       };
@@ -18,7 +14,7 @@ let
     # 2.5 requires Ruby >= 3.0.
     "2.5.11" = {
       builder = ./build-1.17.3.nix;
-      base = null;
+      base = tvp.bases.gcc13;
       deps = {
         ruby = tvp.packages.ruby_3_3_4;
       };
@@ -44,15 +40,8 @@ let
   ];
 
   canonical = tvpLib.packages.mkVersions {
-    # buildRubyGem and writeScript are nixpkgs helpers TVP does not own; they are why
-    # this is the one package with `base = null`.
     infra = {
-      inherit (pkgs)
-        lib
-        fetchurl
-        buildRubyGem
-        writeScript
-        ;
+      inherit (pkgs) lib fetchurl;
     };
     pname = "bundler";
     inherit versionTable;
