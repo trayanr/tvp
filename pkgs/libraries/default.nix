@@ -5,4 +5,5 @@ tvp.lib.packages.merge {
   ncurses = import ./ncurses { inherit pkgs tvp; };
   readline = import ./readline { inherit pkgs tvp; };
   zlib = import ./zlib { inherit pkgs tvp; };
+  gdbm = import ./gdbm { inherit pkgs tvp; };
 }

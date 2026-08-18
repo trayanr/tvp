@@ -12,9 +12,9 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
-        readline = pkgs.readline;
-        zlib = pkgs.zlib;
-        gdbm = pkgs.gdbm;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
       };
     };
 
@@ -23,8 +23,8 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
-        readline = pkgs.readline;
-        zlib = pkgs.zlib;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
       };
     };
 
@@ -33,8 +33,8 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
-        readline = pkgs.readline;
-        zlib = pkgs.zlib;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
         rustc = pkgs.rustc;
@@ -46,7 +46,7 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
-        zlib = pkgs.zlib;
+        zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
         rustc = pkgs.rustc;
@@ -61,7 +61,7 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
-        zlib = pkgs.zlib;
+        zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
         rustc = pkgs.rustc;
@@ -76,7 +76,7 @@ let
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
-        zlib = pkgs.zlib;
+        zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
         rustc = pkgs.rustc;

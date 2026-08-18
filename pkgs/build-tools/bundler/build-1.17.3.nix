@@ -48,6 +48,11 @@ stdenv.mkDerivation (finalAttrs: {
     # A copy of the input, rewritten on every install.
     rm -rf "$GEM_HOME/cache"
 
+    # A gem ships its manpages inside its own lib tree, where man does not look.
+    find "$GEM_HOME/gems" -path '*/man/*' -name '*.[1-9]' | while read -r page; do
+      install -Dm444 "$page" "$out/share/man/man''${page##*.}/$(basename "$page")"
+    done
+
     ruby ${./binstubs.rb} \
       "${ruby}/bin/ruby" "$out" "$GEM_HOME" "${ruby}/${ruby.gemPath}"
 
