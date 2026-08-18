@@ -2,11 +2,6 @@
 [
   {
     def = defs."4.0.0";
-    status = {
-      level = "degraded";
-      reason = "YJIT and ZJIT are disabled; upstream enables both by default whenever the toolchain allows.";
-      needs = "rustc >= 1.85 — 4.0 builds both JITs from one crate requiring Rust edition 2024, and the pinned nixpkgs ships 1.80.1.";
-    };
     releases = {
       "4.0.0" = "sha256-LoOJyMByy2WMk6E3JzLZ6shAgsiLBldQ2x5SpaxjAnE=";
       "4.0.1" = "sha256-OSS+LQXbMPTjX4Wb8Ci+hfS33QFxQUL9gj5K9d4vr50=";

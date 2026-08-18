@@ -37,7 +37,7 @@ let
         zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
-        rustc = pkgs.rustc;
+        rustc = tvp.packages.rustc_1_97_1;
       };
     };
 
@@ -49,7 +49,7 @@ let
         zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
-        rustc = pkgs.rustc;
+        rustc = tvp.packages.rustc_1_97_1;
       };
     };
 
@@ -64,7 +64,7 @@ let
         zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
-        rustc = pkgs.rustc;
+        rustc = tvp.packages.rustc_1_97_1;
       };
       opts = {
         libDir = "3.4.0+1";
@@ -79,11 +79,7 @@ let
         zlib = tvp.packages.zlib_1_3_2;
         libyaml = pkgs.libyaml;
         libffi = pkgs.libffi;
-        rustc = pkgs.rustc;
-      };
-      opts = {
-        yjit = false;
-        zjit = false;
+        rustc = tvp.packages.rustc_1_97_1;
       };
     };
   };
@@ -115,10 +111,11 @@ let
     # (v1_8_7_100 for what ships as ruby-1.8.7-p100.tar.gz).
     packageMeta = {
       upstream = {
+        # One TSV listing every tarball back to 0.49, rather than one request per
+        # minor directory. It also carries each sha256.
         type = "directory-index";
-        url = "https://cache.ruby-lang.org/pub/ruby/";
-        subdirPattern = "[0-9][^/\"]*";
-        pattern = "ruby-[0-9][^\"]*\\.tar\\.gz";
+        url = "https://cache.ruby-lang.org/pub/ruby/index.txt";
+        pattern = "ruby-[0-9][^[:space:]]*\\.tar\\.gz";
 
         normalise =
           file:

@@ -1,5 +1,5 @@
-# The ground a package is built on. Derivation-affecting in full — see
-# docs/11-bases.md.
+# The ground a package is built on. Derivation-affecting in full: every package
+# on a base rebuilds when it changes.
 { pkgs, tvpLib }:
 let
   inherit (pkgs) lib;

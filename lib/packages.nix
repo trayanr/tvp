@@ -94,11 +94,20 @@ rec {
     else
       throw "TVP: ${attr} sets ${lib.concatStringsSep ", " extra} alongside `def`. A version that differs forks its definition rather than overriding it.";
 
+  # A package that installs an upstream binary rather than building from source.
+  # `needs` states what would replace it.
+  checkBlob =
+    attr: blob:
+    if !(blob ? reason && blob ? needs) then
+      throw "TVP: ${attr} declares `blob` and must state both `reason` and `needs`"
+    else
+      blob;
+
   # `base` is required of every definition rather than defaulted per package.
   # There are a few dozen definitions in the whole repo, so stating it is cheap,
   # and a definition that silently landed on the wrong ground would be invisible
   # while a missing one fails to evaluate. `null` says the builder is not on a
-  # base at all — an M9 worklist entry, and a fact worth declaring.
+  # base at all, which is a fact worth declaring rather than inferring.
   checkDef =
     attr: entry:
     if !(entry ? def) then
@@ -157,8 +166,8 @@ rec {
           #
           # A null base means the builder does not take a stdenv because it
           # delegates to a nixpkgs helper, and is therefore not on a TVP base at
-          # all. That has to be declared rather than inferred: it is an M9
-          # worklist entry, and `passthru.tvp.base` reports it as null.
+          # all. That has to be declared rather than inferred, and
+          # `passthru.tvp.base` reports it as null.
           // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
           // checkDeps attr recipe.deps
           // (recipe.opts or { })
@@ -176,7 +185,10 @@ rec {
                 # The name, not the record: passthru is read by tooling, and a
                 # whole stdenv in it makes `nix eval` unusable.
                 base = if base == null then null else base.name;
-              };
+                # Names only, for the same reason.
+                infra = lib.attrNames infra;
+              }
+              // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
 
             # A test a release is known to fail is dropped from the suite, never
             # silently, and only where the status says which and why. Keeping it

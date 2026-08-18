@@ -128,7 +128,7 @@ let
       inherit tvpLib;
     };
     status = pkgs.callPackage ./tools/status.nix {
-      inherit packages;
+      inherit packages bases;
       inherit tvpLib;
     };
   };

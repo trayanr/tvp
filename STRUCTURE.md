@@ -185,14 +185,15 @@ Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
 - **Every definition declares `base`.** There is no per-package default: a definition that
   silently landed on the wrong ground would be invisible, while a missing one fails to
   evaluate. `null` says the builder takes no stdenv because it delegates to a nixpkgs
-  helper — a fact worth declaring, and an M9 worklist entry.
+  helper — a fact worth declaring rather than inferring.
 - **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
   `hardeningDisable` are builder arguments but not dependencies, and `deps` is what the
   canonical-graph contract is written about. `checkDeps` throws on a non-derivation.
 - **Nothing is supplied that is not named.** `mkVersions` calls the builder through
   `lib.makeOverridable` with an explicit `infra` set rather than `callPackage`, so an
   argument that is neither infrastructure nor version data fails to evaluate. `infra` is
-  what a package still borrows from nixpkgs, and it shrinks to nothing at M9.
+  what a package still borrows from nixpkgs, and it shrinks to nothing once TVP owns
+  its own substrate.
 - **A version file receives `defs` and nothing else.** It cannot reach `pkgs` or
   `tvp.packages`, so a release cannot acquire a dependency its neighbours lack. That class
   of defect was real: two packages had versions silently using nixpkgs' dependency while
