@@ -1,4 +1,5 @@
-# Serves 1.1.1 onwards.
+# Serves 3.0 onwards. Upstream changed its release tag scheme at 3.0, from
+# OpenSSL_1_1_1w to openssl-3.0.21, so the source URL is derived differently.
 #
 # `./config` shells out to /usr/bin/env to detect the host, which does not exist
 # in the sandbox and is not a shebang, so patchShebangs cannot reach it.
@@ -32,15 +33,13 @@ let
 
   target =
     targets.${system} or (throw "openssl ${version}: no Configure target for ${system}; add one here.");
-
-  underscoreVersion = builtins.replaceStrings [ "." ] [ "_" ] version;
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "openssl";
   inherit version;
 
   src = fetchurl {
-    url = "https://github.com/openssl/openssl/releases/download/OpenSSL_${underscoreVersion}/openssl-${version}.tar.gz";
+    url = "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
     inherit sha256;
   };
 

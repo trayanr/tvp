@@ -1,4 +1,8 @@
-# Serves 1.1.1 onwards.
+# Serves 1.1.0.
+#
+# Configure imports `glob` from File::Glob, which Perl stopped exporting in 5.30.
+# Upstream's own fix at 1.1.0h was to delete the import and use the builtin; the
+# same deletion is applied here to the releases that predate it.
 #
 # `./config` shells out to /usr/bin/env to detect the host, which does not exist
 # in the sandbox and is not a shebang, so patchShebangs cannot reach it.
@@ -47,6 +51,7 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [ perl ];
 
   postPatch = ''
+    sed -i "/'File::Glob' => qw\/glob\//d" Configure test/build.info
     patchShebangs Configure
   '';
 
@@ -77,7 +82,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       sha256 = true;
-      pbkdf2 = true;
+      pbkdf2 = false;
     };
 
     tests = mkTests finalAttrs.finalPackage;

@@ -1,8 +1,9 @@
-# Serves 1.1.1 onwards.
+# Serves 0.9 through 1.0.
 #
-# `./config` shells out to /usr/bin/env to detect the host, which does not exist
-# in the sandbox and is not a shebang, so patchShebangs cannot reach it.
-# `./Configure` with an explicit target avoids host detection entirely.
+# `Configure` here opens with the `eval 'exec perl'` trick rather than a shebang,
+# so patchShebangs has nothing to rewrite and perl must be named explicitly.
+# `--libdir` does not exist before 1.1.0, and this generation needs an explicit
+# `make depend` before the build.
 {
   lib,
   stdenv,
@@ -20,12 +21,10 @@ let
   targets = {
     x86_64-linux = "linux-x86_64";
     aarch64-linux = "linux-aarch64";
-    i686-linux = "linux-x86";
-    armv7l-linux = "linux-armv4 -march=armv7-a";
+    i686-linux = "linux-elf";
+    armv7l-linux = "linux-armv4";
     powerpc64le-linux = "linux-ppc64le";
-    riscv64-linux = "linux64-riscv64";
     x86_64-darwin = "darwin64-x86_64-cc";
-    aarch64-darwin = "darwin64-arm64-cc";
   };
 
   inherit (stdenv.hostPlatform) system;
@@ -50,13 +49,16 @@ stdenv.mkDerivation (finalAttrs: {
     patchShebangs Configure
   '';
 
-  configureScript = "./Configure ${target}";
+  configureScript = "perl ./Configure ${target}";
 
   configureFlags = [
     "shared"
-    "--libdir=lib"
     "--openssldir=etc/ssl"
   ];
+
+  preBuild = ''
+    make depend
+  '';
 
   installTargets = [ "install_sw" ];
 
@@ -77,7 +79,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       sha256 = true;
-      pbkdf2 = true;
+      pbkdf2 = false;
     };
 
     tests = mkTests finalAttrs.finalPackage;

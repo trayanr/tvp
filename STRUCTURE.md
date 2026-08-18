@@ -168,9 +168,14 @@ status = {
   builds, installs and passes every test while quietly missing a feature does not.
 - **Anything but `ok` must declare `reason` and `needs`**, enforced at evaluation. `needs`
   states what would clear the status, so it is also the worklist.
-- **`broken` sets `meta.broken`** and is exempt from `every-package-tested` and
-  `testBatches` — there is no build to test.
-- Status lives in `meta` and `passthru`, so it never changes a derivation.
+- **`broken` does not set `meta.broken`.** That would make Nix refuse to evaluate the
+  attribute, failing `nix flake check` and hiding the version from the catalogue. A broken
+  version stays addressable; it is exempt from `every-package-tested` and `testBatches`
+  because there is no build to test.
+- **`knownTestFailures = [ "rsa" ]`** drops named tests for one version, and is allowed only
+  when the status is not `ok`. For a defect upstream shipped, keeping the test reddens CI
+  forever and deleting it hides the defect from every other version.
+- Status lives in `passthru`, so it never changes a derivation.
 
 ```sh
 nix run .#status            # inventory, with reasons

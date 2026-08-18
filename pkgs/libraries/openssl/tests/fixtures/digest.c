@@ -1,5 +1,6 @@
-#include <openssl/sha.h>
+/* stdio first: 0.9.8's sha.h uses size_t without including stddef itself. */
 #include <stdio.h>
+#include <openssl/sha.h>
 
 int main(void) {
   unsigned char digest[SHA256_DIGEST_LENGTH];

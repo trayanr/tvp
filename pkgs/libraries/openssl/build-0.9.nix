@@ -1,8 +1,13 @@
-# Serves 1.1.1 onwards.
+# Serves 0.9.
 #
-# `./config` shells out to /usr/bin/env to detect the host, which does not exist
-# in the sandbox and is not a shebang, so patchShebangs cannot reach it.
-# `./Configure` with an explicit target avoids host detection entirely.
+# `Configure` here opens with the `eval 'exec perl'` trick rather than a shebang,
+# so patchShebangs has nothing to rewrite and perl must be named explicitly.
+# `--libdir` does not exist before 1.1.0, and this generation needs an explicit
+# `make depend` before the build.
+#
+# The stdenv's default `format` hardening adds -Werror=format-security, which
+# this generation's apps/engine.c does not survive. The flag is the distribution's
+# policy, not upstream's, so it is dropped rather than the source patched.
 {
   lib,
   stdenv,
@@ -20,12 +25,10 @@ let
   targets = {
     x86_64-linux = "linux-x86_64";
     aarch64-linux = "linux-aarch64";
-    i686-linux = "linux-x86";
-    armv7l-linux = "linux-armv4 -march=armv7-a";
+    i686-linux = "linux-elf";
+    armv7l-linux = "linux-armv4";
     powerpc64le-linux = "linux-ppc64le";
-    riscv64-linux = "linux64-riscv64";
     x86_64-darwin = "darwin64-x86_64-cc";
-    aarch64-darwin = "darwin64-arm64-cc";
   };
 
   inherit (stdenv.hostPlatform) system;
@@ -50,15 +53,27 @@ stdenv.mkDerivation (finalAttrs: {
     patchShebangs Configure
   '';
 
-  configureScript = "./Configure ${target}";
+  configureScript = "perl ./Configure ${target}";
 
   configureFlags = [
     "shared"
-    "--libdir=lib"
     "--openssldir=etc/ssl"
   ];
 
-  installTargets = [ "install_sw" ];
+  hardeningDisable = [ "format" ];
+
+  preBuild = ''
+    make depend
+  '';
+
+  # install_sw does not exist before 0.9.7e; plain `install` also builds docs.
+  installTargets = [ (if lib.versionAtLeast version "0.9.7e" then "install_sw" else "install") ];
+
+  # 0.9.7c's Makefile chmods the pkgconfig *directory* to 644 instead of the
+  # .pc file inside it, locking every later phase out of its own output.
+  postInstall = ''
+    chmod -f 755 "$out/lib/pkgconfig" || true
+  '';
 
   # Parallel building is not reliable in OpenSSL
   enableParallelBuilding = false;
@@ -75,9 +90,10 @@ stdenv.mkDerivation (finalAttrs: {
     inherit version;
     tvp.deps = { };
 
+    # SHA-2 arrived in 0.9.8; the tests read this rather than comparing versions.
     tvp.features = {
-      sha256 = true;
-      pbkdf2 = true;
+      sha256 = lib.versionAtLeast version "0.9.8";
+      pbkdf2 = false;
     };
 
     tests = mkTests finalAttrs.finalPackage;

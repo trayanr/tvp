@@ -3,13 +3,18 @@ rec {
   # What TVP claims about a version, as a fact rather than a comment.
   #
   #   ok        built the way upstream builds it
-  #   degraded  builds and passes its tests, but a documented capability is off
-  #   broken    does not build
+  #   degraded  builds, but a documented capability is off or a known defect bites
+  #   broken    does not build here
   #
   # Anything other than `ok` must say what is wrong and what would fix it, so a
   # status can never decay into an unexplained label nobody dares remove.
-  # Evaluation-only: it reaches `meta` and `passthru`, both of which
-  # `mkDerivation` strips before hashing.
+  # Evaluation-only: it reaches `passthru`, which `mkDerivation` strips before
+  # hashing.
+  #
+  # Deliberately not `meta.broken`. That makes Nix refuse to *evaluate* the
+  # attribute, which breaks `nix flake check` and hides the version from the
+  # catalogue — the opposite of what a preservation project wants. A broken
+  # version stays addressable and stays listed; the status is the record.
   statusLevels = [
     "ok"
     "degraded"
@@ -22,6 +27,8 @@ rec {
       throw "TVP: ${attr} has status level '${status.level}'; expected one of ${lib.concatStringsSep ", " statusLevels}"
     else if status.level != "ok" && !(status ? reason && status ? needs) then
       throw "TVP: ${attr} is '${status.level}' and must declare both `reason` and `needs`"
+    else if (status.knownTestFailures or [ ]) != [ ] && status.level == "ok" then
+      throw "TVP: ${attr} declares knownTestFailures but claims level 'ok'"
     else
       status;
 
@@ -58,11 +65,13 @@ rec {
         pkg.overrideAttrs (old: {
           passthru = old.passthru // {
             tvp = (old.passthru.tvp or { }) // packageMeta // { inherit status; };
-          };
 
-          # Nix's own machinery participates: a broken package refuses to build
-          # rather than only being labelled.
-          meta = (old.meta or { }) // lib.optionalAttrs (status.level == "broken") { broken = true; };
+            # A test a release is known to fail is dropped from the suite, never
+            # silently, and only where the status says which and why. Keeping it
+            # would make CI red forever and train everyone to ignore it; deleting
+            # the test would hide the defect from every other version.
+            tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
+          };
         })
       )
     ) versionTable;

@@ -25,7 +25,10 @@ let
       out = builtins.unsafeDiscardStringContext p.outPath;
     };
 
-  entries = lib.mapAttrsToList entry packages;
+  # A broken package has no closure to attribute, and forcing outPath throws.
+  entries = lib.mapAttrsToList entry (
+    lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") packages
+  );
 
   # Trailing newline on every line, or `read` drops the last entry.
   manifest = writeText "tvp-provenance-manifest" (
