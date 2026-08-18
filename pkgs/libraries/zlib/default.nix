@@ -7,7 +7,9 @@ let
   };
 
   canonical = tvpLib.packages.mkVersions {
-    inherit (pkgs) callPackage;
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
     pname = "zlib";
     inherit versionTable;
     defaultBase = tvp.bases.default;

@@ -7,7 +7,7 @@
 #
 # This fork is what a base does NOT remove. The other reason it once existed —
 # Configure's `1*` gcc-version glob — is gone, because 5.28 now builds on
-# bases.nixpkgs-gcc9. Both remaining differences from build-5.34.nix are
+# bases.gcc9. Both remaining differences from build-5.34.nix are
 # sandbox-shaped, and no choice of era fixes those.
 #
 # Cwd.pm runs `pwd` from a hardcoded list of FHS paths, and the build sandbox

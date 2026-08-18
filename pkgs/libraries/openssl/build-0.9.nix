@@ -14,12 +14,7 @@
   version,
   sha256,
 
-  # -Werror=format-security, which the stdenv adds by default, is survived by most
-  # of this generation but not all: upstream introduced a non-literal format string
-  # in apps/engine.c at 0.9.8 and fixed it by 0.9.8k. Measured by building all 48
-  # non-broken releases, 11 need it off. Declared per version rather than set here,
-  # because blanketing the builder's whole range suppresses the diagnostic on the
-  # 37 that compile clean.
+  # 0.9.8 … 0.9.8j only; the rest of the generation compiles clean with it on.
   hardeningDisable ? [ ],
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.

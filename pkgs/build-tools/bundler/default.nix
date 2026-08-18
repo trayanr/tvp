@@ -38,7 +38,16 @@ let
   };
 
   canonical = tvpLib.packages.mkVersions {
-    inherit (pkgs) callPackage;
+    # buildRubyGem and writeScript are nixpkgs helpers TVP does not own; they are why
+    # this is the one package with `base = null`.
+    infra = {
+      inherit (pkgs)
+        lib
+        fetchurl
+        buildRubyGem
+        writeScript
+        ;
+    };
     pname = "bundler";
     inherit versionTable;
     # bundler is built by nixpkgs' buildRubyGem rather than by

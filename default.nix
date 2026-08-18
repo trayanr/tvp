@@ -9,7 +9,7 @@ let
   # The ground packages are built on. Defined before `packages` because every
   # version table names one, and exposed on `tvp` so a version table can reach
   # it the same way it reaches `tvp.packages`.
-  bases = import ./bases { inherit pkgs; };
+  bases = import ./bases { inherit pkgs tvpLib; };
 
   packages = import ./pkgs { inherit pkgs tvp; };
 
@@ -42,6 +42,19 @@ let
           ''
       else
         throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+
+    every-base-tested =
+      let
+        untested = pkgs.lib.filterAttrs (_: b: !(b ? tests) || b.tests == { }) bases;
+      in
+      if untested == { } then
+        pkgs.runCommand "tvp-check-every-base-tested"
+          { tested = toString (builtins.length (builtins.attrNames bases)); }
+          ''
+            printf '%s base attributes, all with tests\n' "$tested" > "$out"
+          ''
+      else
+        throw "TVP: bases with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
 
     # Holds bases/stdenv/make-derivation.nix at "vendored verbatim": TVP's
     # mkDerivation must still compute exactly what nixpkgs' does. Trimming what

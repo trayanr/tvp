@@ -4,7 +4,7 @@
     builder = ./build-5.28.nix;
     # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
     # struct-return patch this builder would otherwise apply is unnecessary.
-    base = tvp.bases.nixpkgs-gcc9;
+    base = tvp.bases.gcc9;
     sha256 = "sha256-r8nB1mFZeuFNnog8UHEJK+1z9gwxCbKUgj6gGspwURQ=";
     deps = {
       coreutils = pkgs.coreutils;
@@ -14,13 +14,17 @@
   "5.30.3" = {
     builder = ./build-5.34.nix;
     sha256 = "sha256-MuBMi7exrssnQqf3rA6rrBAPOCRzUqc61/oQTjnnQG8=";
-    deps = { };
+    deps = {
+      coreutils = pkgs.coreutils;
+    };
   };
 
   "5.32.1" = {
     builder = ./build-5.34.nix;
     sha256 = "sha256-A7aTkBzYroByMbF4d5jPHy4LilYhjQe32kT3hKfK6yw=";
-    deps = { };
+    deps = {
+      coreutils = pkgs.coreutils;
+    };
   };
 
   "5.34.3" = {

@@ -10,7 +10,12 @@ let
   };
 
   canonical = tvpLib.packages.mkVersions {
-    inherit (pkgs) callPackage;
+    # perl is still nixpkgs', and every Configure in the catalogue runs under it. The
+    # 1.1.0 line names its own; the rest inherit whatever nixpkgs ships, which is an
+    # M9 worklist entry rather than a settled pin.
+    infra = {
+      inherit (pkgs) lib fetchurl perl;
+    };
     pname = "openssl";
     inherit versionTable;
     defaultBase = tvp.bases.default;

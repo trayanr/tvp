@@ -155,9 +155,6 @@
     sha256 = "sha256-wRVLimpFFodA7MnzjUbfrUDrJ65Rq9doM6GNTJpktR0=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -167,9 +164,6 @@
     sha256 = "sha256-MPj2H7Exb0+1FBDHQLSHm44mtBfI2HDkhhRLELgEHHM=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -179,9 +173,6 @@
     sha256 = "sha256-ae/tYnWUL5MS3mHPaarvErBsEvaxDzGWcs4CanVvZcA=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -191,9 +182,6 @@
     sha256 = "sha256-iW94MMGSFojyLG/k+z17dRic7915rMpfsMrStZkTkEg=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -203,9 +191,6 @@
     sha256 = "sha256-AiGUlEzCDa2RfIbJFtuKTgBQ3y3pG5tnQN3U+y2vF10=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -215,9 +200,6 @@
     sha256 = "sha256-QU6EKLlfvFFweWX9oxOQSX0FgpA1ZCa/4IS0lGSmA0A=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -227,9 +209,6 @@
     sha256 = "sha256-vlr9OG9des/wGayvRs2q2JqLQsyc7oXRrbJ3RifzK0I=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -239,9 +218,6 @@
     sha256 = "sha256-DiaIaEXelXFsnxubdcDgbp1AddK9yeEVBOql9+6QHPA=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -251,9 +227,6 @@
     sha256 = "sha256-Ik4co67tqKzHLlxIs0hDkEudWFqq201aFVJMJfbGoc4=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -263,9 +236,6 @@
     sha256 = "sha256-6Pxfz7cV/+klspgqqcooeDKpNJXX//A/F/ZEnwcycYw=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };
@@ -275,9 +245,6 @@
     sha256 = "sha256-cTEkIELb1jH72DQ29CrqF3Xnwy9Yf6StpaAd9MOujos=";
     deps = { };
     opts = {
-      # apps/engine.c passes a non-literal format string. Upstream introduced it
-      # at 0.9.8 and fixed it by 0.9.8k; 0.9.7 and 0.9.8k+ compile clean without
-      # this, verified by building every non-broken 0.9 release.
       hardeningDisable = [ "format" ];
     };
   };

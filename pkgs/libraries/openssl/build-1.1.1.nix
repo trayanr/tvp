@@ -7,17 +7,12 @@
   lib,
   stdenv,
   fetchurl,
-
-  # Which perl matters here, so every version names one. `Configure` on the 1.1.0
-  # line does `use File::Glob 'glob'`, and perl stopped exporting it at 5.30 —
-  # so the line pins a perl that still does, rather than patching the import out.
   perl,
 
   version,
   sha256,
 
-  # 1.1.0 has no `enc -pbkdf2`; 1.1.1 added it. A capability, so it is version
-  # data selecting a test, not a reason to fork the procedure.
+  # 1.1.0 has no `enc -pbkdf2`.
   pbkdf2 ? true,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.

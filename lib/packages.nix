@@ -21,10 +21,6 @@ rec {
     "broken"
   ];
 
-  # `deps` is what the canonical-graph contract is written about, so it holds
-  # derivations and nothing else. Build options that happen to be builder
-  # arguments — `libDir`, `pbkdf2`, `yjit`, `hardeningDisable` — go in `opts`,
-  # where a catalogue reading the graph will not mistake them for dependencies.
   checkDeps =
     attr: deps:
     let
@@ -46,15 +42,15 @@ rec {
     else
       status;
 
-  # `callPackage` fills in the substrate; everything in `deps` is passed
-  # explicitly and is therefore also the seam `.override` needs.
   # `packageMeta` describes the package rather than a version — one upstream
   # index serves all nine Rubies. It is written once in the package's
   # default.nix and copied onto each version's passthru, because the package set
   # is flat and versions are the only things with a name in it.
   mkVersions =
     {
-      callPackage,
+      # What this package still borrows from nixpkgs. Anything a builder declares
+      # that is neither here nor in the version table fails to evaluate.
+      infra,
       pname,
       versionTable,
       # Required rather than defaulted: a package that silently landed on the
@@ -71,8 +67,11 @@ rec {
         status = checkStatus attr (entry.status or { level = "ok"; });
         base = entry.base or defaultBase;
 
-        pkg = callPackage entry.builder (
-          {
+        builder = import entry.builder;
+
+        pkg = lib.makeOverridable builder (
+          builtins.intersectAttrs (builtins.functionArgs builder) infra
+          // {
             inherit version;
             inherit (entry) sha256;
           }

@@ -12,7 +12,9 @@ let
     "4" = import ./4.nix { inherit pkgs tvp; };
   };
   canonical = tvpLib.packages.mkVersions {
-    inherit (pkgs) callPackage;
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
     pname = "ruby";
     inherit versionTable;
     defaultBase = tvp.bases.default;
