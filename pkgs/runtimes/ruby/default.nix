@@ -3,9 +3,9 @@ let
   tvpLib = tvp.lib;
 
   # Upstream's OpenSSL bound (ext/openssl/extconf.rb) gains "< 3.0.0" at 2.7.5
-  # and 3.0.3, then drops the upper limit entirely at 3.1. So 1.1.1w is the
-  # latest compatible release only through 3.0; from 3.1 it is merely the newest
-  # OpenSSL TVP owns, and the pin moves when TVP packages a 3.x.
+  # and again at 3.0.3, then drops the upper limit entirely at 3.1. So 2.7 and
+  # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
+  # pin 3.5.7, the latest LTS line TVP owns.
   versionTable = tvpLib.packages.merge {
     "2" = import ./2.nix { inherit pkgs tvp; };
     "3" = import ./3 { inherit pkgs tvp; };
