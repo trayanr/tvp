@@ -5,6 +5,9 @@ How TVP is laid out and why, so a change lands where the next person expects to 
 ## The tree
 
 ```
+bases/                        the ground packages are built on; `tvp.bases`
+└── default.nix               named bases; canonical names immutable, aliases move
+
 lib/                          shared evaluation logic; the flake's `lib` output
 ├── versions.nix              version parsing, predicates, attribute naming
 ├── packages.nix              version table → package set, merging, alias checks
@@ -261,6 +264,44 @@ or PHP 5.6: `build`, `smoke`, `version`, `stdlib`, `openssl`, `compile`, `upstre
 nix build .#testBatches.x86_64-linux.ruby_2_7_0     # one package's whole suite
 nix build .#packages.x86_64-linux.ruby_2_7_0.tests.openssl
 ```
+
+## Bases
+
+A version declares two different things: the **graph** it depends on (`deps`) and the
+**ground** it is built on (`base`). Bases live in `bases/default.nix` and are reached from
+a version table as `tvp.bases`, exactly as packages are reached as `tvp.packages`.
+
+The seam is `stdenv`, and it already existed. Every builder takes `stdenv` as an argument
+and calls `stdenv.mkDerivation`; a base is simply TVP supplying that argument instead of
+letting `callPackage` fill it from nixpkgs.
+
+```nix
+"1.4.18" = {
+  builder = ./build-1.4.19.nix;
+  base = tvp.bases.glibc233;      # only where it differs from the default
+  sha256 = "…";
+  deps = { };
+};
+```
+
+- **No builder mentions a base.** Swapping one is a substitution rather than an edit.
+- **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can grow the
+  policy a toolchain pin cannot express — hardening flags, language standard, the
+  composition glue that replaces nixpkgs' setup hooks.
+- **Canonical base names are immutable; aliases move.** Same rule as packages, so "which
+  base did this revision use" stays answerable.
+- **`defaultBase` is required** by `mkVersions`. A package that silently landed on the
+  wrong base would be invisible; a missing argument fails to evaluate.
+- **`base = null` declares a package is not on a base at all**, because its builder
+  delegates to a nixpkgs helper rather than calling `stdenv.mkDerivation`. Declared, never
+  inferred.
+- **`passthru.tvp.base` records the name**, not the record.
+
+`bases/` is derivation-affecting in full: every package on a base rebuilds when that base
+changes. That is dependencies working correctly, and the blast radius is one base rather
+than the repo — the same containment `build-VERSION.nix` gives a build procedure. It is
+also why there is still no `mkTvpDerivation`: a customised `mkDerivation` inside a named,
+versioned base is scoped and forkable; a single global wrapper is not.
 
 ## `lib/`
 

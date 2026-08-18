@@ -1,17 +1,14 @@
 # Serves up to 5.28.
 #
-# Two fixes upstream made in 5.30, applied here to the releases that predate
-# them:
+# Errno_pm.PL dies outright when no errno.h is found under the FHS include
+# paths. 5.30 hoisted that probe and falls through to the preprocessor instead.
+# Rather than restructure it, locincpth names where this distribution actually
+# keeps the C library headers.
 #
-#   Configure matched the gcc version with the glob `1*`, meaning "gcc 1.x".
-#   Every gcc from 10 onwards also matches it, so Configure adds
-#   -fpcc-struct-return and omits -fno-strict-aliasing — miniperl then
-#   segfaults. 5.30 tightened both globs to `1.*`.
-#
-#   Errno_pm.PL dies outright when no errno.h is found under the FHS include
-#   paths. 5.30 hoisted that probe and falls through to the preprocessor
-#   instead. Rather than restructure it, locincpth names where this
-#   distribution actually keeps the C library headers.
+# This fork is what a base does NOT remove. The other reason it once existed —
+# Configure's `1*` gcc-version glob — is gone, because 5.28 now builds on
+# bases.nixpkgs-gcc9. Both remaining differences from build-5.34.nix are
+# sandbox-shaped, and no choice of era fixes those.
 #
 # Cwd.pm runs `pwd` from a hardcoded list of FHS paths, and the build sandbox
 # has no /bin. cwd() then returns empty and MakeMaker dies with "Can't figure
@@ -54,8 +51,6 @@ stdenv.mkDerivation (finalAttrs: {
   postPatch = ''
     substituteInPlace dist/PathTools/Cwd.pm \
       --replace-fail "/bin/pwd" "${coreutils}/bin/pwd"
-
-    sed -i "s/^\t1[*])/\t1.*)/" Configure
   '';
 
   configureScript = "./Configure";

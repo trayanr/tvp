@@ -15,6 +15,7 @@ let
     inherit (pkgs) callPackage;
     pname = "ruby";
     inherit versionTable;
+    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

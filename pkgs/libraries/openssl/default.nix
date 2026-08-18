@@ -13,6 +13,7 @@ let
     inherit (pkgs) callPackage;
     pname = "openssl";
     inherit versionTable;
+    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

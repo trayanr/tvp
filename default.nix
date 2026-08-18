@@ -6,6 +6,11 @@
 let
   tvpLib = import ./lib { inherit (pkgs) lib; };
 
+  # The ground packages are built on. Defined before `packages` because every
+  # version table names one, and exposed on `tvp` so a version table can reach
+  # it the same way it reaches `tvp.packages`.
+  bases = import ./bases { inherit pkgs; };
+
   packages = import ./pkgs { inherit pkgs tvp; };
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
@@ -37,6 +42,36 @@ let
           ''
       else
         throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+
+    # Holds bases/stdenv/make-derivation.nix at "vendored verbatim": TVP's
+    # mkDerivation must still compute exactly what nixpkgs' does. Trimming what
+    # TVP does not use is a deliberate, cache-invalidating step, and this check
+    # failing is what distinguishes that from an accident.
+    vendored-mkderivation-neutral =
+      let
+        probe =
+          stdenv:
+          (stdenv.mkDerivation (finalAttrs: {
+            pname = "mkderivation-probe";
+            version = "1";
+            src = null;
+            dontUnpack = true;
+            configureFlags = [ "--probe" ];
+            buildInputs = [ pkgs.zlib ];
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            hardeningDisable = [ "format" ];
+            enableParallelBuilding = true;
+            installPhase = "mkdir -p $out";
+          })).drvPath;
+        tvp = probe bases.default.stdenv;
+        upstream = probe pkgs.stdenv;
+      in
+      if tvp == upstream then
+        pkgs.runCommand "tvp-check-mkderivation-neutral" { inherit tvp; } ''
+          printf '%s\n' "$tvp" > "$out"
+        ''
+      else
+        throw "TVP: vendored mkDerivation is no longer derivation-neutral:\n  nixpkgs ${upstream}\n  tvp     ${tvp}";
 
     # Only .nix files are copied, so local-only files never reach the store.
     formatting =
@@ -87,6 +122,7 @@ let
 
   tvp = {
     inherit
+      bases
       packages
       checks
       testBatches

@@ -10,6 +10,7 @@ let
     inherit (pkgs) callPackage;
     pname = "zlib";
     inherit versionTable;
+    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

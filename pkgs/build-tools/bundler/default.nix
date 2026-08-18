@@ -41,6 +41,11 @@ let
     inherit (pkgs) callPackage;
     pname = "bundler";
     inherit versionTable;
+    # bundler is built by nixpkgs' buildRubyGem rather than by
+    # stdenv.mkDerivation, so it takes no stdenv and there is nothing for a base
+    # to substitute. Declared rather than inferred: this is an M9 worklist entry,
+    # and it is the only package in TVP that is not on a base.
+    defaultBase = null;
 
     extraArgs = {
       mkTests =

@@ -10,6 +10,7 @@ let
     inherit (pkgs) callPackage;
     pname = "m4";
     inherit versionTable;
+    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

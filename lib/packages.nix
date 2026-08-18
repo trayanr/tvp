@@ -43,6 +43,10 @@ rec {
       callPackage,
       pname,
       versionTable,
+      # Required rather than defaulted: a package that silently landed on the
+      # wrong base would be invisible, whereas a missing argument fails to
+      # evaluate. Same reason `mkTests` is mandatory in builders.
+      defaultBase,
       extraArgs ? { },
       packageMeta ? { },
     }:
@@ -51,12 +55,22 @@ rec {
       let
         attr = versions.attrName pname version;
         status = checkStatus attr (entry.status or { level = "ok"; });
+        base = entry.base or defaultBase;
 
         pkg = callPackage entry.builder (
           {
             inherit version;
             inherit (entry) sha256;
           }
+          # The whole base mechanism. Builders already take `stdenv` and already
+          # call `stdenv.mkDerivation`, so naming it here is the only edit a base
+          # ever needs — no builder mentions bases at all.
+          #
+          # A null base means the builder does not take a stdenv because it
+          # delegates to a nixpkgs helper, and is therefore not on a TVP base at
+          # all. That has to be declared rather than inferred: it is an M9
+          # worklist entry, and `passthru.tvp.base` reports it as null.
+          // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
           // entry.deps
           // extraArgs
         );
@@ -64,7 +78,15 @@ rec {
       lib.nameValuePair attr (
         pkg.overrideAttrs (old: {
           passthru = old.passthru // {
-            tvp = (old.passthru.tvp or { }) // packageMeta // { inherit status; };
+            tvp =
+              (old.passthru.tvp or { })
+              // packageMeta
+              // {
+                inherit status;
+                # The name, not the record: passthru is read by tooling, and a
+                # whole stdenv in it makes `nix eval` unusable.
+                base = if base == null then null else base.name;
+              };
 
             # A test a release is known to fail is dropped from the suite, never
             # silently, and only where the status says which and why. Keeping it
