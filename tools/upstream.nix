@@ -94,19 +94,19 @@ writeShellApplication {
       case "$type" in
         directory-index)
           if [ -n "$subdir" ] && [ "$subdir" != "null" ]; then
-            curl -sL "$url" \
+            curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" \
               | grep -oE "href=\"[^\"]*\"" | sed 's|href="||;s|"$||' \
               | grep -oE "$subdir" | sort -u \
-              | while read -r d; do curl -sL "$url$d/" | grep -oE "$pattern" || true; done
+              | while read -r d; do curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url$d/" | grep -oE "$pattern" || true; done
           else
-            curl -sL "$url" | grep -oE "$pattern" || true
+            curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" | grep -oE "$pattern" || true
           fi
           ;;
         git-tags)
           git ls-remote --tags "$url" | sed 's|.*refs/tags/||; s|\^{}$||'
           ;;
         rubygems)
-          curl -sL "$url" | jq -r '.[].number'
+          curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" | jq -r '.[].number'
           ;;
         *)
           echo "tvp-upstream: no adapter for source type '$type'" >&2
@@ -141,6 +141,17 @@ writeShellApplication {
       " "$flake#packages.$system.$attr.tvp.upstream" 2>/dev/null \
         | jq -r '.[]' | sort -u > "$work/upstream" || true
 
+      # A package always has at least one upstream release, so an empty listing is a
+      # fetch failure, not a report. Reporting it as "N of 0 - nothing missing" turns a
+      # rate-limited mirror into a clean bill of health.
+      if ! [ -s "$work/upstream" ]; then
+        printf '%s — FAILED: upstream listing came back empty\n' "$pname"
+        printf '  source: %s %s\n' "$type" "$url"
+        printf '  Retry, or use a mirror: ftp.gnu.org refuses connections after ~60 requests.\n\n'
+        touch "$work/failed"
+        continue
+      fi
+
       jq -r '.versions[]' <<< "$row" | sort -u > "$work/have"
       comm -23 "$work/upstream" "$work/have" > "$work/missing"
 
@@ -156,5 +167,10 @@ writeShellApplication {
       fi
       echo
     done
+
+    if [ -e "$work/failed" ]; then
+      echo "tvp-upstream: at least one upstream listing failed; the report above is incomplete" >&2
+      exit 1
+    fi
   '';
 }

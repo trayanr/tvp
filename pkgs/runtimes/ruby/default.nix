@@ -7,7 +7,7 @@ let
   # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
   # pin 3.5.7, the latest LTS line TVP owns.
   defs = {
-    "2.7.0" = {
+    "2.6.0" = {
       builder = ./build-2.7.nix;
       base = tvp.bases.gcc13;
       deps = {

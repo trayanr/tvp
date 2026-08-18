@@ -32,7 +32,7 @@ let
     packageMeta = {
       upstream = {
         type = "directory-index";
-        url = "https://ftp.gnu.org/gnu/readline/";
+        url = "https://mirrors.kernel.org/gnu/readline/";
         pattern = "readline-[0-9][^\"]*\\.tar\\.gz";
 
         normalise =

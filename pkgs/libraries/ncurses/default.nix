@@ -32,7 +32,7 @@ let
     packageMeta = {
       upstream = {
         type = "directory-index";
-        url = "https://ftp.gnu.org/gnu/ncurses/";
+        url = "https://mirrors.kernel.org/gnu/ncurses/";
         pattern = "ncurses-[0-9][^\"]*\\.tar\\.gz";
 
         normalise =

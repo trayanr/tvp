@@ -30,7 +30,7 @@ let
     packageMeta = {
       upstream = {
         type = "directory-index";
-        url = "https://ftp.gnu.org/gnu/gdbm/";
+        url = "https://mirrors.kernel.org/gnu/gdbm/";
         pattern = "gdbm-[0-9][^\"]*\\.tar\\.gz";
 
         normalise =

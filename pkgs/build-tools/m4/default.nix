@@ -30,7 +30,7 @@ let
     packageMeta = {
       upstream = {
         type = "directory-index";
-        url = "https://ftp.gnu.org/gnu/m4/";
+        url = "https://mirrors.kernel.org/gnu/m4/";
         pattern = "m4-[0-9][^\"]*\\.tar\\.gz";
 
         normalise =
