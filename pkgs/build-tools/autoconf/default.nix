@@ -2,9 +2,18 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "2" = import ./2.nix { inherit pkgs tvp; };
+  defs = {
+    "2.69" = {
+      builder = ./build-2.69.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_44_0;
+      };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./2.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +21,6 @@ let
     };
     pname = "autoconf";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

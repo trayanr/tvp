@@ -31,6 +31,83 @@ rec {
     else
       throw "TVP: ${attr} has non-derivation values in `deps`: ${lib.concatStringsSep ", " bad}. Build options belong in `opts`.";
 
+  # Releases grouped under the definition they use. A list, not an attrset, so
+  # blocks stay in release order and a definition may appear in more than one —
+  # openssl 0.9 returns to its first recipe after the hardened run.
+  #
+  # A release is its hash, or an attrset where there is more than a hash to
+  # state. Nix rejects a duplicate within one block; this catches one across
+  # blocks, which it cannot see.
+  #
+  # A status belongs to the block when the recipe causes it — every ruby 4.0 is
+  # degraded for the same reason — and to the release when the release does, as
+  # openssl 3.0.4 is alone in its 64. Both at once is a contradiction, not a
+  # merge.
+  mkTable =
+    blocks:
+    let
+      entries = lib.concatMap (
+        block:
+        lib.mapAttrsToList (
+          version: raw:
+          let
+            release = if lib.isString raw then { sha256 = raw; } else raw;
+          in
+          if !(block ? def) then
+            throw "TVP: the block holding ${version} names no definition."
+          else if block ? status && release ? status then
+            throw "TVP: ${version} declares a status and so does its block. One of them is wrong."
+          else
+            lib.nameValuePair version (
+              {
+                inherit (block) def;
+              }
+              // lib.optionalAttrs (block ? status) { inherit (block) status; }
+              // release
+            )
+        ) block.releases
+      ) blocks;
+
+      names = map (e: e.name) entries;
+      dupes = lib.unique (lib.filter (n: lib.count (m: m == n) names > 1) names);
+    in
+    if dupes == [ ] then
+      lib.listToAttrs entries
+    else
+      throw "TVP: versions in more than one block: ${lib.concatStringsSep ", " dupes}";
+
+  # A version names a definition and adds only what varies per release. Naming
+  # one forbids overriding it: a version whose recipe differs forks a definition.
+  entryFields = [
+    "def"
+    "sha256"
+    "status"
+  ];
+
+  checkEntry =
+    attr: entry:
+    let
+      extra = lib.subtractLists entryFields (lib.attrNames entry);
+    in
+    if !(entry ? def) || extra == [ ] then
+      entry
+    else
+      throw "TVP: ${attr} sets ${lib.concatStringsSep ", " extra} alongside `def`. A version that differs forks its definition rather than overriding it.";
+
+  # `base` is required of every definition rather than defaulted per package.
+  # There are a few dozen definitions in the whole repo, so stating it is cheap,
+  # and a definition that silently landed on the wrong ground would be invisible
+  # while a missing one fails to evaluate. `null` says the builder is not on a
+  # base at all — an M9 worklist entry, and a fact worth declaring.
+  checkDef =
+    attr: entry:
+    if !(entry ? def) then
+      throw "TVP: ${attr} has no `def`. A version names a definition from its package's `defs`."
+    else if !(entry.def ? base) then
+      throw "TVP: the definition behind ${attr} declares no `base`. Use `null` if the builder takes no stdenv."
+    else
+      entry.def;
+
   checkStatus =
     attr: status:
     if !(lib.elem status.level statusLevels) then
@@ -53,21 +130,20 @@ rec {
       infra,
       pname,
       versionTable,
-      # Required rather than defaulted: a package that silently landed on the
-      # wrong base would be invisible, whereas a missing argument fails to
-      # evaluate. Same reason `mkTests` is mandatory in builders.
-      defaultBase,
       extraArgs ? { },
       packageMeta ? { },
     }:
     lib.mapAttrs' (
-      version: entry:
+      version: rawEntry:
       let
         attr = versions.attrName pname version;
-        status = checkStatus attr (entry.status or { level = "ok"; });
-        base = entry.base or defaultBase;
+        entry = checkEntry attr rawEntry;
+        recipe = checkDef attr entry;
 
-        builder = import entry.builder;
+        status = checkStatus attr (entry.status or { level = "ok"; });
+        inherit (recipe) base;
+
+        builder = import recipe.builder;
 
         pkg = lib.makeOverridable builder (
           builtins.intersectAttrs (builtins.functionArgs builder) infra
@@ -84,8 +160,8 @@ rec {
           # all. That has to be declared rather than inferred: it is an M9
           # worklist entry, and `passthru.tvp.base` reports it as null.
           // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
-          // checkDeps attr entry.deps
-          // (entry.opts or { })
+          // checkDeps attr recipe.deps
+          // (recipe.opts or { })
           // extraArgs
         );
       in

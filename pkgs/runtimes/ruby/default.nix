@@ -6,10 +6,94 @@ let
   # and again at 3.0.3, then drops the upper limit entirely at 3.1. So 2.7 and
   # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
   # pin 3.5.7, the latest LTS line TVP owns.
-  versionTable = tvpLib.packages.merge {
-    "2" = import ./2.nix { inherit pkgs tvp; };
-    "3" = import ./3 { inherit pkgs tvp; };
-    "4" = import ./4.nix { inherit pkgs tvp; };
+  defs = {
+    "2.7.0" = {
+      builder = ./build-2.7.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        readline = pkgs.readline;
+        zlib = pkgs.zlib;
+        gdbm = pkgs.gdbm;
+      };
+    };
+
+    "3.1.0" = {
+      builder = ./build-3.1.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        readline = pkgs.readline;
+        zlib = pkgs.zlib;
+      };
+    };
+
+    "3.2.0" = {
+      builder = ./build-3.2.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        readline = pkgs.readline;
+        zlib = pkgs.zlib;
+        libyaml = pkgs.libyaml;
+        libffi = pkgs.libffi;
+        rustc = pkgs.rustc;
+      };
+    };
+
+    "3.3.0" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = pkgs.zlib;
+        libyaml = pkgs.libyaml;
+        libffi = pkgs.libffi;
+        rustc = pkgs.rustc;
+      };
+    };
+
+    # 3.4.0's tarball declares RUBY_PATCHLEVEL -1, marking it a development
+    # build, so Ruby appends RUBY_ABI_VERSION to its lib directory. 3.4.1
+    # restored patchlevel 0 and the suffix goes away again.
+    "3.4.0" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = pkgs.zlib;
+        libyaml = pkgs.libyaml;
+        libffi = pkgs.libffi;
+        rustc = pkgs.rustc;
+      };
+      opts = {
+        libDir = "3.4.0+1";
+      };
+    };
+
+    "4.0.0" = {
+      builder = ./build-4.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = pkgs.zlib;
+        libyaml = pkgs.libyaml;
+        libffi = pkgs.libffi;
+        rustc = pkgs.rustc;
+      };
+      opts = {
+        yjit = false;
+        zjit = false;
+      };
+    };
+  };
+
+  inherit (tvpLib.packages) merge mkTable;
+
+  versionTable = merge {
+    "2" = mkTable (import ./2.nix { inherit defs; });
+    "3" = mkTable (import ./3.nix { inherit defs; });
+    "4" = mkTable (import ./4.nix { inherit defs; });
   };
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -17,7 +101,6 @@ let
     };
     pname = "ruby";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

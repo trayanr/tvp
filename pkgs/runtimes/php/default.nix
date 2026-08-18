@@ -2,9 +2,23 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "8" = import ./8.nix { inherit pkgs tvp; };
+  defs = {
+    "8.5.9" = {
+      builder = ./build-8.5.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        libxml2 = tvp.packages.libxml2_2_15_3;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = pkgs.sqlite;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./8.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +26,6 @@ let
     };
     pname = "php";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

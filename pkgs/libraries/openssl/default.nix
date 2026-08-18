@@ -2,11 +2,62 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "0" = import ./0.nix { inherit pkgs tvp; };
-    "1" = import ./1 { inherit pkgs tvp; };
-    "3" = import ./3 { inherit pkgs tvp; };
-    "4" = import ./4.nix { inherit pkgs tvp; };
+  # Every version names one of these. A version that differs forks a definition
+  # rather than overriding it, so the entries below hold only a hash and a status.
+  defs = {
+    "0.9.6" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
+
+    "0.9.8" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+      opts = {
+        hardeningDisable = [ "format" ];
+      };
+    };
+
+    "1.0.0" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
+
+    # 1.1.0's Configure does `use File::Glob 'glob'`, which perl stopped exporting at 5.30.
+    "1.1.0" = {
+      builder = ./build-1.1.1.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        perl = tvp.packages.perl_5_28_3;
+      };
+      opts = {
+        pbkdf2 = false;
+      };
+    };
+
+    "1.1.1" = {
+      builder = ./build-1.1.1.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
+
+    "3.0.0" = {
+      builder = ./build-3.0.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
+  };
+
+  inherit (tvpLib.packages) merge mkTable;
+
+  versionTable = merge {
+    "0" = mkTable (import ./0.nix { inherit defs; });
+    "1" = mkTable (import ./1.nix { inherit defs; });
+    "3" = mkTable (import ./3.nix { inherit defs; });
+    "4" = mkTable (import ./4.nix { inherit defs; });
   };
 
   canonical = tvpLib.packages.mkVersions {
@@ -18,7 +69,6 @@ let
     };
     pname = "openssl";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

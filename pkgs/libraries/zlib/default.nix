@@ -2,9 +2,15 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "1" = import ./1.nix { inherit pkgs tvp; };
+  defs = {
+    "1.2.3" = {
+      builder = ./build-1.2.3.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +18,6 @@ let
     };
     pname = "zlib";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

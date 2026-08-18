@@ -6,10 +6,13 @@ How TVP is laid out and why, so a change lands where the next person expects to 
 
 ```
 bases/                        the ground packages are built on; `tvp.bases`
-└── default.nix               named bases; canonical names immutable, aliases move
+├── default.nix               named bases; canonical names immutable, aliases move
+├── stdenv/                   TVP's vendored mkDerivation
+└── tests/                    one shared suite, instantiated per base
 
 lib/                          shared evaluation logic; the flake's `lib` output
 ├── versions.nix              version parsing, predicates, attribute naming
+├── bases.nix                 mkBase and its assertions, mkBaseSuite
 ├── packages.nix              version table → package set, merging, alias checks
 └── tests.nix                 mkTest / mkSuite / mkBatch
 
@@ -18,15 +21,14 @@ pkgs/
 ├── libraries/                openssl, zlib, libxml2, sqlite …
 │   ├── default.nix           index of packages in this category
 │   └── openssl/
-│       ├── default.nix       version → builder table, version data, aliases
+│       ├── default.nix       definitions, index of version files, aliases
+│       ├── 0.nix … 4.nix     releases, grouped by definition
 │       └── build-1.1.1.nix   build procedure
 ├── runtimes/                 ruby, php, python, perl, node, jdk …
 │   └── ruby/
-│       ├── default.nix       index: merges the version files, aliases, tests
-│       ├── 2.nix             version data, split per major once it outgrew one file
-│       ├── 3/                a major that outgrew one file in turn
-│       │   ├── default.nix   index of the minor lines
-│       │   └── 0.nix … 4.nix
+│       ├── default.nix       definitions, index of version files, aliases
+│       ├── 2.nix             releases; per major once one file outgrew ~500 lines
+│       ├── 3.nix
 │       ├── 4.nix
 │       ├── build-2.7.nix     build procedure; one file per start version
 │       ├── build-3.1.nix
@@ -106,13 +108,18 @@ files cannot do that to each other.
 The cost is drift — a fix applied to one builder may also be needed in an older one. That
 is what the shared test suite is for; see below.
 
-## Version data lives in the package's `default.nix`
+## Definitions and releases
+
+Version data is split in two. A **definition** is a whole build recipe; a **release** is a
+version and its hash. Definitions live in the package's `default.nix`, releases in version
+files beside it.
 
 ```nix
-versionTable = {
+# pkgs/runtimes/ruby/default.nix
+defs = {
   "2.7.0" = {
     builder = ./build-2.7.nix;
-    sha256 = "sha256-jJmqk7…";
+    base = tvp.bases.gcc13;
     deps = {
       openssl = tvp.packages.openssl_1_1_1w;
       readline = pkgs.readline;
@@ -120,35 +127,97 @@ versionTable = {
       gdbm = pkgs.gdbm;
     };
   };
+  …
+};
 
-  "2.7.8" = {
-    builder = ./build-2.7.nix;
-    sha256 = "sha256-wtq2PL…";
-    deps = {
-      openssl = tvp.packages.openssl_1_1_1w;
-      readline = pkgs.readline;
-      zlib = pkgs.zlib;
-      gdbm = pkgs.gdbm;
-    };
-  };
+versionTable = merge {
+  "2" = mkTable (import ./2.nix { inherit defs; });
+  "3" = mkTable (import ./3.nix { inherit defs; });
 };
 ```
 
-- **Every entry states its whole graph, even when that repeats.** No `line_2_7 // { … }`,
-  no computed "greatest start-version ≤ v" lookup. This is the file someone opens to find
-  out what `2.7.0` actually is, and an entry that inherits half its meaning from elsewhere
-  does not answer that. The repetition is the price and it is worth paying.
-- **Anything a version does differently is stated at that version.** Builder arguments have
-  defaults for the usual case, and an entry overrides one where upstream disagrees — Ruby
-  3.4.0 sets `libDir = "3.4.0+1"` because upstream shipped that tarball with
-  `RUBY_PATCHLEVEL -1`. A changed *value* is version data; only a changed *procedure* forks
-  a builder.
-- **Source URLs are derived from the version**, not stored per version.
-- **When the file passes ~500 lines it splits per major**, and a major that outgrows one
-  file becomes a directory of minor lines — `3/0.nix`, `3/1.nix`. Each level's
-  `default.nix` indexes the next explicitly. Moving entries between files is provably free;
-  prove it with `drvPath` rather than assuming.
+```nix
+# pkgs/runtimes/ruby/3.nix
+{ defs }:
+[
+  {
+    def = defs."2.7.0";                    # 3.0 needs no recipe of its own
+    releases = {
+      "3.0.0" = "sha256-oT7RQaHBjrlnqsHjP01q1fIb4axUPDRODW/u7lSvjig=";
+      …
+    };
+  }
 
+  {
+    def = defs."3.4.0";                    # one release; upstream shipped it oddly
+    releases = {
+      "3.4.0" = "sha256-BoyFI0QhdL00AOeG9KaVI1LIKxufYhD9F/tIIwhtM3k=";
+    };
+  }
+
+  {
+    def = defs."3.3.0";                    # and back again
+    releases = { "3.4.1" = "sha256-PTheXSLTaLBkyBehPtjjzD9xp3BdftG654ATwzqnyH8="; … };
+  }
+]
+```
+
+Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
+
+### Rules
+
+- **A definition is named for the version where it first appears** — a name, not a range.
+  Definitions are *not* monotone in version: a deviation ends and later releases point back
+  at the earlier definition. OpenSSL `0.9.8k` returns to `defs."0.9.6"` after the hardened
+  run; Ruby `3.4.1` returns to `defs."3.3.0"` after `3.4.0`. That return is the fact worth
+  seeing, and it is why a definition cannot claim a forward range the way a builder does.
+- **A version that differs forks a definition; it never overrides one.** A release entry may
+  hold only `def`, `sha256` and `status`; anything else fails to evaluate. Forking in full
+  keeps definitions diffable against each other, exactly as forked builders are.
+- **A block is a contiguous run of releases sharing everything but their hash.** Blocks are
+  a list rather than an attrset so they stay in release order and one definition may appear
+  in several.
+- **A release is its hash**, or an attrset where there is more than a hash to state.
+- **A status belongs to the block when the recipe causes it** — every Ruby 4.0 is degraded
+  for the same reason — **and to the release when the release does**, as OpenSSL 3.0.4 is
+  alone among its 64. Declaring both for one release is a contradiction, not a merge, and
+  throws.
+- **Every definition declares `base`.** There is no per-package default: a definition that
+  silently landed on the wrong ground would be invisible, while a missing one fails to
+  evaluate. `null` says the builder takes no stdenv because it delegates to a nixpkgs
+  helper — a fact worth declaring, and an M9 worklist entry.
+- **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
+  `hardeningDisable` are builder arguments but not dependencies, and `deps` is what the
+  canonical-graph contract is written about. `checkDeps` throws on a non-derivation.
+- **Nothing is supplied that is not named.** `mkVersions` calls the builder through
+  `lib.makeOverridable` with an explicit `infra` set rather than `callPackage`, so an
+  argument that is neither infrastructure nor version data fails to evaluate. `infra` is
+  what a package still borrows from nixpkgs, and it shrinks to nothing at M9.
+- **A version file receives `defs` and nothing else.** It cannot reach `pkgs` or
+  `tvp.packages`, so a release cannot acquire a dependency its neighbours lack. That class
+  of defect was real: two packages had versions silently using nixpkgs' dependency while
+  their siblings pinned TVP's.
+- **A changed *value* is a definition; a changed *procedure* is a builder.** Ruby 3.4.0 sets
+  `libDir = "3.4.0+1"` because upstream shipped that tarball with `RUBY_PATCHLEVEL -1` —
+  a definition, not a builder fork.
+- **Source URLs are derived from the version**, not stored per release.
+- **When a file passes ~500 lines it splits per major**, and a major that outgrows one file
+  becomes a directory of minor lines, each level indexing the next explicitly. Split under
+  observed pressure, never on predicted structure. Moving releases between files is
+  provably free; prove it with `drvPath` rather than assuming.
+
+### What this replaces
+
+An earlier rule said every entry must state its whole graph, repetition and all, because
+"an entry that inherits half its meaning from elsewhere" cannot answer what a version is.
+The reasoning was right and the conclusion was too strong. A definition gives an entry
+*all* of its meaning, not half, and an entry may not add to it — so nothing is inherited
+piecemeal. What the old rule correctly forbade, and what is still forbidden, is an entry
+that patches a shared base: no `line_2_7 // { … }`, and no computed
+"greatest start-version ≤ v" lookup.
+
+Measured on the catalogue, the old form spent 3194 lines to say what 1239 now say, and
+roughly three quarters of those lines were exact duplicates of a neighbour.
 ## Package status
 
 A version says what TVP claims about it, in the version table:
@@ -267,7 +336,7 @@ nix build .#packages.x86_64-linux.ruby_2_7_0.tests.openssl
 
 ## Bases
 
-A version declares two different things: the **graph** it depends on (`deps`) and the
+A definition declares two different things: the **graph** it depends on (`deps`) and the
 **ground** it is built on (`base`). Bases live in `bases/default.nix` and are reached from
 a version table as `tvp.bases`, exactly as packages are reached as `tvp.packages`.
 
@@ -276,11 +345,12 @@ and calls `stdenv.mkDerivation`; a base is simply TVP supplying that argument in
 letting `callPackage` fill it from nixpkgs.
 
 ```nix
-"1.4.18" = {
-  builder = ./build-1.4.19.nix;
-  base = tvp.bases.glibc233;      # only where it differs from the default
-  sha256 = "…";
-  deps = { };
+# pkgs/libraries/openssl/default.nix — one of six definitions serving 221 releases
+"1.1.0" = {
+  builder = ./build-1.1.1.nix;
+  base = tvp.bases.gcc13;                       # named, never inherited silently
+  deps = { perl = tvp.packages.perl_5_28_3; };  # derivations — the canonical graph
+  opts = { pbkdf2 = false; };                   # build options
 };
 ```
 
@@ -296,13 +366,20 @@ letting `callPackage` fill it from nixpkgs.
 - **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can carry what a
   toolchain pin cannot express — beginning with `builtBy`, since old compilers cannot be
   built by new ones and a base's chain is part of its identity.
-- **Canonical base names are immutable; aliases move.** Same rule as packages, so "which
-  base did this revision use" stays answerable.
-- **`defaultBase` is required** by `mkVersions`. A package that silently landed on the
-  wrong base would be invisible; a missing argument fails to evaluate.
-- **`base = null` declares a package is not on a base at all**, because its builder
+- **Canonical base names are immutable; aliases move**, and the name is *asserted*. A base
+  is named for its compiler (`gcc13`, `gcc9`), and `mkBase` fails to evaluate if the stdenv
+  carries a different one — so a nixpkgs bump cannot silently redefine a base name.
+- **`builtBy` is required**, naming the base that compiled this one. Old compilers cannot be
+  built by new ones, so bases form a chain. `null` means nixpkgs bootstrapped it.
+- **Bases follow the package patterns**: `mkBase` in `lib/bases.nix` beside `mkVersions`,
+  one shared suite in `bases/tests/` instantiated per base, and `checks.every-base-tested`
+  mirroring `every-package-tested`. A base test is built by that base's own stdenv, or it
+  would test the default substrate whichever base it claimed to cover.
+- **Every definition declares `base`** — there is no per-package default. A definition that
+  silently landed on the wrong ground would be invisible; a missing one fails to evaluate.
+- **`base = null` declares a definition is not on a base at all**, because its builder
   delegates to a nixpkgs helper rather than calling `stdenv.mkDerivation`. Declared, never
-  inferred.
+  inferred — bundler is the only one.
 - **`passthru.tvp.base` records the name**, not the record.
 
 `bases/` is derivation-affecting in full: every package on a base rebuilds when that base
@@ -375,13 +452,17 @@ so the tabs were being shipped inside the shell script.
 
 ## How to
 
-**Add a version of an existing package** — add one entry to `versionTable` with its
-`sha256`. If the recipe is unchanged, reuse the line's `deps`. Adding a version rebuilds
-nothing that already exists.
+**Add a version of an existing package** — add one line to the block whose definition it
+uses: `"3.6.4" = "sha256-…";`. Adding a version rebuilds nothing that already exists.
 
-**Add a version that needs a different recipe** — copy the current builder to
+**Add a version that needs different dependencies or options** — copy the current
+definition in `default.nix` to one named for that version, change it there, and open a new
+block pointing at it. If later versions go back to the old recipe, open another block
+naming the old definition; that return is a fact, not a duplicate.
+
+**Add a version that needs a different build procedure** — copy the current builder to
 `build-<that version>.nix`, change it there, record in the header what forced the fork and
-what it came from, and point the new table entry at it. Add a test covering what you fixed:
+the range it serves, and point a new definition at it. Add a test covering what you fixed:
 that is how the same gap gets detected in older builders.
 
 **Add a package** — create `pkgs/<category>/<name>/` with a `default.nix` and one

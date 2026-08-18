@@ -2,9 +2,29 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "0" = import ./0.nix { inherit pkgs tvp; };
+  defs = {
+    "0.27" = {
+      builder = ./build-0.27.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        gettext = pkgs.gettext;
+      };
+    };
+
+    "0.27.1" = {
+      builder = ./build-0.27.1.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
+
+    "0.29.2" = {
+      builder = ./build-0.29.2.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./0.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +32,6 @@ let
     };
     pname = "pkg-config";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

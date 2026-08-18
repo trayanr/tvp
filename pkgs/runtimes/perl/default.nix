@@ -2,9 +2,33 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "5" = import ./5.nix { inherit pkgs tvp; };
+  defs = {
+    "5.28.3" = {
+      builder = ./build-5.28.nix;
+      # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
+      # struct-return patch this builder would otherwise apply is unnecessary.
+      base = tvp.bases.gcc9;
+      deps = {
+        coreutils = pkgs.coreutils;
+      };
+    };
+
+    "5.30.3" = {
+      builder = ./build-5.34.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        coreutils = pkgs.coreutils;
+      };
+    };
+
+    "5.36.3" = {
+      builder = ./build-5.44.nix;
+      base = tvp.bases.gcc13;
+      deps = { };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./5.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +36,6 @@ let
     };
     pname = "perl";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =

@@ -2,9 +2,17 @@
 let
   tvpLib = tvp.lib;
 
-  versionTable = tvpLib.packages.merge {
-    "8" = import ./8.nix { inherit pkgs tvp; };
+  defs = {
+    "8.0" = {
+      builder = ./build-8.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        ncurses = tvp.packages.ncurses_6_6;
+      };
+    };
   };
+
+  versionTable = tvpLib.packages.mkTable (import ./8.nix { inherit defs; });
 
   canonical = tvpLib.packages.mkVersions {
     infra = {
@@ -12,7 +20,6 @@ let
     };
     pname = "readline";
     inherit versionTable;
-    defaultBase = tvp.bases.default;
 
     extraArgs = {
       mkTests =
