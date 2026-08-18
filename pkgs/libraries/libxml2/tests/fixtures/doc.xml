@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE catalogue SYSTEM "doc.dtd">
+<catalogue>
+  <package name="tvp" version="1.2.3"/>
+  <package name="nix" version="2.0.0"/>
+</catalogue>

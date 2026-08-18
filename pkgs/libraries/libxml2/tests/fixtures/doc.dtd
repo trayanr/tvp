@@ -1,0 +1,4 @@
+<!ELEMENT catalogue (package+)>
+<!ELEMENT package EMPTY>
+<!ATTLIST package name CDATA #REQUIRED>
+<!ATTLIST package version CDATA #REQUIRED>

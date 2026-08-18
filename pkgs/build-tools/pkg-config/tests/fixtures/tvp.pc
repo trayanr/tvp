@@ -1,0 +1,9 @@
+prefix=/tvp
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: tvp
+Description: TVP fixture library
+Version: 1.2.3
+Libs: -L${libdir} -ltvp
+Cflags: -I${includedir}

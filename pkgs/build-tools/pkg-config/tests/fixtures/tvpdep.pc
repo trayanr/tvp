@@ -1,0 +1,5 @@
+Name: tvpdep
+Description: TVP fixture library that requires another
+Version: 4.5.6
+Requires: tvp
+Libs: -ltvpdep

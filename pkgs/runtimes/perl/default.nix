@@ -1,0 +1,56 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+
+  versionTable = tvpLib.packages.merge {
+    "5" = import ./5.nix { inherit pkgs tvp; };
+  };
+
+  canonical = tvpLib.packages.mkVersions {
+    inherit (pkgs) callPackage;
+    pname = "perl";
+    inherit versionTable;
+
+    extraArgs = {
+      mkTests =
+        perl:
+        import ./tests {
+          inherit pkgs tvpLib perl;
+        };
+    };
+
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://www.cpan.org/src/5.0/";
+        pattern = "perl-5\\.[0-9][^\"]*\\.tar\\.gz";
+
+        normalise =
+          file:
+          if pkgs.lib.hasPrefix "perl-" file && pkgs.lib.hasSuffix ".tar.gz" file then
+            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "perl-" file)
+          else
+            null;
+
+        # Perl marks development releases by parity, not by a suffix: an odd
+        # second component (5.45, 5.9, 5.11) is a devel series and was never a
+        # stable release. RC and TRIAL tarballs are also published here.
+        include =
+          version:
+          let
+            minor = pkgs.lib.toInt (pkgs.lib.elemAt (pkgs.lib.splitVersion version) 1);
+          in
+          builtins.match "[0-9].*" version != null
+          && pkgs.lib.mod minor 2 == 0
+          && !(pkgs.lib.hasInfix "RC" version || pkgs.lib.hasInfix "TRIAL" version);
+      };
+    };
+  };
+
+  aliases = {
+    perl_5_44 = canonical.perl_5_44_0;
+    perl_5 = canonical.perl_5_44_0;
+    perl = canonical.perl_5_44_0;
+  };
+in
+canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }

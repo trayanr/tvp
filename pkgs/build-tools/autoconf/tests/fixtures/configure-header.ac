@@ -1,0 +1,4 @@
+AC_INIT([tvp], [1.2.3], [tvp@example.invalid])
+AC_CONFIG_HEADERS([config.h])
+AC_DEFINE([TVP_OK], [1], [Defined so autoheader has something to template.])
+AC_OUTPUT
