@@ -42,6 +42,11 @@
           program = "${tvp.tools.upstream}/bin/tvp-upstream";
         };
 
+        apps.neutral = {
+          type = "app";
+          program = "${tvp.tools.neutral}/bin/tvp-neutral";
+        };
+
         apps.status = {
           type = "app";
           program = "${tvp.tools.status}/bin/tvp-status";

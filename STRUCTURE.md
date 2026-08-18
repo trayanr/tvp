@@ -84,6 +84,12 @@ Rules:
   copy the current builder to a file named for that version and change it there.
 - **Files stay guard-free.** A guard is permitted only when it is a single, obviously
   local line. Anything structural forks a file.
+- **An optional *dependency* forks a builder; an optional *option* does not.** The test is
+  which way the mistake fails: a forgotten dependency fails **silently** — the package
+  builds, installs, exits 0 and quietly lacks a capability — while a forgotten option or
+  patch fails **loudly**. A dependency argument defaulted to `null` is declared but not
+  required, so a definition that forgets it still evaluates, which is exactly the silence
+  that retiring `callPackage` was meant to end. Options and patches stay version data.
 - **Every fork records why**, in a header comment: the upstream change that forced it, and
   the range it serves. Not what it was copied from — `diff` against the adjacent builder
   answers that exactly.
@@ -189,6 +195,12 @@ Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
 - **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
   `hardeningDisable` are builder arguments but not dependencies, and `deps` is what the
   canonical-graph contract is written about. `checkDeps` throws on a non-derivation.
+- **A patch is version data, so it belongs to a definition and never forks a builder.**
+  `patches = [ { file; reason; } ]`; both fields are required and `checkPatches` throws
+  otherwise. The builder receives bare paths, so it stays a plain `mkDerivation` argument,
+  while `passthru.tvp.patches` keeps the reasons for the catalogue. A builder holds
+  *procedure*; patching a source is a fact about one run of releases, not a procedure. Patch
+  files live in the package directory, under `patches/`.
 - **Nothing is supplied that is not named.** `mkVersions` calls the builder through
   `lib.makeOverridable` with an explicit `infra` set rather than `callPackage`, so an
   argument that is neither infrastructure nor version data fails to evaluate. `infra` is
@@ -202,6 +214,12 @@ Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
   `libDir = "3.4.0+1"` because upstream shipped that tarball with `RUBY_PATCHLEVEL -1` —
   a definition, not a builder fork.
 - **Source URLs are derived from the version**, not stored per release.
+- **A release that exists upstream but cannot be packaged is declared.** `unavailable` on the
+  package's upstream metadata is a list of `{ versions; reason; }`, and the delta report
+  subtracts it from what is missing and lists it separately. Fifteen OpenSSL releases have no
+  surviving tarball anywhere; while they sat under "not packaged" the report could not say
+  the true answer, which is nothing missing. A dead end that reads as work makes the whole
+  report ignorable.
 - **When a file passes ~500 lines it splits per major**, and a major that outgrows one file
   becomes a directory of minor lines, each level indexing the next explicitly. Split under
   observed pressure, never on predicted structure. Moving releases between files is

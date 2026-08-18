@@ -2,7 +2,7 @@
 let
   tvpLib = tvp.lib;
 
-  defs = {
+  defs = tvpLib.packages.mkDefs {
     "1.17.3" = {
       builder = ./build-1.17.3.nix;
       base = tvp.bases.gcc13;

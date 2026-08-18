@@ -1,7 +1,7 @@
 { defs }:
 [
   {
-    def = defs."2.6.0";
+    def = defs."2.4.0";
     releases = {
       "3.0.0" = "sha256-oT7RQaHBjrlnqsHjP01q1fIb4axUPDRODW/u7lSvjig=";
       "3.0.1" = "sha256-Npgl2yGZ9q7vFrQI32oE663bZk+5rw7Ixoawznq3dyc=";

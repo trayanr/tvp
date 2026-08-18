@@ -153,7 +153,8 @@ writeShellApplication {
       fi
 
       jq -r '.versions[]' <<< "$row" | sort -u > "$work/have"
-      comm -23 "$work/upstream" "$work/have" > "$work/missing"
+      jq -r '.upstream.unavailable // [] | .[].versions[]' <<< "$row" | sort -u > "$work/unavailable"
+      comm -23 "$work/upstream" "$work/have" | comm -23 - "$work/unavailable" > "$work/missing"
 
       printf '%s — %s of %s upstream releases packaged\n' \
         "$pname" "$(wc -l < "$work/have")" "$(wc -l < "$work/upstream")"
@@ -164,6 +165,13 @@ writeShellApplication {
         echo
       else
         echo "  nothing missing"
+      fi
+      if [ -s "$work/unavailable" ]; then
+        printf '  unavailable (%s) — exists upstream, cannot be packaged:\n' \
+          "$(wc -l < "$work/unavailable")"
+        jq -r '.upstream.unavailable // [] | .[]
+               | (.versions | join(" ")), "why: " + .reason' <<< "$row" \
+          | fold -s -w 88 | sed 's/^/    /'
       fi
       echo
     done

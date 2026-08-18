@@ -4,7 +4,7 @@ let
 
   # Every version names one of these. A version that differs forks a definition
   # rather than overriding it, so the entries below hold only a hash and a status.
-  defs = {
+  defs = tvpLib.packages.mkDefs {
     "0.9.6" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.gcc13;
@@ -34,7 +34,7 @@ let
 
     # 1.1.0's Configure does `use File::Glob 'glob'`, which perl stopped exporting at 5.30.
     "1.1.0" = {
-      builder = ./build-1.1.1.nix;
+      builder = ./build-1.1.0.nix;
       base = tvp.bases.gcc13;
       deps = {
         perl = tvp.packages.perl_5_28_3;
@@ -45,7 +45,7 @@ let
     };
 
     "1.1.1" = {
-      builder = ./build-1.1.1.nix;
+      builder = ./build-1.1.0.nix;
       base = tvp.bases.gcc13;
       deps = {
         perl = tvp.packages.perl_5_44_0;
@@ -89,6 +89,32 @@ let
       upstream = {
         type = "git-tags";
         url = "https://github.com/openssl/openssl";
+
+        # Releases that exist upstream and cannot be packaged at all. Listed so
+        # the delta separates work from dead ends, rather than showing both as
+        # "not packaged" forever.
+        unavailable = [
+          {
+            versions = [
+              "0.9.1c"
+              "0.9.2b"
+              "0.9.3"
+              "0.9.3a"
+              "0.9.4"
+              "0.9.5"
+              "0.9.5a"
+              "0.9.6a"
+              "0.9.6b"
+              "0.9.6c"
+              "0.9.6d"
+              "0.9.6e"
+              "0.9.6f"
+              "0.9.6g"
+              "0.9.6h"
+            ];
+            reason = "No tarball is served by openssl.org or by GitHub releases. Only git-archive snapshots survive, and a snapshot is a different artifact from the release.";
+          }
+        ];
 
         # Two tag conventions, split at 3.0: OpenSSL_1_1_1w and openssl-3.0.0.
         # Anything else (rsaref, the fips branches) is not a release.

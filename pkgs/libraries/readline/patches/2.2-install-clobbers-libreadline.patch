@@ -1,0 +1,17 @@
+Back up libhistory.a, not libreadline.a, before installing libhistory.a.
+
+The install target moves the library it is about to replace out of the way
+first. For libhistory it names libreadline.a, so a fresh install destroys the
+libreadline.a installed three lines earlier and the package ships with no
+libreadline at all. Corrected upstream in 2.2.1.
+
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -203,7 +203,7 @@
+ 	-$(MV) $(libdir)/libreadline.a $(libdir)/libreadline.old
+ 	$(INSTALL_DATA) libreadline.a $(libdir)/libreadline.a
+ 	-test -n "$(RANLIB)" && $(RANLIB) -t $(libdir)/libreadline.a
+-	-$(MV) $(libdir)/libreadline.a $(libdir)/libhistory.old
++	-$(MV) $(libdir)/libhistory.a $(libdir)/libhistory.old
+ 	$(INSTALL_DATA) libhistory.a $(libdir)/libhistory.a
+ 	-test -n "$(RANLIB)" && $(RANLIB) -t $(libdir)/libhistory.a

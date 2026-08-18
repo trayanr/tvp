@@ -6,9 +6,9 @@ let
   # and again at 3.0.3, then drops the upper limit entirely at 3.1. So 2.7 and
   # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
   # pin 3.5.7, the latest LTS line TVP owns.
-  defs = {
-    "2.6.0" = {
-      builder = ./build-2.7.nix;
+  defs = tvpLib.packages.mkDefs {
+    "2.4.0" = {
+      builder = ./build-2.2.nix;
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
@@ -18,6 +18,76 @@ let
       };
     };
 
+    # Ruby's OpenSSL extension gained 1.1 support at 2.4. Below that, ext/openssl
+    # reaches into structs 1.1 made opaque, extconf fails, and the extension is
+    # dropped -- without failing the build, which is what the openssl test is for.
+
+    # ext/fiddle stopped shipping its own libffi below 2.2, so it has to be
+    # named. 3.2 needs it again for the opposite reason.
+    "2.1.2" = {
+      builder = ./build-2.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+        libffi = pkgs.libffi;
+      };
+    };
+
+    # Ruby's ext/readline used the Function typedef, which readline gated behind
+    # WANT_OBSOLETE_TYPEDEFS at 6.3. Fixed upstream at 2.1.2.
+    "2.0.0-p0" = {
+      builder = ./build-2.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        readline = tvp.packages.readline_6_2;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+        libffi = pkgs.libffi;
+      };
+    };
+    "2.2.0" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+    };
+    "2.4.8" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+      patches = [
+        {
+          file = ./patches/rbinstall-gem-dir-umask.patch;
+          reason = "2.4.8's tarball ships its bundled gems only as .gem files, and the .gem path creates each gem directory under rbinstall's own umask of 0222, so the first file written into it fails with EACCES. Every other 2.4 release also ships them unpacked and takes a path that chmods the directory itself.";
+        }
+      ];
+    };
+    "2.5.2" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+      opts = {
+        restoreConfigScripts = true;
+      };
+    };
     "3.1.0" = {
       builder = ./build-3.1.nix;
       base = tvp.bases.gcc13;

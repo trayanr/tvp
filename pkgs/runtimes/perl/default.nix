@@ -2,7 +2,7 @@
 let
   tvpLib = tvp.lib;
 
-  defs = {
+  defs = tvpLib.packages.mkDefs {
     "5.28.3" = {
       builder = ./build-5.28.nix;
       # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
@@ -14,7 +14,7 @@ let
     };
 
     "5.30.3" = {
-      builder = ./build-5.34.nix;
+      builder = ./build-5.30.nix;
       base = tvp.bases.gcc13;
       deps = {
         coreutils = pkgs.coreutils;
@@ -22,7 +22,7 @@ let
     };
 
     "5.36.3" = {
-      builder = ./build-5.44.nix;
+      builder = ./build-5.36.nix;
       base = tvp.bases.gcc13;
       deps = { };
     };

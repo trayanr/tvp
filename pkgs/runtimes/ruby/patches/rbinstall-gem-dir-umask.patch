@@ -1,0 +1,29 @@
+Restore a writable umask around the bundled-gem loop.
+
+rbinstall.rb sets File.umask(0222) globally, and Gem::Installer creates each
+gem directory with FileUtils.mkdir_p and no explicit mode, so the directory
+lands at 0555 and the first file written into it fails with EACCES. Upstream
+compensates only after the loop has finished -- the "fix directory permissions"
+chmod below -- which is too late.
+
+Releases that also ship the gems unpacked take RbInstall::UnpackedInstaller
+instead, which chmods each directory itself, so they never reach this path.
+
+--- a/tool/rbinstall.rb
++++ b/tool/rbinstall.rb
+@@ -777,6 +777,7 @@
+   if defined?(Zlib)
+     Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
+     silent = Gem::SilentUI.new
++    gem_umask = File.umask(0022)
+     gems.each do |gem|
+       inst = Gem::Installer.new(gem, options)
+       inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
+@@ -788,6 +789,7 @@
+       gemname = File.basename(gem)
+       puts "#{" "*30}#{gemname}"
+     end
++    File.umask(gem_umask)
+     # fix directory permissions
+     # TODO: Gem.install should accept :dir_mode option or something
+     File.chmod($dir_mode, *Dir.glob(install_dir+"/**/"))

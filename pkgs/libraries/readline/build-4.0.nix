@@ -1,4 +1,6 @@
-# Serves 8.0 onwards.
+# Serves 4.2 and older. Up to 4.2 the default target is `static` and `install`
+# never builds the shared library, so both have to be asked for by name; 4.2a
+# installs shared as part of a normal build.
 {
   lib,
   stdenv,
@@ -33,6 +35,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   configureFlags = [ "--with-curses" ];
 
+  installTargets = [
+    "install"
+    "install-shared"
+  ];
+
   meta = {
     description = "Library for interactive line editing";
     homepage = "https://tiswww.case.edu/php/chet/readline/rltop.html";
@@ -42,6 +49,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru = {
     inherit version;
+    tvp.features = {
+      shared = true;
+      history = true;
+    };
+
     tvp.deps = {
       inherit ncurses;
     };

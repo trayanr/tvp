@@ -9,6 +9,13 @@
 let
   inherit (ruby.passthru.tvp) deps;
 
+  # 2.0.0 and older ship a tarball per patchlevel, so the version identifier
+  # carries it and RUBY_VERSION does not. From 2.1 upstream ships one tarball
+  # per version and the p-label is derived.
+  versionParts = pkgs.lib.splitString "-p" ruby.version;
+  baseVersion = builtins.head versionParts;
+  patchlevel = if builtins.length versionParts > 1 then builtins.elemAt versionParts 1 else null;
+
   # sha256("tvp"), first 16 hex characters.
   tvpDigest = "f6f6ead0bd85c312";
 in
@@ -22,7 +29,7 @@ tvpLib.tests.mkSuite {
         script = ''
           ruby -e 'print RUBY_VERSION'
         '';
-        expected = ruby.version;
+        expected = baseVersion;
       };
 
       smoke = {
@@ -72,7 +79,7 @@ tvpLib.tests.mkSuite {
       # this way, so only a runtime require catches it.
       yaml = {
         script = ''
-          ruby -e 'require "yaml"; print YAML.safe_load(YAML.dump({ "tvp" => [1, 2] }))["tvp"].sum'
+          ruby -e 'require "yaml"; print YAML.load(YAML.dump({ "tvp" => [1, 2] }))["tvp"].inject(:+)'
         '';
         expected = "3";
       };
@@ -90,6 +97,17 @@ tvpLib.tests.mkSuite {
           ruby -e 'require "rubygems"; print Gem.default_dir'
         '';
         expected = "${ruby}/${ruby.passthru.gemPath}";
+      };
+    }
+
+    # A patchlevel release states its own patchlevel, and only RUBY_PATCHLEVEL
+    # carries it — RUBY_VERSION does not.
+    // pkgs.lib.optionalAttrs (patchlevel != null) {
+      patchlevel = {
+        script = ''
+          ruby -e 'print RUBY_PATCHLEVEL'
+        '';
+        expected = patchlevel;
       };
     }
 

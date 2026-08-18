@@ -21,6 +21,12 @@ rec {
     "broken"
   ];
 
+  # A definition is named for the version where it first appears, and that name
+  # has to reach the version table for `definition-names` to check it. Tagging
+  # here rather than at each use is what makes it unforgeable: a definition that
+  # never went through mkDefs has no name and fails to evaluate.
+  mkDefs = lib.mapAttrs (name: def: def // { inherit name; });
+
   checkDeps =
     attr: deps:
     let
@@ -94,6 +100,19 @@ rec {
     else
       throw "TVP: ${attr} sets ${lib.concatStringsSep ", " extra} alongside `def`. A version that differs forks its definition rather than overriding it.";
 
+  # Source TVP changed, and why. A patch is version data: it belongs to the
+  # definition that needs it and never forks a builder, which only holds
+  # procedure. The builder receives bare paths; the reasons reach the catalogue.
+  checkPatches =
+    attr: patches:
+    let
+      bad = lib.filter (p: !(p ? file && p ? reason)) patches;
+    in
+    if bad == [ ] then
+      patches
+    else
+      throw "TVP: ${attr} has patches missing `file` or `reason`. A patch states what it changes and why.";
+
   # A package that installs an upstream binary rather than building from source.
   # `needs` states what would replace it.
   checkBlob =
@@ -123,6 +142,10 @@ rec {
       throw "TVP: ${attr} has status level '${status.level}'; expected one of ${lib.concatStringsSep ", " statusLevels}"
     else if status.level != "ok" && !(status ? reason && status ? needs) then
       throw "TVP: ${attr} is '${status.level}' and must declare both `reason` and `needs`"
+    else if
+      status.level == "degraded" && !(status ? capability) && (status.knownTestFailures or [ ]) == [ ]
+    then
+      throw "TVP: ${attr} is degraded but anchors the claim to nothing. Name the `capability` that is off, or the `knownTestFailures` the defect causes."
     else if (status.knownTestFailures or [ ]) != [ ] && status.level == "ok" then
       throw "TVP: ${attr} declares knownTestFailures but claims level 'ok'"
     else
@@ -149,7 +172,12 @@ rec {
         entry = checkEntry attr rawEntry;
         recipe = checkDef attr entry;
 
+        definition =
+          recipe.name
+            or (throw "TVP: the definition behind ${attr} carries no name. Wrap the package's `defs` in `tvpLib.packages.mkDefs`.");
+
         status = checkStatus attr (entry.status or { level = "ok"; });
+        patches = checkPatches attr (recipe.patches or [ ]);
         inherit (recipe) base;
 
         builder = import recipe.builder;
@@ -170,6 +198,7 @@ rec {
           # `passthru.tvp.base` reports it as null.
           // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
           // checkDeps attr recipe.deps
+          // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
           // (recipe.opts or { })
           // extraArgs
         );
@@ -185,8 +214,18 @@ rec {
                 # The name, not the record: passthru is read by tooling, and a
                 # whole stdenv in it makes `nix eval` unusable.
                 base = if base == null then null else base.name;
+                # The filename, so `builder-names` can compare it against the lowest
+                # version that reaches it. A path here would print a store path.
+                builder = baseNameOf recipe.builder;
+                inherit definition;
                 # Names only, for the same reason.
                 infra = lib.attrNames infra;
+              }
+              // lib.optionalAttrs (patches != [ ]) {
+                patches = map (p: {
+                  inherit (p) reason;
+                  file = baseNameOf p.file;
+                }) patches;
               }
               // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
 
