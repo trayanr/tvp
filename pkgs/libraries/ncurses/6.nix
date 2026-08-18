@@ -20,7 +20,7 @@
     builder = ./build-6.2.nix;
     sha256 = "sha256-aTEoPZrIfFBz8wtikMTHXyFjK7T8NgOsgQCBK+0kgVk=";
     deps = {
-
+      pkg-config = tvp.packages."pkg-config_0_29_2";
     };
   };
 
@@ -28,7 +28,7 @@
     builder = ./build-6.2.nix;
     sha256 = "sha256-E22RvCaamleF5fnpgLx2q1dCj2BM4+WlqQzrx2eXHMY=";
     deps = {
-
+      pkg-config = tvp.packages."pkg-config_0_29_2";
     };
   };
 

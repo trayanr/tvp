@@ -6,8 +6,10 @@
   "3.4.0" = {
     builder = ../build-3.3.nix;
     sha256 = "sha256-BoyFI0QhdL00AOeG9KaVI1LIKxufYhD9F/tIIwhtM3k=";
-    deps = {
+    opts = {
       libDir = "3.4.0+1";
+    };
+    deps = {
       openssl = tvp.packages.openssl_3_5_7;
       zlib = pkgs.zlib;
       libyaml = pkgs.libyaml;

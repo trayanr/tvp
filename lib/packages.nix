@@ -21,6 +21,20 @@ rec {
     "broken"
   ];
 
+  # `deps` is what the canonical-graph contract is written about, so it holds
+  # derivations and nothing else. Build options that happen to be builder
+  # arguments — `libDir`, `pbkdf2`, `yjit`, `hardeningDisable` — go in `opts`,
+  # where a catalogue reading the graph will not mistake them for dependencies.
+  checkDeps =
+    attr: deps:
+    let
+      bad = lib.attrNames (lib.filterAttrs (_: v: !(lib.isDerivation v)) deps);
+    in
+    if bad == [ ] then
+      deps
+    else
+      throw "TVP: ${attr} has non-derivation values in `deps`: ${lib.concatStringsSep ", " bad}. Build options belong in `opts`.";
+
   checkStatus =
     attr: status:
     if !(lib.elem status.level statusLevels) then
@@ -71,7 +85,8 @@ rec {
           # all. That has to be declared rather than inferred: it is an M9
           # worklist entry, and `passthru.tvp.base` reports it as null.
           // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
-          // entry.deps
+          // checkDeps attr entry.deps
+          // (entry.opts or { })
           // extraArgs
         );
       in

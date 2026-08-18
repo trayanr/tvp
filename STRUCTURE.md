@@ -285,9 +285,17 @@ letting `callPackage` fill it from nixpkgs.
 ```
 
 - **No builder mentions a base.** Swapping one is a substitution rather than an edit.
-- **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can grow the
-  policy a toolchain pin cannot express — hardening flags, language standard, the
-  composition glue that replaces nixpkgs' setup hooks.
+- **A base is what a build gets without asking.** The test is mechanical: *if a package can
+  name it, it should name it; the base holds only what cannot be named.* That closes the
+  list at 17 — the 14 in stdenv's `initialPath` plus gcc, binutils and glibc — and stops it
+  growing with the catalogue. perl, m4, pkg-config and rustc are all nameable, so they are
+  version data, never base content.
+- **Only the toolchain is era-pinned.** gcc, glibc and binutils reach the artifact; the
+  floor (`sed`, `grep`, `make`, `tar`, …) runs during the build and vanishes, so it merely
+  has to work. A base is not a collection of era-blessed package versions.
+- **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can carry what a
+  toolchain pin cannot express — beginning with `builtBy`, since old compilers cannot be
+  built by new ones and a base's chain is part of its identity.
 - **Canonical base names are immutable; aliases move.** Same rule as packages, so "which
   base did this revision use" stays answerable.
 - **`defaultBase` is required** by `mkVersions`. A package that silently landed on the

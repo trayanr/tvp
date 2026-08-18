@@ -14,6 +14,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -33,6 +35,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -52,6 +56,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -71,6 +77,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -90,6 +98,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -109,6 +119,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };
@@ -128,6 +140,8 @@
       libyaml = pkgs.libyaml;
       libffi = pkgs.libffi;
       rustc = pkgs.rustc;
+    };
+    opts = {
       yjit = false;
       zjit = false;
     };

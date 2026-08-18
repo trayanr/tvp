@@ -1,81 +1,167 @@
+# The 1.1.0 line pins perl 5.28.3 and names its base rather than inheriting the default.
+#
+# `Configure` there does `use File::Glob 'glob'`, and perl stopped exporting glob at 5.30.
+# Upstream deleted the import at 1.1.0h; pinning a perl that still exports it covers the
+# whole line instead, which is what let 1.1.0 drop its own builder and share 1.1.1's.
+#
+# `pbkdf2 = false` because `enc -pbkdf2` arrives in 1.1.1 — a capability, so it selects a
+# test rather than forking the procedure.
 { pkgs, tvp }:
 {
   "1.1.0" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-9caf+awUcsgLho78HBwNjc/HRtKevlY94jZd1W29jII=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0a" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-wuaW40KWzeLJ7F3NrZ5PBCzXA5MlkdOVw4neSIMCRCs=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0b" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-pF3gcr+b5N6kNyMKrwNgAPDmjGpmWTHFfna1sDbO9vc=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0c" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-/ENkQaLgV1LTG05GEV64lwmiiu+W1P54ar6SQJsv1vU=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0d" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-fV67nol1ZUXBVv+cE88qpiFBk7AQpGijvHicPCj+YN8=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0e" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-V76GGJedgMkQcoz8mTab+XsqGr2PNmq2697ol1rTh0w=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0f" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-EvdG8/JJOy852n7PY9fuGcasnsak/NjCKdqKUiyxJ2U=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0g" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-3k1QEmfaOTEJBcttyMYSH3osrUWncH9234KP4bhQc68=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0h" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-WDVibN6emWVlhfx6qiMCpzp+E0C/jBT9Y1pixmgCpRc=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0i" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-67/IRKjIzA6l3BC4bJzpf0AYN/P6CMF7LNrcEYJTz5k=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0j" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-Mb7GwgPOGo6T1ZlPTtMExjzPB2dhGLZjTt3tEq0bMkY=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0k" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-76SWX093NXTWy9oc+HTbvkVascDU+QYRX4Z9MEREcLE=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.0l" = {
-    builder = ./../build-1.1.0.nix;
+    builder = ./../build-1.1.1.nix;
+    base = tvp.bases.nixpkgs;
     sha256 = "sha256-dKL3VsZP1zhqKRhNwDRPSDEZLWHcJIGpOkxd1yf0EUg=";
-    deps = { };
+    deps = {
+      perl = tvp.packages.perl_5_28_3;
+    };
+    opts = {
+      pbkdf2 = false;
+    };
   };
 
   "1.1.1" = {

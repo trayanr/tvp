@@ -1,4 +1,4 @@
-# Serves 1.1.1 onwards.
+# Serves 1.1.0 onwards.
 #
 # `./config` shells out to /usr/bin/env to detect the host, which does not exist
 # in the sandbox and is not a shebang, so patchShebangs cannot reach it.
@@ -7,10 +7,18 @@
   lib,
   stdenv,
   fetchurl,
+
+  # Which perl matters here, so every version names one. `Configure` on the 1.1.0
+  # line does `use File::Glob 'glob'`, and perl stopped exporting it at 5.30 —
+  # so the line pins a perl that still does, rather than patching the import out.
   perl,
 
   version,
   sha256,
+
+  # 1.1.0 has no `enc -pbkdf2`; 1.1.1 added it. A capability, so it is version
+  # data selecting a test, not a reason to fork the procedure.
+  pbkdf2 ? true,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -77,7 +85,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       sha256 = true;
-      pbkdf2 = true;
+      inherit pbkdf2;
     };
 
     tests = mkTests finalAttrs.finalPackage;
