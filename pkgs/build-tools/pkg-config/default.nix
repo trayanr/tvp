@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "0.27" = {
       builder = ./build-0.27.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         gettext = pkgs.gettext;
       };
@@ -13,24 +13,26 @@ let
 
     "0.27.1" = {
       builder = ./build-0.27.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
 
     "0.29.2" = {
       builder = ./build-0.29.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./0.nix { inherit defs; });
 
+  pname = "pkg-config";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "pkg-config";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -59,11 +61,14 @@ let
     };
   };
 
-  # No `pkg-config_0_29`: upstream shipped a release literally called 0.29, so
-  # that name is canonical and an alias may not shadow it.
-  aliases = {
-    pkg-config_0 = canonical.pkg-config_0_29_2;
-    pkg-config = canonical.pkg-config_0_29_2;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

@@ -40,7 +40,7 @@ let
     # every package to no effect.
     gcc13 = mkBase {
       name = "gcc13";
-      cc = "13";
+      cc = "13.3.0";
       builtBy = null;
       inherit floor;
       stdenv = withTvpMkDerivation pkgs.stdenv;
@@ -48,7 +48,7 @@ let
 
     gcc9 = mkBase {
       name = "gcc9";
-      cc = "9";
+      cc = "9.5.0";
       builtBy = null;
       inherit floor;
       stdenv = withTvpMkDerivation pkgs.gcc9Stdenv;
@@ -58,7 +58,7 @@ let
     # cast-as-lvalue.
     gcc49 = mkBase {
       name = "gcc49";
-      cc = "4.9";
+      cc = "4.9.4";
       builtBy = null;
       inherit floor;
       stdenv = withTvpMkDerivation pkgs.gcc49Stdenv;

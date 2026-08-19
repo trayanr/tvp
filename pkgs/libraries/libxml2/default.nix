@@ -7,7 +7,7 @@ let
     # graph without reaching the artifact.
     "2.7.4" = {
       builder = ./build-2.7.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
@@ -15,7 +15,7 @@ let
 
     "2.8.0" = {
       builder = ./build-2.8.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
         xz = pkgs.xz;
@@ -24,7 +24,7 @@ let
 
     "2.15.0" = {
       builder = ./build-2.15.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
@@ -33,11 +33,13 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./2.nix { inherit defs; });
 
+  pname = "libxml2";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "libxml2";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -67,18 +69,14 @@ let
     };
   };
 
-  aliases = {
-    libxml2_2_7 = canonical.libxml2_2_7_8;
-    libxml2_2_8 = canonical.libxml2_2_8_0;
-    libxml2_2_9 = canonical.libxml2_2_9_14;
-    libxml2_2_10 = canonical.libxml2_2_10_4;
-    libxml2_2_11 = canonical.libxml2_2_11_9;
-    libxml2_2_12 = canonical.libxml2_2_12_10;
-    libxml2_2_13 = canonical.libxml2_2_13_9;
-    libxml2_2_14 = canonical.libxml2_2_14_6;
-    libxml2_2_15 = canonical.libxml2_2_15_3;
-    libxml2_2 = canonical.libxml2_2_15_3;
-    libxml2 = canonical.libxml2_2_15_3;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

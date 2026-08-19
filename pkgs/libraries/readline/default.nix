@@ -18,7 +18,7 @@ let
     # definitions that gcc 10 stopped merging.
     "2.2.1" = {
       builder = ./build-2.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -26,7 +26,7 @@ let
 
     "2.2" = {
       builder = ./build-2.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -40,7 +40,7 @@ let
 
     "4.0" = {
       builder = ./build-4.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -48,7 +48,7 @@ let
 
     "4.2a" = {
       builder = ./build-4.2a.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -66,11 +66,13 @@ let
     "8" = mkTable (import ./8.nix { inherit defs; });
   };
 
+  pname = "readline";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "readline";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -109,10 +111,14 @@ let
     };
   };
 
-  # No `readline_8_3`: upstream ships a release literally called 8.3.
-  aliases = {
-    readline_8 = canonical.readline_8_3;
-    readline = canonical.readline_8_3;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

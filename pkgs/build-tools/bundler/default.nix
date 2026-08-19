@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "1.17.3" = {
       builder = ./build-1.17.3.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ruby = tvp.packages.ruby_2_7_0;
       };
@@ -14,7 +14,7 @@ let
     # 2.5 requires Ruby >= 3.0.
     "2.5.11" = {
       builder = ./build-1.17.3.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         ruby = tvp.packages.ruby_3_3_4;
       };
@@ -39,11 +39,13 @@ let
     }
   ];
 
+  pname = "bundler";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "bundler";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -70,8 +72,14 @@ let
     };
   };
 
-  aliases = {
-    bundler = canonical.bundler_2_5_20;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

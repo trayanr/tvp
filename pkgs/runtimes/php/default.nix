@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "8.3.10" = {
       builder = ./build-8.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -19,7 +19,7 @@ let
 
     "8.1.0" = {
       builder = ./build-8.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -35,7 +35,7 @@ let
 
     "8.0.0" = {
       builder = ./build-8.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
         # RSA_SSLV23_PADDING, which 3.0.0 removed.
@@ -52,11 +52,13 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./8.nix { inherit defs; });
 
+  pname = "php";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "php";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -87,10 +89,14 @@ let
     };
   };
 
-  aliases = {
-    php_8_5 = canonical.php_8_5_9;
-    php_8 = canonical.php_8_5_9;
-    php = canonical.php_8_5_9;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

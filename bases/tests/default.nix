@@ -5,9 +5,10 @@ tvpLib.bases.mkBaseSuite {
   inherit base;
 
   tests = {
-    # The compiler a build actually gets is the one the base is named for.
+    # Not -dumpversion: it prints the full version before gcc 7 and the major
+    # after it, so neither form is comparable across the catalogue.
     cc-version = {
-      script = "cc -dumpversion | cut -d. -f1";
+      script = "cc --version | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+'";
       expected = base.cc;
     };
 

@@ -7,7 +7,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "0.9.6" = {
       builder = ./build-0.9.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
@@ -15,7 +15,7 @@ let
 
     "0.9.8" = {
       builder = ./build-0.9.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
@@ -26,7 +26,7 @@ let
 
     "1.0.0" = {
       builder = ./build-1.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
@@ -35,7 +35,7 @@ let
     # 1.1.0's Configure does `use File::Glob 'glob'`, which perl stopped exporting at 5.30.
     "1.1.0" = {
       builder = ./build-1.1.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_28_3;
       };
@@ -46,7 +46,7 @@ let
 
     "1.1.1" = {
       builder = ./build-1.1.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
@@ -54,7 +54,7 @@ let
 
     "3.0.0" = {
       builder = ./build-3.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
@@ -70,11 +70,13 @@ let
     "4" = mkTable (import ./4.nix { inherit defs; });
   };
 
+  pname = "openssl";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "openssl";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -155,29 +157,14 @@ let
     };
   };
 
-  # No `openssl_1_1_1`: upstream shipped a release literally called 1.1.1, so
-  # that name is canonical and an alias may not shadow it.
-  aliases = {
-    openssl_1_0 = canonical.openssl_1_0_2u;
-    openssl_1_1 = canonical.openssl_1_1_1w;
-    openssl_1 = canonical.openssl_1_1_1w;
-
-    openssl_0_9 = canonical.openssl_0_9_8zh;
-    openssl_0 = canonical.openssl_0_9_8zh;
-
-    openssl_3_0 = canonical.openssl_3_0_21;
-    openssl_3_1 = canonical.openssl_3_1_8;
-    openssl_3_2 = canonical.openssl_3_2_6;
-    openssl_3_3 = canonical.openssl_3_3_7;
-    openssl_3_4 = canonical.openssl_3_4_6;
-    openssl_3_5 = canonical.openssl_3_5_7;
-    openssl_3_6 = canonical.openssl_3_6_3;
-    openssl_3 = canonical.openssl_3_6_3;
-
-    openssl_4_0 = canonical.openssl_4_0_1;
-    openssl_4 = canonical.openssl_4_0_1;
-
-    openssl = canonical.openssl_4_0_1;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

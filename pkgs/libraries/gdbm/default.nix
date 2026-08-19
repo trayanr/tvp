@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "1.19" = {
       builder = ./build-1.9.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
 
@@ -47,11 +47,13 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
+  pname = "gdbm";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "gdbm";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -83,9 +85,14 @@ let
     };
   };
 
-  aliases = {
-    gdbm_1 = canonical.gdbm_1_26;
-    gdbm = canonical.gdbm_1_26;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

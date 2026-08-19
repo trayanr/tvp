@@ -11,7 +11,13 @@ let
   # it the same way it reaches `tvp.packages`.
   bases = import ./bases { inherit pkgs tvpLib; };
 
-  packages = import ./pkgs { inherit pkgs tvp; };
+  universe = import ./pkgs { inherit pkgs tvp; };
+
+  # An alias may shadow a canonical name here, deliberately: `openssl_1_1_1` is
+  # the newest 1.1.1x. The shadowed release keeps its exact name in `canonical`,
+  # which is what every tool and check reads.
+  canonical = universe.canonical;
+  packages = canonical // universe.aliases;
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
   checks = {
@@ -19,7 +25,7 @@ let
       let
         drvs = pkgs.lib.mapAttrsToList (
           name: pkg: "${name} ${builtins.unsafeDiscardStringContext pkg.drvPath}"
-        ) packages;
+        ) canonical;
       in
       pkgs.runCommand "tvp-packages-evaluate" { manifest = builtins.concatStringsSep "\n" drvs; } ''
         printf '%s\n' "$manifest" > "$out"
@@ -31,7 +37,7 @@ let
     # place.
     every-package-tested =
       let
-        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") packages;
+        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") canonical;
         untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
       in
       if untested == { } then
@@ -64,7 +70,7 @@ let
 
         lower = a: b: if builtins.compareVersions a b < 0 then a else b;
 
-        withBuilder = pkgs.lib.filterAttrs (_: p: (p.tvp.builder or null) != null) packages;
+        withBuilder = pkgs.lib.filterAttrs (_: p: (p.tvp.builder or null) != null) canonical;
 
         groups = pkgs.lib.foldlAttrs (
           acc: _: p:
@@ -104,7 +110,7 @@ let
       let
         lower = a: b: if builtins.compareVersions a b < 0 then a else b;
 
-        named = pkgs.lib.filterAttrs (_: p: (p.tvp.definition or null) != null) packages;
+        named = pkgs.lib.filterAttrs (_: p: (p.tvp.definition or null) != null) canonical;
 
         groups = pkgs.lib.foldlAttrs (
           acc: _: p:
@@ -144,7 +150,7 @@ let
       let
         claimed = pkgs.lib.filterAttrs (
           _: p: (p.tvp.status.level or "ok") == "degraded" && (p.tvp.status ? capability)
-        ) packages;
+        ) canonical;
 
         wrong = pkgs.lib.filterAttrs (
           _: p:
@@ -243,33 +249,44 @@ let
       (
         pkgs.lib.filterAttrs (
           _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
-        ) packages
-      );
+        ) canonical
+      )
+    // pkgs.lib.mapAttrs' (
+      name: base:
+      pkgs.lib.nameValuePair "base-${name}" (
+        tvpLib.tests.mkBatch {
+          inherit pkgs;
+          name = "base-${name}";
+          suite = base.tests;
+        }
+      )
+    ) (pkgs.lib.filterAttrs (name: base: base.name == name) bases);
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
     provenance = pkgs.callPackage ./tools/provenance.nix {
-      inherit packages;
+      packages = canonical;
       inherit tvpLib;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
-      inherit packages;
+      packages = canonical;
       inherit tvpLib;
     };
     neutral = pkgs.callPackage ./tools/neutral.nix {
-      inherit packages;
+      packages = canonical;
       inherit tvpLib;
     };
     status = pkgs.callPackage ./tools/status.nix {
-      inherit packages bases;
-      inherit tvpLib;
+      packages = canonical;
+      inherit bases tvpLib;
     };
   };
 
   tvp = {
     inherit
       bases
+      canonical
       packages
       checks
       testBatches

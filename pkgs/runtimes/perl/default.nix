@@ -15,7 +15,7 @@ let
 
     "5.30.3" = {
       builder = ./build-5.30.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         coreutils = pkgs.coreutils;
       };
@@ -23,18 +23,20 @@ let
 
     "5.36.3" = {
       builder = ./build-5.36.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./5.nix { inherit defs; });
 
+  pname = "perl";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "perl";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -73,10 +75,14 @@ let
     };
   };
 
-  aliases = {
-    perl_5_44 = canonical.perl_5_44_0;
-    perl_5 = canonical.perl_5_44_0;
-    perl = canonical.perl_5_44_0;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

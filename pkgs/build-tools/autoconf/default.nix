@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.69" = {
       builder = ./build-2.69.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         m4 = tvp.packages.m4_1_4_21;
         perl = tvp.packages.perl_5_44_0;
@@ -15,11 +15,13 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./2.nix { inherit defs; });
 
+  pname = "autoconf";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "autoconf";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -53,9 +55,14 @@ let
     };
   };
 
-  aliases = {
-    autoconf_2 = canonical.autoconf_2_73;
-    autoconf = canonical.autoconf_2_73;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

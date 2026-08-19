@@ -30,6 +30,12 @@
       {
         inherit (tvp) packages checks;
 
+        # legacyPackages, not a bare output: `packages.<system>.<name>` must be
+        # derivations and this is a level deeper. Resolves as `.#canonical.<attr>`.
+        legacyPackages = {
+          inherit (tvp) canonical;
+        };
+
         formatter = pkgs.nixfmt-rfc-style;
 
         apps.provenance = {

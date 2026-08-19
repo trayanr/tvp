@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "6.2" = {
       builder = ./build-6.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         pkg-config = tvp.packages."pkg-config_0_29_2";
       };
@@ -66,11 +66,13 @@ let
     "6" = mkTable (import ./6.nix { inherit defs; });
   };
 
+  pname = "ncurses";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "ncurses";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -99,11 +101,14 @@ let
     };
   };
 
-  aliases = {
-    ncurses_4 = canonical.ncurses_4_2;
-    ncurses_5 = canonical.ncurses_5_9;
-    ncurses_6 = canonical.ncurses_6_6;
-    ncurses = canonical.ncurses_6_6;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

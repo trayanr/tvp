@@ -5,18 +5,20 @@ let
   defs = tvpLib.packages.mkDefs {
     "1.4.17" = {
       builder = ./build-1.4.17.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
+  pname = "m4";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "m4";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -45,10 +47,14 @@ let
     };
   };
 
-  aliases = {
-    m4_1_4 = canonical.m4_1_4_21;
-    m4_1 = canonical.m4_1_4_21;
-    m4 = canonical.m4_1_4_21;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

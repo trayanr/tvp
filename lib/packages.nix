@@ -275,13 +275,67 @@ rec {
         )
       }";
 
-  checkAliases =
-    { canonical, aliases }:
+  mergeNamespaces = sets: {
+    canonical = merge (lib.mapAttrs (_: s: s.canonical) sets);
+    aliases = merge (lib.mapAttrs (_: s: s.aliases) sets);
+  };
+
+  # Every prefix of every buildable version, pointing at the greatest version
+  # under it.
+  #
+  # Names come from the version table, never from the built packages: reading a
+  # package's `version` forces its `deps`, which reach back into `tvp.packages`.
+  mkAliases =
+    {
+      pname,
+      versionTable,
+      canonical,
+      overrides ? { },
+    }:
     let
-      shadowed = lib.intersectLists (lib.attrNames canonical) (lib.attrNames aliases);
+      buildable = builtins.attrNames (
+        lib.filterAttrs (_: entry: (entry.status.level or "ok") != "broken") versionTable
+      );
+
+      # The attribute name, not the version: attrName has already normalised `.`
+      # and `-`, so ruby 2.0.0-p0 gives 2_0_0_p0 and its line 2_0_0 falls out.
+      prefixesOf =
+        version:
+        let
+          parts = lib.splitString "_" (lib.removePrefix "${pname}_" (versions.attrName pname version));
+          n = builtins.length parts;
+          join = ps: "${pname}_${lib.concatStringsSep "_" ps}";
+
+          whole = map (k: join (lib.take k parts)) (lib.range 1 (n - 1));
+
+          # A trailing letter is a member label, not a level: openssl spells 1.1.1w
+          # with no separator, so splitting on _ alone never yields its line.
+          lettered = builtins.filter (s: s != null) (
+            map (
+              k:
+              let
+                m = builtins.match "([0-9]+)([a-z].*)" (builtins.elemAt parts (k - 1));
+              in
+              if m == null then null else join (lib.take (k - 1) parts ++ [ (builtins.head m) ])
+            ) (lib.range 1 n)
+          );
+        in
+        whole ++ lettered;
+
+      # name -> the greatest version underneath it, as a version string.
+      best = lib.foldl' (
+        acc: version:
+        lib.foldl' (
+          a: name:
+          if !(a ? ${name}) || builtins.compareVersions version a.${name} > 0 then
+            a // { ${name} = version; }
+          else
+            a
+        ) acc ([ pname ] ++ prefixesOf version)
+      ) { } buildable;
+
+      generated = lib.mapAttrs (_: version: canonical.${versions.attrName pname version}) best;
     in
-    if shadowed == [ ] then
-      aliases
-    else
-      throw "TVP: aliases shadow canonical names: ${lib.concatStringsSep ", " shadowed}";
+    generated // overrides;
+
 }

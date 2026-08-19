@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "1.97.1" = {
       builder = ./build-1.97.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       blob = {
         reason = "Upstream's binary distribution. rustc is self-hosting and TVP has no Rust chain, so there is nothing in the catalogue that could compile it.";
@@ -19,6 +19,8 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
+  pname = "rustc";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs)
@@ -28,7 +30,7 @@ let
         zlib
         ;
     };
-    pname = "rustc";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -53,9 +55,14 @@ let
     };
   };
 
-  aliases = {
-    rustc_1 = canonical.rustc_1_97_1;
-    rustc = canonical.rustc_1_97_1;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

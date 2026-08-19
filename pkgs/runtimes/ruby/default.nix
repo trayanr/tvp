@@ -9,7 +9,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.4.0" = {
       builder = ./build-2.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         readline = tvp.packages.readline_8_3;
@@ -26,7 +26,7 @@ let
     # named. 3.2 needs it again for the opposite reason.
     "2.1.2" = {
       builder = ./build-2.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_8_3;
@@ -40,7 +40,7 @@ let
     # WANT_OBSOLETE_TYPEDEFS at 6.3. Fixed upstream at 2.1.2.
     "2.0.0-p0" = {
       builder = ./build-2.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_6_2;
@@ -51,7 +51,7 @@ let
     };
     "2.2.0" = {
       builder = ./build-2.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_8_3;
@@ -61,7 +61,7 @@ let
     };
     "2.4.8" = {
       builder = ./build-2.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         readline = tvp.packages.readline_8_3;
@@ -77,7 +77,7 @@ let
     };
     "2.5.2" = {
       builder = ./build-2.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         readline = tvp.packages.readline_8_3;
@@ -90,7 +90,7 @@ let
     };
     "3.1.0" = {
       builder = ./build-3.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;
@@ -100,7 +100,7 @@ let
 
     "3.2.0" = {
       builder = ./build-3.2.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;
@@ -113,7 +113,7 @@ let
 
     "3.3.0" = {
       builder = ./build-3.3.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -128,7 +128,7 @@ let
     # restored patchlevel 0 and the suffix goes away again.
     "3.4.0" = {
       builder = ./build-3.3.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -143,7 +143,7 @@ let
 
     "4.0.0" = {
       builder = ./build-4.0.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -161,11 +161,13 @@ let
     "3" = mkTable (import ./3.nix { inherit defs; });
     "4" = mkTable (import ./4.nix { inherit defs; });
   };
+  pname = "ruby";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "ruby";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -206,24 +208,14 @@ let
     };
   };
 
-  aliases = {
-    ruby_2_7 = canonical.ruby_2_7_8;
-    ruby_2 = canonical.ruby_2_7_8;
-
-    ruby_3_0 = canonical.ruby_3_0_7;
-    ruby_3_1 = canonical.ruby_3_1_7;
-    ruby_3_2 = canonical.ruby_3_2_11;
-    ruby_3_3 = canonical.ruby_3_3_12;
-    ruby_3_4 = canonical.ruby_3_4_10;
-    ruby_3 = canonical.ruby_3_4_10;
-
-    ruby_4_0 = canonical.ruby_4_0_6;
-    ruby_4 = canonical.ruby_4_0_6;
-
-    # Not 4.0.6: that line is built with both JITs off, against upstream's
-    # default, until TVP has a rustc new enough. 3.4.10 is the newest built the
-    # way upstream builds it.
-    ruby = canonical.ruby_3_4_10;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

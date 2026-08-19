@@ -1,5 +1,5 @@
 { pkgs, tvp }:
-tvp.lib.packages.merge {
+tvp.lib.packages.mergeNamespaces {
   openssl = import ./openssl { inherit pkgs tvp; };
   libxml2 = import ./libxml2 { inherit pkgs tvp; };
   ncurses = import ./ncurses { inherit pkgs tvp; };

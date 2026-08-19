@@ -1,4 +1,4 @@
 { pkgs, tvp }:
-tvp.lib.packages.merge {
+tvp.lib.packages.mergeNamespaces {
   rust = import ./rust { inherit pkgs tvp; };
 }

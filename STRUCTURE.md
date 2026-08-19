@@ -13,7 +13,7 @@ bases/                        the ground packages are built on; `tvp.bases`
 lib/                          shared evaluation logic; the flake's `lib` output
 ├── versions.nix              version parsing, predicates, attribute naming
 ├── bases.nix                 mkBase and its assertions, mkBaseSuite
-├── packages.nix              version table → package set, merging, alias checks
+├── packages.nix              version table → package set, merging, generated aliases
 └── tests.nix                 mkTest / mkSuite / mkBatch
 
 pkgs/
@@ -21,12 +21,12 @@ pkgs/
 ├── libraries/                openssl, zlib, libxml2, sqlite …
 │   ├── default.nix           index of packages in this category
 │   └── openssl/
-│       ├── default.nix       definitions, index of version files, aliases
+│       ├── default.nix       definitions, index of version files
 │       ├── 0.nix … 4.nix     releases, grouped by definition
 │       └── build-1.1.1.nix   build procedure
 ├── runtimes/                 ruby, php, python, perl, node, jdk …
 │   └── ruby/
-│       ├── default.nix       definitions, index of version files, aliases
+│       ├── default.nix       definitions, index of version files
 │       ├── 2.nix             releases; per major once one file outgrew ~500 lines
 │       ├── 3.nix
 │       ├── 4.nix
@@ -125,7 +125,7 @@ files beside it.
 defs = {
   "2.7.0" = {
     builder = ./build-2.7.nix;
-    base = tvp.bases.gcc13;
+    base = tvp.bases.default;
     deps = {
       openssl = tvp.packages.openssl_1_1_1w;
       readline = pkgs.readline;
@@ -302,12 +302,42 @@ not a changed *range*.
 
 ## Naming and aliases
 
+Two namespaces over one set of derivations. `canonical` is exact and round-trips through
+`attrName`; `packages` is what a user types, and there an alias wins. Nothing is built
+twice, and they differ in 25 of 869 names.
+
+```
+nix build .#openssl_1_1_1             → 1.1.1w   the newest 1.1.1x
+nix build .#canonical.openssl_1_1_1   → 1.1.1    the 2018 release, exactly
+```
+
+- **Every tool and check reads `canonical`.** An alias winning inside a single namespace
+  would take the shadowed release's only name and drop it out of `status`, `upstream`,
+  `neutral`, `provenance` and `every-package-tested` — silently.
 - Canonical names are immutable: `ruby_2_7_0` never changes meaning.
-- Aliases are separate and movable: `ruby_2_7`, `ruby_2`, `ruby`.
-- Moving an alias must never redefine a historical package identity — an alias may not
-  shadow a canonical name, and this is checked.
+- Aliases are separate and movable: `ruby_2_7`, `ruby_2`, `ruby` — and the shortest name is
+  the moving one, deliberately: take the latest while adding a version, let CI find the
+  break, pin the exact release only when something forces it.
+- A settled `deps` entry names the exact release. A moving name there is not readable from
+  source, and the canonical dependency graph is the contract.
+- Moving an alias must never redefine a historical package identity. Within `packages` an
+  alias may shadow a canonical name — that is the ergonomic namespace doing its job — and
+  the release stays reachable under `canonical`.
 - Superseded versions are kept, not replaced. `openssl_1_1_1u` stays alongside `1.1.1w`;
   only the alias moves.
+- **The cascade is generated, not written.** `mkAliases` builds every prefix of every
+  version, pointing at the greatest one under it, so `.#ruby`, `.#ruby_3`, `.#ruby_3_4` and
+  `.#ruby_3_4_10` all resolve and a package cannot silently lack a level. A package writes
+  aliases only as `overrides`, for one that is a judgement rather than a maximum.
+- **A trailing letter is a member label, not a level.** openssl spells 1.1.1w with no
+  separator, so the numeric stem of a lettered component is a prefix too.
+- **A `broken` version is never an alias target.** An alias means the latest *usable*
+  version. Where every version of a line is broken the alias simply does not exist.
+- **Alias names come from the version table, not from built packages.** Reading a package's
+  `version` forces its `deps`, which reach back into the package set — deriving names from
+  values is an infinite recursion.
+- **Where upstream reuses a line's name for a release**, `packages` gives the line and
+  `canonical` gives the release. OpenSSL 1.0.1 is both, and both are addressable.
 
 ## Tests
 
@@ -372,7 +402,7 @@ letting `callPackage` fill it from nixpkgs.
 # pkgs/libraries/openssl/default.nix — one of six definitions serving 221 releases
 "1.1.0" = {
   builder = ./build-1.1.1.nix;
-  base = tvp.bases.gcc13;                       # named, never inherited silently
+  base = tvp.bases.gcc9;                        # a build forced this; `default` if not
   deps = { perl = tvp.packages.perl_5_28_3; };  # derivations — the canonical graph
   opts = { pbkdf2 = false; };                   # build options
 };
@@ -393,6 +423,16 @@ letting `callPackage` fill it from nixpkgs.
 - **Canonical base names are immutable; aliases move**, and the name is *asserted*. A base
   is named for its compiler (`gcc13`, `gcc9`), and `mkBase` fails to evaluate if the stdenv
   carries a different one — so a nixpkgs bump cannot silently redefine a base name.
+- **The name is a handle; the assertion is the pin.** The claim is the *exact* compiler
+  (`13.3.0`), so 13.3 → 13.4 fails to evaluate, while definitions keep naming the short
+  handle. The unit is gcc's release series — `X.Y` below 5.0 and `X` above it, which is why
+  `gcc49` is the 4.9 series and not "gcc 4".
+- **`default` says "no opinion"; a canonical name says a build forced the choice.** Both are
+  written out — omitting `base` still throws. Naming a canonical base everywhere would make
+  the unchosen indistinguishable from the chosen, and a fleet move would erase which is
+  which. The definition records intent; `passthru.tvp.base` records the resolved fact.
+- **Bases are populated on demand**, never one per compiler release in advance. A base pin
+  therefore means *"this worked and something newer did not"*, not "the latest that works".
 - **`builtBy` is required**, naming the base that compiled this one. Old compilers cannot be
   built by new ones, so bases form a chain. `null` means nixpkgs bootstrapped it.
 - **Bases follow the package patterns**: `mkBase` in `lib/bases.nix` beside `mkVersions`,

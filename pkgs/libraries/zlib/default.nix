@@ -5,7 +5,7 @@ let
   defs = tvpLib.packages.mkDefs {
     "1.1.3" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
     };
 
@@ -19,7 +19,7 @@ let
 
     "1.0.1" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         arCommand = "ar rc";
@@ -34,7 +34,7 @@ let
     # `all:` still links the example programs against libz.a.
     "1.2.0" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         arCommand = "ar rc";
@@ -45,7 +45,7 @@ let
 
     "1.1.2" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         arCommand = "ar rc";
@@ -55,7 +55,7 @@ let
 
     "1.2.0.5" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         createManDir = true;
@@ -64,7 +64,7 @@ let
 
     "1.2.3.2" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       patches = [
         {
@@ -76,7 +76,7 @@ let
 
     "1.2.3.4" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       patches = [
         {
@@ -88,7 +88,7 @@ let
 
     "1.2.4.4" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         sharedLibDir = true;
@@ -97,7 +97,7 @@ let
 
     "1.2.7.2" = {
       builder = ./build-1.0.1.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         reportedVersion = "1.2.7.2-motley";
@@ -107,11 +107,13 @@ let
 
   versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
+  pname = "zlib";
+
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    pname = "zlib";
+    inherit pname;
     inherit versionTable;
 
     extraArgs = {
@@ -149,11 +151,14 @@ let
     };
   };
 
-  # No `zlib_1_3`: upstream shipped a release literally called 1.3, so that name
-  # is canonical and an alias may not shadow it.
-  aliases = {
-    zlib_1 = canonical.zlib_1_3_2;
-    zlib = canonical.zlib_1_3_2;
-  };
 in
-canonical // tvpLib.packages.checkAliases { inherit canonical aliases; }
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}
