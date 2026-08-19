@@ -114,8 +114,8 @@ writeShellApplication {
 
     # Query one. nix path-info aborts on the first unrealised path, so the
     # unbuilt set has to be known before the graph can be asked for.
-    mapfile -t outPaths < "$work/outs"
-    nix-store --check-validity --print-invalid "''${outPaths[@]}" 2> /dev/null \
+    # --stdin throughout: a large enough catalogue exceeds argv.
+    nix-store --check-validity --print-invalid --stdin < "$work/outs" 2> /dev/null \
       | sort -u > "$work/invalid" || true
     comm -23 "$work/outs" "$work/invalid" > "$work/valid"
 
@@ -124,8 +124,7 @@ writeShellApplication {
       "$work/invalid" "$manifest" > "$work/unbuilt"
 
     # Query two: every runtime reference edge in the catalogue.
-    mapfile -t validPaths < "$work/valid"
-    nix path-info --json -r "''${validPaths[@]}" 2> /dev/null > "$work/refs.json"
+    nix path-info --json -r --stdin < "$work/valid" 2> /dev/null > "$work/refs.json"
     jq -r 'to_entries[] | .key as $k | .value.references[] | select(. != $k) | "\($k)\t\(.)"' \
       "$work/refs.json" > "$work/refs"
 
@@ -141,8 +140,7 @@ writeShellApplication {
     # to store-relative, so both spellings are accepted. A fixed-output
     # derivation states a hash instead of a path; those are all fetched
     # tarballs, which are dropped a few lines below for not being directories.
-    mapfile -t drvPaths < "$work/drvs"
-    nix derivation show -r "''${drvPaths[@]}" 2> /dev/null > "$work/drvs.json"
+    nix derivation show -r --stdin < "$work/drvs" 2> /dev/null > "$work/drvs.json"
     jq -r '
       def abs: if startswith("/") then . else "/nix/store/" + . end;
       (.derivations // .) | to_entries[] | (.key | abs) as $k

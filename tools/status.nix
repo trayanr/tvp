@@ -76,8 +76,10 @@ writeShellApplication {
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
 
+    # --stdin rather than arguments: a large enough catalogue exceeds argv and
+    # gets split into batches, each of which re-walks the shared substrate.
     closure() {
-      xargs -r -a "$1" nix-store -qR --include-outputs 2> /dev/null | grep -v '\.drv$' | sort -u
+      nix-store -qR --include-outputs --stdin < "$1" 2> /dev/null | grep -v '\.drv$' | sort -u
     }
 
     # A directory is a package; the rest are tarballs, patches and setup hooks.
