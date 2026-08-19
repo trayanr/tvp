@@ -2,7 +2,7 @@
 #include <string.h>
 #include <zlib.h>
 
-/* compress(), not compress2(): the levelled form arrives at 1.0.8. */
+/* compress2() takes an explicit level; it arrives at 1.0.8. */
 int main(void) {
   const char *msg = "tvp preserves what other software is built on";
   Bytef packed[256];
@@ -10,7 +10,7 @@ int main(void) {
   uLongf packedLen = sizeof packed;
   uLongf outLen = sizeof out;
 
-  if (compress(packed, &packedLen, (const Bytef *)msg, strlen(msg) + 1) != Z_OK)
+  if (compress2(packed, &packedLen, (const Bytef *)msg, strlen(msg) + 1, 9) != Z_OK)
     return 1;
   if (uncompress(out, &outLen, packed, packedLen) != Z_OK)
     return 1;

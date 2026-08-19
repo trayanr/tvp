@@ -19,6 +19,9 @@
       capability = "shared";
       reason = "Static libraries only. These releases predate support/shobj-conf and link shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects; 2.0 and 2.1 carry no install-shared target at all.";
       needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule these releases have.";
+      blocked = {
+        base = "period-linker";
+      };
     };
     releases = {
       "2.1" = "sha256-vZhE8r2ZBBbNjTskCB1tPGd2/nlQYwYU12iJ8iJCv70=";
@@ -32,6 +35,9 @@
       capability = "shared";
       reason = "Static libraries only. This release predates support/shobj-conf and links shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects.";
       needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule this release has.";
+      blocked = {
+        base = "period-linker";
+      };
     };
     releases = {
       "2.2" = "sha256-eErtGTfKrHRqpLiGoMorou8tMRlCCv3iS6pWvHDAbZQ=";
@@ -45,6 +51,9 @@
       capability = "shared";
       reason = "Static libraries only. These releases predate support/shobj-conf and link shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects; 2.0 and 2.1 carry no install-shared target at all.";
       needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule these releases have.";
+      blocked = {
+        base = "period-linker";
+      };
     };
     releases = {
       "2.2.1" = "sha256-GBmwBUI7eOaHZlN4H+WdmyLtElWGe3NtlckeUpp7Gns=";

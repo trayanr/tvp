@@ -10,6 +10,9 @@ let
       blob = {
         reason = "Upstream's binary distribution. rustc is self-hosting and TVP has no Rust chain, so there is nothing in the catalogue that could compile it.";
         needs = "A from-source chain: mrustc (C++, reaches ~1.54) and then a walk forward, or a period rustc able to build this one. Until then this package exists only for the platforms upstream publishes a binary for, which is what bounds the architectures TVP can serve.";
+        blocked = {
+          package = "rustc-from-source";
+        };
       };
     };
   };

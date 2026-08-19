@@ -16,6 +16,12 @@ let
   cc = [ pkgs.stdenv.cc ];
 
   features = zlib.passthru.tvp.features or { };
+
+  # 0.x names the archive libgz.a; from 1.0 it is libz.a.
+  l = "-l" + (features.libName or "z");
+
+  # 1.2.7.2 reports "1.2.7.2-motley"; every other release reports its own name.
+  reported = zlib.passthru.tvp.reportedVersion or zlib.version;
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -23,29 +29,20 @@ tvpLib.tests.mkSuite {
 
   tests =
     {
-      version = {
-        script = ''
-          cc ${./fixtures/version.c} -lz -o version
-          ./version
-        '';
-        expected = zlib.version;
-        extraInputs = cc;
-      };
-
       # Paired with `version`: together they prove the installed header and the
       # installed library came from the same build.
       header-version = {
         script = ''
-          cc ${./fixtures/header-version.c} -lz -o header-version
+          cc ${./fixtures/header-version.c} ${l} -o header-version
           ./header-version
         '';
-        expected = zlib.version;
+        expected = reported;
         extraInputs = cc;
       };
 
       compress = {
         script = ''
-          cc ${./fixtures/roundtrip.c} -lz -o roundtrip
+          cc ${./fixtures/roundtrip.c} ${l} -o roundtrip
           ./roundtrip
         '';
         expected = message;
@@ -54,7 +51,7 @@ tvpLib.tests.mkSuite {
 
       crc32 = {
         script = ''
-          cc ${./fixtures/crc.c} -lz -o crc
+          cc ${./fixtures/crc.c} ${l} -o crc
           ./crc
         '';
         expected = tvpCrc32;
@@ -64,7 +61,7 @@ tvpLib.tests.mkSuite {
       # The on-disk format, checked by a gzip that knows nothing about this build.
       gzip = {
         script = ''
-          cc ${./fixtures/gz.c} -lz -o gz
+          cc ${./fixtures/gz.c} ${l} -o gz
           ./gz
           gzip -dc out.gz
         '';
@@ -73,12 +70,38 @@ tvpLib.tests.mkSuite {
       };
     }
 
+    // pkgs.lib.optionalAttrs (features.compress2 or true) {
+      # The levelled form, which arrives at 1.0.8. Kept as its own test so the
+      # older releases lose only this one rather than the whole roundtrip.
+      compress-level = {
+        script = ''
+          cc ${./fixtures/roundtrip-level.c} ${l} -o roundtrip-level
+          ./roundtrip-level
+        '';
+        expected = message;
+        extraInputs = cc;
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (features.versionFunction or true) {
+      # The runtime version, from the library. zlibVersion() arrives at 1.0.5;
+      # before that only the header carries a version at all.
+      version = {
+        script = ''
+          cc ${./fixtures/version.c} ${l} -o version
+          ./version
+        '';
+        expected = reported;
+        extraInputs = cc;
+      };
+    }
+
     // pkgs.lib.optionalAttrs (features.pkgConfig or false) {
       pkg-config = {
         script = ''
           pkg-config --modversion zlib
         '';
-        expected = zlib.version;
+        expected = reported;
         extraInputs = [ pkgs.pkg-config ];
       };
     }

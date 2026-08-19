@@ -136,6 +136,14 @@ rec {
     else
       entry.def;
 
+  # What a blocked version is waiting for, as something groupable. `needs` says
+  # it in prose; this is the same claim in a form the status report can count.
+  blockedKinds = [
+    "base"
+    "package"
+    "platform"
+  ];
+
   checkStatus =
     attr: status:
     if !(lib.elem status.level statusLevels) then
@@ -148,6 +156,11 @@ rec {
       throw "TVP: ${attr} is degraded but anchors the claim to nothing. Name the `capability` that is off, or the `knownTestFailures` the defect causes."
     else if (status.knownTestFailures or [ ]) != [ ] && status.level == "ok" then
       throw "TVP: ${attr} declares knownTestFailures but claims level 'ok'"
+    else if
+      (status.blocked or { }) != { }
+      && !(builtins.all (k: lib.elem k blockedKinds) (builtins.attrNames status.blocked))
+    then
+      throw "TVP: ${attr} is blocked on an unknown kind. Use one of ${lib.concatStringsSep ", " blockedKinds}."
     else
       status;
 

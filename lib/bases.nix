@@ -11,7 +11,13 @@ rec {
       builtBy,
     }:
     let
-      actualCC = lib.versions.major stdenv.cc.version;
+      # A dotted claim is checked to that depth: "4" alone does not distinguish
+      # 4.8 from 4.9, and for pre-C89 sources those are different compilers.
+      actualCC =
+        if lib.hasInfix "." cc then
+          lib.versions.majorMinor stdenv.cc.version
+        else
+          lib.versions.major stdenv.cc.version;
       actualFloor = map (p: p.pname or (builtins.parseDrvName p.name).name) stdenv.initialPath;
     in
     if actualCC != cc then

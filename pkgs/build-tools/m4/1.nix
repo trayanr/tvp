@@ -6,6 +6,9 @@
       level = "broken";
       reason = "The bundled gnulib tests SIGSTKSZ in a preprocessor conditional (lib/c-stack.c), and glibc 2.34 redefined it from a constant to a sysconf() call, so the file no longer preprocesses.";
       needs = "A period glibc (< 2.34). The code was correct when released; the substrate moved under it. Upstream's own fix was a full gnulib rewrite that arrived in 1.4.19, not a change TVP can apply backwards.";
+      blocked = {
+        package = "glibc<2.34";
+      };
     };
     releases = {
       "1.4.17" = "sha256-POclEz7lUri0usp4N/t3KUCyXoGyqdySU3rq9zNTjJ4=";

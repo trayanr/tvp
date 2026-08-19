@@ -14,11 +14,15 @@ tvpLib.tests.mkSuite {
   package = gdbm;
 
   tests = {
+    # The library, not a CLI: 1.10 and older ship testgdbm, and gdbmtool only
+    # arrives at 1.11.
     version = {
       script = ''
-        gdbmtool --version | head -1 | awk '{ print $NF }'
+        cc ${./fixtures/version.c} -lgdbm -o version
+        ./version | sed -n 's|.*version \([0-9.]*\)\..*|\1|p'
       '';
       expected = gdbm.version;
+      extraInputs = cc;
     };
 
     store = {

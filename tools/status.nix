@@ -30,6 +30,7 @@ let
     level = p.tvp.status.level or "ok";
     reason = p.tvp.status.reason or "";
     needs = p.tvp.status.needs or "";
+    blocked = lib.mapAttrsToList (kind: want: "${kind} ${want}") (p.tvp.status.blocked or { });
 
     base = p.tvp.base or null;
     infra = p.tvp.infra or [ ];
@@ -82,6 +83,20 @@ writeShellApplication {
            "    why:   \(.[0].reason)",
            "    needs: \(.[0].needs)",
            "")
+    ' "$manifest"
+
+    # What owning a thing would unlock, counted upward from versions. The
+    # mirror of provenance, which counts downward from closures.
+    jq -r '
+      [.versions[] | select(.blocked | length > 0) | .blocked[] as $b | {b: $b, v: "\(.pname) \(.version)"}]
+      | if length == 0 then empty else
+          "BLOCKED ON",
+          "",
+          (group_by(.b)[]
+           | "  \(.[0].b) — \(length) versions",
+             "    \(map(.v) | join(", "))",
+             "")
+        end
     ' "$manifest"
 
     echo "DECLARED GAPS"

@@ -53,6 +53,16 @@ let
       inherit floor;
       stdenv = withTvpMkDerivation pkgs.gcc9Stdenv;
     };
+
+    # The oldest stdenv nixpkgs offers, and the only one that still accepts
+    # cast-as-lvalue.
+    gcc49 = mkBase {
+      name = "gcc49";
+      cc = "4.9";
+      builtBy = null;
+      inherit floor;
+      stdenv = withTvpMkDerivation pkgs.gcc49Stdenv;
+    };
   };
 
   aliases = {

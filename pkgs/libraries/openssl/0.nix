@@ -6,6 +6,9 @@
       level = "broken";
       reason = "Configure has no x86_64 target: 0.9.6 predates AMD64 and offers only alpha, ia64, m68k, mips, ppc, s390, sparc and 32-bit linux-elf.";
       needs = "A period-appropriate architecture. Not fixable on x86_64-linux.";
+      blocked = {
+        platform = "pre-amd64";
+      };
     };
     releases = {
       "0.9.6" = "sha256-UhW2cMJnTfmmQlZepopn5tlV2O/MoaobTmpbT9J0Tug=";

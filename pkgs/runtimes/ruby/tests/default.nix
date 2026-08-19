@@ -8,6 +8,7 @@
 }:
 let
   inherit (ruby.passthru.tvp) deps;
+  features = ruby.passthru.tvp.features or { };
 
   # 2.0.0 and older ship a tarball per patchlevel, so the version identifier
   # carries it and RUBY_VERSION does not. From 2.1 upstream ships one tarball
@@ -97,6 +98,28 @@ tvpLib.tests.mkSuite {
           ruby -e 'require "rubygems"; print Gem.default_dir'
         '';
         expected = "${ruby}/${ruby.passthru.gemPath}";
+      };
+    }
+
+    # Restored as guarded tests rather than removed from the fixtures: the
+    # universal forms above satisfy 2.0, and these keep the coverage that
+    # lowering them to the oldest common denominator would have cost everyone.
+    // pkgs.lib.optionalAttrs (features.enumerableSum or false) {
+      enumerable-sum = {
+        script = ''
+          ruby ${./fixtures/enumerable-sum.rb}
+        '';
+        expected = "220";
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (features.yamlSafeLoad or false) {
+      # A different code path from YAML.load, and the one consumers should use.
+      yaml-safe-load = {
+        script = ''
+          ruby -e 'require "yaml"; print YAML.safe_load(YAML.dump({ "tvp" => [1, 2] }))["tvp"].inject(:+)'
+        '';
+        expected = "3";
       };
     }
 

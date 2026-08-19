@@ -1,0 +1,12 @@
+--- a/configure	2026-08-19 09:34:25.922130621 +0300
++++ b/configure	2026-08-19 09:34:25.926656013 +0300
+@@ -216,9 +216,6 @@
+ off64_t dummy = 0;
+ EOF
+ if test "`($CC -c $CFLAGS -D_LARGEFILE64_SOURCE $test.c) 2>&1`" = ""; then
+-  cat >> zlibdefs.h <<EOF
+-#define z_off_t off64_t
+-EOF
+   CFLAGS="${CFLAGS} -D_LARGEFILE64_SOURCE"
+   SFLAGS="${SFLAGS} -D_LARGEFILE64_SOURCE"
+   echo "Checking for off64_t... Yes."

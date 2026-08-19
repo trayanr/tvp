@@ -103,6 +103,13 @@ stdenv.mkDerivation (
       teenyVersion = lib.versions.patch version;
       patchLevel = null;
 
+      # Language capability has nothing in the dependency graph to read, so the
+      # builder states it and the suite guards on it.
+      tvp.features = {
+        enumerableSum = lib.versionAtLeast version "2.4";
+        yamlSafeLoad = lib.versionAtLeast version "2.1";
+      };
+
       tvp.deps = {
         inherit
           openssl

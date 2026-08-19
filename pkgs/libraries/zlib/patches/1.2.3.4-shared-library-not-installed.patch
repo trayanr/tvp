@@ -1,0 +1,11 @@
+--- a/Makefile.in	2026-08-19 09:34:26.020982580 +0300
++++ b/Makefile.in	2026-08-19 09:34:26.027595912 +0300
+@@ -34,7 +34,7 @@
+ SHAREDLIB=libz.so
+ SHAREDLIBV=libz.so.1.2.3.4
+ SHAREDLIBM=libz.so.1
+-LIBS=$(STATICLIB) $(SHAREDLIB)
++LIBS=$(STATICLIB) $(SHAREDLIB) $(SHAREDLIBV)
+ 
+ AR=ar rc
+ RANLIB=ranlib

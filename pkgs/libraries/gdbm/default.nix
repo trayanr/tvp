@@ -3,10 +3,27 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
-    "1.23" = {
-      builder = ./build-1.23.nix;
+    "1.19" = {
+      builder = ./build-1.9.1.nix;
       base = tvp.bases.gcc13;
       deps = { };
+    };
+
+    # Tentative definitions in libgdbmapp collide under -fno-common, which gcc
+    # 10 made the default.
+    "1.10" = {
+      builder = ./build-1.9.1.nix;
+      base = tvp.bases.gcc9;
+      deps = { };
+    };
+
+    "1.9.1" = {
+      builder = ./build-1.9.1.nix;
+      base = tvp.bases.gcc9;
+      deps = { };
+      opts = {
+        touchTestsuite = true;
+      };
     };
   };
 
