@@ -167,12 +167,14 @@ writeShellApplication {
     sort -k1,1rn -k2,2 "$work/foreign-tally" > "$work/foreign-ranked"
 
     # At build time most of the substrate is needed by everything, and a count
-    # equal to the catalogue ranks nothing. Only the entries that discriminate
-    # are a worklist; the rest are reported as a total.
+    # equal to the catalogue ranks nothing. Those entries are still listed —
+    # naming them once as a group is what a tie is, and an inventory that omits
+    # them cannot answer where a given package sits.
     npkgs=$(wc -l < "$work/rows")
     sort -k1,1rn -k2,2 "$work/build-tally" > "$work/build-ranked"
     awk -F'\t' -v n="$npkgs" '$1 != n' "$work/build-ranked" > "$work/build-tail"
-    universal=$(awk -F'\t' -v n="$npkgs" '$1 == n' "$work/build-ranked" | wc -l)
+    awk -F'\t' -v n="$npkgs" '$1 == n { print $2 }' "$work/build-ranked" \
+      > "$work/build-universal"
 
     if [ "$json" = 1 ]; then
       jq -n -R \
@@ -180,7 +182,8 @@ writeShellApplication {
         --rawfile unbuiltRaw "$work/unbuilt" \
         --rawfile rankedRaw "$work/foreign-ranked" \
         --rawfile buildRaw "$work/build-tail" \
-        --argjson universal "$universal" \
+        --rawfile universalRaw "$work/build-universal" \
+        --argjson npkgs "$npkgs" \
         'def lines: split("\n") | map(select(length > 0));
          def ranked: lines | map(split("\t"))
                      | map({ name: .[1], needed_by: (.[0] | tonumber) });
@@ -191,7 +194,9 @@ writeShellApplication {
                      tvp: (.[3] | words), foreign: (.[4] | words) })),
            unbuilt: ($unbuiltRaw | lines),
            foreign: ($rankedRaw | ranked),
-           foreignBuild: { universal: $universal, ranked: ($buildRaw | ranked) } }'
+           foreignBuild: {
+             ranked: ($buildRaw | ranked),
+             universal: { needed_by: $npkgs, names: ($universalRaw | lines) } } }'
       exit 0
     fi
 
@@ -211,10 +216,13 @@ writeShellApplication {
 
     echo
     printf 'FOREIGN AT BUILD TIME (%s), by how many packages need them\n' \
-      "$(wc -l < "$work/build-tail")"
-    printf '  %s more are needed by all %s, and are omitted: that is the substrate.\n' \
-      "$universal" "$npkgs"
-    awk -F'\t' '{ printf "  %3d  %s\n", $1, $2 }' "$work/build-tail"
+      "$(wc -l < "$work/build-ranked")"
+    awk -F'\t' '{ printf "  %4d  %s\n", $1, $2 }' "$work/build-tail"
+    if [ -s "$work/build-universal" ]; then
+      printf '  %4d  the substrate — %s entries, tied, so named rather than ranked:\n' \
+        "$npkgs" "$(wc -l < "$work/build-universal")"
+      fmt -w 72 "$work/build-universal" | sed 's/^/          /'
+    fi
 
     if [ -s "$work/unbuilt" ]; then
       echo
