@@ -23,6 +23,7 @@ let
       # Context discarded, or referencing a path would make this script depend on
       # building the entire repository.
       out = builtins.unsafeDiscardStringContext p.outPath;
+      drv = builtins.unsafeDiscardStringContext p.drvPath;
     };
 
   # A broken package has no closure to attribute, and forcing outPath throws.
@@ -33,7 +34,7 @@ let
   # Trailing newline on every line, or `read` drops the last entry.
   manifest = writeText "tvp-provenance-manifest" (
     lib.concatMapStrings (
-      e: "${e.name}\t${if e.canonical then "canonical" else "alias"}\t${e.out}\n"
+      e: "${e.name}\t${if e.canonical then "canonical" else "alias"}\t${e.out}\t${e.drv}\n"
     ) entries
   );
 in
@@ -59,8 +60,21 @@ writeShellApplication {
     : > "$work/pkgs.jsonl"
     : > "$work/foreign-all"
     : > "$work/owned-all"
+    : > "$work/build-foreign-all"
 
-    while IFS=$'\t' read -r name kind out; do
+    # One batched pass, so directory-ness is decided once for the whole
+    # catalogue rather than per package. A directory is a package; the rest are
+    # tarballs, patches and setup hooks.
+    awk -F'\t' '$2 == "canonical" { print $4 }' "$manifest" | sort -u > "$work/drvs"
+    xargs -r -a "$work/drvs" nix-store -qR --include-outputs 2>/dev/null \
+      | grep -v '\.drv$' | sort -u > "$work/build-union" || true
+    comm -23 "$work/build-union" "$work/tvp-paths" \
+      | while read -r p; do
+          if [ -d "$p" ]; then printf '%s\n' "$p"; fi
+        done \
+      | sort -u > "$work/build-foreign-paths"
+
+    while IFS=$'\t' read -r name kind out drv; do
       [ "$kind" = "canonical" ] || continue
 
       if ! nix path-info "$out" >/dev/null 2>&1; then
@@ -74,6 +88,12 @@ writeShellApplication {
         | sed 's|^/nix/store/[a-z0-9]*-||' | sort -u > "$work/owned"
       comm -23 "$work/closure" "$work/tvp-paths" \
         | sed 's|^/nix/store/[a-z0-9]*-||' | sort -u > "$work/foreign"
+
+      # Deduped by name, not by path: one name can sit at several hashes.
+      nix-store -qR --include-outputs "$drv" 2>/dev/null \
+        | grep -v '\.drv$' | sort -u > "$work/bclosure" || true
+      comm -12 "$work/bclosure" "$work/build-foreign-paths" \
+        | sed 's|^/nix/store/[a-z0-9]*-||' | sort -u >> "$work/build-foreign-all"
 
       owned=$(wc -l < "$work/owned")
       total=$(wc -l < "$work/closure")
@@ -95,16 +115,28 @@ writeShellApplication {
     # How many packages need each foreign path: the order to take ownership in.
     sort "$work/foreign-all" | uniq -c | sort -k1,1rn -k2,2 > "$work/foreign-ranked"
 
+    # At build time most of the substrate is needed by everything, and a count
+    # equal to the catalogue ranks nothing. Only the entries that discriminate
+    # are a worklist; the rest are reported as a total.
+    npkgs=$(wc -l < "$work/rows")
+    sort "$work/build-foreign-all" | uniq -c | sort -k1,1rn -k2,2 > "$work/build-ranked"
+    awk -v n="$npkgs" '$1 != n' "$work/build-ranked" > "$work/build-tail"
+    universal=$(awk -v n="$npkgs" '$1 == n' "$work/build-ranked" | wc -l)
+
     if [ "$json" = 1 ]; then
       jq -n -s \
         --slurpfile pkgs "$work/pkgs.jsonl" \
         --rawfile unbuiltRaw "$work/unbuilt" \
         --rawfile rankedRaw "$work/foreign-ranked" \
-        '{ packages: $pkgs,
-           unbuilt: ($unbuiltRaw | split("\n") | map(select(length > 0))),
-           foreign: ($rankedRaw | split("\n") | map(select(length > 0))
+        --rawfile buildRaw "$work/build-tail" \
+        --argjson universal "$universal" \
+        'def ranked: split("\n") | map(select(length > 0))
                      | map(capture("^\\s*(?<needed_by>[0-9]+)\\s+(?<name>.+)$"))
-                     | map({ name: .name, needed_by: (.needed_by|tonumber) })) }' \
+                     | map({ name: .name, needed_by: (.needed_by|tonumber) });
+         { packages: $pkgs,
+           unbuilt: ($unbuiltRaw | split("\n") | map(select(length > 0))),
+           foreign: ($rankedRaw | ranked),
+           foreignBuild: { universal: $universal, ranked: ($buildRaw | ranked) } }' \
         < /dev/null
       exit 0
     fi
@@ -121,6 +153,13 @@ writeShellApplication {
     printf 'NOT BUILT BY TVP (%s), by how many packages need them\n' \
       "$(wc -l < "$work/foreign-ranked")"
     awk '{ n = $1; $1 = ""; sub(/^ /, ""); printf "  %3d  %s\n", n, $0 }' "$work/foreign-ranked"
+
+    echo
+    printf 'FOREIGN AT BUILD TIME (%s), by how many packages need them\n' \
+      "$(wc -l < "$work/build-tail")"
+    printf '  %s more are needed by all %s, and are omitted: that is the substrate.\n' \
+      "$universal" "$npkgs"
+    awk '{ n = $1; $1 = ""; sub(/^ /, ""); printf "  %3d  %s\n", n, $0 }' "$work/build-tail"
 
     if [ -s "$work/unbuilt" ]; then
       echo

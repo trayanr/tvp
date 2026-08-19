@@ -1,7 +1,7 @@
 # Reports what TVP claims about each package version, and every gap it declares.
 #
-# Hermetic, unlike provenance and upstream: the answer is a property of the
-# tree, so this could be a check. It is a command because its job is to be read.
+# Everything but the build surface is hermetic — a property of the tree, so it
+# could be a check. The build surface reads a realised store instead.
 {
   lib,
   writeShellApplication,
@@ -24,23 +24,37 @@ let
   # A TVP package carries `passthru.tvp`; a nixpkgs one does not.
   foreignDeps = p: lib.attrNames (lib.filterAttrs (_: d: !(d ? tvp)) (p.tvp.deps or { }));
 
-  rows = lib.mapAttrsToList (name: p: {
-    attr = name;
-    inherit (p) pname version;
-    level = p.tvp.status.level or "ok";
-    reason = p.tvp.status.reason or "";
-    needs = p.tvp.status.needs or "";
-    blocked = lib.mapAttrsToList (kind: want: "${kind} ${want}") (p.tvp.status.blocked or { });
+  rows = lib.mapAttrsToList (
+    name: p:
+    let
+      level = p.tvp.status.level or "ok";
+      # A broken version has no realisable paths, and forcing them throws.
+      measurable = level != "broken";
+    in
+    {
+      attr = name;
+      inherit (p) pname version;
+      inherit level;
+      reason = p.tvp.status.reason or "";
+      needs = p.tvp.status.needs or "";
+      blocked = lib.mapAttrsToList (kind: want: "${kind} ${want}") (p.tvp.status.blocked or { });
 
-    base = p.tvp.base or null;
-    infra = p.tvp.infra or [ ];
-    foreign = foreignDeps p;
-    blob = p.tvp.blob or null;
-  }) canonical;
+      base = p.tvp.base or null;
+      infra = p.tvp.infra or [ ];
+      foreign = foreignDeps p;
+      blob = p.tvp.blob or null;
+
+      # Context discarded, or reading this report would build the repository.
+      drv = if measurable then builtins.unsafeDiscardStringContext p.drvPath else null;
+      out = if measurable then builtins.unsafeDiscardStringContext p.outPath else null;
+    }
+  ) canonical;
 
   baseRows = lib.mapAttrsToList (name: b: {
     inherit name;
     builtBy = b.builtBy;
+    drv =
+      if (b.stdenv or null) == null then null else builtins.unsafeDiscardStringContext b.stdenv.drvPath;
   }) (lib.filterAttrs (name: b: b.name == name) bases);
 
   manifest = writeText "tvp-status.json" (
@@ -59,8 +73,51 @@ writeShellApplication {
   text = ''
     manifest=${manifest}
 
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+
+    closure() {
+      xargs -r -a "$1" nix-store -qR --include-outputs 2> /dev/null | grep -v '\.drv$' | sort -u
+    }
+
+    # A directory is a package; the rest are tarballs, patches and setup hooks.
+    names() {
+      while read -r p; do
+        if [ -d "$p" ]; then printf '%s\n' "''${p##*/}"; fi
+      done \
+        | sed -E 's/^[a-z0-9]{32}-//; s/-(bin|dev|doc|man|info|lib|debug|devdoc|out)$//' \
+        | sort -u
+    }
+
+    surface=null
+    if command -v nix-store > /dev/null 2>&1; then
+      jq -r '.versions[] | select(.drv != null) | .drv' "$manifest" | sort -u > "$work/drvs"
+      jq -r '.versions[] | select(.out != null) | .out' "$manifest" | sort -u > "$work/outs"
+      jq -r '.bases[] | select(.drv != null) | .drv' "$manifest" | sort -u > "$work/base-drvs"
+
+      closure "$work/drvs" > "$work/reached" || true
+      closure "$work/base-drvs" > "$work/base-reached" || true
+
+      if [ -s "$work/reached" ]; then
+        comm -23 "$work/reached" "$work/outs" | names > "$work/all"
+        comm -23 "$work/base-reached" "$work/outs" | names > "$work/floor"
+        comm -13 "$work/floor" "$work/all" > "$work/beyond"
+
+        surface=$(jq -Rn \
+          --rawfile all "$work/all" \
+          --rawfile floor "$work/floor" \
+          --rawfile beyond "$work/beyond" '
+          def count: split("\n") | map(select(length > 0)) | length;
+          {
+            total: ($all | count),
+            base: ($floor | count),
+            beyond: ($beyond | count),
+          }')
+      fi
+    fi
+
     if [ "''${1:-}" = "--json" ]; then
-      cat "$manifest"
+      jq --argjson surface "$surface" '. + { buildSurface: $surface }' "$manifest"
       exit 0
     fi
 
@@ -147,5 +204,19 @@ writeShellApplication {
              "    \($bb | map(.name) | join(" "))  builtBy = null"
            end)
     ' "$manifest"
+
+    echo
+
+    # The totals only. Which ones, and what each is needed by, is provenance's
+    # question rather than this one's.
+    jq -rn --argjson surface "$surface" '
+      "BUILD SURFACE — measured, not declared",
+      "",
+      (if $surface == null then "  not measured — needs a realised store" else
+        "  \($surface.total) foreign packages are reachable while building the catalogue",
+        "    \($surface.base) brought by a base",
+        "    \($surface.beyond) beyond every base"
+       end)
+    '
   '';
 }

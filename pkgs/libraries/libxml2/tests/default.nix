@@ -102,8 +102,8 @@ tvpLib.tests.mkSuite {
         extraInputs = [ pkgs.xz ];
       };
 
-      # The capability works against any liblzma the loader can reach, so only
-      # this proves the declared one is what libxml2 was linked against.
+      # lzma above passes against any liblzma the loader reaches, never only
+      # the declared one.
       xz-linkage = {
         script = ''
           ldd ${libxml2}/lib/libxml2.so | awk '/liblzma\.so/ { print $3 }' | grep -q "^${deps.xz.out}/" && printf linked
