@@ -82,12 +82,14 @@ writeShellApplication {
       nix-store -qR --include-outputs --stdin < "$1" 2> /dev/null | grep -v '\.drv$' | sort -u
     }
 
-    # A directory is a package; the rest are tarballs, patches and setup hooks.
+    # A directory is a package output; the rest are tarballs, patches and setup
+    # hooks. Counted per output, as provenance counts them, so the two reports
+    # can be read against each other.
     names() {
       while read -r p; do
         if [ -d "$p" ]; then printf '%s\n' "''${p##*/}"; fi
       done \
-        | sed -E 's/^[a-z0-9]{32}-//; s/-(bin|dev|doc|man|info|lib|debug|devdoc|out)$//' \
+        | sed -E 's/^[a-z0-9]{32}-//' \
         | sort -u
     }
 
@@ -215,7 +217,7 @@ writeShellApplication {
       "BUILD SURFACE — measured, not declared",
       "",
       (if $surface == null then "  not measured — needs a realised store" else
-        "  \($surface.total) foreign packages are reachable while building the catalogue",
+        "  \($surface.total) foreign outputs are reachable while building the catalogue",
         "    \($surface.base) brought by a base",
         "    \($surface.beyond) beyond every base"
        end)
