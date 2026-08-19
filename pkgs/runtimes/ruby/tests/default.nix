@@ -189,5 +189,29 @@ tvpLib.tests.mkSuite {
         expected = "linked";
         extraInputs = [ pkgs.glibc.bin ];
       };
+    }
+
+    // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && deps ? libyaml) {
+      # yaml and fiddle prove the extension loaded, never which library it
+      # loaded — both resolve against whatever the loader reaches first.
+      yaml-linkage = {
+        script = ''
+          so=$(ruby -e 'require "yaml"; print $LOADED_FEATURES.grep(/psych\.so$/).first')
+          ldd "$so" | awk '/libyaml/ { print $3 }' | grep -q "^${deps.libyaml.out}/" && printf linked
+        '';
+        expected = "linked";
+        extraInputs = [ pkgs.glibc.bin ];
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && deps ? libffi) {
+      fiddle-linkage = {
+        script = ''
+          so=$(ruby -e 'require "fiddle"; print $LOADED_FEATURES.grep(/fiddle\.so$/).first')
+          ldd "$so" | awk '/libffi\.so/ { print $3 }' | grep -q "^${deps.libffi.out}/" && printf linked
+        '';
+        expected = "linked";
+        extraInputs = [ pkgs.glibc.bin ];
+      };
     };
 }

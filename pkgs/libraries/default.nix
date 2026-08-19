@@ -6,4 +6,8 @@ tvp.lib.packages.mergeNamespaces {
   readline = import ./readline { inherit pkgs tvp; };
   zlib = import ./zlib { inherit pkgs tvp; };
   gdbm = import ./gdbm { inherit pkgs tvp; };
+  libyaml = import ./libyaml { inherit pkgs tvp; };
+  libffi = import ./libffi { inherit pkgs tvp; };
+  xz = import ./xz { inherit pkgs tvp; };
+  sqlite = import ./sqlite { inherit pkgs tvp; };
 }

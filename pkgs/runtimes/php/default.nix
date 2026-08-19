@@ -12,7 +12,7 @@ let
         libxml2 = tvp.packages.libxml2_2_15_3;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
-        sqlite = pkgs.sqlite;
+        sqlite = tvp.packages.sqlite_3_53_4;
         pkg-config = tvp.packages."pkg-config_0_29_2";
       };
     };
@@ -28,7 +28,7 @@ let
         libxml2 = tvp.packages.libxml2_2_13_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
-        sqlite = pkgs.sqlite;
+        sqlite = tvp.packages.sqlite_3_53_4;
         pkg-config = tvp.packages."pkg-config_0_29_2";
       };
     };
@@ -44,7 +44,7 @@ let
         libxml2 = tvp.packages.libxml2_2_13_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
-        sqlite = pkgs.sqlite;
+        sqlite = tvp.packages.sqlite_3_53_4;
         pkg-config = tvp.packages."pkg-config_0_29_2";
       };
     };

@@ -18,7 +18,7 @@ let
       base = tvp.bases.default;
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
-        xz = pkgs.xz;
+        xz = tvp.packages.xz_5_8_3;
       };
     };
 

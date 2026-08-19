@@ -103,6 +103,14 @@ tvpLib.tests.mkSuite {
         '';
         expected = "tvp preserved";
       };
+
+      sqlite-linkage = {
+        script = ''
+          ldd "$(command -v php)" | awk '/libsqlite3\.so/ { print $3 }' | grep -q "^${deps.sqlite.out}/" && printf linked
+        '';
+        expected = "linked";
+        extraInputs = [ pkgs.glibc.bin ];
+      };
     }
 
     // pkgs.lib.optionalAttrs (deps ? readline) {

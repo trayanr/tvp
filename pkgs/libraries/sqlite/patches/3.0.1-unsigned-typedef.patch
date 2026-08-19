@@ -1,0 +1,11 @@
+--- a/src/sqliteInt.h
++++ b/src/sqliteInt.h
+@@ -125,7 +125,7 @@
+ # if SQLITE_PTR_SZ==4
+ #   define INTPTR_TYPE int
+ # else
+-#   define INTPTR_TYPE sqlite_int64
++#   define INTPTR_TYPE long long
+ # endif
+ #endif
+ typedef sqlite_int64 i64;          /* 8-byte signed integer */

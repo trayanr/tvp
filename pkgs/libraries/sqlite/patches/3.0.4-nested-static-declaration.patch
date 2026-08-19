@@ -1,0 +1,19 @@
+--- a/src/btree.c
++++ b/src/btree.c
+@@ -1522,6 +1522,8 @@
+ ** default comparison function is used.  The comparison function is
+ ** always ignored for INTKEY tables.
+ */
++static int checkReadLocks(Btree*,Pgno,BtCursor*);
++
+ int sqlite3BtreeCursor(
+   Btree *pBt,                                 /* The btree */
+   int iTable,                                 /* Root page of table to open */
+@@ -1535,7 +1537,6 @@
+ 
+   *ppCur = 0;
+   if( wrFlag ){
+-    static int checkReadLocks(Btree*,Pgno,BtCursor*);
+     if( pBt->readOnly ){
+       return SQLITE_READONLY;
+     }

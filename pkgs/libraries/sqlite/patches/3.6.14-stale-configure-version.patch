@@ -1,0 +1,13 @@
+--- a/configure
++++ b/configure
+@@ -743,8 +743,8 @@
+ # Identity of this package.
+ PACKAGE_NAME='sqlite'
+ PACKAGE_TARNAME='sqlite'
+-PACKAGE_VERSION='3.6.13'
+-PACKAGE_STRING='sqlite 3.6.13'
++PACKAGE_VERSION='3.6.14'
++PACKAGE_STRING='sqlite 3.6.14'
+ PACKAGE_BUGREPORT=''
+ 
+ # Factoring default headers for most tests.

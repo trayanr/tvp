@@ -1,0 +1,22 @@
+--- a/generic/tclResult.c
++++ b/generic/tclResult.c
+@@ -475,7 +475,7 @@
+      * Scan through all the arguments to see how much space is needed.
+      */
+ 
+-    tmpArgList = argList;
++    memcpy ((VOID *) &tmpArgList, (VOID *) &argList, sizeof (tmpArgList));
+     newSpace = 0;
+     while (1) {
+ 	string = va_arg(tmpArgList, char *);
+--- a/generic/tclStringObj.c
++++ b/generic/tclStringObj.c
+@@ -429,7 +429,7 @@
+      * bytes would be appended, just return.
+      */
+ 
+-    tmpArgList = argList;
++    memcpy ((VOID *) &tmpArgList, (VOID *) &argList, sizeof (tmpArgList));
+     newLength = oldLength = objPtr->length;
+     while (1) {
+ 	string = va_arg(tmpArgList, char *);

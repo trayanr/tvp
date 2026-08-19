@@ -1,0 +1,15 @@
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -765,7 +765,11 @@
+ 		$(TEMP_STORE) -o $@ $(TESTFIXTURE_SRC) $(LIBTCL)
+ 
+ 
+-install:	sqlite3$(BEXE) libsqlite3.la sqlite3.h sqlite3.pc ${HAVE_TCL:1=tcl_install}
++lib_install:	libsqlite3.la
++	$(INSTALL) -d $(DESTDIR)$(libdir)
++	$(LTINSTALL) libsqlite3.la $(DESTDIR)$(libdir)
++
++install:	sqlite3$(BEXE) lib_install sqlite3.h sqlite3.pc ${HAVE_TCL:1=tcl_install}
+ 	$(INSTALL) -d $(DESTDIR)$(libdir)
+ 	$(LTINSTALL) libsqlite3.la $(DESTDIR)$(libdir)
+ 	$(INSTALL) -d $(DESTDIR)$(bindir)

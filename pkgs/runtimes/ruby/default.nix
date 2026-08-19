@@ -32,7 +32,7 @@ let
         readline = tvp.packages.readline_8_3;
         zlib = tvp.packages.zlib_1_3_2;
         gdbm = tvp.packages.gdbm_1_26;
-        libffi = pkgs.libffi;
+        libffi = tvp.packages.libffi_3_8_0;
       };
     };
 
@@ -46,7 +46,7 @@ let
         readline = tvp.packages.readline_6_2;
         zlib = tvp.packages.zlib_1_3_2;
         gdbm = tvp.packages.gdbm_1_26;
-        libffi = pkgs.libffi;
+        libffi = tvp.packages.libffi_3_8_0;
       };
     };
     "2.2.0" = {
@@ -105,8 +105,8 @@ let
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;
         zlib = tvp.packages.zlib_1_3_2;
-        libyaml = pkgs.libyaml;
-        libffi = pkgs.libffi;
+        libyaml = tvp.packages.libyaml_0_2_5;
+        libffi = tvp.packages.libffi_3_8_0;
         rustc = tvp.packages.rustc_1_97_1;
       };
     };
@@ -117,8 +117,8 @@ let
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        libyaml = pkgs.libyaml;
-        libffi = pkgs.libffi;
+        libyaml = tvp.packages.libyaml_0_2_5;
+        libffi = tvp.packages.libffi_3_8_0;
         rustc = tvp.packages.rustc_1_97_1;
       };
     };
@@ -132,8 +132,8 @@ let
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        libyaml = pkgs.libyaml;
-        libffi = pkgs.libffi;
+        libyaml = tvp.packages.libyaml_0_2_5;
+        libffi = tvp.packages.libffi_3_8_0;
         rustc = tvp.packages.rustc_1_97_1;
       };
       opts = {
@@ -147,8 +147,8 @@ let
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        libyaml = pkgs.libyaml;
-        libffi = pkgs.libffi;
+        libyaml = tvp.packages.libyaml_0_2_5;
+        libffi = tvp.packages.libffi_3_8_0;
         rustc = tvp.packages.rustc_1_97_1;
       };
     };
