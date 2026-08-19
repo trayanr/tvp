@@ -8,6 +8,9 @@
 }:
 let
   deps = php.passthru.tvp.deps or { };
+
+  # sha256("tvp"), first 16 hex characters.
+  tvpDigest = "f6f6ead0bd85c312";
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -38,15 +41,47 @@ tvpLib.tests.mkSuite {
         '';
         expected = "tvp";
       };
+
+      # phpize, php-config and the installed headers are a separate install
+      # path from the interpreter, so nothing above notices when it is
+      # incomplete.
+      compile = {
+        script = ''
+          mkdir -p ext && cd ext
+          cp ${./fixtures/ext-config.m4} config.m4
+          cp ${./fixtures/ext-tvp.c} tvp.c
+          phpize > /dev/null
+          ./configure --with-php-config="$(command -v php-config)" > /dev/null
+          make > /dev/null
+          php -d extension="$PWD/modules/tvp.so" -r 'echo tvp_answer();'
+        '';
+        expected = "42";
+        extraInputs = [
+          pkgs.stdenv.cc
+          pkgs.autoconf
+          pkgs.automake
+          pkgs.libtool
+          pkgs.gnumake
+        ];
+      };
     }
 
     // pkgs.lib.optionalAttrs (deps ? openssl) {
-      # Reports the OpenSSL that is actually linked, not the one declared.
+      # Reports the OpenSSL that is actually linked, not the one declared, and
+      # runs a digest through it so a constant alone cannot pass the test.
       openssl = {
         script = ''
-          php -r 'echo explode(" ", OPENSSL_VERSION_TEXT)[1];'
+          php -r 'echo explode(" ", OPENSSL_VERSION_TEXT)[1], " ", substr(openssl_digest("tvp", "sha256"), 0, 16);'
         '';
-        expected = deps.openssl.version;
+        expected = "${deps.openssl.version} ${tvpDigest}";
+      };
+
+      openssl-linkage = {
+        script = ''
+          ldd "$(command -v php)" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
+        '';
+        expected = "linked";
+        extraInputs = [ pkgs.glibc.bin ];
       };
     }
 
@@ -54,6 +89,17 @@ tvpLib.tests.mkSuite {
       zlib = {
         script = ''
           php -r 'echo gzuncompress(gzcompress("tvp preserved"));'
+        '';
+        expected = "tvp preserved";
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (deps ? sqlite) {
+      # ext/sqlite3 and ext/pdo_sqlite are built by default and both vanish
+      # quietly when the library is not found.
+      sqlite = {
+        script = ''
+          php ${./fixtures/sqlite.php}
         '';
         expected = "tvp preserved";
       };

@@ -3,13 +3,45 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
-    "8.5.9" = {
-      builder = ./build-8.5.nix;
+    "8.3.10" = {
+      builder = ./build-8.0.nix;
       base = tvp.bases.gcc13;
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
         libxml2 = tvp.packages.libxml2_2_15_3;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = pkgs.sqlite;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
+
+    "8.1.0" = {
+      builder = ./build-8.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        # 8.3.9 and older use ATTRIBUTE_UNUSED from libxml2's public headers,
+        # which 2.14 removed.
+        libxml2 = tvp.packages.libxml2_2_13_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = pkgs.sqlite;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
+
+    "8.0.0" = {
+      builder = ./build-8.0.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
+        # RSA_SSLV23_PADDING, which 3.0.0 removed.
+        openssl = tvp.packages.openssl_1_1_1w;
+        zlib = tvp.packages.zlib_1_3_2;
+        libxml2 = tvp.packages.libxml2_2_13_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         sqlite = pkgs.sqlite;
@@ -40,18 +72,17 @@ let
         type = "git-tags";
         url = "https://github.com/php/php-src";
 
-        normalise = tag: if pkgs.lib.hasPrefix "php-" tag then pkgs.lib.removePrefix "php-" tag else null;
+        normalise =
+          tag:
+          if pkgs.lib.hasPrefix "php-" tag then
+            pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
+          else
+            null;
 
-        # Pre-releases carry no separator (php-8.5.0RC1, php-8.6.0beta1), so
-        # they are matched as infixes rather than suffixes.
-        include =
-          version:
-          builtins.match "[0-9].*" version != null
-          && !(
-            pkgs.lib.hasInfix "RC" version
-            || pkgs.lib.hasInfix "alpha" version
-            || pkgs.lib.hasInfix "beta" version
-          );
+        # Upstream tags pre-releases in a dozen spellings — RC1, rc1, beta1, b1,
+        # dev, pre1 — so a release is recognised by its shape instead: three
+        # numbers, plus the patch-level suffix PHP 4 used.
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
       };
     };
   };

@@ -41,6 +41,7 @@ let
             pkgs.lib.hasInfix "alpha" version
             || pkgs.lib.hasInfix "beta" version
             || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "pre" version
           );
       };
     };

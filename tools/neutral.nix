@@ -41,6 +41,9 @@ writeShellApplication {
     jq
   ];
   text = ''
+    # join and comm compare bytes; sort must not use locale collation, or
+    # they silently disagree on any name containing - or _.
+    export LC_ALL=C
     key=drv
     if [ "''${1:-}" = "--out" ]; then key=out; shift; fi
 

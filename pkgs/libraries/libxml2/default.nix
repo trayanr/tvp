@@ -11,6 +11,14 @@ let
         xz = pkgs.xz;
       };
     };
+
+    "2.15.3" = {
+      builder = ./build-2.15.nix;
+      base = tvp.bases.gcc13;
+      deps = {
+        zlib = tvp.packages.zlib_1_3_2;
+      };
+    };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./2.nix { inherit defs; });

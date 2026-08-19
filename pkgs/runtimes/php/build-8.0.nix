@@ -1,5 +1,4 @@
-# Serves 8.5 onwards. Only 8.5 has been built; the name records what this
-# recipe is known to serve, not what it is assumed to.
+# Serves 8.0 onwards.
 {
   lib,
   stdenv,
@@ -73,6 +72,7 @@ stdenv.mkDerivation (finalAttrs: {
         openssl
         zlib
         libxml2
+        sqlite
         readline
         ;
     };

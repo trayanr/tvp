@@ -3,6 +3,7 @@
   {
     def = defs."1.2.3";
     releases = {
+      "1.2.3.1" = "sha256-YXYvvYfExMGZbD4MP7TIwUqFbVQDMENceHaWq4hGy6Y=";
       "1.2.3" = "sha256-F5XH0GekMXQRP98DRHUy83PhxsV8CNYdnk6b5eJEsF4=";
       "1.2.8" = "sha256-NmWMt2ilTB1N7EPDEWwn7Yk+iLAuz8tE8hZvnAt/Kg0=";
       "1.2.11" = "sha256-w+Xp/dUATctUL+2l7k8P8HRGKLr47S3V1m+MoRl8saE=";

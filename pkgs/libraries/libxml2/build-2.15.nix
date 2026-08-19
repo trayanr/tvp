@@ -1,11 +1,12 @@
-# Serves 2.12 to 2.14.
+# Serves 2.15 onwards. 2.15.0 removed LZMA support outright: configure.ac no
+# longer defines --with-lzma, so the flag was accepted and ignored while xz
+# stayed in the declared graph and out of the artifact.
 {
   lib,
   stdenv,
   fetchurl,
 
   zlib,
-  xz,
 
   version,
   sha256,
@@ -24,7 +25,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     zlib
-    xz
   ];
 
   # The Python bindings are a separate artifact with their own interpreter
@@ -32,7 +32,6 @@ stdenv.mkDerivation (finalAttrs: {
   configureFlags = [
     "--without-python"
     "--with-zlib=${lib.getDev zlib}"
-    "--with-lzma=${lib.getDev xz}"
   ];
 
   meta = {
@@ -45,7 +44,7 @@ stdenv.mkDerivation (finalAttrs: {
   passthru = {
     inherit version;
     tvp.deps = {
-      inherit zlib xz;
+      inherit zlib;
     };
 
     tests = mkTests finalAttrs.finalPackage;
