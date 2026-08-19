@@ -1,8 +1,43 @@
 { defs }:
 [
   {
-    def = defs."1.9.1";
+    def = defs."1.7.3";
+    status = {
+      level = "degraded";
+      capability = "shared";
+      reason = "Static library only. This release predates libtool in gdbm; `all` builds libgdbm.a and there is no shared-library rule to install.";
+      needs = "The libtool build upstream first shipped at 1.8.0.";
+    };
     releases = {
+      "1.7.3" = "sha256-gcBuiEc9aw/SI7nCf+c7u8yB3NT5OLmtzfX/K5m73no=";
+    };
+  }
+
+  {
+    def = defs."1.8.0";
+    releases = {
+      "1.8.0" = "sha256-S8jhb/4n+nF7Y1LPr0eiZbIG36nhhhZlZKcotzOP9xk=";
+      "1.8.1" = {
+        sha256 = "sha256-VqMk/7VJSuFqKwoEqAa4IWk3E4ZcPbHjIAmzbdB2WBE=";
+        status = {
+          level = "degraded";
+          knownTestFailures = [
+            "store"
+            "ndbm"
+          ];
+          reason = "gdbm_open returns a handle in reader mode whatever mode is asked for, so every write fails with GDBM_READER_CANT_STORE. Measured against GDBM_NEWDB and GDBM_WRCREAT; 1.8.0 and 1.8.2 both write.";
+          needs = "Nothing TVP can supply. Upstream shipped 1.8.2 the following day.";
+        };
+      };
+      "1.8.2" = "sha256-DVr8LcDBTLo5Y2PMFeHKeFOoXV2Z6rW2tKnq95llImk=";
+      "1.8.3" = "sha256-zDQDOKLii0AFirnrU1SiHVP4ihWC6iG6C7GFw3ooHck=";
+    };
+  }
+
+  {
+    def = defs."1.9";
+    releases = {
+      "1.9" = "sha256-+FMk1943d9sWdYH9XTST0tqj6F4ZWorpr8BbNFUbblc=";
       "1.9.1" = "sha256-YCWFJjd3KwaZ8ilLXxT9SghLyjyBYdKdZNHzDW0amu0=";
     };
   }

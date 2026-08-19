@@ -1,6 +1,6 @@
-# Serves 2.15 onwards. 2.15.0 removed LZMA support outright: configure.ac no
-# longer defines --with-lzma, so the flag was accepted and ignored while xz
-# stayed in the declared graph and out of the artifact.
+# Serves 2.7.4 to 2.7.8 — the generation before libxml2 had LZMA support.
+# --with-lzma is unrecognized here, so declaring xz would put it in the graph
+# and leave it out of the artifact.
 {
   lib,
   stdenv,
@@ -48,7 +48,8 @@ stdenv.mkDerivation (finalAttrs: {
     };
 
     tvp.features = {
-      xpath = true;
+      # xmllint gained --xpath at 2.7.7, measured against its own --help.
+      xpath = lib.versionAtLeast version "2.7.7";
     };
 
     tests = mkTests finalAttrs.finalPackage;

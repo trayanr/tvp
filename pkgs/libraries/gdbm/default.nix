@@ -4,7 +4,7 @@ let
 
   defs = tvpLib.packages.mkDefs {
     "1.19" = {
-      builder = ./build-1.9.1.nix;
+      builder = ./build-1.9.nix;
       base = tvp.bases.gcc13;
       deps = { };
     };
@@ -12,18 +12,36 @@ let
     # Tentative definitions in libgdbmapp collide under -fno-common, which gcc
     # 10 made the default.
     "1.10" = {
-      builder = ./build-1.9.1.nix;
+      builder = ./build-1.9.nix;
       base = tvp.bases.gcc9;
       deps = { };
     };
 
-    "1.9.1" = {
-      builder = ./build-1.9.1.nix;
+    "1.9" = {
+      builder = ./build-1.9.nix;
       base = tvp.bases.gcc9;
       deps = { };
       opts = {
         touchTestsuite = true;
       };
+    };
+
+    "1.8.0" = {
+      builder = ./build-1.7.3.nix;
+      base = tvp.bases.gcc9;
+      deps = { };
+    };
+
+    "1.7.3" = {
+      builder = ./build-1.7.3.nix;
+      base = tvp.bases.gcc9;
+      deps = { };
+      patches = [
+        {
+          file = ./patches/1.7.3-install-compat-unbalanced-paren.patch;
+          reason = "install-compat writes 100 1 26 57 100 131 989 991srcdir/ndbm.h — an unbalanced paren make expands to nothing, so the target installs no ndbm.h at all.";
+        }
+      ];
     };
   };
 

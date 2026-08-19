@@ -8,6 +8,11 @@
 }:
 let
   cc = [ pkgs.stdenv.cc ];
+  features = gdbm.passthru.tvp.features or { };
+
+  # dbm and ndbm are split into libgdbm_compat at 1.8.1; below that they are
+  # linked into libgdbm itself.
+  compatFlag = if (features.compatLib or true) then "-lgdbm_compat " else "";
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -19,7 +24,10 @@ tvpLib.tests.mkSuite {
     version = {
       script = ''
         cc ${./fixtures/version.c} -lgdbm -o version
-        ./version | sed -n 's|.*version \([0-9.]*\)\..*|\1|p'
+        # 1.8.2 and older print "This is GDBM version X, as of DATE"; from 1.8.3
+        # it is "GDBM version X. DATE". The first version-shaped token is the
+        # only thing both forms share.
+        ./version | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1
       '';
       expected = gdbm.version;
       extraInputs = cc;
@@ -38,7 +46,7 @@ tvpLib.tests.mkSuite {
     # and a gdbm configured without them still builds and installs.
     ndbm = {
       script = ''
-        cc ${./fixtures/ndbm.c} -lgdbm_compat -lgdbm -o ndbm
+        cc ${./fixtures/ndbm.c} ${compatFlag}-lgdbm -o ndbm
         ./ndbm
       '';
       expected = "tvp";

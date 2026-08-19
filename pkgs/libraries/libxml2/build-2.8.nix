@@ -1,4 +1,4 @@
-# Serves 2.12 to 2.14.
+# Serves 2.8 to 2.14.
 {
   lib,
   stdenv,
@@ -46,6 +46,10 @@ stdenv.mkDerivation (finalAttrs: {
     inherit version;
     tvp.deps = {
       inherit zlib xz;
+    };
+
+    tvp.features = {
+      xpath = true;
     };
 
     tests = mkTests finalAttrs.finalPackage;

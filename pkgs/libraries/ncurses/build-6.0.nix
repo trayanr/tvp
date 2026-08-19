@@ -1,4 +1,4 @@
-# Serves 6.2 onwards.
+# Serves 6.0 onwards.
 #
 # --enable-widec is a uniform TVP choice, not upstream's default before 6.6:
 # a narrow build cannot represent UTF-8, and every consumer of a modern ncurses
@@ -55,9 +55,13 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.deps = {
       inherit pkg-config;
     };
+    tvp.cc = stdenv.cc;
 
     tvp.features = {
       widec = true;
+      libName = "ncursesw";
+      pkgConfig = true;
+      cxx = true;
     };
 
     tests = mkTests finalAttrs.finalPackage;

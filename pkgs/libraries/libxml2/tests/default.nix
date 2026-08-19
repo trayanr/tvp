@@ -8,6 +8,7 @@
 }:
 let
   deps = libxml2.passthru.tvp.deps or { };
+  features = libxml2.passthru.tvp.features or { };
 
   doc = ''
     cp ${./fixtures/doc.xml} doc.xml
@@ -29,14 +30,6 @@ tvpLib.tests.mkSuite {
         expected = libxml2.version;
       };
 
-      xpath = {
-        script = ''
-          ${doc}
-          xmllint --xpath 'string(//package[@name="tvp"]/@version)' doc.xml
-        '';
-        expected = "1.2.3";
-      };
-
       # DTD validation exercises a different engine from parsing, and it is what
       # downstream consumers most often rely on libxml2 for.
       validate = {
@@ -49,14 +42,29 @@ tvpLib.tests.mkSuite {
 
       # libxml2 transparently reads gzipped XML only when it was built against
       # zlib, so this proves the declared dependency is actually wired in.
+      # --valid rather than --xpath: a partial decompression would still parse,
+      # and --xpath does not exist before 2.7.7.
       gzip = {
         script = ''
           ${doc}
           gzip -c doc.xml > doc.xml.gz
-          xmllint --xpath 'count(//package)' doc.xml.gz
+          xmllint --noout --valid doc.xml.gz && printf gzip-ok
         '';
-        expected = "2";
+        expected = "gzip-ok";
         extraInputs = [ pkgs.gzip ];
+      };
+
+      # Consumers compile against the installed headers, and a library that
+      # builds can still install headers that do not.
+      compile = {
+        script = ''
+          ${doc}
+          cc ${./fixtures/compile.c} $(xml2-config --cflags --libs) -o compile
+          ./compile
+        '';
+        expected = "catalogue";
+        # The declared graph, because xml2-config emits -lz and -llzma.
+        extraInputs = [ pkgs.stdenv.cc ] ++ pkgs.lib.attrValues deps;
       };
 
       pkg-config = {
@@ -68,6 +76,18 @@ tvpLib.tests.mkSuite {
       };
     }
 
+    # xmllint gained --xpath at 2.7.7; below that the engine is reachable only
+    # through --shell, which is a different code path from what consumers use.
+    // pkgs.lib.optionalAttrs (features.xpath or true) {
+      xpath = {
+        script = ''
+          ${doc}
+          xmllint --xpath 'string(//package[@name="tvp"]/@version)' doc.xml
+        '';
+        expected = "1.2.3";
+      };
+    }
+
     // pkgs.lib.optionalAttrs (deps ? xz) {
       # libxml2 reads xz-compressed XML only when it was built --with-lzma.
       # 2.15 removed that support, so the guard drops the test with the
@@ -76,9 +96,9 @@ tvpLib.tests.mkSuite {
         script = ''
           ${doc}
           xz -c doc.xml > doc.xml.xz
-          xmllint --xpath 'count(//package)' doc.xml.xz
+          xmllint --noout --valid doc.xml.xz && printf lzma-ok
         '';
-        expected = "2";
+        expected = "lzma-ok";
         extraInputs = [ pkgs.xz ];
       };
     };

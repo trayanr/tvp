@@ -1,0 +1,11 @@
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -100,7 +100,7 @@
+ 
+ install-compat:
+ 	$(INSTALL_DATA) $(srcdir)/dbm.h $(includedir)/dbm.h
+-	$(INSTALL_DATA) $(srcdir/ndbm.h $(includedir)/ndbm.h
++	$(INSTALL_DATA) $(srcdir)/ndbm.h $(includedir)/ndbm.h
+ 
+ libgdbm.a: $(OBJS) gdbm.h
+ 	rm -f libgdbm.a

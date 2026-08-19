@@ -1,4 +1,4 @@
-# Serves 1.9.1 onwards.
+# Serves 1.9 onwards.
 {
   lib,
   stdenv,
@@ -7,8 +7,9 @@
   version,
   sha256,
 
-  # 1.9 and 1.9.1 ship tests/testsuite older than the testsuite.at it is
-  # generated from, so make check tries to regenerate it with autoconf.
+  # 1.9 and 1.9.1 ship tests/testsuite, but package.m4 is generated during the
+  # check itself, so the shipped file is stale again by the time make looks and
+  # it reaches for autoconf. Generate package.m4 first, then make it newer.
   touchTestsuite ? false,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
@@ -50,12 +51,20 @@ stdenv.mkDerivation (
       inherit version;
       tvp.deps = { };
 
+      tvp.features = {
+        compatLib = true;
+        shared = true;
+      };
+
       tests = mkTests finalAttrs.finalPackage;
     };
   }
   // lib.optionalAttrs touchTestsuite {
     # preCheck, not postPatch: package.m4 is generated during the build, so a
     # testsuite touched at unpack time is stale again by check time.
-    preCheck = "touch tests/testsuite";
+    preCheck = ''
+      make -C tests package.m4
+      touch tests/testsuite
+    '';
   }
 )

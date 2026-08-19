@@ -332,6 +332,11 @@ fails where an old builder is missing something. Fork the tests and that stops w
 - **Guard on the declared graph, never on a version number.** `gdbm` runs iff the package
   declares a `gdbm` dependency, not iff the version is below 3.1. A builder that drops a
   dependency then drops its test automatically, and the two can never disagree.
+- **When a shared suite fails on an old version, guard — never lower the fixture.**
+  Rewriting a test to the oldest common denominator costs every version that coverage to
+  satisfy one. Declare the capability in the builder, guard the strong test on it, and
+  keep a universal core underneath. Measure the boundary in the artifacts — grep the
+  installed header, ask the built interpreter — never from release notes.
 - **Test what a failed build would not tell you.** An extension whose `extconf.rb` fails is
   usually skipped rather than fatal, so the package still builds and still installs, just
   without that extension. Only a test that actually `require`s it notices.
