@@ -7,6 +7,7 @@
   version,
   sha256,
   float128 ? true,
+  mpfrRoundingNames ? true,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -33,6 +34,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
     tvp.cc = stdenv.cc;
     tvp.features.float128 = float128;
+    tvp.features.mpfrRoundingNames = mpfrRoundingNames;
     tests = mkTests finalAttrs.finalPackage;
   };
 })

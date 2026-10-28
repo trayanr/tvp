@@ -5,9 +5,29 @@
   zlib,
 }:
 let
+  source =
+    root: files:
+    pkgs.lib.fileset.toSource {
+      inherit root;
+      fileset = pkgs.lib.fileset.unions files;
+    };
+  standalone = source ./fixtures/standalone [
+    ./fixtures/standalone/meson.build
+    ./fixtures/standalone/main.c
+  ];
+  wrap = source ./fixtures/wrap [
+    ./fixtures/wrap/meson.build
+    ./fixtures/wrap/main.c
+    ./fixtures/wrap/child/meson.build
+    ./fixtures/wrap/child/answer.c
+  ];
   consumer = pkgs.stdenv.mkDerivation {
     name = "meson-consumer";
-    src = ./fixtures;
+    src = source ./fixtures [
+      ./fixtures/meson.build
+      ./fixtures/answer.c
+      ./fixtures/main.cc
+    ];
     nativeBuildInputs = [ package ];
     buildInputs = [ zlib ];
     doCheck = true;
@@ -27,7 +47,7 @@ tvpLib.tests.mkSuite {
     };
     introspection = {
       script = ''
-        meson setup build ${./fixtures/standalone} >&2
+        meson setup build ${standalone} >&2
         meson introspect --targets build > info.json
         ${package.tvp.deps.python}/bin/python3 -c 'import json; d=json.load(open("info.json")); assert any(t["name"] == "answer" and t["type"] == "executable" for t in d); print(42)'
       '';
@@ -36,7 +56,7 @@ tvpLib.tests.mkSuite {
     };
     standalone = {
       script = ''
-        cp -R ${./fixtures/standalone} project
+        cp -R ${standalone} project
         chmod -R u+w project
         meson setup build project >&2
         meson compile -C build >&2
@@ -48,7 +68,7 @@ tvpLib.tests.mkSuite {
     };
     wrap-archive = {
       script = ''
-        cp -R ${./fixtures/wrap} project
+        cp -R ${wrap} project
         chmod -R u+w project
         mkdir -p project/subprojects/packagecache
         tar -cJf project/subprojects/packagecache/child.tar.xz -C project child

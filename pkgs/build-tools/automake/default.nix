@@ -10,6 +10,7 @@ let
         autoconf = tvp.packages.autoconf_2_13;
         perl = tvp.packages.perl_5_44_0;
       };
+      opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
       opts.headerMacro = "AM_CONFIG_HEADER";
     };
@@ -20,6 +21,7 @@ let
         autoconf = tvp.packages.autoconf_2_73;
         perl = tvp.packages.perl_5_44_0;
       };
+      opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
       opts.headerMacro = "AM_CONFIG_HEADER";
     };
@@ -30,10 +32,21 @@ let
         autoconf = tvp.packages.autoconf_2_73;
         perl = tvp.packages.perl_5_44_0;
       };
+      opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
       opts.headerMacro = "AM_CONFIG_HEADER";
     };
     "1.7.9" = {
+      builder = ./build-1.6.3.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_73;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.automaticCcCo = false;
+      opts.archiveExt = "tar.bz2";
+    };
+    "1.10.3" = {
       builder = ./build-1.6.3.nix;
       inherit base;
       deps = {
@@ -86,6 +99,11 @@ let
         "1.7.9" = "sha256-MsE7atOO1ee/0XVsvBnPXv1nt63i0GAApMmbDOlL1G0=";
         "1.8.5" = "sha256-hMk6qjw2UannR0tyGw5niDGFklCefeYEuv5OqASdxBA=";
         "1.9.6" = "sha256-jsyqmOGGPRDkpfhh2OLsNJoj6IyxKtEPa295AirSu40=";
+      };
+    }
+    {
+      def = defs."1.10.3";
+      releases = {
         "1.10.3" = "sha256-6Yq0O7g5wxaWpCAuW2/ziLORZZ7yOHz5NlAZ+tF+Gtw=";
       };
     }

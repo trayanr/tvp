@@ -5,11 +5,19 @@
   ninja,
 }:
 let
+  source = pkgs.lib.fileset.toSource {
+    root = ./fixtures;
+    fileset = pkgs.lib.fileset.unions [
+      ./fixtures/CMakeLists.txt
+      ./fixtures/answer.c
+      ./fixtures/main.cc
+    ];
+  };
   consumer =
     useNinja:
     pkgs.stdenv.mkDerivation {
       name = "cmake-consumer-${if useNinja then "ninja" else "make"}";
-      src = ./fixtures;
+      src = source;
       nativeBuildInputs = [ package ] ++ pkgs.lib.optional useNinja ninja;
       buildInputs = [ package.tvp.deps.zlib ];
       doCheck = true;
@@ -33,7 +41,7 @@ tvpLib.tests.mkSuite {
     };
     archives = {
       script = ''
-        cmake -S ${./fixtures} -B build -DCMAKE_PREFIX_PATH='${package.tvp.cc.libc};${package.tvp.deps.zlib}' >&2
+        cmake -S ${source} -B build -DCMAKE_PREFIX_PATH='${package.tvp.cc.libc};${package.tvp.deps.zlib}' >&2
         cmake --build build -j "$NIX_BUILD_CORES" >&2
         ctest --test-dir build --output-on-failure >&2
         cd build

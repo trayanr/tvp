@@ -13,6 +13,13 @@ tvpLib.tests.mkSuite {
         expected = mpfr.version;
         extraInputs = [ mpfr.tvp.cc ];
       };
+      legacy-arithmetic = {
+        script = ''cc ${./fixtures/legacy-arithmetic.c} -lmpfr -lgmp -o arithmetic; ./arithmetic'';
+        expected = "12";
+        extraInputs = [ mpfr.tvp.cc ];
+      };
+    }
+    // pkgs.lib.optionalAttrs mpfr.tvp.features.mpfrRoundingNames {
       arithmetic = {
         script = ''cc ${./fixtures/arithmetic.c} -lmpfr -lgmp -o arithmetic; ./arithmetic'';
         expected = "12";

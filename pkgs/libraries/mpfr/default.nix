@@ -7,6 +7,13 @@ let
       base = tvp.bases.default;
       deps.gmp = tvp.packages.gmp_5_0_5;
       opts.float128 = false;
+      opts.mpfrRoundingNames = false;
+    };
+    "3.0.1" = {
+      builder = ./build-2.4.2.nix;
+      base = tvp.bases.default;
+      deps.gmp = tvp.packages.gmp_5_0_5;
+      opts.float128 = false;
     };
     "3.1.6" = {
       builder = ./build-2.4.2.nix;
@@ -25,6 +32,11 @@ let
       def = defs."2.4.2";
       releases = {
         "2.4.2" = "sha256-1ycbv7yd3zh9ORnfgxjNcZLGeyMpGb+hyzIC0HhD2hs=";
+      };
+    }
+    {
+      def = defs."3.0.1";
+      releases = {
         "3.0.1" = "sha256-KKltWPJ2NSipebKgFpWdziq7yP74FC+hhgZwwkh2AGE=";
       };
     }

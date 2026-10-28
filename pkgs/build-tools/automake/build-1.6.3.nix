@@ -10,6 +10,7 @@
   archiveExt ? "tar.xz",
   installAclocalDir ? false,
   headerMacro ? "AC_CONFIG_HEADERS",
+  automaticCcCo ? true,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -54,6 +55,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
     tvp.cc = stdenv.cc;
     tvp.headerMacro = headerMacro;
+    tvp.features.automaticCcCo = automaticCcCo;
     tests = mkTests finalAttrs.finalPackage;
   };
 })

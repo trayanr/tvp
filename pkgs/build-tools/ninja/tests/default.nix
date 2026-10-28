@@ -6,7 +6,10 @@
 let
   consumer = pkgs.stdenv.mkDerivation {
     name = "ninja-consumer";
-    src = ./fixtures;
+    src = pkgs.lib.fileset.toSource {
+      root = ./fixtures;
+      fileset = ./fixtures/build.ninja;
+    };
     nativeBuildInputs = [ package ];
     dontConfigure = true;
     doCheck = true;
