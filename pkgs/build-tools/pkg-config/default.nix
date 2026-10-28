@@ -37,7 +37,15 @@ let
 
     extraArgs = {
       mkTests = pkgs.lib.makeOverridable (
-        { pkgs }: pkgConfig: import ./tests { inherit pkgs tvpLib pkgConfig; }
+        { pkgs }:
+        pkgConfig:
+        import ./tests {
+          inherit tvpLib pkgConfig;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = pkgConfig.stdenv;
+          };
+        }
       ) { inherit pkgs; };
     };
 
@@ -65,8 +73,8 @@ let
     // {
       inherit pkgs;
       profiles = {
-        gcc13-owned = {
-          base = tvp.bases.gcc13-owned;
+        gcc13 = {
+          base = tvp.bases.gcc13;
           versions."0.29.2" = { };
         };
       };

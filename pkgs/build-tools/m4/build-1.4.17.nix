@@ -17,7 +17,10 @@ stdenv.mkDerivation (finalAttrs: {
   # ftp.gnu.org keeps every release it has ever published, so one pattern serves
   # the whole line.
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/m4/m4-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/m4/m4-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/m4/m4-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 

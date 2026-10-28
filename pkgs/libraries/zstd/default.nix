@@ -18,7 +18,7 @@ let
     }
   ];
   pname = "zstd";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -31,8 +31,25 @@ let
       include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
     };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."1.5.6" = {
+          deps = {
+            xz = tvp.variants.gcc13.xz_5_8_3;
+            zlib = tvp.variants.gcc13.zlib_1_3_2;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

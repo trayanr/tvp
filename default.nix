@@ -30,6 +30,13 @@ let
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
   checks = {
+    bootstrap-independent = import ./bases/tests/bootstrap.nix {
+      inherit pkgs;
+      parent = bases.gcc13;
+      owned = bases.gcc13-owned;
+      packages = variants.gcc13;
+    };
+    test-runner = pkgs.callPackage ./tools/test-runner/tests { };
     native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
     variants-evaluate =
       let
@@ -236,7 +243,9 @@ let
             enableParallelBuilding = true;
             installPhase = "mkdir -p $out";
           })).drvPath;
-        tvp = probe bases.default.stdenv;
+        # Compare the borrowed environment to its original Nixpkgs builder.
+        # The default now constructs a deliberately different owned environment.
+        tvp = probe bases.gcc13.stdenv;
         upstream = probe pkgs.stdenv;
       in
       if tvp == upstream then
@@ -261,7 +270,7 @@ let
       '';
   };
 
-  testBatches = tvpLib.packages.merge {
+  testBatchEntries = tvpLib.packages.merge {
     packages =
       builtins.mapAttrs
         (
@@ -295,9 +304,17 @@ let
     ) (pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") variantPackages);
   };
 
+  testBatches = testBatchEntries // {
+    all = tvpLib.tests.mkAll {
+      inherit pkgs checks;
+      batches = testBatchEntries;
+    };
+  };
+
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
+    testRunner = pkgs.callPackage ./tools/test-runner { };
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
       inherit tvpLib variantPackages;

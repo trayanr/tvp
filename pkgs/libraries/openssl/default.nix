@@ -30,6 +30,15 @@ let
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };
+      opts.forceGccName = true;
+    };
+
+    "1.0.2p" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
     };
 
     # 1.1.0's Configure does `use File::Glob 'glob'`, which perl stopped exporting at 5.30.

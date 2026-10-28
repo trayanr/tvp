@@ -6,6 +6,27 @@
   base,
 }:
 {
+  linker-metadata = tvpLib.bases.mkBaseTest {
+    inherit base;
+    name = "linker-metadata";
+    script = ''
+      support=${base.stdenv.cc.bintools}/nix-support
+      test "$(cat "$support/orig-libc")" = '${base.stdenv.cc.libc}'
+      cat "$support/dynamic-linker"
+    '';
+    expected = "${base.stdenv.cc.libc}/${base.platform.dynamicLinker}";
+  };
+  bootstrap-build-tools = tvpLib.tests.mkBatch {
+    inherit pkgs;
+    name = "base-${base.name}-bootstrap-build-tools";
+    suite = pkgs.lib.concatMapAttrs (
+      name: tool:
+      if (tool.tvp.variant or null) != "gcc13" || tool.tvp.base != "gcc13" then
+        throw "TVP: ${base.name} bootstrap tool '${name}' must be a package-owned gcc13 variant."
+      else
+        pkgs.lib.mapAttrs' (test: drv: pkgs.lib.nameValuePair "${name}-${test}" drv) tool.tests
+    ) base.bootstrap.buildTools;
+  };
   autotools = tvpLib.tests.mkBatch {
     inherit pkgs;
     name = "base-${base.name}-autotools";

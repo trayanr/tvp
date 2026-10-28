@@ -4,15 +4,15 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.42" = {
       builder = ./build-2.42.nix;
-      base = tvp.bases.default;
+      base = tvp.bases.gcc13;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        perl = tvp.packages.perl_5_44_0;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
-        # Original bootstrap pins; the owned-base validation graph selects TVP
-        # replacements without moving this canonical build.
-        inherit (pkgs) bison texinfo;
+        zlib = tvp.variants.gcc13.zlib_1_3_2;
+        zstd = tvp.variants.gcc13.zstd_1_5_6;
+        perl = tvp.variants.gcc13.perl_5_44_0;
+        pkg-config = tvp.variants.gcc13."pkg-config_0_29_2";
+        # These helpers precede the owned base; its canonical tools follow it.
+        bison = tvp.variants.gcc13.bison_3_8_2;
+        texinfo = tvp.variants.gcc13.texinfo_7_1;
       };
     };
   };
@@ -23,7 +23,7 @@ let
     }
   ];
   pname = "binutils";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -44,8 +44,29 @@ let
       include = version: builtins.match "[0-9]+\\.[0-9]+(\\.[0-9]+)?" version != null;
     };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."2.42" = {
+          deps = {
+            bison = tvp.variants.gcc13.bison_3_8_2;
+            perl = tvp.variants.gcc13.perl_5_44_0;
+            pkg-config = tvp.variants.gcc13.pkg-config_0_29_2;
+            texinfo = tvp.variants.gcc13.texinfo_7_1;
+            zlib = tvp.variants.gcc13.zlib_1_3_2;
+            zstd = tvp.variants.gcc13.zstd_1_5_6;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

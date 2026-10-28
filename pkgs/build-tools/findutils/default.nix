@@ -17,15 +17,31 @@ let
     }
   ];
   pname = "findutils";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
     extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."4.10.0" = {
+          deps = {
+            coreutils = tvp.variants.gcc13.coreutils_9_5;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

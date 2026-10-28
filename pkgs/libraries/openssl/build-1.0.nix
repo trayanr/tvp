@@ -13,6 +13,9 @@
   version,
   sha256,
 
+  # Before 1.0.2p, domd recognises the compiler by its executable name.
+  forceGccName ? false,
+
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
 }:
@@ -34,54 +37,62 @@ let
 
   underscoreVersion = builtins.replaceStrings [ "." ] [ "_" ] version;
 in
-stdenv.mkDerivation (finalAttrs: {
-  pname = "openssl";
-  inherit version;
-
-  src = fetchurl {
-    url = "https://github.com/openssl/openssl/releases/download/OpenSSL_${underscoreVersion}/openssl-${version}.tar.gz";
-    inherit sha256;
-  };
-
-  nativeBuildInputs = [ perl ];
-
-  postPatch = ''
-    patchShebangs Configure
-  '';
-
-  configureScript = "perl ./Configure ${target}";
-
-  configureFlags = [
-    "shared"
-    "--openssldir=etc/ssl"
-  ];
-
-  preBuild = ''
-    make depend
-  '';
-
-  installTargets = [ "install_sw" ];
-
-  # Parallel building is not reliable in OpenSSL
-  enableParallelBuilding = false;
-
-  meta = {
-    description = "A cryptographic library that implements the SSL and TLS protocols";
-    homepage = "https://www.openssl.org/";
-    license = lib.licenses.openssl;
-    platforms = lib.platforms.unix;
-    mainProgram = "openssl";
-  };
-
-  passthru = {
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "openssl";
     inherit version;
-    tvp.deps = { };
 
-    tvp.features = {
-      sha256 = true;
-      pbkdf2 = false;
+    src = fetchurl {
+      url = "https://github.com/openssl/openssl/releases/download/OpenSSL_${underscoreVersion}/openssl-${version}.tar.gz";
+      inherit sha256;
     };
 
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    nativeBuildInputs = [ perl ];
+
+    postPatch = ''
+      patchShebangs Configure
+    '';
+
+    configureScript = "perl ./Configure ${target}";
+
+    configureFlags = [
+      "shared"
+      "--openssldir=etc/ssl"
+    ];
+
+    preBuild = ''
+      make depend
+    '';
+
+    installTargets = [ "install_sw" ];
+
+    # Parallel building is not reliable in OpenSSL
+    enableParallelBuilding = false;
+
+    meta = {
+      description = "A cryptographic library that implements the SSL and TLS protocols";
+      homepage = "https://www.openssl.org/";
+      license = lib.licenses.openssl;
+      platforms = lib.platforms.unix;
+      mainProgram = "openssl";
+    };
+
+    passthru = {
+      inherit version;
+      tvp.deps = { };
+
+      tvp.features = {
+        sha256 = true;
+        pbkdf2 = false;
+      };
+
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs forceGccName {
+    preConfigure = ''
+      export CC=gcc
+    '';
+  }
+)

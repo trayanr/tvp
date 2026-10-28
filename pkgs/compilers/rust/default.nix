@@ -27,6 +27,7 @@ let
         lib
         fetchurl
         autoPatchelfHook
+        patchelf
         zlib
         ;
     };

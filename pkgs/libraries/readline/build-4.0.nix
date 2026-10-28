@@ -1,12 +1,12 @@
-# Serves 4.2 and older. Up to 4.2 the default target is `static` and `install`
-# never builds the shared library, so both have to be asked for by name; 4.2a
-# installs shared as part of a normal build.
+# Serves 4.0 through 4.2a. The default target is `static` and `install`
+# never builds the shared library, so both have to be asked for by name.
 {
   lib,
   stdenv,
   fetchurl,
 
   ncurses,
+  automake,
 
   version,
   sha256,
@@ -19,11 +19,20 @@ stdenv.mkDerivation (finalAttrs: {
   inherit version;
 
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 
   buildInputs = [ ncurses ];
+
+  # These platform scripts predate x86_64. Some configure generations ignore
+  # that failure and silently disable shared libraries instead of stopping.
+  postPatch = ''
+    cp ${automake}/share/automake-${automake.version}/config.{guess,sub} support/
+  '';
 
   # Without --with-curses, configure links termcap and the resulting library
   # cannot resolve terminal capabilities against a terminfo database.
@@ -55,7 +64,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
 
     tvp.deps = {
-      inherit ncurses;
+      inherit ncurses automake;
     };
 
     tests = mkTests finalAttrs.finalPackage;

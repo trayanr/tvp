@@ -62,6 +62,12 @@
       "1.0.2m" = "sha256-jG/xXsazGbUHiPQserwokMCLpaHNzTgQ65CS3q2jew8=";
       "1.0.2n" = "sha256-Nwurt18njDngxQ6MTnSTvA8Y22hnR4NBqDKpgv0VqP4=";
       "1.0.2o" = "sha256-7D9clxS6D9RctOCHMB6xM2wxfg0gtXWhJQUEcOgInk0=";
+    };
+  }
+
+  {
+    def = defs."1.0.2p";
+    releases = {
       "1.0.2p" = "sha256-UKmOB7Gonrj2qZR38mLfccb6e+93303IMCWihFyCfQA=";
       "1.0.2q" = "sha256-V0TPy87CsbSGKfc1QgO8Hl6bVGaZi7zMW1/N47GOtoQ=";
       "1.0.2r" = "sha256-rlHQi7qKg5WOiUlG8VMD/4lNdcK4u9RKhStk4/4R0NY=";

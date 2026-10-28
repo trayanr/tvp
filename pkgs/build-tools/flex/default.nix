@@ -1,13 +1,13 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  base = tvp.bases.gcc13-owned;
+  base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
     "2.6.4" = {
       builder = ./build-2.6.4.nix;
       inherit base;
       deps = {
-        bison = tvp.variants.gcc13-owned.bison_3_8_2;
+        bison = tvp.packages.bison_3_8_2;
         m4 = tvp.packages.m4_1_4_21;
       };
     };

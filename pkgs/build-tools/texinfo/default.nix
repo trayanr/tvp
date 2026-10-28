@@ -8,7 +8,7 @@ let
       deps = {
         perl = tvp.packages.perl_5_44_0;
         ncurses = tvp.packages.ncurses_6_6;
-        localeTools = tvp.packages.glibc_2_39.bin;
+        localeTools = tvp.bases.default.stdenv.cc.libc.bin;
       };
       patches = [
         {
@@ -35,7 +35,15 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
@@ -44,13 +52,15 @@ let
     // {
       inherit pkgs;
       profiles = {
-        gcc13-owned = {
-          base = tvp.bases.gcc13-owned;
+        gcc13 = {
+          base = tvp.bases.gcc13;
           versions."7.1" = {
             deps = {
-              perl = tvp.bases.gcc13-owned.components.perl;
-              ncurses = tvp.bases.gcc13-owned.components.libraries.ncurses;
-              localeTools = tvp.bases.gcc13-owned.components.libc.bin;
+              perl = tvp.variants.gcc13.perl_5_44_0;
+              ncurses = tvp.variants.gcc13.ncurses_6_6;
+              # This makeinfo builds GCC, which builds TVP's first glibc.
+              # Its locale program must therefore come from the seed libc.
+              localeTools = tvp.bases.gcc13.stdenv.cc.libc.bin;
             };
           };
         };

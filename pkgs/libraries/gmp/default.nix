@@ -6,8 +6,7 @@ let
       builder = ./build-6.3.0.nix;
       base = tvp.bases.default;
       deps = {
-        # This compiler prerequisite precedes construction of gcc13-owned.
-        m4 = tvp.variants.gcc13.m4_1_4_21;
+        m4 = tvp.packages.m4_1_4_21;
       };
     };
   };
@@ -18,15 +17,31 @@ let
     }
   ];
   pname = "gmp";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
     extraArgs.mkTests = gmp: import ./tests { inherit pkgs tvpLib gmp; };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."6.3.0" = {
+          deps = {
+            m4 = tvp.variants.gcc13.m4_1_4_21;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

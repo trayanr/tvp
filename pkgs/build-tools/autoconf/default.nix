@@ -7,16 +7,16 @@ let
       builder = ./build-2.69.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.variants.gcc13.m4_1_4_21;
+        m4 = tvp.packages.m4_1_4_21;
         perl = tvp.packages.perl_5_44_0;
       };
     };
     "2.73" = {
       builder = ./build-2.69.nix;
-      base = tvp.bases.gcc13-owned;
+      base = tvp.bases.default;
       deps = {
         m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.bases.gcc13-owned.components.perl;
+        perl = tvp.packages.perl_5_44_0;
       };
     };
   };
@@ -37,7 +37,11 @@ let
         { pkgs }:
         autoconf:
         import ./tests {
-          inherit pkgs tvpLib autoconf;
+          inherit tvpLib autoconf;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = autoconf.stdenv;
+          };
         }
       ) { inherit pkgs; };
     };
@@ -76,7 +80,7 @@ let
           versions."2.73" = {
             deps = {
               m4 = tvp.variants.gcc13.m4_1_4_21;
-              perl = tvp.packages.perl_5_44_0;
+              perl = tvp.variants.gcc13.perl_5_44_0;
             };
           };
         };

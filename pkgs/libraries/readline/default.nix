@@ -43,11 +43,12 @@ let
       base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
+        automake = tvp.packages.automake_1_19;
       };
     };
 
-    "4.2a" = {
-      builder = ./build-4.2a.nix;
+    "4.3" = {
+      builder = ./build-4.3.nix;
       base = tvp.bases.default;
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
@@ -68,7 +69,7 @@ let
 
   pname = "readline";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -113,9 +114,25 @@ let
     };
   };
 
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."8.3" = {
+          deps = {
+            ncurses = tvp.variants.gcc13.ncurses_6_6;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname

@@ -1,14 +1,14 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  base = tvp.bases.gcc13-owned;
+  base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
     "1.19" = {
       builder = ./build-1.19.nix;
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2_73;
-        perl = base.components.perl;
+        perl = tvp.packages.perl_5_44_0;
       };
     };
   };

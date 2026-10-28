@@ -5,9 +5,7 @@ let
     "2.21" = {
       builder = ./build-2.21.nix;
       base = tvp.bases.default;
-      deps = {
-
-      };
+      deps = { };
     };
   };
   versionTable = tvpLib.packages.mkTable [
@@ -23,7 +21,15 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
@@ -32,8 +38,8 @@ let
     // {
       inherit pkgs;
       profiles = {
-        gcc13-owned = {
-          base = tvp.bases.gcc13-owned;
+        gcc13 = {
+          base = tvp.bases.gcc13;
           versions."2.21" = { };
         };
       };

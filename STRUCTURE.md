@@ -55,6 +55,10 @@ models, different version-population policies — without changing what TVP is.
 
 The model can *express* any patch version; it does not have to *package* every one.
 
+GNU archive recipes try the kernel.org GNU mirror and retain the original GNU server
+as a fallback. The release hashes are unchanged: transport fallback preserves the exact
+upstream artifacts and package outputs.
+
 ## Every level is an index
 
 Each `default.nix` names the level below it, explicitly:
@@ -355,19 +359,19 @@ Variants carry `tvp.canonical = false` and their profile name in `tvp.variant`.
 ```nix
 variants = tvpLib.packages.mkVariants (packageArgs // {
   inherit pkgs;
-  profiles.gcc13-owned = {
-    base = tvp.bases.gcc13-owned;
+  profiles.gcc13 = {
+    base = tvp.bases.gcc13;
     versions."3.8.2".deps = {
-      m4 = tvp.packages.m4_1_4_21;
-      perl = tvp.bases.gcc13-owned.components.perl;
+      m4 = tvp.variants.gcc13.m4_1_4_21;
+      perl = tvp.packages.perl_5_44_0;
     };
   };
 });
 ```
 
 ```sh
-nix build .#variants.gcc13-owned.bison_3_8_2 --no-link
-nix build .#testBatches.x86_64-linux.variant-gcc13-owned-bison_3_8_2 --no-link
+nix build .#variants.gcc13.bison_3_8_2 --no-link
+nix build .#testBatches.x86_64-linux.variant-gcc13-bison_3_8_2 --no-link
 ```
 
 Variant evaluation and test attachment are checked alongside canonical packages.
@@ -515,8 +519,9 @@ and runtime RPATH policy.
 
 `gcc13-owned` is the opt-in native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
 glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. Its
-`builtBy = "gcc13"` records the borrowed bootstrap parent. `default` continues to resolve
-to the existing `gcc13`; adding the owned base does not move existing definitions.
+`builtBy = "gcc13"` records the borrowed bootstrap parent. `default` resolves to
+`gcc13-owned`. Ordinary tools follow that alias; bootstrap toolchain definitions and
+compatibility requirements retain explicit base names.
 
 The assembler is `bases/gcc13-owned/default.nix`. It reuses the versioned package recipes,
 rebuilds their dependencies against the owned libc, and records each intermediate stage
@@ -578,29 +583,33 @@ helper or an unused RPATH cannot silently retain a bootstrap package.
 The component, consumer and gprofng checks are explicitly attached from
 `bases/gcc13-owned/tests/`; other owned bases do not inherit those requirements.
 
-`bases/gcc13-owned/tests/build-tools.nix` selects canonical owned tools and package-local
-named variants, then declares test-only binutils, three-stage GCC and glibc integration
+`bases/gcc13-owned/tests/build-tools.nix` selects canonical owned tools, then declares
+test-only binutils, three-stage GCC and glibc integration
 builds using those inputs. Its rebuild helper is confined to these test consumers.
 Reusable tool builds are defined in their package directories. Their suites and runtime
 ownership audit are part of the complete base validation batch; the graph remains
 exposed as `buildToolValidation` for inspection. Production dependencies never refer
 to that validation record.
 
-Canonical M4 1.4.21 and Autoconf 2.73 now use `gcc13-owned`. Their previous builds remain
-addressable as `variants.gcc13.m4_1_4_21` and `variants.gcc13.autoconf_2_73`. GMP and older
-tool definitions explicitly retain the bootstrap M4, keeping the compiler's construction
-independent of the base it produces. Base migrations are made one version at a time,
-with comparisons checking exactly which canonical derivations move.
+Canonical M4 1.4.21, Autoconf 2.73, pkg-config 0.29.2, Bison 3.8.2, Texinfo 7.1,
+which 2.21 and minimal Python 3.12.5 follow `default`. Their bootstrap builds are
+addressable under `variants.gcc13` with the same exact version names. Bootstrap GMP and
+Autoconf explicitly retain bootstrap M4; bootstrap ncurses and binutils retain bootstrap
+pkg-config. These dependencies keep construction independent of the base it
+produces. Base migrations compare exactly which canonical derivations move, including
+downstream consumers of a changed tool.
 
-The corresponding canonical packages are `bison_3_8_2`, `texinfo_7_1`, `which_2_21` and
-`python-minimal_3_12_5`. Their version declarations retain the existing default substrate;
-the explicitly rebuilt owned-base variants are noncanonical. Minimal Python is a build
-interpreter with a declared list of disabled third-party extension modules, not the full
-Python developer runtime. Its core standard library and C embedding API are tested.
+Ordinary tools select canonical Perl, Bash, ncurses and file as named dependencies;
+they do not depend on the base assembler's private build stages. The locale program
+comes from the selected base's libc tools, matching its ABI.
+Canonical tool suites bind their builder and compiler to each package's actual stdenv.
+The same test factories serve bootstrap variants without selecting the canonical base.
+Minimal Python is a build interpreter with a declared list of disabled third-party
+extension modules, not the full Python developer runtime. Its core standard library and
+C embedding API are tested.
 
 Automake 1.19, Libtool 2.6.2 and Flex 2.6.4 are new canonical packages built directly on
-`gcc13-owned`. They reference canonical owned M4/Autoconf and explicitly named Bison
-variants, with Perl supplied by the base;
+the default owned base. They reference canonical owned M4/Autoconf/Bison and Perl;
 they do not move the existing versions to another base. Automake provides a setup hook
 that adds declared packages' `share/aclocal` directories to `ACLOCAL_PATH`.
 
@@ -615,14 +624,27 @@ nix build .#automake_1_19 .#libtool_2_6_2 .#flex_2_6_4 --no-link
 nix build .#testBatches.x86_64-linux.base-gcc13-owned --no-link
 ```
 
-Runtime ownership does not remove the bootstrap dependency graph. The committed base's
-original assembly still starts with the pinned nixpkgs parent and its declared borrowed
-Bison, Texinfo, Python and which inputs. The additional validation graph proves their
-TVP replacements without moving that assembly. The M4/Autoconf migrations move only
-those selected canonical builds; their predecessors remain named bootstrap variants.
-These outputs can be selected when assembling a successor base. Fetching and evaluation
-infrastructure, including the remaining mkDerivation imports, also still use nixpkgs.
-An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
+The production bootstrap also selects TVP's tools: binutils uses bootstrap Bison,
+Texinfo and pkg-config; GCC uses bootstrap Texinfo and which; glibc uses bootstrap Bison
+and minimal Python. Those toolchain definitions explicitly name the borrowed `gcc13`
+parent rather than following the default alias. `bootstrap.buildTools` records the helpers
+actually selected by these production recipes. Their package suites and a check requiring
+package-owned bootstrap variants are included in the complete base batch.
+
+Bootstrap Texinfo binds its locale program to the parent base's glibc tools: using TVP's
+new libc there would create a Texinfo/GCC/glibc cycle. Canonical Texinfo binds to the
+owned libc tools. Runtime ownership does not remove these bootstrap dependencies: the
+initial compiler still needs the parent's libc, shell, compiler and floor. Fetching and
+evaluation infrastructure, including the remaining mkDerivation imports, also still use
+nixpkgs. An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
+The complete bootstrap generation, including Perl, Bash, compiler support libraries and
+floor tools, is declared as package-local `variants.gcc13` builds. The assembler selects
+that generation rather than following canonical packages through `default`.
+`checks.bootstrap-independent` verifies its parent, package bases and dependency edges.
+The switch preserves the bootstrap compiler, libraries and stages; the final linker
+wrapper also exports `nix-support/dynamic-linker` and `orig-libc` for consumers such as
+autoPatchelf. Rust declares patchelf explicitly and accepts either single-output or
+split-output compiler runtimes through `lib.getLib`.
 
 ## `lib/`
 
@@ -656,6 +678,65 @@ files exist to avoid — hidden one level up. Builders call `stdenv.mkDerivation
 |---|---|
 | `checks` | repo-wide invariants only — the package set evaluates, formatting is clean |
 | `testBatches` | one buildable handle per package's suite, so CI gets a work unit per job |
+
+`testBatches.<system>.all` also includes all base suites, named bootstrap variants and
+repository checks. Declared broken versions are excluded with their recorded reasons.
+It is separate from `checks`, so `nix flake check` remains a short invariant check.
+
+```sh
+nix build .#testBatches.x86_64-linux.all --keep-going --no-link
+```
+
+For a detached run with persistent progress and wall-clock timing:
+
+```sh
+nix run .#test -- start
+nix run .#test -- status
+nix run .#test -- status --json
+tail -f .tvp-tests/latest/nix.log
+nix run .#test -- wait
+nix run .#test -- stop
+```
+
+`start` materialises `testPlans.<system>` and launches one Nix build with `--keep-going`.
+Nix schedules and shares dependencies across the whole graph, using its configured
+resource settings. Optional `--jobs` and `--cores` override those settings. Valid cached results
+are reused; this does not force unchanged packages to rebuild.
+
+Each run under `.tvp-tests/runs/` contains its frozen source/derivation plan, declared
+exclusions, readable Nix log, filtered activity events and atomic JSON status. Debug
+cache-query traffic is discarded; full build logs remain available through `nix log`.
+Progress queries inspect each test's valid store outputs, so a suite passes as soon as
+all its tests pass, even if Nix has deferred its summary derivation. Reports include
+both suite totals and individual test/check totals. Activity events provide live build
+names and phases. The report distinguishes cached-at-start suites, passed suites and failed-or-blocked suites;
+elapsed time becomes the measured total on completion. It does not infer a reliable ETA
+from suite counts, because suite costs and shared prerequisites vary.
+Nix failure messages mark affected tests and suites failed-or-blocked during the run;
+unresolved work remains pending until Nix finishes. Valid successful outputs take
+precedence over error messages. Historical Nix failure diagnostics, including failures
+in shared prerequisites, remain available in JSON and `nix.log`.
+
+The runner and plan are garbage-collection roots, and completed suites are rooted as
+they finish. Later worktree edits do not change a run already in progress. The printed
+frozen-runner command can inspect the run without re-evaluating the current worktree.
+The current `status` command can also inspect older frozen plans and recover their test
+membership without changing the running build.
+For a repaired recipe, link its focused validation back to the original run:
+
+```sh
+nix run .#test -- start --state-dir .tvp-tests/retries \
+  --retry-of .tvp-tests/runs/ORIGINAL --only openssl_1_0_0
+```
+
+The original run's `status` and `wait` use the latest linked attempt for each
+retried suite. A successful retry replaces the old failure; an unfinished retry
+is pending. Unrelated runs never override results automatically. `status --json`
+retains attempt provenance and historical errors; `status --attempt-only` shows
+the selected frozen attempt without retry results. Original logs are preserved.
+`--run PATH` selects an earlier run; `--only NAME` on `start` selects an exact suite for
+a focused run. `wait` returns nonzero on failure or interruption. Removing an inactive
+run directory releases its roots. `.tvp-tests/` is ignored by Git.
 
 `checks` is deliberately small. Projecting thousands of test derivations into it would make
 `nix flake check` mean "realize the entire repository", which is not what a developer wants

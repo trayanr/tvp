@@ -13,6 +13,9 @@
   # Bootstrap C libraries must not retain the parent's libstdc++ via an unused
   # RPATH. The final compiler runtime is owned and is available to C consumers.
   cRuntime ? true,
+  # Final consumers such as autoPatchelf use this standard Nix interface.
+  # Bootstrap stages do not need it and keep their existing derivations.
+  supportMetadata ? false,
 }:
 assert platform.isNative;
 assert platform.buildPlatform.config == stdenv.buildPlatform.config;
@@ -55,6 +58,10 @@ let
         substitute ${./bintools-setup.sh} "$out/nix-support/setup-hook" \
           --subst-var out
       ''
+      + lib.optionalString supportMetadata ''
+        printf '%s\n' ${libc}/${platform.dynamicLinker} > "$out/nix-support/dynamic-linker"
+        printf '%s\n' ${libc} > "$out/nix-support/orig-libc"
+      ''
       + lib.optionalString wrapGprofng ''
         # The raw upstream HTML program uses /usr/bin/env perl. Bind its named
         # interpreter here, including calls dispatched by the gprofng frontend.
@@ -72,6 +79,7 @@ let
       bintools = binutils;
       targetPrefix = "";
       isGNU = true;
+      dynamicLinker = "${libc}/${platform.dynamicLinker}";
     };
   };
   cc = stdenv.mkDerivation {

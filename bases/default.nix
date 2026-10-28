@@ -82,7 +82,7 @@ let
       };
 
   aliases = {
-    default = canonical.gcc13;
+    default = canonical.gcc13-owned;
   };
 
   shadowed = lib.intersectLists (lib.attrNames canonical) (lib.attrNames aliases);

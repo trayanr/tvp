@@ -48,7 +48,15 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
@@ -57,11 +65,11 @@ let
     // {
       inherit pkgs;
       profiles = {
-        gcc13-owned = {
-          base = tvp.bases.gcc13-owned;
+        gcc13 = {
+          base = tvp.bases.gcc13;
           versions."3.12.5" = {
             deps = {
-              bash = tvp.bases.gcc13-owned.components.floor.bash;
+              bash = tvp.variants.gcc13.bash_5_2_37;
             };
           };
         };

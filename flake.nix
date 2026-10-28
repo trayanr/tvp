@@ -59,6 +59,19 @@
           program = "${tvp.tools.status}/bin/tvp-status";
         };
 
+        apps.test = {
+          type = "app";
+          program = "${tvp.tools.testRunner}/bin/tvp-test";
+        };
+
+        testPlans = tvp.lib.tests.mkPlan {
+          inherit pkgs;
+          batches = removeAttrs tvp.testBatches [ "all" ];
+          inherit (tvp) checks canonical;
+          source = self.outPath;
+          revision = self.rev or self.dirtyRev or null;
+        };
+
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;

@@ -15,7 +15,7 @@ let
     }
   ];
   pname = "linux-headers";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
       inherit (tvpLib) platforms;
@@ -23,8 +23,24 @@ let
     inherit pname versionTable;
     extraArgs.mkTests = headers: import ./tests { inherit pkgs tvpLib headers; };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."6.9" = {
+          deps = {
+            perl = tvp.variants.gcc13.perl_5_44_0;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

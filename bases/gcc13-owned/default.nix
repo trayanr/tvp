@@ -1,5 +1,5 @@
-# The borrowed gcc13 base is the bootstrap parent. No existing canonical graph
-# is moved. Intermediate stages are explicit so runtime ownership can be checked
+# The borrowed gcc13 base is the bootstrap parent. Intermediate stages are
+# explicit so runtime ownership can be checked
 # independently of the tools which performed the initial builds.
 {
   pkgs,
@@ -8,7 +8,8 @@
 }:
 let
   inherit (pkgs) lib;
-  p = tvp.packages;
+  # The seed generation must not follow canonical packages through `default`.
+  p = tvp.variants.gcc13;
   platform = tvp.lib.platforms.forStdenv builtBy.stdenv;
   mkStdenv = import ../stdenv {
     inherit lib platform;
@@ -21,7 +22,7 @@ let
     stage: package: args:
     (package.override args).overrideAttrs (old: {
       passthru = old.passthru // {
-        tvp = old.passthru.tvp // {
+        tvp = (removeAttrs old.passthru.tvp [ "variant" ]) // {
           base = stage;
           canonical = false;
         };
@@ -316,6 +317,7 @@ let
     bash = floor.bash;
     inherit perl;
     wrapGprofng = true;
+    supportMetadata = true;
   };
   stdenv = mkStdenv {
     name = "tvp-gcc13-owned-stdenv";
@@ -400,6 +402,14 @@ in
   };
   bootstrap = {
     parent = builtBy.name;
+    # Record the tools actually selected by production recipes, not a parallel
+    # list of tools which is only exercised by validation builds.
+    buildTools = {
+      inherit (binutils.tvp.deps) pkg-config;
+      inherit (gcc.tvp.deps) texinfo which;
+      inherit (libc.tvp.deps) bison;
+      python-minimal = libc.tvp.deps.python3Minimal;
+    };
     inherit
       libcStage
       shellStage

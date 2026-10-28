@@ -23,7 +23,10 @@ stdenv.mkDerivation (
     inherit version;
 
     src = fetchurl {
-      url = "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz";
+      urls = [
+        "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
+        "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
+      ];
       inherit sha256;
     };
 

@@ -46,7 +46,19 @@ stdenv.mkDerivation (
     # directory inside it.
     src = fetchurl {
       name = "sqlite-${version}.tar.gz";
-      url = "https://sqlite.org/src/tarball/sqlite-${version}.tar.gz?r=version-${version}";
+      urls = [
+        "https://sqlite.org/src/tarball/version-${version}/sqlite-${version}.tar.gz"
+        "https://www.sqlite.org/src/tarball/sqlite-${version}.tar.gz?r=version-${version}"
+        "https://sqlite.org/src/tarball/sqlite-${version}.tar.gz?r=version-${version}"
+      ];
+      # Fossil can return 503 under concurrent archive generation. Allow it
+      # time to recover rather than exhausting the default retries in seconds.
+      curlOptsList = [
+        "--retry"
+        "12"
+        "--retry-delay"
+        "5"
+      ];
       inherit sha256;
     };
 

@@ -6,7 +6,7 @@ let
       builder = ./build-3.8.2.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.variants.gcc13.m4_1_4_21;
+        m4 = tvp.packages.m4_1_4_21;
         perl = tvp.packages.perl_5_44_0;
       };
     };
@@ -24,7 +24,15 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
@@ -33,12 +41,12 @@ let
     // {
       inherit pkgs;
       profiles = {
-        gcc13-owned = {
-          base = tvp.bases.gcc13-owned;
+        gcc13 = {
+          base = tvp.bases.gcc13;
           versions."3.8.2" = {
             deps = {
-              m4 = tvp.packages.m4_1_4_21;
-              perl = tvp.bases.gcc13-owned.components.perl;
+              m4 = tvp.variants.gcc13.m4_1_4_21;
+              perl = tvp.variants.gcc13.perl_5_44_0;
             };
           };
         };

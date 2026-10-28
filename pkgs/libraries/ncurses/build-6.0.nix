@@ -24,7 +24,10 @@ stdenv.mkDerivation (finalAttrs: {
   inherit version;
 
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/ncurses/ncurses-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/ncurses/ncurses-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/ncurses/ncurses-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 

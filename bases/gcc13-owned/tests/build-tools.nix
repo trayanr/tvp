@@ -33,17 +33,30 @@ let
           };
         };
       });
-  owned = tvp.variants.gcc13-owned;
   inputs = {
     m4 = p.m4_1_4_21;
-    pkg-config = owned."pkg-config_0_29_2";
+    pkg-config = p."pkg-config_0_29_2";
     autoconf = p.autoconf_2_73;
   };
   packages = {
-    bison = owned.bison_3_8_2;
-    texinfo = owned.texinfo_7_1;
-    which = owned.which_2_21;
-    python-minimal = owned."python-minimal_3_12_5";
+    bison = p.bison_3_8_2;
+    texinfo = p.texinfo_7_1;
+    which = p.which_2_21;
+    python-minimal = p."python-minimal_3_12_5";
+  };
+  # Ordinary tools now select normal canonical dependencies, rather than
+  # reaching into this base's private assembly stages for Perl, Bash or file.
+  runtimeDependencies = {
+    inherit (p)
+      perl_5_44_0
+      bash_5_2_37
+      ncurses_6_6
+      file_5_45
+      zlib_1_3_2
+      xz_5_8_3
+      zstd_1_5_6
+      bzip2_1_0_8
+      ;
   };
   consumers = rec {
     binutils = buildConsumer p.binutils_2_42 {
@@ -85,6 +98,7 @@ in
   runtimePaths =
     lib.attrValues inputs
     ++ lib.attrValues packages
+    ++ lib.attrValues runtimeDependencies
     ++ lib.attrValues consumers
     ++ [ consumers.glibc.bin ];
 }

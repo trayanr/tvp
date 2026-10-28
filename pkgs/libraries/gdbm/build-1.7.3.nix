@@ -28,7 +28,10 @@ stdenv.mkDerivation (finalAttrs: {
   inherit version patches;
 
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 

@@ -1,7 +1,7 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  base = tvp.bases.gcc13-owned;
+  base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
     "2.6.2" = {
       builder = ./build-2.6.2.nix;
@@ -10,7 +10,7 @@ let
         autoconf = tvp.packages.autoconf_2_73;
         automake = tvp.packages.automake_1_19;
         m4 = tvp.packages.m4_1_4_21;
-        file = base.components.floor.file;
+        file = tvp.packages.file_5_45;
       };
       patches = [
         {

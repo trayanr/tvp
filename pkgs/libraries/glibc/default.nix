@@ -4,14 +4,14 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.39" = {
       builder = ./build-2.39.nix;
-      base = tvp.bases.default;
+      base = tvp.bases.gcc13;
       deps = {
-        gcc = tvp.packages.gcc_13_3_0;
-        binutils = tvp.packages.binutils_2_42;
-        linuxHeaders = tvp.packages."linux-headers_6_9";
-        perl = tvp.packages.perl_5_44_0;
-        # Build-time bootstrap inputs; neither is a runtime base input.
-        inherit (pkgs) bison python3Minimal;
+        gcc = tvp.variants.gcc13.gcc_13_3_0;
+        binutils = tvp.variants.gcc13.binutils_2_42;
+        linuxHeaders = tvp.variants.gcc13."linux-headers_6_9";
+        perl = tvp.variants.gcc13.perl_5_44_0;
+        bison = tvp.variants.gcc13.bison_3_8_2;
+        python3Minimal = tvp.variants.gcc13."python-minimal_3_12_5";
       };
       patches = [
         {
@@ -28,7 +28,7 @@ let
     }
   ];
   pname = "glibc";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
       inherit (tvpLib) platforms;
@@ -38,8 +38,29 @@ let
       { pkgs }: glibc: import ./tests { inherit pkgs tvpLib glibc; }
     ) { inherit pkgs; };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles.gcc13 = {
+        base = tvp.bases.gcc13;
+        versions."2.39" = {
+          deps = {
+            binutils = tvp.variants.gcc13.binutils_2_42;
+            bison = tvp.variants.gcc13.bison_3_8_2;
+            gcc = tvp.variants.gcc13.gcc_13_3_0;
+            linuxHeaders = tvp.variants.gcc13.linux-headers_6_9;
+            perl = tvp.variants.gcc13.perl_5_44_0;
+            python3Minimal = tvp.variants.gcc13.python-minimal_3_12_5;
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

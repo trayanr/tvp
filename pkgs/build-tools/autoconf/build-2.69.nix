@@ -20,7 +20,10 @@ stdenv.mkDerivation (finalAttrs: {
   # .tar.gz is the only format present across the whole line: .tar.bz2 covers
   # only 2.52-2.68 and .tar.xz starts at 2.64.
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/autoconf/autoconf-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/autoconf/autoconf-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/autoconf/autoconf-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 

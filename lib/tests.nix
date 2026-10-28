@@ -70,10 +70,80 @@ rec {
       name,
       suite,
     }:
-    pkgs.linkFarm "tvp-tests-${name}" (
+    (pkgs.linkFarm "tvp-tests-${name}" (
       lib.mapAttrsToList (name: drv: {
         inherit name;
         path = drv;
       }) suite
+    )).overrideAttrs
+      (old: {
+        passthru = (old.passthru or { }) // {
+          testSuite = suite;
+        };
+      });
+
+  suiteJobs =
+    { batches, checks }:
+    let
+      checkJobs = lib.mapAttrs' (name: drv: lib.nameValuePair "check-${name}" drv) checks;
+      duplicates = lib.intersectLists (lib.attrNames batches) (lib.attrNames checkJobs);
+    in
+    if duplicates != [ ] then
+      throw "TVP: full-suite job names collide: ${lib.concatStringsSep ", " duplicates}"
+    else
+      batches // checkJobs;
+
+  mkAll =
+    {
+      pkgs,
+      batches,
+      checks,
+    }:
+    mkBatch {
+      inherit pkgs;
+      name = "all";
+      suite = suiteJobs { inherit batches checks; };
+    };
+
+  # Reference derivations without demanding their outputs. Rooting this plan
+  # protects the frozen build graph without building the catalogue first.
+  mkPlan =
+    {
+      pkgs,
+      batches,
+      checks,
+      canonical,
+      source,
+      revision ? null,
+    }:
+    let
+      jobs = suiteJobs { inherit batches checks; };
+      broken = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") == "broken") canonical;
+    in
+    pkgs.writeText "tvp-test-plan.json" (
+      builtins.toJSON {
+        schema = 1;
+        inherit revision;
+        source = builtins.path {
+          path = source;
+          name = "tvp-test-source";
+        };
+        system = pkgs.stdenv.hostPlatform.system;
+        aggregate = builtins.unsafeDiscardOutputDependency (mkAll { inherit pkgs batches checks; }).drvPath;
+        jobs = lib.mapAttrsToList (name: drv: {
+          inherit name;
+          drv = builtins.unsafeDiscardOutputDependency drv.drvPath;
+          outputs = map (output: builtins.unsafeDiscardStringContext drv.${output}.outPath) drv.outputs;
+          tests = lib.mapAttrsToList (testName: test: {
+            name = testName;
+            drv = builtins.unsafeDiscardOutputDependency test.drvPath;
+            outputs = map (output: builtins.unsafeDiscardStringContext test.${output}.outPath) test.outputs;
+          }) (drv.testSuite or { });
+        }) jobs;
+        skipped = lib.mapAttrsToList (name: p: {
+          inherit name;
+          inherit (p.tvp.status) reason;
+        }) broken;
+      }
     );
 }

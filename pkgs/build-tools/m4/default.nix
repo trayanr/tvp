@@ -10,7 +10,7 @@ let
     };
     "1.4.21" = {
       builder = ./build-1.4.17.nix;
-      base = tvp.bases.gcc13-owned;
+      base = tvp.bases.default;
       deps = { };
     };
   };
@@ -27,9 +27,17 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests = pkgs.lib.makeOverridable ({ pkgs }: m4: import ./tests { inherit pkgs tvpLib m4; }) {
-        inherit pkgs;
-      };
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        m4:
+        import ./tests {
+          inherit tvpLib m4;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = m4.stdenv;
+          };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

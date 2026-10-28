@@ -1,4 +1,4 @@
-# Serves 8.0 onwards.
+# Serves 4.3 onwards.
 {
   lib,
   stdenv,
@@ -17,7 +17,10 @@ stdenv.mkDerivation (finalAttrs: {
   inherit version;
 
   src = fetchurl {
-    url = "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz";
+    urls = [
+      "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
+      "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
+    ];
     inherit sha256;
   };
 

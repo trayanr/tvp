@@ -5,6 +5,7 @@
   stdenv,
   fetchurl,
   autoPatchelfHook,
+  patchelf,
   zlib,
 
   version,
@@ -33,9 +34,12 @@ stdenv.mkDerivation (finalAttrs: {
     inherit sha256;
   };
 
-  nativeBuildInputs = [ autoPatchelfHook ];
+  nativeBuildInputs = [
+    autoPatchelfHook
+    patchelf
+  ];
   buildInputs = [
-    stdenv.cc.cc.lib
+    (lib.getLib stdenv.cc.cc)
     zlib
   ];
 
