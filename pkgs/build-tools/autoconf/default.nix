@@ -3,8 +3,36 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
-    "2.69" = {
-      builder = ./build-2.69.nix;
+    "2.10" = {
+      builder = ./build-2.10.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.modernInit = false;
+      opts.license = pkgs.lib.licenses.gpl2Plus;
+    };
+    "2.50" = {
+      builder = ./build-2.10.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.license = pkgs.lib.licenses.gpl2Plus;
+    };
+    "2.53" = {
+      builder = ./build-2.10.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_24_4;
+      };
+      opts.license = pkgs.lib.licenses.gpl2Plus;
+    };
+    "2.65" = {
+      builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
         m4 = tvp.packages.m4_1_4_21;
@@ -12,7 +40,7 @@ let
       };
     };
     "2.73" = {
-      builder = ./build-2.69.nix;
+      builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
         m4 = tvp.packages.m4_1_4_21;

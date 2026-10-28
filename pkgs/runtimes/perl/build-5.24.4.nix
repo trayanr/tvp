@@ -1,4 +1,4 @@
-# Serves up to 5.28.
+# Serves 5.24.4 through 5.28.3.
 #
 # Errno_pm.PL dies outright when no errno.h is found under the FHS include
 # paths. 5.30 hoisted that probe and falls through to the preprocessor instead.

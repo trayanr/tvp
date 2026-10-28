@@ -3,8 +3,13 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
+    "5.24.4" = {
+      builder = ./build-5.24.4.nix;
+      base = tvp.bases.gcc9;
+      deps.coreutils = tvp.packages.coreutils_9_5;
+    };
     "5.28.3" = {
-      builder = ./build-5.28.nix;
+      builder = ./build-5.24.4.nix;
       # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
       # struct-return patch this builder would otherwise apply is unnecessary.
       base = tvp.bases.gcc9;
@@ -40,11 +45,17 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         perl:
         import ./tests {
-          inherit pkgs tvpLib perl;
-        };
+          inherit tvpLib perl;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = perl.stdenv;
+          };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

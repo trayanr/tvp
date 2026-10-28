@@ -1,3 +1,4 @@
+# Since 1.6, configure accepts tool bindings as VAR=value arguments.
 {
   lib,
   stdenv,
@@ -6,13 +7,16 @@
   perl,
   version,
   sha256,
+  archiveExt ? "tar.xz",
+  installAclocalDir ? false,
+  headerMacro ? "AC_CONFIG_HEADERS",
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "automake";
   inherit version;
   src = fetchurl {
-    url = "https://mirrors.kernel.org/gnu/automake/automake-${version}.tar.xz";
+    url = "https://mirrors.kernel.org/gnu/automake/automake-${version}.${archiveExt}";
     inherit sha256;
   };
   nativeBuildInputs = [
@@ -29,10 +33,14 @@ stdenv.mkDerivation (finalAttrs: {
     "AUTOUPDATE=${autoconf}/bin/autoupdate"
   ];
   enableParallelBuilding = true;
-  postInstall = ''
-    mkdir -p "$out/nix-support"
-    cp ${./setup-hook.sh} "$out/nix-support/setup-hook"
-  '';
+  postInstall =
+    ''
+      mkdir -p "$out/nix-support"
+      cp ${./setup-hook.sh} "$out/nix-support/setup-hook"
+    ''
+    + lib.optionalString installAclocalDir ''
+      mkdir -p "$out/share/aclocal"
+    '';
   meta = {
     description = "GNU Makefile generator and aclocal macro collector";
     homepage = "https://www.gnu.org/software/automake/";
@@ -45,6 +53,7 @@ stdenv.mkDerivation (finalAttrs: {
       inherit autoconf perl;
     };
     tvp.cc = stdenv.cc;
+    tvp.headerMacro = headerMacro;
     tests = mkTests finalAttrs.finalPackage;
   };
 })

@@ -1,6 +1,10 @@
 { defs }:
 [
   {
+    def = defs."5.24.4";
+    releases."5.24.4" = "sha256-vy893bEBVNgzzbQVqT8WcrbYWZ6HkTtmwIXDMss2GXA=";
+  }
+  {
     def = defs."5.28.3";
     releases = {
       "5.28.3" = "sha256-r8nB1mFZeuFNnog8UHEJK+1z9gwxCbKUgj6gGspwURQ=";

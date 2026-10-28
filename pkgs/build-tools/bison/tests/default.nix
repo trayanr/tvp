@@ -7,7 +7,7 @@ tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests = {
     version = {
-      script = ''bison --version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' '';
+      script = ''bison --version | head -1 | awk '{print $NF}' '';
       expected = package.version;
     };
     parser = {

@@ -1,4 +1,4 @@
-# Serves 2.69 onwards.
+# Serves 2.10 onwards.
 {
   lib,
   stdenv,
@@ -9,6 +9,8 @@
 
   version,
   sha256,
+  modernInit ? true,
+  license ? lib.licenses.gpl3Plus,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -37,7 +39,7 @@ stdenv.mkDerivation (finalAttrs: {
   meta = {
     description = "Tool for producing configure scripts for building software";
     homepage = "https://www.gnu.org/software/autoconf/";
-    license = lib.licenses.gpl3Plus;
+    inherit license;
     platforms = lib.platforms.unix;
     mainProgram = "autoconf";
   };
@@ -47,6 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.deps = {
       inherit m4 perl;
     };
+    tvp.features.modernInit = modernInit;
 
     tests = mkTests finalAttrs.finalPackage;
   };

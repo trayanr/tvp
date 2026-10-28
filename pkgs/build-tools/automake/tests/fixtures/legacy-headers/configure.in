@@ -1,0 +1,6 @@
+AC_INIT([main.c])
+AM_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE([tvp-automake], [1.0])
+AC_PROG_CC
+AC_DEFINE([TVP_ANSWER], [42], [Answer compiled through autoheader])
+AC_OUTPUT([Makefile])
