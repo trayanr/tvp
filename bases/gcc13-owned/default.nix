@@ -330,6 +330,13 @@ let
       libc = finalLibc;
     };
   };
+  buildToolValidation = import ./build-tools.nix {
+    inherit pkgs tvp stdenv;
+    components = {
+      inherit perl floor libraries;
+      libc = finalLibc;
+    };
+  };
 in
 (tvp.lib.bases.mkBase {
   name = "gcc13-owned";
@@ -359,6 +366,7 @@ in
   };
   consumerTests = consumerValidation.tests;
   consumerPackages = consumerValidation.packages;
+  inherit buildToolValidation;
   ownership = {
     roots = [
       stdenv

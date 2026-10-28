@@ -17,7 +17,8 @@ let
         zstd = tvp.packages.zstd_1_5_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
         perl = tvp.packages.perl_5_44_0;
-        # The initial compiler is built against the declared bootstrap libc.
+        # Original bootstrap pins. Owned helper replacements are selected by
+        # the separate validation graph, preserving this canonical build.
         inherit (pkgs) glibc texinfo which;
       };
       patches = [
@@ -48,7 +49,9 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = gcc: import ./tests { inherit pkgs tvpLib gcc; };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }: gcc: import ./tests { inherit pkgs tvpLib gcc; }
+    ) { inherit pkgs; };
   };
 in
 {

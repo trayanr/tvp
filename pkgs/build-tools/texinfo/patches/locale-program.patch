@@ -1,0 +1,11 @@
+--- a/tp/Texinfo/Translations.pm
++++ b/tp/Texinfo/Translations.pm
+@@ -82,7 +82,7 @@
+   # try the output of 'locale -a' (but only once)
+   our $locale_command;
+   if (!$locale and !$locale_command) {
+-    $locale_command = "locale -a";
++    $locale_command = "@TVP_LOCALE@ -a";
+     my @local_command_locales = split("\n", `$locale_command`);
+     if ($? == 0) {
+       foreach my $try (@local_command_locales) {

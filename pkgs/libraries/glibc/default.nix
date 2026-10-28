@@ -33,7 +33,9 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = glibc: import ./tests { inherit pkgs tvpLib glibc; };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }: glibc: import ./tests { inherit pkgs tvpLib glibc; }
+    ) { inherit pkgs; };
   };
 in
 {

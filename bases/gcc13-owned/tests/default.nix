@@ -6,6 +6,22 @@
   base,
 }:
 {
+  build-tools = tvpLib.tests.mkBatch {
+    inherit pkgs;
+    name = "base-${base.name}-build-tools";
+    suite = base.buildToolValidation.tests;
+  };
+  build-tool-consumers = tvpLib.tests.mkBatch {
+    inherit pkgs;
+    name = "base-${base.name}-build-tool-consumers";
+    suite = base.buildToolValidation.consumerTests;
+  };
+  build-tool-runtime-ownership = tvpLib.bases.mkOwnershipTest {
+    inherit pkgs base;
+    name = "build-tool-runtime-ownership";
+    roots = base.buildToolValidation.runtimePaths;
+    allowedRuntimePaths = base.ownership.allowedRuntimePaths ++ base.buildToolValidation.runtimePaths;
+  };
   gprofng = tvpLib.bases.mkBaseTest {
     inherit base;
     name = "gprofng";

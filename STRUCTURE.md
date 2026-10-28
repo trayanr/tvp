@@ -517,11 +517,26 @@ helper or an unused RPATH cannot silently retain a bootstrap package.
 The component, consumer and gprofng checks are explicitly attached from
 `bases/gcc13-owned/tests/`; other owned bases do not inherit those requirements.
 
-Runtime ownership does not remove the bootstrap dependency graph. The pinned nixpkgs
-parent still starts the chain, and bison, texinfo, Python and which remain explicitly
-borrowed build tools. Fetching and evaluation infrastructure, including the remaining
-mkDerivation imports, also still use nixpkgs. Removing those roots is separate work; an
-owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
+`bases/gcc13-owned/build-tools.nix` adds an explicit build-tool validation graph alongside
+that completed base. It rebuilds Bison 3.8.2, Texinfo 7.1, which 2.21 and minimal CPython
+3.12.5 on the owned stdenv, together with owned M4 and pkg-config inputs. These helpers
+are then selected in real binutils, three-stage GCC and glibc integration builds. Their
+package suites and runtime ownership audit are part of the complete base validation
+batch; the graph is exposed as `buildToolValidation` for inspection.
+
+The corresponding canonical packages are `bison_3_8_2`, `texinfo_7_1`, `which_2_21` and
+`python-minimal_3_12_5`. Their version declarations retain the existing default substrate;
+the explicitly rebuilt owned-base variants are noncanonical. Minimal Python is a build
+interpreter with a declared list of disabled third-party extension modules, not the full
+Python developer runtime. Its core standard library and C embedding API are tested.
+
+Runtime ownership does not remove the bootstrap dependency graph. The committed base's
+original assembly still starts with the pinned nixpkgs parent and its declared borrowed
+Bison, Texinfo, Python and which inputs. The additional validation graph proves their
+TVP replacements without moving that assembly or existing canonical package graphs.
+These outputs can be selected when assembling a successor base. Fetching and evaluation
+infrastructure, including the remaining mkDerivation imports, also still use nixpkgs.
+An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
 
 ## `lib/`
 

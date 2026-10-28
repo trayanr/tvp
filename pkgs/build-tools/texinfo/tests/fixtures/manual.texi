@@ -1,0 +1,7 @@
+\input texinfo
+@setfilename manual.info
+@settitle TVP build tools
+@node Top
+@top TVP build tools
+TVP preserves build tools.
+@bye

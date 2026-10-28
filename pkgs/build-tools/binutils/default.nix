@@ -10,7 +10,8 @@ let
         zstd = tvp.packages.zstd_1_5_6;
         perl = tvp.packages.perl_5_44_0;
         pkg-config = tvp.packages."pkg-config_0_29_2";
-        # Bootstrap tools still borrowed explicitly until TVP packages them.
+        # Original bootstrap pins; the owned-base validation graph selects TVP
+        # replacements without moving this canonical build.
         inherit (pkgs) bison texinfo;
       };
     };
@@ -27,7 +28,9 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = binutils: import ./tests { inherit pkgs tvpLib binutils; };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }: binutils: import ./tests { inherit pkgs tvpLib binutils; }
+    ) { inherit pkgs; };
     packageMeta.upstream = {
       type = "directory-index";
       url = "https://mirrors.kernel.org/gnu/binutils/";
