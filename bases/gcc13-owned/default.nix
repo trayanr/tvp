@@ -14,7 +14,6 @@ let
   mkStdenv = import ../stdenv {
     inherit lib platform;
     inherit (pkgs) config;
-    nixpkgsPath = pkgs.path;
   };
   wrap = args: import ../wrappers ({ inherit platform; } // args);
   # Reusing a versioned recipe must not keep its parent's base metadata.

@@ -16,7 +16,6 @@ let
         final:
         (import ./stdenv/make-derivation.nix {
           inherit (pkgs) lib config;
-          nixpkgsPath = pkgs.path;
         } final).mkDerivation;
     };
 

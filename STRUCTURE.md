@@ -635,8 +635,12 @@ Bootstrap Texinfo binds its locale program to the parent base's glibc tools: usi
 new libc there would create a Texinfo/GCC/glibc cycle. Canonical Texinfo binds to the
 owned libc tools. Runtime ownership does not remove these bootstrap dependencies: the
 initial compiler still needs the parent's libc, shell, compiler and floor. Fetching and
-evaluation infrastructure, including the remaining mkDerivation imports, also still use
-nixpkgs. An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
+generic evaluation infrastructure still use nixpkgs. The derivation constructor's
+CMake/Meson flag helpers, metadata validation and conditional hooks are local files
+under `bases/stdenv/`, copied from the same pinned revision as the build protocol.
+Constructing the owned stdenv requires no nixpkgs source path. These import moves are
+verified to preserve canonical, variant, base, bootstrap and consumer derivations.
+An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
 The complete bootstrap generation, including Perl, Bash, compiler support libraries and
 floor tools, is declared as package-local `variants.gcc13` builds. The assembler selects
 that generation rather than following canonical packages through `default`.

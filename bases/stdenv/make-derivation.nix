@@ -1,32 +1,16 @@
-# nixpkgs' mkDerivation, vendored verbatim, so that the code path that computes
-# every TVP derivation belongs to TVP rather than to a pinned input.
+# TVP derivation constructor, vendored from nixpkgs
+# 12228ff1752d7b7624a54e9c1af4b222b3c1073b under COPYING.
 #
-# Vendored from nixpkgs 12228ff1752d7b7624a54e9c1af4b222b3c1073b,
-# pkgs/stdenv/generic/make-derivation.nix. Reached through the stdenv's own
-# `mkDerivationFromStdenv` argument, which exists for exactly this.
+# CMake/Meson flag helpers, metadata validation and conditional hooks are local
+# copies from that same revision. The generic Nix library and config remain
+# explicit arguments; constructing a derivation needs no nixpkgs source path.
 #
-# DELIBERATELY BYTE-IDENTICAL IN EFFECT. The only edits are the four imports
-# repointed at `nixpkgsPath`, none of which reach a derivation: cmake.nix and
-# meson.nix are no-ops off cross, check-meta.nix only asserts, and the two setup
-# hooks are behind `optional` predicates no TVP package satisfies. Everything
-# this file computes is unchanged, and `checks.vendored-mkderivation-neutral`
-# holds it there.
-#
-# `./default-builder.sh` stays relative and therefore resolves to TVP's copy.
-# That is not a difference: Nix names a path in the store by its content and
-# filename, so an identical copy is the identical store path.
-#
-# Formatted with the repo's nixfmt like everything else, which is safe here:
-# reformatting it was verified to leave all 390 drvPaths unchanged. Re-vendoring
-# a later nixpkgs means diffing the two upstream files against each other, so
-# TVP's copy carrying TVP's formatting costs nothing.
-#
-# Trimming what TVP does not use is a separate, deliberate, cache-invalidating
-# step, and not this file's job today.
+# Keep changes to the build protocol deliberate. Structural moves must preserve
+# derivation and output paths; checks.vendored-mkderivation-neutral also compares
+# the borrowed base to its original upstream constructor.
 {
   lib,
   config,
-  nixpkgsPath,
 }:
 
 stdenv:
@@ -68,10 +52,10 @@ let
     unique
     ;
 
-  inherit (import "${nixpkgsPath}/pkgs/build-support/lib/cmake.nix" { inherit lib stdenv; })
+  inherit (import ./helpers/cmake.nix { inherit lib stdenv; })
     makeCMakeFlags
     ;
-  inherit (import "${nixpkgsPath}/pkgs/build-support/lib/meson.nix" { inherit lib stdenv; })
+  inherit (import ./helpers/meson.nix { inherit lib stdenv; })
     makeMesonFlags
     ;
 
@@ -82,7 +66,7 @@ let
     else
       makeDerivationExtensibleConst fnOrAttrs;
 
-  checkMeta = import "${nixpkgsPath}/pkgs/stdenv/generic/check-meta.nix" {
+  checkMeta = import ./helpers/check-meta.nix {
     inherit lib config;
     # Nix itself uses the `system` field of a derivation to decide where
     # to build it. This is a bit confusing for cross compilation.
@@ -377,8 +361,8 @@ let
           buildInputs ++ optionals doCheck checkInputs ++ optionals doInstallCheck installCheckInputs;
         nativeBuildInputs' =
           nativeBuildInputs
-          ++ optional separateDebugInfo' "${nixpkgsPath}/pkgs/build-support/setup-hooks/separate-debug-info.sh"
-          ++ optional stdenv.hostPlatform.isWindows "${nixpkgsPath}/pkgs/build-support/setup-hooks/win-dll-link.sh"
+          ++ optional separateDebugInfo' ./hooks/separate-debug-info.sh
+          ++ optional stdenv.hostPlatform.isWindows ./hooks/win-dll-link.sh
           ++ optionals doCheck nativeCheckInputs
           ++ optionals doInstallCheck nativeInstallCheckInputs;
 

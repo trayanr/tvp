@@ -1,10 +1,9 @@
 # Native Linux constructor. setup.sh, builder.sh and hooks are vendored from
-# nixpkgs 12228ff1752d7b7624a54e9c1af4b222b3c1073b under COPYING. Existing
-# borrowed bases keep their original setup; this constructor is opt-in.
+# nixpkgs 12228ff1752d7b7624a54e9c1af4b222b3c1073b under COPYING. Borrowed
+# compatibility bases keep their original setup; the owned default uses this constructor.
 {
   lib,
   config,
-  nixpkgsPath,
   platform,
 }:
 lib.makeOverridable (
@@ -80,7 +79,7 @@ lib.makeOverridable (
         shellDryRun = "${shell} -n -O extglob";
         mkDerivation =
           (import ./make-derivation.nix {
-            inherit lib config nixpkgsPath;
+            inherit lib config;
           } stdenv).mkDerivation;
       };
   in
