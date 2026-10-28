@@ -1,0 +1,23 @@
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
+@@ -3072,7 +3072,10 @@
+ static char*
+ find_a_program (const char *name)
+ {
+-  /* Do not search if default matches query. */
++  /* Explicit program prefixes precede the configure-time fallback. */
++  char *program = find_a_file (&exec_prefixes, name, X_OK, false);
++  if (program)
++    return program;
+ 
+ #ifdef DEFAULT_ASSEMBLER
+   if (! strcmp (name, "as") && access (DEFAULT_ASSEMBLER, X_OK) == 0)
+@@ -3089,7 +3092,7 @@
+     return xstrdup (DEFAULT_DSYMUTIL);
+ #endif
+ 
+-  return find_a_file (&exec_prefixes, name, X_OK, false);
++  return NULL;
+ }
+ 
+ /* Ranking of prefixes in the sort list. -B prefixes are put before

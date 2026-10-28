@@ -80,11 +80,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         openssl:
         import ./tests {
           inherit pkgs tvpLib openssl;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

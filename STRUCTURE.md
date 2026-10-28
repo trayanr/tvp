@@ -7,12 +7,15 @@ How TVP is laid out and why, so a change lands where the next person expects to 
 ```
 bases/                        the ground packages are built on; `tvp.bases`
 ├── default.nix               named bases; canonical names immutable, aliases move
-├── stdenv/                   TVP's vendored mkDerivation
-└── tests/                    one shared suite, instantiated per base
+├── stdenv/                   vendored build protocol and native constructor
+├── wrappers/                 native compiler and linker wrappers
+├── gcc13-owned/              explicit bootstrap stages and consumer graphs
+│   └── tests/                checks explicitly attached by this base
+└── tests/                    shared behavior and generic ownership checks
 
 lib/                          shared evaluation logic; the flake's `lib` output
 ├── versions.nix              version parsing, predicates, attribute naming
-├── bases.nix                 mkBase and its assertions, mkBaseSuite
+├── bases.nix                 mkBase, base tests and runtime ownership audits
 ├── packages.nix              version table → package set, merging, generated aliases
 └── tests.nix                 mkTest / mkSuite / mkBatch
 
@@ -373,6 +376,12 @@ fails where an old builder is missing something. Fork the tests and that stops w
 - **Tests are attached centrally**, via a required `mkTests` builder argument supplied by
   `default.nix`. A forked builder that drops the argument fails to evaluate, so test
   coverage cannot be silently lost in a copy.
+- **Packages own their test wiring.** A package can make its `mkTests` factory
+  overridable with `lib.makeOverridable ({ pkgs }: package: …) { inherit pkgs; }`.
+  `mkVersions` exposes that factory as `package.mkTests`, outside serializable TVP
+  metadata. A port supplies `mkTests = package.mkTests.override { pkgs = testPkgs; };`
+  alongside its new stdenv and dependencies; it does not import package test files
+  from the base assembler.
 - **Tests assert, they do not merely exit 0.** `cmd > $out` passes for anything that exits
   cleanly with no output. `mkTest` requires an `expected` value.
 - **Every declared dependency gets a test proving it is genuinely linked.** An untested
@@ -418,14 +427,15 @@ letting `callPackage` fill it from nixpkgs.
   floor (`sed`, `grep`, `make`, `tar`, …) runs during the build and vanishes, so it merely
   has to work. A base is not a collection of era-blessed package versions.
 - **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can carry what a
-  toolchain pin cannot express — beginning with `builtBy`, since old compilers cannot be
-  built by new ones and a base's chain is part of its identity.
+  toolchain pin cannot express — beginning with `builtBy`, because the bootstrap parent
+  and a base's chain are part of its identity.
 - **Canonical base names are immutable; aliases move**, and the name is *asserted*. A base
   is named for its compiler (`gcc13`, `gcc9`), and `mkBase` fails to evaluate if the stdenv
   carries a different one — so a nixpkgs bump cannot silently redefine a base name.
-- **The name is a handle; the assertion is the pin.** The claim is the *exact* compiler
-  (`13.3.0`), so 13.3 → 13.4 fails to evaluate, while definitions keep naming the short
-  handle. The unit is gcc's release series — `X.Y` below 5.0 and `X` above it, which is why
+- **The name is a handle; the assertions are the pins.** Claims name the *exact* compiler,
+  binutils and glibc versions (`13.3.0`, `2.42`, `2.39`). Changing any of them fails to
+  evaluate, while definitions keep naming the short handle. The unit is gcc's release
+  series — `X.Y` below 5.0 and `X` above it, which is why
   `gcc49` is the 4.9 series and not "gcc 4".
 - **`default` says "no opinion"; a canonical name says a build forced the choice.** Both are
   written out — omitting `base` still throws. Naming a canonical base everywhere would make
@@ -434,11 +444,17 @@ letting `callPackage` fill it from nixpkgs.
 - **Bases are populated on demand**, never one per compiler release in advance. A base pin
   therefore means *"this worked and something newer did not"*, not "the latest that works".
 - **`builtBy` is required**, naming the base that compiled this one. Old compilers cannot be
-  built by new ones, so bases form a chain. `null` means nixpkgs bootstrapped it.
+  assumed to build with every host toolchain, so bootstrap edges are explicit rather than
+  inferred from compiler version ordering. `null` means nixpkgs bootstrapped it.
 - **Bases follow the package patterns**: `mkBase` in `lib/bases.nix` beside `mkVersions`,
   one shared suite in `bases/tests/` instantiated per base, and `checks.every-base-tested`
   mirroring `every-package-tested`. A base test is built by that base's own stdenv, or it
   would test the default substrate whichever base it claimed to cover.
+- **Ownership declares only an ownership audit.** A base's `ownership` record supplies
+  `roots` and `allowedRuntimePaths`; it implies no particular compiler, optional tool,
+  component layout or consumer suite. Additional checks are attached explicitly through
+  `mkExtraTests = base: …`. The runner merges shared, ownership and extra checks with
+  duplicate-name rejection so an extra test cannot replace a shared assertion.
 - **Every definition declares `base`** — there is no per-package default. A definition that
   silently landed on the wrong ground would be invisible; a missing one fails to evaluate.
 - **`base = null` declares a definition is not on a base at all**, because its builder
@@ -451,6 +467,61 @@ changes. That is dependencies working correctly, and the blast radius is one bas
 than the repo — the same containment `build-VERSION.nix` gives a build procedure. It is
 also why there is still no `mkTvpDerivation`: a customised `mkDerivation` inside a named,
 versioned base is scoped and forkable; a single global wrapper is not.
+
+The current bootstrap boundary is explicit: `builtBy = null` bases still borrow their
+compiler, binutils, glibc, wrappers, floor tools and setup script from the pinned nixpkgs
+input. A TVP package built on one of them owns its recipe and named dependencies, not
+that substrate. In particular, packaged raw binutils are not a replacement for the
+bintools wrapper: the wrapper supplies library search paths, the dynamic interpreter
+and runtime RPATH policy.
+
+`gcc13-owned` is the opt-in native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
+glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. Its
+`builtBy = "gcc13"` records the borrowed bootstrap parent. `default` continues to resolve
+to the existing `gcc13`; adding the owned base does not move existing definitions.
+
+The assembler is `bases/gcc13-owned/default.nix`. It reuses the versioned package recipes,
+rebuilds their dependencies against the owned libc, and records each intermediate stage
+in `bootstrap`. C-only bootstrap variants break the C++ runtime and shell cycles; the
+final libraries and binutils restore the C++ bindings and gprofng. GCC retains its
+three-stage bootstrap comparison. glibc starts from the upstream release, with declared
+store-layout adaptations and no stable-branch fixes. Its libraries and tools are separate
+outputs so the tools' scripts can use the resulting Bash and Perl without a libc/shell
+dependency cycle. The rebinding procedure lives beside the glibc recipe in `tools.nix`;
+the assembler calls `libc.mkTools { stdenv = floorStage; bash = floor.bash; inherit perl; }`.
+
+The native wrappers live in `bases/wrappers/`. The new constructor, setup script and
+default hooks live in `bases/stdenv/`; vendored protocol files retain their source revision
+and license. The wrappers supply headers, startup objects, linker flags, interpreter,
+RPATHs and hardening. Package setup hooks still belong to their packages.
+The final bintools wrapper also binds gprofng's HTML program to its declared Perl,
+including calls dispatched through the gprofng frontend; Perl is not added to the floor.
+
+A definition opts in with `base = tvp.bases.gcc13-owned`. When porting a package, its
+dependency graph must be ported too: changing only its compiler can leave libraries on
+the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
+libraries. The raw packages in the canonical catalogue retain their declared bootstrap
+base; the assembler's rebuilt variants are explicitly marked noncanonical.
+
+Run the complete base validation with:
+
+```sh
+nix build .#testBatches.x86_64-linux.base-gcc13-owned --no-link
+```
+
+That batch includes the shared base suite, the assembled packages' suites, and zlib,
+OpenSSL, libxml2, Tcl, SQLite and PHP consumer builds. The PHP suite also builds and loads
+a module through `phpize` using the owned compiler. Runtime ownership checks compare the
+base and consumer closures against exact lists of owned store outputs, so an installed
+helper or an unused RPATH cannot silently retain a bootstrap package.
+The component, consumer and gprofng checks are explicitly attached from
+`bases/gcc13-owned/tests/`; other owned bases do not inherit those requirements.
+
+Runtime ownership does not remove the bootstrap dependency graph. The pinned nixpkgs
+parent still starts the chain, and bison, texinfo, Python and which remain explicitly
+borrowed build tools. Fetching and evaluation infrastructure, including the remaining
+mkDerivation imports, also still use nixpkgs. Removing those roots is separate work; an
+owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
 
 ## `lib/`
 

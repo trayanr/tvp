@@ -5,6 +5,8 @@ rec {
     {
       name,
       cc,
+      binutils,
+      libc,
       stdenv,
       floor,
       # Required: which base compiled this one. null means nixpkgs bootstrapped it.
@@ -14,10 +16,16 @@ rec {
       # Exact, never a prefix: 13.3 -> 13.4 under one name would redefine what
       # every definition on that base meant.
       actualCC = stdenv.cc.version;
+      actualBinutils = stdenv.cc.bintools.version;
+      actualLibc = stdenv.cc.libc.version;
       actualFloor = map (p: p.pname or (builtins.parseDrvName p.name).name) stdenv.initialPath;
     in
     if actualCC != cc then
       throw "TVP: base '${name}' claims gcc ${cc} but its stdenv carries ${stdenv.cc.version}. Add a base for ${actualCC}; do not redefine '${name}'."
+    else if actualBinutils != binutils then
+      throw "TVP: base '${name}' claims binutils ${binutils} but its stdenv carries ${actualBinutils}. Add a new base; do not redefine '${name}'."
+    else if actualLibc != libc then
+      throw "TVP: base '${name}' claims glibc ${libc} but its stdenv carries ${actualLibc}. Add a new base; do not redefine '${name}'."
     else if actualFloor != floor then
       throw "TVP: base '${name}' floor is not what TVP declares. Declared: ${lib.concatStringsSep " " floor}. stdenv carries: ${lib.concatStringsSep " " actualFloor}."
     else
@@ -25,6 +33,8 @@ rec {
         inherit
           name
           cc
+          binutils
+          libc
           floor
           builtBy
           stdenv
@@ -73,4 +83,37 @@ rec {
 
   mkBaseSuite =
     { base, tests }: lib.mapAttrs (name: spec: mkBaseTest ({ inherit base name; } // spec)) tests;
+
+  # An ownership audit only needs roots and allowed outputs. It does not imply
+  # any compiler family, optional tools, component layout or consumer suite.
+  mkOwnershipTest =
+    {
+      pkgs,
+      base,
+      name,
+      roots,
+      allowedRuntimePaths,
+    }:
+    mkBaseTest {
+      inherit base name;
+      script =
+        let
+          closure = pkgs.closureInfo { rootPaths = roots; };
+          allowed = pkgs.writeText "tvp-${name}-paths" (
+            lib.concatMapStrings (path: "${path}\n") allowedRuntimePaths
+          );
+        in
+        ''
+          foreign=0
+          while IFS= read -r path; do
+            if ! grep -Fx "$path" ${allowed} > /dev/null; then
+              echo "unowned runtime dependency: $path" >&2
+              foreign=1
+            fi
+          done < ${closure}/store-paths
+          test "$foreign" = 0
+          echo ok
+        '';
+      expected = "ok";
+    };
 }

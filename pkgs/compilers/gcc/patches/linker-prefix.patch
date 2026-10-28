@@ -1,0 +1,22 @@
+--- a/gcc/collect2.cc
++++ b/gcc/collect2.cc
+@@ -1049,8 +1049,10 @@
+   /* Try to discover a valid linker/nm/strip to use.  */
+ 
+   /* Maybe we know the right file to use (if not cross).  */
+-  ld_file_name = 0;
++  ld_file_name = find_a_file (&cpath, ld_suffixes[selected_linker], X_OK);
+ #ifdef DEFAULT_LINKER
++  if (ld_file_name == 0)
++    {
+   if (selected_linker == USE_BFD_LD || selected_linker == USE_GOLD_LD ||
+       selected_linker == USE_LLD_LD || selected_linker == USE_MOLD_LD)
+     {
+@@ -1082,6 +1084,7 @@
+     }
+   if (ld_file_name == 0 && access (DEFAULT_LINKER, X_OK) == 0)
+     ld_file_name = DEFAULT_LINKER;
++    }
+   if (ld_file_name == 0)
+ #endif
+ #ifdef REAL_LD_FILE_NAME

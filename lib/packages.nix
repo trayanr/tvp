@@ -218,36 +218,43 @@ rec {
       in
       lib.nameValuePair attr (
         pkg.overrideAttrs (old: {
-          passthru = old.passthru // {
-            tvp =
-              (old.passthru.tvp or { })
-              // packageMeta
-              // {
-                inherit status;
-                # The name, not the record: passthru is read by tooling, and a
-                # whole stdenv in it makes `nix eval` unusable.
-                base = if base == null then null else base.name;
-                # The filename, so `builder-names` can compare it against the lowest
-                # version that reaches it. A path here would print a store path.
-                builder = baseNameOf recipe.builder;
-                inherit definition;
-                # Names only, for the same reason.
-                infra = lib.attrNames infra;
-              }
-              // lib.optionalAttrs (patches != [ ]) {
-                patches = map (p: {
-                  inherit (p) reason;
-                  file = baseNameOf p.file;
-                }) patches;
-              }
-              // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
+          passthru =
+            old.passthru
+            // {
+              tvp =
+                (old.passthru.tvp or { })
+                // packageMeta
+                // {
+                  inherit status;
+                  # The name, not the record: passthru is read by tooling, and a
+                  # whole stdenv in it makes `nix eval` unusable.
+                  base = if base == null then null else base.name;
+                  # The filename, so `builder-names` can compare it against the lowest
+                  # version that reaches it. A path here would print a store path.
+                  builder = baseNameOf recipe.builder;
+                  inherit definition;
+                  # Names only, for the same reason.
+                  infra = lib.attrNames infra;
+                }
+                // lib.optionalAttrs (patches != [ ]) {
+                  patches = map (p: {
+                    inherit (p) reason;
+                    file = baseNameOf p.file;
+                  }) patches;
+                }
+                // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
 
-            # A test a release is known to fail is dropped from the suite, never
-            # silently, and only where the status says which and why. Keeping it
-            # would make CI red forever and train everyone to ignore it; deleting
-            # the test would hide the defect from every other version.
-            tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
-          };
+              # A test a release is known to fail is dropped from the suite, never
+              # silently, and only where the status says which and why. Keeping it
+              # would make CI red forever and train everyone to ignore it; deleting
+              # the test would hide the defect from every other version.
+              tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
+            }
+            // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+              # Packages opt into rebinding their test environment locally. Keep
+              # the factory outside tvp metadata, which catalogue tools serialize.
+              inherit (extraArgs) mkTests;
+            };
         })
       )
     ) versionTable;

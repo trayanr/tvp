@@ -62,11 +62,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         php:
         import ./tests {
           inherit pkgs tvpLib php;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

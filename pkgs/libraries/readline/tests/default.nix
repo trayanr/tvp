@@ -64,7 +64,7 @@ tvpLib.tests.mkSuite {
       terminal = {
         script = ''
           cc ${./fixtures/version.c} -lreadline -o version
-          ldd ./version | grep -c 'libncursesw\|libtinfo'
+          ${pkgs.glibc.bin}/bin/ldd ./version | grep -c 'libncursesw\|libtinfo'
         '';
         expected = "1";
         extraInputs = cc;

@@ -43,11 +43,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         libxml2:
         import ./tests {
           inherit pkgs tvpLib libxml2;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

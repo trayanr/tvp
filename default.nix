@@ -9,7 +9,7 @@ let
   # The ground packages are built on. Defined before `packages` because every
   # version table names one, and exposed on `tvp` so a version table can reach
   # it the same way it reaches `tvp.packages`.
-  bases = import ./bases { inherit pkgs tvpLib; };
+  bases = import ./bases { inherit pkgs tvpLib tvp; };
 
   universe = import ./pkgs { inherit pkgs tvp; };
 

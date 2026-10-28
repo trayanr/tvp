@@ -208,11 +208,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         sqlite:
         import ./tests {
           inherit pkgs tvpLib sqlite;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

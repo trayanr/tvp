@@ -93,11 +93,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         tcl:
         import ./tests {
           inherit pkgs tvpLib tcl;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {

@@ -1,6 +1,10 @@
 # The ground a package is built on. Derivation-affecting in full: every package
 # on a base rebuilds when it changes.
-{ pkgs, tvpLib }:
+{
+  pkgs,
+  tvpLib,
+  tvp,
+}:
 let
   inherit (pkgs) lib;
   inherit (tvpLib.bases) mkBase;
@@ -35,35 +39,47 @@ let
     "file"
   ];
 
-  canonical = lib.mapAttrs (_: base: base // { tests = import ./tests { inherit tvpLib base; }; }) {
-    # Not `gcc13Stdenv`: same compiler, different derivation, so it would rebuild
-    # every package to no effect.
-    gcc13 = mkBase {
-      name = "gcc13";
-      cc = "13.3.0";
-      builtBy = null;
-      inherit floor;
-      stdenv = withTvpMkDerivation pkgs.stdenv;
-    };
+  canonical =
+    lib.mapAttrs (_: base: base // { tests = import ./tests { inherit pkgs tvpLib base; }; })
+      {
+        gcc13-owned = import ./gcc13-owned {
+          inherit pkgs tvp;
+          builtBy = tvp.bases.gcc13;
+        };
+        # Not `gcc13Stdenv`: same compiler, different derivation, so it would rebuild
+        # every package to no effect.
+        gcc13 = mkBase {
+          name = "gcc13";
+          cc = "13.3.0";
+          binutils = "2.42";
+          libc = "2.39";
+          builtBy = null;
+          inherit floor;
+          stdenv = withTvpMkDerivation pkgs.stdenv;
+        };
 
-    gcc9 = mkBase {
-      name = "gcc9";
-      cc = "9.5.0";
-      builtBy = null;
-      inherit floor;
-      stdenv = withTvpMkDerivation pkgs.gcc9Stdenv;
-    };
+        gcc9 = mkBase {
+          name = "gcc9";
+          cc = "9.5.0";
+          binutils = "2.42";
+          libc = "2.39";
+          builtBy = null;
+          inherit floor;
+          stdenv = withTvpMkDerivation pkgs.gcc9Stdenv;
+        };
 
-    # The oldest stdenv nixpkgs offers, and the only one that still accepts
-    # cast-as-lvalue.
-    gcc49 = mkBase {
-      name = "gcc49";
-      cc = "4.9.4";
-      builtBy = null;
-      inherit floor;
-      stdenv = withTvpMkDerivation pkgs.gcc49Stdenv;
-    };
-  };
+        # The oldest stdenv nixpkgs offers, and the only one that still accepts
+        # cast-as-lvalue.
+        gcc49 = mkBase {
+          name = "gcc49";
+          cc = "4.9.4";
+          binutils = "2.42";
+          libc = "2.39";
+          builtBy = null;
+          inherit floor;
+          stdenv = withTvpMkDerivation pkgs.gcc49Stdenv;
+        };
+      };
 
   aliases = {
     default = canonical.gcc13;

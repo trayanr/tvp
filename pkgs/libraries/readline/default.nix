@@ -76,11 +76,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         readline:
         import ./tests {
           inherit pkgs tvpLib readline;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {
