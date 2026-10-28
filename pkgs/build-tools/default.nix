@@ -23,4 +23,7 @@ tvp.lib.packages.mergeNamespaces {
   which = import ./which { inherit pkgs tvp; };
   m4 = import ./m4 { inherit pkgs tvp; };
   pkg-config = import ./pkg-config { inherit pkgs tvp; };
+  ninja = import ./ninja { inherit pkgs tvp; };
+  cmake = import ./cmake { inherit pkgs tvp; };
+  meson = import ./meson { inherit pkgs tvp; };
 }

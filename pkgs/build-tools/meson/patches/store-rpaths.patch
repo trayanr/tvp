@@ -1,0 +1,12 @@
+--- a/mesonbuild/scripts/depfixer.py
++++ b/mesonbuild/scripts/depfixer.py
+@@ -641,6 +641,9 @@
+             # added by get_link_dep_subdirs() or
+             # specified by user with build_rpath.
+             for rpath_dir in old_rpath.split(b':'):
++                if rpath_dir.startswith(b'@TVP_STORE_DIR@/'):
++                    new_rpaths.add(rpath_dir)
++                    continue
+                 if not (rpath_dir in rpath_dirs_to_remove or
+                         rpath_dir == (b'X' * len(rpath_dir))):
+                     if rpath_dir:

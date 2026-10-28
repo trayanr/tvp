@@ -1,0 +1,60 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+  defs = tvpLib.packages.mkDefs {
+    "4.4.5" = {
+      builder = ./build-4.4.5.nix;
+      base = tvp.bases.default;
+      deps = {
+        bash = tvp.packages.bash_5_2_37;
+        openssl = tvp.packages.openssl_4_0_1;
+        zlib = tvp.packages.zlib_1_3_2;
+        bzip2 = tvp.packages.bzip2_1_0_8;
+        xz = tvp.packages.xz_5_8_3;
+        zstd = tvp.packages.zstd_1_5_6;
+        pkg-config = tvp.packages.pkg-config_0_29_2;
+      };
+      patches = [
+        {
+          file = ./patches/store-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+      ];
+    };
+  };
+  versionTable = tvpLib.packages.mkTable [
+    {
+      def = defs."4.4.5";
+      releases."4.4.5" = "sha256-oMVMiKu4B43Y7MrbcX/GuxlL8Y59RMhjCZECiIhuBOI=";
+    }
+  ];
+  pname = "cmake";
+  canonical = tvpLib.packages.mkVersions {
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
+    inherit pname versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        ninja = tvp.packages.ninja_1_13_2;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
+    ) { inherit pkgs; };
+    packageMeta.upstream = {
+      type = "git-tags";
+      url = "https://github.com/Kitware/CMake.git";
+      normalise = tag: pkgs.lib.removePrefix "v" tag;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
+  };
+in
+{
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+}

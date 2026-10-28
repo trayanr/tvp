@@ -1,0 +1,3 @@
+rule builtin
+  command = printf 42 > answer
+build answer: builtin

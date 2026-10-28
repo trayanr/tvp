@@ -641,6 +641,18 @@ under `bases/stdenv/`, copied from the same pinned revision as the build protoco
 Constructing the owned stdenv requires no nixpkgs source path. These import moves are
 verified to preserve canonical, variant, base, bootstrap and consumer derivations.
 An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
+Native build-system packages ship their consumer setup hooks. Declaring
+`nativeBuildInputs = [ tvp.packages.cmake_4_4_5 tvp.packages.ninja_1_13_2 ];`
+selects CMake configuration and Ninja build/check/install phases. CMake alone uses
+Make; `nativeBuildInputs = [ tvp.packages.meson_1_12_1 ];` selects Meson's phases
+and its explicitly pinned Ninja, CMake, pkg-config and Python tools. The hooks search
+declared library inputs, honor explicit phase overrides and expose flags through
+`cmakeFlags`, `ninjaFlags`, and `mesonFlags` (with corresponding shell arrays).
+Meson configures with downloads disabled; wrap sources must be declared or cached inputs.
+The Python `python-build` profile includes TLS and archive modules; `python-minimal`
+remains the separate bootstrap interpreter. These hooks currently implement native Linux
+builds; cross compilation requires an explicit platform/toolchain design.
+
 The complete bootstrap generation, including Perl, Bash, compiler support libraries and
 floor tools, is declared as package-local `variants.gcc13` builds. The assembler selects
 that generation rather than following canonical packages through `default`.

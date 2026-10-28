@@ -1,0 +1,31 @@
+--- a/Source/cmLocalUnixMakefileGenerator3.cxx
++++ b/Source/cmLocalUnixMakefileGenerator3.cxx
+@@ -85,7 +85,7 @@
+       "$(CTEST_COMMAND) --start-instrumentation $(CMAKE_BINARY_DIR)";
+ #  ifndef _WIN32
+     /*
+-     * On Unix systems, Make will prefix the command with `/bin/sh -c`.
++     * On Unix systems, Make will prefix the command with `@TVP_SHELL@ -c`.
+      * Use exec so that Make is the parent process of the command.
+      * Add a `;` to convince BSD make to not optimize out the shell.
+      */
+@@ -680,7 +680,7 @@
+   } else {
+ #if !defined(__VMS)
+     makefileStream << "# The shell in which to execute make rules.\n"
+-                      "SHELL = /bin/sh\n"
++                      "SHELL = @TVP_SHELL@\n"
+                       "\n";
+ #endif
+   }
+--- a/Source/cmExecProgramCommand.cxx
++++ b/Source/cmExecProgramCommand.cxx
+@@ -206,7 +206,7 @@
+   }
+   fflush(stdout);
+   fflush(stderr);
+-  char const* cmd[] = { "/bin/sh", "-c", command.c_str(), nullptr };
++  char const* cmd[] = { "@TVP_SHELL@", "-c", command.c_str(), nullptr };
+   cmsysProcess_SetCommand(cp, cmd);
+ #endif
+ 

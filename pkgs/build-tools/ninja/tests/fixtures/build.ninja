@@ -1,0 +1,10 @@
+rule write
+  command = printf 42 > $out
+rule check
+  command = test "$$(cat answer)" = 42
+rule install
+  command = mkdir -p @out@ && cp answer @out@/answer
+build answer: write
+build test: check answer
+build install: install answer
+default answer

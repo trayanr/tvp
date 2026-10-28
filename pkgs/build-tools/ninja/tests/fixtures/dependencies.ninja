@@ -1,0 +1,5 @@
+rule cc
+  command = c++ -MMD -MF $out.d $in -o $out
+  depfile = $out.d
+  deps = gcc
+build main: cc main.cc
