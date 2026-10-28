@@ -1,4 +1,4 @@
-# Serves 1.3.1 onwards.
+# Serves 1.0.3 onwards.
 {
   lib,
   stdenv,
@@ -7,13 +7,14 @@
   mpfr,
   version,
   sha256,
+  archiveExt ? "tar.gz",
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "mpc";
   inherit version;
   src = fetchurl {
-    url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.gz";
+    url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.${archiveExt}";
     inherit sha256;
   };
   propagatedBuildInputs = [

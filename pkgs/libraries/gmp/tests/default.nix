@@ -10,7 +10,7 @@ tvpLib.tests.mkSuite {
     {
       version = {
         script = ''cc ${./fixtures/version.c} -lgmp -o version; ./version'';
-        expected = gmp.version;
+        expected = gmp.tvp.reportedVersion;
         extraInputs = [ gmp.tvp.cc ];
       };
       arithmetic = {

@@ -1,40 +1,38 @@
-# Serves 6.3.0 onwards.
+# Serves 2.4.2 onwards.
 {
   lib,
   stdenv,
   fetchurl,
-  m4,
+  gmp,
   version,
   sha256,
-  cxx ? true,
+  float128 ? true,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
-  pname = "gmp";
+  pname = "mpfr";
   inherit version;
   src = fetchurl {
-    url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
+    url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
     inherit sha256;
   };
-  buildInputs = [ ];
-  nativeBuildInputs = [ m4 ];
+  propagatedBuildInputs = [ gmp ];
   configureFlags = [
-    (lib.enableFeature cxx "cxx")
-    "--with-pic"
-  ];
+    "--with-gmp=${lib.getDev gmp}"
+  ] ++ lib.optional (!float128) "--disable-float128";
   enableParallelBuilding = true;
   doCheck = true;
   meta = {
-    description = "GNU multiple-precision arithmetic library";
+    description = "Correctly rounded multiple-precision floating-point arithmetic";
     license = lib.licenses.lgpl3Plus;
     platforms = lib.platforms.unix;
   };
   passthru = {
     tvp.deps = {
-      inherit m4;
+      inherit gmp;
     };
     tvp.cc = stdenv.cc;
-    tvp.features.cxx = cxx;
+    tvp.features.float128 = float128;
     tests = mkTests finalAttrs.finalPackage;
   };
 })

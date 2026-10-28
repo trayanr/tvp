@@ -2,18 +2,39 @@
 let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
-    "6.3.0" = {
-      builder = ./build-6.3.0.nix;
+    "5.0.5" = {
+      builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
-      deps = {
-        m4 = tvp.packages.m4_1_4_21;
-      };
+      deps.m4 = tvp.packages.m4_1_4_21;
+    };
+    "6.0.0a" = {
+      builder = ./build-5.0.5.nix;
+      base = tvp.bases.default;
+      deps.m4 = tvp.packages.m4_1_4_21;
+      opts.reportedVersion = "6.0.0";
     };
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."6.3.0";
-      releases."6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
+      def = defs."5.0.5";
+      releases = {
+        "5.0.5" = "sha256-6HAVqCWiRF4WmTHuJ4SdUldqLZ4zjROD3LNv7WjQAG8=";
+        "5.1.3" = "sha256-3uLto39P9UHzABmTLbDDf293owujYJI0kzsYGPmwcHE=";
+      };
+    }
+    {
+      def = defs."6.0.0a";
+      releases = {
+        "6.0.0a" = "sha256-kVbTLtrGlVvFOwIY9fN2P6y4kLc6g11eG5Adz464t2Q=";
+      };
+    }
+    {
+      def = defs."5.0.5";
+      releases = {
+        "6.1.2" = "sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=";
+        "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
+        "6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
+      };
     }
   ];
   pname = "gmp";
@@ -22,7 +43,29 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = gmp: import ./tests { inherit pkgs tvpLib gmp; };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      gmp:
+      import ./tests {
+        inherit tvpLib gmp;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = gmp.stdenv;
+        };
+      }
+    ) { inherit pkgs; };
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/gmp/";
+      pattern = "gmp-[0-9][^\"]*\\.tar\\.(gz|bz2|xz)";
+      normalise =
+        file:
+        let
+          match = builtins.match "gmp-([0-9]+(\\.[0-9]+)*[a-z]?)\\.tar\\.(gz|bz2|xz)" file;
+        in
+        if match == null then null else builtins.head match;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
+    };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
   variants = tvpLib.packages.mkVariants (
