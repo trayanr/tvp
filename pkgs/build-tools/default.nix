@@ -13,6 +13,9 @@ tvp.lib.packages.mergeNamespaces {
   patch = import ./patch { inherit pkgs tvp; };
   file = import ./file { inherit pkgs tvp; };
   autoconf = import ./autoconf { inherit pkgs tvp; };
+  automake = import ./automake { inherit pkgs tvp; };
+  libtool = import ./libtool { inherit pkgs tvp; };
+  flex = import ./flex { inherit pkgs tvp; };
   bundler = import ./bundler { inherit pkgs tvp; };
   binutils = import ./binutils { inherit pkgs tvp; };
   bison = import ./bison { inherit pkgs tvp; };

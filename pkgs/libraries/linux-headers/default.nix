@@ -18,6 +18,7 @@ let
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
+      inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
     extraArgs.mkTests = headers: import ./tests { inherit pkgs tvpLib headers; };

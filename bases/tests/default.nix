@@ -34,7 +34,7 @@ let
       compile = {
         script = ''
           cc ${./fixtures/libc.c} -o libc
-          readelf -l libc | grep -F '${base.stdenv.cc.libc}/lib/ld-linux-x86-64.so.2' >&2
+          readelf -l libc | grep -F '${base.stdenv.cc.libc}/${base.platform.dynamicLinker}' >&2
           readelf -l libc | grep GNU_RELRO >&2
           readelf -d libc | grep -E 'BIND_NOW|FLAGS.*NOW' >&2
           ./libc

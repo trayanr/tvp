@@ -5,7 +5,7 @@
 }:
 let
   gcc = glibc.tvp.deps.gcc;
-  flags = "-B${glibc}/lib/ -isystem ${glibc}/include -L${glibc}/lib -Wl,-dynamic-linker,${glibc}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${glibc}/lib -Wl,-rpath,${gcc}/lib";
+  flags = "-B${glibc}/lib/ -isystem ${glibc}/include -L${glibc}/lib -Wl,-dynamic-linker,${glibc}/${glibc.platform.dynamicLinker} -Wl,-rpath,${glibc}/lib -Wl,-rpath,${gcc}/lib";
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -18,7 +18,7 @@ tvpLib.tests.mkSuite {
     runtime = {
       script = ''
         ${gcc}/bin/gcc ${flags} ${./fixtures/runtime.c} -pthread -ldl -lm -o runtime
-        ${glibc.tvp.deps.binutils}/bin/readelf -l runtime | grep -F '${glibc}/lib/ld-linux-x86-64.so.2' >&2
+        ${glibc.tvp.deps.binutils}/bin/readelf -l runtime | grep -F '${glibc}/${glibc.platform.dynamicLinker}' >&2
         ./runtime ${glibc.version}
       '';
       expected = "ok";

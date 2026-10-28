@@ -8,13 +8,18 @@ let
       base = tvp.bases.default;
       deps = { };
     };
+    "1.4.21" = {
+      builder = ./build-1.4.17.nix;
+      base = tvp.bases.gcc13-owned;
+      deps = { };
+    };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
 
   pname = "m4";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -22,11 +27,9 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
-        m4:
-        import ./tests {
-          inherit pkgs tvpLib m4;
-        };
+      mkTests = pkgs.lib.makeOverridable ({ pkgs }: m4: import ./tests { inherit pkgs tvpLib m4; }) {
+        inherit pkgs;
+      };
     };
 
     packageMeta = {
@@ -47,9 +50,23 @@ let
     };
   };
 
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles = {
+        gcc13 = {
+          base = tvp.bases.gcc13;
+          versions."1.4.21" = { };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname

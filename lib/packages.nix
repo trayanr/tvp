@@ -1,4 +1,8 @@
-{ lib, versions }:
+{
+  lib,
+  versions,
+  tests,
+}:
 rec {
   # What TVP claims about a version, as a fact rather than a comment.
   #
@@ -282,9 +286,79 @@ rec {
         )
       }";
 
+  # Package-local named builds reuse version data without forcing a canonical
+  # derivation first. This also permits bootstrap builds whose canonical
+  # counterpart depends on the base they help construct.
+  mkVariants =
+    { pkgs, profiles, ... }@args:
+    lib.mapAttrs (
+      profileName: profile:
+      let
+        extraArgs = args.extraArgs or { };
+        variantPackages = mkVersions (
+          removeAttrs args [
+            "pkgs"
+            "profiles"
+          ]
+          // {
+            versionTable = lib.mapAttrs (
+              version: overrides:
+              let
+                entry = args.versionTable.${version};
+                extra = lib.subtractLists [
+                  "deps"
+                  "opts"
+                ] (lib.attrNames overrides);
+              in
+              if extra != [ ] then
+                throw "TVP: variant ${profileName}/${args.pname}/${version} has unsupported fields: ${lib.concatStringsSep ", " extra}"
+              else
+                entry
+                // {
+                  def = entry.def // {
+                    base = profile.base;
+                    deps = entry.def.deps // (overrides.deps or { });
+                    opts = (entry.def.opts or { }) // (overrides.opts or { });
+                  };
+                }
+            ) profile.versions;
+            extraArgs =
+              extraArgs
+              // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+                mkTests = extraArgs.mkTests.override {
+                  pkgs = tests.withBase {
+                    inherit pkgs;
+                    base = profile.base;
+                  };
+                };
+              };
+          }
+        );
+      in
+      lib.mapAttrs (
+        _: package:
+        package.overrideAttrs (old: {
+          passthru = old.passthru // {
+            tvp = old.passthru.tvp // {
+              canonical = false;
+              variant = profileName;
+            };
+          };
+        })
+      ) variantPackages
+    ) profiles;
+
+  mergeVariants =
+    sets:
+    let
+      names = lib.unique (lib.concatMap lib.attrNames (lib.attrValues sets));
+    in
+    lib.genAttrs names (profile: merge (lib.mapAttrs (_: profiles: profiles.${profile} or { }) sets));
+
   mergeNamespaces = sets: {
     canonical = merge (lib.mapAttrs (_: s: s.canonical) sets);
     aliases = merge (lib.mapAttrs (_: s: s.aliases) sets);
+    variants = mergeVariants (lib.mapAttrs (_: s: s.variants or { }) sets);
   };
 
   # Every prefix of every buildable version, pointing at the greatest version

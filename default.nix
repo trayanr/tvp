@@ -18,9 +18,33 @@ let
   # which is what every tool and check reads.
   canonical = universe.canonical;
   packages = canonical // universe.aliases;
+  variants = universe.variants;
+  variantPackages = tvpLib.packages.merge (
+    pkgs.lib.mapAttrs (
+      profile: entries:
+      pkgs.lib.mapAttrs' (
+        name: package: pkgs.lib.nameValuePair "variant-${profile}-${name}" package
+      ) entries
+    ) variants
+  );
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
   checks = {
+    native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
+    variants-evaluate =
+      let
+        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") variantPackages;
+        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
+        manifest = pkgs.lib.mapAttrsToList (
+          name: p: "${name} ${builtins.unsafeDiscardStringContext p.drvPath}"
+        ) variantPackages;
+      in
+      if untested != { } then
+        throw "TVP: variants with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}"
+      else
+        pkgs.runCommand "tvp-variants-evaluate" { manifest = builtins.concatStringsSep "\n" manifest; } ''
+          printf '%s\n' "$manifest" > "$out"
+        '';
     packages-evaluate =
       let
         drvs = pkgs.lib.mapAttrsToList (
@@ -237,21 +261,22 @@ let
       '';
   };
 
-  testBatches =
-    builtins.mapAttrs
-      (
-        name: pkg:
-        tvpLib.tests.mkBatch {
-          inherit pkgs name;
-          suite = pkg.tests;
-        }
-      )
-      (
-        pkgs.lib.filterAttrs (
-          _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
-        ) canonical
-      )
-    // pkgs.lib.mapAttrs' (
+  testBatches = tvpLib.packages.merge {
+    packages =
+      builtins.mapAttrs
+        (
+          name: pkg:
+          tvpLib.tests.mkBatch {
+            inherit pkgs name;
+            suite = pkg.tests;
+          }
+        )
+        (
+          pkgs.lib.filterAttrs (
+            _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
+          ) canonical
+        );
+    bases = pkgs.lib.mapAttrs' (
       name: base:
       pkgs.lib.nameValuePair "base-${name}" (
         tvpLib.tests.mkBatch {
@@ -261,13 +286,21 @@ let
         }
       )
     ) (pkgs.lib.filterAttrs (name: base: base.name == name) bases);
+    variants = pkgs.lib.mapAttrs (
+      name: package:
+      tvpLib.tests.mkBatch {
+        inherit pkgs name;
+        suite = package.tests;
+      }
+    ) (pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") variantPackages);
+  };
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
-      inherit tvpLib;
+      inherit tvpLib variantPackages;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
       packages = canonical;
@@ -288,6 +321,7 @@ let
       bases
       canonical
       packages
+      variants
       checks
       testBatches
       tools

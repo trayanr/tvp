@@ -2,12 +2,17 @@
 {
   lib,
   stdenv,
+  platforms,
   fetchurl,
   perl,
   version,
   sha256,
   mkTests,
 }:
+let
+  platform = platforms.forStdenv stdenv;
+in
+assert platform.isNative;
 stdenv.mkDerivation (finalAttrs: {
   pname = "linux-headers";
   inherit version;
@@ -19,7 +24,7 @@ stdenv.mkDerivation (finalAttrs: {
   dontConfigure = true;
   enableParallelBuilding = true;
   makeFlags = [
-    "ARCH=x86"
+    "ARCH=${platform.linuxHeadersArch}"
     "SHELL=bash"
   ];
   buildPhase = ''
@@ -41,6 +46,7 @@ stdenv.mkDerivation (finalAttrs: {
     platforms = [ "x86_64-linux" ];
   };
   passthru = {
+    inherit platform;
     tvp.deps = {
       inherit perl;
     };

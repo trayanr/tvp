@@ -28,7 +28,7 @@ let
 
   pname = "pkg-config";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -36,11 +36,9 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
-        pkgConfig:
-        import ./tests {
-          inherit pkgs tvpLib pkgConfig;
-        };
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }: pkgConfig: import ./tests { inherit pkgs tvpLib pkgConfig; }
+      ) { inherit pkgs; };
     };
 
     packageMeta = {
@@ -61,9 +59,23 @@ let
     };
   };
 
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles = {
+        gcc13-owned = {
+          base = tvp.bases.gcc13-owned;
+          versions."0.29.2" = { };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname

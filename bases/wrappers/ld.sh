@@ -16,7 +16,7 @@ if ! $relocatable; then
     read -r -a flags <<< "${NIX_LDFLAGS-}"
     flags+=(-L@libc@/lib)
     if ! $static; then
-        flags+=(-dynamic-linker @libc@/lib/ld-linux-x86-64.so.2 -rpath @libc@/lib)
+        flags+=(-dynamic-linker @libc@/@dynamicLinker@ -rpath @libc@/lib)
     fi
     for flag in ${NIX_HARDENING_ENABLE-bindnow fortify format pic relro stackprotector strictoverflow}; do
         case "$flag" in

@@ -1,7 +1,8 @@
-# Native x86_64 Linux wrappers. Build machinery is a bootstrap input; installed
+# Native Linux wrappers. Build machinery is a bootstrap input; installed
 # scripts refer only to the explicitly supplied runtime components.
 {
   lib,
+  platform,
   stdenv,
   gcc,
   binutils,
@@ -13,7 +14,21 @@
   # RPATH. The final compiler runtime is owned and is available to C consumers.
   cRuntime ? true,
 }:
+assert platform.isNative;
+assert platform.buildPlatform.config == stdenv.buildPlatform.config;
+assert platform.hostPlatform.config == stdenv.hostPlatform.config;
+assert platform.targetPlatform.config == stdenv.targetPlatform.config;
 let
+  # Render platform facts before handing scripts to the builder. Normalising
+  # the source path preserves its hash when the rendered bytes are unchanged.
+  scriptFor =
+    file:
+    builtins.path {
+      name = baseNameOf file;
+      path = builtins.toFile (baseNameOf file) (
+        lib.replaceStrings [ "@dynamicLinker@" ] [ platform.dynamicLinker ] (builtins.readFile file)
+      );
+    };
   bintools = stdenv.mkDerivation {
     pname = "binutils-wrapper";
     inherit (binutils) version;
@@ -25,7 +40,7 @@ let
         mkdir -p "$out/bin" "$out/nix-support"
         for linker in ld ld.bfd ld.gold; do
           if [ -x ${binutils}/bin/"$linker" ]; then
-            substitute ${./ld.sh} "$out/bin/$linker" \
+            substitute ${scriptFor ./ld.sh} "$out/bin/$linker" \
               --subst-var-by bash ${bash}/bin/bash \
               --subst-var-by binutils ${binutils} \
               --subst-var-by libc ${libc} \
@@ -69,7 +84,7 @@ let
     installPhase = ''
       mkdir -p "$out/bin" "$out/nix-support"
       for program in gcc g++ cpp; do
-        substitute ${./cc.sh} "$out/bin/$program" \
+        substitute ${scriptFor ./cc.sh} "$out/bin/$program" \
           --subst-var-by bash ${bash}/bin/bash \
           --subst-var-by gcc ${gcc} \
           --subst-var-by bintools ${bintools} \

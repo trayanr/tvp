@@ -6,7 +6,8 @@ let
       builder = ./build-6.3.0.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
+        # This compiler prerequisite precedes construction of gcc13-owned.
+        m4 = tvp.variants.gcc13.m4_1_4_21;
       };
     };
   };

@@ -16,6 +16,7 @@ bases/                        the ground packages are built on; `tvp.bases`
 lib/                          shared evaluation logic; the flake's `lib` output
 ├── versions.nix              version parsing, predicates, attribute naming
 ├── bases.nix                 mkBase, base tests and runtime ownership audits
+├── platforms.nix             native platform contract and architecture settings
 ├── packages.nix              version table → package set, merging, generated aliases
 └── tests.nix                 mkTest / mkSuite / mkBatch
 
@@ -305,9 +306,9 @@ not a changed *range*.
 
 ## Naming and aliases
 
-Two namespaces over one set of derivations. `canonical` is exact and round-trips through
-`attrName`; `packages` is what a user types, and there an alias wins. Nothing is built
-twice, and they differ in 25 of 869 names.
+Two views of the canonical builds: `canonical` is exact and round-trips through
+`attrName`; `packages` is what a user types, and there an alias wins. Both reference the
+same derivations. Explicit alternative builds live separately under `variants`.
 
 ```
 nix build .#openssl_1_1_1             → 1.1.1w   the newest 1.1.1x
@@ -341,6 +342,39 @@ nix build .#canonical.openssl_1_1_1   → 1.1.1    the 2018 release, exactly
   values is an infinite recursion.
 - **Where upstream reuses a line's name for a release**, `packages` gives the line and
   `canonical` gives the release. OpenSSL 1.0.1 is both, and both are addressable.
+
+## Named package variants
+
+Named package builds live alongside canonical definitions in each package's
+`default.nix`. `mkVariants` reuses that package's version table and builder, with an
+explicit base and per-version dependency or option overrides. A profile cannot change
+the source hash, builder or patches. The indexes merge these builds with duplicate-name
+checks into `tvp.variants.<profile>.<exact-package-name>`; there are no generated aliases.
+Variants carry `tvp.canonical = false` and their profile name in `tvp.variant`.
+
+```nix
+variants = tvpLib.packages.mkVariants (packageArgs // {
+  inherit pkgs;
+  profiles.gcc13-owned = {
+    base = tvp.bases.gcc13-owned;
+    versions."3.8.2".deps = {
+      m4 = tvp.packages.m4_1_4_21;
+      perl = tvp.bases.gcc13-owned.components.perl;
+    };
+  };
+});
+```
+
+```sh
+nix build .#variants.gcc13-owned.bison_3_8_2 --no-link
+nix build .#testBatches.x86_64-linux.variant-gcc13-owned-bison_3_8_2 --no-link
+```
+
+Variant evaluation and test attachment are checked alongside canonical packages.
+Provenance counts their outputs as TVP-owned, while catalogue population and upstream
+reports continue to use canonical versions. Bootstrap variants are constructed from
+version data directly, so selecting one does not evaluate a canonical build that may
+depend on the base being bootstrapped.
 
 ## Tests
 
@@ -382,6 +416,10 @@ fails where an old builder is missing something. Fork the tests and that stops w
   metadata. A port supplies `mkTests = package.mkTests.override { pkgs = testPkgs; };`
   alongside its new stdenv and dependencies; it does not import package test files
   from the base assembler.
+- **A test context can run on a selected base.** `tvpLib.tests.withBase { inherit pkgs base; }`
+  binds both the compiler context and `runCommand` to that base's stdenv. Merely replacing
+  `pkgs.stdenv` leaves `pkgs.runCommand` closed over its original builder. New packages
+  on the owned base use this context for their package suites.
 - **Tests assert, they do not merely exit 0.** `cmd > $out` passes for anything that exits
   cleanly with no output. `mkTest` requires an `expected` value.
 - **Every declared dependency gets a test proving it is genuinely linked.** An untested
@@ -497,6 +535,29 @@ RPATHs and hardening. Package setup hooks still belong to their packages.
 The final bintools wrapper also binds gprofng's HTML program to its declared Perl,
 including calls dispatched through the gprofng frontend; Perl is not added to the floor.
 
+Platform facts live behind `tvp.lib.platforms` in `lib/platforms.nix`:
+
+```nix
+platform = tvp.lib.platforms.forStdenv stdenv;
+# Alternatively: mkNative { buildPlatform = ...; hostPlatform = ...; targetPlatform = ...; }
+```
+
+The returned record preserves `buildPlatform` (where compilation runs), `hostPlatform`
+(where the result runs) and `targetPlatform` (what a compiler generates code for). It also
+supplies the libc-relative `dynamicLinker`, `linuxHeadersArch` and `libcLibdirAliases`.
+Every base exposes this record as `base.platform`. The owned assembler passes it to its
+environment constructor and wrappers; GCC, glibc and Linux headers resolve it from their
+actual stdenv, including recipe overrides. The wrappers render the loader into their
+script templates at evaluation time, preserving existing source hashes when the rendered
+bytes do not change.
+
+Only native `x86_64-unknown-linux-gnu` is currently supported. Cross compilation,
+unsupported native systems and unsupported ABIs fail explicitly; the interface does not
+claim ARM support. Adding platform facts does not extend a recipe's `meta.platforms`:
+recipes keep their own tested support lists. Tool versions, bootstrap parents and glibc's
+minimum kernel version remain choices of their base or recipe. The
+`checks.native-platform-interface` contract checks rejection and base wiring.
+
 A definition opts in with `base = tvp.bases.gcc13-owned`. When porting a package, its
 dependency graph must be ported too: changing only its compiler can leave libraries on
 the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
@@ -517,12 +578,19 @@ helper or an unused RPATH cannot silently retain a bootstrap package.
 The component, consumer and gprofng checks are explicitly attached from
 `bases/gcc13-owned/tests/`; other owned bases do not inherit those requirements.
 
-`bases/gcc13-owned/build-tools.nix` adds an explicit build-tool validation graph alongside
-that completed base. It rebuilds Bison 3.8.2, Texinfo 7.1, which 2.21 and minimal CPython
-3.12.5 on the owned stdenv, together with owned M4 and pkg-config inputs. These helpers
-are then selected in real binutils, three-stage GCC and glibc integration builds. Their
-package suites and runtime ownership audit are part of the complete base validation
-batch; the graph is exposed as `buildToolValidation` for inspection.
+`bases/gcc13-owned/tests/build-tools.nix` selects canonical owned tools and package-local
+named variants, then declares test-only binutils, three-stage GCC and glibc integration
+builds using those inputs. Its rebuild helper is confined to these test consumers.
+Reusable tool builds are defined in their package directories. Their suites and runtime
+ownership audit are part of the complete base validation batch; the graph remains
+exposed as `buildToolValidation` for inspection. Production dependencies never refer
+to that validation record.
+
+Canonical M4 1.4.21 and Autoconf 2.73 now use `gcc13-owned`. Their previous builds remain
+addressable as `variants.gcc13.m4_1_4_21` and `variants.gcc13.autoconf_2_73`. GMP and older
+tool definitions explicitly retain the bootstrap M4, keeping the compiler's construction
+independent of the base it produces. Base migrations are made one version at a time,
+with comparisons checking exactly which canonical derivations move.
 
 The corresponding canonical packages are `bison_3_8_2`, `texinfo_7_1`, `which_2_21` and
 `python-minimal_3_12_5`. Their version declarations retain the existing default substrate;
@@ -530,10 +598,28 @@ the explicitly rebuilt owned-base variants are noncanonical. Minimal Python is a
 interpreter with a declared list of disabled third-party extension modules, not the full
 Python developer runtime. Its core standard library and C embedding API are tested.
 
+Automake 1.19, Libtool 2.6.2 and Flex 2.6.4 are new canonical packages built directly on
+`gcc13-owned`. They reference canonical owned M4/Autoconf and explicitly named Bison
+variants, with Perl supplied by the base;
+they do not move the existing versions to another base. Automake provides a setup hook
+that adds declared packages' `share/aclocal` directories to `ACLOCAL_PATH`.
+
+`bases/gcc13-owned/tests/autotools.nix` exposes these packages as `autotoolsValidation` and
+attaches their suites and a runtime ownership audit to the full base batch. The suites
+generate projects with `autoreconf`, build and install C/C++ shared libraries and an
+executable, link a static library, load a module through libltdl, and compile scanners
+with Flex and Bison. The tests themselves run on the owned stdenv.
+
+```sh
+nix build .#automake_1_19 .#libtool_2_6_2 .#flex_2_6_4 --no-link
+nix build .#testBatches.x86_64-linux.base-gcc13-owned --no-link
+```
+
 Runtime ownership does not remove the bootstrap dependency graph. The committed base's
 original assembly still starts with the pinned nixpkgs parent and its declared borrowed
 Bison, Texinfo, Python and which inputs. The additional validation graph proves their
-TVP replacements without moving that assembly or existing canonical package graphs.
+TVP replacements without moving that assembly. The M4/Autoconf migrations move only
+those selected canonical builds; their predecessors remain named bootstrap variants.
 These outputs can be selected when assembling a successor base. Fetching and evaluation
 infrastructure, including the remaining mkDerivation imports, also still use nixpkgs.
 An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
@@ -555,6 +641,10 @@ packages rebuild, something has leaked.
 The same helper can be either, depending on use: `majorMinor` building the attribute name
 `ruby_2_7_0` is free; `majorMinor` building `…/pub/ruby/2.7/ruby-2.7.0.tar.gz` is inside
 `src` and is not. Derivation-affecting entries say so in a comment.
+
+`platforms.nix` is derivation-affecting: its loader paths and architecture settings reach
+build commands. Moving existing values behind its interface is neutral; changing those
+values changes the builds which consume them.
 
 **There is no `mkTvpDerivation`.** A shared wrapper around `stdenv.mkDerivation` is the
 most tempting thing to put here, and it is exactly the shared builder that start-version

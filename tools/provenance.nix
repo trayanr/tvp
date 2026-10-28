@@ -9,6 +9,7 @@
   jq,
 
   packages,
+  variantPackages ? { },
   tvpLib,
 }:
 let
@@ -21,6 +22,7 @@ let
     {
       inherit name pname version;
       canonical = pname != "" && version != "" && name == tvpLib.versions.attrName pname version;
+      variant = p.tvp.variant or null;
       # Context discarded, or referencing a path would make this script depend on
       # building the entire repository.
       out = builtins.unsafeDiscardStringContext p.outPath;
@@ -29,13 +31,21 @@ let
 
   # A broken package has no closure to attribute, and forcing outPath throws.
   entries = lib.mapAttrsToList entry (
-    lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") packages
+    lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") (packages // variantPackages)
   );
 
   # Trailing newline on every line, or `read` drops the last entry.
   manifest = writeText "tvp-provenance-manifest" (
     lib.concatMapStrings (
-      e: "${e.name}\t${if e.canonical then "canonical" else "alias"}\t${e.out}\t${e.drv}\n"
+      e:
+      "${e.name}\t${
+        if e.variant != null then
+          "variant"
+        else if e.canonical then
+          "canonical"
+        else
+          "alias"
+      }\t${e.out}\t${e.drv}\n"
     ) entries
   );
 

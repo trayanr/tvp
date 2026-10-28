@@ -14,7 +14,7 @@ let
     glibc = components.libc;
     gnumake = components.floor.gnumake;
   };
-  build =
+  buildConsumer =
     package: args:
     (package.override (
       {
@@ -31,21 +31,21 @@ let
           };
         };
       });
-  zlib = build p.zlib_1_3_2 { };
-  openssl = build p.openssl_3_5_7 {
+  zlib = buildConsumer p.zlib_1_3_2 { };
+  openssl = buildConsumer p.openssl_3_5_7 {
     perl = components.perl;
   };
-  libxml2 = build p.libxml2_2_15_3 {
+  libxml2 = buildConsumer p.libxml2_2_15_3 {
     inherit zlib;
   };
-  tcl = build p.tcl_8_6_18 {
+  tcl = buildConsumer p.tcl_8_6_18 {
     inherit zlib;
   };
-  sqlite = build p.sqlite_3_53_4 {
+  sqlite = buildConsumer p.sqlite_3_53_4 {
     inherit tcl;
     inherit (components.libraries) readline;
   };
-  php = build p.php_8_5_12 {
+  php = buildConsumer p.php_8_5_12 {
     inherit
       zlib
       openssl

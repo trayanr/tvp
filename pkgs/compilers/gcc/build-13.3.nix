@@ -2,6 +2,7 @@
 {
   lib,
   stdenv,
+  platforms,
   fetchurl,
   binutils,
   gmp,
@@ -23,11 +24,12 @@
   mkTests,
 }:
 let
+  platform = platforms.forStdenv stdenv;
   crtFlags = "-B${glibc}/lib/ -isystem ${lib.getDev glibc}/include -I${lib.getDev zlib}/include -I${lib.getDev zstd}/include -I${lib.getDev libxcrypt}/include";
   runtimeFlags = lib.concatStringsSep " " (
     [
       "-L${glibc}/lib"
-      "-Wl,-dynamic-linker,${glibc}/lib/ld-linux-x86-64.so.2"
+      "-Wl,-dynamic-linker,${glibc}/${platform.dynamicLinker}"
       "-Wl,-rpath,${placeholder "out"}/lib"
     ]
     ++ map (p: "-L${lib.getLib p}/lib -Wl,-rpath,${lib.getLib p}/lib") [
@@ -42,6 +44,7 @@ let
     ]
   );
 in
+assert platform.isNative;
 stdenv.mkDerivation (finalAttrs: {
   pname = "gcc";
   inherit version patches hardeningDisable;
@@ -117,6 +120,7 @@ stdenv.mkDerivation (finalAttrs: {
     priority = 10;
   };
   passthru = {
+    inherit platform;
     tvp.deps = {
       inherit
         binutils

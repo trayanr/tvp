@@ -47,6 +47,7 @@ let
   canonical = tvpLib.packages.mkVersions {
     infra = {
       inherit (pkgs) lib fetchurl;
+      inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (

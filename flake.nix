@@ -31,9 +31,10 @@
         inherit (tvp) packages checks;
 
         # legacyPackages, not a bare output: `packages.<system>.<name>` must be
-        # derivations and this is a level deeper. Resolves as `.#canonical.<attr>`.
+        # derivations and these are nested. Resolves as `.#canonical.<attr>` or
+        # `.#variants.<profile>.<attr>`.
         legacyPackages = {
-          inherit (tvp) canonical;
+          inherit (tvp) canonical variants;
         };
 
         formatter = pkgs.nixfmt-rfc-style;

@@ -14,7 +14,7 @@ lib.makeOverridable (
     initialPath,
     shell,
   }:
-  assert platform.system == "x86_64-linux";
+  assert platform.isNative;
   let
     stdenv =
       derivation {
@@ -24,7 +24,7 @@ lib.makeOverridable (
           initialPath
           shell
           ;
-        inherit (platform) system;
+        inherit (platform.buildPlatform) system;
         builder = shell;
         args = [
           "-e"
@@ -53,10 +53,8 @@ lib.makeOverridable (
       // {
         inherit cc initialPath shell;
         hasCC = true;
-        buildPlatform = platform;
-        hostPlatform = platform;
-        targetPlatform = platform;
-        inherit (platform)
+        inherit (platform) buildPlatform hostPlatform targetPlatform;
+        inherit (platform.hostPlatform)
           system
           isDarwin
           isLinux

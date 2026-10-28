@@ -1,5 +1,22 @@
 { lib }:
 rec {
+  # Keep the test builder on the selected base as well as the test compiler.
+  # Overriding pkgs.stdenv alone does not change pkgs.runCommand's closure.
+  withBase =
+    { pkgs, base }:
+    pkgs
+    // {
+      inherit (base) stdenv;
+      glibc = base.stdenv.cc.libc;
+      runCommand =
+        name: env:
+        pkgs.runCommandWith {
+          inherit name;
+          stdenv = base.stdenv;
+          derivationArgs = env;
+        };
+    };
+
   # `expected` is mandatory: `cmd > $out` passes for anything that exits cleanly
   # with no output.
   mkTest =

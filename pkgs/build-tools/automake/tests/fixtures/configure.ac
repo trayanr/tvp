@@ -1,0 +1,8 @@
+AC_INIT([tvp-automake], [1.0])
+AC_CONFIG_SRCDIR([main.c])
+AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
+AC_PROG_CC
+AC_DEFINE([TVP_ANSWER], [42], [Answer compiled through autoheader])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

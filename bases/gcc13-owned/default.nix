@@ -9,13 +9,13 @@
 let
   inherit (pkgs) lib;
   p = tvp.packages;
+  platform = tvp.lib.platforms.forStdenv builtBy.stdenv;
   mkStdenv = import ../stdenv {
-    inherit lib;
+    inherit lib platform;
     inherit (pkgs) config;
     nixpkgsPath = pkgs.path;
-    platform = pkgs.stdenv.hostPlatform;
   };
-  wrap = import ../wrappers;
+  wrap = args: import ../wrappers ({ inherit platform; } // args);
   # Reusing a versioned recipe must not keep its parent's base metadata.
   rebuild =
     stage: package: args:
@@ -323,20 +323,21 @@ let
     inherit initialPath;
     shell = "${floor.bash}/bin/bash";
   };
-  consumerValidation = import ./consumers.nix {
+  consumerValidation = import ./tests/consumers.nix {
     inherit pkgs tvp stdenv;
     components = {
       inherit perl floor libraries;
       libc = finalLibc;
     };
   };
-  buildToolValidation = import ./build-tools.nix {
+  buildToolValidation = import ./tests/build-tools.nix {
     inherit pkgs tvp stdenv;
     components = {
       inherit perl floor libraries;
       libc = finalLibc;
     };
   };
+  autotoolsValidation = import ./tests/autotools.nix { inherit pkgs tvp; };
 in
 (tvp.lib.bases.mkBase {
   name = "gcc13-owned";
@@ -366,7 +367,7 @@ in
   };
   consumerTests = consumerValidation.tests;
   consumerPackages = consumerValidation.packages;
-  inherit buildToolValidation;
+  inherit buildToolValidation autotoolsValidation;
   ownership = {
     roots = [
       stdenv

@@ -2,6 +2,7 @@
 {
   lib,
   stdenv,
+  platforms,
   fetchurl,
   gcc,
   binutils,
@@ -14,6 +15,10 @@
   patches ? [ ],
   mkTests,
 }:
+let
+  platform = platforms.forStdenv stdenv;
+in
+assert platform.isNative;
 stdenv.mkDerivation (finalAttrs: {
   pname = "glibc";
   inherit version patches;
@@ -72,7 +77,7 @@ stdenv.mkDerivation (finalAttrs: {
   postInstall = ''
     # Upstream's x86_64 ldd loader list uses lib64, while this store prefix
     # installs its native libraries in lib. Preserve the ABI directory alias.
-    ln -sT lib "$out/lib64"
+    ${lib.concatMapStringsSep "\n" (dir: ''ln -sT lib "$out/${dir}"'') platform.libcLibdirAliases}
     # C.UTF-8 is part of the build environment contract. Other locale data can
     # be generated from this same upstream release with localedef.
     mkdir -p "$out/lib/locale"
@@ -90,6 +95,7 @@ stdenv.mkDerivation (finalAttrs: {
     platforms = [ "x86_64-linux" ];
   };
   passthru = {
+    inherit platform;
     mkTools = args: import ./tools.nix ({ glibc = finalAttrs.finalPackage; } // args);
     tvp.deps = {
       inherit

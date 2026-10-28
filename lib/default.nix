@@ -1,10 +1,11 @@
 { lib }:
 let
   versions = import ./versions.nix { inherit lib; };
+  tests = import ./tests.nix { inherit lib; };
+  platforms = import ./platforms.nix { inherit lib; };
 in
 {
-  inherit versions;
-  tests = import ./tests.nix { inherit lib; };
-  bases = import ./bases.nix { inherit lib; };
-  packages = import ./packages.nix { inherit lib versions; };
+  inherit versions tests platforms;
+  bases = import ./bases.nix { inherit lib platforms; };
+  packages = import ./packages.nix { inherit lib versions tests; };
 }

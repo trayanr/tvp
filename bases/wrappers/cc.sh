@@ -45,7 +45,7 @@ if $link && ! $relocatable; then
         link_flags+=("-Wl,$flag")
     done
     if ! $static; then
-        link_flags+=(-Wl,-dynamic-linker,@libc@/lib/ld-linux-x86-64.so.2 -Wl,-rpath,@libc@/lib)
+        link_flags+=(-Wl,-dynamic-linker,@libc@/@dynamicLinker@ -Wl,-rpath,@libc@/lib)
     fi
     for flag in ${NIX_HARDENING_ENABLE-bindnow fortify format pic relro stackprotector strictoverflow}; do
         case "$flag" in

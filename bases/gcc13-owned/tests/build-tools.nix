@@ -1,5 +1,5 @@
-# Additional tools built on the completed base. Integration builds replace the
-# borrowed helpers without redefining the committed bootstrap graph.
+# Test consumers select package-owned tool variants. These rebuilds validate
+# alternative toolchain inputs; they do not define reusable production tools.
 {
   pkgs,
   tvp,
@@ -14,7 +14,7 @@ let
     glibc = components.libc;
     gnumake = components.floor.gnumake;
   };
-  build =
+  buildConsumer =
     package: args:
     (package.override (
       {
@@ -33,33 +33,26 @@ let
           };
         };
       });
+  owned = tvp.variants.gcc13-owned;
   inputs = {
-    m4 = build p.m4_1_4_21 { };
-    pkg-config = build p."pkg-config_0_29_2" { };
+    m4 = p.m4_1_4_21;
+    pkg-config = owned."pkg-config_0_29_2";
+    autoconf = p.autoconf_2_73;
   };
   packages = {
-    bison = build p.bison_3_8_2 {
-      inherit (inputs) m4;
-      inherit (components) perl;
-    };
-    texinfo = build p.texinfo_7_1 {
-      inherit (components) perl;
-      inherit (components.libraries) ncurses;
-      localeTools = components.libc.bin;
-    };
-    which = build p.which_2_21 { };
-    python-minimal = build p."python-minimal_3_12_5" {
-      inherit (components.floor) bash;
-    };
+    bison = owned.bison_3_8_2;
+    texinfo = owned.texinfo_7_1;
+    which = owned.which_2_21;
+    python-minimal = owned."python-minimal_3_12_5";
   };
   consumers = rec {
-    binutils = build p.binutils_2_42 {
+    binutils = buildConsumer p.binutils_2_42 {
       inherit (packages) bison texinfo;
       inherit (components) perl;
       inherit (components.libraries) zlib zstd;
       inherit (inputs) pkg-config;
     };
-    gcc = build p.gcc_13_3_0 {
+    gcc = buildConsumer p.gcc_13_3_0 {
       inherit binutils;
       inherit (packages) texinfo which;
       inherit (components) perl;
@@ -74,7 +67,7 @@ let
         libxcrypt
         ;
     };
-    glibc = build p.glibc_2_39 {
+    glibc = buildConsumer p.glibc_2_39 {
       inherit gcc binutils;
       inherit (packages) bison;
       python3Minimal = packages.python-minimal;

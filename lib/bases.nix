@@ -1,4 +1,4 @@
-{ lib }:
+{ lib, platforms }:
 rec {
   # Asserted against the stdenv, never supplied to it.
   mkBase =
@@ -39,6 +39,7 @@ rec {
           builtBy
           stdenv
           ;
+        platform = platforms.forStdenv stdenv;
       };
 
   # A base test runs *on* the base, so it is built by that base's own stdenv

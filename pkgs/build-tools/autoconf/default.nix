@@ -7,8 +7,16 @@ let
       builder = ./build-2.69.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
+        m4 = tvp.variants.gcc13.m4_1_4_21;
         perl = tvp.packages.perl_5_44_0;
+      };
+    };
+    "2.73" = {
+      builder = ./build-2.69.nix;
+      base = tvp.bases.gcc13-owned;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.bases.gcc13-owned.components.perl;
       };
     };
   };
@@ -17,7 +25,7 @@ let
 
   pname = "autoconf";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -25,11 +33,13 @@ let
     inherit versionTable;
 
     extraArgs = {
-      mkTests =
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
         autoconf:
         import ./tests {
           inherit pkgs tvpLib autoconf;
-        };
+        }
+      ) { inherit pkgs; };
     };
 
     # Not git-tags: the tag set carries betas, uses two naming conventions, and
@@ -55,9 +65,28 @@ let
     };
   };
 
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles = {
+        gcc13 = {
+          base = tvp.bases.gcc13;
+          versions."2.73" = {
+            deps = {
+              m4 = tvp.variants.gcc13.m4_1_4_21;
+              perl = tvp.packages.perl_5_44_0;
+            };
+          };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname

@@ -5,7 +5,7 @@
 }:
 let
   libc = gcc.tvp.deps.glibc;
-  flags = "-B${libc}/lib/ -idirafter ${pkgs.lib.getDev libc}/include -L${libc}/lib -Wl,-dynamic-linker,${libc}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${gcc}/lib -Wl,-rpath,${libc}/lib";
+  flags = "-B${libc}/lib/ -idirafter ${pkgs.lib.getDev libc}/include -L${libc}/lib -Wl,-dynamic-linker,${libc}/${gcc.platform.dynamicLinker} -Wl,-rpath,${gcc}/lib -Wl,-rpath,${libc}/lib";
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;

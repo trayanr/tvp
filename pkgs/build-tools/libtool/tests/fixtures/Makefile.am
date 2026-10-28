@@ -1,0 +1,9 @@
+ACLOCAL_AMFLAGS = -I m4
+lib_LTLIBRARIES = libanswer.la libcppanswer.la
+libanswer_la_SOURCES = answer.c
+libanswer_la_LDFLAGS = -version-info 1:0:0
+libcppanswer_la_SOURCES = cppanswer.cc
+libcppanswer_la_LDFLAGS = -version-info 1:0:0
+bin_PROGRAMS = answer
+answer_SOURCES = main.c
+answer_LDADD = libanswer.la libcppanswer.la

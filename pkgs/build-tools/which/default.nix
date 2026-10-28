@@ -17,7 +17,7 @@ let
     }
   ];
   pname = "which";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -26,8 +26,22 @@ let
       { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
     ) { inherit pkgs; };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      profiles = {
+        gcc13-owned = {
+          base = tvp.bases.gcc13-owned;
+          versions."2.21" = { };
+        };
+      };
+    }
+  );
+
 in
 {
-  inherit canonical;
+  inherit canonical variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

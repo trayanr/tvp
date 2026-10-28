@@ -1,0 +1,26 @@
+--- a/libtoolize.in
++++ b/libtoolize.in
+@@ -38,8 +38,8 @@
+ # with bootstrap, so set those here where they can still be over-
+ # ridden by the user, but otherwise take precedence.
+ 
+-: ${AUTOCONF="autoconf"}
+-: ${AUTOMAKE="automake"}
++: ${AUTOCONF="@TVP_AUTOCONF@"}
++: ${AUTOMAKE="@TVP_AUTOMAKE@"}
+ : ${EGREP="@EGREP@"}
+ : ${FGREP="@FGREP@"}
+ : ${GREP="@GREP@"}
+--- a/build-aux/ltmain.in
++++ b/build-aux/ltmain.in
+@@ -50,8 +50,8 @@
+ # with bootstrap, so set those here where they can still be over-
+ # ridden by the user, but otherwise take precedence.
+ 
+-: ${AUTOCONF="autoconf"}
+-: ${AUTOMAKE="automake"}
++: ${AUTOCONF="@TVP_AUTOCONF@"}
++: ${AUTOMAKE="@TVP_AUTOMAKE@"}
+ 
+ 
+ ## -------------------------- ##

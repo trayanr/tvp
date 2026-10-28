@@ -6,6 +6,20 @@
   base,
 }:
 {
+  autotools = tvpLib.tests.mkBatch {
+    inherit pkgs;
+    name = "base-${base.name}-autotools";
+    suite = base.autotoolsValidation.tests;
+  };
+  autotools-runtime-ownership = tvpLib.bases.mkOwnershipTest {
+    inherit pkgs base;
+    name = "autotools-runtime-ownership";
+    roots = base.autotoolsValidation.runtimePaths;
+    allowedRuntimePaths =
+      base.ownership.allowedRuntimePaths
+      ++ base.buildToolValidation.runtimePaths
+      ++ base.autotoolsValidation.runtimePaths;
+  };
   build-tools = tvpLib.tests.mkBatch {
     inherit pkgs;
     name = "base-${base.name}-build-tools";
