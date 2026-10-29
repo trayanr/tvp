@@ -38,19 +38,25 @@ reverse proxy on the host exposes the dashboard on its LAN address.
 
 1. Open independent PRs, such as "PHP 7.3", "PHP 7.2" and "older Autoconf".
 2. Add `ci:build` to each ready PR. Drafts are not scheduled.
-3. The next poll admits the current full head SHA and master/base SHA. Buildbot stores
-   the request in its local database and reports GitHub status **pending**.
+3. The next poll resolves the actual target ref, independently of the PR payload's
+   possibly stale base SHA, and compares that immutable tip with the full head SHA.
+   Only an ahead or identical head is admitted. Behind/diverged branches get a pending
+   `tvp/full` instruction to rebase or merge the target, without a build request.
+   Buildbot stores admitted requests in its database and reports **pending**.
 4. One full validation runs per worker; other PRs stay queued. Within that validation,
    Nix inherits its normal machine-wide job/core settings. CI adds no Nix resource caps.
 5. Read the failing version and test, fix the PR and push. Keeping `ci:build` attached
    automatically schedules its new head; no repeated labelling is needed.
-6. Merge a passing PR. Master receives its own full validation. Other labelled PRs
-   are also revalidated when their base changes, even if their head stays the same.
+6. Squash merge a passing PR, with `tvp/full` required and GitHub's up-to-date branch
+   requirement enabled. Master receives its own full validation. Update other labelled
+   branches to include the new target and wait for their updated heads to pass.
 
-Requests contain immutable SHAs, never a moving branch name. The worker merges the
-pinned base into the pinned head before evaluating the catalogue, so passing means
-that integration was tested. A merge conflict is a failed validation requiring an
-update to the PR. Evidence records head, base, resulting merge and frozen source/plan.
+Requests contain immutable head and target SHAs. Before any Nix evaluation or builds,
+the worker fetches the configured target branch (default master), requires its tip to
+equal the queued base and verifies that it is an ancestor of the head. An advance after
+admission requires a branch update and requeue. CI never edits the candidate branch or
+constructs a synthetic merge. Evidence records head, base and frozen source/plan;
+the compatibility field `identity.merge` equals the exact head.
 Two passing sibling PRs are not a guarantee that their later combination passes.
 
 The first queue preserves requests rather than silently collapsing different commits.
@@ -60,9 +66,12 @@ available through the authenticated Buildbot Rebuild action. Removing the label 
 future admissions; already queued/running requests remain until an operator cancels
 or they finish. Closing a PR has the same admission-only effect.
 
-The poller paginates all open PRs, compares complete SHAs and persists delivery state
-only after Buildbot accepts a change. Restarting does not forget previously admitted
-identities. A crash between delivery and recording may produce a duplicate request;
+The poller paginates all open PRs and resolves each eligible target branch once per
+poll, even when the PR payload base stays unchanged. No eligible PR means no target
+lookup. It persists complete admitted identities after Buildbot accepts a change,
+and blocked identities after successful status reporting. Restarts do not repeat
+successful deliveries or blocked reports; failed HTTP lookups or writes are retried.
+A crash between delivery and recording may produce a duplicate request or status;
 it must not lose a build. The queue database and controller state stay on local disk.
 
 ## What a full validation does
@@ -75,8 +84,8 @@ happen under the worker account.
 For PRs:
 
 1. Fetch exact head and base commits into separate work directories.
-2. Form their integration tree and record its identity.
-3. Evaluate the queued target-master and merged-candidate producer graphs. Report
+2. Recheck the current target and ancestry; record the unchanged head's identity.
+3. Evaluate the immutable target and exact-head producer graphs. Report
    additions, changes and removals, retaining exact before/after identities in
    `graph-diff.json`. These differences are informational and do not skip builds.
 4. Run `nix flake check --no-build` on the candidate.
@@ -97,7 +106,7 @@ Dependency selectors may advance when a release is added; affected consumers the
 new producer paths. Review those differences and the full validation results together.
 The report does not infer whether a change is compatible or intentional. There is no
 controller-owned allowance gate for changed or removed producers. Invalid snapshots,
-evaluation errors, merge conflicts and failed validation still fail the build.
+evaluation errors, stale/diverged branches and failed validation still fail the build.
 
 ## GitHub and local communication
 
