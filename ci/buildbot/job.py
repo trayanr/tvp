@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trusted worker harness: pinned integration tree, graph report, frozen full suite."""
+"""Trusted worker harness: exact PR head, current target gate, frozen full suite."""
 import argparse
 import fcntl
 import json
@@ -40,6 +40,26 @@ def wait_for_run(runner, run):
             signal.signal(sig, handler)
 
 
+def require_current_target(repository, candidate, base, head, branch):
+    if not re.fullmatch(r"[0-9a-f]{40}", base):
+        raise ValueError("A full immutable base SHA is required")
+    if not branch or branch.startswith("-") or any(c in branch for c in "\r\n"):
+        raise ValueError("Invalid target branch")
+    # Validate a literal heads ref, without Git's branch shorthand expansion.
+    execute(["git", "check-ref-format", f"refs/heads/{branch}"], stdout=subprocess.DEVNULL)
+    execute(["git", "-C", str(candidate), "-c", "core.hooksPath=/dev/null",
+             "fetch", "--no-tags", "--", f"https://github.com/{repository}.git", f"refs/heads/{branch}"])
+    current = subprocess.check_output([
+        "git", "-C", str(candidate), "rev-parse", "--verify", "FETCH_HEAD^{commit}"
+    ], text=True).strip()
+    if current != base:
+        raise ValueError("Target branch advanced after admission; update the PR branch and requeue")
+    ancestry = subprocess.run(["git", "-C", str(candidate), "merge-base", "--is-ancestor", base, head])
+    if ancestry.returncode == 1:
+        raise ValueError("PR branch must contain the current target; rebase or merge it before testing")
+    ancestry.check_returncode()
+
+
 def validate(args):
     # The detached runner must not outlive its controlling Buildbot command,
     # including a forced kill or a stop before start returns the run identity.
@@ -57,23 +77,17 @@ def validate_owned(args, owner_path):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
         raise ValueError("Invalid GitHub repository")
     root = Path.cwd()
-    nix_version = subprocess.check_output(["nix", "--version"], text=True).strip()
-    print(nix_version, flush=True)
     evidence = root / "evidence"
     evidence.mkdir(exist_ok=True)
     candidate, base = root / "candidate", root / "base"
     checkout(args.repository, args.head, candidate)
     base_sha = args.base or args.head
+    if args.base:
+        require_current_target(args.repository, candidate, base_sha, args.head, args.target_branch)
     checkout(args.repository, base_sha, base)
-    if base_sha != args.head:
-        # Both histories are fetched in full: the common ancestor is needed for a real merge.
-        execute(["git", "-C", str(candidate), "fetch", "--no-tags",
-                 f"https://github.com/{args.repository}.git", base_sha])
-        execute(["git", "-C", str(candidate), "-c", "core.hooksPath=/dev/null",
-                 "-c", "user.name=TVP CI", "-c", "user.email=ci@tvp.invalid",
-                 "-c", "commit.gpgSign=false", "merge", "--no-edit", base_sha])
-    merge = subprocess.check_output(["git", "-C", str(candidate), "rev-parse", "HEAD"], text=True).strip()
-    identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": merge}
+    nix_version = subprocess.check_output(["nix", "--version"], text=True).strip()
+    print(nix_version, flush=True)
+    identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": args.head}
     identity["nixVersion"] = nix_version
     (evidence / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
     # Record producers for master too. Normal evaluation registers generated
@@ -151,6 +165,7 @@ def main():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--head", required=True)
     parser.add_argument("--base", default="")
+    parser.add_argument("--target-branch", default="master")
     parser.add_argument("--tools-ref", required=True)
     parser.add_argument("--compare", required=True)
     args = parser.parse_args()

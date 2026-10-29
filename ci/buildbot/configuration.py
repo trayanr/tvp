@@ -37,6 +37,7 @@ def make_config(settings, source):
         command = ["python3", "job.py", "--repository", repository,
                    "--head", props.getProperty("revision"),
                    "--base", props.getProperty("tvp_base", ""),
+                   "--target-branch", settings.get("branch", "master"),
                    "--tools-ref", tools_ref, "--compare", "compare.py"]
         return command
     factory.addStep(steps.SetPropertyFromCommand(

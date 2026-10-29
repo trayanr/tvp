@@ -13,9 +13,17 @@ the repository. The service files and `config.example.json` are templates.
 ## Developer workflow
 
 Open a non-draft expansion PR from a branch in this repository, targeting master, then
-add `ci:build`. New commits requeue automatically while the label remains. Both PRs and
+add `ci:build`. The branch must already contain the **current** target tip: rebase or
+merge master into it before testing. CI tests that exact PR head and never constructs
+a merge commit. A behind or diverged branch gets a pending `tvp/full` instruction
+without a full build. New commits requeue automatically while the label remains. Both PRs and
 master run the full catalogue. Existing local Nix outputs are reused; there is no TVP
 binary-cache service yet. Fork PRs require a later disposable VM worker pool.
+
+Use squash merge after the exact head passes. Require `tvp/full` and an up-to-date
+branch in GitHub's merge protection. After another PR lands, update remaining branches
+and wait for their new heads to pass before squash merging them. A target advance
+after admission also stops a queued PR before Nix evaluation; update it and requeue.
 
 On GitHub, inspect the `tvp/full` status for counts and failing versions. The local
 Buildbot UI provides the queue, Rebuild action and complete failure logs. Buildbot binds
@@ -53,8 +61,9 @@ producer graph, flake checks and full test plan. It builds no packages. Choose a
 evidence directory on each run so existing store paths cannot hide evaluation errors.
 
 A separate integration smoke test validates a master checkout with a fresh generated
-input, then merges two diverging local Git histories. Both execute a tiny frozen plan
-with Nix. It does not contact GitHub;
+input. It rejects outdated and diverging PR histories before Nix, then validates the
+exact head after an explicit author merge of the target. Master and updated PR execute
+a tiny frozen plan with Nix. It does not contact GitHub;
 Nix may fetch dependencies for the already pinned Nixpkgs input:
 
 ```sh
@@ -136,7 +145,8 @@ this implementation.
 
 ## Graph changes
 
-PR validation compares the queued target-master revision with the PR's merged result.
+PR validation compares the immutable current target admitted by the poller with the
+exact PR head. The worker rechecks that target before evaluating either graph.
 The comparison reports added, changed and removed producers in the build log and saves
 exact before/after identities in `evidence/graph-diff.json`. It is informational:
 dependency updates and other graph changes continue into the full validation without
@@ -197,4 +207,4 @@ nix run .#test -- status --state-dir .tvp-tests/ci --json
 
 This uses the existing frozen-plan runner, inherits Nix's job/core settings and retains
 logs, result roots and terminal `ci-status.json`. The Buildbot harness adds pinned
-integration, trusted graph comparison and reporting around that same runner.
+head validation, trusted graph comparison and reporting around that same runner.
