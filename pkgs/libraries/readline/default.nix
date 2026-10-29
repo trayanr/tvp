@@ -119,6 +119,10 @@ let
     packageArgs
     // {
       inherit pkgs;
+      profiles.ncurses64 = {
+        base = tvp.bases.default;
+        versions."8.3".deps.ncurses = tvp.packages.ncurses_6_4;
+      };
       profiles.gcc13 = {
         base = tvp.bases.gcc13;
         versions."8.3" = {

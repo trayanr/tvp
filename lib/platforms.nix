@@ -9,6 +9,8 @@ let
       config = "x86_64-unknown-linux-gnu";
       dynamicLinker = "lib/ld-linux-x86-64.so.2";
       linuxHeadersArch = "x86";
+      goOS = "linux";
+      goArch = "amd64";
       libcLibdirAliases = [ "lib64" ];
     };
   };

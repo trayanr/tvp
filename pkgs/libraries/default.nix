@@ -8,6 +8,7 @@ tvp.lib.packages.mergeNamespaces {
   linux-headers = import ./linux-headers { inherit pkgs tvp; };
   gmp = import ./gmp { inherit pkgs tvp; };
   mpfr = import ./mpfr { inherit pkgs tvp; };
+  mpdecimal = import ./mpdecimal { inherit pkgs tvp; };
   mpc = import ./mpc { inherit pkgs tvp; };
   isl = import ./isl { inherit pkgs tvp; };
   openssl = import ./openssl { inherit pkgs tvp; };

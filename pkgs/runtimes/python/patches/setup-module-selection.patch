@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -48,7 +48,7 @@
+ COMPILED_WITH_PYDEBUG = ('--with-pydebug' in sysconfig.get_config_var("CONFIG_ARGS"))
+ 
+ # This global variable is used to hold the list of modules to be disabled.
+-disabled_module_list = []
++disabled_module_list = @TVP_DISABLED_MODULES@
+ 
+ def add_dir_to_list(dirlist, dir):
+     """Add the directory 'dir' to the list 'dirlist' (after any relative

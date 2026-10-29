@@ -1,0 +1,11 @@
+--- a/Lib/subprocess.py
++++ b/Lib/subprocess.py
+@@ -1240,7 +1240,7 @@
+                 args = list(args)
+ 
+             if shell:
+-                args = ["/bin/sh", "-c"] + args
++                args = ["@TVP_SHELL@", "-c"] + args
+                 if executable:
+                     args[0] = executable
+ 

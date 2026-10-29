@@ -820,3 +820,29 @@ derivation-neutral. The only way to know is to look.
 
 **Note:** `git add` new files before evaluating. The flake source is the git tree, so an
 untracked file is invisible to Nix.
+
+## Python profiles and Go bootstrap
+
+`python-minimal` and `python-build` retain their independently pinned build-interpreter
+profiles. The `python` family supplies general-purpose interpreters with explicit TLS,
+FFI, databases, terminal and compression inputs, plus upstream's bundled ensurepip for
+offline virtual environments. Tk, the optional native UUID helper and NIS omissions are
+recorded in the profile rather than left to host detection. Python 3.5/3.6 use the existing
+GCC 9 compatibility base; 3.7 onward use the owned default. Python 3.5 uses the named
+`ncurses64` Readline variant and matching Ncurses 6.4 public WINDOW headers. Library and compiler ceilings
+live in version definitions; modern C API tests remain alongside guarded legacy consumers.
+
+`go-bootstrap_20171003` builds upstream's dated C-source bootstrap distribution. Its archive
+retains `go1.4-bootstrap-20170531` in VERSION; the package records both facts explicitly.
+Regular `go` definitions pin an earlier compiler through `deps.bootstrap`. The chain is
+C bootstrap → Go 1.17.13 → 1.20.14 → 1.22.12 → 1.24.13 → 1.27.3. Every stage builds from
+source. Native Go OS/architecture and ELF loader settings come from the platform interface;
+C/C++ compiler defaults are pinned to the selected base. Cross compilation is not implied.
+Automatic toolchain and module downloads are disabled during builds and validation.
+Go 1.22+ also defaults its installed toolchain selection to `local`, so a version pin
+does not silently select a downloaded compiler; explicit user overrides still work.
+
+For example, `nix shell .#python_3_12_16 .#go_1_27_3` selects those canonical toolchains.
+The Python suite tests native extensions, embedding, offline venv/pip, standard-library
+behavior and exact library linkage. Go tests include offline local modules, cgo and its
+owned loader/libc, and standard-library tests.
