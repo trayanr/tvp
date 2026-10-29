@@ -265,18 +265,21 @@ let
         let
           probe =
             stdenv:
-            (stdenv.mkDerivation (finalAttrs: {
-              pname = "mkderivation-probe";
-              version = "1";
-              src = null;
-              dontUnpack = true;
-              configureFlags = [ "--probe" ];
-              buildInputs = [ pkgs.zlib ];
-              nativeBuildInputs = [ pkgs.pkg-config ];
-              hardeningDisable = [ "format" ];
-              enableParallelBuilding = true;
-              installPhase = "mkdir -p $out";
-            })).drvPath;
+            builtins.unsafeDiscardStringContext
+              (stdenv.mkDerivation (finalAttrs: {
+                pname = "mkderivation-probe";
+                version = "1";
+                src = null;
+                dontUnpack = true;
+                configureFlags = [ "--probe" ];
+                buildInputs = [ pkgs.zlib ];
+                nativeBuildInputs = [ pkgs.pkg-config ];
+                hardeningDisable = [ "format" ];
+                enableParallelBuilding = true;
+                installPhase = "mkdir -p $out";
+              })).drvPath;
+          # These are identities to compare, not build dependencies. Keeping
+          # their context requires an unwritten probe drv during read-only checks.
           # Compare the borrowed environment to its original Nixpkgs builder.
           # The default now constructs a deliberately different owned environment.
           tvp = probe construction.bases.gcc13.stdenv;

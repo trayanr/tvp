@@ -42,6 +42,16 @@ on PATH, so host Nix upgrades also apply to CI. Each run records the Nix version
 CI evaluation and build commands enable `--show-trace`; failures retain the full Nix
 trace in the build logs.
 
+To check startup against a fresh store, run this in the CI shell:
+
+```sh
+python3 ci/buildbot/tests/evaluation.py --evidence .tvp-tests/evaluation
+```
+
+This copies the locked flake inputs into an isolated local store, then evaluates the
+producer graph, flake checks and full test plan. It builds no packages. Choose a new
+evidence directory on each run so existing store paths cannot hide evaluation errors.
+
 A separate integration smoke test validates a master checkout with a fresh generated
 input, then merges two diverging local Git histories. Both execute a tiny frozen plan
 with Nix. It does not contact GitHub;
