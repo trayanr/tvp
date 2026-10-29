@@ -1,0 +1,21 @@
+[Unit]
+Description=TVP local CI controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tvp-controller
+Group=tvp-controller
+StateDirectory=tvp-controller
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/tvp-controller
+Environment=TVP_CI_SOURCE=/opt/tvp-ci
+Environment=TVP_CI_CONFIG=/var/lib/tvp-controller/config.json
+ExecStart=/nix/var/nix/profiles/default/bin/nix-shell /opt/tvp-ci/ci/buildbot/shell.nix --run "buildbot start --nodaemon /var/lib/tvp-controller"
+Restart=on-failure
+RestartSec=10
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

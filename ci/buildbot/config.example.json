@@ -1,0 +1,8 @@
+{
+  "repository": "trayanr/tvp",
+  "branch": "master",
+  "label": "ci:build",
+  "controller_revision": "REPLACE_WITH_REVIEWED_FULL_CI_COMMIT_SHA",
+  "secrets_directory": "/var/lib/tvp-controller/secrets",
+  "dashboard_url": "http://localhost:8010/"
+}

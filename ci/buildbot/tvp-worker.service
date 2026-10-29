@@ -1,0 +1,21 @@
+[Unit]
+Description=TVP trusted-repository CI worker
+After=tvp-controller.service
+Wants=tvp-controller.service
+
+[Service]
+Type=simple
+User=tvp-worker
+Group=tvp-worker
+StateDirectory=tvp-worker
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/tvp-worker
+Environment=TVP_CI_WORKER_PASSWORD_FILE=/var/lib/tvp-worker/worker-password
+Environment=TVP_CI_WORKER_DIRECTORY=/var/lib/tvp-worker
+ExecStart=/nix/var/nix/profiles/default/bin/nix-shell /opt/tvp-ci/ci/buildbot/shell.nix --run "twistd --nodaemon --logfile=- --python /opt/tvp-ci/ci/buildbot/worker.tac"
+Restart=on-failure
+RestartSec=10
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
