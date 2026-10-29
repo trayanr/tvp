@@ -5,11 +5,12 @@
   pkgs,
   tvp,
   builtBy,
+  inputs,
 }:
 let
   inherit (pkgs) lib;
   # The seed generation must not follow canonical packages through `default`.
-  p = tvp.variants.gcc13;
+  p = inputs;
   platform = tvp.lib.platforms.forStdenv builtBy.stdenv;
   mkStdenv = import ../stdenv {
     inherit lib platform;

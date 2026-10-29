@@ -17,7 +17,7 @@ let
       builder = ./build-6.0.nix;
       base = tvp.bases.gcc9;
       deps = {
-        pkg-config = tvp.variants.gcc13."pkg-config_0_29_2";
+        pkg-config = tvp.packages."pkg-config_0_29_2";
       };
     };
 
@@ -27,7 +27,7 @@ let
       builder = ./build-5.8.nix;
       base = tvp.bases.gcc49;
       deps = {
-        pkg-config = tvp.variants.gcc13."pkg-config_0_29_2";
+        pkg-config = tvp.packages."pkg-config_0_29_2";
       };
       opts = {
         hardeningDisable = [ "format" ];
@@ -102,24 +102,11 @@ let
   };
 
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = tvp.bases.gcc13;
-        versions."6.6" = {
-          deps = {
-            pkg-config = tvp.variants.gcc13.pkg-config_0_29_2;
-          };
-        };
-      };
-    }
-  );
 
 in
 {
-  inherit canonical variants;
+  recipes.${pname} = packageArgs;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname

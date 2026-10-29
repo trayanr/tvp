@@ -100,5 +100,9 @@ in
     ++ lib.attrValues packages
     ++ lib.attrValues runtimeDependencies
     ++ lib.attrValues consumers
-    ++ [ consumers.glibc.bin ];
+    ++ [
+      consumers.glibc.bin
+      # glibc installs symlinks to its selected Linux UAPI headers.
+      consumers.glibc.tvp.deps.linuxHeaders
+    ];
 }

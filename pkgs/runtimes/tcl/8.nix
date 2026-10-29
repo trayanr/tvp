@@ -1,7 +1,7 @@
 { defs }:
 [
   {
-    def = defs."8.6.2";
+    def = defs."8.6.5";
     releases = {
       "8.6.18" = "sha256-FPmvMrF2f/cYR3qPl0rQPDQ0EJfmtD9M5UZE7pdOJo4=";
       "8.6.17" = "sha256-o5Azce/M6KQFxcJF0Cnp9oUCWKYPo3YcTViZVhCUmzE=";
@@ -17,6 +17,12 @@
       "8.6.7" = "sha256-fGuPhONzMkI8/luuUDRA2IRQ2ozBJDSWJJ+qUmgCa6U=";
       "8.6.6" = "sha256-omVAl4Hks+3MTvgiUzBxs0w9xnkLiTljgJuf4iG+/gc=";
       "8.6.5" = "sha256-zibVucdQT8JdLxDvC4KxTPEXMVRFta+p5nPtMxgw+1M=";
+    };
+  }
+
+  {
+    def = defs."8.6.2";
+    releases = {
       "8.6.4" = "sha256-nm7ZTJgcHQxfX++4ES0Gxr9NBQpzJ+lecdQXxBZRnI0=";
       "8.6.3" = "sha256-bOB3jeDVDaqpw0XXwf0SiPtlj2dAKIEufu7pkuMFEAU=";
       "8.6.2" = "sha256-hveuX1gd0JBNBEFWN6s671pQmGwbbQTDQOKxsCWNqcQ=";

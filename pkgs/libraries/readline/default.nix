@@ -123,19 +123,12 @@ let
         base = tvp.bases.default;
         versions."8.3".deps.ncurses = tvp.packages.ncurses_6_4;
       };
-      profiles.gcc13 = {
-        base = tvp.bases.gcc13;
-        versions."8.3" = {
-          deps = {
-            ncurses = tvp.variants.gcc13.ncurses_6_6;
-          };
-        };
-      };
     }
   );
 
 in
 {
+  recipes.${pname} = packageArgs;
   inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     inherit

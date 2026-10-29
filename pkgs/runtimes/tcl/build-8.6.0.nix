@@ -18,6 +18,7 @@
   pkgConfigVersion ? version,
 
   reportedVersion ? version,
+  linkUnwinder ? false,
 
   version,
   sha256,
@@ -28,6 +29,11 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "tcl";
   inherit version;
+  env = lib.optionalAttrs linkUnwinder {
+    # glibc loads this library during pthread_exit. A direct dependency keeps
+    # it available after unused RPATHs are removed.
+    NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
+  };
 
   # 8.3.5 onwards publish tclX.Y.Z-src.tar.gz; older releases are tclX.Y.Z.tar.gz.
   src = fetchurl {

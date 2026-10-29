@@ -1,13 +1,13 @@
-{ pkgs, tvp }:
+{
+  pkgs,
+  tvp,
+  registry,
+}:
 let
   inherit (pkgs) lib;
   packages = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") tvp.canonical;
   compositions = lib.mapAttrs' (name: p: lib.nameValuePair "android:${name}" p) tvp.android.profiles;
   roots = packages // compositions;
-  registry = tvp.lib.provenance.registry {
-    inherit (tvp) canonical variants bases;
-    compositions = tvp.android.profiles;
-  };
   manifest = {
     roots = lib.attrNames roots;
     legacy = builtins.fromJSON (builtins.readFile ./runtime-baseline.json);

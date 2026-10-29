@@ -17,6 +17,10 @@ rec {
       variants,
       bases,
       compositions ? { },
+      construction ? {
+        bases = { };
+        variants = { };
+      },
     }:
     let
       buildable = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken");
@@ -35,10 +39,13 @@ rec {
             blob = p.tvp.blob or null;
           }) p.outputs
         ) (lib.attrNames (buildable packages));
+      registeredBases =
+        bases
+        // lib.mapAttrs' (name: b: lib.nameValuePair "bootstrap.${name}" b) construction.bases;
       baseRows = lib.concatMap (
         name:
         let
-          b = bases.${name};
+          b = registeredBases.${name};
         in
         map (p: {
           name = "base:${name}";
@@ -49,7 +56,7 @@ rec {
           base = name;
           blob = null;
         }) b.ownership.allowedRuntimePaths
-      ) (lib.attrNames (lib.filterAttrs (name: b: b.name == name && b ? ownership) bases));
+      ) (lib.attrNames (lib.filterAttrs (_: b: b ? ownership) registeredBases));
     in
     packageRows "canonical" canonical
     ++ lib.concatMap (
@@ -58,6 +65,14 @@ rec {
         lib.mapAttrs' (name: p: lib.nameValuePair "${profile}/${name}" p) variants.${profile}
       )
     ) (lib.attrNames variants)
+    ++ lib.concatMap (
+      profile:
+      packageRows "bootstrap" (
+        lib.mapAttrs' (
+          name: p: lib.nameValuePair "bootstrap/${profile}/${name}" p
+        ) construction.variants.${profile}
+      )
+    ) (lib.attrNames construction.variants)
     ++ baseRows
     ++ lib.mapAttrsToList (name: p: {
       inherit name;

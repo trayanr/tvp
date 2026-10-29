@@ -4,6 +4,7 @@
   pkgs,
   tvpLib,
   tvp,
+  recipes,
 }:
 let
   inherit (pkgs) lib;
@@ -38,27 +39,22 @@ let
     "file"
   ];
 
+  construction = import ./gcc13-owned/inputs {
+    inherit
+      pkgs
+      tvpLib
+      tvp
+      recipes
+      ;
+  };
+
   canonical =
     lib.mapAttrs (_: base: base // { tests = import ./tests { inherit pkgs tvpLib base; }; })
       {
         gcc13-owned-v2 = import ./gcc13-owned-v2 {
           inherit pkgs tvp;
-          builtBy = tvp.bases.gcc13-owned;
-        };
-        gcc13-owned = import ./gcc13-owned {
-          inherit pkgs tvp;
-          builtBy = tvp.bases.gcc13;
-        };
-        # Not `gcc13Stdenv`: same compiler, different derivation, so it would rebuild
-        # every package to no effect.
-        gcc13 = mkBase {
-          name = "gcc13";
-          cc = "13.3.0";
-          binutils = "2.42";
-          libc = "2.39";
-          builtBy = null;
-          inherit floor;
-          stdenv = withTvpMkDerivation pkgs.stdenv;
+          builtBy = construction.bases.gcc13-owned;
+          patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
         };
 
         gcc9 = mkBase {
@@ -85,12 +81,16 @@ let
       };
 
   aliases = {
-    default = canonical.gcc13-owned;
+    default = canonical.gcc13-owned-v2;
+    gcc13-owned = canonical.gcc13-owned-v2;
   };
 
   shadowed = lib.intersectLists (lib.attrNames canonical) (lib.attrNames aliases);
 in
 if shadowed == [ ] then
-  canonical // aliases
+  {
+    bases = canonical // aliases;
+    inherit construction;
+  }
 else
   throw "TVP: base aliases shadow canonical names: ${lib.concatStringsSep ", " shadowed}"

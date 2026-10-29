@@ -47,29 +47,10 @@ let
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles = {
-        gcc13 = {
-          base = tvp.bases.gcc13;
-          versions."7.1" = {
-            deps = {
-              perl = tvp.variants.gcc13.perl_5_44_0;
-              ncurses = tvp.variants.gcc13.ncurses_6_6;
-              # This makeinfo builds GCC, which builds TVP's first glibc.
-              # Its locale program must therefore come from the seed libc.
-              localeTools = tvp.bases.gcc13.stdenv.cc.libc.bin;
-            };
-          };
-        };
-      };
-    }
-  );
 
 in
 {
-  inherit canonical variants;
+  recipes.${pname} = packageArgs;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

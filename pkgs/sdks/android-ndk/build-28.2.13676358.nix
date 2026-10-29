@@ -26,6 +26,8 @@ stdenv.mkDerivation (finalAttrs: {
   dontConfigure = true;
   dontBuild = true;
   dontStrip = true;
+  # Host executables are fixed explicitly; preserve upstream target artifacts.
+  dontShrinkRpaths = true;
   dontPatchShebangs = true;
   installPhase = ''
     runHook preInstall

@@ -25,6 +25,7 @@
   finalizeEx ? true,
   embedFlag ? true,
   textSubprocess ? true,
+  linkUnwinder ? false,
   disabledModules,
   upstreamModules ? [
     "test_ssl"
@@ -46,6 +47,11 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "python";
   inherit version patches;
+  env = lib.optionalAttrs linkUnwinder {
+    # Older thread/process shutdown paths call pthread_exit. glibc needs the
+    # shared unwinder loaded despite Python having no direct symbol reference.
+    NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
+  };
   src = fetchurl {
     url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
     inherit sha256;

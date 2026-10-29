@@ -356,6 +356,7 @@ rec {
     lib.genAttrs names (profile: merge (lib.mapAttrs (_: profiles: profiles.${profile} or { }) sets));
 
   mergeNamespaces = sets: {
+    recipes = merge (lib.mapAttrs (_: s: s.recipes or { }) sets);
     canonical = merge (lib.mapAttrs (_: s: s.canonical) sets);
     aliases = merge (lib.mapAttrs (_: s: s.aliases) sets);
     variants = mergeVariants (lib.mapAttrs (_: s: s.variants or { }) sets);

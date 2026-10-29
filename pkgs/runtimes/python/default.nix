@@ -108,6 +108,7 @@ let
     "3.7.17" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_1_1_1w;
@@ -173,6 +174,7 @@ let
           reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
         }
       ];
+      opts.linkUnwinder = true;
       opts.opensslRpath = false;
       opts.platlibdir = false;
       opts.upstreamModules = [

@@ -79,26 +79,10 @@ let
       };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = tvp.bases.gcc13;
-        versions."5.2.2" = {
-          deps = {
-            gmp = tvp.variants.gcc13.gmp_6_3_0;
-            mpfr = tvp.variants.gcc13.mpfr_4_2_1;
-            ncurses = tvp.variants.gcc13.ncurses_6_6;
-            readline = tvp.variants.gcc13.readline_8_3;
-          };
-        };
-      };
-    }
-  );
 
 in
 {
-  inherit canonical variants;
+  recipes.${pname} = packageArgs;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

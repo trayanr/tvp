@@ -4,23 +4,23 @@ let
   defs = tvpLib.packages.mkDefs {
     "13.3.0" = {
       builder = ./build-13.3.nix;
-      base = tvp.bases.gcc13;
+      base = tvp.bases.default;
       # Upstream libcpp uses nonliteral diagnostics with no format arguments.
       opts.hardeningDisable = [ "format" ];
       deps = {
-        binutils = tvp.variants.gcc13.binutils_2_42;
-        gmp = tvp.variants.gcc13.gmp_6_3_0;
-        mpfr = tvp.variants.gcc13.mpfr_4_2_1;
-        mpc = tvp.variants.gcc13.mpc_1_3_1;
-        isl = tvp.variants.gcc13.isl_0_20;
-        zlib = tvp.variants.gcc13.zlib_1_3_2;
-        zstd = tvp.variants.gcc13.zstd_1_5_6;
-        libxcrypt = tvp.variants.gcc13.libxcrypt_4_4_36;
-        perl = tvp.variants.gcc13.perl_5_44_0;
-        texinfo = tvp.variants.gcc13.texinfo_7_1;
-        which = tvp.variants.gcc13.which_2_21;
-        # The first compiler needs a libc from its explicit bootstrap parent.
-        glibc = tvp.bases.gcc13.stdenv.cc.libc;
+        binutils = tvp.packages.binutils_2_42;
+        gmp = tvp.packages.gmp_6_3_0;
+        mpfr = tvp.packages.mpfr_4_2_1;
+        mpc = tvp.packages.mpc_1_3_1;
+        isl = tvp.packages.isl_0_20;
+        zlib = tvp.packages.zlib_1_3_2;
+        zstd = tvp.packages.zstd_1_5_6;
+        libxcrypt = tvp.packages.libxcrypt_4_4_36;
+        perl = tvp.packages.perl_5_44_0;
+        texinfo = tvp.packages.texinfo_7_1;
+        which = tvp.packages.which_2_21;
+        # Use the base libc; canonical glibc itself is built with this compiler.
+        glibc = tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
         {
@@ -56,33 +56,10 @@ let
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = tvp.bases.gcc13;
-        versions."13.3.0" = {
-          deps = {
-            binutils = tvp.variants.gcc13.binutils_2_42;
-            gmp = tvp.variants.gcc13.gmp_6_3_0;
-            isl = tvp.variants.gcc13.isl_0_20;
-            libxcrypt = tvp.variants.gcc13.libxcrypt_4_4_36;
-            mpc = tvp.variants.gcc13.mpc_1_3_1;
-            mpfr = tvp.variants.gcc13.mpfr_4_2_1;
-            perl = tvp.variants.gcc13.perl_5_44_0;
-            texinfo = tvp.variants.gcc13.texinfo_7_1;
-            which = tvp.variants.gcc13.which_2_21;
-            zlib = tvp.variants.gcc13.zlib_1_3_2;
-            zstd = tvp.variants.gcc13.zstd_1_5_6;
-          };
-        };
-      };
-    }
-  );
 
 in
 {
-  inherit canonical variants;
+  recipes.${pname} = packageArgs;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

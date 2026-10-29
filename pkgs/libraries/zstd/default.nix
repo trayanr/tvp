@@ -32,24 +32,10 @@ let
     };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = tvp.bases.gcc13;
-        versions."1.5.6" = {
-          deps = {
-            xz = tvp.variants.gcc13.xz_5_8_3;
-            zlib = tvp.variants.gcc13.zlib_1_3_2;
-          };
-        };
-      };
-    }
-  );
 
 in
 {
-  inherit canonical variants;
+  recipes.${pname} = packageArgs;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

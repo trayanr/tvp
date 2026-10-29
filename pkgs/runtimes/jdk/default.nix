@@ -4,8 +4,8 @@ let
   platform = tvpLib.platforms.forStdenv tvp.bases.default.stdenv;
   defs = tvpLib.packages.mkDefs {
     "21.0.13" = {
-      builder = ./hardened/build-21.0.13.nix;
-      base = tvp.bases.gcc13-owned-v2;
+      builder = ./build-21.0.13.nix;
+      base = tvp.bases.default;
       deps = {
         xorgproto = tvp.packages.xorgproto_2026_1;
         libx11 = tvp.packages.libx11_1_8_14;
@@ -63,27 +63,9 @@ let
       };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      versionTable = builtins.mapAttrs (
-        _: entry:
-        entry
-        // {
-          def = entry.def // {
-            builder = ./build-21.0.13.nix;
-          };
-        }
-      ) versionTable;
-      profiles.gcc13-owned = {
-        base = tvp.bases.gcc13-owned;
-        versions."21.0.13" = { };
-      };
-    }
-  );
+
 in
 {
-  inherit canonical variants;
+  inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

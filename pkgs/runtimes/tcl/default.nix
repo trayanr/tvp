@@ -20,6 +20,15 @@ let
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
+      opts.linkUnwinder = true;
+    };
+
+    "8.6.5" = {
+      builder = ./build-8.6.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        zlib = tvp.packages.zlib_1_3_2;
+      };
     };
 
     "8.0.2" = {
@@ -75,6 +84,7 @@ let
       };
       opts = {
         pkgConfigVersion = "8.6";
+        linkUnwinder = true;
       };
     };
   };

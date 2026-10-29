@@ -3,7 +3,7 @@ let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
     "0.19.2" = {
-      builder = ./build-0.19.2.nix;
+      builder = ./trimmed/build-0.19.2.nix;
       base = tvp.bases.default;
       deps = { };
     };
@@ -15,7 +15,7 @@ let
       releases."0.19.2" = "sha256-1K2aTlxongkRnOLzCpSw6LT5jHhZASPqIWZeNMaSiAE=";
     }
   ];
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -30,8 +30,11 @@ let
         };
       };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+
 in
 {
+  recipes.${pname} = (packageArgs // { constructionBuilder = ./build-0.19.2.nix; });
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

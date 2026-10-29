@@ -9,7 +9,12 @@ let
   # The ground packages are built on. Defined before `packages` because every
   # version table names one, and exposed on `tvp` so a version table can reach
   # it the same way it reaches `tvp.packages`.
-  bases = import ./bases { inherit pkgs tvpLib tvp; };
+  baseSet = import ./bases {
+    inherit pkgs tvpLib tvp;
+    inherit (universe) recipes;
+  };
+  bases = baseSet.bases;
+  construction = baseSet.construction;
 
   universe = import ./pkgs { inherit pkgs tvp; };
 
@@ -19,6 +24,16 @@ let
   canonical = universe.canonical;
   packages = canonical // universe.aliases;
   variants = universe.variants;
+  allVariantPackages =
+    tvpLib.packages.merge (
+      pkgs.lib.mapAttrs (
+        profile: entries:
+        pkgs.lib.mapAttrs' (
+          name: package: pkgs.lib.nameValuePair "bootstrap-${profile}-${name}" package
+        ) entries
+      ) construction.variants
+    )
+    // variantPackages;
   variantPackages = tvpLib.packages.merge (
     pkgs.lib.mapAttrs (
       profile: entries:
@@ -28,248 +43,266 @@ let
     ) variants
   );
 
+  runtimeRegistry = tvpLib.provenance.registry {
+    inherit
+      canonical
+      variants
+      bases
+      construction
+      ;
+    compositions = tvp.android.profiles;
+  };
+
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
-  checks = (import ./audits { inherit pkgs tvp; }) // {
-    android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
-    bootstrap-independent = import ./bases/tests/bootstrap.nix {
-      inherit pkgs;
-      parent = bases.gcc13;
-      owned = bases.gcc13-owned;
-      packages = variants.gcc13;
-    };
-    test-runner = pkgs.callPackage ./tools/test-runner/tests { };
-    native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
-    variants-evaluate =
-      let
-        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") variantPackages;
-        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
-        manifest = pkgs.lib.mapAttrsToList (
-          name: p: "${name} ${builtins.unsafeDiscardStringContext p.drvPath}"
-        ) variantPackages;
-      in
-      if untested != { } then
-        throw "TVP: variants with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}"
-      else
-        pkgs.runCommand "tvp-variants-evaluate" { manifest = builtins.concatStringsSep "\n" manifest; } ''
+  checks =
+    (import ./audits {
+      inherit pkgs tvp;
+      registry = runtimeRegistry;
+    })
+    // {
+      base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
+      android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
+      bootstrap-independent = import ./bases/tests/bootstrap.nix {
+        inherit pkgs;
+        parent = construction.bases.gcc13;
+        owned = construction.bases.gcc13-owned;
+        packages = construction.variants.gcc13;
+      };
+      test-runner = pkgs.callPackage ./tools/test-runner/tests { };
+      native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
+      variants-evaluate =
+        let
+          buildable = pkgs.lib.filterAttrs (
+            _: p: (p.tvp.status.level or "ok") != "broken"
+          ) allVariantPackages;
+          untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
+          manifest = pkgs.lib.mapAttrsToList (
+            name: p: "${name} ${builtins.unsafeDiscardStringContext p.drvPath}"
+          ) allVariantPackages;
+        in
+        if untested != { } then
+          throw "TVP: variants with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}"
+        else
+          pkgs.runCommand "tvp-variants-evaluate" { manifest = builtins.concatStringsSep "\n" manifest; } ''
+            printf '%s\n' "$manifest" > "$out"
+          '';
+      packages-evaluate =
+        let
+          drvs = pkgs.lib.mapAttrsToList (
+            name: pkg: "${name} ${builtins.unsafeDiscardStringContext pkg.drvPath}"
+          ) canonical;
+        in
+        pkgs.runCommand "tvp-packages-evaluate" { manifest = builtins.concatStringsSep "\n" drvs; } ''
           printf '%s\n' "$manifest" > "$out"
         '';
-    packages-evaluate =
-      let
-        drvs = pkgs.lib.mapAttrsToList (
-          name: pkg: "${name} ${builtins.unsafeDiscardStringContext pkg.drvPath}"
-        ) canonical;
-      in
-      pkgs.runCommand "tvp-packages-evaluate" { manifest = builtins.concatStringsSep "\n" drvs; } ''
-        printf '%s\n' "$manifest" > "$out"
-      '';
 
-    # Makes "untested" unrepresentable rather than merely discouraged. A broken
-    # package is exempt because it has no build to test — and it can only be
-    # broken by declaring a reason and a fix, so that exemption is not a hiding
-    # place.
-    every-package-tested =
-      let
-        buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") canonical;
-        untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
-      in
-      if untested == { } then
-        pkgs.runCommand "tvp-check-every-package-tested"
-          { tested = toString (builtins.length (builtins.attrNames buildable)); }
+      # Makes "untested" unrepresentable rather than merely discouraged. A broken
+      # package is exempt because it has no build to test — and it can only be
+      # broken by declaring a reason and a fix, so that exemption is not a hiding
+      # place.
+      every-package-tested =
+        let
+          buildable = pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") canonical;
+          untested = pkgs.lib.filterAttrs (_: p: !(p ? tests) || p.tests == { }) buildable;
+        in
+        if untested == { } then
+          pkgs.runCommand "tvp-check-every-package-tested"
+            { tested = toString (builtins.length (builtins.attrNames buildable)); }
+            ''
+              printf '%s buildable packages, all with tests\n' "$tested" > "$out"
+            ''
+        else
+          throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+
+      # A builder is named for the version it starts at and serves forward, so the
+      # lowest version pointing at it must be the version it is named for. Nothing
+      # enforced that, and descending moves the answer on every step: build-2.7.nix
+      # served 2.2.0 upward for 85 versions before anyone noticed.
+      #
+      # Renaming is a finish-the-line step, so a stale name mid-descent is expected
+      # and this failing is the reminder to do it before committing.
+      builder-names =
+        let
+          # "2.7" is the name for a line whose lowest release is "2.7.0", so the
+          # name has to be a component-wise prefix rather than equal.
+          prefixOf =
+            name: version:
+            let
+              n = builtins.splitVersion name;
+              v = builtins.splitVersion version;
+            in
+            builtins.length n <= builtins.length v && pkgs.lib.take (builtins.length n) v == n;
+
+          lower = a: b: if builtins.compareVersions a b < 0 then a else b;
+
+          withBuilder = pkgs.lib.filterAttrs (_: p: (p.tvp.builder or null) != null) canonical;
+
+          groups = pkgs.lib.foldlAttrs (
+            acc: _: p:
+            let
+              key = "${p.pname}/${p.tvp.builder}";
+            in
+            acc // { ${key} = if acc ? ${key} then lower acc.${key} p.version else p.version; }
+          ) { } withBuilder;
+
+          stale = pkgs.lib.filterAttrs (
+            key: lowest:
+            let
+              file = pkgs.lib.last (pkgs.lib.splitString "/" key);
+              name = pkgs.lib.removeSuffix ".nix" (pkgs.lib.removePrefix "build-" file);
+            in
+            !(prefixOf name lowest)
+          ) groups;
+        in
+        if stale == { } then
+          pkgs.runCommand "tvp-check-builder-names"
+            { checked = toString (builtins.length (builtins.attrNames groups)); }
+            ''
+              printf '%s builders, each named for the lowest version it serves\n' "$checked" > "$out"
+            ''
+        else
+          throw "TVP: builders serving a version below their name — rename them to the version they now start at:\n${
+            pkgs.lib.concatStringsSep "\n" (
+              pkgs.lib.mapAttrsToList (key: lowest: "  ${key} serves ${lowest}") stale
+            )
+          }";
+
+      # A definition is named for the version where it first appears, so the lowest
+      # version pointing at it must be the version it is named for. Unlike a
+      # builder, a definition claims no forward range — dependencies and options
+      # revert — so this is equality on the lowest version, not a prefix.
+      definition-names =
+        let
+          lower = a: b: if builtins.compareVersions a b < 0 then a else b;
+
+          named = pkgs.lib.filterAttrs (_: p: (p.tvp.definition or null) != null) canonical;
+
+          groups = pkgs.lib.foldlAttrs (
+            acc: _: p:
+            let
+              key = "${p.pname}/${p.tvp.definition}";
+            in
+            acc // { ${key} = if acc ? ${key} then lower acc.${key} p.version else p.version; }
+          ) { } named;
+
+          stale = pkgs.lib.filterAttrs (
+            key: lowest: pkgs.lib.last (pkgs.lib.splitString "/" key) != lowest
+          ) groups;
+        in
+        if stale == { } then
+          pkgs.runCommand "tvp-check-definition-names"
+            { checked = toString (builtins.length (builtins.attrNames groups)); }
+            ''
+              printf '%s definitions, each named for the lowest version it serves\n' "$checked" > "$out"
+            ''
+        else
+          throw "TVP: definitions named for a version above the lowest they serve:\n${
+            pkgs.lib.concatStringsSep "\n" (
+              pkgs.lib.mapAttrsToList (key: lowest: "  ${key} serves ${lowest}") stale
+            )
+          }";
+
+      # `checkStatus` makes a degraded version name a capability; this makes the
+      # name true. A status is a claim, and the only claim a machine can settle is
+      # whether the capability it points at is actually off.
+      #
+      # The reverse does not follow and is deliberately not checked: a false
+      # feature on an `ok` package may be a degradation or may be era-correct —
+      # readline 2.x lost a shared library upstream shipped, while zlib before
+      # 1.2.3.1 never had a .pc file to lose — and nothing computable tells those
+      # apart.
+      degraded-capability-is-off =
+        let
+          claimed = pkgs.lib.filterAttrs (
+            _: p: (p.tvp.status.level or "ok") == "degraded" && (p.tvp.status ? capability)
+          ) canonical;
+
+          wrong = pkgs.lib.filterAttrs (
+            _: p:
+            let
+              name = p.tvp.status.capability;
+              features = p.tvp.features or { };
+            in
+            !(features ? ${name}) || features.${name} != false
+          ) claimed;
+        in
+        if wrong == { } then
+          pkgs.runCommand "tvp-check-degraded-capability-is-off"
+            { checked = toString (builtins.length (builtins.attrNames claimed)); }
+            ''
+              printf '%s degraded versions, each naming a capability that is declared off\n' "$checked" > "$out"
+            ''
+        else
+          throw "TVP: degraded versions naming a capability that is not declared off:\n${
+            pkgs.lib.concatStringsSep "\n" (
+              pkgs.lib.mapAttrsToList (
+                name: p:
+                "  ${name} claims '${p.tvp.status.capability}', which the builder declares as ${
+                    if (p.tvp.features or { }) ? ${p.tvp.status.capability} then "true" else "nothing at all"
+                  }"
+              ) wrong
+            )
+          }";
+
+      every-base-tested =
+        let
+          untested = pkgs.lib.filterAttrs (_: b: !(b ? tests) || b.tests == { }) bases;
+        in
+        if untested == { } then
+          pkgs.runCommand "tvp-check-every-base-tested"
+            { tested = toString (builtins.length (builtins.attrNames bases)); }
+            ''
+              printf '%s base attributes, all with tests\n' "$tested" > "$out"
+            ''
+        else
+          throw "TVP: bases with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+
+      # Holds bases/stdenv/make-derivation.nix at "vendored verbatim": TVP's
+      # mkDerivation must still compute exactly what nixpkgs' does. Trimming what
+      # TVP does not use is a deliberate, cache-invalidating step, and this check
+      # failing is what distinguishes that from an accident.
+      vendored-mkderivation-neutral =
+        let
+          probe =
+            stdenv:
+            (stdenv.mkDerivation (finalAttrs: {
+              pname = "mkderivation-probe";
+              version = "1";
+              src = null;
+              dontUnpack = true;
+              configureFlags = [ "--probe" ];
+              buildInputs = [ pkgs.zlib ];
+              nativeBuildInputs = [ pkgs.pkg-config ];
+              hardeningDisable = [ "format" ];
+              enableParallelBuilding = true;
+              installPhase = "mkdir -p $out";
+            })).drvPath;
+          # Compare the borrowed environment to its original Nixpkgs builder.
+          # The default now constructs a deliberately different owned environment.
+          tvp = probe construction.bases.gcc13.stdenv;
+          upstream = probe pkgs.stdenv;
+        in
+        if tvp == upstream then
+          pkgs.runCommand "tvp-check-mkderivation-neutral" { inherit tvp; } ''
+            printf '%s\n' "$tvp" > "$out"
           ''
-            printf '%s buildable packages, all with tests\n' "$tested" > "$out"
-          ''
-      else
-        throw "TVP: packages with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
+        else
+          throw "TVP: vendored mkDerivation is no longer derivation-neutral:\n  nixpkgs ${upstream}\n  tvp     ${tvp}";
 
-    # A builder is named for the version it starts at and serves forward, so the
-    # lowest version pointing at it must be the version it is named for. Nothing
-    # enforced that, and descending moves the answer on every step: build-2.7.nix
-    # served 2.2.0 upward for 85 versions before anyone noticed.
-    #
-    # Renaming is a finish-the-line step, so a stale name mid-descent is expected
-    # and this failing is the reminder to do it before committing.
-    builder-names =
-      let
-        # "2.7" is the name for a line whose lowest release is "2.7.0", so the
-        # name has to be a component-wise prefix rather than equal.
-        prefixOf =
-          name: version:
-          let
-            n = builtins.splitVersion name;
-            v = builtins.splitVersion version;
-          in
-          builtins.length n <= builtins.length v && pkgs.lib.take (builtins.length n) v == n;
-
-        lower = a: b: if builtins.compareVersions a b < 0 then a else b;
-
-        withBuilder = pkgs.lib.filterAttrs (_: p: (p.tvp.builder or null) != null) canonical;
-
-        groups = pkgs.lib.foldlAttrs (
-          acc: _: p:
-          let
-            key = "${p.pname}/${p.tvp.builder}";
-          in
-          acc // { ${key} = if acc ? ${key} then lower acc.${key} p.version else p.version; }
-        ) { } withBuilder;
-
-        stale = pkgs.lib.filterAttrs (
-          key: lowest:
-          let
-            file = pkgs.lib.last (pkgs.lib.splitString "/" key);
-            name = pkgs.lib.removeSuffix ".nix" (pkgs.lib.removePrefix "build-" file);
-          in
-          !(prefixOf name lowest)
-        ) groups;
-      in
-      if stale == { } then
-        pkgs.runCommand "tvp-check-builder-names"
-          { checked = toString (builtins.length (builtins.attrNames groups)); }
-          ''
-            printf '%s builders, each named for the lowest version it serves\n' "$checked" > "$out"
-          ''
-      else
-        throw "TVP: builders serving a version below their name — rename them to the version they now start at:\n${
-          pkgs.lib.concatStringsSep "\n" (
-            pkgs.lib.mapAttrsToList (key: lowest: "  ${key} serves ${lowest}") stale
-          )
-        }";
-
-    # A definition is named for the version where it first appears, so the lowest
-    # version pointing at it must be the version it is named for. Unlike a
-    # builder, a definition claims no forward range — dependencies and options
-    # revert — so this is equality on the lowest version, not a prefix.
-    definition-names =
-      let
-        lower = a: b: if builtins.compareVersions a b < 0 then a else b;
-
-        named = pkgs.lib.filterAttrs (_: p: (p.tvp.definition or null) != null) canonical;
-
-        groups = pkgs.lib.foldlAttrs (
-          acc: _: p:
-          let
-            key = "${p.pname}/${p.tvp.definition}";
-          in
-          acc // { ${key} = if acc ? ${key} then lower acc.${key} p.version else p.version; }
-        ) { } named;
-
-        stale = pkgs.lib.filterAttrs (
-          key: lowest: pkgs.lib.last (pkgs.lib.splitString "/" key) != lowest
-        ) groups;
-      in
-      if stale == { } then
-        pkgs.runCommand "tvp-check-definition-names"
-          { checked = toString (builtins.length (builtins.attrNames groups)); }
-          ''
-            printf '%s definitions, each named for the lowest version it serves\n' "$checked" > "$out"
-          ''
-      else
-        throw "TVP: definitions named for a version above the lowest they serve:\n${
-          pkgs.lib.concatStringsSep "\n" (
-            pkgs.lib.mapAttrsToList (key: lowest: "  ${key} serves ${lowest}") stale
-          )
-        }";
-
-    # `checkStatus` makes a degraded version name a capability; this makes the
-    # name true. A status is a claim, and the only claim a machine can settle is
-    # whether the capability it points at is actually off.
-    #
-    # The reverse does not follow and is deliberately not checked: a false
-    # feature on an `ok` package may be a degradation or may be era-correct —
-    # readline 2.x lost a shared library upstream shipped, while zlib before
-    # 1.2.3.1 never had a .pc file to lose — and nothing computable tells those
-    # apart.
-    degraded-capability-is-off =
-      let
-        claimed = pkgs.lib.filterAttrs (
-          _: p: (p.tvp.status.level or "ok") == "degraded" && (p.tvp.status ? capability)
-        ) canonical;
-
-        wrong = pkgs.lib.filterAttrs (
-          _: p:
-          let
-            name = p.tvp.status.capability;
-            features = p.tvp.features or { };
-          in
-          !(features ? ${name}) || features.${name} != false
-        ) claimed;
-      in
-      if wrong == { } then
-        pkgs.runCommand "tvp-check-degraded-capability-is-off"
-          { checked = toString (builtins.length (builtins.attrNames claimed)); }
-          ''
-            printf '%s degraded versions, each naming a capability that is declared off\n' "$checked" > "$out"
-          ''
-      else
-        throw "TVP: degraded versions naming a capability that is not declared off:\n${
-          pkgs.lib.concatStringsSep "\n" (
-            pkgs.lib.mapAttrsToList (
-              name: p:
-              "  ${name} claims '${p.tvp.status.capability}', which the builder declares as ${
-                  if (p.tvp.features or { }) ? ${p.tvp.status.capability} then "true" else "nothing at all"
-                }"
-            ) wrong
-          )
-        }";
-
-    every-base-tested =
-      let
-        untested = pkgs.lib.filterAttrs (_: b: !(b ? tests) || b.tests == { }) bases;
-      in
-      if untested == { } then
-        pkgs.runCommand "tvp-check-every-base-tested"
-          { tested = toString (builtins.length (builtins.attrNames bases)); }
-          ''
-            printf '%s base attributes, all with tests\n' "$tested" > "$out"
-          ''
-      else
-        throw "TVP: bases with no tests: ${pkgs.lib.concatStringsSep ", " (pkgs.lib.attrNames untested)}";
-
-    # Holds bases/stdenv/make-derivation.nix at "vendored verbatim": TVP's
-    # mkDerivation must still compute exactly what nixpkgs' does. Trimming what
-    # TVP does not use is a deliberate, cache-invalidating step, and this check
-    # failing is what distinguishes that from an accident.
-    vendored-mkderivation-neutral =
-      let
-        probe =
-          stdenv:
-          (stdenv.mkDerivation (finalAttrs: {
-            pname = "mkderivation-probe";
-            version = "1";
-            src = null;
-            dontUnpack = true;
-            configureFlags = [ "--probe" ];
-            buildInputs = [ pkgs.zlib ];
-            nativeBuildInputs = [ pkgs.pkg-config ];
-            hardeningDisable = [ "format" ];
-            enableParallelBuilding = true;
-            installPhase = "mkdir -p $out";
-          })).drvPath;
-        # Compare the borrowed environment to its original Nixpkgs builder.
-        # The default now constructs a deliberately different owned environment.
-        tvp = probe bases.gcc13.stdenv;
-        upstream = probe pkgs.stdenv;
-      in
-      if tvp == upstream then
-        pkgs.runCommand "tvp-check-mkderivation-neutral" { inherit tvp; } ''
-          printf '%s\n' "$tvp" > "$out"
-        ''
-      else
-        throw "TVP: vendored mkDerivation is no longer derivation-neutral:\n  nixpkgs ${upstream}\n  tvp     ${tvp}";
-
-    # Only .nix files are copied, so local-only files never reach the store.
-    formatting =
-      let
-        inherit (pkgs.lib) fileset;
-        src = fileset.toSource {
-          root = ./.;
-          fileset = fileset.fileFilter (f: f.hasExt "nix") ./.;
-        };
-      in
-      pkgs.runCommand "tvp-check-formatting" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; } ''
-        nixfmt --check $(find ${src} -name '*.nix') 2>&1 | tee "$out"
-        test ! -s "$out"
-      '';
-  };
+      # Only .nix files are copied, so local-only files never reach the store.
+      formatting =
+        let
+          inherit (pkgs.lib) fileset;
+          src = fileset.toSource {
+            root = ./.;
+            fileset = fileset.fileFilter (f: f.hasExt "nix") ./.;
+          };
+        in
+        pkgs.runCommand "tvp-check-formatting" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; } ''
+          nixfmt --check $(find ${src} -name '*.nix') 2>&1 | tee "$out"
+          test ! -s "$out"
+        '';
+    };
 
   testBatchEntries = tvpLib.packages.merge {
     packages =
@@ -296,13 +329,23 @@ let
         }
       )
     ) (pkgs.lib.filterAttrs (name: base: base.name == name) bases);
+    bootstrapBases = pkgs.lib.mapAttrs' (
+      name: base:
+      pkgs.lib.nameValuePair "bootstrap-base-${name}" (
+        tvpLib.tests.mkBatch {
+          inherit pkgs;
+          name = "bootstrap-base-${name}";
+          suite = base.tests;
+        }
+      )
+    ) construction.bases;
     variants = pkgs.lib.mapAttrs (
       name: package:
       tvpLib.tests.mkBatch {
         inherit pkgs name;
         suite = package.tests;
       }
-    ) (pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") variantPackages);
+    ) (pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") allVariantPackages);
   };
 
   testBatches = testBatchEntries // {
@@ -319,10 +362,7 @@ let
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
       inherit tvpLib variantPackages;
-      registry = tvpLib.provenance.registry {
-        inherit canonical variants bases;
-        compositions = tvp.android.profiles;
-      };
+      registry = runtimeRegistry;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
       packages = canonical;
@@ -341,7 +381,12 @@ let
 
   tvp = {
     graph = tvpLib.graph.snapshot {
-      inherit canonical variants bases;
+      inherit
+        canonical
+        variants
+        bases
+        construction
+        ;
       compositions = tvp.android.profiles;
     };
     android = import ./sdks/android.nix { inherit tvp; };

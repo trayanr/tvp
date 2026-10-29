@@ -361,19 +361,16 @@ Variants carry `tvp.canonical = false` and their profile name in `tvp.variant`.
 ```nix
 variants = tvpLib.packages.mkVariants (packageArgs // {
   inherit pkgs;
-  profiles.gcc13 = {
-    base = tvp.bases.gcc13;
-    versions."3.8.2".deps = {
-      m4 = tvp.variants.gcc13.m4_1_4_21;
-      perl = tvp.packages.perl_5_44_0;
-    };
+  profiles.ncurses64 = {
+    base = tvp.bases.default;
+    versions."8.3".deps.ncurses = tvp.packages.ncurses_6_4;
   };
 });
 ```
 
 ```sh
-nix build .#variants.gcc13.bison_3_8_2 --no-link
-nix build .#testBatches.x86_64-linux.variant-gcc13-bison_3_8_2 --no-link
+nix build .#variants.ncurses64.readline_8_3 --no-link
+nix build .#testBatches.x86_64-linux.variant-ncurses64-readline_8_3 --no-link
 ```
 
 Variant evaluation and test attachment are checked alongside canonical packages.
@@ -523,11 +520,16 @@ that substrate. In particular, packaged raw binutils are not a replacement for t
 bintools wrapper: the wrapper supplies library search paths, the dynamic interpreter
 and runtime RPATH policy.
 
-`gcc13-owned` is the opt-in native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
-glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. Its
-`builtBy = "gcc13"` records the borrowed bootstrap parent. `default` resolves to
-`gcc13-owned`. Ordinary tools follow that alias; bootstrap toolchain definitions and
-compatibility requirements retain explicit base names.
+`gcc13-owned-v2` is the default native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
+glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `default` and `gcc13-owned` both resolve to `gcc13-owned-v2`. Its
+`builtBy = "internal:gcc13-owned"` records the pinned earlier owned generation.
+The borrowed GCC 13 seed and first owned generation are retired from public base
+selection. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
+there is no `tvp.bootstrap` API. Ordinary package definitions select the default
+base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
+Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
+retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
+owned generation so selecting the default cannot introduce a dependency cycle.
 
 The assembler is `bases/gcc13-owned/default.nix`. It reuses the versioned package recipes,
 rebuilds their dependencies against the owned libc, and records each intermediate stage
@@ -569,16 +571,16 @@ recipes keep their own tested support lists. Tool versions, bootstrap parents an
 minimum kernel version remain choices of their base or recipe. The
 `checks.native-platform-interface` contract checks rejection and base wiring.
 
-A definition opts in with `base = tvp.bases.gcc13-owned`. When porting a package, its
+An ordinary definition selects `base = tvp.bases.default`. When porting a package, its
 dependency graph must be ported too: changing only its compiler can leave libraries on
 the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
-libraries. The raw packages in the canonical catalogue retain their declared bootstrap
-base; the assembler's rebuilt variants are explicitly marked noncanonical.
+libraries. The assembler's rebuilt variants are explicitly marked noncanonical and remain
+separate from the ordinary compiler and libc packages in the catalogue.
 
 Run the complete base validation with:
 
 ```sh
-nix build .#testBatches.x86_64-linux.base-gcc13-owned --no-link
+nix build .#testBatches.x86_64-linux.bootstrap-base-gcc13-owned --no-link
 ```
 
 That batch includes the shared base suite, the assembled packages' suites, and zlib,
@@ -598,8 +600,8 @@ exposed as `buildToolValidation` for inspection. Production dependencies never r
 to that validation record.
 
 Canonical M4 1.4.21, Autoconf 2.73, pkg-config 0.29.2, Bison 3.8.2, Texinfo 7.1,
-which 2.21 and minimal Python 3.12.5 follow `default`. Their bootstrap builds are
-addressable under `variants.gcc13` with the same exact version names. Bootstrap GMP and
+which 2.21 and minimal Python 3.12.5 follow `default`. The base implementation
+constructs its pinned tool builds from the same version tables. Bootstrap GMP and
 Autoconf explicitly retain bootstrap M4; bootstrap ncurses and binutils retain bootstrap
 pkg-config. These dependencies keep construction independent of the base it
 produces. Base migrations compare exactly which canonical derivations move, including
@@ -627,13 +629,13 @@ with Flex and Bison. The tests themselves run on the owned stdenv.
 
 ```sh
 nix build .#automake_1_19 .#libtool_2_6_2 .#flex_2_6_4 --no-link
-nix build .#testBatches.x86_64-linux.base-gcc13-owned --no-link
+nix build .#testBatches.x86_64-linux.bootstrap-base-gcc13-owned --no-link
 ```
 
 The production bootstrap also selects TVP's tools: binutils uses bootstrap Bison,
 Texinfo and pkg-config; GCC uses bootstrap Texinfo and which; glibc uses bootstrap Bison
-and minimal Python. Those toolchain definitions explicitly name the borrowed `gcc13`
-parent rather than following the default alias. `bootstrap.buildTools` records the helpers
+and minimal Python. The internal construction profiles pin the borrowed seed
+rather than following the default alias. `bootstrap.buildTools` records the helpers
 actually selected by these production recipes. Their package suites and a check requiring
 package-owned bootstrap variants are included in the complete base batch.
 
@@ -659,9 +661,13 @@ The Python `python-build` profile includes TLS and archive modules; `python-mini
 remains the separate bootstrap interpreter. These hooks currently implement native Linux
 builds; cross compilation requires an explicit platform/toolchain design.
 
-The complete bootstrap generation, including Perl, Bash, compiler support libraries and
-floor tools, is declared as package-local `variants.gcc13` builds. The assembler selects
-that generation rather than following canonical packages through `default`.
+The complete construction generation, including Perl, Bash, compiler support libraries
+and floor tools, is selected inside `bases/gcc13-owned/inputs/`. Package modules supply
+uninstantiated recipe tables through the indexes' private `recipes` metadata. This lets
+the base instantiate pinned inputs without evaluating canonical derivations that already
+depend on it. The metadata and construction environments are not exported on `tvp`.
+The assembler uses that generation rather than following canonical packages through
+`default`.
 `checks.bootstrap-independent` verifies its parent, package bases and dependency edges.
 The switch preserves the bootstrap compiler, libraries and stages; the final linker
 wrapper also exports `nix-support/dynamic-linker` and `orig-libc` for consumers such as
@@ -926,8 +932,8 @@ supplementary checks.
 ## Runtime cleanup and permanent audits
 
 `gcc13-owned-v2` reuses the first owned base's compiler, libc and floor, and adds an
-owned patchelf-backed RPATH cleanup hook. The `default` base alias remains
-`gcc13-owned`; migration is explicit. The original constructor's empty fixup-input
+owned patchelf-backed RPATH cleanup hook. Both `default` and `gcc13-owned` select
+this newest generation. The earlier GCC 13 bases are private bootstrap inputs. The original constructor's empty fixup-input
 selection computes the same earlier base and bootstrap producers.
 
 The v2 hook removes unused ELF search directories. A package declares store library
@@ -939,15 +945,15 @@ multiple outputs and the explicit opt-out profile.
 
 Canonical JDK 21.0.13 selects v2. Its procedure cleans the exploded JDK before building
 module images, so `jpackage` launchers embedded in `lib/modules` and jmods receive the
-same cleanup as ordinary installed ELF files. The old producer remains exactly
-available as `tvp.variants.gcc13-owned.jdk_21_0_13`. Shared tests cover JNI, subprocesses,
+same cleanup as ordinary installed ELF files. The superseded JDK base variant is
+retired; earlier TVP revisions retain its original graph. Shared tests cover JNI, subprocesses,
 image creation, a real generated application launcher, offscreen font rendering and
 PostScript printing. Loader traces verify owned Fontconfig/CUPS loading; the trimmed
 profile additionally rejects the boot JDK, file utility and X11 inputs in its closure.
 
 `checks.package-runtime-ownership` reads an exported Nix reference graph for every
-buildable canonical package and SDK composition. Registration includes canonical and
-variant outputs, the owned bases' explicitly declared private paths and SDK profiles.
+buildable canonical package and SDK composition. Registration includes canonical, variant and private bootstrap
+outputs, the owned bases' explicitly declared private paths and SDK profiles.
 The audit walks references transitively per root, without calling a Nix daemon from
 inside the build sandbox.
 
@@ -986,3 +992,11 @@ prints selected Nix settings without dumping configuration tokens. See
 [the builder handoff](ci/README.md) for the existing-distribution setup and deployment
 boundaries. Host provisioning, repository CI activation and publishing remain separate
 from the local validation entry points.
+
+Retired bootstrap generations retain full validation under
+`testBatches.x86_64-linux.bootstrap-base-gcc13`,
+`testBatches.x86_64-linux.bootstrap-base-gcc13-owned` and the corresponding
+`bootstrap-PROFILE-PACKAGE` batches. The active base suite is
+`testBatches.x86_64-linux.base-gcc13-owned-v2`. All are included in the full plan.
+Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
+`bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.

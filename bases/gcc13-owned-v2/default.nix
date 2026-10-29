@@ -2,10 +2,10 @@
   pkgs,
   tvp,
   builtBy,
+  patchelf,
 }:
 let
   parent = builtBy;
-  patchelf = tvp.packages.patchelf_0_19_2;
   mkStdenv = import ../stdenv {
     inherit (pkgs) lib config;
     inherit (parent) platform;
@@ -27,7 +27,7 @@ in
     libc
     floor
     ;
-  builtBy = parent.name;
+  builtBy = "internal:${parent.name}";
   inherit stdenv;
 })
 // {
