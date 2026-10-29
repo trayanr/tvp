@@ -7,6 +7,7 @@
   perl,
   version,
   sha256,
+  patches ? [ ],
   archiveExt ? "tar.xz",
   installAclocalDir ? false,
   headerMacro ? "AC_CONFIG_HEADERS",
@@ -15,7 +16,7 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "automake";
-  inherit version;
+  inherit version patches;
   src = fetchurl {
     url = "https://mirrors.kernel.org/gnu/automake/automake-${version}.${archiveExt}";
     inherit sha256;

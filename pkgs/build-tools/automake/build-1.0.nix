@@ -1,5 +1,5 @@
 # Before 1.6, configure treats VAR=value arguments as host names; tool paths
-# must be supplied through the environment. Serves 1.2 through 1.5.
+# must be supplied through the environment.
 {
   lib,
   stdenv,
@@ -8,15 +8,17 @@
   perl,
   version,
   sha256,
+  patches ? [ ],
   archiveExt ? "tar.xz",
   installAclocalDir ? false,
   headerMacro ? "AC_CONFIG_HEADERS",
   automaticCcCo ? true,
+  hasAclocal ? true,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "automake";
-  inherit version;
+  inherit version patches;
   src = fetchurl {
     url = "https://mirrors.kernel.org/gnu/automake/automake-${version}.${archiveExt}";
     inherit sha256;
@@ -57,6 +59,7 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.cc = stdenv.cc;
     tvp.headerMacro = headerMacro;
     tvp.features.automaticCcCo = automaticCcCo;
+    tvp.features.aclocal = hasAclocal;
     tests = mkTests finalAttrs.finalPackage;
   };
 })
