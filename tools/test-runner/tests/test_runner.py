@@ -142,6 +142,20 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(self.wait_done()['phase'],'passed')
         self.assertEqual(self.cli('status','--run',str(self.run),'--json').returncode,0)
 
+    def test_status_identifies_the_selected_local_run(self):
+        self.start()
+        self.wait_done()
+        result=self.cli('status','--state-dir',str(self.state))
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('Run: '+str(self.run),result.stdout)
+
+    def test_missing_local_state_explains_how_to_select_a_run(self):
+        result=self.cli('status','--state-dir',str(self.state))
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('No local validation run',result.stderr)
+        self.assertIn('--state-dir DIR or --run PATH',result.stderr)
+        self.assertIn('Buildbot',result.stderr)
+
     def test_duplicate_start_and_stop(self):
         self.env['FAKE_DELAY']='10'
         self.start()

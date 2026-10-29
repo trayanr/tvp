@@ -5,6 +5,11 @@ and NAS/cache plan. GitHub is the public PR/status surface; the local PC runs Bu
 and TVP's full validation. The PC connects outward to GitHub; there is no public
 listener, webhook, port forwarding or discovery requirement.
 
+These files are for TVP maintainers. Using TVP packages does not install or start CI
+services. Buildbot dependencies are loaded only through `ci/buildbot/shell.nix`.
+Keep deployed configuration, credentials, NAS mounts and host setup scripts outside
+the repository. The service files and `config.example.json` are templates.
+
 ## Developer workflow
 
 Open a non-draft expansion PR from a branch in this repository, targeting master, then
@@ -13,15 +18,15 @@ master run the full catalogue. Existing local Nix outputs are reused; there is n
 binary-cache service yet. Fork PRs require a later disposable VM worker pool.
 
 On GitHub, inspect the `tvp/full` status for counts and failing versions. The local
-Buildbot UI provides the queue, Rebuild action and complete failure logs. It binds only
-to localhost. See the architecture for optional private access from the workstation.
+Buildbot UI provides the queue, Rebuild action and complete failure logs. Buildbot binds
+to localhost; a host-managed reverse proxy or SSH tunnel can provide private access.
 
 ## Check the CI configuration locally
 
 From this checkout:
 
 ```sh
-nix-shell ci/buildbot/shell.nix
+NIX_BUILD_SHELL="$(command -v bash)" nix-shell ci/buildbot/shell.nix
 python3 -m unittest discover -s ci/buildbot/tests -p test_policy.py
 python3 -m unittest discover -s ci/buildbot/tests -p test_job.py
 python3 -m unittest discover -s ci/buildbot/tests -p test_configuration.py
@@ -46,7 +51,7 @@ python3 ci/buildbot/tests/smoke.py --runner "$(nix eval --raw .#apps.x86_64-linu
 
 ## Prepare the builder at its console
 
-The current target is `x86_64-linux`; the existing Ubuntu installation can stay.
+The current target is `x86_64-linux`; an existing Linux installation can be used.
 Run `bash ci/builder-preflight.sh` and install Nix using the
 [Nix installation guide](https://nix.dev/install-nix). Enable `nix-command`, `flakes`
 and build sandboxing. Keep `/nix`, build scratch and controller state on local SSD.
@@ -69,9 +74,8 @@ owned by their respective users, mode `0700`. Provision the controller files:
 
 The initial GitHub credential needs repository metadata, contents and PR read access,
 and commit-status write access. It needs no Actions, comment, administration or code
-write permission. Keep it only in the controller's private secrets directory. For
-interactive assisted deployment, supply credentials through the secret-input mechanism,
-not chat, repository files or shell arguments.
+write permission. Keep credentials in the controller's private secrets directory,
+readable only by its account. Do not commit them or pass them as command-line arguments.
 
 Set `controller_revision` to the reviewed **full commit SHA containing this CI code**.
 Leave `github_enabled` false during setup: the dashboard and worker can start without
@@ -102,8 +106,10 @@ when ready, then enable them. `worker.tac` reads its password file directly, avo
 password in process arguments. Run the worker as its own account, not the controller.
 No services are installed by the files in this repository.
 
-Visit `http://localhost:8010/` at the builder. The UI is readable locally; control
-operations require the operator login. After the first real GitHub status has appeared,
+Visit `http://localhost:8010/` at the builder, or configure a reverse proxy on its LAN
+address. Keep proxy and firewall configuration on the host and set `dashboard_url` in
+the controller's private `config.json` to the address users visit. Control operations
+require the operator login. After the first real GitHub status has appeared,
 `tvp/full` can be made a required branch check. Repository settings are not changed by
 this implementation.
 
@@ -152,6 +158,10 @@ from the controller side; workers do not get NAS write credentials. No archival,
 garbage collection, cache publishing or signing job is enabled in this version.
 
 ## Existing full-suite entry point
+
+The CLI reads runs on the machine where it is invoked. `status` follows `latest` in
+the chosen state directory; it does not query the builder's queue or search other state
+directories. Use the Buildbot dashboard for server CI builds.
 
 For trusted local development, independently of Buildbot:
 

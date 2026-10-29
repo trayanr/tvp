@@ -1,6 +1,7 @@
 # TVP CI architecture
 
-Status: initial implementation, locally checked; not deployed or connected to GitHub.
+This describes the queue and validation process. Host configuration and deployment
+state are maintained separately from the repository.
 
 ## Decisions
 
@@ -11,10 +12,10 @@ Status: initial implementation, locally checked; not deployed or connected to Gi
   every admitted PR and every master update. No changed-package-only shortcut.
 - Keep the active Nix store on local SSD and reuse its outputs between builds.
   No TVP binary-cache service, signing or publication in this first version.
-- The 48 TB NAS is the archive tier and future master binary-cache storage, not a
+- The NAS is the archive tier and future master binary-cache storage, not a
   network mount for the active Nix store or controller database.
 - The development workstation stays independent: develop new packages and fixes there
-  while the dedicated builder processes multiple expansion requests.
+  while the builder processes queued expansion requests.
 
 ```mermaid
 flowchart LR
@@ -23,14 +24,15 @@ flowchart LR
     controller -->|durable FIFO queue| worker[Local worker account]
     worker -->|frozen full test plan| store[Local SSD: Nix store and builds]
     worker -->|counts, logs, exact identities| controller
-    controller -. archive after NAS setup .-> nas[48 TB NAS]
+    controller -. evidence archive .-> nas[NAS]
     store -. future: passing master closures .-> publisher[Trusted publisher]
     publisher -. signed binary cache .-> nas
 ```
 
 All Internet traffic starts on the local PC. GitHub never connects to it. No router
 forwarding, public DNS, webhook listener, LAN discovery service or inbound Internet
-port is needed. Controller HTTP and worker protocol bind to `127.0.0.1`.
+port is needed. Controller HTTP and worker protocol bind to `127.0.0.1`. An optional
+reverse proxy on the host exposes the dashboard on its LAN address.
 
 ## Queue and expansion workflow
 
@@ -104,8 +106,9 @@ webhook endpoint is not involved.
 
 The status details link points at the local Buildbot UI. Its queue, steps and full
 failure logs are available at `http://localhost:8010/` on the builder. That address is
-not reachable from another computer unless deliberately forwarded. On the workstation,
-optional LAN SSH forwarding makes the same link work:
+not reachable from another computer unless access is configured. For LAN access, use
+a host-managed reverse proxy and set the private `dashboard_url` accordingly. An SSH
+tunnel is another option:
 
 ```sh
 ssh -N -L 8010:127.0.0.1:8010 user@builder
@@ -148,7 +151,7 @@ pinned Nixpkgs input, not newly added canonical TVP packages.
 | --- | --- | --- |
 | Build scratch, checkouts, active `/nix` | Builder local SSD | Fast working data and reuse |
 | Queue database and controller state | Builder local SSD | Durable local scheduling; backup to NAS |
-| Run identities, plans and failure logs | Controller local disk | Archive to NAS, indexed by commit and build number |
+| Run identities, plans and failure logs | Controller storage, optionally NAS-backed | Indexed by commit and build number |
 | Upstream source archives | Existing source fetchers | Optional independent NAS mirror |
 | Passing master output closures | Rooted local Nix store | Signed binary cache backed by NAS |
 | PR build outputs | Local trusted-worker store | Working results, not published master artifacts |
@@ -171,14 +174,14 @@ are another reason to archive/backup state rather than share a live database.
 NAS capacity alone does not establish its I/O performance: inspect disks, SSD tier,
 filesystem and link speed before selecting its eventual cache-serving arrangement.
 
-## Delivery status
+## Repository and host configuration
 
-Implemented under `ci/buildbot/`: pinned runtime shell, label/pagination policy,
-durable change delivery, Buildbot configuration, trusted full-validation harness,
-result reporting, evidence upload, service templates and offline contract tests.
-No GitHub credential has been installed, no live status posted, and no service enabled
-on either machine. Deployment requires console access to the builder, Nix setup,
-controller credentials and a reviewed clean CI checkout. NAS setup and cache publication
-remain later deployment steps.
+`ci/buildbot/` contains the queue, validation harness, reporting and their tests.
+Service units and example settings describe how to deploy it. Importing the TVP flake
+or building a package does not load Buildbot or install services.
+
+Actual controller settings, credentials, proxy configuration, NAS mounts and host setup
+scripts stay outside the repository. Deploy a reviewed CI revision independently of
+the PRs it builds.
 
 See [the operator handoff](README.md) for preparation and local checks.

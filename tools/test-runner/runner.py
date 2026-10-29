@@ -264,6 +264,7 @@ def status(run, as_json=False, attempt_only=False):
         print(json.dumps(state, indent=2))
         return state
     duration = state["elapsedSeconds"]
+    print("Run:", run)
     print(f"{state['phase']} | {duration // 3600:02}:{duration // 60 % 60:02}:{duration % 60:02} elapsed")
     print(f"Suites: {counts['passed']}/{len(state['jobs'])} passed; {counts['failed-or-blocked']} failed/blocked; {counts['pending']} pending; {counts['cancelled']} cancelled")
     if state.get("testCounts"):
@@ -316,8 +317,9 @@ def main():
     launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
     launch.add_argument("--json", action="store_true", help="return the exact frozen run identity for automation")
     for name in ("status", "wait", "stop"):
-        command = commands.add_parser(name)
-        command.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"))
+        command = commands.add_parser(name, help=f"{name} a local validation run")
+        command.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"),
+                             help="local state directory whose latest run is selected (default: .tvp-tests)")
         command.add_argument("--run", type=Path)
         if name == "status":
             command.add_argument("--json", action="store_true")
@@ -327,6 +329,10 @@ def main():
         if args.command == "start":
             return start(args)
         run = (args.run or args.state_dir / "latest").resolve()
+        if not (run / "state.json").is_file():
+            raise RuntimeError(f"No local validation run found at {run}.\n"
+                               "Use --state-dir DIR or --run PATH to select an existing run, "
+                               "or 'start' to launch one. Server CI builds are shown in Buildbot.")
         if args.command == "stop":
             state = json.loads((run / "state.json").read_text())
             if not lease_held(run / "worker.lock") or not state.get("pid"):
