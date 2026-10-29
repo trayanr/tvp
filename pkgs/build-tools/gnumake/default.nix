@@ -2,17 +2,16 @@
 let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
-    "4.4.1" = {
-      builder = ./build-4.4.1.nix;
+    "4.3" = {
+      builder = ./build-4.3.nix;
       base = tvp.bases.default;
-      deps = {
-
-      };
+      deps = { };
     };
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."4.4.1";
+      def = defs."4.3";
+      releases."4.3" = "sha256-4F/d5HxffKRctpfpc4lP9PXXnhO3UO1X17Ztje/Hjhk=";
       releases."4.4.1" = "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=";
     }
   ];
@@ -22,7 +21,15 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
+    extraArgs.mkTests =
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
   variants = tvpLib.packages.mkVariants (

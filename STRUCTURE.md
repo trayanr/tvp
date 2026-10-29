@@ -420,6 +420,10 @@ fails where an old builder is missing something. Fork the tests and that stops w
   metadata. A port supplies `mkTests = package.mkTests.override { pkgs = testPkgs; };`
   alongside its new stdenv and dependencies; it does not import package test files
   from the base assembler.
+- **Test-only tools can be exact definition pins.** PHP requires `testAutoconf` in
+  `defs.deps` and exposes it under `tvp.testDeps` for its phpize consumer tests. It is
+  absent from the interpreter's build inputs, so choosing a compatible test tool does
+  not rebuild the interpreter. The suite still uses owned tools and the package's base.
 - **A test context can run on a selected base.** `tvpLib.tests.withBase { inherit pkgs base; }`
   binds both the compiler context and `runCommand` to that base's stdenv. Merely replacing
   `pkgs.stdenv` leaves `pkgs.runCommand` closed over its original builder. New packages

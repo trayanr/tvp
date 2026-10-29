@@ -3,8 +3,57 @@ let
   tvpLib = tvp.lib;
   base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
-    "2.6.2" = {
-      builder = ./build-2.6.2.nix;
+    "1.0" = {
+      builder = ./build-1.0.nix;
+      inherit base;
+      opts = {
+        testFeatures = {
+          acLibtool = false;
+          ltdl = false;
+        };
+        license = pkgs.lib.licenses.gpl2Plus;
+      };
+      deps = {
+        autoconf = tvp.packages.autoconf_2_13;
+        platformAutomake = tvp.packages.automake_1_19;
+        automake = tvp.packages.automake_1_3;
+        m4 = tvp.packages.m4_1_4_21;
+        file = tvp.packages.file_5_45;
+      };
+    };
+    "1.3.5" = {
+      builder = ./build-1.0.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_73;
+        platformAutomake = tvp.packages.automake_1_19;
+        automake = tvp.packages.automake_1_19;
+        m4 = tvp.packages.m4_1_4_21;
+        file = tvp.packages.file_5_45;
+      };
+    };
+    "1.5.26" = {
+      builder = ./build-1.5.26.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_73;
+        automake = tvp.packages.automake_1_19;
+        m4 = tvp.packages.m4_1_4_21;
+        file = tvp.packages.file_5_45;
+      };
+    };
+    "2.2.10" = {
+      builder = ./build-2.2.10.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_73;
+        automake = tvp.packages.automake_1_19;
+        m4 = tvp.packages.m4_1_4_21;
+        file = tvp.packages.file_5_45;
+      };
+    };
+    "2.4.7" = {
+      builder = ./build-2.4.7.nix;
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2_73;
@@ -22,7 +71,28 @@ let
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."2.6.2";
+      def = defs."1.0";
+      releases."1.0" = "sha256-89w7P05pCqRis340DsdQLnpdJl0UAqlcwCQPPVrqeiw=";
+      releases."1.1" = "sha256-UsM9vsvUzcTl2Ki0DufHEB4iR8sttkoDqAMZKf4Sx68=";
+      releases."1.2" = "sha256-HW1uP/Ai050M8t/b+Os73fNZKC6Ij1CP38FtlsJS+HU=";
+    }
+    {
+      def = defs."1.3.5";
+      releases."1.3.5" = "sha256-AuKHumIaoB7lgbD4iFTesiL6Yefg/FXtdoUDg1TwJZ8=";
+      releases."1.4.3" = "sha256-vR7b9k9XBHjvj2h1mslcxlPx2M+C7lSUiUd1E4t2VNc=";
+    }
+    {
+      def = defs."1.5.26";
+      releases."1.5.26" = "sha256-HDWuNP6FqhZ716tLyfR3/gGROOGvYmeNlS/EPAt+Lwk=";
+    }
+    {
+      def = defs."2.2.10";
+      releases."2.2.10" = "sha256-3n0dAo+jvhWgWz4A/mT4Ds5iY2kjzJ74Lci5ovPF130=";
+    }
+    {
+      def = defs."2.4.7";
+      releases."2.4.7" = "sha256-T38hfwV85lX/IlWa0iGg/Y74StH8X8tpkM7MMzqhY10=";
+      releases."2.5.4" = "sha256-+B9YYGZrC8fYS63e+mDRy5+m/OsjmMw7rKavqmAmZnU=";
       releases."2.6.2" = "sha256-LvEGfBbJfbkw/XQMybw9O6mlg4BK5axCzD6HGeSeGR4=";
     }
   ];

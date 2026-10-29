@@ -1,3 +1,4 @@
+# Libtool 1.5 ships ltmain.sh at the source root and predates LT_INIT.
 {
   lib,
   stdenv,
@@ -15,7 +16,7 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "libtool";
   inherit version patches;
   src = fetchurl {
-    url = "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.tar.xz";
+    url = "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.tar.gz";
     inherit sha256;
   };
   nativeBuildInputs = [
@@ -30,20 +31,9 @@ stdenv.mkDerivation (finalAttrs: {
     m4
     file
   ];
-  postPatch = ''
-    for script in libtoolize.in build-aux/ltmain.in; do
-      substituteInPlace "$script" \
-        --replace-fail '@TVP_AUTOCONF@' '${autoconf}/bin/autoconf' \
-        --replace-fail '@TVP_AUTOMAKE@' '${automake}/bin/automake'
-    done
-    patchShebangs libtoolize.in
-  '';
-  preBuild = ''
-    make build-aux/ltmain.sh
-    # Interpreter/command path changes do not change the shipped manual pages.
-    touch -r build-aux/ltmain.sh doc/libtool.1
-    touch -r libtoolize.in doc/libtoolize.1
-  '';
+  # This release ships ltmain.sh directly; there is no ltmain.in template
+  # to regenerate and no runtime Autoconf/Automake defaults to substitute.
+  postPatch = ''patchShebangs libtoolize.in'';
   configureFlags = [
     "M4=${m4}/bin/m4"
     "FILECMD=${file}/bin/file"
@@ -68,6 +58,10 @@ stdenv.mkDerivation (finalAttrs: {
         file
         ;
     };
+    tvp.features.cxxDependencyTracking = true;
+    tvp.features.acLibtool = true;
+    tvp.features.ltdl = true;
+    tvp.features.ltInit = false;
     tvp.cc = stdenv.cc;
     tests = mkTests finalAttrs.finalPackage;
   };

@@ -1,10 +1,8 @@
-# Serves 5.2.2 onwards.
+# Gawk 4.0 has Readline but predates the GMP/MPFR arithmetic interface.
 {
   lib,
   stdenv,
   fetchurl,
-  gmp,
-  mpfr,
   readline,
   ncurses,
   version,
@@ -19,8 +17,6 @@ stdenv.mkDerivation (finalAttrs: {
     inherit sha256;
   };
   buildInputs = [
-    gmp
-    mpfr
     readline
     ncurses
   ];
@@ -28,19 +24,19 @@ stdenv.mkDerivation (finalAttrs: {
   configureFlags = [ ];
 
   meta = {
-    description = "GNU AWK with arbitrary precision arithmetic";
+    description = "GNU AWK";
     license = lib.licenses.gpl3Plus;
     platforms = lib.platforms.unix;
   };
   passthru = {
     tvp.deps = {
       inherit
-        gmp
-        mpfr
         readline
         ncurses
         ;
     };
+    tvp.features.bignum = false;
+    tvp.readlineProgram = "dgawk";
     tvp.cc = stdenv.cc;
     tests = mkTests finalAttrs.finalPackage;
   };
