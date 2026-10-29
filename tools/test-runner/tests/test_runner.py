@@ -1,4 +1,5 @@
 import contextlib
+import fcntl
 import io
 import json
 import os
@@ -180,6 +181,32 @@ class RunnerTests(unittest.TestCase):
         result=self.cli('start','--state-dir',str(self.state),'--only','missing')
         self.assertNotEqual(result.returncode,0)
         self.assertIn('Unknown suites',result.stderr)
+
+    def test_owner_exit_cancels_detached_work_and_keeps_completed_outputs(self):
+        self.env['FAKE_DELAY']='30'
+        completed=Path(self.plan['jobs'][0]['outputs'][0])
+        completed.write_text('cached')
+        owner_path=self.root/'owner.lock'
+        with owner_path.open('a') as owner:
+            fcntl.flock(owner,fcntl.LOCK_EX)
+            self.start('--owner-lock',str(owner_path))
+            deadline=time.monotonic()+5
+            while not json.loads((self.run/'state.json').read_text()).get('active'):
+                self.assertLess(time.monotonic(),deadline)
+                time.sleep(0.02)
+            self.assertNotEqual(json.loads((self.run/'state.json').read_text())['phase'],'cancelled')
+        state=self.wait_done()
+        self.assertEqual(state['phase'],'cancelled')
+        self.assertEqual(state['cancelReason'],'Controlling process exited')
+        self.assertEqual(completed.read_text(),'cached')
+        self.assertEqual(state['jobs']['first']['status'],'passed')
+        self.assertEqual(state['jobs']['second']['status'],'cancelled')
+
+    def test_unheld_owner_lock_cannot_launch_detached_work(self):
+        result=self.cli('start','--state-dir',str(self.state),'--owner-lock',str(self.root/'unheld.lock'))
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('must hold --owner-lock',result.stderr)
+        self.assertFalse(self.state.exists())
 
     def test_activity_is_optional_and_interrupted_state_is_visible(self):
         active={};log=io.StringIO()

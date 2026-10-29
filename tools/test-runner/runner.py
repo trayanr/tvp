@@ -80,6 +80,8 @@ def work(run, global_fd, lease_fd):
     state.update(phase="running", pid=os.getpid(), buildStartedAt=time.time(), active={})
     write_json(run / "state.json", state)
     stopped = threading.Event()
+    finished = threading.Event()
+    owner_gone = threading.Event()
     child = None
     active = {}
     lock = threading.Lock()
@@ -91,6 +93,17 @@ def work(run, global_fd, lease_fd):
                 os.killpg(child.pid, signal.SIGTERM)
             except ProcessLookupError:
                 pass
+
+    def watch_owner():
+        while not finished.wait(0.5):
+            try:
+                held = lease_held(Path(state["ownerLock"]))
+            except OSError:
+                held = False
+            if not held:
+                owner_gone.set()
+                stop(None, None)
+                return
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
@@ -104,6 +117,8 @@ def work(run, global_fd, lease_fd):
     command += [drv + "^*" for drv in targets]
     write_json(run / "command.json", command)
     try:
+        if state.get("ownerLock"):
+            threading.Thread(target=watch_owner, daemon=True).start()
         with (run / "nix.log").open("w", buffering=1) as log, (run / "events.jsonl").open("w") as events:
             child = subprocess.Popen(command, stdout=log, stderr=subprocess.PIPE,
                                      text=True, errors="replace", start_new_session=True)
@@ -161,6 +176,9 @@ def work(run, global_fd, lease_fd):
         state.update(phase="error", error=str(error), finishedAt=time.time(), active={})
         print(str(error), file=sys.stderr)
     finally:
+        finished.set()
+        if owner_gone.is_set():
+            state["cancelReason"] = "Controlling process exited"
         write_json(run / "state.json", state)
         os.close(global_fd)
         os.close(lease_fd)
@@ -168,6 +186,10 @@ def work(run, global_fd, lease_fd):
 
 
 def start(args):
+    if args.owner_lock:
+        args.owner_lock = args.owner_lock.resolve()
+        if not lease_held(args.owner_lock):
+            raise RuntimeError("The controlling process must hold --owner-lock before starting")
     if args.retry_of:
         args.retry_of = args.retry_of.resolve()
     directory = args.state_dir.resolve()
@@ -183,6 +205,8 @@ def start(args):
             fcntl.flock(lease, fcntl.LOCK_EX)
             state = {"phase": "preparing", "startedAt": time.time(), "maxJobs": args.jobs,
                      "cores": args.cores, "jobs": {}, "full": not bool(args.only)}
+            if args.owner_lock:
+                state["ownerLock"] = str(args.owner_lock)
             write_json(run / "state.json", state)
             temporary = directory / f"latest-{os.getpid()}.tmp"
             temporary.symlink_to(run)
@@ -316,6 +340,7 @@ def main():
     launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
     launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
     launch.add_argument("--json", action="store_true", help="return the exact frozen run identity for automation")
+    launch.add_argument("--owner-lock", type=Path, help="stop if the controlling process releases this file lock")
     for name in ("status", "wait", "stop"):
         command = commands.add_parser(name, help=f"{name} a local validation run")
         command.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"),

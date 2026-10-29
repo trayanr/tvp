@@ -62,6 +62,14 @@ nix run .#test -- --help > /dev/null
 python3 ci/buildbot/tests/smoke.py --runner "$(nix eval --raw .#apps.x86_64-linux.test.program)"
 ```
 
+The cancellation test starts an isolated controller and worker with a tiny Nix plan.
+It checks queued cancellation, running stops, forced termination and stops during
+startup, including reuse of completed outputs:
+
+```sh
+python3 ci/buildbot/tests/cancellation.py --runner "$(nix eval --raw .#apps.x86_64-linux.test.program)"
+```
+
 ## Prepare the builder at its console
 
 The current target is `x86_64-linux`; an existing Linux installation can be used.
@@ -164,6 +172,10 @@ The exact paths are in `evidence/launch.json`. Rebuild in the authenticated UI t
 an unchanged commit; push a fix to automatically queue a new revision. The default queue
 does not cancel running work or collapse different commits. Removing a label prevents
 future admissions but does not discard already queued requests.
+
+**Cancel** removes a queued request. **Stop** interrupts a running validation,
+including its detached Nix runner. Completed outputs stay in the Nix store and can
+be reused by a later build. A killed worker command also cancels its runner.
 
 For the first master build, use **Build commit** on the builder page and enter its full
 40-character commit SHA. The same action can validate any reviewed commit in this

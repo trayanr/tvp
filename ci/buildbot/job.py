@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Trusted worker harness: pinned integration tree, graph policy, frozen full suite."""
 import argparse
+import fcntl
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -39,6 +41,19 @@ def wait_for_run(runner, run):
 
 
 def validate(args):
+    # The detached runner must not outlive its controlling Buildbot command,
+    # including a forced kill or a stop before start returns the run identity.
+    owner_path = Path.cwd() / "validation-owner.lock"
+    with owner_path.open("a+") as owner:
+        fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        owner.seek(0)
+        owner.truncate()
+        owner.write(str(os.getpid()))
+        owner.flush()
+        return validate_owned(args, owner_path)
+
+
+def validate_owned(args, owner_path):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
         raise ValueError("Invalid GitHub repository")
     root = Path.cwd()
@@ -74,7 +89,8 @@ def validate(args):
     execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)])
     start = subprocess.check_output([
         "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
-        "--system", "x86_64-linux", "--state-dir", str(root / "validation"), "--json",
+        "--system", "x86_64-linux", "--state-dir", str(root / "validation"),
+        "--owner-lock", str(owner_path), "--json",
     ], text=True)
     launch = json.loads(start)
     run = Path(launch["run"])

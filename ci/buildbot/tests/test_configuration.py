@@ -22,6 +22,9 @@ class Deployment(unittest.TestCase):
             self.assertEqual(config['services'], [])
             self.assertEqual(len(config['workers']), 1)
             self.assertIn('127.0.0.1', config['www']['port'])
+            step = next(s for s in config['builders'][0].factory.steps
+                        if s.kwargs.get('name') == 'full-catalogue')
+            self.assertEqual(step.kwargs['sigtermTime'], 30)
 
     def test_enabling_github_requires_a_real_provisioned_credential_file(self):
         with tempfile.TemporaryDirectory() as temporary:

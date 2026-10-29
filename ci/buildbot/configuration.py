@@ -46,7 +46,7 @@ def make_config(settings, source):
         name="full-catalogue", workdir=directory,
         command=validation_command,
         extract_fn=result_properties, haltOnFailure=True,
-        timeout=None, maxTime=None,
+        timeout=None, maxTime=None, sigtermTime=30,
     ))
     # Evidence stays in controller history even if a worker checkout is later removed.
     factory.addStep(steps.DirectoryUpload(
