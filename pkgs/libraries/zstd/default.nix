@@ -14,7 +14,10 @@ let
   versionTable = tvpLib.packages.mkTable [
     {
       def = defs."1.5.6";
-      releases."1.5.6" = "sha256-jCngbPQqrMHq/EB3ri7Gxvy5amJhV+BZPV6Co0/UA8E=";
+      releases = {
+        "1.5.6" = "sha256-jCngbPQqrMHq/EB3ri7Gxvy5amJhV+BZPV6Co0/UA8E=";
+        "1.5.7" = "sha256-6zPlH0mhXgI5UM14Jcp0pKK0Pbg1SCWsJPwbfuCeb6M=";
+      };
     }
   ];
   pname = "zstd";
