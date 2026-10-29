@@ -152,6 +152,11 @@ an unchanged commit; push a fix to automatically queue a new revision. The defau
 does not cancel running work or collapse different commits. Removing a label prevents
 future admissions but does not discard already queued requests.
 
+For the first master build, use **Build commit** on the builder page and enter its full
+40-character commit SHA. The same action can validate any reviewed commit in this
+repository. It requires the operator login. The master poller starts watching from
+the current revision; later pushes are queued automatically.
+
 Keep the run's Nix GC roots until an explicit retention decision. Controller state
 stays on SSD and can be backed up to the NAS. Archive completed evidence to the NAS
 from the controller side; workers do not get NAS write credentials. No archival,

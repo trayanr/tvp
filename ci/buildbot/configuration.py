@@ -71,6 +71,16 @@ def make_config(settings, source):
         "schedulers": [schedulers.AnyBranchScheduler(
             name="catalogue", treeStableTimer=None, builderNames=["tvp-full"],
             change_filter=util.ChangeFilter(category=["tvp-pr", "tvp-master"]),
+        ), schedulers.ForceScheduler(
+            name="build-commit", label="Build commit", builderNames=["tvp-full"],
+            codebases=[util.CodebaseParameter(
+                "", branch=settings.get("branch", "master"),
+                repository=f"https://github.com/{repository}.git", project=repository,
+                revision=util.StringParameter(
+                    name="revision", label="Full commit SHA", required=True,
+                    regex=r"^[0-9a-f]{40}$", maxsize=40,
+                ),
+            )],
         )],
         "builders": [util.BuilderConfig(name="tvp-full", workernames=["tvp-linux"],
                                          factory=factory, collapseRequests=False)],

@@ -4,6 +4,7 @@ import tempfile
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configuration import make_config
+from buildbot.schedulers.forcesched import ValidationError
 
 
 class Deployment(unittest.TestCase):
@@ -26,6 +27,19 @@ class Deployment(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             with self.assertRaises(FileNotFoundError):
                 make_config(self.settings(temporary, True), Path(__file__).resolve().parents[3])
+
+    def test_manual_build_requires_an_exact_commit_in_the_configured_repository(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = make_config(self.settings(temporary, False), Path(__file__).resolve().parents[3])
+            scheduler = next(s for s in config['schedulers'] if s.name == 'build-commit')
+            fields = {f.name: f for f in scheduler.forcedProperties[0].fields}
+            self.assertEqual(fields['repository'].default, 'https://github.com/trayanr/tvp.git')
+            self.assertEqual(fields['branch'].default, 'master')
+            revision = fields['revision']
+            self.assertEqual(revision.getFromKwargs({revision.fullName: ['a' * 40]}), 'a' * 40)
+            for value in ['', 'master', 'a' * 7, 'a' * 41]:
+                with self.assertRaises(ValidationError):
+                    revision.getFromKwargs({revision.fullName: [value]})
 
 
 if __name__ == '__main__':
