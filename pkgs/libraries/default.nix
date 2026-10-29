@@ -1,5 +1,27 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  libxfixes = import ./libxfixes { inherit pkgs tvp; };
+  libxt = import ./libxt { inherit pkgs tvp; };
+  libsm = import ./libsm { inherit pkgs tvp; };
+  libice = import ./libice { inherit pkgs tvp; };
+  libxrandr = import ./libxrandr { inherit pkgs tvp; };
+  libxtst = import ./libxtst { inherit pkgs tvp; };
+  libxi = import ./libxi { inherit pkgs tvp; };
+  libxrender = import ./libxrender { inherit pkgs tvp; };
+  libxext = import ./libxext { inherit pkgs tvp; };
+  libx11 = import ./libx11 { inherit pkgs tvp; };
+  libxcb = import ./libxcb { inherit pkgs tvp; };
+  libxdmcp = import ./libxdmcp { inherit pkgs tvp; };
+  libxau = import ./libxau { inherit pkgs tvp; };
+  xcb-proto = import ./xcb-proto { inherit pkgs tvp; };
+  xtrans = import ./xtrans { inherit pkgs tvp; };
+  xorgproto = import ./xorgproto { inherit pkgs tvp; };
+  libdns_sd = import ./libdns_sd { inherit pkgs tvp; };
+  libcups = import ./libcups { inherit pkgs tvp; };
+  fontconfig = import ./fontconfig { inherit pkgs tvp; };
+  freetype = import ./freetype { inherit pkgs tvp; };
+  alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
+  expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };
   attr = import ./attr { inherit pkgs tvp; };
   acl = import ./acl { inherit pkgs tvp; };

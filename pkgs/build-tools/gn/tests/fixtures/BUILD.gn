@@ -1,0 +1,18 @@
+toolchain("native") {
+  tool("cc") {
+    command = "@CC@ -MMD -MF {{output}}.d -c {{source}} -o {{output}}"
+    outputs = [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o" ]
+    depfile = "{{output}}.d"
+    depsformat = "gcc"
+  }
+  tool("link") {
+    command = "@CC@ {{inputs}} -o {{output}}"
+    outputs = [ "{{root_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+  }
+  tool("stamp") {
+    command = "touch {{output}}"
+  }
+}
+executable("hello") {
+  sources = [ "hello.c" ]
+}

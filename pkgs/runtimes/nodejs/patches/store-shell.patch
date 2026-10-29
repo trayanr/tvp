@@ -1,0 +1,22 @@
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -691,7 +691,7 @@
+       else if (process.platform === 'android')
+         file = '/system/bin/sh';
+       else
+-        file = '/bin/sh';
++        file = '@TVP_SHELL@';
+       args = ['-c', command];
+     }
+   }
+--- a/deps/npm/node_modules/@npmcli/promise-spawn/lib/index.js
++++ b/deps/npm/node_modules/@npmcli/promise-spawn/lib/index.js
+@@ -72,7 +72,7 @@
+   // ahead of time so that we can escape arguments properly. we don't need coverage here.
+   if (command === true) {
+     // istanbul ignore next
+-    command = process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : 'sh'
++    command = process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : '@TVP_SHELL@'
+   }
+ 
+   const options = { ...opts, shell: false }

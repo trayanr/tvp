@@ -1,0 +1,13 @@
+%language=ANSI-C
+%readonly-tables
+%{
+#include <string.h>
+%}
+%%
+alpha
+beta
+gamma
+%%
+int main(void) {
+  return !(in_word_set("alpha",5) && !in_word_set("absent",6));
+}

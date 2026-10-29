@@ -1,0 +1,56 @@
+--- a/src/java.base/unix/native/libjava/childproc.c
++++ b/src/java.base/unix/native/libjava/childproc.c
+@@ -225,7 +225,7 @@
+     while (*end != NULL)
+         ++end;
+     memmove(argv+2, argv+1, (end-argv) * sizeof(*end));
+-    argv[0] = "/bin/sh";
++    argv[0] = "@TVP_SHELL@";
+     argv[1] = file;
+     execve(argv[0], (char **) argv, (char **) envp);
+     /* Can't even exec /bin/sh?  Big trouble, but let's soldier on... */
+@@ -242,16 +242,13 @@
+                            const char *argv[],
+                            const char *const envp[])
+ {
+-    if (mode == MODE_VFORK) {
+-        /* shared address space; be very careful. */
+-        execve(file, (char **) argv, (char **) envp);
+-        if (errno == ENOEXEC)
+-            execve_as_traditional_shell_script(file, argv, envp);
+-    } else {
++    if (mode != MODE_VFORK) {
+         /* unshared address space; we can mutate environ. */
+         environ = (char **) envp;
+-        execvp(file, (char **) argv);
+-    }
++    }
++    execve(file, (char **) argv, (char **) envp);
++    if (errno == ENOEXEC)
++        execve_as_traditional_shell_script(file, argv, envp);
+ }
+ 
+ /**
+@@ -266,9 +263,8 @@
+             const char *argv[],
+             const char *const envp[])
+ {
+-    if (envp == NULL || (char **) envp == environ) {
+-        execvp(file, (char **) argv);
+-        return;
++    if (envp == NULL) {
++        envp = (const char *const *) environ;
+     }
+ 
+     if (*file == '\0') {
+--- a/src/java.desktop/unix/native/common/awt/fontpath.c
++++ b/src/java.desktop/unix/native/common/awt/fontpath.c
+@@ -425,7 +425,7 @@
+      * certain symbols - and functionality - to be available.
+      * Also add explicit search for .so.1 in case .so symlink doesn't exist.
+      */
+-    libfontconfig = dlopen(FONTCONFIG_DLL_VERSIONED, RTLD_LOCAL|RTLD_LAZY);
++    libfontconfig = dlopen("@TVP_FONTCONFIG@", RTLD_LOCAL|RTLD_LAZY);
+     if (libfontconfig == NULL) {
+         libfontconfig = dlopen(FONTCONFIG_DLL, RTLD_LOCAL|RTLD_LAZY);
+         if (libfontconfig == NULL) {

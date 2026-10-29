@@ -1,5 +1,10 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  gn = import ./gn { inherit pkgs tvp; };
+  unzip = import ./unzip { inherit pkgs tvp; };
+  zip = import ./zip { inherit pkgs tvp; };
+  gperf = import ./gperf { inherit pkgs tvp; };
+  cargo-bootstrap = import ./cargo-bootstrap { inherit pkgs tvp; };
   coreutils = import ./coreutils { inherit pkgs tvp; };
   findutils = import ./findutils { inherit pkgs tvp; };
   diffutils = import ./diffutils { inherit pkgs tvp; };
@@ -23,6 +28,7 @@ tvp.lib.packages.mergeNamespaces {
   which = import ./which { inherit pkgs tvp; };
   m4 = import ./m4 { inherit pkgs tvp; };
   pkg-config = import ./pkg-config { inherit pkgs tvp; };
+  patchelf = import ./patchelf { inherit pkgs tvp; };
   ninja = import ./ninja { inherit pkgs tvp; };
   cmake = import ./cmake { inherit pkgs tvp; };
   meson = import ./meson { inherit pkgs tvp; };
