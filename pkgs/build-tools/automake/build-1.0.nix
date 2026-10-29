@@ -1,5 +1,5 @@
 # Before 1.6, configure treats VAR=value arguments as host names; tool paths
-# must be supplied through the environment. Serves 1.2 through 1.5.
+# must be supplied through the environment.
 {
   lib,
   stdenv,
