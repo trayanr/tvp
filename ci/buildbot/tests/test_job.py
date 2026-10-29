@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from io import StringIO
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ import unittest
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import job
+from policy import result_properties
 
 
 @contextmanager
@@ -110,6 +112,45 @@ class FrozenValidation(unittest.TestCase):
             with self.assertRaises(ValueError):
                 job.checkout("trayanr/tvp", "master", Path("candidate"))
             execute.assert_not_called()
+
+
+class ResultProtocol(unittest.TestCase):
+    def test_full_catalogue_pass_survives_buildbot_line_limit(self):
+        result = {"phase": "passed", "counts": {"passed": 2000},
+                  "testCounts": {"passed": 15000},
+                  "jobs": {f"package_{i}": {"status": "passed", "log": "x" * 200}
+                           for i in range(2000)}}
+        def validate(args):
+            Path("evidence").mkdir()
+            Path("evidence/status.json").write_text(json.dumps(result))
+            return result, 0
+        with directory(), patch.object(job, "validate", side_effect=validate), \
+             patch.object(sys, "argv", ["job.py", "--repository", "test/repo", "--head", "a" * 40,
+                                        "--tools-ref", "pinned", "--compare", "compare.py"]), \
+             patch("sys.stdout", new_callable=StringIO) as stdout:
+            self.assertEqual(job.main(), 0)
+            self.assertEqual(json.loads(Path("evidence/status.json").read_text()), result)
+            line = stdout.getvalue()
+        self.assertLess(len(line.encode()), 4096)
+        self.assertEqual(result_properties(0, line, "")["ci_summary"],
+                         "2000/2000 suites; 15000/15000 tests")
+
+    def test_many_failures_keep_totals_and_a_failure_name(self):
+        result = {"phase": "failed", "counts": {"passed": 1000, "failed-or-blocked": 1000},
+                  "testCounts": {"passed": 10000, "failed-or-blocked": 1000},
+                  "jobs": {f"package_{i}": {"status": "failed-or-blocked"} for i in range(1000)}}
+        line = "TVP_CI_RESULT=" + job.result_record(result)
+        self.assertLess(len(line.encode()), 4096)
+        self.assertEqual(result_properties(1, line, "")["ci_summary"].split("; failed: ")[0],
+                         "1000/2000 suites; 10000/11000 tests")
+        self.assertIn("package_0", result_properties(1, line, "")["ci_summary"])
+
+    def test_unicode_error_and_failure_names_remain_bounded(self):
+        result = {"phase": "error", "error": "\u4e00" * 1000,
+                  "jobs": {"\u4e00" * 1000: {"status": "failed-or-blocked"}}}
+        line = "TVP_CI_RESULT=" + job.result_record(result)
+        self.assertLess(len(line.encode()), 4096)
+        self.assertNotIn("Invalid", result_properties(1, line, "")["ci_summary"])
 
 
 if __name__ == '__main__':

@@ -129,6 +129,23 @@ def validate_owned(args, owner_path):
     return result, 0 if waited.returncode == 0 and result["phase"] == "passed" else 1
 
 
+def result_record(result):
+    # Buildbot splits long log lines. Keep this protocol record below its line
+    # limit; evidence/status.json retains the complete per-job report.
+    compact = {key: result[key] for key in ("phase", "counts", "testCounts") if key in result}
+    if "error" in result:
+        compact["error"] = result["error"][:256]
+    compact["jobs"] = {}
+    for name, state in sorted(result.get("jobs", {}).items()):
+        if state.get("status") != "failed-or-blocked":
+            continue
+        compact["jobs"][name] = {"status": "failed-or-blocked"}
+        if len(json.dumps(compact)) > 3000:
+            del compact["jobs"][name]
+            break
+    return json.dumps(compact)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository", required=True)
@@ -145,7 +162,7 @@ def main():
     evidence.mkdir(exist_ok=True)
     if code == 2:
         (evidence / "status.json").write_text(json.dumps(result, indent=2) + "\n")
-    print("TVP_CI_RESULT=" + json.dumps(result), flush=True)
+    print("TVP_CI_RESULT=" + result_record(result), flush=True)
     return code
 
 
