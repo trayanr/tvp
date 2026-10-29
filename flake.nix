@@ -46,7 +46,12 @@
         # derivations and these are nested. Resolves as `.#canonical.<attr>` or
         # `.#variants.<profile>.<attr>`.
         legacyPackages = {
-          inherit (tvp) canonical variants android;
+          inherit (tvp)
+            canonical
+            variants
+            android
+            graph
+            ;
         };
 
         formatter = pkgs.nixfmt-rfc-style;

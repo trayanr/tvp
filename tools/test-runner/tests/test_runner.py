@@ -127,6 +127,21 @@ class RunnerTests(unittest.TestCase):
         self.assertGreaterEqual(state['finishedAt'],state['startedAt'])
         self.assertEqual(self.cli('wait','--run',str(self.run)).returncode,0)
 
+    def test_json_start_identifies_exact_frozen_run(self):
+        result=self.cli('start','--state-dir',str(self.state),'--json')
+        self.assertEqual(result.returncode,0,result.stderr)
+        launched=json.loads(result.stdout)
+        self.run=Path(launched['run'])
+        self.addCleanup(self.stop_if_running)
+        self.assertEqual(launched['runner'],str(self.run/'runner/bin/tvp-test'))
+        self.assertEqual(launched['source'],self.plan['source'])
+        self.assertEqual(launched['suites'],2)
+        # The returned identity remains valid after the convenience alias moves.
+        (self.state/'latest').unlink()
+        (self.state/'latest').symlink_to(self.root/'different-run')
+        self.assertEqual(self.wait_done()['phase'],'passed')
+        self.assertEqual(self.cli('status','--run',str(self.run),'--json').returncode,0)
+
     def test_duplicate_start_and_stop(self):
         self.env['FAKE_DELAY']='10'
         self.start()

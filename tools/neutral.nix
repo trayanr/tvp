@@ -13,9 +13,11 @@
   writeText,
   coreutils,
   jq,
+  python3,
 
   packages,
   tvpLib,
+  graph,
 }:
 let
   canonical = lib.filterAttrs (
@@ -33,6 +35,7 @@ let
       }) canonical
     )
   );
+  graphSnapshot = writeText "tvp-build-graph.json" (builtins.toJSON graph);
 in
 writeShellApplication {
   name = "tvp-neutral";
@@ -44,6 +47,23 @@ writeShellApplication {
     # join and comm compare bytes; sort must not use locale collation, or
     # they silently disagree on any name containing - or _.
     export LC_ALL=C
+    if [ "''${1:-}" = --graph ]; then
+      shift
+      case "''${1:-}" in
+        save)
+          [ "$#" = 2 ] || { echo 'usage: tvp-neutral --graph save FILE' >&2; exit 2; }
+          cp ${graphSnapshot} "$2"
+          ;;
+        diff)
+          shift
+          [ "$#" -ge 1 ] || { echo 'usage: tvp-neutral --graph diff BEFORE [--allow-change EXACT_NAME] [--json] [--out]' >&2; exit 2; }
+          before=$1; shift
+          exec ${python3}/bin/python3 ${./graph/compare.py} "$before" ${graphSnapshot} "$@"
+          ;;
+        *) echo 'usage: tvp-neutral --graph {save|diff} FILE' >&2; exit 2 ;;
+      esac
+      exit 0
+    fi
     key=drv
     if [ "''${1:-}" = "--out" ]; then key=out; shift; fi
 

@@ -222,10 +222,16 @@ def start(args):
                 state.update(phase="error", error=str(error), finishedAt=time.time())
                 write_json(run / "state.json", state)
                 raise
-    print("Started:", run)
-    print(f"Suites: {len(plan['jobs'])}; cached at start: {sum(x['cachedAtStart'] for x in state['jobs'].values())}; declared broken: {len(plan['skipped'])}")
-    print("Progress: nix run .#test -- status --run", args.retry_of.resolve() if args.retry_of else run)
-    print("Frozen runner:", run / "runner/bin/tvp-test", "status --run", run)
+    if getattr(args, "json", False):
+        print(json.dumps({"run": str(run), "runner": str(run / "runner/bin/tvp-test"),
+                          "suites": len(plan["jobs"]), "source": plan["source"],
+                          "cachedAtStart": sum(x["cachedAtStart"] for x in state["jobs"].values()),
+                          "declaredBroken": len(plan["skipped"])}))
+    else:
+        print("Started:", run)
+        print(f"Suites: {len(plan['jobs'])}; cached at start: {sum(x['cachedAtStart'] for x in state['jobs'].values())}; declared broken: {len(plan['skipped'])}")
+        print("Progress: nix run .#test -- status --run", args.retry_of.resolve() if args.retry_of else run)
+        print("Frozen runner:", run / "runner/bin/tvp-test", "status --run", run)
     return 0
 
 
@@ -308,6 +314,7 @@ def main():
     launch.add_argument("--cores", type=int, help="override Nix's cores setting (0 uses all cores)")
     launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
     launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
+    launch.add_argument("--json", action="store_true", help="return the exact frozen run identity for automation")
     for name in ("status", "wait", "stop"):
         command = commands.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"))

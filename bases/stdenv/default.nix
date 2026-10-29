@@ -12,6 +12,7 @@ lib.makeOverridable (
     cc,
     initialPath,
     shell,
+    fixupInputs ? [ ],
   }:
   assert platform.isNative;
   let
@@ -46,7 +47,7 @@ lib.makeOverridable (
           ./hooks/set-source-date-epoch-to-latest.sh
           ./hooks/strip.sh
           cc
-        ];
+        ] ++ fixupInputs;
         defaultBuildInputs = [ ];
       }
       // {

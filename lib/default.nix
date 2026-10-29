@@ -7,6 +7,8 @@ in
 {
   inherit versions tests platforms;
   android = import ./android.nix { inherit lib; };
+  provenance = import ./provenance.nix { inherit lib; };
+  graph = import ./graph.nix { inherit lib; };
   bases = import ./bases.nix { inherit lib platforms; };
   packages = import ./packages.nix { inherit lib versions tests; };
 }

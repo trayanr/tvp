@@ -922,3 +922,67 @@ fixture was additionally validated natively. ADB initializes `~/.android` even f
 version command, so its startup/version was validated natively alongside the sandboxed
 component revision and fastboot checks. A native/VM CI stage should retain those two
 supplementary checks.
+
+## Runtime cleanup and permanent audits
+
+`gcc13-owned-v2` reuses the first owned base's compiler, libc and floor, and adds an
+owned patchelf-backed RPATH cleanup hook. The `default` base alias remains
+`gcc13-owned`; migration is explicit. The original constructor's empty fixup-input
+selection computes the same earlier base and bootstrap producers.
+
+The v2 hook removes unused ELF search directories. A package declares store library
+directories required for name-based `dlopen` in `runtimeLibraryPaths`; these are
+preserved even without `DT_NEEDED` entries. `dontShrinkRpaths` opts out for packages
+whose output format needs a different fixup procedure. Static executables are retained.
+The base fixture runs linked/dlopen consumers, a symlinked executable, static code,
+multiple outputs and the explicit opt-out profile.
+
+Canonical JDK 21.0.13 selects v2. Its procedure cleans the exploded JDK before building
+module images, so `jpackage` launchers embedded in `lib/modules` and jmods receive the
+same cleanup as ordinary installed ELF files. The old producer remains exactly
+available as `tvp.variants.gcc13-owned.jdk_21_0_13`. Shared tests cover JNI, subprocesses,
+image creation, a real generated application launcher, offscreen font rendering and
+PostScript printing. Loader traces verify owned Fontconfig/CUPS loading; the trimmed
+profile additionally rejects the boot JDK, file utility and X11 inputs in its closure.
+
+`checks.package-runtime-ownership` reads an exported Nix reference graph for every
+buildable canonical package and SDK composition. Registration includes canonical and
+variant outputs, the owned bases' explicitly declared private paths and SDK profiles.
+The audit walks references transitively per root, without calling a Nix daemon from
+inside the build sandbox.
+
+Existing foreign runtime debt is recorded in `audits/runtime-baseline.json` with exact
+paths, a reason and required follow-up per package. It covers borrowed compatibility
+bases, historical borrowed dependencies and retained binary toolchain references.
+A path accepted for one package is not accepted for another. New foreign paths fail;
+removed roots or cleared debt also require a reviewed baseline update. Binary seeds
+receive the same regression check. This freezes known debt without describing it as
+complete ownership. `checks.audit-contracts` exercises these failure cases and graph
+comparison behavior; `checks.provenance-declarations` rejects precompiled provenance
+without a declared binary boundary and checks context-free reporting manifests.
+
+`nix run .#provenance -- --json` reports each root's declared `source`, `mixed` or
+`binary` origin separately from registered closure membership. `runtimeBoundaries`
+lists registered binary/mixed components reached at runtime; `foreignPaths` lists
+exact unregistered store paths. The legacy JSON field `owned` measures registration,
+not compilation from source. Private owned-base components are registered rather than
+misreported as foreign packages with matching version names.
+
+## Producer graph comparison and CI entry points
+
+`nix eval .#graph --json` or `nix run .#neutral -- --graph save FILE` captures the
+canonical, variant, base/alias, private component, bootstrap, consumer and SDK producer
+identities. `nix run .#neutral -- --graph diff BEFORE --json` compares them by exact
+name. New entries pass; removed entries and changes fail. Deliberate changes require
+repeatable `--allow-change EXACT_NAME` arguments, and unused allowances fail. The JSON
+keeps before/after values for reviewed changes. `--out` compares outputs for verified
+transport changes; the original canonical-only text commands remain available.
+
+`ci/validate.sh` provides a foreground exit code around the existing full-suite runner.
+`start --json` returns the exact frozen run identity; CI waits on that identity rather
+than following a movable `latest` alias. Final machine-readable status is retained in
+the run directory. `ci/builder-preflight.sh` performs read-only Linux inventory and
+prints selected Nix settings without dumping configuration tokens. See
+[the builder handoff](ci/README.md) for the existing-distribution setup and deployment
+boundaries. Host provisioning, repository CI activation and publishing remain separate
+from the local validation entry points.

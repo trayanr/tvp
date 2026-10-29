@@ -1,0 +1,1401 @@
+{
+  "autoconf_2_53": {
+    "base": "gcc13-owned",
+    "needs": "A compatible owned historical Perl profile and explicit migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Autoconf pins a Perl built on a borrowed compatibility base.",
+    "source": "source"
+  },
+  "autoconf_2_54": {
+    "base": "gcc13-owned",
+    "needs": "A compatible owned historical Perl profile and explicit migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Autoconf pins a Perl built on a borrowed compatibility base.",
+    "source": "source"
+  },
+  "autoconf_2_55": {
+    "base": "gcc13-owned",
+    "needs": "A compatible owned historical Perl profile and explicit migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Autoconf pins a Perl built on a borrowed compatibility base.",
+    "source": "source"
+  },
+  "autoconf_2_56": {
+    "base": "gcc13-owned",
+    "needs": "A compatible owned historical Perl profile and explicit migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Autoconf pins a Perl built on a borrowed compatibility base.",
+    "source": "source"
+  },
+  "autoconf_2_57": {
+    "base": "gcc13-owned",
+    "needs": "A compatible owned historical Perl profile and explicit migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Autoconf pins a Perl built on a borrowed compatibility base.",
+    "source": "source"
+  },
+  "binutils_2_42": {
+    "base": "gcc13",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc13 compatibility base.",
+    "source": "source"
+  },
+  "bundler_2_5_11": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "bundler_2_5_20": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "gcc_13_3_0": {
+    "base": "gcc13",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc13 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_10": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_11": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_12": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_13": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_14": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_14_1": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_15": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_16": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_17": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_18": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_18_1": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_8_0": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_8_1": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_8_2": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_8_3": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_9": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "gdbm_1_9_1": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_4_2": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_0": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_1": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_2": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_3": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_4": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_5": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_6": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_7": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_8": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_5_9": {
+    "base": "gcc49",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc49 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_6_0": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "ncurses_6_1": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "perl_5_24_4": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "perl_5_28_3": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/jhn7xv6kwaydflia4n0hvqf18kjbki8x-gnused-4.9",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "perl_5_30_3": {
+    "base": "gcc13-owned",
+    "needs": "A versioned dependency migration to owned coreutils with the historical Perl suite.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Perl definition explicitly uses borrowed coreutils.",
+    "source": "source"
+  },
+  "perl_5_32_1": {
+    "base": "gcc13-owned",
+    "needs": "A versioned dependency migration to owned coreutils with the historical Perl suite.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Perl definition explicitly uses borrowed coreutils.",
+    "source": "source"
+  },
+  "perl_5_34_3": {
+    "base": "gcc13-owned",
+    "needs": "A versioned dependency migration to owned coreutils with the historical Perl suite.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical Perl definition explicitly uses borrowed coreutils.",
+    "source": "source"
+  },
+  "pkg-config_0_27": {
+    "base": "gcc13-owned",
+    "needs": "Owned gettext and a tested dependency migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/4h0chd6cwrs7iyzmn8hk735al1mmvxsk-gettext-0.21.1",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Historical pkg-config explicitly selects borrowed gettext for its bundled GLib.",
+    "source": "source"
+  },
+  "python_3_5_10": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "python_3_6_15": {
+    "base": "gcc9",
+    "needs": "A compatible owned base and an explicit package migration.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/3ilxy06yvz70vg6ld86kyjr6qb248vd6-gcc-13.3.0-libgcc",
+      "/nix/store/520q9diriqq2sh3s105h891fp4s3a4jn-linux-headers-6.9",
+      "/nix/store/9z1yc545csxqy2cd45qxzkxmfq6c88aa-binutils-wrapper-2.42",
+      "/nix/store/ag3bka67zxgrwmp2550k8fdmiv3krzc2-glibc-2.39-52-dev",
+      "/nix/store/arfqhbi7f0saj5nmqphi25pxpmfhc5pg-gmp-with-cxx-6.3.0",
+      "/nix/store/c4f952p7aml4izqphndgiy3rj7lq5aak-gnugrep-3.11",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/cxz2iaaaipqbf2slznyaazx81d27imlh-gmp-with-cxx-6.3.0",
+      "/nix/store/d828ccvc2148g7m49hh3mzvyzwpipy46-binutils-2.42",
+      "/nix/store/fjcwzzjxvz8gnh24mpm0l6n7vzh1kc8z-gcc-9.5.0",
+      "/nix/store/fvd0x6x3kn3c2bacvsjfg5d3vqllz8f3-pcre2-10.44",
+      "/nix/store/gda8zjgw0s8zzg5ijza7p12zf5c4b0b0-acl-2.3.2",
+      "/nix/store/i9px6m6hbi41ffrhppv4d37h1kxnx4a9-binutils-2.42-lib",
+      "/nix/store/iyvq4ypsh5rsnc2620kbypbrqyxhjybv-glibc-2.39-52-bin",
+      "/nix/store/l22gsn4vmgz5k01yb5lij14g9d7inif6-gcc-9.5.0-lib",
+      "/nix/store/l8ka21f8gs02xm1gk42rc7l62faf5b0z-libmpc-1.3.1",
+      "/nix/store/mmj43rxdqks28bdhxjs25a81v34sq130-mpfr-4.2.1",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/nyvhpl54kg8m1x9wgrljrlpb715bl88l-gcc-wrapper-9.5.0",
+      "/nix/store/p610ybx1pp15lnxxdggm3nmaq31whnvi-attr-2.5.2",
+      "/nix/store/vb8mdklw65p9wikp97ybmnyay0xzipx3-coreutils-9.5",
+      "/nix/store/vg6p25sybxyr2ar34hqy243di64c84fl-isl-0.20",
+      "/nix/store/vpvy79k1qq02p1vyqjk6nb89gwhxqvyb-bash-5.2p32",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52",
+      "/nix/store/xkj82dwfh9ddxay7hw4md7619p4hbb0q-expand-response-params",
+      "/nix/store/zx9zgvy2nsxcmpn0fzx277m5lk352cdf-gcc-13.3.0-lib"
+    ],
+    "reason": "Existing package explicitly selects the borrowed gcc9 compatibility base.",
+    "source": "source"
+  },
+  "ruby_3_2_0": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_1": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_10": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_11": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_2": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_3": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_4": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_5": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_6": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_7": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_8": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_2_9": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_0": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_1": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_10": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_11": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_12": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_2": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_3": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_4": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_5": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_6": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_7": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_8": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_3_9": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_0": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_1": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_10": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_2": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_3": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_4": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_5": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_6": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_7": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_8": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_3_4_9": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_0": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_1": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_2": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_3": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_4": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_5": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "ruby_4_0_6": {
+    "base": "gcc13-owned",
+    "needs": "A cleanup-base migration with YJIT and runtime coverage.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing Ruby/YJIT RPATH retains its build-only binary Rust toolchain; Bundler inherits the Ruby closure.",
+    "source": "source"
+  },
+  "rustc_1_97_1": {
+    "base": "gcc13-owned",
+    "needs": "A source bootstrap chain or a separately migrated, fully adapted seed.",
+    "paths": [
+      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
+      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
+      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
+      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
+      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
+    ],
+    "reason": "Existing upstream binary seed retains foreign runtime paths in its private libraries.",
+    "source": "binary"
+  }
+}

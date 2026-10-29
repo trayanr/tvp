@@ -29,7 +29,7 @@ let
   );
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
-  checks = {
+  checks = (import ./audits { inherit pkgs tvp; }) // {
     android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
     bootstrap-independent = import ./bases/tests/bootstrap.nix {
       inherit pkgs;
@@ -319,6 +319,10 @@ let
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
       inherit tvpLib variantPackages;
+      registry = tvpLib.provenance.registry {
+        inherit canonical variants bases;
+        compositions = tvp.android.profiles;
+      };
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
       packages = canonical;
@@ -327,6 +331,7 @@ let
     neutral = pkgs.callPackage ./tools/neutral.nix {
       packages = canonical;
       inherit tvpLib;
+      graph = tvp.graph;
     };
     status = pkgs.callPackage ./tools/status.nix {
       packages = canonical;
@@ -335,6 +340,10 @@ let
   };
 
   tvp = {
+    graph = tvpLib.graph.snapshot {
+      inherit canonical variants bases;
+      compositions = tvp.android.profiles;
+    };
     android = import ./sdks/android.nix { inherit tvp; };
     inherit
       bases

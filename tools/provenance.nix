@@ -10,6 +10,7 @@
 
   packages,
   variantPackages ? { },
+  registry,
   tvpLib,
 }:
 let
@@ -23,6 +24,9 @@ let
       inherit name pname version;
       canonical = pname != "" && version != "" && name == tvpLib.versions.attrName pname version;
       variant = p.tvp.variant or null;
+      source = tvpLib.provenance.sourceKind p;
+      blob = p.tvp.blob or null;
+      base = p.tvp.base or null;
       # Context discarded, or referencing a path would make this script depend on
       # building the entire repository.
       out = builtins.unsafeDiscardStringContext p.outPath;
@@ -45,9 +49,11 @@ let
           "canonical"
         else
           "alias"
-      }\t${e.out}\t${e.drv}\n"
+      }\t${e.out}\t${e.drv}\t${e.source}\n"
     ) entries
   );
+  registration = writeText "tvp-registration.json" (builtins.toJSON registry);
+  metadata = writeText "tvp-provenance-metadata.json" (builtins.toJSON entries);
 
   # Every closure below is walked here rather than by a nix invocation per
   # package. The three queries in the script return the whole graph once, and a
@@ -56,20 +62,26 @@ let
     function nm(p,   s) { s = p; sub(/^\/nix\/store\/[a-z0-9]*-/, "", s); return s }
     BEGIN { FS = "\t" }
     FILENAME ~ /tvp-paths$/ { tvp[$0] = 1; next }
+    FILENAME ~ /source-kinds$/ { if (!($1 in source)) source[$1] = $2; next }
     FILENAME ~ /refs$/ { ref[$1, ++rn[$1]] = $2; next }
     {
-      split("", seen); split("", own); split("", alien)
+      split("", seen); split("", own); split("", alien); split("", alienPaths); split("", binary); split("", mixed)
       top = 1; stack[1] = $2; seen[$2] = 1; total = 0; owned = 0
       while (top > 0) {
         p = stack[top--]
         total++
-        if (p in tvp) { owned++; own[nm(p)] = 1 } else alien[nm(p)] = 1
+        if (p in tvp) { owned++; own[nm(p)] = 1 } else { alien[nm(p)] = 1; alienPaths[p] = 1 }
+        if (source[p] == "binary") binary[nm(p)] = 1
+        if (source[p] == "mixed") mixed[nm(p)] = 1
         for (i = 1; i <= rn[p]; i++)
           if (!(ref[p, i] in seen)) { seen[ref[p, i]] = 1; stack[++top] = ref[p, i] }
       }
       o = ""; for (m in own)   { o = o (o == "" ? "" : " ") m; ownedAll[m] = 1 }
       f = ""; for (m in alien) { f = f (f == "" ? "" : " ") m; tally[m]++ }
-      printf "%s\t%d\t%d\t%s\t%s\n", $1, owned, total, o, f
+      b = ""; for (m in binary) b = b (b == "" ? "" : " ") m
+      x = ""; for (m in mixed) x = x (x == "" ? "" : " ") m
+      a = ""; for (m in alienPaths) a = a (a == "" ? "" : " ") m
+      printf "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, owned, total, o, f, b, x, $3, a
     }
     END {
       for (m in ownedAll) print m > ownedFile
@@ -118,7 +130,8 @@ writeShellApplication {
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
 
-    cut -f3 "$manifest" | sort -u > "$work/tvp-paths"
+    jq -r '.[].path' ${registration} | sort -u > "$work/tvp-paths"
+    jq -r '.[] | [.path, .source] | @tsv' ${registration} > "$work/source-kinds"
     awk -F'\t' '$2 == "canonical" { print $3 }' "$manifest" | sort -u > "$work/outs"
     awk -F'\t' '$2 == "canonical" { print $4 }' "$manifest" | sort -u > "$work/drvs"
 
@@ -139,11 +152,11 @@ writeShellApplication {
       "$work/refs.json" > "$work/refs"
 
     awk -F'\t' 'NR == FNR { ok[$0] = 1; next }
-                $2 == "canonical" && ($3 in ok) { print $1 "\t" $3 }' \
+                $2 == "canonical" && ($3 in ok) { print $1 "\t" $3 "\t" $5 }' \
       "$work/valid" "$manifest" > "$work/roots"
 
     awk -v ownedFile="$work/owned-all" -v tallyFile="$work/foreign-tally" \
-      -f ${runtimeAwk} "$work/tvp-paths" "$work/refs" "$work/roots" > "$work/rows"
+      -f ${runtimeAwk} "$work/tvp-paths" "$work/source-kinds" "$work/refs" "$work/roots" > "$work/rows"
 
     # Query three: every derivation in the build graph, with its inputs. The
     # field moved from inputDrvs to inputs.drvs, and output paths from absolute
@@ -194,6 +207,8 @@ writeShellApplication {
         --rawfile buildRaw "$work/build-tail" \
         --rawfile universalRaw "$work/build-universal" \
         --argjson npkgs "$npkgs" \
+        --slurpfile metadata ${metadata} \
+        --slurpfile registration ${registration} \
         'def lines: split("\n") | map(select(length > 0));
          def ranked: lines | map(split("\t"))
                      | map({ name: .[1], needed_by: (.[0] | tonumber) });
@@ -201,7 +216,11 @@ writeShellApplication {
          { packages: ($rowsRaw | lines | map(split("\t"))
              | map({ package: .[0], owned: (.[1] | tonumber), total: (.[2] | tonumber),
                      percent: ((.[1] | tonumber) * 1000 / (.[2] | tonumber) | round / 10),
-                     tvp: (.[3] | words), foreign: (.[4] | words) })),
+                     tvp: (.[3] | words), foreign: (.[4] | words), source: .[7],
+                     foreignPaths: (.[8] | words),
+                     runtimeBoundaries: {binary: (.[5] | words), mixed: (.[6] | words)} })),
+           declarations: ($metadata[0] | map({package: .name, base, source, blob})),
+           registration: {paths: ($registration[0] | map(.path) | unique | length)},
            unbuilt: ($unbuiltRaw | lines),
            foreign: ($rankedRaw | ranked),
            foreignBuild: {
@@ -210,17 +229,17 @@ writeShellApplication {
       exit 0
     fi
 
-    printf '%-20s %7s %7s %8s\n' PACKAGE OWNED TOTAL PERCENT
-    awk -F'\t' '{ printf "%-20s %7d %7d %7.1f%%\n", $1, $2, $3, ($3 ? $2*100/$3 : 0) }' \
+    printf '%-20s %10s %7s %8s %s\n' PACKAGE REGISTERED TOTAL PERCENT SOURCE
+    awk -F'\t' '{ printf "%-20s %10d %7d %7.1f%% %s\n", $1, $2, $3, ($3 ? $2*100/$3 : 0), $8 }' \
       "$work/rows"
 
     echo
     sort -u "$work/owned-all" > "$work/owned-distinct"
-    printf 'BUILT BY TVP (%s)\n' "$(wc -l < "$work/owned-distinct")"
+    printf 'REGISTERED IN TVP (%s); source/binary provenance is reported separately\n' "$(wc -l < "$work/owned-distinct")"
     sed 's/^/  /' "$work/owned-distinct"
 
     echo
-    printf 'NOT BUILT BY TVP (%s), by how many packages need them\n' \
+    printf 'OUTSIDE TVP REGISTRATION (%s), by how many packages need them\n' \
       "$(wc -l < "$work/foreign-ranked")"
     awk -F'\t' '{ printf "  %3d  %s\n", $1, $2 }' "$work/foreign-ranked"
 

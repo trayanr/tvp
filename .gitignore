@@ -1,2 +1,4 @@
 result
 .tvp-tests/
+__pycache__/
+*.py[cod]
