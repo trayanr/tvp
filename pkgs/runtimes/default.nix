@@ -1,5 +1,6 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  dart = import ./dart { inherit pkgs tvp; };
   dart-bootstrap = import ./dart-bootstrap { inherit pkgs tvp; };
   jdk-bootstrap = import ./jdk-bootstrap { inherit pkgs tvp; };
   jdk = import ./jdk { inherit pkgs tvp; };

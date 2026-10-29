@@ -22,6 +22,8 @@ lib/                          shared evaluation logic; the flake's `lib` output
 
 pkgs/
 ├── default.nix               index of categories
+├── data/                     dated CA certificates and other build/runtime data
+├── sdks/                     Flutter and independent Android SDK components
 ├── libraries/                openssl, zlib, libxml2, sqlite …
 │   ├── default.nix           index of packages in this category
 │   └── openssl/
@@ -41,7 +43,7 @@ pkgs/
 │       ├── build-4.0.nix
 │       └── tests/            the package's own test suite
 ├── build-tools/              cmake, autoconf, bundler, m4, make …
-└── compilers/                gcc, clang, rust …             (not yet populated)
+└── compilers/                LLVM/Clang and compiler distributions
 ```
 
 Categories exist so kinds of package can be treated differently — different testing
@@ -846,3 +848,77 @@ For example, `nix shell .#python_3_12_16 .#go_1_27_3` selects those canonical to
 The Python suite tests native extensions, embedding, offline venv/pip, standard-library
 behavior and exact library linkage. Go tests include offline local modules, cgo and its
 owned loader/libc, and standard-library tests.
+
+## Dart, Flutter and Android SDK components
+
+`pkgs/data/` holds versioned build/runtime data such as the dated Mozilla CA bundle.
+`pkgs/sdks/` holds Flutter and independent Android component families. Android platform
+versions include the upstream revision: `android-platform_36_r2` is API 36 revision 2,
+and `android-platform_37_2_r2` is API 37.2 revision 2.
+
+Dart 3.13.7's VM, native compiler and language tools build from source using the exact
+upstream Dart bootstrap and DEPS revisions, owned GN, LLVM and LLD. DevTools web assets
+remain an explicit binary input. Flutter 3.47.8 rebuilds its command snapshot from Dart
+sources using this SDK. Its engine, frontend snapshots and web artifacts remain pinned
+upstream binaries. Android components and Gradle likewise declare their binary/bytecode
+provenance and the source bootstrap work that would replace it.
+
+Choose SDK components independently; a profile joins their existing outputs:
+
+```nix
+sdk = tvp.android.mkSdk {
+  components = with tvp.packages; [
+    android-commandline-tools_23_0
+    android-platform-tools_37_0_1
+    android-platform_36_r2
+    android-build-tools_36_0_0
+    android-ndk_28_2_13676358
+  ];
+};
+
+# In a derivation or development shell:
+nativeBuildInputs = [ sdk tvp.packages.gradle_9_3_1 ];
+```
+
+`tvp.android.profiles.flutter` selects those versions for Flutter 3.47. The `latest`
+profile selects API 37.2 r2, Build Tools 37.0.0 and NDK 30.0.16248370. Each profile may
+contain multiple platform, Build Tools and NDK versions; duplicate component paths and
+multiple command-line tools versions are rejected. Component selection adds links and
+keeps each component's canonical build graph intact. The lower-level constructor is
+`tvp.lib.android.mkSdk { stdenv = ...; components = ...; }`.
+
+Profiles provide `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `android`, `sdkmanager`, `adb`,
+`fastboot` and `tvp-android-sdk`. The latter prints the writable SDK directory. SDK locks
+live in an atomic per-output cache under `$XDG_CACHE_HOME/tvp/android`, or the build
+scratch directory inside Nix. Flutter similarly prepares a per-output writable SDK
+under `$XDG_CACHE_HOME/tvp/flutter`; `TVP_FLUTTER_CACHE` selects another cache parent.
+Initial copies preserve timestamps so the built tool snapshot stays valid. Components
+and Android target sysroots retain their store paths; target sysroot and compiler
+runtime bytes are checked against the original NDK archives after fixup.
+
+The flake permits the six explicitly selected Android distribution families while
+retaining their upstream unfree licence metadata. Library consumers importing their own
+`pkgs` configure `allowUnfreePredicate` for `android-cli`, `android-commandline-tools`,
+`android-platform-tools`, `android-build-tools`, `android-platform` and `android-ndk`.
+Command-line Tools 23's auto-downloading launcher is replaced by the separately pinned
+Android CLI. Upstream `android sdk list` still contacts its repository for package lists.
+
+Gradle's `tvp-gradle-seed-wrapper` seeds the exact verified `9.3.1-all.zip` into the
+selected `GRADLE_USER_HOME`. The upstream Wrapper verifies and installs that archive;
+its checksum and success-marker handling remain intact. Flutter invokes this helper
+and preloads the SDK's exact bundled pub archives. Package checks run offline: Dart
+JIT/AOT/JS/Wasm compilation, FFI and pub; Flutter widget execution, web compilation and
+Android ARM64 AOT assembly; NDK C/C++ cross linking and `ndk-build`; and signed APK
+construction using Android Build Tools. Cross-produced Android artifacts are inspected
+on the host. Devices, emulators and Flutter GTK desktop execution are separate work.
+A complete Flutter Gradle APK also needs the application's Maven/plugin dependencies;
+this initial profile does not provide a locked offline Maven repository.
+
+Git, curl, nghttp2 and CA data support these SDKs as normal versioned packages. curl's
+initial profile enables OpenSSL, HTTP/2, gzip and zstd, with local HTTP/TLS checks. Git
+checks repositories, PCRE2 matching, packing and HTTP clones. Nix's syscall filter
+prevents the setgid operations in Git's initialization fixture; that complete unchanged
+fixture was additionally validated natively. ADB initializes `~/.android` even for its
+version command, so its startup/version was validated natively alongside the sandboxed
+component revision and fastboot checks. A native/VM CI stage should retain those two
+supplementary checks.

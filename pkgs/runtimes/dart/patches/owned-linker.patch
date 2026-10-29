@@ -1,0 +1,20 @@
+--- a/build/config/linux/BUILD.gn
++++ b/build/config/linux/BUILD.gn
+@@ -4,9 +4,17 @@
+ 
+ import("//build/config/sysroot.gni")
+ 
++declare_args() {
++  llvm_linker_path = ""
++}
++
+ config("sdk") {
+   ldflags = []
+   cflags = []
++
++  if (llvm_linker_path != "") {
++    ldflags += [ "--ld-path=" + llvm_linker_path ]
++  }
+ 
+   if (is_clang) {
+     # Don't allow visible symbols from libc++ to be re-exported.

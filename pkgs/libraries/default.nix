@@ -1,5 +1,6 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  nghttp2 = import ./nghttp2 { inherit pkgs tvp; };
   libxfixes = import ./libxfixes { inherit pkgs tvp; };
   libxt = import ./libxt { inherit pkgs tvp; };
   libsm = import ./libsm { inherit pkgs tvp; };

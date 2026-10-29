@@ -1,0 +1,19 @@
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -3,6 +3,7 @@
+ # found in the LICENSE file.
+ 
+ declare_args() {
++  use_cipd_toolchain_stamps = true
+   # The optimization level to use for debug builds.
+   if (is_android) {
+     # On Android we kind of optimize some things that don't affect debugging
+@@ -430,7 +431,7 @@
+   # changes since artifacts from an older version of the toolchain may or may
+   # not be compatible with newer ones. To achieve this, we insert a synthetic
+   # define into the compile line.
+-  if (is_clang && (is_linux || is_mac || is_ios) && dart_sysroot != "alpine") {
++  if (use_cipd_toolchain_stamps && is_clang && (is_linux || is_mac || is_ios) && dart_sysroot != "alpine") {
+     if (is_linux && host_cpu == "arm64") {
+       toolchain_stamp_file =
+           "//buildtools/linux-arm64/clang/.versions/clang.cipd_version"

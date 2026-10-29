@@ -30,6 +30,7 @@ let
 
   # Repo-wide invariants only. A package's own tests live at <pkg>.tests.*.
   checks = {
+    android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
     bootstrap-independent = import ./bases/tests/bootstrap.nix {
       inherit pkgs;
       parent = bases.gcc13;
@@ -334,6 +335,7 @@ let
   };
 
   tvp = {
+    android = import ./sdks/android.nix { inherit tvp; };
     inherit
       bases
       canonical

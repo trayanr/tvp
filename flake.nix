@@ -24,6 +24,18 @@
           config.permittedInsecurePackages = [
             "openssl-1.1.1w"
           ];
+          # The SDK components are explicitly requested binary distributions.
+          # Keep their upstream licence metadata and scope the allowance to them.
+          config.allowUnfreePredicate =
+            p:
+            builtins.elem (nixpkgs.lib.getName p) [
+              "android-cli"
+              "android-commandline-tools"
+              "android-platform-tools"
+              "android-build-tools"
+              "android-platform"
+              "android-ndk"
+            ];
         };
         tvp = import ./. { inherit pkgs system; };
       in
@@ -34,7 +46,7 @@
         # derivations and these are nested. Resolves as `.#canonical.<attr>` or
         # `.#variants.<profile>.<attr>`.
         legacyPackages = {
-          inherit (tvp) canonical variants;
+          inherit (tvp) canonical variants android;
         };
 
         formatter = pkgs.nixfmt-rfc-style;

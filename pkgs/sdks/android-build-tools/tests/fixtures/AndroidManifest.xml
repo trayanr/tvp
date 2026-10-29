@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="tvp.fixture"><application android:label="@string/app_name"><activity android:name=".MainActivity" android:exported="true"/></application></manifest>

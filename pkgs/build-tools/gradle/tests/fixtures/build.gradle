@@ -1,0 +1,5 @@
+plugins { id 'application' }
+application { mainClass = 'Main' }
+tasks.register('verify', JavaExec) { classpath = sourceSets.main.runtimeClasspath; mainClass = 'Main' }
+tasks.named('check') { dependsOn 'verify' }
+wrapper { gradleVersion = '9.3.1'; distributionType = Wrapper.DistributionType.ALL; validateDistributionUrl = false; distributionSha256Sum = '17f277867f6914d61b1aa02efab1ba7bb439ad652ca485cd8ca6842fccec6e43' }
