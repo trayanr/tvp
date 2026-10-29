@@ -53,6 +53,19 @@ class GraphContract(unittest.TestCase):
         self.assertEqual(self.run_cli(self.before, schema=2).returncode, 2)
         self.assertEqual(self.run_cli({"packages.example_1": {"out": "missing drv"}}).returncode, 2)
 
+    def test_report_only_preserves_changes_and_removals_without_rejecting_them(self):
+        changed = {"packages.example_1": {"drv": "/nix/store/new.drv", "out": "/nix/store/new"}}
+        result = self.run_cli(changed, "--report-only")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["changed"]["packages.example_1"],
+                         {"before": self.before["packages.example_1"], "after": changed["packages.example_1"]})
+        removed = self.run_cli({}, "--report-only")
+        self.assertEqual(removed.returncode, 0, removed.stderr)
+        self.assertEqual(json.loads(removed.stdout)["removed"], ["packages.example_1"])
+
+    def test_report_only_still_rejects_malformed_graphs(self):
+        self.assertEqual(self.run_cli(self.before, "--report-only", schema=2).returncode, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

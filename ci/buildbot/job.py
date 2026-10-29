@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trusted worker harness: pinned integration tree, graph policy, frozen full suite."""
+"""Trusted worker harness: pinned integration tree, graph report, frozen full suite."""
 import argparse
 import fcntl
 import json
@@ -83,9 +83,19 @@ def validate_owned(args, owner_path):
         with (evidence / f"{name}-graph.json").open("w") as output:
             execute(["nix", "eval", "--show-trace", "--json", f"{tree}#graph"], stdout=output)
     if args.base:
-        execute([sys.executable, str(Path(args.compare).resolve()),
-                 str(evidence / "base-graph.json"), str(evidence / "candidate-graph.json"), "--json"]
-                + [arg for name in args.allow_change for arg in ["--allow-change", name]])
+        difference = json.loads(subprocess.check_output([
+            sys.executable, str(Path(args.compare).resolve()),
+            str(evidence / "base-graph.json"), str(evidence / "candidate-graph.json"),
+            "--json", "--report-only",
+        ], text=True))
+        difference["informational"] = True
+        difference["ciIdentity"] = identity
+        (evidence / "graph-diff.json").write_text(json.dumps(difference, indent=2) + "\n")
+        print("Graph comparison (informational): " + "; ".join(
+            f"{len(difference[key])} {key}" for key in ("added", "changed", "removed")), flush=True)
+        for key in ("added", "changed", "removed"):
+            for name in difference[key]:
+                print(f"  {key}: {name}", flush=True)
     execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)])
     start = subprocess.check_output([
         "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
@@ -126,7 +136,6 @@ def main():
     parser.add_argument("--base", default="")
     parser.add_argument("--tools-ref", required=True)
     parser.add_argument("--compare", required=True)
-    parser.add_argument("--allow-change", action="append", default=[])
     args = parser.parse_args()
     try:
         result, code = validate(args)

@@ -76,9 +76,9 @@ For PRs:
 
 1. Fetch exact head and base commits into separate work directories.
 2. Form their integration tree and record its identity.
-3. Evaluate base and candidate producer graphs. New packages pass the graph policy;
-   removed or unexpectedly changed producers fail. A PR cannot approve its own changes
-   to existing derivations or weaken the comparator used by CI.
+3. Evaluate the queued target-master and merged-candidate producer graphs. Report
+   additions, changes and removals, retaining exact before/after identities in
+   `graph-diff.json`. These differences are informational and do not skip builds.
 4. Run `nix flake check --no-build` on the candidate.
 5. Start its full frozen test plan through the trusted test runner, wait using the
    returned exact run identity and require both exit success and terminal `passed`.
@@ -91,11 +91,13 @@ from sharing a mutable source tree. Successful store outputs and test outputs ca
 reused across requests when their derivations match. "Full suite" means all declared
 outputs are realised; it does not force unchanged cached tests to execute again.
 
-Intentional changes to existing producers require a controller-owned `graph_approvals`
-entry keyed by `PR_NUMBER:HEAD_SHA:BASE_SHA`, listing exact producer names. The
-comparator rejects stale/unused allowances and removals. Any new head or base requires
-review again. Routine additions need no approval entry. A broad base retirement or
-change to removal policy is a separate controller policy review, not an expansion PR.
+The graph comparison records what merging the PR would change relative to its pinned
+target master, rather than changes already present since the original branch point.
+Dependency selectors may advance when a release is added; affected consumers then have
+new producer paths. Review those differences and the full validation results together.
+The report does not infer whether a change is compatible or intentional. There is no
+controller-owned allowance gate for changed or removed producers. Invalid snapshots,
+evaluation errors, merge conflicts and failed validation still fail the build.
 
 ## GitHub and local communication
 

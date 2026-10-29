@@ -23,7 +23,7 @@ def directory():
 
 
 class FrozenValidation(unittest.TestCase):
-    def run_validation(self, phase, wait_code):
+    def run_validation(self, phase, wait_code, base=""):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
@@ -31,6 +31,10 @@ class FrozenValidation(unittest.TestCase):
                 return "nix (Nix) 2.34.9\n"
             if argv[:1] == ["git"]:
                 return "a" * 40 + "\n"
+            if "--report-only" in argv:
+                return json.dumps({"added": ["packages.new_1"],
+                                   "changed": {"packages.consumer_1": {"before": {}, "after": {}}},
+                                   "removed": ["packages.old_1"]})
             if "start" in argv:
                 return json.dumps({"run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test"})
             if "status" in argv:
@@ -39,12 +43,14 @@ class FrozenValidation(unittest.TestCase):
         def run(argv, **kwargs):
             commands.append(argv)
             return SimpleNamespace(returncode=wait_code)
-        args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base="", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
+        args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
              patch.object(job.subprocess, "check_output", side_effect=output), \
              patch.object(job.subprocess, "run", side_effect=run):
             result, code = job.validate(args)
             self.assertTrue(Path("evidence/status.json").exists())
+            if base:
+                self.graph_diff = json.loads(Path("evidence/graph-diff.json").read_text())
         return code, commands
 
     def test_wait_success_cannot_hide_failed_suite_results(self):
@@ -84,6 +90,20 @@ class FrozenValidation(unittest.TestCase):
         with patch.object(job.signal, "signal", side_effect=register), patch.object(job.subprocess, "run", side_effect=run):
             job.wait_for_run("/frozen/runner", "/immutable/run-17")
         self.assertIn(["/frozen/runner", "stop", "--run", "/immutable/run-17"], calls)
+
+    def test_changed_and_removed_producers_are_evidence_not_a_build_gate(self):
+        code, commands = self.run_validation("passed", 0, base="c" * 40)
+        self.assertEqual(code, 0)
+        report = next(c for c in commands if "--report-only" in c)
+        start = next(c for c in commands if "start" in c)
+        self.assertLess(commands.index(report), commands.index(start))
+        self.assertIn("packages.consumer_1", self.graph_diff["changed"])
+        self.assertEqual(self.graph_diff["removed"], ["packages.old_1"])
+        self.assertTrue(self.graph_diff["informational"])
+        self.assertEqual(self.graph_diff["ciIdentity"]["base"], "c" * 40)
+
+    def test_informational_graph_report_cannot_hide_failed_validation(self):
+        self.assertEqual(self.run_validation("failed", 1, base="c" * 40)[0], 1)
 
     def test_checkout_rejects_mutable_refs_before_executing_git(self):
         with patch.object(job, "execute") as execute:

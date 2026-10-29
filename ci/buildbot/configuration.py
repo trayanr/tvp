@@ -5,7 +5,7 @@ from buildbot.reporters.generators.build import BuildStartEndStatusGenerator
 from buildbot.reporters.generators.buildrequest import BuildRequestGenerator
 from buildbot.reporters.message import MessageFormatterRenderable
 from changes import LabelledPullRequests
-from policy import REPOSITORY, SHA, eligible, result_properties, graph_approval
+from policy import REPOSITORY, SHA, eligible, result_properties
 
 
 def make_config(settings, source):
@@ -30,7 +30,7 @@ def make_config(settings, source):
         name="trusted-harness", mastersrc=str(source / "ci/buildbot/job.py"),
         workerdest="job.py", workdir=directory, haltOnFailure=True))
     factory.addStep(steps.FileDownload(
-        name="trusted-graph-policy", mastersrc=str(source / "tools/graph/compare.py"),
+        name="trusted-graph-comparator", mastersrc=str(source / "tools/graph/compare.py"),
         workerdest="compare.py", workdir=directory, haltOnFailure=True))
     @util.renderer
     def validation_command(props):
@@ -38,9 +38,6 @@ def make_config(settings, source):
                    "--head", props.getProperty("revision"),
                    "--base", props.getProperty("tvp_base", ""),
                    "--tools-ref", tools_ref, "--compare", "compare.py"]
-        for name in graph_approval(settings, props.getProperty("tvp_pr", ""),
-                                   props.getProperty("revision"), props.getProperty("tvp_base", "")):
-            command.extend(["--allow-change", name])
         return command
     factory.addStep(steps.SetPropertyFromCommand(
         name="full-catalogue", workdir=directory,

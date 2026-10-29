@@ -29,10 +29,16 @@ flake='''{ inputs.nixpkgs.url = "github:NixOS/nixpkgs/NIXPKGS_REV"; outputs = { 
       jobs = [{ name = "fixture"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ];
         tests = [{ name = "run"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ]; }]; }]; skipped = []; }; };
 in { testPlans.${system} = plan; checks.${system}.fixture = result;
- graph = { schema = 1; entries.fixture = { drv = discard result.drvPath; out = discard result.outPath; }; }; }; }
+ graph = { schema = 1; entries.fixture = { drv = discard result.drvPath; out = discard result.outPath; };
+ entries.retired = { drv = discard result.drvPath; out = discard result.outPath; }; }; }; }
 '''.replace('NIXPKGS_REV',revision).replace('BASH', '"${pkgs.bash}/bin/bash"').replace('SMOKE_ID',area.name)
 (repository/'flake.nix').write_text(flake);g('add','flake.nix');subprocess.run([realnix,'flake','lock',str(repository)],check=True);g('add','flake.lock');g('commit','--quiet','-m','base');base=g('rev-parse','HEAD')
-(repository/'expansion').write_text('new package version\n');g('add','expansion');g('commit','--quiet','-m','expand');head=g('rev-parse','HEAD')
+(repository/'expansion').write_text('new package version\n')
+# Keep the test's result identical, but change its producer and remove a graph
+# entry. The PR must still build without a controller-owned graph allowance.
+(repository/'flake.nix').write_text(flake.replace('printf passed > $out', "printf '%s' passed > $out")
+    .replace(' entries.retired = { drv = discard result.drvPath; out = discard result.outPath; };', ''))
+g('add','expansion','flake.nix');g('commit','--quiet','-m','expand');head=g('rev-parse','HEAD')
 # Make the base diverge so the harness must perform a real merge.
 g('checkout','--quiet',base);(repository/'other-pr').write_text('another merged expansion\n');g('add','other-pr');g('commit','--quiet','-m','other expansion');base=g('rev-parse','HEAD')
 runner=args.runner.resolve()
@@ -52,12 +58,16 @@ from types import SimpleNamespace
 # Master must work before any writable evaluation has registered its generated
 # script. Running only the PR case would hide this fresh-store failure.
 master_work=area/'master-work';master_work.mkdir();os.chdir(master_work)
-master_result,master_code=job.validate(SimpleNamespace(repository='fixture/tvp',head=base,base='',tools_ref='offline-fixture',compare=str(root/'tools/graph/compare.py'),allow_change=[]))
+master_result,master_code=job.validate(SimpleNamespace(repository='fixture/tvp',head=base,base='',tools_ref='offline-fixture',compare=str(root/'tools/graph/compare.py')))
 assert master_code==0 and master_result['phase']=='passed'
 assert (master_work/'evidence/candidate-graph.json').is_file()
 work=area/'work';work.mkdir();os.chdir(work)
-result,code=job.validate(SimpleNamespace(repository='fixture/tvp',head=head,base=base,tools_ref='offline-fixture',compare=str(root/'tools/graph/compare.py'),allow_change=[]))
+result,code=job.validate(SimpleNamespace(repository='fixture/tvp',head=head,base=base,tools_ref='offline-fixture',compare=str(root/'tools/graph/compare.py')))
 print(json.dumps({'fixture':str(area),'code':code,'phase':result['phase'],'counts':result['counts'],'identity':result['ciIdentity']},indent=2))
 assert code==0 and result['phase']=='passed'
 assert result['ciIdentity']['merge'] not in [base,head]
 assert (work/'candidate/expansion').is_file() and (work/'candidate/other-pr').is_file()
+difference=json.loads((work/'evidence/graph-diff.json').read_text())
+assert list(difference['changed'])==['fixture']
+assert difference['removed']==['retired']
+assert difference['ciIdentity']==result['ciIdentity']

@@ -46,6 +46,8 @@ def main():
     parser.add_argument("--allow-change", action="append", default=[], metavar="EXACT_NAME")
     parser.add_argument("--out", action="store_true", help="compare output paths only")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--report-only", action="store_true",
+                        help="report valid graph differences without failing on changed or removed producers")
     args = parser.parse_args()
     try:
         result = compare(read_snapshot(args.before), read_snapshot(args.after), args.allow_change, args.out)
@@ -61,7 +63,7 @@ def main():
                 print(f"{key}: {name}")
         if not failed:
             print("All existing producers are unchanged or explicitly reviewed.")
-    return int(failed)
+    return 0 if args.report_only else int(failed)
 
 
 if __name__ == "__main__":

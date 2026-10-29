@@ -134,23 +134,18 @@ require the operator login. After the first real GitHub status has appeared,
 `tvp/full` can be made a required branch check. Repository settings are not changed by
 this implementation.
 
-## Reviewed changes to existing producers
+## Graph changes
 
-Additions need no graph allowance. For an intentional producer change, review the graph
-output and add exact names to the controller's private `config.json`, for example:
+PR validation compares the queued target-master revision with the PR's merged result.
+The comparison reports added, changed and removed producers in the build log and saves
+exact before/after identities in `evidence/graph-diff.json`. It is informational:
+dependency updates and other graph changes continue into the full validation without
+controller allowances. Review the diff alongside the test results before merging.
 
-```json
-{
-  "graph_approvals": {
-    "17:FULL_HEAD_SHA:FULL_BASE_SHA": ["packages.php_7_4_33"]
-  }
-}
-```
-
-Reload the reviewed controller configuration and rebuild that request. These approvals
-are exact to both commits; a PR cannot edit its own allowance. Unused approvals and
-removals still fail. This is separate from fixing a failed new historical version by
-forking its definition/builder and pushing another commit.
+The comparison uses resolved producers, so it includes consumers whose dependency
+selector moved even when their own definition files were not edited. It does not
+classify the cause of a change. The standalone graph comparator remains strict by
+default; CI uses its `--report-only` mode. Invalid graph data still fails validation.
 
 ## Inspect and operate
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from policy import eligible, result_properties, summary, graph_approval
+from policy import eligible, result_properties, summary
 
 
 def pull():
@@ -49,19 +49,6 @@ class Reporting(unittest.TestCase):
     def test_process_failure_cannot_be_reported_as_pass(self):
         line = "TVP_CI_RESULT=" + json.dumps({"phase": "passed", "counts": {"passed": 1}})
         self.assertIn("process failed", result_properties(1, line, "")["ci_summary"])
-
-
-class Approvals(unittest.TestCase):
-    def test_approval_is_pinned_to_both_commits_and_pr(self):
-        settings = {"graph_approvals": {"17:head:base": ["packages.php_7_4_33"]}}
-        self.assertEqual(graph_approval(settings, 17, "head", "base"), ["packages.php_7_4_33"])
-        for pr, head, base in [(18, "head", "base"), (17, "new", "base"), (17, "head", "new")]:
-            self.assertEqual(graph_approval(settings, pr, head, base), [])
-
-    def test_blanket_or_malformed_configuration_is_not_a_list_of_approvals(self):
-        for value in ["all", [None], [""]]:
-            with self.assertRaises(ValueError):
-                graph_approval({"graph_approvals": {"1:h:b": value}}, 1, "h", "b")
 
 
 if __name__ == '__main__':

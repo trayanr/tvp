@@ -48,11 +48,3 @@ def result_properties(rc, stdout, stderr):
         return {"ci_summary": text}
     except (ValueError, TypeError, AttributeError):
         return {"ci_summary": "Invalid final validation report"}
-
-
-def graph_approval(settings, number, head, base):
-    key = f"{number}:{head}:{base}"
-    names = settings.get("graph_approvals", {}).get(key, [])
-    if not isinstance(names, list) or any(not isinstance(n, str) or not n for n in names):
-        raise ValueError("Graph approvals must list exact producer names")
-    return names
