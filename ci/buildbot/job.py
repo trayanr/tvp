@@ -42,6 +42,8 @@ def validate(args):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
         raise ValueError("Invalid GitHub repository")
     root = Path.cwd()
+    nix_version = subprocess.check_output(["nix", "--version"], text=True).strip()
+    print(nix_version, flush=True)
     evidence = root / "evidence"
     evidence.mkdir(exist_ok=True)
     candidate, base = root / "candidate", root / "base"
@@ -57,6 +59,7 @@ def validate(args):
                  "-c", "commit.gpgSign=false", "merge", "--no-edit", base_sha])
     merge = subprocess.check_output(["git", "-C", str(candidate), "rev-parse", "HEAD"], text=True).strip()
     identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": merge}
+    identity["nixVersion"] = nix_version
     (evidence / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
     if args.base:
         for name, tree in [("base", base), ("candidate", candidate)]:

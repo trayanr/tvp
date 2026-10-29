@@ -17,9 +17,12 @@ def make_config(settings, source):
     revision = settings["controller_revision"]
     if not SHA.fullmatch(revision):
         raise ValueError("controller_revision must be a full trusted commit SHA")
+    tools_ref = settings.get("tools_ref", f"github:{repository}/{revision}")
     secrets = Path(settings["secrets_directory"]).resolve()
     def secret(name):
         return (secrets / name).read_text().strip()
+    github_enabled = settings.get("github_enabled", True)
+    github_token = secret("github-token") if github_enabled else None
     allowed = lambda pr: eligible(pr, repository, settings.get("label", "ci:build"), settings.get("branch", "master"))
     directory = util.Interpolate("runs/%(prop:buildnumber)s")
     factory = util.BuildFactory()
@@ -34,7 +37,7 @@ def make_config(settings, source):
         command = ["python3", "job.py", "--repository", repository,
                    "--head", props.getProperty("revision"),
                    "--base", props.getProperty("tvp_base", ""),
-                   "--tools-ref", f"github:{repository}/{revision}", "--compare", "compare.py"]
+                   "--tools-ref", tools_ref, "--compare", "compare.py"]
         for name in graph_approval(settings, props.getProperty("tvp_pr", ""),
                                    props.getProperty("revision"), props.getProperty("tvp_base", "")):
             command.extend(["--allow-change", name])
@@ -58,13 +61,13 @@ def make_config(settings, source):
         "protocols": {"pb": {"port": "tcp:9989:interface=127.0.0.1"}},
         "workers": [worker.Worker("tvp-linux", secret("worker-password"), max_builds=1)],
         "change_source": [
-            LabelledPullRequests(owner=owner, repo=repo, token=secret("github-token"),
+            LabelledPullRequests(owner=owner, repo=repo, token=github_token,
                                  pullrequest_filter=allowed, pollInterval=60, pollAtLaunch=True),
             changes.GitPoller(repourl=f"https://github.com/{repository}.git",
                               branches=[settings.get("branch", "master")],
                               category="tvp-master", project=repository,
                               pollInterval=60, pollAtLaunch=True),
-        ],
+        ] if github_enabled else [],
         "schedulers": [schedulers.AnyBranchScheduler(
             name="catalogue", treeStableTimer=None, builderNames=["tvp-full"],
             change_filter=util.ChangeFilter(category=["tvp-pr", "tvp-master"]),
@@ -72,13 +75,13 @@ def make_config(settings, source):
         "builders": [util.BuilderConfig(name="tvp-full", workernames=["tvp-linux"],
                                          factory=factory, collapseRequests=False)],
         "services": [reporters.GitHubStatusPush(
-            token=secret("github-token"), context="tvp/full",
+            token=github_token, context="tvp/full",
             generators=[BuildRequestGenerator(formatter=MessageFormatterRenderable("Queued on local TVP builder")),
                         BuildStartEndStatusGenerator(
                             start_formatter=MessageFormatterRenderable("Building full catalogue locally"),
                             end_formatter=MessageFormatterRenderable(util.Property("ci_summary", default="Validation stopped before its final report")),
                         )],
-        )],
+        )] if github_enabled else [],
         "www": {
             "port": "tcp:8010:interface=127.0.0.1",
             "plugins": {"waterfall_view": {}, "console_view": {}, "grid_view": {}},

@@ -12,6 +12,7 @@ StateDirectoryMode=0700
 WorkingDirectory=/var/lib/tvp-controller
 Environment=TVP_CI_SOURCE=/opt/tvp-ci
 Environment=TVP_CI_CONFIG=/var/lib/tvp-controller/config.json
+Environment=PATH=/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/nix/var/nix/profiles/default/bin/nix-shell /opt/tvp-ci/ci/buildbot/shell.nix --run "buildbot start --nodaemon /var/lib/tvp-controller"
 Restart=on-failure
 RestartSec=10

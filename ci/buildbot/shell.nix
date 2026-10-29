@@ -14,7 +14,6 @@ pkgs.mkShell {
     pkgs.buildbot-worker
     pkgs.git
     pkgs.cacert
-    pkgs.nix
     pkgs.python3
   ];
 }

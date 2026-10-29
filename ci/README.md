@@ -24,12 +24,16 @@ From this checkout:
 nix-shell ci/buildbot/shell.nix
 python3 -m unittest discover -s ci/buildbot/tests -p test_policy.py
 python3 -m unittest discover -s ci/buildbot/tests -p test_job.py
+python3 -m unittest discover -s ci/buildbot/tests -p test_configuration.py
 python3 -m twisted.trial --temp-directory=/tmp/tvp-ci-trial ci/buildbot/tests/test_changes.py
 ```
 
 The shell uses Buildbot and plugins from TVP's locked Nixpkgs input. Tests do not call
 GitHub or start package builds. They cover admission, pagination, exact SHA tracking,
 restart/failure delivery, status handling and frozen-run validation.
+
+Nix itself comes from the host installation. The service units put its managed profile
+on PATH, so host Nix upgrades also apply to CI. Each run records the Nix version used.
 
 A separate integration smoke test creates two diverging local Git histories, forms a
 real merge and executes a tiny full frozen plan with Nix. It does not contact GitHub;
@@ -70,9 +74,16 @@ interactive assisted deployment, supply credentials through the secret-input mec
 not chat, repository files or shell arguments.
 
 Set `controller_revision` to the reviewed **full commit SHA containing this CI code**.
+Leave `github_enabled` false during setup: the dashboard and worker can start without
+polling GitHub or posting statuses. Enable it after the repository has the test-plan
+interface and the controller has its GitHub credential.
 The worker resolves its trusted test-runner executable from that revision. Copy the
 worker authentication value into `/var/lib/tvp-worker/worker-password`, readable only by
 the worker. The worker receives no GitHub or operator credential.
+
+For a local deployment before the CI commit is pushed, `tools_ref` may instead point
+to the deployed source with a NAR hash, for example `path:/opt/tvp-ci?narHash=sha256-...`.
+The hash pins the exact files; both service accounts must be able to read that checkout.
 
 In the pinned CI shell, under the controller account:
 

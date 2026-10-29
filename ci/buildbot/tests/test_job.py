@@ -27,6 +27,8 @@ class FrozenValidation(unittest.TestCase):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
+            if argv == ["nix", "--version"]:
+                return "nix (Nix) 2.34.9\n"
             if argv[:1] == ["git"]:
                 return "a" * 40 + "\n"
             if "start" in argv:
