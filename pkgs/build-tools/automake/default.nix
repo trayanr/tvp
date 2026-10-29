@@ -12,7 +12,8 @@ let
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
-      opts.headerMacro = "AM_CONFIG_HEADER";
+      opts.headerMacro = "AC_CONFIG_HEADER";
+      opts.hasAclocal = false;
     };
     "1.2" = {
       builder = ./build-1.0.nix;
@@ -24,6 +25,23 @@ let
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
       opts.headerMacro = "AM_CONFIG_HEADER";
+    };
+    "1.4" = {
+      builder = ./build-1.0.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_13;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.automaticCcCo = false;
+      opts.archiveExt = "tar.gz";
+      opts.headerMacro = "AM_CONFIG_HEADER";
+      patches = [
+        {
+          file = ./patches/1.4-perl-indirect-call.patch;
+          reason = "Perl 5.20 removed do SUBROUTINE(LIST); call the language handlers through their symbolic references instead.";
+        }
+      ];
     };
     "1.5" = {
       builder = ./build-1.0.nix;
@@ -67,6 +85,22 @@ let
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
+    };
+    "1.8" = {
+      builder = ./build-1.6.nix;
+      inherit base;
+      deps = {
+        autoconf = tvp.packages.autoconf_2_73;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.automaticCcCo = false;
+      opts.archiveExt = "tar.bz2";
+      patches = [
+        {
+          file = ./patches/1.8-load-exporter.patch;
+          reason = "Automake::Config inherits from Exporter without loading it, leaving aclocal's version and macro directory unset on modern Perl.";
+        }
+      ];
     };
     "1.10" = {
       builder = ./build-1.6.nix;
@@ -117,6 +151,11 @@ let
       releases = {
         "1.2" = "sha256-5FEV79YJTx+5xhfk2E84af5yy76vrYhZVDC75RsHxbg=";
         "1.3" = "sha256-xqbrs4M11YqlAfp3P6SQQelRNbzOl3sZ78nxRWdAPWA=";
+      };
+    }
+    {
+      def = defs."1.4";
+      releases = {
         "1.4" = "sha256-a3Hfp5qM0N4rTN7TJHdDy7lV1DTVfPiJIUQyHreVyWg=";
         "1.4-p1" = "sha256-26J0yUdm2a1jmpoayXaMnA1aQqHLexhieWoZHLEy9+g=";
         "1.4-p2" = "sha256-p42ZQ64D13qYRu97lqP70n4qj1hISyB1pV0vamdHRGU=";
@@ -159,7 +198,17 @@ let
         "1.7.7" = "sha256-0smPsSGIRhsFQr2SjpHDdn2yy2zZUaIitsMFvZmnWHg=";
         "1.7.8" = "sha256-Ld3DtRUG5wJkfMxnV+FcBTI/pnJF0tU+ge02qDL5vkI=";
         "1.7.9" = "sha256-MsE7atOO1ee/0XVsvBnPXv1nt63i0GAApMmbDOlL1G0=";
+      };
+    }
+    {
+      def = defs."1.8";
+      releases = {
         "1.8" = "sha256-cFZZUFvZ2Y3AbvCE4hM5mrjr5ElZ2Pi9Hxp31A9cepo=";
+      };
+    }
+    {
+      def = defs."1.7";
+      releases = {
         "1.8.1" = "sha256-qC+gVn+YFEuujM/O9ROECmi0JXh8eMvqbCFsK3HIaUs=";
         "1.8.2" = "sha256-4X4RSigeo4zXXYkI11+GFqCriok7HQSKHY6wHn5wYFs=";
         "1.8.3" = "sha256-DGVCyrgw3xUOe6Dv9rJW/umwuYqrVtzK0trpnNBQBoQ=";

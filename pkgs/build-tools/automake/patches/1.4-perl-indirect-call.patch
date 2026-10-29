@@ -1,0 +1,8 @@
+--- a/automake.in
++++ b/automake.in
+@@ -932 +932 @@
+-	do $name ();
++	&$name ();
+@@ -1093 +1093 @@
+-		local ($r) = do $subr ($base, $extension);
++		local ($r) = &$subr ($base, $extension);
