@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from io import StringIO
 import json
 import os
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -32,7 +33,7 @@ class FrozenValidation(unittest.TestCase):
             if argv == ["nix", "--version"]:
                 return "nix (Nix) 2.34.9\n"
             if argv[:1] == ["git"]:
-                return "a" * 40 + "\n"
+                return base + "\n"
             if "--report-only" in argv:
                 return json.dumps({"added": ["packages.new_1"],
                                    "changed": {"packages.consumer_1": {"before": {}, "after": {}}},
@@ -44,8 +45,8 @@ class FrozenValidation(unittest.TestCase):
             raise AssertionError(argv)
         def run(argv, **kwargs):
             commands.append(argv)
-            return SimpleNamespace(returncode=wait_code)
-        args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
+            return subprocess.CompletedProcess(argv, 0 if 'merge-base' in argv else wait_code)
+        args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, target_branch="master", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
              patch.object(job.subprocess, "check_output", side_effect=output), \
              patch.object(job.subprocess, "run", side_effect=run):
@@ -53,6 +54,9 @@ class FrozenValidation(unittest.TestCase):
             self.assertTrue(Path("evidence/status.json").exists())
             if base:
                 self.graph_diff = json.loads(Path("evidence/graph-diff.json").read_text())
+            identity = json.loads(Path("evidence/identity.json").read_text())
+            self.assertEqual(identity['merge'], args.head)
+            self.assertFalse(any('merge' in c for c in commands))
         return code, commands
 
     def test_wait_success_cannot_hide_failed_suite_results(self):
@@ -112,6 +116,47 @@ class FrozenValidation(unittest.TestCase):
             with self.assertRaises(ValueError):
                 job.checkout("trayanr/tvp", "master", Path("candidate"))
             execute.assert_not_called()
+
+    def test_queued_pr_rejected_before_any_nix_for_outdated_or_divergent_target(self):
+        for current, ancestry in [('d' * 40, 0), ('c' * 40, 1)]:
+            args = SimpleNamespace(repository='trayanr/tvp', head='a' * 40, base='c' * 40,
+                                   target_branch='release/next', compare='compare.py', tools_ref='unused')
+            calls = []
+            def output(argv, **kwargs):
+                calls.append(argv)
+                self.assertEqual(argv[0], 'git')
+                return current + '\n'
+            def run(argv, **kwargs):
+                calls.append(argv)
+                self.assertEqual(argv[0], 'git')
+                return subprocess.CompletedProcess(argv, ancestry)
+            with directory(), patch.object(job, 'checkout') as checkout, \
+                 patch.object(job, 'execute', side_effect=lambda argv, **kwargs: calls.append(argv)), \
+                 patch.object(job.subprocess, 'check_output', side_effect=output), \
+                 patch.object(job.subprocess, 'run', side_effect=run):
+                with self.assertRaises(ValueError):
+                    job.validate(args)
+                self.assertEqual(checkout.call_count, 1)
+                self.assertFalse(Path('evidence/identity.json').exists())
+            self.assertTrue(any('refs/heads/release/next' in c for c in calls))
+
+    def test_ancestry_git_errors_fail_closed(self):
+        with patch.object(job, 'execute'), \
+             patch.object(job.subprocess, 'check_output', return_value='c' * 40 + '\n'), \
+             patch.object(job.subprocess, 'run', return_value=subprocess.CompletedProcess([], 128)):
+            with self.assertRaises(subprocess.CalledProcessError):
+                job.require_current_target('trayanr/tvp', Path('candidate'), 'c' * 40, 'a' * 40, 'master')
+
+    def test_unsafe_target_branches_are_rejected_without_fetching(self):
+        for branch in ['', '--upload-pack=evil', 'master\nother', 'master\r']:
+            with patch.object(job, 'execute') as execute:
+                with self.assertRaises(ValueError):
+                    job.require_current_target('trayanr/tvp', Path('candidate'), 'c' * 40, 'a' * 40, branch)
+                execute.assert_not_called()
+        for branch in ['@{-1}', 'a..b', 'a b', 'a:b', 'a.lock', '/master']:
+            with self.assertRaises(subprocess.CalledProcessError), patch.object(job.subprocess, 'check_output') as output:
+                job.require_current_target('trayanr/tvp', Path('candidate'), 'c' * 40, 'a' * 40, branch)
+            output.assert_not_called()
 
 
 class ResultProtocol(unittest.TestCase):

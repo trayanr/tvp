@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configuration import make_config
@@ -43,6 +44,18 @@ class Deployment(unittest.TestCase):
             for value in ['', 'master', 'a' * 7, 'a' * 41]:
                 with self.assertRaises(ValidationError):
                     revision.getFromKwargs({revision.fullName: [value]})
+
+    def test_worker_receives_configured_target_independently_of_pr_properties(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            settings = self.settings(temporary, False)
+            settings['branch'] = 'release/next'
+            config = make_config(settings, Path(__file__).resolve().parents[3])
+            step = next(s for s in config['builders'][0].factory.steps
+                        if s.kwargs.get('name') == 'full-catalogue')
+            properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40, 'target_branch': 'untrusted'}
+            props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
+            command = step.kwargs['command'].fn(props)
+            self.assertEqual(command[command.index('--target-branch') + 1], 'release/next')
 
 
 if __name__ == '__main__':
