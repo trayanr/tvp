@@ -95,7 +95,7 @@ def work(run, global_fd, lease_fd):
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     targets = [plan["aggregate"]] if state["full"] else [job["drv"] for job in plan["jobs"]]
-    command = ["nix", "build", "--keep-going", "--log-format", "internal-json",
+    command = ["nix", "build", "--show-trace", "--keep-going", "--log-format", "internal-json",
                "--out-link", str(run / "result")]
     if state.get("maxJobs") is not None:
         command += ["--max-jobs", str(state["maxJobs"])]
@@ -190,7 +190,7 @@ def start(args):
             try:
                 # Keep the executable and its interpreter alive after nix run exits.
                 root_path(run / "runner", Path(__file__).resolve().parents[2])
-                command = ["nix", "build", "--no-write-lock-file", "--out-link", str(run / "plan"),
+                command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
                            args.flake + "#testPlans." + args.system]
                 with (run / "prepare.log").open("w") as log:
                     subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)

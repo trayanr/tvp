@@ -21,6 +21,8 @@ import json, os
 from pathlib import Path
 import sys, time
 args=sys.argv[1:]
+with open(os.environ['FAKE_COMMANDS'], 'a') as commands:
+    commands.write(json.dumps(args)+'\n')
 link=Path(args[args.index('--out-link')+1])
 plan=json.loads(Path(os.environ['FAKE_PLAN']).read_text())
 if any('#testPlans.' in a for a in args):
@@ -76,7 +78,8 @@ class RunnerTests(unittest.TestCase):
                            for n in ['first','second']]}
         self.plan_file=self.root/'fixture.json'
         self.plan_file.write_text(json.dumps(self.plan))
-        self.env=dict(os.environ,PATH=str(binaries)+os.pathsep+os.environ['PATH'],FAKE_PLAN=str(self.plan_file))
+        self.commands_file=self.root/'commands.jsonl'
+        self.env=dict(os.environ,PATH=str(binaries)+os.pathsep+os.environ['PATH'],FAKE_PLAN=str(self.plan_file),FAKE_COMMANDS=str(self.commands_file))
         self.state=self.root/'state'
 
     def cli(self,*args):
@@ -120,6 +123,10 @@ class RunnerTests(unittest.TestCase):
         state=self.wait_done()
         self.assertEqual(state['phase'],'passed')
         command=json.loads((self.run/'command.json').read_text())
+        self.assertIn('--show-trace',command)
+        preparation=next(json.loads(line) for line in self.commands_file.read_text().splitlines()
+                         if any('#testPlans.' in arg for arg in json.loads(line)))
+        self.assertIn('--show-trace',preparation)
         self.assertNotIn('--max-jobs',command)
         self.assertNotIn('--cores',command)
         self.assertTrue(state['jobs']['first']['cachedAtStart'])

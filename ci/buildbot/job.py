@@ -61,16 +61,19 @@ def validate(args):
     identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": merge}
     identity["nixVersion"] = nix_version
     (evidence / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
+    # Record producers for master too. Normal evaluation registers generated
+    # source files which a fresh store's read-only flake check cannot create.
+    trees = [("base", base), ("candidate", candidate)] if args.base else [("candidate", candidate)]
+    for name, tree in trees:
+        with (evidence / f"{name}-graph.json").open("w") as output:
+            execute(["nix", "eval", "--show-trace", "--json", f"{tree}#graph"], stdout=output)
     if args.base:
-        for name, tree in [("base", base), ("candidate", candidate)]:
-            with (evidence / f"{name}-graph.json").open("w") as output:
-                execute(["nix", "eval", "--json", f"{tree}#graph"], stdout=output)
         execute([sys.executable, str(Path(args.compare).resolve()),
                  str(evidence / "base-graph.json"), str(evidence / "candidate-graph.json"), "--json"]
                 + [arg for name in args.allow_change for arg in ["--allow-change", name]])
-    execute(["nix", "flake", "check", "--no-build", str(candidate)])
+    execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)])
     start = subprocess.check_output([
-        "nix", "run", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
+        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
         "--system", "x86_64-linux", "--state-dir", str(root / "validation"), "--json",
     ], text=True)
     launch = json.loads(start)

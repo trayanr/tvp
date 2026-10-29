@@ -39,9 +39,12 @@ restart/failure delivery, status handling and frozen-run validation.
 
 Nix itself comes from the host installation. The service units put its managed profile
 on PATH, so host Nix upgrades also apply to CI. Each run records the Nix version used.
+CI evaluation and build commands enable `--show-trace`; failures retain the full Nix
+trace in the build logs.
 
-A separate integration smoke test creates two diverging local Git histories, forms a
-real merge and executes a tiny full frozen plan with Nix. It does not contact GitHub;
+A separate integration smoke test validates a master checkout with a fresh generated
+input, then merges two diverging local Git histories. Both execute a tiny frozen plan
+with Nix. It does not contact GitHub;
 Nix may fetch dependencies for the already pinned Nixpkgs input:
 
 ```sh
