@@ -29,13 +29,13 @@ fixtures from [#912](https://github.com/PCRE2Project/pcre2/pull/912) and
 expectations: the former misses in JIT on 10.44/10.47; the latter truncates the
 mixed Unicode class match on 10.47. Both match correctly on 10.48/10.49.
 
-Supplemental unmodified `make check` on x86_64 Linux reports four runners per
-release: three pass (`RunTest`, `pcre2posix_test`, `pcre2_jit_test`), one fails
-(`RunGrepTest`), zero runner skips. `RunGrepTest` requires the absolute
-`/bin/echo` for script callouts, unavailable in the validation environment.
-Its remaining sections after that failure are untested. `RunTest` also reports
-locale and width/feature-specific omissions; runner-level zero skips does not
-mean every subcase ran. No runners or expected upstream outputs are modified.
+Unmodified `make check` initially reported three runner passes and one failure
+per release: `RunGrepTest` calls an unavailable `/bin/echo`. A validation-only
+rerun replaced its four helper paths with owned Coreutils 9.5 echo, preserving
+the test patterns and expected outputs. All four runners then passed on all
+four releases, including the remaining grep sections. Locale and width/feature
+omissions remain; zero runner skips does not mean every subcase ran. Original
+failure logs are retained in the validation evidence.
 
 The family tracker accepts only complete `pcre2-N.N` tags and preserves version
 strings such as `10.00`. The upstream tool strips peeled-ref markers and
