@@ -534,6 +534,13 @@ libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
 MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
 GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
 also retains its test with a check-only missing-declaration diagnostic exception.
+The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
+libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
+Ruby 2.0–2.3 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,
+Bison 3.6.4/3.7.6, and selected early OpenSSL callbacks/bool identifiers. Newer
+fixed releases retain their upstream defaults. Readline checks actual installed
+libraries because its old Makefiles can ignore failed shared-library targets;
+Perl's shared suite includes a persistent SDBM store/fetch round trip.
 The sources, upstream checks and historical failure classifications are retained.
 
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
