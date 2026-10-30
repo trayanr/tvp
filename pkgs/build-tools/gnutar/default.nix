@@ -2,6 +2,14 @@
 let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
+    "1.32" = {
+      builder = ./build-1.32.nix;
+      base = tvp.bases.default;
+      deps = {
+        acl = tvp.packages.acl_2_3_2;
+        attr = tvp.packages.attr_2_5_2;
+      };
+    };
     "1.35" = {
       builder = ./build-1.35.nix;
       base = tvp.bases.default;
@@ -13,6 +21,12 @@ let
   };
   versionTable = tvpLib.packages.mkTable [
     {
+      def = defs."1.32";
+      releases."1.32" = "sha256-0NOuB/EDMjvoCbw+rA3MOG1SxSYkmf4FURrEeIrx/dg=";
+      releases."1.33" = "sha256-Zqg0Sx3IOkEdMRvRVH4BduVswxHyjulKMPhNr7PZBn4=";
+      releases."1.34" = "sha256-Y769JoecXh7qQ1Lw0DyZH5Zq6z3es8dEXJAlaNVBHSg=";
+    }
+    {
       def = defs."1.35";
       releases."1.35" = "sha256-TWL/NzQux67XSFNTI5MMfPlKz3HDWRiCsmp+pQ8+3BY=";
     }
@@ -23,7 +37,34 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
+    packageMeta.upstream = import ./upstream.nix;
+    extraArgs.mkTests =
+      package:
+      import ./tests {
+        inherit pkgs tvpLib package;
+        helpers = [
+          {
+            bin = "gzip";
+            package = tvp.packages.gzip_1_13;
+            flag = "-z";
+          }
+          {
+            bin = "bzip2";
+            package = tvp.packages.bzip2_1_0_8;
+            flag = "-j";
+          }
+          {
+            bin = "xz";
+            package = tvp.packages.xz_5_8_3;
+            flag = "-J";
+          }
+          {
+            bin = "zstd";
+            package = tvp.packages.zstd_1_5_7;
+            flag = "--zstd";
+          }
+        ];
+      };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
 
