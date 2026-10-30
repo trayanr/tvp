@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   package,
+  helpers,
 }:
 tvpLib.tests.mkSuite {
   inherit pkgs package;
@@ -23,3 +24,4 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+// import ./extended.nix { inherit pkgs package helpers; }
