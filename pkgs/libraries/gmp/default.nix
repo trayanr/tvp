@@ -31,7 +31,10 @@ let
     {
       def = defs."5.0.5";
       releases = {
+        "6.1.0" = "sha256-aNrazOUVsPilT1EO3wfBtjZJK8246NVMVushYiXRaYk=";
+        "6.1.1" = "sha256-026cBd9IitYw//F+21AFHWQyNX+c4E40oJs9gYgl6DE=";
         "6.1.2" = "sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=";
+        "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
         "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
         "6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
       };

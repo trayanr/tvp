@@ -16,6 +16,10 @@
   # Final consumers such as autoPatchelf use this standard Nix interface.
   # Bootstrap stages do not need it and keep their existing derivations.
   supportMetadata ? false,
+  # Construction callers retain their exact script paths and rendered install phases.
+  protocolRevision ? 2,
+  responseExpander ? null,
+  coreutils ? null,
 }:
 assert platform.isNative;
 assert platform.buildPlatform.config == stdenv.buildPlatform.config;
@@ -32,6 +36,12 @@ let
         lib.replaceStrings [ "@dynamicLinker@" ] [ platform.dynamicLinker ] (builtins.readFile file)
       );
     };
+  v3 = protocolRevision == 3;
+  scripts = if v3 then ./v3 else ./.;
+  responseSubstitutions = lib.optionalString v3 ''
+    --subst-var-by responseExpander ${responseExpander} \
+    --subst-var-by coreutils ${coreutils} \
+  '';
   bintools = stdenv.mkDerivation {
     pname = "binutils-wrapper";
     inherit (binutils) version;
@@ -43,11 +53,11 @@ let
         mkdir -p "$out/bin" "$out/nix-support"
         for linker in ld ld.bfd ld.gold; do
           if [ -x ${binutils}/bin/"$linker" ]; then
-            substitute ${scriptFor ./ld.sh} "$out/bin/$linker" \
+            substitute ${scriptFor (scripts + "/ld.sh")} "$out/bin/$linker" \
               --subst-var-by bash ${bash}/bin/bash \
               --subst-var-by binutils ${binutils} \
               --subst-var-by libc ${libc} \
-              --subst-var linker
+              ${responseSubstitutions}--subst-var linker
             chmod +x "$out/bin/$linker"
           fi
         done
@@ -55,7 +65,7 @@ let
           name="''${tool##*/}"
           test -e "$out/bin/$name" || ln -s "$tool" "$out/bin/$name"
         done
-        substitute ${./bintools-setup.sh} "$out/nix-support/setup-hook" \
+        substitute ${scripts + "/bintools-setup.sh"} "$out/nix-support/setup-hook" \
           --subst-var out
       ''
       + lib.optionalString supportMetadata ''
@@ -92,13 +102,13 @@ let
     installPhase = ''
       mkdir -p "$out/bin" "$out/nix-support"
       for program in gcc g++ cpp; do
-        substitute ${scriptFor ./cc.sh} "$out/bin/$program" \
+        substitute ${scriptFor (scripts + "/cc.sh")} "$out/bin/$program" \
           --subst-var-by bash ${bash}/bin/bash \
           --subst-var-by gcc ${gcc} \
           --subst-var-by bintools ${bintools} \
           --subst-var-by libc ${libc} \
           --subst-var-by cRuntime ${lib.boolToString cRuntime} \
-          --subst-var program
+          ${responseSubstitutions}--subst-var program
         chmod +x "$out/bin/$program"
       done
       ln -s gcc "$out/bin/cc"
@@ -106,7 +116,7 @@ let
       for program in gcc-ar gcc-nm gcc-ranlib gcov gcov-dump gcov-tool; do
         ln -s ${gcc}/bin/"$program" "$out/bin/$program"
       done
-      substitute ${./cc-setup.sh} "$out/nix-support/setup-hook" \
+      substitute ${scripts + "/cc-setup.sh"} "$out/nix-support/setup-hook" \
         --subst-var out --subst-var-by bintools ${bintools} \
         --subst-var-by libcBin ${libc.bin}
       printf '%s\n' ${gcc} > "$out/nix-support/orig-cc"
