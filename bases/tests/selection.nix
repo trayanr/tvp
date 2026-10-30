@@ -7,6 +7,12 @@
 let
   inherit (pkgs) lib;
   bases = tvp.bases;
+  parent16 = construction.bases.gcc13-owned-v3;
+  inputs16 = lib.attrValues construction.variants.gcc16;
+  constructionPaths16 = lib.concatMap (p: map (output: toString p.${output}) p.outputs) inputs16 ++ [
+    (toString parent16.stdenv.cc.libc)
+    (toString parent16.stdenv.cc.libc.bin)
+  ];
   contracts = {
     active-gcc16 =
       bases.default.name == "gcc16-owned"
@@ -19,6 +25,18 @@ let
       && tvp.packages.acl_2_3_2.tvp.base == bases.default.name;
     no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
     retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
+    pinned-gcc16-inputs =
+      builtins.length inputs16 == 18
+      && construction.variants.gcc16.gcc_16_2_0.tvp.bootstrap
+      && lib.all (
+        p:
+        p.tvp.base == parent16.name
+        && p.tvp.variant == "gcc16"
+        && p.stdenv.drvPath == parent16.stdenv.drvPath
+        && lib.all (dep: builtins.elem (toString dep) constructionPaths16) (
+          lib.attrValues (p.tvp.deps or { })
+        )
+      ) inputs16;
     pinned-parent =
       bases.default.builtBy == "internal:gcc13-owned-v3"
       && construction.bases.gcc13-owned.builtBy == "gcc13";
