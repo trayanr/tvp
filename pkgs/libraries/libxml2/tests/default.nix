@@ -113,3 +113,13 @@ tvpLib.tests.mkSuite {
       };
     };
 }
+//
+  pkgs.lib.optionalAttrs
+    (builtins.elem libxml2.version [
+      "2.15.3"
+      "2.15.4"
+    ])
+    {
+      # These are the two reviewed corpus profiles, not an API availability boundary.
+      relaxng-corpus = import ./relaxng-corpus.nix { inherit pkgs libxml2; };
+    }
