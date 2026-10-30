@@ -8,14 +8,14 @@ let
   inherit (pkgs) lib;
   bases = tvp.bases;
   contracts = {
-    active-gcc13 =
-      bases.default.name == "gcc13-owned-v3"
-      && bases.gcc13-owned.stdenv.drvPath == bases.gcc13-owned-v3.stdenv.drvPath;
-    retired-v2 = !(bases ? gcc13-owned-v2);
+    active-gcc16 =
+      bases.default.name == "gcc16-owned"
+      && bases.gcc16.stdenv.drvPath == bases.gcc16-owned.stdenv.drvPath;
+    retired-v2 = !(bases ? gcc13-owned-v2) && !(bases ? gcc13-owned-v3) && !(bases ? gcc13-owned);
     no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
     retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
     pinned-parent =
-      bases.default.builtBy == "internal:gcc13-owned"
+      bases.default.builtBy == "internal:gcc13-owned-v3"
       && construction.bases.gcc13-owned.builtBy == "gcc13";
     pinned-fixup =
       bases.default.fixupTools.patchelf.drvPath

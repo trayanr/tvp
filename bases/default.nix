@@ -39,7 +39,7 @@ let
     "file"
   ];
 
-  construction = import ./gcc13-owned/inputs {
+  frozen = import ./gcc13-owned/inputs {
     inherit
       pkgs
       tvpLib
@@ -48,14 +48,36 @@ let
       ;
   };
 
+  construction = frozen // {
+    bases = frozen.bases // {
+      gcc13-owned-v3 = import ./gcc13-owned-v3 {
+        inherit pkgs tvp;
+        builtBy = construction.bases.gcc13-owned;
+        previous = construction.bases.gcc13-owned-v2;
+        patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
+      };
+    };
+    variants = tvpLib.packages.mergeVariants {
+      inherit (frozen) variants;
+      gcc16 = import ./gcc16-owned/inputs {
+        inherit
+          pkgs
+          tvpLib
+          recipes
+          construction
+          ;
+      };
+    };
+  };
+
   canonical =
     lib.mapAttrs (_: base: base // { tests = import ./tests { inherit pkgs tvpLib base; }; })
       {
-        gcc13-owned-v3 = import ./gcc13-owned-v3 {
+        gcc16-owned = import ./gcc16-owned {
           inherit pkgs tvp;
-          builtBy = construction.bases.gcc13-owned;
-          previous = construction.bases.gcc13-owned-v2;
-          patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
+          parent = construction.bases.gcc13-owned-v3;
+          compiler = construction.variants.gcc16.gcc_16_2_0;
+          inputs = construction.variants.gcc16;
         };
 
         gcc9 = mkBase {
@@ -82,8 +104,8 @@ let
       };
 
   aliases = {
-    default = canonical.gcc13-owned-v3;
-    gcc13-owned = canonical.gcc13-owned-v3;
+    default = canonical.gcc16-owned;
+    gcc16 = canonical.gcc16-owned;
   };
 
   shadowed = lib.intersectLists (lib.attrNames canonical) (lib.attrNames aliases);
