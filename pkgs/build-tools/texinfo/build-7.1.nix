@@ -7,6 +7,7 @@
   localeTools,
   version,
   sha256,
+  cStandard ? null,
   patches ? [ ],
   mkTests,
 }:
@@ -24,7 +25,11 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace tp/Texinfo/Translations.pm \
       --replace-fail '@TVP_LOCALE@' '${localeTools}/bin/locale'
   '';
-  env.NIX_CFLAGS_COMPILE = "-I${lib.getDev ncurses}/include/ncursesw";
+  env.NIX_CFLAGS_COMPILE =
+    "-I${lib.getDev ncurses}/include/ncursesw"
+    + lib.optionalString (
+      cStandard != null && lib.versionAtLeast stdenv.cc.version "15"
+    ) " -std=${cStandard}";
   configureFlags = [
     "PERL=${perl}/bin/perl"
     "--enable-perl-xs=yes"
