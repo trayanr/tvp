@@ -65,12 +65,12 @@
     },
     {
       "id": "sandbox-service-database",
-      "reason": "The exact upstream resolver source succeeds on Tower outside the Nix sandbox. Its localhost/http lookup fails inside the sandbox without /etc/services; numeric-host and negative-resolution cases are not a compiler defect.",
+      "reason": "The exact upstream resolver source succeeds outside the Nix sandbox. Its localhost/http lookup fails inside the sandbox without /etc/services; numeric-host and negative-resolution cases are not a compiler defect.",
       "observedUnexpected": [
         "FAIL: experimental/net/internet/resolver/ops/lookup.cc  -std=gnu++20 execution test"
       ],
       "reproduction": [
-        "Compiled and ran the exact upstream lookup.cc outside the Nix sandbox on Tower: exit0.",
+        "Compiled and ran the exact upstream lookup.cc outside the Nix sandbox: exit0.",
         "The raw sandbox failure occurs at the localhost/named-service lookup. No sandbox bypass, source skip, or expected-output change is applied."
       ]
     }
