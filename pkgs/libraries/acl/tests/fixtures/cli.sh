@@ -7,7 +7,7 @@ touch file ' leading'
 chmod 640 file
 if ! setfacl -m u:12345:r-- file 2>probe.err; then
     if grep -q 'Operation not supported' probe.err; then
-        echo 'SKIP cli: filesystem rejects named ACLs'; exit 0
+        echo 'SKIP cli: filesystem rejects named ACLs'; exit 77
     fi
     cat probe.err; exit 1
 fi
