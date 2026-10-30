@@ -90,8 +90,10 @@ compiler.overrideAttrs (old: {
     # Invoke stdenv's check function, inheriting its parallelism from the
     # configured NIX_BUILD_CORES exactly as in the normal build phase.
     declare -f checkPhase > "$validation/check-procedure.sh"
-    result=0
-    checkPhase > "$validation/make-check.log" 2>&1 || result=$?
+    set +e
+    ( set -e; checkPhase ) > "$validation/make-check.log" 2>&1
+    result=$?
+    set -e
     head -n 1 "$validation/make-check.log" > "$validation/invocation.txt"
     printf '%s\n' "$result" > "$validation/make-check.exit"
     # Keep failures as data. The separate upstream test gates on the actual

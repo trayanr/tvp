@@ -56,7 +56,7 @@ let
         perl = tvp.packages.perl_5_44_0;
         texinfo = tvp.packages.texinfo_7_1;
         which = tvp.packages.which_2_21;
-        # Use the base libc; canonical glibc itself is built with this compiler.
+        # Use the unchanged base libc; GCC16 is not a construction input.
         glibc = tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
