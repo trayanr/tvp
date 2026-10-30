@@ -9,8 +9,9 @@ let
   bases = tvp.bases;
   contracts = {
     active-gcc13 =
-      bases.default.name == "gcc13-owned-v2"
-      && bases.gcc13-owned.stdenv.drvPath == bases.gcc13-owned-v2.stdenv.drvPath;
+      bases.default.name == "gcc13-owned-v3"
+      && bases.gcc13-owned.stdenv.drvPath == bases.gcc13-owned-v3.stdenv.drvPath;
+    retired-v2 = !(bases ? gcc13-owned-v2);
     no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
     retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
     pinned-parent =
