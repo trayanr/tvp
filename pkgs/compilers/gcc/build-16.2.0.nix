@@ -58,6 +58,9 @@ compiler.overrideAttrs (old: {
     cp config.log "$validation/config.log"
     find stage2-gcc -name '*.o' | sort > "$validation/stage2-objects.txt"
     test -s "$validation/stage2-objects.txt"
+    # compare stages the compiler directories; restore them once before the
+    # parallel check targets can each try to start stage 3.
+    make stage3-start 2>&1 | tee "$validation/stage3-start.log"
   '';
   doCheck = true;
   enableParallelChecking = true;
@@ -80,6 +83,7 @@ compiler.overrideAttrs (old: {
     mkdir -p boards
     cat > boards/tvp.exp <<'BOARD'
     load_generic_config "unix"
+    set_board_info isremote 0
     set_board_info cflags "${libcFlags}"
     set_board_info ldflags "${libcFlags}"
     BOARD
