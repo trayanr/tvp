@@ -88,8 +88,9 @@ compiler.overrideAttrs (old: {
     load_base_board_description "unix"
     unset_board_info isremote
     set_board_info isremote 0
-    set_board_info cflags "${libcFlags}"
-    set_board_info ldflags "${libcFlags}"
+    # GCC selectors concatenate these strings with per-test options.
+    set_board_info cflags " ${libcFlags} "
+    set_board_info ldflags " ${libcFlags} "
     BOARD
     cat > site-tvp.exp <<SITE
     lappend boards_dir "$PWD/boards"
