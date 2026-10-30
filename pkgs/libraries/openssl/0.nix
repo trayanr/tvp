@@ -21,7 +21,7 @@
   }
 
   {
-    def = defs."0.9.6";
+    def = defs."0.9.7";
     releases = {
       "0.9.7" = "sha256-CoBRPltBb69HBMbi2/3hG0gmlHm+QX8JIKooNg0lkQA=";
       "0.9.7a" = "sha256-1cVx3PPCLCrKa50tL5oILmDgfu45eqNFIxgXfR9QlaI=";

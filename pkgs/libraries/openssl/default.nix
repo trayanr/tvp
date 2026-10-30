@@ -13,6 +13,14 @@ let
       };
     };
 
+    "0.9.7" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      # EVP's sign/verify callbacks use unprototyped parameter lists.
+      opts.cStandard = "gnu17";
+    };
+
     "0.9.8" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
@@ -31,6 +39,23 @@ let
         perl = tvp.packages.perl_5_44_0;
       };
       opts.forceGccName = true;
+      # The bool identifier was renamed in 1.0.0i.
+      opts.cStandard = "gnu17";
+    };
+
+    "1.0.0i" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      opts.forceGccName = true;
+    };
+    "1.0.1" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      opts.forceGccName = true;
+      # tasn_prn.c uses bool as an identifier; 1.0.1a renames it boolval.
+      opts.cStandard = "gnu17";
     };
 
     "1.0.2p" = {

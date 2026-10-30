@@ -13,6 +13,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # 0.9.8 … 0.9.8j only; the rest of the generation compiles clean with it on.
   hardeningDisable ? [ ],
@@ -58,7 +59,7 @@ stdenv.mkDerivation (finalAttrs: {
   configureFlags = [
     "shared"
     "--openssldir=etc/ssl"
-  ];
+  ] ++ lib.optional (cStandard != null) "-std=${cStandard}";
 
   inherit hardeningDisable;
 

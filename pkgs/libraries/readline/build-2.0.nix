@@ -10,6 +10,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   patches ? [ ],
 
@@ -83,4 +84,12 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs (patches != [ ]) { inherit patches; }
+  // lib.optionalAttrs (cStandard != null) {
+    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+    # Old upstream make ignores failed shared/install-shared targets.
+    postInstall = ''
+      test -s "$out/lib/libreadline.a"
+      test -s "$out/lib/libhistory.a"
+    '';
+  }
 )
