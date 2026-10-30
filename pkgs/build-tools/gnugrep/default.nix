@@ -35,7 +35,7 @@ let
       type = "directory-index";
       url = "https://mirrors.kernel.org/gnu/grep/";
       # Capture the entire filename, including suffixes, before validating it.
-      pattern = "grep-[^\"<>/[:space:]]+";
+      pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
       normalise =
         file:
         let
