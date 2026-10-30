@@ -51,9 +51,10 @@ let
   canonical =
     lib.mapAttrs (_: base: base // { tests = import ./tests { inherit pkgs tvpLib base; }; })
       {
-        gcc13-owned-v2 = import ./gcc13-owned-v2 {
+        gcc13-owned-v3 = import ./gcc13-owned-v3 {
           inherit pkgs tvp;
           builtBy = construction.bases.gcc13-owned;
+          previous = construction.bases.gcc13-owned-v2;
           patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
         };
 
@@ -81,8 +82,8 @@ let
       };
 
   aliases = {
-    default = canonical.gcc13-owned-v2;
-    gcc13-owned = canonical.gcc13-owned-v2;
+    default = canonical.gcc13-owned-v3;
+    gcc13-owned = canonical.gcc13-owned-v3;
   };
 
   shadowed = lib.intersectLists (lib.attrNames canonical) (lib.attrNames aliases);
