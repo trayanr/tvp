@@ -23,3 +23,8 @@ tvpLib.tests.mkSuite {
 
   };
 }
+// import ./consumers.nix { inherit pkgs isl; }
+// {
+  upstream-coverage = import ./upstream.nix { inherit pkgs isl; };
+  tracker = import ./tracker.nix { inherit pkgs isl; };
+}
