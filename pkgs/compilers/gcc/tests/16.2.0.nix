@@ -3,6 +3,10 @@
   tvpLib,
   gcc,
 }:
+let
+  libc = gcc.tvp.deps.glibc;
+  flags = "-B${libc}/lib/ -idirafter ${pkgs.lib.getDev libc}/include -L${libc}/lib -Wl,-dynamic-linker,${libc}/${gcc.platform.dynamicLinker} -Wl,-rpath,${gcc}/lib -Wl,-rpath,${libc}/lib";
+in
 {
   upstream =
     pkgs.runCommand "gcc-${gcc.version}-upstream-results" { nativeBuildInputs = [ pkgs.python3 ]; }
