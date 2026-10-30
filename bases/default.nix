@@ -50,12 +50,16 @@ let
 
   construction = frozen // {
     bases = frozen.bases // {
-      gcc13-owned-v3 = import ./gcc13-owned-v3 {
-        inherit pkgs tvp;
-        builtBy = construction.bases.gcc13-owned;
-        previous = construction.bases.gcc13-owned-v2;
-        patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
-      };
+      gcc13-owned-v3 =
+        let
+          base = import ./gcc13-owned-v3 {
+            inherit pkgs tvp;
+            builtBy = construction.bases.gcc13-owned;
+            previous = construction.bases.gcc13-owned-v2;
+            patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
+          };
+        in
+        base // { tests = import ./tests { inherit pkgs tvpLib base; }; };
     };
     variants = tvpLib.packages.mergeVariants {
       inherit (frozen) variants;
