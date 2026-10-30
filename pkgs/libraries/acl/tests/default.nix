@@ -22,3 +22,4 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+// import ./expanded.nix { inherit pkgs tvpLib package; }
