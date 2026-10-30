@@ -60,6 +60,7 @@ let
       registry = runtimeRegistry;
     })
     // {
+      construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
