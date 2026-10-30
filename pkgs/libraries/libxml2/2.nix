@@ -20,6 +20,13 @@
       "2.9.2" = "sha256-7dei/tLrgyoJSZKuxh8cQRZ6CV3Yzn8+KdtCxTnrT/I=";
       "2.9.3" = "sha256-h5BiryYmkq/e5WPjUfbnJedx1XwYXn3cYkfrMyivTSA=";
       "2.9.4" = "sha256-IbKCT5zlanIpb2eBA+7VqERkF8B+kE5hdIr/ojDskHI=";
+
+    };
+  }
+
+  {
+    def = defs."2.9.5";
+    releases = {
       "2.9.5" = "sha256-qRnfd49eUp+GHMSPsbuMWyZfkmFxO2xuaVS8OfTmy+o=";
       "2.9.6" = "sha256-rBw+EcojcbhPo7hMRSFaXeK++UkVbNexZzLLM5E81E0=";
       "2.9.7" = "sha256-ZDeFXzMy/MD8JTI8XwaQHgInfhIypmK2IdyI/eNyWaw=";
