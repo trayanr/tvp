@@ -23,7 +23,7 @@ in
         # Audit exact reproduced outcomes; preserve raw FAIL/XPASS and report
         # strictUpstreamConformance=false instead of claiming a clean suite.
         python3 ${./audit-upstream.py} ${gcc.validation}/upstream.json \
-          ${./upstream-known-16.2.0.json} ${gcc.version} ${pkgs.stdenv.hostPlatform.system} \
+          ${./upstream-known-16.2.0.json} ${gcc.version} ${pkgs.stdenv.hostPlatform.system} ${gcc.validation} \
           > "$out/audit.json"
         # libquadmath and libsanitizer ship no independent testsuite. Their
         # compiler-integrated cases remain in the GCC results; native runtime
