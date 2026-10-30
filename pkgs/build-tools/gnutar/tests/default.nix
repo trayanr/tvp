@@ -24,4 +24,12 @@ tvpLib.tests.mkSuite {
     };
   };
 }
-// import ./extended.nix { inherit pkgs package helpers; }
+// builtins.mapAttrs (
+  name: test:
+  test.overrideAttrs (old: {
+    passthru = (old.passthru or { }) // {
+      inherit package;
+      testName = name;
+    };
+  })
+) (import ./extended.nix { inherit pkgs package helpers; })
