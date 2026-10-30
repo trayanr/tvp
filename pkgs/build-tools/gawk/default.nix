@@ -54,6 +54,9 @@ let
     {
       def = defs."4.1.4";
       releases."5.4.1" = "sha256-B/b3NCt/6+QxP8LCVCrZPWT+IK2HFyABCfEFqCb1/Tc=";
+      releases."5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
+      releases."5.3.1" = "sha256-aU23ZIEqYjZCPU/0DOt7bExEEwG3KtUCu1wn4AzVb3g=";
+      releases."5.4.0" = "sha256-PdQw8M07RCjGw/avwCG5zTwfjJP3pojcJoykKKkLSsE=";
       releases."5.3.2" = "sha256-+MNIZQnecFGSE4sA7ywAu73Q6Eww1cB9I/xzqdxMycw=";
       releases."5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
       releases."5.0.1" = "sha256-jk6G8E7XiWSLZvdXMpdDoNbftSlMO5G3VqR08c4Fp5Q=";
@@ -68,6 +71,7 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
+    packageMeta.upstream = import ./upstream.nix;
     extraArgs.mkTests =
       package:
       import ./tests {
