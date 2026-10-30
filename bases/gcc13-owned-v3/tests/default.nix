@@ -46,6 +46,10 @@ let
     };
   allFlat = hardening false [ "all" ];
   allStructured = hardening true [ "all" ];
+  allExportedStructured = allStructured.overrideAttrs {
+    name = "tvp-v3-hardening-structured-exported-all";
+    preHook = "export NIX_HARDENING_ENABLE";
+  };
   selectiveFlat = hardening false [
     "pic"
     "format"
@@ -71,7 +75,7 @@ let
 in
 {
   hardening-protocol = test "hardening-protocol" ''
-    for result in ${allFlat} ${allStructured}; do
+    for result in ${allFlat} ${allStructured} ${allExportedStructured}; do
       grep -qx 'NIX_HARDENING_ENABLE=' "$result/environment"
       if grep -Eq '^#define (__PIC__|_FORTIFY_SOURCE) ' "$result/macros"; then exit 1; fi
     done
@@ -85,13 +89,18 @@ in
     grep -q '^#define _FORTIFY_SOURCE 2$' macros
     echo ok
   '';
+  wrapper-queries = test "wrapper-queries" ''
+    TMPDIR=$PWD/nonexistent cc --version | grep -Fq '${base.cc}'
+    TMPDIR=$PWD/nonexistent ld --version | grep -Fq '${base.binutils}'
+    echo ok
+  '';
   fortify-order = test "fortify-order" ''
     fortify() {
       cc "$@" -E -dM -x c /dev/null > macros
       grep -q '^#define __OPTIMIZE__ 1$' macros
       grep -q '^#define _FORTIFY_SOURCE 2$' macros
     }
-    for opt in -O -O1 -O2 -O3 -Og -Os -Oz -Ofast; do fortify "$opt"; done
+    for opt in -O -O1 -O2 -O3 -Og -Os -Oz -Ofast -O01; do fortify "$opt"; done
     NIX_CFLAGS_COMPILE=-O2 fortify
     NIX_CFLAGS_COMPILE=$'-O0\n-O2' fortify
     printf '%s\n' -O2 > optimize.rsp
@@ -107,6 +116,11 @@ in
     done
     cc -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -E -dM -x c /dev/null > macros
     grep -q '^#define _FORTIFY_SOURCE 1$' macros
+    cc -O2 -O00 -E -dM -x c /dev/null > macros
+    if grep -Eq '^#define (__OPTIMIZE__|_FORTIFY_SOURCE) ' macros; then exit 1; fi
+    NIX_CFLAGS_LINK=-O0 fortify -O2
+    printf '#include <string.h>\nint answer(void) { return 42; }\n' > unoptimized.c
+    NIX_CFLAGS_LINK=-O2 cc -O0 -Werror -c unoptimized.c -o unoptimized.o
     echo ok
   '';
   response-modes = test "response-modes" ''
@@ -202,6 +216,9 @@ in
     printf '%s\n' '-r main.o -o partial.o' > ld.rsp
     NIX_SET_BUILD_ID=1 ld @ld.rsp
     if readelf -n partial.o | grep -q 'Build ID:'; then exit 1; fi
+    NIX_CFLAGS_LINK=-r NIX_SET_BUILD_ID=1 cc main.o -o requested-partial.o
+    readelf -h requested-partial.o | grep -q REL
+    if readelf -n requested-partial.o | grep -q 'Build ID:'; then exit 1; fi
     echo ok
   '';
   runtime-paths = test "runtime-paths" ''

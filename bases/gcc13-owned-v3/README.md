@@ -20,6 +20,10 @@ arguments; link flags follow them, with the existing driver/linker marker preven
 duplicate additions. The wrappers supply owned headers, library search paths and
 the dynamic loader for dynamic executables.
 
+Compile-only invocations omit link-only flags. Relocatable links retain requested
+link flags while omitting automatic runtime paths and build IDs. Ordinary argv
+classification needs no helper process or temporary file.
+
 The unchanged hardening defaults are bindnow, fortify, format, pic, relro,
 stackprotector and strictoverflow. `hardeningEnable`/`hardeningDisable` retain the
 stdenv selection rules, including `hardeningDisable = [ "all" ]`. Structured

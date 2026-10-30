@@ -4,34 +4,55 @@ set -e
 # compiler protocol. User arguments remain an array, including response files.
 compile_flags=()
 read -r -d '' -a compile_flags <<< "${NIX_CFLAGS_COMPILE-}" || true
-# Classify exactly the user flag order passed to GCC, including response files.
-# Capture in a file so a failed helper cannot be hidden by process substitution.
-expanded_file=$(@coreutils@/bin/mktemp)
-trap '@coreutils@/bin/rm -f "$expanded_file"' EXIT
-classification_flags=()
-read -r -d '' -a classification_flags <<< "${NIX_CFLAGS_LINK-}" || true
-if ! @responseExpander@/bin/expand-response-params "${compile_flags[@]}" "$@" "${classification_flags[@]}" > "$expanded_file"; then
-    exit 1
-fi
-mapfile -d '' -t expanded_args < "$expanded_file"
-@coreutils@/bin/rm -f "$expanded_file"
-trap - EXIT
+# Ordinary argv needs no helper or temporary file. For response files, capture
+# expansion explicitly so a failed helper cannot hide in process substitution.
+expand_args() {
+    local arg
+    expanded_args=("$@")
+    for arg in "$@"; do
+        [[ "$arg" = @?* ]] || continue
+        expanded_file=$(@coreutils@/bin/mktemp)
+        trap '@coreutils@/bin/rm -f "$expanded_file"' EXIT
+        if ! @responseExpander@/bin/expand-response-params "$@" > "$expanded_file"; then
+            exit 1
+        fi
+        mapfile -d '' -t expanded_args < "$expanded_file"
+        @coreutils@/bin/rm -f "$expanded_file"
+        trap - EXIT
+        return 0
+    done
+}
 link=true
 static=false
 shared=false
 relocatable=false
 optimized=false
-for arg in "${expanded_args[@]}"; do
-    case "$arg" in
-        -c|-E|-S|-M|-MM|-fsyntax-only) link=false ;;
-        -static|-static-pie) static=true ;;
-        -shared) shared=true ;;
-        -r|-Wl,-r|-Wl,--relocatable) relocatable=true ;;
-        -O|-O[1-9]*|-Os|-Og|-Oz|-Ofast) optimized=true ;;
-        -O0) optimized=false ;;
-    esac
-done
+scan_flags() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            -c|-E|-S|-M|-MM|-fsyntax-only) link=false ;;
+            -static|-static-pie) static=true ;;
+            -shared) shared=true ;;
+            -r|-Wl,-r|-Wl,--relocatable) relocatable=true ;;
+            -O|-Os|-Og|-Oz|-Ofast) optimized=true ;;
+            -O[0-9]*)
+                if [[ "$arg" =~ ^-O0+$ ]]; then optimized=false
+                elif [[ "$arg" =~ ^-O[0-9]+$ ]]; then optimized=true; fi ;;
+        esac
+    done
+}
+expand_args "${compile_flags[@]}" "$@"
+scan_flags "${expanded_args[@]}"
 [[ @program@ != cpp ]] || link=false
+# Link-only flags affect classification only when they will reach GCC. Keep
+# requested flags even if they turn this into a relocatable or compile-only job.
+link_flags=()
+if $link; then
+    read -r -d '' -a link_flags <<< "${NIX_CFLAGS_LINK-}" || true
+    expand_args "${link_flags[@]}"
+    scan_flags "${expanded_args[@]}"
+fi
 hardening=()
 for flag in ${NIX_HARDENING_ENABLE-bindnow fortify format pic relro stackprotector strictoverflow}; do
     case "$flag" in
@@ -51,9 +72,7 @@ for flag in ${NIX_HARDENING_ENABLE-bindnow fortify format pic relro stackprotect
 done
 # Apply flags at the driver too: a caller may select raw binutils with -B.
 # The marker prevents the normal linker wrapper from adding them a second time.
-link_flags=()
 if $link && ! $relocatable; then
-    read -r -d '' -a link_flags <<< "${NIX_CFLAGS_LINK-}" || true
     link_flags+=(-L@libc@/lib -L@gcc@/lib)
     nix_ldflags=()
     read -r -d '' -a nix_ldflags <<< "${NIX_LDFLAGS-}" || true

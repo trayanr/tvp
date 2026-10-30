@@ -14,7 +14,9 @@ export CC=cc CXX=c++
 # Environment variables must be scalars before export; assignment alone keeps
 # Bash's array type. The default applies only when the value was absent.
 tvpNormalizeHardening() {
-    if [[ $(declare -p NIX_HARDENING_ENABLE 2>/dev/null) = "declare -a "* ]]; then
+    local declaration
+    declaration=$(declare -p NIX_HARDENING_ENABLE 2>/dev/null) || return 0
+    if [[ "$declaration" =~ ^declare\ -[^[:space:]]*a[^[:space:]]*\  ]]; then
         local flags="${NIX_HARDENING_ENABLE[*]}"
         unset NIX_HARDENING_ENABLE
         NIX_HARDENING_ENABLE=$flags

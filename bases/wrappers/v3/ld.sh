@@ -3,16 +3,21 @@ set -e
 if [[ ${TVP_CC_LINK_FLAGS_SET-} = 1 ]]; then
     exec @binutils@/bin/@linker@ "$@"
 fi
-expanded_file=$(@coreutils@/bin/mktemp)
-trap '@coreutils@/bin/rm -f "$expanded_file"' EXIT
 flags=()
 read -r -d '' -a flags <<< "${NIX_LDFLAGS-}" || true
-if ! @responseExpander@/bin/expand-response-params "$@" "${flags[@]}" > "$expanded_file"; then
-    exit 1
-fi
-mapfile -d '' -t expanded_args < "$expanded_file"
-@coreutils@/bin/rm -f "$expanded_file"
-trap - EXIT
+expanded_args=("$@" "${flags[@]}")
+for arg in "${expanded_args[@]}"; do
+    [[ "$arg" = @?* ]] || continue
+    expanded_file=$(@coreutils@/bin/mktemp)
+    trap '@coreutils@/bin/rm -f "$expanded_file"' EXIT
+    if ! @responseExpander@/bin/expand-response-params "${expanded_args[@]}" > "$expanded_file"; then
+        exit 1
+    fi
+    mapfile -d '' -t expanded_args < "$expanded_file"
+    @coreutils@/bin/rm -f "$expanded_file"
+    trap - EXIT
+    break
+done
 relocatable=false
 static=false
 for arg in "${expanded_args[@]}"; do
