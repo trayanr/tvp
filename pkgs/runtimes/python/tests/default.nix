@@ -60,13 +60,24 @@ tvpLib.tests.mkSuite {
         expected = "isolated";
       };
       upstream = {
-        script = ''
-          python3 -m test -v -j"$NIX_BUILD_CORES" ${pkgs.lib.escapeShellArgs package.tvp.upstreamModules} > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
-          cat upstream.log >&2
-          printf passed
-        '';
+        # Patch only the validation copy: the interpreter and all production
+        # consumers keep their original identities.
+        script =
+          pkgs.lib.optionalString (package.version == "3.11.18") ''
+            mkdir validation
+            # ctypes.test discovery requires it beside the copied test support.
+            cp -R ${package}/lib/python3.11/{test,ctypes} validation/
+            chmod -R u+w validation/test
+            patch --batch --fuzz=0 -d validation -p1 < ${./patches/python-3.11.18-tls13-closure.patch} >&2
+            export PYTHONPATH="$PWD/validation"
+          ''
+          + ''
+            python3 -m test -v -j"$NIX_BUILD_CORES" ${pkgs.lib.escapeShellArgs package.tvp.upstreamModules} > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
+            cat upstream.log >&2
+            printf passed
+          '';
         expected = "passed";
-        extraInputs = [ package.tvp.cc ];
+        extraInputs = [ package.tvp.cc ] ++ pkgs.lib.optional (package.version == "3.11.18") pkgs.patch;
       };
       openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
         "_ssl"
