@@ -27,6 +27,9 @@ let
     "2.1.2" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
+      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_8_3;
@@ -41,6 +44,9 @@ let
     "2.0.0-p0" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
+      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_6_2;
@@ -52,6 +58,9 @@ let
     "2.2.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
+      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_8_3;

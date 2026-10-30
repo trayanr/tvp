@@ -6,6 +6,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   openssl,
   readline,
@@ -127,4 +128,10 @@ stdenv.mkDerivation (
       cp ext/fiddle/libffi-*/config.sub ext/fiddle/libffi-*/config.guess tool/
     '';
   }
+  // lib.optionalAttrs (cStandard != null) {
+    # Ruby appends its normal opt/debug/warning flags to lowercase cflags,
+    # retaining them in RbConfig for native extension consumers as well.
+    env.cflags = "-std=${cStandard}";
+  }
+
 )
