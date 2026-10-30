@@ -91,7 +91,7 @@ let
       inherit (pkgs) lib fetchurl dejagnu;
       python3 = pkgs.python3.withPackages (ps: [
         ps.pytest
-        ps.check-jsonschema
+        ps.jsonschema
       ]);
       inherit (tvpLib) platforms;
     };
