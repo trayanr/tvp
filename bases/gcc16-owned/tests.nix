@@ -7,13 +7,21 @@
 }:
 let
   inherit (pkgs) lib;
-  closure = pkgs.closureInfo { rootPaths = base.ownership.roots; };
   undeclared = base.components.gcc;
-  allowedWithoutCompiler = pkgs.writeText "tvp-gcc16-missing-owner" (
-    lib.concatMapStrings (p: "${p}\n") (
-      builtins.filter (p: toString p != toString undeclared) base.ownership.allowedRuntimePaths
-    )
+  negativeAudit = tvpLib.bases.mkOwnershipTest {
+    inherit pkgs base;
+    name = "gcc16-missing-owner";
+    roots = base.ownership.roots;
+    allowedRuntimePaths = builtins.filter (
+      p: toString p != toString undeclared
+    ) base.ownership.allowedRuntimePaths;
+  };
+  # Run the production audit in a separate shell so the expected-failure
+  # conditional cannot suppress errexit inside its command substitution.
+  negativeScript = pkgs.writeText "tvp-negative-ownership.sh" (
+    "shopt -s inherit_errexit\n" + negativeAudit.buildPhase
   );
+
 in
 {
   pinned-construction = tvpLib.bases.mkBaseTest {
@@ -35,18 +43,11 @@ in
     inherit base;
     name = "undeclared-runtime-owner";
     script = ''
-      # Remove one real selected compiler, not an unrelated synthetic path.
-      grep -Fx '${undeclared}' ${closure}/store-paths >&2
-      if grep -Fx '${undeclared}' ${allowedWithoutCompiler}; then exit 1; fi
-      foreign=0
-      while IFS= read -r path; do
-        if ! grep -Fx "$path" ${allowedWithoutCompiler} >/dev/null; then
-          printf '%s\n' "$path" >> rejected
-          foreign=1
-        fi
-      done < ${closure}/store-paths
-      test "$foreign" = 1
-      grep -Fx '${undeclared}' rejected >/dev/null
+      if out=$PWD/rejected-output ${base.stdenv.shell} -e ${negativeScript} >rejected.log 2>&1; then
+        echo 'undeclared compiler incorrectly accepted' >&2
+        exit 1
+      fi
+      grep -F 'unowned runtime dependency: ${undeclared}' rejected.log >&2
       echo ok
     '';
     expected = "ok";

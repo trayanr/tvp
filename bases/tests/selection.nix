@@ -24,6 +24,7 @@ let
         construction.variants.gcc13-owned.patchelf_0_19_2.stdenv.drvPath
         == construction.bases.gcc13-owned.stdenv.drvPath;
     canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
+      tvp.packages.gcc_16_2_0
       tvp.packages.gcc_13_3_0
       tvp.packages.binutils_2_42
       tvp.packages.glibc_2_39
