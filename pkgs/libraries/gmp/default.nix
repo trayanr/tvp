@@ -9,7 +9,7 @@ let
       # The long-long configure probe defines g() then calls it with arguments.
       # C23 interprets () as (void); retain the intended pre-C23 semantics.
       # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu17";
+      opts.cStandard = "gnu89";
     };
     "6.0.0a" = {
       builder = ./build-5.0.5.nix;
@@ -18,9 +18,17 @@ let
       # The long-long configure probe defines g() then calls it with arguments.
       # C23 interprets () as (void); retain the intended pre-C23 semantics.
       # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu17";
+      opts.cStandard = "gnu89";
       opts.reportedVersion = "6.0.0";
     };
+    "6.1.0" = {
+      builder = ./build-5.0.5.nix;
+      base = tvp.bases.default;
+      deps.m4 = tvp.packages.m4_1_4_21;
+      # Newer probes have explicit return types but still require pre-C23 ().
+      opts.cStandard = "gnu17";
+    };
+
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -37,7 +45,7 @@ let
       };
     }
     {
-      def = defs."5.0.5";
+      def = defs."6.1.0";
       releases = {
         "6.1.0" = "sha256-aNrazOUVsPilT1EO3wfBtjZJK8246NVMVushYiXRaYk=";
         "6.1.1" = "sha256-026cBd9IitYw//F+21AFHWQyNX+c4E40oJs9gYgl6DE=";
