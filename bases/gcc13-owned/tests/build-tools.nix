@@ -93,6 +93,13 @@ let
 in
 {
   inherit inputs packages consumers;
+  # These validation roots combine bootstrap-base consumers with canonical
+  # tools. The latter retain their selected base's wrapper runtime helpers.
+  canonicalToolRuntimePaths = lib.unique (
+    lib.concatMap (package: tvp.bases.${package.tvp.base}.ownership.allowedRuntimePaths) (
+      lib.attrValues inputs ++ lib.attrValues packages ++ lib.attrValues runtimeDependencies
+    )
+  );
   tests = suite (tvp.lib.packages.merge { inherit inputs packages; });
   consumerTests = suite consumers;
   runtimePaths =
