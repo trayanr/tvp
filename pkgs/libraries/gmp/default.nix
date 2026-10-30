@@ -20,6 +20,10 @@ let
       # The procedure leaves earlier compiler construction byte-identical.
       opts.cStandard = "gnu89";
       opts.reportedVersion = "6.0.0";
+      # t-scanf.c tests HAVE_UNISTD_H before including config.h, so unlink's
+      # declaration is missed. 6.1.0 includes config.h first. Keep the warning
+      # and original upstream test, demoting only this check-time diagnostic.
+      opts.checkCFlags = [ "-Wno-error=implicit-function-declaration" ];
     };
     "6.1.0" = {
       builder = ./build-5.0.5.nix;

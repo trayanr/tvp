@@ -7,6 +7,7 @@
   version,
   sha256,
   cStandard ? null,
+  checkCFlags ? [ ],
   cxx ? true,
   reportedVersion ? version,
   mkTests,
@@ -46,4 +47,10 @@ stdenv.mkDerivation (
   // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
     env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
   }
+  // lib.optionalAttrs (checkCFlags != [ ] && lib.versionAtLeast stdenv.cc.version "14") {
+    preCheck = ''
+      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${lib.concatStringsSep " " checkCFlags}"
+    '';
+  }
+
 )
