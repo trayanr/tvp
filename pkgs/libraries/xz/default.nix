@@ -3,6 +3,12 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
+    "5.8.4" = {
+      builder = ./build-5.8.4.nix;
+      base = tvp.bases.default;
+      deps = { };
+    };
+
     "5.0.0" = {
       builder = ./build-5.0.0.nix;
       base = tvp.bases.default;
