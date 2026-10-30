@@ -7,6 +7,7 @@
   perl,
   version,
   sha256,
+  cStandard ? null,
   mkTests,
   patches ? [ ],
   postPatch ? null,
@@ -48,4 +49,5 @@ stdenv.mkDerivation (
   // lib.optionalAttrs (postPatch != null) {
     inherit postPatch;
   }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
 )
