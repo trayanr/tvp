@@ -59,3 +59,6 @@ tvpLib.tests.mkSuite {
       ncurses-linkage = linkage deps.ncurses "lib(tinfow?|ncursesw?)\\.so" package.tvp.readlineProgram;
     };
 }
+// import ./behavior.nix { inherit pkgs tvpLib package; }
+
+// import ./tracker.nix { inherit pkgs tvpLib package; }
