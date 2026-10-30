@@ -88,12 +88,11 @@ let
   pname = "gcc";
   packageArgs = {
     infra = {
-      inherit (pkgs)
-        lib
-        fetchurl
-        dejagnu
-        python3
-        ;
+      inherit (pkgs) lib fetchurl dejagnu;
+      python3 = pkgs.python3.withPackages (ps: [
+        ps.pytest
+        ps.check-jsonschema
+      ]);
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;

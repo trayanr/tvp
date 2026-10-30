@@ -83,6 +83,7 @@ compiler.overrideAttrs (old: {
     mkdir -p boards
     cat > boards/tvp.exp <<'BOARD'
     load_generic_config "unix"
+    unset_board_info isremote
     set_board_info isremote 0
     set_board_info cflags "${libcFlags}"
     set_board_info ldflags "${libcFlags}"
