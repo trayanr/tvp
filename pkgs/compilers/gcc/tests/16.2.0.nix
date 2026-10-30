@@ -13,6 +13,8 @@ in
       ''
         python3 - ${gcc.validation}/upstream.json <<'PY'
         import json, sys
+        from pathlib import Path
+        assert Path("${gcc.validation}/make-check.exit").read_text().strip() == "0", "Upstream make failed; inspect retained raw log"
         data = json.load(open(sys.argv[1]))
         suites = data["suites"]
         assert suites, "No actual upstream results"
