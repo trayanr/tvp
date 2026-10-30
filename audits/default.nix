@@ -42,7 +42,7 @@ in
         }
       );
   runtime-policy = pkgs.writeText "tvp-runtime-audit-policy.json" (builtins.toJSON manifest);
-  package-runtime-ownership = tvp.bases.gcc13-owned-v2.stdenv.mkDerivation {
+  package-runtime-ownership = tvp.bases.default.stdenv.mkDerivation {
     name = "tvp-catalogue-runtime-ownership";
     __structuredAttrs = true;
     exportReferencesGraph.runtime = lib.attrValues roots;

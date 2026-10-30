@@ -2,8 +2,8 @@
 let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
-    "1.12.1" = {
-      builder = ./build-1.12.1.nix;
+    "1.11.1" = {
+      builder = ./build-1.11.1.nix;
       base = tvp.bases.default;
       deps = {
         python = tvp.packages.python-build_3_12_5;
@@ -22,8 +22,13 @@ let
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."1.12.1";
-      releases."1.12.1" = "sha256-qwpsoJ+O9wxWTIJB+1ojlXiGoLU/tYQSteB+rwfbp0M=";
+      def = defs."1.11.1";
+      releases = {
+        "1.11.1" = "sha256-Z4iuKZl5ZD+NhBvK9kNSVYQ2yuRaA1UUijruzPeROGY=";
+        "1.11.2" = "sha256-aY/q4GnO8+zU16rygdffNZvfz1VamhVkOD07kT+opzY=";
+        "1.12.0" = "sha256-iK/gwg5SAwIYkkrDfQyBxZtLXzrjdSyMbXRwx9NliGw=";
+        "1.12.1" = "sha256-qwpsoJ+O9wxWTIJB+1ojlXiGoLU/tYQSteB+rwfbp0M=";
+      };
     }
   ];
   pname = "meson";

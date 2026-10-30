@@ -38,6 +38,7 @@
     roots = base.autotoolsValidation.runtimePaths;
     allowedRuntimePaths =
       base.ownership.allowedRuntimePaths
+      ++ base.buildToolValidation.canonicalToolRuntimePaths
       ++ base.buildToolValidation.runtimePaths
       ++ base.autotoolsValidation.runtimePaths;
   };
@@ -55,7 +56,10 @@
     inherit pkgs base;
     name = "build-tool-runtime-ownership";
     roots = base.buildToolValidation.runtimePaths;
-    allowedRuntimePaths = base.ownership.allowedRuntimePaths ++ base.buildToolValidation.runtimePaths;
+    allowedRuntimePaths =
+      base.ownership.allowedRuntimePaths
+      ++ base.buildToolValidation.canonicalToolRuntimePaths
+      ++ base.buildToolValidation.runtimePaths;
   };
   gprofng = tvpLib.bases.mkBaseTest {
     inherit base;

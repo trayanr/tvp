@@ -85,4 +85,11 @@
       "2.15.3" = "sha256-eCYqbnrBcNZSjr/i78zfIgGRpa9qbNYepKmppQQsegc=";
     };
   }
+
+  {
+    def = defs."2.15.4";
+    releases = {
+      "2.15.4" = "sha256-mAh/0YHZBwck8/vGXHN32wMDjrkr2II3Ta/0SUATiCE=";
+    };
+  }
 ]
