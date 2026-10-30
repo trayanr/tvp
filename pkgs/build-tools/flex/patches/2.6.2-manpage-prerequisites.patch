@@ -1,0 +1,15 @@
+--- a/doc/Makefile.in
++++ b/doc/Makefile.in
+@@ -879,10 +879,10 @@
+ .PRECIOUS: Makefile
+ 
+ 
+-flex.1: ../src/flex$(EXEEXT)
++flex.1: $(top_srcdir)/configure.ac $(top_srcdir)/src/flex.skl $(top_srcdir)/src/options.c $(top_srcdir)/src/options.h | ../src/flex$(EXEEXT)
+ 	$(help2man) --name='$(PACKAGE_NAME)' --section=1 \
+ 	--source='The Flex Project' --manual='Programming' \
+-	--output=$@ $< \
++	--output=$@ ../src/flex$(EXEEXT) \
+ 	|| rm -f $@
+ 
+ # Tell versions [3.59,3.63) of GNU make to not export all variables.
