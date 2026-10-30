@@ -6,11 +6,19 @@ let
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
       deps.m4 = tvp.packages.m4_1_4_21;
+      # The long-long configure probe defines g() then calls it with arguments.
+      # C23 interprets () as (void); retain the intended pre-C23 semantics.
+      # The procedure leaves earlier compiler construction byte-identical.
+      opts.cStandard = "gnu17";
     };
     "6.0.0a" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
       deps.m4 = tvp.packages.m4_1_4_21;
+      # The long-long configure probe defines g() then calls it with arguments.
+      # C23 interprets () as (void); retain the intended pre-C23 semantics.
+      # The procedure leaves earlier compiler construction byte-identical.
+      opts.cStandard = "gnu17";
       opts.reportedVersion = "6.0.0";
     };
   };

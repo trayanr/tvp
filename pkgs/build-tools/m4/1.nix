@@ -19,12 +19,17 @@
   {
     def = defs."1.4.17";
     releases = {
-      "1.4.19" = "sha256-O+SibYJf/f2lKlb8QyRkVpiaNjAJPM7T+930dx7linA=";
       "1.4.20" = "sha256-asT8Mc5EDevmOYfC67+de2Y05np8Mnklfcc2Hei9s+8=";
     };
   }
   {
     def = defs."1.4.21";
     releases."1.4.21" = "sha256-OK5Z96ML+cEIGTzFwl+7BgFPIeIwx+3i7/YU97fDftg=";
+  }
+  {
+    def = defs."1.4.19";
+    releases = {
+      "1.4.19" = "sha256-O+SibYJf/f2lKlb8QyRkVpiaNjAJPM7T+930dx7linA=";
+    };
   }
 ]
