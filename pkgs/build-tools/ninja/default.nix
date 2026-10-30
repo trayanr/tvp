@@ -2,8 +2,8 @@
 let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
-    "1.13.2" = {
-      builder = ./build-1.13.2.nix;
+    "1.13.0" = {
+      builder = ./build-1.13.0.nix;
       base = tvp.bases.default;
       deps = {
         python = tvp.packages.python-minimal_3_12_5;
@@ -19,8 +19,12 @@ let
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."1.13.2";
-      releases."1.13.2" = "sha256-l01rL07u+iViXTTaPLNr3Ovn+85A9MFqwINf0cDLrhc=";
+      def = defs."1.13.0";
+      releases = {
+        "1.13.0" = "sha256-8IZB0ACZqeQNROwBRvhBxHKuWLfm3VF77jlFz9kjzt8=";
+        "1.13.1" = "sha256-8AVa0Dab8uNylVulUSjQAM/MIXdwV4BgFbReSsy+vyM=";
+        "1.13.2" = "sha256-l01rL07u+iViXTTaPLNr3Ovn+85A9MFqwINf0cDLrhc=";
+      };
     }
   ];
   pname = "ninja";

@@ -4,6 +4,7 @@
   fetchurl,
   version,
   sha256,
+  linkWithCC ? false,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -16,7 +17,7 @@ stdenv.mkDerivation (finalAttrs: {
   configureFlags = [
     "--enable-shared"
     "--enable-cxx"
-  ];
+  ] ++ lib.optional linkWithCC "LD=cc";
   enableParallelBuilding = true;
   doCheck = true;
   # Upstream's offline target exercises the release's shipped test corpus.
