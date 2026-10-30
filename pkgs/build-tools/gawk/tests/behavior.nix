@@ -130,6 +130,7 @@ in
 })
 // lib.optionalAttrs (atLeast "5.2") {
   persistent-memory = recorded "persistent-memory" ''
+    export LC_ALL=C
     if ! ${awk} --version | grep -q PMA; then
       echo 'SKIP: build has no PMA support' | tee "$out/status"
       exit 0
@@ -144,8 +145,8 @@ in
     set -e
     cat error
     if [ "$result" -ne 0 ]; then
-      if grep -Eqi 'mmap|address|personality|Operation not permitted|not supported' error; then
-        echo 'SKIP: PMA address layout or filesystem unavailable; see log' | tee "$out/status"
+      if grep -Eq 'Operation not permitted|Operation not supported|Function not implemented' error; then
+        echo 'SKIP: PMA operation unavailable; see log' | tee "$out/status"
         exit 0
       fi
       exit "$result"
