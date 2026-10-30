@@ -33,7 +33,7 @@ let
       "python3"
     ]
   );
-  libcFlags = "-B${glibc}/lib/ -isystem ${lib.getDev glibc}/include -L${glibc}/lib -Wl,-dynamic-linker,${glibc}/${(platforms.forStdenv stdenv).dynamicLinker} -Wl,-rpath,${glibc}/lib";
+  libcFlags = "-B${glibc}/lib/ -idirafter ${lib.getDev glibc}/include -L${glibc}/lib -Wl,-dynamic-linker,${glibc}/${(platforms.forStdenv stdenv).dynamicLinker} -Wl,-rpath,${glibc}/lib";
 in
 assert bootstrap;
 compiler.overrideAttrs (old: {
