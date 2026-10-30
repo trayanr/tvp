@@ -58,8 +58,21 @@ compiler.overrideAttrs (old: {
     test -s "$validation/stage2-objects.txt"
   '';
   doCheck = true;
+  enableParallelChecking = true;
+  checkTarget = [
+    "check-gcc"
+    "check-target-libstdc++-v3"
+    "check-target-libgomp"
+    "check-target-libatomic"
+    "check-target-libitm"
+    "check-target-libquadmath"
+    "check-target-libsanitizer"
+  ];
+  checkFlags = [
+    "-k"
+    "RUNTESTFLAGS=--target_board=tvp"
+  ];
   checkPhase = ''
-    runHook preCheck
     # Supply only the explicit native libc layout. Test directives retain their
     # own optimisation/language options and unmodified expected diagnostics.
     mkdir -p boards
@@ -74,18 +87,16 @@ compiler.overrideAttrs (old: {
     export DEJAGNU="$PWD/site-tvp.exp"
     export CONFIG_SHELL=${stdenv.shell}
     export SHELL=${stdenv.shell}
-    targets=(check-gcc check-target-libstdc++-v3 check-target-libgomp
-      check-target-libatomic check-target-libitm check-target-libquadmath
-      check-target-libsanitizer)
-    printf '%s\n' "make -k ''${targets[*]} RUNTESTFLAGS=--target_board=tvp" > "$validation/invocation.txt"
+    # Invoke stdenv's check function, inheriting its parallelism from the
+    # configured NIX_BUILD_CORES exactly as in the normal build phase.
+    declare -f checkPhase > "$validation/check-procedure.sh"
     result=0
-    make -k "''${makeFlagsArray[@]}" "''${targets[@]}" \
-      'RUNTESTFLAGS=--target_board=tvp' > "$validation/make-check.log" 2>&1 || result=$?
+    checkPhase > "$validation/make-check.log" 2>&1 || result=$?
+    head -n 1 "$validation/make-check.log" > "$validation/invocation.txt"
     printf '%s\n' "$result" > "$validation/make-check.exit"
     # Keep failures as data. The separate upstream test gates on the actual
     # DejaGNU records, never on make's exit status alone.
     find . -type f \( -name '*.sum' -o -name '*.log' \) -exec cp --parents {} "$validation" \;
     ${python3}/bin/python3 ${./tests/summarise-upstream.py} "$validation"
-    runHook postCheck
   '';
 })
