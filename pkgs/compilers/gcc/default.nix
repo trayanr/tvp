@@ -51,6 +51,19 @@ let
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://gcc.gnu.org/pub/gcc/releases/";
+      # Keep complete links so snapshots, prereleases and suffix junk cannot
+      # contribute a numeric release substring.
+      pattern = "href=\"[^\"]*\"";
+      normalise =
+        href:
+        let
+          match = builtins.match ''href="gcc-([0-9]+(\.[0-9]+)+)/"'' href;
+        in
+        if match == null then null else builtins.head match;
+    };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }: gcc: import ./tests { inherit pkgs tvpLib gcc; }
     ) { inherit pkgs; };

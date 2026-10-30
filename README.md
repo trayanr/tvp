@@ -16,9 +16,9 @@ nix build github:trayanr/tvp#ruby_2_7_0
 nix shell github:trayanr/tvp#ruby_2_7_0
 ```
 
-Every package has a canonical, immutable name (`ruby_2_7_0`) and may also have movable
-aliases (`ruby_2_7`, `ruby_2`, `ruby`). Pin the canonical name if you want it to mean the
-same thing forever.
+An exact name (`ruby_2_7_0`) selects an upstream release. Aliases (`ruby_2_7`, `ruby_2`,
+`ruby`) follow the latest packaged, non-broken release in that line. Pin the TVP commit
+in your flake lock to fix the dependencies and build environment too.
 
 To list what is available:
 

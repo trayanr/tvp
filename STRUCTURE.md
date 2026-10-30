@@ -6,7 +6,7 @@ How TVP is laid out and why, so a change lands where the next person expects to 
 
 ```
 bases/                        the ground packages are built on; `tvp.bases`
-├── default.nix               named bases; canonical names immutable, aliases move
+├── default.nix               default and compatibility bases, pinned bootstrap inputs
 ├── stdenv/                   vendored build protocol and native constructor
 ├── wrappers/                 native compiler and linker wrappers
 ├── gcc13-owned/              explicit bootstrap stages and consumer graphs
@@ -285,30 +285,24 @@ nix run .#status -- --json  # same, for tooling
 
 ## Choosing dependency versions
 
-> Take the latest version the upstream release itself declares compatible, read from
-> upstream's own build configuration rather than inferred or copied from another distro.
+Choose a selector from upstream's declared compatibility, read from its build
+configuration. Major, minor and exact selectors are all allowed:
 
-Ruby 2.7 is the worked example. `ext/openssl/extconf.rb` states the bound, and it moves
-mid-line:
+```nix
+tcl = tvp.packages.tcl_9;
+tcl = tvp.packages.tcl_8_6;
+tcl = tvp.packages.tcl_8_6_18;
+```
 
-| Ruby | Upstream OpenSSL constraint |
-|---|---|
-| 2.7.0 – 2.7.4 | `>= 1.0.1` |
-| 2.7.5 – 2.7.8 | `>= 1.0.1 and < 3.0.0` |
+Upstream constraints guide the initial choice; package and consumer tests confirm it.
+Adding a newer release advances matching aliases and rebuilds their consumers. If a
+consumer breaks, pin it to a verified working version and record why.
+Other consumers can keep advancing. A dependency constraint belongs in the definition;
+fork the builder only when the build procedure changes.
 
-TVP pins 1.1.1w for all nine — the latest release satisfying both.
-
-The rule selects a pin **once**, when the version is added. The pin is then immutable:
-"latest compatible" evaluated today and in five years give different answers, and a
-canonical graph that changed meaning would break the guarantee that pinning a TVP revision
-pins the whole universe. Moving a pin afterwards is a deliberate rebuild, not an update.
-
-It is not a security claim. TVP does not backport fixes, and availability is not a
-statement that something is safe to deploy.
-
-**A changed constraint is not automatically a builder fork.** 2.7.5 tightened its OpenSSL
-bound without changing how Ruby builds, so it is version data. Fork on a changed *recipe*,
-not a changed *range*.
+An exact package name fixes the upstream release. A pinned TVP commit fixes its source,
+recipe, resolved dependencies and base. Build graphs may change between TVP commits.
+Evaluation resolves aliases from the pinned catalogue; it does not query upstream.
 
 ## Naming and aliases
 
@@ -324,15 +318,15 @@ nix build .#canonical.openssl_1_1_1   → 1.1.1    the 2018 release, exactly
 - **Every tool and check reads `canonical`.** An alias winning inside a single namespace
   would take the shadowed release's only name and drop it out of `status`, `upstream`,
   `neutral`, `provenance` and `every-package-tested` — silently.
-- Canonical names are immutable: `ruby_2_7_0` never changes meaning.
+- Canonical names keep their upstream release: `ruby_2_7_0` always selects Ruby 2.7.0.
 - Aliases are separate and movable: `ruby_2_7`, `ruby_2`, `ruby` — and the shortest name is
   the moving one, deliberately: take the latest while adding a version, let CI find the
   break, pin the exact release only when something forces it.
-- A settled `deps` entry names the exact release. A moving name there is not readable from
-  source, and the canonical dependency graph is the contract.
-- Moving an alias must never redefine a historical package identity. Within `packages` an
-  alias may shadow a canonical name — that is the ergonomic namespace doing its job — and
-  the release stays reachable under `canonical`.
+- `deps` may use aliases within upstream's compatibility constraints or exact releases
+  for compatibility exceptions. The resolved graph is fixed by the TVP commit.
+- Moving an alias must never change a canonical name's upstream release. Within
+  `packages` an alias may shadow a canonical name — that is the ergonomic namespace
+  doing its job — and the release stays reachable under `canonical`.
 - Superseded versions are kept, not replaced. `openssl_1_1_1u` stays alongside `1.1.1w`;
   only the alias moves.
 - **The cascade is generated, not written.** `mkAliases` builds every prefix of every
@@ -474,23 +468,18 @@ letting `callPackage` fill it from nixpkgs.
 - **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can carry what a
   toolchain pin cannot express — beginning with `builtBy`, because the bootstrap parent
   and a base's chain are part of its identity.
-- **Canonical base names are immutable; aliases move**, and the name is *asserted*. A base
-  is named for its compiler (`gcc13`, `gcc9`), and `mkBase` fails to evaluate if the stdenv
-  carries a different one — so a nixpkgs bump cannot silently redefine a base name.
-- **The name is a handle; the assertions are the pins.** Claims name the *exact* compiler,
-  binutils and glibc versions (`13.3.0`, `2.42`, `2.39`). Changing any of them fails to
-  evaluate, while definitions keep naming the short handle. The unit is gcc's release
-  series — `X.Y` below 5.0 and `X` above it, which is why
-  `gcc49` is the 4.9 series and not "gcc 4".
-- **`default` says "no opinion"; a canonical name says a build forced the choice.** Both are
-  written out — omitting `base` still throws. Naming a canonical base everywhere would make
-  the unchosen indistinguishable from the chosen, and a fleet move would erase which is
-  which. The definition records intent; `passthru.tvp.base` records the resolved fact.
-- **Bases are populated on demand**, never one per compiler release in advance. A base pin
-  therefore means *"this worked and something newer did not"*, not "the latest that works".
-- **`builtBy` is required**, naming the base that compiled this one. Old compilers cannot be
-  assumed to build with every host toolchain, so bootstrap edges are explicit rather than
-  inferred from compiler version ordering. `null` means nixpkgs bootstrapped it.
+- **A named base identifies an environment generation.** Its identity includes the exact
+  compiler, libc, binutils, wrappers, hooks, floor tools and bootstrap inputs. Toolchain
+  versions are asserted by `mkBase`; a replacement environment gets a new generation.
+- **Use `base = tvp.bases.default` normally.** Advance the default to newer validated
+  toolchains. Pin a package to an older base only when compatibility requires it, and
+  record the reason. `passthru.tvp.base` records the resolved base name.
+- **Public bases are the default and older bases with actual consumers.**
+  Retire a superseded public base once its consumers have moved. Older TVP commits
+  retain its definition; bootstrap recipes may still need it internally.
+- **`builtBy` is required**, naming the reviewed parent used to construct the base.
+  Construction inputs stay pinned and must not follow the default they are building.
+  `null` means nixpkgs bootstrapped it.
 - **Bases follow the package patterns**: `mkBase` in `lib/bases.nix` beside `mkVersions`,
   one shared suite in `bases/tests/` instantiated per base, and `checks.every-base-tested`
   mirroring `every-package-tested`. A base test is built by that base's own stdenv, or it
@@ -507,11 +496,14 @@ letting `callPackage` fill it from nixpkgs.
   inferred — bundler is the only one.
 - **`passthru.tvp.base` records the name**, not the record.
 
-`bases/` is derivation-affecting in full: every package on a base rebuilds when that base
-changes. That is dependencies working correctly, and the blast radius is one base rather
-than the repo — the same containment `build-VERSION.nix` gives a build procedure. It is
-also why there is still no `mkTvpDerivation`: a customised `mkDerivation` inside a named,
-versioned base is scoped and forkable; a single global wrapper is not.
+Promote a new default through a full-catalogue PR. Report graph changes, run the full
+validation and pin packages needing older environments before merging. Most packages
+follow the default, so a promotion rebuilds most of the catalogue. We do not build
+every package against every historical base.
+
+GCC is also an ordinary catalogue package. Adding a GCC release does not promote it
+into the default base or require a base for that release. The base assembler reuses the
+package recipe with pinned construction inputs.
 
 The current bootstrap boundary is explicit: `builtBy = null` bases still borrow their
 compiler, binutils, glibc, wrappers, floor tools and setup script from the pinned nixpkgs
@@ -520,10 +512,12 @@ that substrate. In particular, packaged raw binutils are not a replacement for t
 bintools wrapper: the wrapper supplies library search paths, the dynamic interpreter
 and runtime RPATH policy.
 
-`gcc13-owned-v2` is the default native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
-glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `default` and `gcc13-owned` both resolve to `gcc13-owned-v2`. Its
-`builtBy = "internal:gcc13-owned"` records the pinned earlier owned generation.
-The borrowed GCC 13 seed and first owned generation are retired from public base
+`gcc13-owned-v3` is the default native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
+glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `default` and
+`gcc13-owned` both resolve to `gcc13-owned-v3`. It reuses the pinned compiler and floor
+from v2, with revised wrappers and fixup hooks. Its `builtBy = "internal:gcc13-owned"`
+records the pinned earlier owned generation.
+The borrowed GCC 13 seed, first owned generation and v2 are retired from public base
 selection. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
@@ -932,9 +926,11 @@ supplementary checks.
 ## Runtime cleanup and permanent audits
 
 `gcc13-owned-v2` reuses the first owned base's compiler, libc and floor, and adds an
-owned patchelf-backed RPATH cleanup hook. Both `default` and `gcc13-owned` select
-this newest generation. The earlier GCC 13 bases are private bootstrap inputs. The original constructor's empty fixup-input
-selection computes the same earlier base and bootstrap producers.
+owned patchelf-backed RPATH cleanup hook. V3 retains these producers and revises the
+consumer protocol, including response-file expansion and wrapper support metadata.
+Both `default` and `gcc13-owned` select v3. The earlier GCC 13 bases are private
+bootstrap inputs. The original constructor's empty fixup-input selection computes the
+same earlier base and bootstrap producers.
 
 The v2 hook removes unused ELF search directories. A package declares store library
 directories required for name-based `dlopen` in `runtimeLibraryPaths`; these are
@@ -943,9 +939,9 @@ whose output format needs a different fixup procedure. Static executables are re
 The base fixture runs linked/dlopen consumers, a symlinked executable, static code,
 multiple outputs and the explicit opt-out profile.
 
-Canonical JDK 21.0.13 selects v2. Its procedure cleans the exploded JDK before building
-module images, so `jpackage` launchers embedded in `lib/modules` and jmods receive the
-same cleanup as ordinary installed ELF files. The superseded JDK base variant is
+Canonical JDK 21.0.13 follows the default base. Its procedure cleans the exploded JDK
+before building module images, so `jpackage` launchers embedded in `lib/modules` and
+jmods receive the same cleanup as ordinary installed ELF files. The superseded JDK base variant is
 retired; earlier TVP revisions retain its original graph. Shared tests cover JNI, subprocesses,
 image creation, a real generated application launcher, offscreen font rendering and
 PostScript printing. Loader traces verify owned Fontconfig/CUPS loading; the trimmed
@@ -995,8 +991,9 @@ from the local validation entry points.
 
 Retired bootstrap generations retain full validation under
 `testBatches.x86_64-linux.bootstrap-base-gcc13`,
-`testBatches.x86_64-linux.bootstrap-base-gcc13-owned` and the corresponding
+`testBatches.x86_64-linux.bootstrap-base-gcc13-owned`,
+`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v2` and the corresponding
 `bootstrap-PROFILE-PACKAGE` batches. The active base suite is
-`testBatches.x86_64-linux.base-gcc13-owned-v2`. All are included in the full plan.
+`testBatches.x86_64-linux.base-gcc13-owned-v3`. All are included in the full plan.
 Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
 `bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.
