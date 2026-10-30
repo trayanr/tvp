@@ -18,6 +18,7 @@
   texinfo,
   which,
   dejagnu,
+  flock,
   python3,
   version,
   sha256,
@@ -30,6 +31,7 @@ let
   compiler = import ./build-13.3.nix (
     removeAttrs args [
       "dejagnu"
+      "flock"
       "python3"
     ]
   );
@@ -43,6 +45,7 @@ compiler.overrideAttrs (old: {
   ];
   nativeBuildInputs = old.nativeBuildInputs ++ [
     dejagnu
+    (lib.getBin flock)
     python3
   ];
   postBuild = ''
@@ -82,7 +85,7 @@ compiler.overrideAttrs (old: {
     # own optimisation/language options and unmodified expected diagnostics.
     mkdir -p boards
     cat > boards/tvp.exp <<'BOARD'
-    load_generic_config "unix"
+    load_base_board_description "unix"
     unset_board_info isremote
     set_board_info isremote 0
     set_board_info cflags "${libcFlags}"
@@ -90,6 +93,9 @@ compiler.overrideAttrs (old: {
     BOARD
     cat > site-tvp.exp <<SITE
     lappend boards_dir "$PWD/boards"
+    # Host-side test generators use the unchanged wrapped build compiler.
+    set HOSTCC "${stdenv.cc}/bin/gcc"
+    set HOSTCXX "${stdenv.cc}/bin/g++"
     SITE
     export DEJAGNU="$PWD/site-tvp.exp"
     export CONFIG_SHELL=${stdenv.shell}

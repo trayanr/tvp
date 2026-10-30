@@ -93,6 +93,8 @@ let
         ps.pytest
         ps.jsonschema
       ]);
+      # OpenMP parallel execution needs the real native flock helper.
+      flock = pkgs.util-linux;
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
