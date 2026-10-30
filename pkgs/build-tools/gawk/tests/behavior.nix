@@ -25,8 +25,9 @@ let
       ''
         set -euo pipefail
         mkdir "$out"
-        exec > "$out/log" 2>&1
-        ${script}
+        (
+          ${script}
+        ) 2>&1 | tee "$out/log"
       '';
 in
 (tvpLib.tests.mkSuite {
