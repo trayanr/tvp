@@ -29,6 +29,15 @@ let
         zlib = tvp.packages.zlib_1_3_2;
       };
     };
+
+    "2.15.4" = {
+      builder = ./build-2.15.4.nix;
+      base = tvp.bases.default;
+      deps = {
+        zlib = tvp.packages.zlib_1_3_2;
+        pkg-config = tvp.packages.pkg-config_0_29_2;
+      };
+    };
   };
 
   versionTable = tvpLib.packages.mkTable (import ./2.nix { inherit defs; });
