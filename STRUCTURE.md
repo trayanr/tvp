@@ -518,10 +518,21 @@ glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `def
 compiler built on the pinned `gcc13-owned-v3` parent, with explicit dependency variants
 in `bases/gcc16-owned/inputs/`. The parent libc, binutils, floor, shell and fixup tool
 are reused. `builtBy = "internal:gcc13-owned-v3"` records that construction boundary.
-The borrowed GCC 13 seed and earlier owned generations are retired from public base
-selection. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
+The GCC13-v3 compatibility selection remains for measured ACL 2.3.0/2.3.1
+consumers: their nested zero-length string member trips GCC16 fortified copies.
+Hardening and regression tests remain enabled; ACL 2.3.2/2.4.0 use GCC16. The borrowed
+GCC13 seed, original owned generation and v2 remain internal. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
+Historical Gawk 3.x and Tcl before 8.6 explicitly select GNU89; GMP's older
+compiler probes use GNU89 or GNU17, and GDBM 1.19–1.24, M4 1.4.19 and
+pkg-config's bundled GLib use GNU17. These preserve source language assumptions
+under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/porting_to.html)
+and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Only
+libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
+`int open_temp_exec_file(void)`; [upstream fixed its declaration in 3.4.5](https://github.com/libffi/libffi/commit/ce077e5565366171aa1b4438749b0922fce887a4).
+The sources, upstream checks and historical failure classifications are retained.
+
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
 retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
 owned generation so selecting the default cannot introduce a dependency cycle.
@@ -930,8 +941,8 @@ supplementary checks.
 owned patchelf-backed RPATH cleanup hook. V3 retains these producers and revises the
 consumer protocol, including response-file expansion and wrapper support metadata.
 The GCC16 generation carries the v2/v3 consumer protocol and regression tests.
-Both `default` and `gcc16` select GCC16. The earlier GCC 13 bases are private
-bootstrap inputs. The original constructor's empty fixup-input selection computes the
+Both `default` and `gcc16` select GCC16. Earlier GCC13 generations remain pinned bootstrap inputs; GCC13-v3 also
+serves the two measured ACL compatibility consumers. The original constructor's empty fixup-input selection computes the
 same earlier base and bootstrap producers.
 
 The v2 hook removes unused ELF search directories. A package declares store library
