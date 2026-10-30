@@ -92,6 +92,7 @@ let
     {
       def = defs."2.4.7";
       releases."2.4.7" = "sha256-T38hfwV85lX/IlWa0iGg/Y74StH8X8tpkM7MMzqhY10=";
+      releases."2.5.3" = "sha256-iYARIyzFm2s7u+Mhtgq6nbGsEVeKth7Q3wKZRYFGri4=";
       releases."2.5.4" = "sha256-+B9YYGZrC8fYS63e+mDRy5+m/OsjmMw7rKavqmAmZnU=";
       releases."2.6.2" = "sha256-LvEGfBbJfbkw/XQMybw9O6mlg4BK5axCzD6HGeSeGR4=";
     }

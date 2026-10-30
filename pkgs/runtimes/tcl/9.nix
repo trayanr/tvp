@@ -12,6 +12,7 @@
       };
     };
     releases = {
+      "9.1.0" = "sha256-U2xFVD9k1usRgy2XujSUqs/wRvvFBAJzvVUljQ5Ej/E=";
       "9.0.4" = "sha256-0K7UkjC8AqZcHgIp5l80WQpLA37EDVRvMlc7Rn91Ueo=";
       "9.0.3" = "sha256-JTe6DIYRLIyVP3wJ0z8TTdRcD7OnHy1/dpH9MB0sM6Y=";
       "9.0.2" = "sha256-4HTGqNm6LN35FLqXtmd6VS16UqPKECkkOJoFzLJJtSA=";
