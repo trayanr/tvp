@@ -50,7 +50,9 @@ compiler.overrideAttrs (old: {
     test -f compare
     test ! -f stage2-lean
     test ! -f .bad_compare
-    make -B compare 2>&1 | tee "$validation/bootstrap-compare.log"
+    # Invalidate only the comparison stamp, not all generated makefiles.
+    rm compare
+    make compare 2>&1 | tee "$validation/bootstrap-compare.log"
     grep -Fx 'Comparison successful.' "$validation/bootstrap-compare.log"
     cp stage_final "$validation/stage_final"
     cp config.log "$validation/config.log"
