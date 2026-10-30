@@ -46,6 +46,12 @@ let
       stdenv = withTvpMkDerivation pkgs.stdenv;
     };
 
+    gcc13-owned-v2 = import ../../gcc13-owned-v2 {
+      inherit pkgs tvp;
+      builtBy = construction.bases.gcc13-owned;
+      patchelf = construction.variants.gcc13-owned.patchelf_0_19_2;
+    };
+
     gcc13-owned = import ../. {
       inherit pkgs tvp;
       builtBy = construction.bases.gcc13;
