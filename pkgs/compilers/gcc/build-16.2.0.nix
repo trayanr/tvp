@@ -19,6 +19,7 @@
   which,
   dejagnu,
   flock,
+  graphviz,
   python3,
   version,
   sha256,
@@ -32,6 +33,7 @@ let
     removeAttrs args [
       "dejagnu"
       "flock"
+      "graphviz"
       "python3"
     ]
   );
@@ -46,6 +48,7 @@ compiler.overrideAttrs (old: {
   nativeBuildInputs = old.nativeBuildInputs ++ [
     dejagnu
     (lib.getBin flock)
+    (lib.getBin graphviz)
     python3
   ];
   postBuild = ''

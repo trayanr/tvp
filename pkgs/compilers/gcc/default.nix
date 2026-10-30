@@ -95,6 +95,8 @@ let
       ]);
       # OpenMP parallel execution needs the real native flock helper.
       flock = pkgs.util-linux;
+      # HTML diagnostic CFG tests invoke dot to generate their SVG.
+      graphviz = pkgs.graphviz;
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
