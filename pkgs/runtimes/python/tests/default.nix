@@ -5,6 +5,14 @@
 }:
 let
   deps = package.tvp.deps;
+  # Both versions exhibited the same TLS 1.3 rejection/closure race.
+  tlsClosurePatch =
+    {
+      "3.11.18" = ./patches/python-3.11.18-tls13-closure.patch;
+      "3.12.16" = ./patches/python-3.12.16-tls13-closure.patch;
+    }
+    .${package.version} or null;
+  pythonLib = "lib/python${pkgs.lib.versions.majorMinor package.version}";
   linkage = dependency: soname: modules: {
     script = ''
       modules=$(python3 -c 'import importlib, sys; print("\n".join(importlib.import_module(m).__file__ for m in sys.argv[1:]))' ${pkgs.lib.escapeShellArgs modules})
@@ -63,12 +71,12 @@ tvpLib.tests.mkSuite {
         # Patch only the validation copy: the interpreter and all production
         # consumers keep their original identities.
         script =
-          pkgs.lib.optionalString (package.version == "3.11.18") ''
+          pkgs.lib.optionalString (tlsClosurePatch != null) ''
             mkdir validation
             # ctypes.test discovery requires it beside the copied test support.
-            cp -R ${package}/lib/python3.11/{test,ctypes} validation/
+            cp -R ${package}/${pythonLib}/{test,ctypes} validation/
             chmod -R u+w validation/test
-            patch --batch --fuzz=0 -d validation -p1 < ${./patches/python-3.11.18-tls13-closure.patch} >&2
+            patch --batch --fuzz=0 -d validation -p1 < ${tlsClosurePatch} >&2
             export PYTHONPATH="$PWD/validation"
           ''
           + ''
@@ -77,7 +85,7 @@ tvpLib.tests.mkSuite {
             printf passed
           '';
         expected = "passed";
-        extraInputs = [ package.tvp.cc ] ++ pkgs.lib.optional (package.version == "3.11.18") pkgs.patch;
+        extraInputs = [ package.tvp.cc ] ++ pkgs.lib.optional (tlsClosurePatch != null) pkgs.patch;
       };
       openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
         "_ssl"
