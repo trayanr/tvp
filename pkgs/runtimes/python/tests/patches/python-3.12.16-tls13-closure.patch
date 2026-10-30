@@ -1,0 +1,54 @@
+Validation-only backport of the test_wrong_cert_tls13 assertion from:
+https://github.com/python/cpython/commit/ea9a296fce2f786b4cf43c7924e5de01061f27ca
+https://github.com/python/cpython/commit/a214f55b274df9782e78e99516a372e0b800162a
+
+Only accept upstream's specific TLS/transport closure reasons, and additionally
+require the server to report rejection of the untrusted certificate. A trusted
+client must still exchange data with CERT_REQUIRED under TLS 1.3.
+No interpreter changes; applied to a private copy of the installed test package.
+
+--- a/test/test_ssl.py
++++ b/test/test_ssl.py
+@@ -3358,14 +3358,40 @@
+                                         suppress_ragged_eofs=False) as s:
+             s.connect((HOST, server.port))
+             with self.assertRaisesRegex(
+-                ssl.SSLError,
+-                'alert unknown ca|EOF occurred|TLSV1_ALERT_UNKNOWN_CA'
++                OSError,
++                'alert unknown ca|EOF occurred|TLSV1_ALERT_UNKNOWN_CA|'
++                'closed by the remote host|Connection reset by peer|'
++                'Broken pipe'
+             ):
+                 # TLS 1.3 perform client cert exchange after handshake
+                 s.write(b'data')
+                 s.read(1000)
+                 s.write(b'should have failed already')
+                 s.read(1000)
++
++        # A transport closure alone must not stand in for cert rejection.
++        self.assertEqual(len(server.conn_errors), 1, server.conn_errors)
++        self.assertRegex(server.conn_errors[0],
++                         'CERTIFICATE_VERIFY_FAILED.*self-signed certificate')
++
++    @requires_tls_version('TLSv1_3')
++    def test_trusted_cert_tls13(self):
++        client_context, server_context, hostname = testing_context()
++        client_context.load_cert_chain(SIGNED_CERTFILE)
++        server_context.verify_mode = ssl.CERT_REQUIRED
++        server_context.minimum_version = ssl.TLSVersion.TLSv1_3
++        client_context.minimum_version = ssl.TLSVersion.TLSv1_3
++
++        server = ThreadedEchoServer(context=server_context)
++        with server, client_context.wrap_socket(
++                socket.socket(), server_hostname=hostname) as s:
++            s.connect((HOST, server.port))
++            self.assertEqual(s.version(), 'TLSv1.3')
++            self.assertTrue(s.getpeercert())
++            s.write(b'TRUSTED\n')
++            self.assertEqual(s.read(1000), b'trusted\n')
++            s.write(b'over\n')
++        self.assertEqual(server.conn_errors, [])
+
+     def test_rude_shutdown(self):
+         """A brutal shutdown of an SSL server should raise an OSError
