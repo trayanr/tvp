@@ -1,0 +1,10 @@
+<a href="attr-2.4.44.src.tar.gz">old source</a>
+<a href="attr-2.4.48.tar.gz">source</a>
+<a href="attr-2.6.0.tar.gz">source</a>
+<a href="prefixattr-9.9.9.tar.gz">other family</a>
+<a href="attr-9.9.9.tar.gz.sig">signature</a>
+<a href="attr-9.9.9.tar.gz.README">readme</a>
+<a href="attr-9.9.9.tar.gz.junk">suffix junk</a>
+<a href="attr-2.7.0-rc1.tar.gz">prerelease</a>
+<a href="prefix!attr-9.9.9.tar.gz">punctuated prefix</a>
+<a href="attr-9.9.9.tar.gz@junk">punctuated suffix</a>
