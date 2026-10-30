@@ -524,7 +524,7 @@ Hardening and regression tests remain enabled; ACL 2.3.2/2.4.0 use GCC16. The bo
 GCC13 seed, original owned generation and v2 remain internal. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
-Historical Gawk 3.x and Tcl before 8.6 explicitly select GNU89; GMP's older
+Historical Gawk 3.x and Tcl through 8.6.8 explicitly select GNU89; GMP's older
 compiler probes use GNU89 or GNU17, and GDBM 1.19–1.24, M4 1.4.19 and
 pkg-config's bundled GLib use GNU17. These preserve source language assumptions
 under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/porting_to.html)
