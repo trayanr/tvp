@@ -97,6 +97,7 @@ let
       flock = pkgs.util-linux;
       # HTML diagnostic CFG tests invoke dot to generate their SVG.
       graphviz = pkgs.graphviz;
+      fontsConf = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;

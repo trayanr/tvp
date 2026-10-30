@@ -20,6 +20,7 @@
   dejagnu,
   flock,
   graphviz,
+  fontsConf,
   python3,
   version,
   sha256,
@@ -34,6 +35,7 @@ let
       "dejagnu"
       "flock"
       "graphviz"
+      "fontsConf"
       "python3"
     ]
   );
@@ -104,6 +106,20 @@ compiler.overrideAttrs (old: {
     export DEJAGNU="$PWD/site-tvp.exp"
     export CONFIG_SHELL=${stdenv.shell}
     export SHELL=${stdenv.shell}
+    export FONTCONFIG_FILE=${fontsConf}
+    export XDG_CACHE_HOME="$PWD/.cache"
+    mkdir -p "$XDG_CACHE_HOME"
+    # Upstream stacktrace tests need caller DWARF. Keep the production runtime
+    # flags and optimisation, adding debug information only for test programs.
+    for flag in "''${makeFlagsArray[@]}"; do
+      case "$flag" in
+        CXXFLAGS_FOR_TARGET=*) checkFlagsArray+=("$flag -g") ;;
+      esac
+    done
+    printf '%s\n' "FONTCONFIG_FILE=$FONTCONFIG_FILE" \
+      "XDG_CACHE_HOME=$XDG_CACHE_HOME" "HOSTCC=${stdenv.cc}/bin/gcc" \
+      "HOSTCXX=${stdenv.cc}/bin/g++" "NIX_BUILD_CORES=$NIX_BUILD_CORES" \
+      > "$validation/test-environment.txt"
     # Invoke stdenv's check function, inheriting its parallelism from the
     # configured NIX_BUILD_CORES exactly as in the normal build phase.
     declare -f checkPhase > "$validation/check-procedure.sh"
