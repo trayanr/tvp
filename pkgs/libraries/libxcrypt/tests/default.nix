@@ -2,8 +2,9 @@
   pkgs,
   tvpLib,
   package,
+  baseline,
 }:
-tvpLib.tests.mkSuite {
+(tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests = {
     crypt = {
@@ -15,4 +16,6 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
   };
-}
+})
+// (import ./validation.nix { inherit pkgs package baseline; })
+// (import ./upstream-fixtures.nix { inherit pkgs package; })
