@@ -54,3 +54,6 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+// {
+  tracker = import ./tracker.nix { inherit pkgs gcc; };
+}
