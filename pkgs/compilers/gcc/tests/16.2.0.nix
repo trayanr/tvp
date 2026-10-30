@@ -9,7 +9,14 @@ let
 in
 {
   upstream-audit =
-    pkgs.runCommand "gcc-${gcc.version}-upstream-audit" { nativeBuildInputs = [ pkgs.python3 ]; }
+    pkgs.runCommand "gcc-${gcc.version}-upstream-audit"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+        passthru = {
+          package = gcc;
+          testName = "upstream-audit";
+        };
+      }
       ''
         test "$(cat ${gcc.validation}/make-check.exit)" = 0
         mkdir -p "$out"
