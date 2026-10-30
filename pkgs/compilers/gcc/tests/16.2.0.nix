@@ -16,12 +16,15 @@ in
         data = json.load(open(sys.argv[1]))
         suites = data["suites"]
         assert suites, "No actual upstream results"
-        for tool in ["gcc", "g++", "libstdc++", "libgomp", "libatomic", "libitm", "libquadmath", "asan", "ubsan"]:
+        for tool in ["gcc", "g++", "libstdc++", "libgomp", "libatomic", "libitm"]:
             found = [s for name, s in suites.items() if name.endswith("/" + tool + ".sum")]
             assert found and sum(s["counts"].get("PASS", 0) for s in found) > 0, tool
         unexpected = {name: s["unexpected"] for name, s in suites.items() if s["unexpected"]}
         assert not unexpected, json.dumps(unexpected, indent=2)
         PY
+        # libquadmath and libsanitizer ship no independent testsuite. Their
+        # compiler-integrated cases remain in the GCC results; native runtime
+        # consumers below exercise the installed libraries as well.
         mkdir -p "$out"
         cp ${gcc.validation}/upstream.json "$out/results.json"
         ln -s ${gcc.validation} "$out/raw"
@@ -46,6 +49,33 @@ in
         ./graphite
       '';
       expected = "3840";
+    };
+    sanitizers = {
+      script = ''
+        ${gcc}/bin/gcc ${flags} -fsanitize=address,undefined ${./fixtures/hello.c} -o instrumented
+        LD_DEBUG=libs ./instrumented 2> loaded
+        grep -F 'calling init: ${gcc}/lib/libasan.so' loaded >/dev/null
+        grep -F 'calling init: ${gcc}/lib/libubsan.so' loaded >/dev/null
+      '';
+      expected = "42";
+    };
+    quadmath = {
+      script = ''
+        cat > quad.c <<'C'
+        #include <quadmath.h>
+        #include <stdio.h>
+        int main(void) {
+          char result[128];
+          quadmath_snprintf(result, sizeof result, "%.0Qf", sqrtq(1764.0Q));
+          puts(result);
+          return 0;
+        }
+        C
+        ${gcc}/bin/gcc ${flags} quad.c -lquadmath -o quad
+        LD_DEBUG=libs ./quad 2> loaded
+        grep -F 'calling init: ${gcc}/lib/libquadmath.so' loaded >/dev/null
+      '';
+      expected = "42";
     };
     actual-binutils = {
       extraInputs = [ pkgs.strace ];
