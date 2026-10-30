@@ -7,6 +7,14 @@ let
       builder = ./build-1.9.nix;
       base = tvp.bases.default;
       deps = { };
+      # src/var.c uses bool as a field name; upstream 1.25 renamed it.
+      opts.cStandard = "gnu17";
+    };
+
+    "1.25" = {
+      builder = ./build-1.9.nix;
+      base = tvp.bases.default;
+      deps = { };
     };
 
     # Tentative definitions in libgdbmapp collide under -fno-common, which gcc

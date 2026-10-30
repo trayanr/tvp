@@ -11,7 +11,12 @@ let
     active-gcc16 =
       bases.default.name == "gcc16-owned"
       && bases.gcc16.stdenv.drvPath == bases.gcc16-owned.stdenv.drvPath;
-    retired-v2 = !(bases ? gcc13-owned-v2) && !(bases ? gcc13-owned-v3) && !(bases ? gcc13-owned);
+    retired-v2 = !(bases ? gcc13-owned-v2) && !(bases ? gcc13-owned);
+    measured-compat =
+      bases.gcc13-owned-v3.stdenv.drvPath == construction.bases.gcc13-owned-v3.stdenv.drvPath
+      && tvp.packages.acl_2_3_0.tvp.base == "gcc13-owned-v3"
+      && tvp.packages.acl_2_3_1.tvp.base == "gcc13-owned-v3"
+      && tvp.packages.acl_2_3_2.tvp.base == bases.default.name;
     no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
     retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
     pinned-parent =

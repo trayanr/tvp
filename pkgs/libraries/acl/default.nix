@@ -4,7 +4,10 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.3.0" = {
       builder = ./build-2.3.0.nix;
-      base = tvp.bases.default;
+      # Measured 2.3.0/1 abort under GCC16 FORTIFY: libobj.h nests a
+      # zero-length string subobject; 2.3.2 flattens it. Preserve the sources
+      # and hardening on the verified compatibility compiler.
+      base = tvp.bases.gcc13-owned-v3;
       deps.attr = tvp.packages.attr_2_5_2;
     };
     "2.3.2" = {

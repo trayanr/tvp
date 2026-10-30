@@ -70,6 +70,15 @@ let
       ];
     };
 
+    "8.3.3" = {
+      builder = ./build-8.0.2.nix;
+      base = tvp.bases.default;
+      deps = { };
+      # Measured old configure implicit-int and non-prototype probes need
+      # pre-standard C semantics; see GCC14/GCC15 porting guidance.
+      opts.cStandard = "gnu89";
+    };
+
     "8.0.5" = {
       builder = ./build-8.0.2.nix;
       base = tvp.bases.default;

@@ -77,6 +77,8 @@ let
   canonical =
     lib.mapAttrs (_: base: base // { tests = import ./tests { inherit pkgs tvpLib base; }; })
       {
+        gcc13-owned-v3 = construction.bases.gcc13-owned-v3;
+
         gcc16-owned = import ./gcc16-owned {
           inherit pkgs tvp;
           parent = construction.bases.gcc13-owned-v3;

@@ -6,6 +6,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # 1.9 and 1.9.1 ship tests/testsuite, but package.m4 is generated during the
   # check itself, so the shipped file is stale again by the time make looks and
@@ -70,4 +71,5 @@ stdenv.mkDerivation (
       touch tests/testsuite
     '';
   }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
 )

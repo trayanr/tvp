@@ -9,6 +9,16 @@ let
       deps = { };
     };
 
+    "3.4.3" = {
+      builder = ./build-3.4.3.nix;
+      base = tvp.bases.default;
+      deps = { };
+      # tramp.c calls the existing int(void) function without its declaration.
+      # Upstream ce077e5565366171aa1b4438749b0922fce887a4 fixed this in 3.4.5.
+      # Keep the original source and warning, demoting only this GCC14 error.
+      opts.cFlags = [ "-Wno-error=implicit-function-declaration" ];
+    };
+
     "3.6.0" = {
       builder = ./build-3.0.9.nix;
       base = tvp.bases.default;

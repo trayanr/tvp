@@ -8,12 +8,18 @@ let
       deps = { };
       opts = {
         hardeningDisable = [ "format" ];
+        # K&R probes and empty parameter lists predate modern C semantics.
+        cStandard = "gnu89";
         archiveExt = "tar.gz";
         license = pkgs.lib.licenses.gpl2Plus;
       };
     };
     "3.1.8" = {
-      opts.hardeningDisable = [ "format" ];
+      # Retain pre-C23 non-prototype semantics (GCC porting guidance).
+      opts = {
+        hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+      };
       builder = ./build-3.0.6.nix;
       base = tvp.bases.default;
       deps = { };
