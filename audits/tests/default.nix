@@ -1,5 +1,5 @@
 { tvp }:
-tvp.bases.gcc13-owned-v2.stdenv.mkDerivation {
+tvp.bases.default.stdenv.mkDerivation {
   name = "tvp-audit-contracts";
   nativeBuildInputs = [ tvp.packages.python_3_12_16 ];
   dontUnpack = true;
