@@ -58,9 +58,9 @@ This fixture comes from upstream 3.12's `tests/side-by-side-seq`.
 3.11 also intentionally changes filename quoting and symlink diagnostics,
 adds multibyte case/whitespace handling, and fixes `cmp -s` on nonempty proc
 files reporting zero size and `cmp` offsets/limits larger than integer ranges.
-For example, UTF-8 `Δ`/`δ` under `diff -i` and U+2003/ASCII space under `diff -b`
-compare equal in 3.11/3.12, but differ in 3.10. These historical distinctions
-remain intact.
+Under a UTF-8 locale, `Δ`/`δ` under `diff -i` and U+2003/ASCII space under
+`diff -b` compare equal in 3.11/3.12, but differ in 3.10. These historical
+distinctions remain intact.
 
 ## Coverage
 
