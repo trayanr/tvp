@@ -531,6 +531,9 @@ under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/port
 and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Only
 libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
 `int open_temp_exec_file(void)`; [upstream fixed its declaration in 3.4.5](https://github.com/libffi/libffi/commit/ce077e5565366171aa1b4438749b0922fce887a4).
+MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
+GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
+also retains its test with a check-only missing-declaration diagnostic exception.
 The sources, upstream checks and historical failure classifications are retained.
 
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
