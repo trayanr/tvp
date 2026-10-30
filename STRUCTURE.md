@@ -512,12 +512,13 @@ that substrate. In particular, packaged raw binutils are not a replacement for t
 bintools wrapper: the wrapper supplies library search paths, the dynamic interpreter
 and runtime RPATH policy.
 
-`gcc13-owned-v3` is the default native x86_64 Linux base: GCC 13.3.0, binutils 2.42,
+`gcc16-owned` is the default native x86_64 Linux base: GCC 16.2.0, binutils 2.42,
 glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `default` and
-`gcc13-owned` both resolve to `gcc13-owned-v3`. It reuses the pinned compiler and floor
-from v2, with revised wrappers and fixup hooks. Its `builtBy = "internal:gcc13-owned"`
-records the pinned earlier owned generation.
-The borrowed GCC 13 seed, first owned generation and v2 are retired from public base
+`gcc16` both resolve to `gcc16-owned`. Its protocol-3 wrappers use the native GCC16
+compiler built on the pinned `gcc13-owned-v3` parent, with explicit dependency variants
+in `bases/gcc16-owned/inputs/`. The parent libc, binutils, floor, shell and fixup tool
+are reused. `builtBy = "internal:gcc13-owned-v3"` records that construction boundary.
+The borrowed GCC 13 seed and earlier owned generations are retired from public base
 selection. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
@@ -928,7 +929,8 @@ supplementary checks.
 `gcc13-owned-v2` reuses the first owned base's compiler, libc and floor, and adds an
 owned patchelf-backed RPATH cleanup hook. V3 retains these producers and revises the
 consumer protocol, including response-file expansion and wrapper support metadata.
-Both `default` and `gcc13-owned` select v3. The earlier GCC 13 bases are private
+The GCC16 generation carries the v2/v3 consumer protocol and regression tests.
+Both `default` and `gcc16` select GCC16. The earlier GCC 13 bases are private
 bootstrap inputs. The original constructor's empty fixup-input selection computes the
 same earlier base and bootstrap producers.
 
@@ -992,8 +994,9 @@ from the local validation entry points.
 Retired bootstrap generations retain full validation under
 `testBatches.x86_64-linux.bootstrap-base-gcc13`,
 `testBatches.x86_64-linux.bootstrap-base-gcc13-owned`,
-`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v2` and the corresponding
+`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v2`,
+`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v3` and the corresponding
 `bootstrap-PROFILE-PACKAGE` batches. The active base suite is
-`testBatches.x86_64-linux.base-gcc13-owned-v3`. All are included in the full plan.
+`testBatches.x86_64-linux.base-gcc16-owned`. All are included in the full plan.
 Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
 `bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.
