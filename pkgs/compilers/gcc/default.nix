@@ -88,7 +88,12 @@ let
   pname = "gcc";
   packageArgs = {
     infra = {
-      inherit (pkgs) lib fetchurl dejagnu python3;
+      inherit (pkgs)
+        lib
+        fetchurl
+        dejagnu
+        python3
+        ;
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
@@ -106,11 +111,12 @@ let
         if match == null then null else builtins.head match;
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: gcc:
-        (import ./tests { inherit pkgs tvpLib gcc; })
-        // pkgs.lib.optionalAttrs (pkgs.lib.versionAtLeast gcc.version "16.2.0") (
-          import ./tests/16.2.0.nix { inherit pkgs tvpLib gcc; }
-        )
+      { pkgs }:
+      gcc:
+      (import ./tests { inherit pkgs tvpLib gcc; })
+      // pkgs.lib.optionalAttrs (pkgs.lib.versionAtLeast gcc.version "16.2.0") (
+        import ./tests/16.2.0.nix { inherit pkgs tvpLib gcc; }
+      )
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;

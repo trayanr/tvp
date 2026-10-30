@@ -27,13 +27,24 @@
   mkTests,
 }@args:
 let
-  compiler = import ./build-13.3.nix (removeAttrs args [ "dejagnu" "python3" ]);
+  compiler = import ./build-13.3.nix (
+    removeAttrs args [
+      "dejagnu"
+      "python3"
+    ]
+  );
   libcFlags = "-B${glibc}/lib/ -isystem ${lib.getDev glibc}/include -L${glibc}/lib -Wl,-dynamic-linker,${glibc}/${(platforms.forStdenv stdenv).dynamicLinker} -Wl,-rpath,${glibc}/lib";
 in
 assert bootstrap;
 compiler.overrideAttrs (old: {
-  outputs = [ "out" "validation" ];
-  nativeBuildInputs = old.nativeBuildInputs ++ [ dejagnu python3 ];
+  outputs = [
+    "out"
+    "validation"
+  ];
+  nativeBuildInputs = old.nativeBuildInputs ++ [
+    dejagnu
+    python3
+  ];
   postBuild = ''
     mkdir -p "$validation"
     test -f compare
