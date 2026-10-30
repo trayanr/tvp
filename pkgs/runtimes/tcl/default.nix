@@ -17,6 +17,8 @@ let
     "8.6.2" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
@@ -26,9 +28,17 @@ let
     "8.6.5" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
+    };
+
+    "8.6.9" = {
+      builder = ./build-8.6.0.nix;
+      base = tvp.bases.default;
+      deps.zlib = tvp.packages.zlib_1_3_2;
     };
 
     "8.0.2" = {
@@ -91,6 +101,8 @@ let
     "8.6.0" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
