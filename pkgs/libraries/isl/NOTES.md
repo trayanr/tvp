@@ -27,8 +27,9 @@ The appended tests retain the original version and arithmetic leaves:
 - `upstream-coverage` rebuilds the unmodified source with Python available only
   to tests, retaining live output, configuration, upstream logs and `.trs` results.
   It requires PASS for every expected enabled group. 0.20 has seven C/shell
-  groups and no generated C++ suite. 0.26 ships unchecked C++11/C++17 bindings,
-  but checked C++ and Python groups require the optional Clang interface generator.
+  groups and no generated C++ suite. 0.26 runs unchecked C++11/C++17 and checked
+  C++17 tests; its C++11 checked/conversion and Python groups remain gated on
+  the optional Clang interface generator.
   0.27/0.28 ship generated checked C++ and Python bindings and exercise those
   groups without Clang. Production packages do not acquire Python or Clang.
 - `tracker` checks whole href basenames, compression deduplication, leading-zero

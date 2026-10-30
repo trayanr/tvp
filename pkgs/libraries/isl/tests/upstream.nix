@@ -51,7 +51,7 @@ isl.stdenv.mkDerivation {
       done
       ${
         lib.optionalString (isl.version == "0.26") ''
-          echo 'SKIP upstream checked C++ and Python: ISL 0.26 requires the optional Clang interface generator for these groups'
+          echo 'SKIP upstream C++11 checked/conversion and Python groups: ISL 0.26 gates these on the optional Clang interface generator'
         ''
       }
       ${
