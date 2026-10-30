@@ -1,0 +1,7 @@
+--- a/configure
++++ b/configure
+@@ -11037,1 +11037,4 @@
++# AC_PROG_LEX leaves this unset when no lexer is found.
++# An empty command would incorrectly enable the Flex example conditionals.
++LEX_IS_FLEX=false
+ for ac_prog in flex lex
