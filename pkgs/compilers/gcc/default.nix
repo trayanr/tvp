@@ -37,17 +37,58 @@ let
         }
       ];
     };
+    "16.2.0" = {
+      builder = ./build-16.2.0.nix;
+      base = tvp.bases.default;
+      # Upstream libcpp uses nonliteral diagnostics with no format arguments.
+      opts.hardeningDisable = [ "format" ];
+      # External dependencies meet upstream configure requirements. ISL 0.28
+      # is newer than the in-tree 0.24 recommendation; Graphite is tested.
+      deps = {
+        binutils = tvp.packages.binutils_2_42;
+        gmp = tvp.packages.gmp_6_3_0;
+        mpfr = tvp.packages.mpfr_4_2_2;
+        mpc = tvp.packages.mpc_1_3_1;
+        isl = tvp.packages.isl_0_28;
+        zlib = tvp.packages.zlib_1_3_2;
+        zstd = tvp.packages.zstd_1_5_6;
+        libxcrypt = tvp.packages.libxcrypt_4_4_36;
+        perl = tvp.packages.perl_5_44_0;
+        texinfo = tvp.packages.texinfo_7_1;
+        which = tvp.packages.which_2_21;
+        # Use the base libc; canonical glibc itself is built with this compiler.
+        glibc = tvp.bases.default.stdenv.cc.libc;
+      };
+      patches = [
+        {
+          file = ./patches/16.2.0-program-prefix.patch;
+          reason = "Store-layout adaptation: let GCC's explicit -B prefixes select the assembler and program queries before the configured absolute fallback. This makes the base's selected binutils real, rather than silently using the compiler's bootstrap assembler.";
+        }
+        {
+          file = ./patches/16.2.0-linker-prefix.patch;
+          reason = "Store-layout adaptation: let collect2 find the linker from GCC's explicit -B/COMPILER_PATH before the configured absolute fallback, so a base can select its libc/linker wrapper. Without this, -print-prog-name=ld reports the wrapper but collect2 invokes the raw linker.";
+        }
+        {
+          file = ./patches/no-system-dirs.patch;
+          reason = "Store-layout adaptation: remove implicit /usr/local/include, /lib and /usr/lib searches. Headers and startup objects are named by the toolchain. From nixpkgs 12228ff1752d7b7624a54e9c1af4b222b3c1073b, gcc-12-no-sys-dirs.patch.";
+        }
+      ];
+    };
   };
   versionTable = tvpLib.packages.mkTable [
     {
       def = defs."13.3.0";
       releases."13.3.0" = "sha256-CEXpYhyVQ6E/SE6UWEpJ/8ASmXDpkUYkI1/B0GGgwIM=";
     }
+    {
+      def = defs."16.2.0";
+      releases."16.2.0" = "sha256-5nOOKVl/czJwcxqpBgDzf/3ARQed/CfsfoGSzIEIXD4=";
+    }
   ];
   pname = "gcc";
   packageArgs = {
     infra = {
-      inherit (pkgs) lib fetchurl;
+      inherit (pkgs) lib fetchurl dejagnu python3;
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
@@ -65,7 +106,11 @@ let
         if match == null then null else builtins.head match;
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: gcc: import ./tests { inherit pkgs tvpLib gcc; }
+      { pkgs }: gcc:
+        (import ./tests { inherit pkgs tvpLib gcc; })
+        // pkgs.lib.optionalAttrs (pkgs.lib.versionAtLeast gcc.version "16.2.0") (
+          import ./tests/16.2.0.nix { inherit pkgs tvpLib gcc; }
+        )
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
