@@ -12,7 +12,7 @@ let
         rustc = tvp.packages.rustc_1;
         cargo = tvp.packages.cargo-bootstrap_1;
         patchelf = tvp.packages.patchelf;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
       };
       patches = [

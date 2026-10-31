@@ -306,6 +306,46 @@ let
         rustc = tvp.packages.rustc_1;
       };
     };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "3.3.12" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "3.4.10" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "4.0.6" = {
+      builder = ./build-4.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;

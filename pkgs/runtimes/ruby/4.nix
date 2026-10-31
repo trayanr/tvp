@@ -9,6 +9,11 @@
       "4.0.3" = "sha256-d5ZKzDcNXIN1uVAuW6bBPAPvkaueufUhyE+0K5yaaw8=";
       "4.0.4" = "sha256-819u36Pauz9yP50M8ZBsZRKud/TkEqseaMxukdIw+oA=";
       "4.0.5" = "sha256-fWFJB5pj+K4dMmyfplxgGbotwxVerns5FZgXkRyIlY4=";
+    };
+  }
+  {
+    def = defs."4.0.6";
+    releases = {
       "4.0.6" = "sha256-g30pno993yvjGiKaen4BnTVJeYJRF5iayzsysam+Jio=";
     };
   }

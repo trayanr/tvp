@@ -416,7 +416,7 @@ let
       opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         mpdecimal = tvp.packages.mpdecimal_4;

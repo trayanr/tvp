@@ -10,7 +10,7 @@ let
         patchelf = tvp.packages.patchelf;
         perl = tvp.packages.perl_5;
         python = tvp.packages.python_3;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         zstd = tvp.packages.zstd_1;
         nghttp2 = tvp.packages.nghttp2_1;

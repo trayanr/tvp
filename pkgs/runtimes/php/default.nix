@@ -21,8 +21,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+          } tvp.packages.libxml2_2_8
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -59,8 +59,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+          } tvp.packages.libxml2_2_8
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -98,8 +98,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+          } tvp.packages.libxml2_2_8
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -188,6 +188,9 @@ let
       opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
       opts = {
         parallelBuild = true;
+        # install-cli and install-pharcmd race in the shipped mkdir helper.
+        # Keep parallel compilation; serialise this release's install targets.
+        parallelInstall = false;
         testFeatures.passwordApi = false;
       };
     };
@@ -536,6 +539,77 @@ let
         pkg-config = tvp.packages.pkg-config;
       };
     };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "8.2.31" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
+        # still requires libxml2 before 2.14.
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+          } tvp.packages.libxml2_2_13
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "8.3.31" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "8.4.22" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "8.5.7" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+      };
+    };
+
   };
 
   versionTable = tvpLib.packages.mkTable (

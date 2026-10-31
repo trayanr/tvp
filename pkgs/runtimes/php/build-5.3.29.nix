@@ -22,6 +22,7 @@
   iconvFromBase ? false,
   compileFlags ? [ ],
   parallelBuild ? false,
+  parallelInstall ? null,
   testFeatures ? { },
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
@@ -111,6 +112,7 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs (parallelInstall != null) { enableParallelInstalling = parallelInstall; }
   //
     lib.optionalAttrs
       ((cStandard != null || compileFlags != [ ]) && lib.versionAtLeast stdenv.cc.version "15")

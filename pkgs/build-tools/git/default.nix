@@ -14,7 +14,7 @@ let
         perl = tvp.packages.perl_5;
         python = tvp.packages.python_3;
         curl = tvp.packages.curl_8;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         expat = tvp.packages.expat_2;
         pcre2 = tvp.packages.pcre2_10;

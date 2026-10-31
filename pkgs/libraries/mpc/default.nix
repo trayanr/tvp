@@ -7,7 +7,9 @@ let
       base = tvp.bases.default;
       deps = {
         gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
+        mpfr = tvp.lib.packages.withConstraint {
+          reason = "MPC 1.0.3 mul.c defines its own seven-argument mpfr_fmma; MPFR 4 adds a six-argument public function with that name. Native compilation fails with 4.2.2; use the working MPFR 3 line.";
+        } tvp.packages.mpfr_3;
       };
     };
     "1.1.0" = {

@@ -7,7 +7,7 @@ let
       base = tvp.bases.default;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_4;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;

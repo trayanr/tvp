@@ -8,7 +8,7 @@ let
       deps = {
         dnssd = tvp.packages.libdns_sd;
         pkg-config = tvp.packages.pkg-config;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         patchelf = tvp.packages.patchelf;
       };
