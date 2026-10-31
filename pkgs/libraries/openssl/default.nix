@@ -32,6 +32,15 @@ let
       };
     };
 
+    "0.9.8s" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      # This release's ECDSA self-test passes unsigned char ** to const **;
+      # 0.9.8t separates the two pointers. Keep the original test and warning.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+    };
+
     "1.0.0" = {
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
