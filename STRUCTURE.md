@@ -533,7 +533,9 @@ and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Libffi
 MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
 GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
 also retains its test with a check-only missing-declaration diagnostic exception;
-its C99-guarded arithmetic checks remain enabled.
+its C99-guarded arithmetic checks remain enabled. Ruby 2.6 forwards its configured
+CFLAGS to MJIT header generation, retaining the strict header checks; only 2.6.7
+needs the isolated missing mutex-declaration diagnostic exception.
 The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
 libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
 Ruby 2.0–3.0 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,
