@@ -5,6 +5,11 @@
     releases = {
       "2.10" = "sha256-9PYB1+RVjW3JD+XsxP4VmfFfoOcxfAr7g/dUHPA6Th4=";
       "2.11" = "sha256-5ofbdqZLWvtcSXrCEROKvEL6xy7/Gwhzi0ir5MrJy6I=";
+    };
+  }
+  {
+    def = defs."2.12";
+    releases = {
       "2.12" = "sha256-Zv3kdOEk6AyENWAEHNaIIMnc5W5pbziDErowNhqBShY=";
       "2.13" = "sha256-8GERNr7lBYEenKEcp6wYjvUyOo4u8Zz/0+2zzwj9eR4=";
     };

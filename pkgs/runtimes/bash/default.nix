@@ -5,6 +5,8 @@ let
     "5.2.37" = {
       builder = ./build-5.2.37.nix;
       base = tvp.bases.default;
+      # These K&R and unprototyped interfaces predate C23.
+      opts.cStandard = "gnu17";
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };

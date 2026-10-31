@@ -11,6 +11,10 @@
   autoconf,
 }:
 let
+  consumerStandard = autoconf.tvp.features.consumerCStandard or null;
+  configureEnv =
+    pkgs.lib.optionalString (consumerStandard != null)
+      "CFLAGS=${pkgs.lib.escapeShellArg ("-std=" + consumerStandard)} ";
   project = ''
     cp ${./fixtures/configure.ac} configure.ac
     cp ${./fixtures/greeting.txt.in} greeting.txt.in
@@ -39,7 +43,7 @@ tvpLib.tests.mkSuite {
           cp ${./fixtures/answer.c} answer.c
           autoconf
           autoheader
-          ./configure --silent >&2
+          ${configureEnv}./configure --silent >&2
           cc -I. answer.c -o answer
           ./answer
         '';
@@ -61,7 +65,7 @@ tvpLib.tests.mkSuite {
       substitute = {
         script = ''
           ${project}
-          ./configure --silent >&2
+          ${configureEnv}./configure --silent >&2
           cat greeting.txt
         '';
         expected = "tvp 1.2.3 preserved";
