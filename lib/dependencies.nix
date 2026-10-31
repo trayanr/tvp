@@ -5,6 +5,7 @@
   variants,
   construction,
   compositions ? { },
+  buildTestSupport ? { },
 }:
 let
   inherit (pkgs) lib;
@@ -123,7 +124,19 @@ in
       ) compositions
     );
   support =
-    supportRows "ordinary" canonical
+    lib.concatLists (
+      lib.mapAttrsToList (
+        consumer: dependencies:
+        lib.mapAttrsToList (dependency: value: {
+          inherit consumer dependency;
+          scope = "build-test-support";
+          selection = value.__tvpSelection or null;
+          resolved = resolved value;
+          reason = "Repository audit test interpreter.";
+        }) dependencies
+      ) buildTestSupport
+    )
+    ++ supportRows "ordinary" canonical
     ++ lib.concatLists (lib.mapAttrsToList (_: supportRows "public-variant") variants)
     ++ lib.concatLists (lib.mapAttrsToList (_: supportRows "construction") construction.variants);
 }

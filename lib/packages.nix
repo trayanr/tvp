@@ -32,8 +32,11 @@ rec {
         // lib.optionalAttrs (value ? overrideAttrs) {
           overrideAttrs = args: changed "overrideAttrs" (value.overrideAttrs args);
         };
+      projectedOutputs = lib.genAttrs (package.outputs or [ ]) (
+        output: decorate package.${output} // projectedOutputs
+      );
     in
-    decorate package // lib.genAttrs (package.outputs or [ ]) (output: decorate package.${output});
+    decorate package // projectedOutputs;
 
   # A constraint belongs at the dependency choice, outside derivation inputs.
   withConstraint =
@@ -528,6 +531,15 @@ rec {
         } canonical.${versions.attrName pname version}
       ) best;
     in
-    generated // overrides;
+    generated
+    // lib.mapAttrs (
+      selector: package:
+      tagSelection {
+        namespace = "packages";
+        inherit selector pname;
+        kind = "override";
+        operation = "alias-override";
+      } package
+    ) overrides;
 
 }

@@ -43,7 +43,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        ninja = testDeps.ninja;
+        ninja = package.tvp.declaredTestDependencies.ninja;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

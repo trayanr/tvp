@@ -76,8 +76,8 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        platform = testDeps.platform;
-        zip = testDeps.zip;
+        platform = package.tvp.declaredTestDependencies.platform;
+        zip = package.tvp.declaredTestDependencies.zip;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

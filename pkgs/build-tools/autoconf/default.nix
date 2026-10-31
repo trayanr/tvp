@@ -39,7 +39,7 @@ let
       base = tvp.bases.default;
       deps = {
         m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5_24;
+        perl = tvp.packages.perl_5;
       };
       opts.license = pkgs.lib.licenses.gpl2Plus;
     };

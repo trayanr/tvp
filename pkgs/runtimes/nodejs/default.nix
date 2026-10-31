@@ -9,18 +9,8 @@ let
         bash = tvp.packages.bash_5;
         python = tvp.packages.python_3;
         ninja = tvp.packages.ninja;
-        rustc = (
-          tvp.lib.packages.withConstraint {
-            category = "artifact";
-            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-          } tvp.canonical.rustc_1_97_1
-        );
-        cargo = (
-          tvp.lib.packages.withConstraint {
-            category = "artifact";
-            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-          } tvp.canonical."cargo-bootstrap_1_97_1"
-        );
+        rustc = tvp.packages.rustc_1;
+        cargo = tvp.packages.cargo-bootstrap_1;
         patchelf = tvp.packages.patchelf;
         openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;

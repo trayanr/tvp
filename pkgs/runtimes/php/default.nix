@@ -13,7 +13,11 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_0_9_8;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Historical PHP extension uses the 0.9.8 API; preserve that API line without selecting its terminal letter release.";
+          } tvp.packages.openssl_0_9_8
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -47,7 +51,11 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_0_9_8;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Historical PHP extension uses the 0.9.8 API; preserve that API line without selecting its terminal letter release.";
+          } tvp.packages.openssl_0_9_8
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -82,7 +90,11 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_1_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -116,7 +128,11 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_1_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -150,7 +166,11 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -184,7 +204,11 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -215,7 +239,11 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -250,7 +278,11 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
@@ -279,9 +311,17 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -296,9 +336,17 @@ let
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
       deps = {
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -319,9 +367,17 @@ let
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -353,7 +409,11 @@ let
         openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;
         # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -370,7 +430,11 @@ let
         zlib = tvp.packages.zlib_1;
         # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+          } tvp.packages.libxml2_2_13
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -390,7 +454,11 @@ let
         openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;
         # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -411,7 +479,11 @@ let
         zlib = tvp.packages.zlib_1;
         # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+          } tvp.packages.libxml2_2_13
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -427,7 +499,11 @@ let
         zlib = tvp.packages.zlib_1;
         # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+          } tvp.packages.libxml2_2_13
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -443,9 +519,17 @@ let
         testAutoconf = tvp.packages.autoconf_2;
         # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
         # RSA_SSLV23_PADDING, which 3.0.0 removed.
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
-        libxml2 = tvp.packages.libxml2_2_11;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+          } tvp.packages.libxml2_2_11
+        );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -488,9 +572,9 @@ let
             })
             // {
               autoconf = php.tvp.testDeps.autoconf;
-              automake = testDeps.automake;
-              libtool = testDeps.libtool;
-              gnumake = testDeps.gnumake;
+              automake = php.tvp.declaredTestDependencies.automake;
+              libtool = php.tvp.declaredTestDependencies.libtool;
+              gnumake = php.tvp.declaredTestDependencies.gnumake;
             };
         }
       ) { inherit pkgs; };

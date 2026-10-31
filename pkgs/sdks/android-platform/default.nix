@@ -134,7 +134,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        jdk = testDeps.jdk;
+        jdk = package.tvp.declaredTestDependencies.jdk;
       };
   };
 in

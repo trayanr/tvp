@@ -26,12 +26,7 @@ let
     }
   ];
   testDeps = {
-    rustc = (
-      tvp.lib.packages.withConstraint {
-        category = "artifact";
-        reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-      } tvp.canonical.rustc_1_97_1
-    );
+    rustc = tvp.packages.rustc_1;
   };
   canonical = tvpLib.packages.mkVersions {
     inherit testDeps;
@@ -47,7 +42,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        rustc = testDeps.rustc;
+        rustc = package.tvp.declaredTestDependencies.rustc;
       };
   };
 in

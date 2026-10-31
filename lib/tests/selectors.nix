@@ -114,6 +114,48 @@ let
     overrideIntent = (before.probe_1.overrideAttrs (_: { })).__tvpSelection.kind == "override";
     dependencyCapture =
       (consumer before.probe_1).tvp.declaredDependencies.dependency.__tvpSelection.kind == "major";
+    explicitSingleCandidateLine =
+      let
+        aliases =
+          versions:
+          api.mkAliases {
+            pname = "short";
+            lines = [ "6_2" ];
+            versionTable = lib.genAttrs versions (_: { });
+            canonical = lib.listToAttrs (
+              map (
+                version: lib.nameValuePair (tvp.lib.versions.attrName "short" version) (release version)
+              ) versions
+            );
+          };
+        old = aliases [ "6.2" ];
+        new = aliases [
+          "6.2"
+          "6.2.1"
+          "6.3"
+        ];
+      in
+      old.short_6_2.__tvpSelection.kind == "minor"
+      && old.short_6_2.version == "6.2"
+      && new.short_6_2.version == "6.2.1";
+    siblingProjection =
+      (lib.getDev before.probe_1.bin).__tvpSelection.selector == "probe_1"
+      && before.probe_1.bin.out.__tvpSelection.kind == "major";
+    customAlias =
+      let
+        a = api.mkAliases {
+          pname = "custom";
+          versionTable = { };
+          canonical = { };
+          overrides.custom-choice = release "1";
+        };
+      in
+      a.custom-choice.__tvpSelection.kind == "override"
+      && a.custom-choice.__tvpSelection.operation == "alias-override";
+    projectedOverride = (before.probe_1.bin.overrideAttrs (_: { })).__tvpSelection.kind == "override";
+    overrideMethod =
+      ((consumer before.probe_1).override { dependency = after.probe_1; }).__tvpSelection.kind
+      == "override";
     noAliasCycles =
       lazyNames == [
         "lazy"

@@ -48,7 +48,7 @@ in
     exportReferencesGraph.runtime = lib.attrValues roots;
     runtimeRoots = lib.mapAttrs (_: p: builtins.unsafeDiscardStringContext p.outPath) roots;
     inherit (manifest) registeredPaths;
-    nativeBuildInputs = [ tvp.packages.python_3_12_16 ];
+    nativeBuildInputs = [ tvp.packages.python_3 ];
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;

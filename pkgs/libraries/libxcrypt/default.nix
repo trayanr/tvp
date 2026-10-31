@@ -49,7 +49,7 @@ let
       package:
       import ./tests {
         inherit pkgs tvpLib package;
-        baseline = testDeps.baseline;
+        baseline = package.tvp.declaredTestDependencies.baseline;
       };
     packageMeta.upstream = {
       type = "git-tags";

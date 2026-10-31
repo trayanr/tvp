@@ -6,7 +6,11 @@ let
       builder = ./build-1.32.nix;
       base = tvp.bases.default;
       deps = {
-        acl = tvp.packages.acl_2;
+        acl = (
+          tvp.lib.packages.withConstraint {
+            reason = "tar xattrs.c defines static acl_*_at helpers with three arguments; ACL 2.4 introduces public four-argument functions of the same names. Native tar 1.32 and 1.35 fail with ACL 2.4.0; use the working 2.3 line.";
+          } tvp.packages.acl_2_3
+        );
         attr = tvp.packages.attr_2;
       };
     };
@@ -14,7 +18,11 @@ let
       builder = ./build-1.35.nix;
       base = tvp.bases.default;
       deps = {
-        acl = tvp.packages.acl_2;
+        acl = (
+          tvp.lib.packages.withConstraint {
+            reason = "tar xattrs.c defines static acl_*_at helpers with three arguments; ACL 2.4 introduces public four-argument functions of the same names. Native tar 1.32 and 1.35 fail with ACL 2.4.0; use the working 2.3 line.";
+          } tvp.packages.acl_2_3
+        );
         attr = tvp.packages.attr_2;
       };
     };

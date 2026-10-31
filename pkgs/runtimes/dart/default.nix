@@ -72,7 +72,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        nodejs = testDeps.nodejs;
+        nodejs = package.tvp.declaredTestDependencies.nodejs;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

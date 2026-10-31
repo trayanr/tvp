@@ -80,7 +80,11 @@ let
       builder = ./build-1.1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_28;
+        perl = (
+          tvp.lib.packages.withConstraint {
+            reason = "OpenSSL 1.1.0 Configure imports File::Glob qw/glob/; Perl 5.30 removed that export.";
+          } tvp.packages.perl_5_28
+        );
       };
       opts = {
         pbkdf2 = false;

@@ -7,7 +7,11 @@ let
       base = tvp.bases.gcc9;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;
@@ -59,7 +63,11 @@ let
       base = tvp.bases.gcc9;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;
@@ -111,7 +119,11 @@ let
       opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_1_1;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;

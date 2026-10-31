@@ -6,18 +6,8 @@ let
       builder = ./build-2.56.0.nix;
       base = tvp.bases.default;
       deps = {
-        rustc = (
-          tvp.lib.packages.withConstraint {
-            category = "artifact";
-            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-          } tvp.canonical.rustc_1_97_1
-        );
-        cargo = (
-          tvp.lib.packages.withConstraint {
-            category = "artifact";
-            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-          } tvp.canonical."cargo-bootstrap_1_97_1"
-        );
+        rustc = tvp.packages.rustc_1;
+        cargo = tvp.packages.cargo-bootstrap_1;
         pkg-config = tvp.packages.pkg-config;
         patchelf = tvp.packages.patchelf;
         bash = tvp.packages.bash_5;
