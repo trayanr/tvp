@@ -4,6 +4,48 @@
   tests,
 }:
 rec {
+  # Evaluation-only evidence of the expression selected by a definition. Never
+  # feed this tag to a builder or use a realised version to guess its intent.
+  # Reapply it to output projections; explicit overrides are choices of their
+  # own, rather than misleading evidence that an unmodified alias was used.
+  tagSelection =
+    selection: package:
+    let
+      changed =
+        operation: value:
+        tagSelection (
+          selection
+          // {
+            kind = "override";
+            inherit operation;
+          }
+        ) value;
+      decorate =
+        value:
+        value
+        // {
+          __tvpSelection = selection;
+        }
+        // lib.optionalAttrs (value ? override) {
+          override = args: changed "override" (value.override args);
+        }
+        // lib.optionalAttrs (value ? overrideAttrs) {
+          overrideAttrs = args: changed "overrideAttrs" (value.overrideAttrs args);
+        };
+    in
+    decorate package // lib.genAttrs (package.outputs or [ ]) (output: decorate package.${output});
+
+  # A constraint belongs at the dependency choice, outside derivation inputs.
+  withConstraint =
+    constraint: package:
+    tagSelection (
+      (package.__tvpSelection or {
+        kind = "unknown";
+      }
+      )
+      // constraint
+    ) package;
+
   # What TVP claims about a version, as a fact rather than a comment.
   #
   #   ok        built the way upstream builds it
@@ -181,6 +223,7 @@ rec {
       versionTable,
       extraArgs ? { },
       packageMeta ? { },
+      testDeps ? { },
     }:
     lib.mapAttrs' (
       version: rawEntry:
@@ -221,45 +264,61 @@ rec {
         );
       in
       lib.nameValuePair attr (
-        pkg.overrideAttrs (old: {
-          passthru =
-            old.passthru
-            // {
-              tvp =
-                (old.passthru.tvp or { })
-                // packageMeta
+        tagSelection
+          {
+            namespace = "canonical";
+            selector = attr;
+            kind = "exact";
+            inherit pname version;
+            canonical = attr;
+          }
+          (
+            pkg.overrideAttrs (old: {
+              passthru =
+                old.passthru
                 // {
-                  inherit status;
-                  # The name, not the record: passthru is read by tooling, and a
-                  # whole stdenv in it makes `nix eval` unusable.
-                  base = if base == null then null else base.name;
-                  # The filename, so `builder-names` can compare it against the lowest
-                  # version that reaches it. A path here would print a store path.
-                  builder = baseNameOf recipe.builder;
-                  inherit definition;
-                  # Names only, for the same reason.
-                  infra = lib.attrNames infra;
-                }
-                // lib.optionalAttrs (patches != [ ]) {
-                  patches = map (p: {
-                    inherit (p) reason;
-                    file = baseNameOf p.file;
-                  }) patches;
-                }
-                // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
+                  tvp =
+                    (old.passthru.tvp or { })
+                    // packageMeta
+                    // {
+                      inherit status;
+                      # The name, not the record: passthru is read by tooling, and a
+                      # whole stdenv in it makes `nix eval` unusable.
+                      base = if base == null then null else base.name;
+                      # The filename, so `builder-names` can compare it against the lowest
+                      # version that reaches it. A path here would print a store path.
+                      builder = baseNameOf recipe.builder;
+                      inherit definition;
+                      # Names only, for the same reason.
+                      infra = lib.attrNames infra;
+                      declaredInfrastructure = infra;
+                      # Generic declared edges include build/test tools even when a
+                      # particular builder does not put them in its own tvp.deps.
+                      declaredDependencies = checkDeps attr recipe.deps;
+                      declaredTestDependencies = checkDeps "${attr} tests" testDeps;
+                      dependencyReasons = recipe.dependencyReasons or { };
+                    }
+                    // lib.optionalAttrs (patches != [ ]) {
+                      patches = map (p: {
+                        inherit (p) reason;
+                        file = baseNameOf p.file;
+                      }) patches;
+                    }
+                    // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
 
-              # A test a release is known to fail is dropped from the suite, never
-              # silently, and only where the status says which and why. Keeping it
-              # would make CI red forever and train everyone to ignore it; deleting
-              # the test would hide the defect from every other version.
-              tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
-            }
-            // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
-              # Packages opt into rebinding their test environment locally. Keep
-              # the factory outside tvp metadata, which catalogue tools serialize.
-              inherit (extraArgs) mkTests;
-            };
-        })
+                  # A test a release is known to fail is dropped from the suite, never
+                  # silently, and only where the status says which and why. Keeping it
+                  # would make CI red forever and train everyone to ignore it; deleting
+                  # the test would hide the defect from every other version.
+                  tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
+                }
+                // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+                  # Packages opt into rebinding their test environment locally. Keep
+                  # the factory outside tvp metadata, which catalogue tools serialize.
+                  inherit (extraArgs) mkTests;
+                };
+            })
+          )
       )
     ) versionTable;
 
@@ -337,14 +396,25 @@ rec {
       in
       lib.mapAttrs (
         _: package:
-        package.overrideAttrs (old: {
-          passthru = old.passthru // {
-            tvp = old.passthru.tvp // {
-              canonical = false;
-              variant = profileName;
-            };
-          };
-        })
+        tagSelection
+          {
+            namespace = "variants.${profileName}";
+            selector = versions.attrName args.pname package.version;
+            kind = "variant";
+            pname = args.pname;
+            version = package.version;
+            canonical = versions.attrName args.pname package.version;
+          }
+          (
+            package.overrideAttrs (old: {
+              passthru = old.passthru // {
+                tvp = old.passthru.tvp // {
+                  canonical = false;
+                  variant = profileName;
+                };
+              };
+            })
+          )
       ) variantPackages
     ) profiles;
 
@@ -373,6 +443,9 @@ rec {
       versionTable,
       canonical,
       overrides ? { },
+      # Opt-in lines whose current only member has no extra version component
+      # (e.g. Autoconf 2.13). Canonical still denotes the immutable release.
+      lines ? [ ],
     }:
     let
       buildable = builtins.attrNames (
@@ -402,7 +475,17 @@ rec {
             ) (lib.range 1 n)
           );
         in
-        whole ++ lettered;
+        whole
+        ++ lettered
+        ++ map (line: "${pname}_${line}") (
+          lib.filter (
+            line:
+            let
+              normal = lib.removePrefix "${pname}_" (versions.attrName pname version);
+            in
+            normal == line || lib.hasPrefix "${line}_" normal
+          ) lines
+        );
 
       # name -> the greatest version underneath it, as a version string.
       best = lib.foldl' (
@@ -416,7 +499,34 @@ rec {
         ) acc ([ pname ] ++ prefixesOf version)
       ) { } buildable;
 
-      generated = lib.mapAttrs (_: version: canonical.${versions.attrName pname version}) best;
+      generated = lib.mapAttrs (
+        selector: version:
+        let
+          # best and the version table are pure. In particular do not inspect
+          # canonical.*.pname/version/deps here: aliases are a fixed point.
+          prefix = lib.removePrefix "${pname}_" selector;
+          depth = builtins.length (lib.splitString "_" prefix);
+        in
+        tagSelection {
+          namespace = "packages";
+          inherit
+            selector
+            pname
+            version
+            prefix
+            ;
+          kind =
+            if selector == pname then
+              "latest"
+            else if depth == 1 then
+              "major"
+            else if depth == 2 then
+              "minor"
+            else
+              "finer";
+          canonical = versions.attrName pname version;
+        } canonical.${versions.attrName pname version}
+      ) best;
     in
     generated // overrides;
 

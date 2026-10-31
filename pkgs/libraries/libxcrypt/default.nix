@@ -35,7 +35,12 @@ let
     }
   ];
   pname = "libxcrypt";
+  testDeps.baseline = tvp.lib.packages.withConstraint {
+    category = "artifact";
+    reason = "Historical libxcrypt 4.4.36 crypt-format compatibility baseline; newer releases are compared against this exact release.";
+  } tvp.canonical.libxcrypt_4_4_36;
   packageArgs = {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -44,7 +49,7 @@ let
       package:
       import ./tests {
         inherit pkgs tvpLib package;
-        baseline = tvp.canonical.libxcrypt_4_4_36;
+        baseline = testDeps.baseline;
       };
     packageMeta.upstream = {
       type = "git-tags";

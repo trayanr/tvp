@@ -117,7 +117,11 @@ let
       releases."37.2-r2" = "sha256-F6+Y7BQnof7Z6ieBhKunHlO4fsoQNlVgL5/GTvEepNM=";
     }
   ];
+  testDeps = {
+    jdk = tvp.packages.jdk_21_0_13;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -130,7 +134,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        jdk = tvp.packages.jdk_21_0_13;
+        jdk = testDeps.jdk;
       };
   };
 in

@@ -25,7 +25,11 @@ let
       releases."1.97.1" = "sha256-tM28fMaw7gomZrGHJ2n9sq2Dk7KLY5UvZJO0tADkgys=";
     }
   ];
+  testDeps = {
+    rustc = tvp.packages.rustc_1_97_1;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -38,7 +42,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        rustc = tvp.packages.rustc_1_97_1;
+        rustc = testDeps.rustc;
       };
   };
 in

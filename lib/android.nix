@@ -20,7 +20,7 @@
     else if lib.length cli > 1 then
       throw "TVP Android: select one command-line tools version per SDK profile."
     else
-      stdenv.mkDerivation {
+      (stdenv.mkDerivation {
         inherit name;
         dontUnpack = true;
         dontConfigure = true;
@@ -71,6 +71,15 @@
         passthru = {
           inherit components;
           sdkPath = "libexec/android-sdk";
+        };
+      })
+      // {
+        __tvpComposition = true;
+        __tvpSelection = {
+          namespace = "android.profiles";
+          selector = name;
+          kind = "override";
+          reason = "Explicit SDK composition of released binary artifacts.";
         };
       };
 }

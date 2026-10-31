@@ -49,7 +49,11 @@ let
       releases."3.13.7" = "sha256-zSoUUPM8/rNfGA0zuDarkqZj0TNe5/lTrj68sgMIyZ0=";
     }
   ];
+  testDeps = {
+    nodejs = tvp.packages.nodejs_26_13_0;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl fetchzip;
     };
@@ -58,7 +62,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        nodejs = tvp.packages.nodejs_26_13_0;
+        nodejs = testDeps.nodejs;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

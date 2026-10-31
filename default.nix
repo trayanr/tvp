@@ -22,7 +22,19 @@ let
   # the newest 1.1.1x. The shadowed release keeps its exact name in `canonical`,
   # which is what every tool and check reads.
   canonical = universe.canonical;
-  packages = canonical // universe.aliases;
+  packages =
+    pkgs.lib.mapAttrs (
+      selector: package:
+      tvpLib.packages.tagSelection (
+        package.__tvpSelection
+        // {
+          namespace = "packages";
+          inherit selector;
+          publicFallback = true;
+        }
+      ) package
+    ) canonical
+    // universe.aliases;
   variants = universe.variants;
   allVariantPackages =
     tvpLib.packages.merge (
@@ -61,6 +73,17 @@ let
     })
     // {
       construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
+      dependency-inventory =
+        pkgs.runCommand "tvp-dependency-inventory-tests"
+          {
+            nativeBuildInputs = [ pkgs.python3 ];
+          }
+          ''
+            cp ${./tools/dependencies/report.py} report.py
+            cp ${./tools/dependencies/test_report.py} test_report.py
+            python -m unittest -v test_report 2>&1 | tee "$out"
+          '';
+      dependency-selectors = import ./lib/tests/selectors.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
@@ -362,6 +385,7 @@ let
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
+    dependencies = pkgs.callPackage ./tools/dependencies { };
     testRunner = pkgs.callPackage ./tools/test-runner { };
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
@@ -384,6 +408,15 @@ let
   };
 
   tvp = {
+    dependencyInventory = import ./lib/dependencies.nix {
+      inherit
+        pkgs
+        canonical
+        variants
+        construction
+        ;
+      compositions = tvp.android.profiles;
+    };
     graph = tvpLib.graph.snapshot {
       inherit
         canonical

@@ -29,7 +29,11 @@ let
     }
   ];
   pname = "cmake";
+  testDeps = {
+    ninja = tvp.packages.ninja_1_13_2;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -39,7 +43,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        ninja = tvp.packages.ninja_1_13_2;
+        ninja = testDeps.ninja;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

@@ -57,7 +57,12 @@ let
       releases."37.0.0" = "sha256-Aa8Xk0fLzZwgi3+BcfeyH23R0vhbzRXojKpR1de4YGA=";
     }
   ];
+  testDeps = {
+    platform = tvp.packages.android-platform_36_r2;
+    zip = tvp.packages.zip_3_0;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -66,8 +71,8 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        platform = tvp.packages.android-platform_36_r2;
-        zip = tvp.packages.zip_3_0;
+        platform = testDeps.platform;
+        zip = testDeps.zip;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

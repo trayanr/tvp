@@ -430,7 +430,13 @@ let
 
   pname = "php";
 
+  testDeps = {
+    automake = tvp.packages.automake_1_19;
+    libtool = tvp.packages.libtool_2_6_2;
+    gnumake = tvp.packages.gnumake_4_4_1;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -450,9 +456,9 @@ let
             })
             // {
               autoconf = php.tvp.testDeps.autoconf;
-              automake = tvp.packages.automake_1_19;
-              libtool = tvp.packages.libtool_2_6_2;
-              gnumake = tvp.packages.gnumake_4_4_1;
+              automake = testDeps.automake;
+              libtool = testDeps.libtool;
+              gnumake = testDeps.gnumake;
             };
         }
       ) { inherit pkgs; };
