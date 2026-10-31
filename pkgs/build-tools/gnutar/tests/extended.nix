@@ -15,8 +15,10 @@ in
     bash ${./roundtrip.sh} 2>&1 | tee "$out/results.log"
     # Assertions inspect the original traversal and numeric PAX header first.
     # Persist the member set and header shape independently of readdir/PIDs;
-    # the unmodified observations remain in the build log above.
+    # the raw observations remain in the build log before normalization.
     for listing in "$out/gnu.list" "$out/ustar.list" "$out/pax.list"; do
+      printf 'Raw archive members (%s):\n' "$listing"
+      cat "$listing"
       LC_ALL=C sort "$listing" -o "$listing"
     done
     sed -E -i 's@(PaxHeaders\.)[0-9]+/@\1<pid>/@g' \
