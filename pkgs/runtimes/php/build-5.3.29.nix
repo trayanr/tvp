@@ -68,7 +68,7 @@ stdenv.mkDerivation (
       # PEAR fetches from the network at install time, which a sandbox forbids
       # and a reproducible build should not want.
       "--without-pear"
-    ] ++ lib.optional iconvFromBase "--with-iconv=${lib.getDev stdenv.cc.libc}";
+    ];
 
     meta = {
       description = "Widely-used general-purpose scripting language";
@@ -113,5 +113,15 @@ stdenv.mkDerivation (
           compileFlags ++ lib.optional (cStandard != null) "-std=${cStandard}"
         );
       }
+
+  // lib.optionalAttrs iconvFromBase {
+    # Keep libc iconv detection; only its generated absolute header fallback
+    # needs the owned store prefix rather than an absent /usr tree.
+    postPatch = ''
+      substituteInPlace configure --replace-fail \
+        'PHP_ICONV_PREFIX="/usr"' \
+        'PHP_ICONV_PREFIX="${lib.getDev stdenv.cc.libc}"'
+    '';
+  }
 
 )
