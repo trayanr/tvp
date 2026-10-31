@@ -27,7 +27,12 @@ tvpLib.tests.mkSuite {
       expected = "preserved";
     };
     aarch64-codegen = {
-      script = ''clang --target=aarch64-unknown-linux-gnu -ffreestanding -nostdinc -c ${./fixtures/codegen.c} -o answer.o; llvm-readelf -h answer.o | grep -q AArch64; printf aarch64'';
+      script = ''
+        clang --target=aarch64-unknown-linux-gnu -ffreestanding -nostdinc -c ${./fixtures/codegen.c} -o answer.o
+        llvm-readelf -h answer.o > elf-header
+        grep -q AArch64 elf-header
+        printf aarch64
+      '';
       expected = "aarch64";
     };
     loader = {
