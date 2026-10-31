@@ -6,6 +6,8 @@ let
     "1.0" = {
       builder = ./build-1.0.nix;
       inherit base;
+      # Shipped configure and ltconfig probes use implicit-int main().
+      opts.cStandard = "gnu89";
       opts = {
         testFeatures = {
           acLibtool = false;
@@ -24,6 +26,8 @@ let
     "1.3.5" = {
       builder = ./build-1.0.nix;
       inherit base;
+      # Shipped configure and ltconfig probes use implicit-int main().
+      opts.cStandard = "gnu89";
       deps = {
         autoconf = tvp.packages.autoconf_2_73;
         platformAutomake = tvp.packages.automake_1_19;
