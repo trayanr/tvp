@@ -525,14 +525,15 @@ GCC13 seed, original owned generation and v2 remain internal. Their construction
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
 Historical Gawk 3.x and Tcl through 8.6.8 explicitly select GNU89; GMP's older
-compiler probes use GNU89 or GNU17, and GDBM 1.19–1.24, M4 1.4.19 and
+compiler probes use GNU17 with missing-type diagnostics scoped to configure, and GDBM 1.19–1.24, M4 1.4.19 and
 pkg-config's bundled GLib use GNU17. These preserve source language assumptions
 under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/porting_to.html)
 and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
 `int open_temp_exec_file(void)`; [upstream fixed its declaration in 3.4.5](https://github.com/libffi/libffi/commit/ce077e5565366171aa1b4438749b0922fce887a4).
 MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
 GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
-also retains its test with a check-only missing-declaration diagnostic exception.
+also retains its test with a check-only missing-declaration diagnostic exception;
+its C99-guarded arithmetic checks remain enabled.
 The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
 libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
 Ruby 2.0–3.0 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,

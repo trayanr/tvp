@@ -8,6 +8,7 @@
   sha256,
   cStandard ? null,
   checkCFlags ? [ ],
+  configureCFlags ? [ ],
   cxx ? true,
   reportedVersion ? version,
   mkTests,
@@ -46,6 +47,16 @@ stdenv.mkDerivation (
   }
   // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
     env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+  }
+  // lib.optionalAttrs (configureCFlags != [ ] && lib.versionAtLeast stdenv.cc.version "14") {
+    preConfigure = ''
+      tvpGmpProductionFlags="''${NIX_CFLAGS_COMPILE-}"
+      export NIX_CFLAGS_COMPILE="$tvpGmpProductionFlags ${lib.concatStringsSep " " configureCFlags}"
+    '';
+    postConfigure = ''
+      export NIX_CFLAGS_COMPILE="$tvpGmpProductionFlags"
+      unset tvpGmpProductionFlags
+    '';
   }
   // lib.optionalAttrs (checkCFlags != [ ] && lib.versionAtLeast stdenv.cc.version "14") {
     preCheck = ''

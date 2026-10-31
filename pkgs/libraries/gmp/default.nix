@@ -9,7 +9,13 @@ let
       # The long-long configure probe defines g() then calls it with arguments.
       # C23 interprets () as (void); retain the intended pre-C23 semantics.
       # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu89";
+      opts.cStandard = "gnu17";
+      # Old h(){} / g(){} configure probes omit types/declarations.
+      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
+      opts.configureCFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
     };
     "6.0.0a" = {
       builder = ./build-5.0.5.nix;
@@ -18,7 +24,13 @@ let
       # The long-long configure probe defines g() then calls it with arguments.
       # C23 interprets () as (void); retain the intended pre-C23 semantics.
       # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu89";
+      opts.cStandard = "gnu17";
+      # Old h(){} / g(){} configure probes omit types/declarations.
+      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
+      opts.configureCFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       opts.reportedVersion = "6.0.0";
       # t-scanf.c tests HAVE_UNISTD_H before including config.h, so unlink's
       # declaration is missed. 6.1.0 includes config.h first. Keep the warning
