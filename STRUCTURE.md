@@ -585,6 +585,14 @@ harness able to finish after its upstream tests pass.
 The new base also checks C/C++ LTO through its selected compiler plugin and pinned
 binutils. The sources, upstream checks and historical failure classifications are retained.
 
+Cached test artifacts preserve assertions independently of host observations. GNU tar
+checks its original archive traversal and numeric PAX headers before sorting saved
+member lists and recording the header PID symbolically. ISL 0.20's supplemental
+upstream test uses its documented `--without-gcc-arch` option instead of guessing the
+build CPU. All seven upstream groups remain required; raw configuration evidence
+stays in the build log, while only kernel release/version fields are normalized in
+the saved configuration logs.
+
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
 retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
 owned generation so selecting the default cannot introduce a dependency cycle.

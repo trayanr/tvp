@@ -13,6 +13,14 @@ in
     mkdir -p "$out"
     export RESULTS="$out" TAR=${package}/bin/tar VERSION=${package.version}
     bash ${./roundtrip.sh} 2>&1 | tee "$out/results.log"
+    # Assertions inspect the original traversal and numeric PAX header first.
+    # Persist the member set and header shape independently of readdir/PIDs;
+    # the unmodified observations remain in the build log above.
+    for listing in "$out/gnu.list" "$out/ustar.list" "$out/pax.list"; do
+      LC_ALL=C sort "$listing" -o "$listing"
+    done
+    sed -E -i 's@(PaxHeaders\.)[0-9]+/@\1<pid>/@g' \
+      "$out/pax-no.header" "$out/pax-yes.header" "$out/results.log"
   '';
   compression-helpers = pkgs.runCommand "gnutar-${package.version}-compression-helpers" { } ''
     set -euo pipefail
