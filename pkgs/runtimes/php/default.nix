@@ -280,7 +280,7 @@ let
         testAutoconf = tvp.packages.autoconf_2_73;
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
+        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
         libxml2 = tvp.packages.libxml2_2_13_9;
         readline = tvp.packages.readline_8_3;
@@ -296,7 +296,7 @@ let
         testAutoconf = tvp.packages.autoconf_2_73;
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
+        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
         libxml2 = tvp.packages.libxml2_2_13_9;
         readline = tvp.packages.readline_8_3;
