@@ -6,7 +6,7 @@ let
       builder = ./build-2.39.nix;
       base = tvp.bases.default;
       deps = {
-        gcc = tvp.packages.gcc_13;
+        gcc = tvp.packages.gcc;
         binutils = tvp.packages.binutils_2;
         linuxHeaders = tvp.packages.linux-headers;
         perl = tvp.packages.perl_5;
