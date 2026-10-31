@@ -1,4 +1,4 @@
-# Serves 2.7 and 3.0.
+# Serves 2.2–2.5, 2.7 and 3.0; 2.6 adds its MJIT command adaptation.
 {
   lib,
   stdenv,

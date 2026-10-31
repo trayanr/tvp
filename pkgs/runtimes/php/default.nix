@@ -290,6 +290,8 @@ let
       # C99 is upstream’s minimum. It selects the existing GNU atomic branch
       # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
       opts.cStandard = "gnu99";
+      # Installed atomic headers need the same supported dialect in extensions.
+      opts.testFeatures.consumerCStandard = "gnu99";
       deps = {
         testAutoconf = tvp.packages.autoconf_2_73;
         openssl = tvp.packages.openssl_3_5_7;
@@ -308,6 +310,8 @@ let
       # C99 is upstream’s minimum. It selects the existing GNU atomic branch
       # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
       opts.cStandard = "gnu99";
+      # Installed atomic headers need the same supported dialect in extensions.
+      opts.testFeatures.consumerCStandard = "gnu99";
       deps = {
         testAutoconf = tvp.packages.autoconf_2_73;
         openssl = tvp.packages.openssl_3_5_7;

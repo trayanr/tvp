@@ -9,6 +9,11 @@
 let
   deps = php.passthru.tvp.deps or { };
 
+  consumerStandard = php.tvp.features.consumerCStandard or null;
+  configureEnv = pkgs.lib.optionalString (
+    consumerStandard != null
+  ) "CFLAGS=\"\${CFLAGS:--g -O2} -std=${consumerStandard}\" ";
+
   # sha256("tvp"), first 16 hex characters.
   tvpDigest = "f6f6ead0bd85c312";
   linkage = dependency: soname: {
@@ -76,7 +81,7 @@ tvpLib.tests.mkSuite {
           cp ${./fixtures/ext-config.m4} config.m4
           cp ${./fixtures/ext-tvp.c} tvp.c
           phpize > /dev/null
-          ./configure --with-php-config="$(command -v php-config)" > /dev/null
+          ${configureEnv}./configure --with-php-config="$(command -v php-config)" > /dev/null
           make > /dev/null
           php -d extension="$PWD/modules/tvp.so" -r 'echo tvp_answer();'
         '';
@@ -97,7 +102,7 @@ tvpLib.tests.mkSuite {
           cp ${./fixtures/ext-config.m4} config.m4
           cp ${./fixtures/ext-tvp-legacy.c} tvp.c
           phpize > /dev/null
-          ./configure --with-php-config="$(command -v php-config)" > /dev/null
+          ${configureEnv}./configure --with-php-config="$(command -v php-config)" > /dev/null
           make > /dev/null
           printf 'extension_dir="%s"\nextension=tvp.so\n' "$PWD/modules" > php.ini
           php -c "$PWD/php.ini" -r 'echo tvp_answer();'

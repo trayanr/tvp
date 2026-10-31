@@ -551,7 +551,8 @@ to be installed. The dated Go bootstrap source uses GNU17; PHP 5.0–5.3
 configuration probes use GNU89. PHP releases before their const-error-callback
 fixes select libxml2 2.11.9; fixed 8.1.31/8.2.14/8.3.1 and later keep the newer
 dependency. PHP 8.2.0–8.2.15 and 8.3.0–8.3.2 select upstream-supported GNU99
-to use their existing GNU atomic implementation, avoiding the [Clang-only builtin
+for production and installed-header extension consumers to use the existing GNU
+atomic implementation, avoiding the [Clang-only builtin
 selection bug](https://github.com/php/php-src/issues/13215) fixed in 8.2.16/8.3.3.
 Libtool through 1.4.3 declares GNU89 for its original configure and generated
 consumer probes; all shared/static/ltdl checks remain enabled. Older PHP DOM hash callbacks retain libxml2 2.9.7, and scanf callbacks through
@@ -559,7 +560,9 @@ consumer probes; all shared/static/ltdl checks remain enabled. Older PHP DOM has
 the shared suite checks conversion and invalid input. PHP 5.0/5.1 create their
 install directory before parallel helper copies and reject missing phpize tools.
 Unzip 6.0 retains GNU17 probe semantics and missing-declaration warnings; its
-generated configuration flags match the earlier compiler control.
+generated configuration flags match the earlier compiler control. Zip 3.0 keeps
+its Unix capability probes with two missing-declaration/type diagnostics retained
+as warnings; its complete generated flags also match the GCC13 control.
 Autoconf 2.12/2.13 declare
 the GNU89 dialect needed by their generated compiler probe; dependent Automake
 consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
