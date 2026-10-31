@@ -524,74 +524,24 @@ Hardening and regression tests remain enabled; ACL 2.3.2/2.4.0 use GCC16. The bo
 GCC13 seed, original owned generation and v2 remain internal. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
 there is no `tvp.bootstrap` API. Ordinary package definitions select the default
 base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
-Historical Gawk 3.x and Tcl through 8.6.8 explicitly select GNU89; GMP's older
-compiler probes use GNU17 with missing-type diagnostics scoped to configure, and GDBM 1.19–1.24, M4 1.4.19 and
-pkg-config's bundled GLib use GNU17. These preserve source language assumptions
-under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/porting_to.html)
-and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
-`int open_temp_exec_file(void)`; [upstream fixed its declaration in 3.4.5](https://github.com/libffi/libffi/commit/ce077e5565366171aa1b4438749b0922fce887a4).
-MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
-GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
-also retains its test with a check-only missing-declaration diagnostic exception;
-its C99-guarded arithmetic checks remain enabled. Ruby 2.6 forwards its configured
-CFLAGS to MJIT header generation, retaining the strict header checks; only 2.6.7
-needs the isolated missing mutex-declaration diagnostic exception.
-Ruby 2.7.4–2.7.8 restore upstream's capture of declared compiler flags after
-Autoconf's implicit CFLAGS initialization, following Ruby 3.0's reset. Explicit
-user CFLAGS and the normal optimization, debug and warning flags are retained.
-The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
-libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
-Ruby 2.0–3.0 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,
-Bison 3.6.4/3.7.6, and selected early OpenSSL callbacks/bool identifiers. Newer
-fixed releases retain their upstream defaults. Readline checks actual installed
-libraries because its old Makefiles can ignore failed shared-library targets;
-Perl's shared suite includes a persistent SDBM store/fetch round trip.
-Old SQLite generators select GNU17 through 3.18.2, with the missing-declaration
-diagnostic retained as a warning only through 3.4.1 and the missing Lemon return
-type only in 3.0.3–3.1.0. Ruby before 2.3 retains mkmf’s headerless function
-probes with a scoped diagnostic exception and requires its declared extensions
-to be installed. The dated Go bootstrap source uses GNU17; PHP 5.0–5.3
-configuration probes use GNU89. PHP releases before their const-error-callback
-fixes select libxml2 2.11.9; fixed 8.1.31/8.2.14/8.3.1 and later keep the newer
-dependency. PHP 8.2.0–8.2.15 and 8.3.0–8.3.2 select upstream-supported GNU99
-for production and installed-header extension consumers to use the existing GNU
-atomic implementation, avoiding the [Clang-only builtin
-selection bug](https://github.com/php/php-src/issues/13215) fixed in 8.2.16/8.3.3.
-Libtool through 1.4.3 declares GNU89 for its original configure and generated
-consumer probes; all shared/static/ltdl checks remain enabled. Older PHP DOM hash callbacks retain libxml2 2.9.7, and scanf callbacks through
-8.0 retain GNU17. PHP before 8.0 binds iconv probes to the base libc headers;
-the shared suite checks conversion and invalid input. It captures the original
-5.0–5.3 partial-string result plus its warning, and the later false result,
-without changing the runtime. Historical readdir probes retain their native
-execution with configure-only diagnostic flags restored before compilation. PHP 5.0/5.1 create their
-install directory before parallel helper copies and reject missing phpize tools.
-Unzip 6.0 retains GNU17 probe semantics and missing-declaration warnings; its
-generated configuration flags match the earlier compiler control. Zip 3.0 keeps
-its Unix capability probes with two missing-declaration/type diagnostics retained
-as warnings; its complete generated flags also match the GCC13 control.
-Autoconf 2.12/2.13 declare
-the GNU89 dialect needed by their generated compiler probe; dependent Automake
-consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
-and build extensions in the same declared dialect, preserving the independent
-compiler/header control; the fixed 3.3.9/3.4.5 and later lines stay unchanged.
-Binutils 2.42 keeps gprofng enabled with C-only GNU17; earlier compiler
-construction variants retain their exact original flags. Bash 5.2.37 retains GNU17, and libxcrypt 4.4.36/OpenSSL 0.9.8s keep their isolated
-new compiler diagnostics visible as warnings rather than changing runtime sources.
-Python 3.9–3.15 retain the compiler unwinder explicitly, extending the existing
-3.7/3.8 dependency: glibc loads it during native thread exit even when Python has
-no direct symbol reference. A regression checks the selected compiler's runtime
-owner and Python's native thread-exit API. This also keeps Node's Python test
-harness able to finish after its upstream tests pass.
-The new base also checks C/C++ LTO through its selected compiler plugin and pinned
-binutils. The sources, upstream checks and historical failure classifications are retained.
 
-Cached test artifacts preserve assertions independently of host observations. GNU tar
-checks its original archive traversal and numeric PAX headers before sorting saved
-member lists and recording the header PID symbolically. ISL 0.20's supplemental
-upstream test uses its documented `--without-gcc-arch` option instead of guessing the
-build CPU. All seven upstream groups remain required; raw configuration evidence
-stays in the build log, while only kernel release/version fields are normalized in
-the saved configuration logs.
+Historical releases can declare an older C dialect, a compatible dependency or a
+scoped diagnostic exception in their version definitions. Procedure fixes belong
+in versioned build files. Newer fixed releases keep their upstream defaults.
+These choices preserve native configure probes, extension compiler flags and
+runtime dependencies without replacing historical source behavior. Build and
+runtime checks determine which consumers need an older base; a compiler update
+does not add a package-by-base test matrix.
+
+The GCC16 base retains the protocol-3 wrapper, fixup and ownership checks, and
+adds C/C++ LTO checks through its selected compiler and binutils. Raw upstream
+failures and existing coverage limits remain explicit.
+
+Cached test artifacts keep host observations separate from assertions. GNU tar
+checks the original member lists and numeric PAX headers before saving sorted
+lists and a symbolic header PID. ISL 0.20's supplemental tests use the documented
+`--without-gcc-arch` option and require all seven upstream groups. Raw observations
+stay in build logs; saved ISL logs normalize only the kernel release and version.
 
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
 retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
