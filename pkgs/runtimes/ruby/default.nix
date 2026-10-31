@@ -100,6 +100,8 @@ let
     "3.1.0" = {
       builder = ./build-3.1.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;
@@ -110,6 +112,8 @@ let
     "3.2.0" = {
       builder = ./build-3.2.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;
@@ -123,6 +127,8 @@ let
     "3.3.0" = {
       builder = ./build-3.3.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
@@ -145,11 +151,28 @@ let
         libffi = tvp.packages.libffi_3_8_0;
         rustc = tvp.packages.rustc_1_97_1;
       };
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts = {
+        cStandard = "gnu17";
         libDir = "3.4.0+1";
       };
     };
 
+    "3.3.9" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        libyaml = tvp.packages.libyaml_0_2_5;
+        libffi = tvp.packages.libffi_3_8_0;
+        rustc = tvp.packages.rustc_1_97_1;
+      };
+    };
+
+    # 3.4.0's tarball declares RUBY_PATCHLEVEL -1, marking it a development
+    # build, so Ruby appends RUBY_ABI_VERSION to its lib directory. 3.4.1
+    # restored patchlevel 0 and the suffix goes away again.
     "4.0.0" = {
       builder = ./build-4.0.nix;
       base = tvp.bases.default;

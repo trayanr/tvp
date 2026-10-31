@@ -104,6 +104,7 @@ stdenv.mkDerivation (
       # Language capability has nothing in the dependency graph to read, so the
       # builder states it and the suite guards on it.
       tvp.features = {
+        consumerCStandard = cStandard;
         enumerableSum = lib.versionAtLeast version "2.4";
         yamlSafeLoad = lib.versionAtLeast version "2.1";
       };

@@ -9,6 +9,11 @@
 let
   inherit (ruby.passthru.tvp) deps;
   features = ruby.passthru.tvp.features or { };
+  consumerStandard = features.consumerCStandard or null;
+  # Keep the independent consumer compiler, preserving all RbConfig flags.
+  consumerFlags =
+    pkgs.lib.optionalString (consumerStandard != null)
+      ''--with-cflags="$(ruby -rrbconfig -e 'print RbConfig::CONFIG["CFLAGS"]') -std=${consumerStandard}"'';
 
   # 2.0.0 and older ship a tarball per patchlevel, so the version identifier
   # carries it and RUBY_VERSION does not. From 2.1 upstream ships one tarball
@@ -53,7 +58,7 @@ tvpLib.tests.mkSuite {
           mkdir -p ext && cd ext
           cp ${./fixtures/ext-extconf.rb} extconf.rb
           cp ${./fixtures/ext-tvp.c} tvp_ext.c
-          ruby extconf.rb > /dev/null
+          ruby extconf.rb ${consumerFlags} > /dev/null
           make > /dev/null
           ruby -I. -e 'require "tvp_ext"; print TvpExt.answer'
         '';
