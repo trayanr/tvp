@@ -95,6 +95,29 @@ let
       };
     };
 
+    "1.0.0f" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.forceGccName = true;
+      # ECDSA self-test pointer mismatch, corrected in 1.0.0g.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+      # The bool identifier was renamed in 1.0.0i.
+      opts.cStandard = "gnu17";
+    };
+
+    "1.1.1q" = {
+      builder = ./build-1.1.0.nix;
+      base = tvp.bases.default;
+      # test/v3ext.c omits string.h for memcmp; 1.1.1s adds it.
+      opts.compileFlags = [ "-Wno-error=implicit-function-declaration" ];
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
+    };
+
     "3.0.0" = {
       builder = ./build-3.0.nix;
       base = tvp.bases.default;

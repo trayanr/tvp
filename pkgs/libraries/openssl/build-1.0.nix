@@ -13,6 +13,7 @@
   version,
   sha256,
   cStandard ? null,
+  compileFlags ? [ ],
 
   # Before 1.0.2p, domd recognises the compiler by its executable name.
   forceGccName ? false,
@@ -60,7 +61,7 @@ stdenv.mkDerivation (
     configureFlags = [
       "shared"
       "--openssldir=etc/ssl"
-    ] ++ lib.optional (cStandard != null) "-std=${cStandard}";
+    ] ++ lib.optional (cStandard != null) "-std=${cStandard}" ++ compileFlags;
 
     preBuild = ''
       make depend
