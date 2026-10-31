@@ -15,7 +15,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Historical PHP extension uses the 0.9.8 API; preserve that API line without selecting its terminal letter release.";
+            reason = "ext/openssl uses the LHASH type removed in OpenSSL 1.0; native PHP 5.0.5 fails compilation with 1.0.2u. The moving 0.9.8 letter line preserves that public API.";
           } tvp.packages.openssl_0_9_8
         );
         zlib = tvp.packages.zlib_1;
@@ -53,7 +53,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Historical PHP extension uses the 0.9.8 API; preserve that API line without selecting its terminal letter release.";
+            reason = "ext/openssl uses the LHASH type removed in OpenSSL 1.0; native PHP 5.0.5 fails compilation with 1.0.2u. The moving 0.9.8 letter line preserves that public API.";
           } tvp.packages.openssl_0_9_8
         );
         zlib = tvp.packages.zlib_1;
@@ -283,7 +283,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -316,7 +316,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -341,7 +341,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -372,7 +372,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -431,13 +431,7 @@ let
         testAutoconf = tvp.packages.autoconf_2;
         openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;
-        # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
-        # still requires libxml2 before 2.14.
-        libxml2 = (
-          tvp.lib.packages.withConstraint {
-            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
-          } tvp.packages.libxml2_2_13
-        );
+        libxml2 = tvp.packages.libxml2_2;
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -524,7 +518,7 @@ let
         # RSA_SSLV23_PADDING, which 3.0.0 removed.
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -548,13 +542,7 @@ let
         testAutoconf = tvp.packages.autoconf_2;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
-        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
-        # still requires libxml2 before 2.14.
-        libxml2 = (
-          tvp.lib.packages.withConstraint {
-            reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
-          } tvp.packages.libxml2_2_13
-        );
+        libxml2 = tvp.packages.libxml2_2;
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         sqlite = tvp.packages.sqlite_3;
@@ -601,6 +589,22 @@ let
       deps = {
         testAutoconf = tvp.packages.autoconf_2;
         openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+      };
+    };
+
+    # Upstream replaced libxml2 ATTRIBUTE_UNUSED with its own attribute at 8.2.22.
+    "8.2.22" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;
         libxml2 = tvp.packages.libxml2_2;
         readline = tvp.packages.readline_8;

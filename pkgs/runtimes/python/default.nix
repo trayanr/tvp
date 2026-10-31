@@ -9,7 +9,7 @@ let
         bash = tvp.packages.bash_5;
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -65,7 +65,7 @@ let
         bash = tvp.packages.bash_5;
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -121,7 +121,7 @@ let
         bash = tvp.packages.bash_5;
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
           } tvp.packages.openssl_1_1
         );
         zlib = tvp.packages.zlib_1;
@@ -168,7 +168,9 @@ let
       base = tvp.bases.default;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;
@@ -213,7 +215,9 @@ let
       opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl_3;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;

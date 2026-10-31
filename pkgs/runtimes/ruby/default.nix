@@ -2,10 +2,9 @@
 let
   tvpLib = tvp.lib;
 
-  # Upstream's OpenSSL bound (ext/openssl/extconf.rb) gains "< 3.0.0" at 2.7.5
-  # and again at 3.0.3, then drops the upper limit entirely at 3.1. So 2.7 and
-  # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
-  # pin 3.5.7, the latest LTS line TVP owns.
+  # OpenSSL API lines follow the bundled extension's compatibility. 2.7/3.0
+  # enforce <3; later releases use the 3 API until their ASN.1 accessor fixes
+  # admit OpenSSL 4 (3.3.12, 3.4.10 and 4.0.6).
   defs = tvpLib.packages.mkDefs {
     "2.4.0" = {
       builder = ./build-2.2.nix;
@@ -15,7 +14,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -120,7 +119,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -140,7 +139,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -161,7 +160,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -178,7 +177,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -196,7 +195,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Consumer uses the pre-3 OpenSSL API (Ruby extconf upper bound or PHP RSA_SSLV23_PADDING); keep the 1.1 line.";
+            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;

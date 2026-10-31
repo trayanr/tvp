@@ -129,6 +129,19 @@ let
         perl = tvp.packages.perl_5;
       };
     };
+
+    # 1.1.0h replaced the removed File::Glob export with OpenSSL::Glob.
+    "1.1.0h" = {
+      builder = ./build-1.1.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5;
+      };
+      opts = {
+        pbkdf2 = false;
+      };
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;

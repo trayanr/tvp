@@ -19,7 +19,9 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2;
+        autoconf = tvpLib.packages.withConstraint {
+          reason = "1.2/1.3 define AM_PROG_INSTALL unquoted; Autoconf 2.50 aliases that name to AC_PROG_INSTALL, causing macro recursion and an unset INSTALL. Native bootstrap/header controls pass on 2.13 and fail on 2.50 and 2.73.";
+        } tvp.packages.autoconf_2_13;
         perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;

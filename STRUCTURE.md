@@ -308,7 +308,7 @@ with `withConstraint { category = "artifact"; reason = …; }`.
 Adding a packaged release advances matching aliases and rebuilds consumers. The
 pinned TVP commit fixes the source, recipe, selected dependencies and base;
 evaluation never queries upstream. `mkAliases.lines` declares a moving prefix
-when its only current member has no finer component, such as Autoconf 2.13.
+when its only current member has no finer component, such as Readline 6.2 or Autoconf 2.13.
 
 `nix run .#dependencies` evaluates generic `recipe.deps` and package `testDeps`,
 including broken releases without building them. `--json` records namespace,
@@ -872,8 +872,8 @@ profiles. The `python` family supplies general-purpose interpreters with explici
 FFI, databases, terminal and compression inputs, plus upstream's bundled ensurepip for
 offline virtual environments. Tk, the optional native UUID helper and NIS omissions are
 recorded in the profile rather than left to host detection. Python 3.5/3.6 use the existing
-GCC 9 compatibility base; 3.7 onward use the owned default. Python 3.5 uses the named
-`ncurses64` Readline variant and matching Ncurses 6.4 public WINDOW headers. Library and compiler ceilings
+GCC 9 compatibility base; 3.7 onward use the owned default. Python dependencies follow tested library lines; the named
+`ncurses64` Readline profile retains its separate Ncurses 6.4 constraint. Library and compiler ceilings
 live in version definitions; modern C API tests remain alongside guarded legacy consumers.
 
 `go-bootstrap_20171003` builds upstream's dated C-source bootstrap distribution. Its archive
