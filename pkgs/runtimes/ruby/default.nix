@@ -2,9 +2,9 @@
 let
   tvpLib = tvp.lib;
 
-  # OpenSSL API lines follow the bundled extension's compatibility. 2.7/3.0
-  # enforce <3; later releases use the 3 API until their ASN.1 accessor fixes
-  # admit OpenSSL 4 (3.3.12, 3.4.10 and 4.0.6).
+  # OpenSSL API lines follow the bundled extension's compatibility. Explicit
+  # <3 checks begin at 2.7.5 and 3.0.3. Later extensions use the 3 API until
+  # their ASN.1 accessor fixes admit OpenSSL 4 (3.3.12, 3.4.10 and 4.0.6).
   defs = tvpLib.packages.mkDefs {
     "2.4.0" = {
       builder = ./build-2.2.nix;
@@ -14,7 +14,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -119,7 +119,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -139,7 +139,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -160,7 +160,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -177,7 +177,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
@@ -195,7 +195,7 @@ let
       deps = {
         openssl = (
           tvp.lib.packages.withConstraint {
-            reason = "Bundled ext/openssl extconf requires OpenSSL below 3 and uses APIs removed in 3; retain the 1.1 API line.";
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
           } tvp.packages.openssl_1_1
         );
         readline = tvp.packages.readline_8;
