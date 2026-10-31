@@ -96,7 +96,7 @@ def summarize(inventory):
     ]) for row in support}
     return {
         "consumers": {
-            "releases": len(inventory.get("consumers", [])),
+            "instances": len(inventory.get("consumers", [])),
             "byScope": {scope: sum(row.get("scope") == scope for row in inventory.get("consumers", []))
                         for scope in SCOPES},
             "withoutDeclaredDependencies": sum(not row.get("dependencies") and not row.get("testDependencies")

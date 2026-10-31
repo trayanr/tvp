@@ -76,9 +76,11 @@
       // {
         __tvpComposition = true;
         __tvpSelection = {
-          namespace = "android.profiles";
+          namespace = "compositions";
           selector = name;
           kind = "override";
+          category = "composition";
+          operation = "custom-sdk";
           reason = "Explicit SDK composition of released binary artifacts.";
         };
       };

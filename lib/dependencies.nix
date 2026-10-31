@@ -140,7 +140,19 @@ in
   consumers =
     owners "ordinary" canonical
     ++ profileOwners "public-variant" variants
-    ++ profileOwners "construction" construction.variants;
+    ++ profileOwners "construction" construction.variants
+    ++ lib.mapAttrsToList (consumer: package: {
+      inherit consumer;
+      scope = "composition";
+      ownerScope = "composition";
+      family = "android-sdk";
+      version = null;
+      definition = consumer;
+      base = null;
+      status = null;
+      dependencies = lib.imap0 (i: _: "component-${toString i}") (package.components or [ ]);
+      testDependencies = [ ];
+    }) compositions;
   edges =
     namespace "ordinary" canonical
     ++ profiles "public-variant" variants
