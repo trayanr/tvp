@@ -30,6 +30,9 @@ let
       # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
       # selects GNU99 itself; older releases need a pre-C23 dialect.
       opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_8_3;
@@ -47,6 +50,9 @@ let
       # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
       # selects GNU99 itself; older releases need a pre-C23 dialect.
       opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         readline = tvp.packages.readline_6_2;
@@ -56,6 +62,22 @@ let
       };
     };
     "2.2.0" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.default;
+      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
+      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+    };
+    "2.3.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
       # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
