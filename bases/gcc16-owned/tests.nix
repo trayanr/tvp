@@ -43,12 +43,16 @@ in
     inherit base;
     name = "lto-selected-toolchain";
     script = ''
-      plugin=$(cc -print-file-name=liblto_plugin.so)
-      case "$plugin" in ${compiler}/*) ;; *) exit 1 ;; esac
+      ltoWrapper=$(cc -print-prog-name=lto-wrapper)
+      case "$ltoWrapper" in ${compiler}/*) ;; *) exit 1 ;; esac
+      test -x "$ltoWrapper"
+      plugin="$(dirname "$ltoWrapper")/liblto_plugin.so"
       test -f "$plugin"
-      cc -O2 -flto ${../tests/fixtures/libc.c} -o lto-c
+      cc -O2 -flto -v ${../tests/fixtures/libc.c} -o lto-c 2>lto-c.log
+      grep -F -- "-plugin $plugin" lto-c.log >&2
       ./lto-c | grep -qx 45
-      c++ -O2 -flto ${../tests/fixtures/cxx.cc} -o lto-cxx
+      c++ -O2 -flto -v ${../tests/fixtures/cxx.cc} -o lto-cxx 2>lto-cxx.log
+      grep -F -- "-plugin $plugin" lto-cxx.log >&2
       ./lto-cxx | grep -qx 42
       echo ok
     '';
