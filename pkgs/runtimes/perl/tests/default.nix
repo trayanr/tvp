@@ -31,6 +31,30 @@ tvpLib.tests.mkSuite {
         expected = "42";
       };
 
+      cwd = {
+        script = ''
+          perl <<'PERL'
+          use strict;
+          use warnings;
+          use Cwd ();
+          my $root = Cwd::getcwd();
+          mkdir "real directory" or die "mkdir: $!";
+          symlink "real directory", "alias directory" or die "symlink: $!";
+          chdir "alias directory" or die "chdir: $!";
+          $ENV{PWD} = "/nonexistent/logical/directory";
+          $ENV{PATH} = "";
+          my $expected = "$root/real directory";
+          die "cwd mismatch" unless Cwd::cwd() eq $expected;
+          die "getcwd mismatch" unless Cwd::getcwd() eq $expected;
+          die "abs_path mismatch" unless Cwd::abs_path(".") eq $expected;
+          die "symlink resolution mismatch"
+            unless Cwd::abs_path("../alias directory") eq $expected;
+          print "cwd-ok";
+          PERL
+        '';
+        expected = "cwd-ok";
+      };
+
       # Exercise the installed shared libperl ABI, not only its interpreter.
       # A failed ELF probe can otherwise select the obsolete a.out format.
       shared-embed = {
@@ -110,6 +134,36 @@ tvpLib.tests.mkSuite {
           perl -e 'use File::Glob "glob"; print defined &glob ? "importable" : "missing"'
         '';
         expected = "importable";
+      };
+    }
+
+    // pkgs.lib.optionalAttrs ((perl.passthru.tvp.deps or { }) ? coreutils) {
+      # These releases embed an external pwd in installed Cwd.pm for miniperl
+      # and the non-XS fallback. Invoke it directly: the normal XS getcwd path
+      # alone cannot detect a missing runtime executable in the sandbox.
+      cwd-pwd-fallback = {
+        script = ''
+          test ! -x /bin/pwd
+          test ! -x /usr/bin/pwd
+          test ! -x /QOpenSys/bin/pwd
+          perl <<'PERL'
+          use strict;
+          use warnings;
+          use Cwd ();
+          my $root = Cwd::getcwd();
+          mkdir "real directory" or die "mkdir: $!";
+          symlink "real directory", "alias directory" or die "symlink: $!";
+          chdir "alias directory" or die "chdir: $!";
+          $ENV{PWD} = "/nonexistent/logical/directory";
+          $ENV{PATH} = "";
+          local $/;
+          my $actual = Cwd::_backtick_pwd();
+          die "external pwd fallback mismatch"
+            unless defined($actual) && $actual eq "$root/real directory";
+          print "cwd-pwd-fallback-ok";
+          PERL
+        '';
+        expected = "cwd-pwd-fallback-ok";
       };
     }
 
