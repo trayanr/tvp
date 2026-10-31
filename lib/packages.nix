@@ -26,6 +26,9 @@ rec {
         // {
           __tvpSelection = selection;
         }
+        // lib.optionalAttrs (package ? all && builtins.isList package.all) {
+          all = projectedAll;
+        }
         // lib.optionalAttrs (value ? override) {
           override = lib.mirrorFunctionArgs value.override (args: changed "override" (value.override args));
         }
@@ -34,6 +37,7 @@ rec {
             args: changed "overrideAttrs" (value.overrideAttrs args)
           );
         };
+      projectedAll = map (value: decorate value // projectedOutputs) (package.all or [ ]);
       projectedOutputs = lib.genAttrs (package.outputs or [ ]) (
         output: decorate package.${output} // projectedOutputs
       );

@@ -111,6 +111,15 @@ let
       (lib.getDev before.probe_1).__tvpSelection.selector == "probe_1"
       && before.probe_1.bin.__tvpSelection.kind == "major"
       && (lib.getDev before.probe_1).outputName == "dev";
+    bulkOutputProjection =
+      let
+        outputs = before.probe_1.all;
+        original = (release "1.2.3").all;
+      in
+      map (value: value.outPath) outputs == map (value: value.outPath) original
+      && lib.all (value: value.__tvpSelection.kind == "major") outputs
+      && (lib.getDev (builtins.head outputs)).__tvpSelection.selector == "probe_1"
+      && (builtins.elemAt (builtins.head outputs).all 1).__tvpSelection.kind == "major";
     overrideIntent = (before.probe_1.overrideAttrs (_: { })).__tvpSelection.kind == "override";
     dependencyCapture =
       (consumer before.probe_1).tvp.declaredDependencies.dependency.__tvpSelection.kind == "major";
