@@ -6,11 +6,11 @@ let
       builder = ./build-2.4.20.nix;
       base = tvp.bases.default;
       deps = {
-        dnssd = tvp.packages.libdns_sd_2881_120_11;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        dnssd = tvp.packages.libdns_sd;
+        pkg-config = tvp.packages.pkg-config;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };

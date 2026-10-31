@@ -5,7 +5,7 @@ let
     "4.4.36" = {
       builder = ./build-4.4.36.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       # ascii64 retains its explicit NUL and discards a redundant implicit NUL.
       # GCC15 adds this Wextra diagnostic; keep it visible and all other Werror.
       opts.compileFlags = [ "-Wno-error=unterminated-string-initialization" ];
@@ -13,7 +13,7 @@ let
     "4.5.0" = {
       builder = ./build-4.4.36.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
     };
 
   };
@@ -35,7 +35,12 @@ let
     }
   ];
   pname = "libxcrypt";
+  testDeps.baseline = tvp.lib.packages.withConstraint {
+    category = "artifact";
+    reason = "Historical libxcrypt 4.4.36 crypt-format compatibility baseline; newer releases are compared against this exact release.";
+  } tvp.canonical.libxcrypt_4_4_36;
   packageArgs = {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -44,7 +49,7 @@ let
       package:
       import ./tests {
         inherit pkgs tvpLib package;
-        baseline = tvp.canonical.libxcrypt_4_4_36;
+        baseline = package.tvp.declaredTestDependencies.baseline;
       };
     packageMeta.upstream = {
       type = "git-tags";

@@ -22,7 +22,19 @@ let
   # the newest 1.1.1x. The shadowed release keeps its exact name in `canonical`,
   # which is what every tool and check reads.
   canonical = universe.canonical;
-  packages = canonical // universe.aliases;
+  packages =
+    pkgs.lib.mapAttrs (
+      selector: package:
+      tvpLib.packages.tagSelection (
+        package.__tvpSelection
+        // {
+          namespace = "packages";
+          inherit selector;
+          publicFallback = true;
+        }
+      ) package
+    ) canonical
+    // universe.aliases;
   variants = universe.variants;
   allVariantPackages =
     tvpLib.packages.merge (
@@ -61,6 +73,42 @@ let
     })
     // {
       construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
+      dependency-inventory =
+        pkgs.runCommand "tvp-dependency-inventory-tests"
+          {
+            nativeBuildInputs = [
+              pkgs.python3
+              tvp.tools.dependencies
+            ];
+          }
+          ''
+            tvp-dependencies --help > /dev/null
+            cp ${./tools/dependencies/report.py} report.py
+            cp ${./tools/dependencies/test_report.py} test_report.py
+            python -m unittest -v test_report >&2
+            printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
+          '';
+      dependency-policy =
+        let
+          unexplained = pkgs.lib.filter (
+            edge:
+            builtins.elem edge.scope [
+              "ordinary"
+              "public-variant"
+            ]
+            && (edge.selection.kind or "unknown") == "exact"
+            && (edge.reason == null || edge.reason == "")
+          ) tvp.dependencyInventory.edges;
+        in
+        if builtins.hasContext (builtins.toJSON tvp.dependencyInventory) then
+          throw "TVP: dependency inventory must discard build contexts."
+        else if unexplained != [ ] then
+          throw "TVP: unexplained ordinary exact dependency selections: ${
+            pkgs.lib.concatStringsSep ", " (map (edge: "${edge.consumer}/${edge.dependency}") unexplained)
+          }"
+        else
+          pkgs.writeText "tvp-dependency-policy" "No unexplained ordinary exact dependency selections.\n";
+      dependency-selectors = import ./lib/tests/selectors.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
@@ -362,6 +410,7 @@ let
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
+    dependencies = pkgs.callPackage ./tools/dependencies { };
     testRunner = pkgs.callPackage ./tools/test-runner { };
     provenance = pkgs.callPackage ./tools/provenance.nix {
       packages = canonical;
@@ -384,6 +433,19 @@ let
   };
 
   tvp = {
+    dependencyInventory = import ./lib/dependencies.nix {
+      inherit
+        pkgs
+        canonical
+        variants
+        construction
+        ;
+      compositions = tvp.android.profiles;
+      buildTestSupport = {
+        audit-contracts.python = tvp.packages.python_3;
+        package-runtime-ownership.python = tvp.packages.python_3;
+      };
+    };
     graph = tvpLib.graph.snapshot {
       inherit
         canonical

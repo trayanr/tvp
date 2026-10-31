@@ -99,6 +99,11 @@
       "1.1.0e" = "sha256-V76GGJedgMkQcoz8mTab+XsqGr2PNmq2697ol1rTh0w=";
       "1.1.0f" = "sha256-EvdG8/JJOy852n7PY9fuGcasnsak/NjCKdqKUiyxJ2U=";
       "1.1.0g" = "sha256-3k1QEmfaOTEJBcttyMYSH3osrUWncH9234KP4bhQc68=";
+    };
+  }
+  {
+    def = defs."1.1.0h";
+    releases = {
       "1.1.0h" = "sha256-WDVibN6emWVlhfx6qiMCpzp+E0C/jBT9Y1pixmgCpRc=";
       "1.1.0i" = "sha256-67/IRKjIzA6l3BC4bJzpf0AYN/P6CMF7LNrcEYJTz5k=";
       "1.1.0j" = "sha256-Mb7GwgPOGo6T1ZlPTtMExjzPB2dhGLZjTt3tEq0bMkY=";

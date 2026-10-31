@@ -7,7 +7,7 @@ let
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
       opts = {
         zipfsImage = false;
@@ -20,7 +20,7 @@ let
       # These configure probes misdetect ANSI headers/strtod under C23.
       opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
       opts.linkUnwinder = true;
     };
@@ -31,14 +31,14 @@ let
       # These configure probes misdetect ANSI headers/strtod under C23.
       opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
     "8.6.9" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
-      deps.zlib = tvp.packages.zlib_1_3_2;
+      deps.zlib = tvp.packages.zlib_1;
     };
 
     "8.0.2" = {
@@ -104,7 +104,7 @@ let
       # These configure probes misdetect ANSI headers/strtod under C23.
       opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
       opts = {
         pkgConfigVersion = "8.6";

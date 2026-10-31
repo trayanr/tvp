@@ -6,7 +6,7 @@ let
     "1.1.16717390" = {
       builder = ./build-1.1.16717390.nix;
       base = tvp.bases.default;
-      deps.patchelf = tvp.packages.patchelf_0_19_2;
+      deps.patchelf = tvp.packages.patchelf;
       opts = {
         inherit (platform) dynamicLinker;
       };

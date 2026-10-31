@@ -10,8 +10,8 @@ let
       opts.cflags = "-fcommon -std=gnu17 -Wno-error=implicit-int -Wno-error=implicit-function-declaration";
       opts.hardeningDisable = [ "format" ];
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        bash = tvp.packages.bash_5;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };
@@ -35,7 +35,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        zip = tvp.packages.zip_3_0;
+        zip = tvp.packages.zip;
       };
   };
 in

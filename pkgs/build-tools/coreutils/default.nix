@@ -6,8 +6,8 @@ let
       builder = ./build-9.5.nix;
       base = tvp.bases.default;
       deps = {
-        gmp = tvp.packages.gmp_6_3_0;
-        acl = tvp.packages.acl_2_3_2;
+        gmp = tvp.packages.gmp_6;
+        acl = tvp.packages.acl_2;
       };
     };
   };

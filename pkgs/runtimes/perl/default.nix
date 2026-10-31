@@ -6,7 +6,7 @@ let
     "5.24.4" = {
       builder = ./build-5.24.4.nix;
       base = tvp.bases.gcc9;
-      deps.coreutils = tvp.packages.coreutils_9_5;
+      deps.coreutils = tvp.packages.coreutils;
     };
     "5.28.3" = {
       builder = ./build-5.24.4.nix;

@@ -7,8 +7,8 @@ let
       builder = ./build-3.13.0-103.1.beta.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
       };
       opts = {
         inherit (platform) dynamicLinker;
@@ -24,8 +24,8 @@ let
       builder = ./build-3.13.0-103.1.beta.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
       };
       opts = {
         inherit (platform) dynamicLinker;

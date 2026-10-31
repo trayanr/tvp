@@ -8,7 +8,7 @@ let
       # These K&R and unprototyped interfaces predate C23.
       opts.cStandard = "gnu17";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
   };

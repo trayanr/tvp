@@ -5,7 +5,7 @@ let
     "2881.120.11" = {
       builder = ./build-2881.120.11.nix;
       base = tvp.bases.default;
-      deps.patchelf = tvp.packages.patchelf_0_19_2;
+      deps.patchelf = tvp.packages.patchelf;
     };
   };
   pname = "libdns_sd";

@@ -178,7 +178,8 @@ versionTable = merge {
 ]
 ```
 
-Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
+Many releases share a definition; a compatibility boundary adds one definition,
+without duplicating the build procedure.
 
 ### Rules
 
@@ -285,24 +286,47 @@ nix run .#status -- --json  # same, for tooling
 
 ## Choosing dependency versions
 
-Choose a selector from upstream's declared compatibility, read from its build
-configuration. Major, minor and exact selectors are all allowed:
+Ordinary dependencies use the broadest moving line supported by upstream's
+configure/API requirements and consumer tests. Stable command interfaces can use
+latest; library ABI boundaries often require a major or minor line. For example:
 
 ```nix
-tcl = tvp.packages.tcl_9;
-tcl = tvp.packages.tcl_8_6;
-tcl = tvp.packages.tcl_8_6_18;
+tcl = tvp.packages.tcl_8;
+libxml2 = tvp.packages.libxml2_2_11;
+libxml2 = tvp.lib.packages.withConstraint {
+  reason = "DOM itemHashScanner needs mutable names; libxml2 2.9.8 changed the callback to const.";
+} tvp.canonical.libxml2_2_9_7;
 ```
 
-Upstream constraints guide the initial choice; package and consumer tests confirm it.
-Adding a newer release advances matching aliases and rebuilds their consumers. If a
-consumer breaks, pin it to a verified working version and record why.
-Other consumers can keep advancing. A dependency constraint belongs in the definition;
-fork the builder only when the build procedure changes.
+An exact exception needs source evidence and a newest-working/failing consumer
+control. Use `canonical` for strict exact selections, since public full names can
+be shadowed by aliases. `dependency-policy` rejects unexplained ordinary exact
+choices. A constraint belongs in the definition; fork a builder only when the
+build procedure changes. Explicit bootstrap/base inputs stay pinned. Matched SDK
+payloads and historical test baselines declare their artifact identity separately
+with `withConstraint { category = "artifact"; reason = …; }`.
 
-An exact package name fixes the upstream release. A pinned TVP commit fixes its source,
-recipe, resolved dependencies and base. Build graphs may change between TVP commits.
-Evaluation resolves aliases from the pinned catalogue; it does not query upstream.
+Adding a packaged release advances matching aliases and rebuilds consumers. The
+pinned TVP commit fixes the source, recipe, selected dependencies and base;
+evaluation never queries upstream. `mkAliases.lines` declares a moving prefix
+when its only current member has no finer component, such as Readline 6.2 or Autoconf 2.13.
+
+`nix run .#dependencies` evaluates generic `recipe.deps` and package `testDeps`,
+including broken releases without building them. Actual test native inputs are
+reported separately from recipe choices; inputs without intent tags stay unknown.
+Foreign means an input lacks TVP package metadata, including infrastructure; this
+classification does not infer its source provenance. `--json` records namespace,
+selector intent, resolved release/output/producer, consumer definition and reason.
+`--flake` is snapshotted once to an immutable store source; `--system` selects the
+platform. `--kind`, `--scope`, `--family`, `--exceptions` and `--details` filter
+inspection; `--compare before.json --json` lists exact selection and resolution
+changes. Expanded release edges, distinct definition/dependency choices, unique
+requested selectors/families and resolved releases/producers are separate counts.
+All kinds, including zero and unknown, remain visible. Builder infrastructure is
+reported separately; this is a declaration inventory, not a transitive store-closure
+count. Evaluation-only tags preserve output projections and mark explicit overrides;
+they never become builder arguments. A shared definition is counted once per
+choice, rather than once for every release that uses it.
 
 ## Naming and aliases
 
@@ -413,7 +437,7 @@ fails where an old builder is missing something. Fork the tests and that stops w
   metadata. A port supplies `mkTests = package.mkTests.override { pkgs = testPkgs; };`
   alongside its new stdenv and dependencies; it does not import package test files
   from the base assembler.
-- **Test-only tools can be exact definition pins.** PHP requires `testAutoconf` in
+- **Test-only tools follow the same dependency policy.** PHP requires `testAutoconf` in
   `defs.deps` and exposes it under `tvp.testDeps` for its phpize consumer tests. It is
   absent from the interpreter's build inputs, so choosing a compatible test tool does
   not rebuild the interpreter. The suite still uses owned tools and the package's base.
@@ -852,8 +876,9 @@ profiles. The `python` family supplies general-purpose interpreters with explici
 FFI, databases, terminal and compression inputs, plus upstream's bundled ensurepip for
 offline virtual environments. Tk, the optional native UUID helper and NIS omissions are
 recorded in the profile rather than left to host detection. Python 3.5/3.6 use the existing
-GCC 9 compatibility base; 3.7 onward use the owned default. Python 3.5 uses the named
-`ncurses64` Readline variant and matching Ncurses 6.4 public WINDOW headers. Library and compiler ceilings
+GCC 9 compatibility base; 3.7 onward use the owned default. Python 3.5 needs public WINDOW fields: it selects the moving Ncurses 6.4 line
+and overrides moving Readline 8 to use that same library instance. The named
+`ncurses64` public profile retains its separate documented constraint. Library and compiler ceilings
 live in version definitions; modern C API tests remain alongside guarded legacy consumers.
 
 `go-bootstrap_20171003` builds upstream's dated C-source bootstrap distribution. Its archive

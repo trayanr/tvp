@@ -7,26 +7,31 @@ let
       builder = ./build-3.47.8.nix;
       base = tvp.bases.default;
       deps = {
-        dart = tvp.packages.dart_3_13_7;
-        git = tvp.packages.git_2_56_0;
-        curl = tvp.packages.curl_8_23_0;
-        gradle = tvp.packages.gradle_9_3_1;
+        dart = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.dart_3_13_7
+        );
+        git = tvp.packages.git_2;
+        curl = tvp.packages.curl_8;
+        gradle = tvp.packages.gradle_9;
         androidSdk = tvp.android.profiles.flutter;
-        jdk = tvp.packages.jdk_21_0_13;
-        ca-certificates = tvp.packages.ca-certificates_2026_10_20;
-        bash = tvp.packages.bash_5_2_37;
-        coreutils = tvp.packages.coreutils_9_5;
-        findutils = tvp.packages.findutils_4_10_0;
-        gnugrep = tvp.packages.gnugrep_3_11;
-        gnused = tvp.packages.gnused_4_9;
-        gawk = tvp.packages.gawk_5_4_1;
-        gnutar = tvp.packages.gnutar_1_35;
-        gzip = tvp.packages.gzip_1_13;
-        xz = tvp.packages.xz_5_8_1;
-        unzip = tvp.packages.unzip_6_0;
-        python = tvp.packages.python_3_12_16;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        which = tvp.packages.which_2_21;
+        jdk = tvp.packages.jdk_21;
+        ca-certificates = tvp.packages.ca-certificates;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils;
+        findutils = tvp.packages.findutils;
+        gnugrep = tvp.packages.gnugrep;
+        gnused = tvp.packages.gnused;
+        gawk = tvp.packages.gawk;
+        gnutar = tvp.packages.gnutar;
+        gzip = tvp.packages.gzip;
+        xz = tvp.packages.xz_5;
+        unzip = tvp.packages.unzip;
+        python = tvp.packages.python_3;
+        patchelf = tvp.packages.patchelf;
+        which = tvp.packages.which;
       };
       opts = {
         inherit (platform) dynamicLinker;

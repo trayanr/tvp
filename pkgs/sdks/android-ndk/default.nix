@@ -7,11 +7,11 @@ let
       builder = ./build-28.2.13676358.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
-        zlib = tvp.packages.zlib_1_3_2;
-        gnumake = tvp.packages.gnumake_4_4_1;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
+        zlib = tvp.packages.zlib_1;
+        gnumake = tvp.packages.gnumake;
       };
       opts = {
         url = "https://dl.google.com/android/repository/android-ndk-r28c-linux.zip";
@@ -29,11 +29,11 @@ let
       builder = ./build-28.2.13676358.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
-        zlib = tvp.packages.zlib_1_3_2;
-        gnumake = tvp.packages.gnumake_4_4_1;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
+        zlib = tvp.packages.zlib_1;
+        gnumake = tvp.packages.gnumake;
       };
       opts = {
         url = "https://dl.google.com/android/repository/android-ndk-r30-linux.zip";

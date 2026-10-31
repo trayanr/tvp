@@ -5,7 +5,7 @@ let
     "6.9" = {
       builder = ./build-6.9.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
     };
   };
   versionTable = tvpLib.packages.mkTable [

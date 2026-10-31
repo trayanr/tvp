@@ -9,14 +9,14 @@ let
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
     };
 
     "0.9.7" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       # EVP's sign/verify callbacks use unprototyped parameter lists.
       opts.cStandard = "gnu17";
     };
@@ -25,7 +25,7 @@ let
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts = {
         hardeningDisable = [ "format" ];
@@ -35,7 +35,7 @@ let
     "0.9.8s" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       # This release's ECDSA self-test passes unsigned char ** to const **;
       # 0.9.8t separates the two pointers. Keep the original test and warning.
       opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
@@ -45,7 +45,7 @@ let
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts.forceGccName = true;
       # The bool identifier was renamed in 1.0.0i.
@@ -55,13 +55,13 @@ let
     "1.0.0i" = {
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       opts.forceGccName = true;
     };
     "1.0.1" = {
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       opts.forceGccName = true;
       # tasn_prn.c uses bool as an identifier; 1.0.1a renames it boolval.
       opts.cStandard = "gnu17";
@@ -71,7 +71,7 @@ let
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
     };
 
@@ -80,7 +80,11 @@ let
       builder = ./build-1.1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_28_3;
+        perl = (
+          tvp.lib.packages.withConstraint {
+            reason = "OpenSSL 1.1.0 Configure imports File::Glob qw/glob/; Perl 5.30 removed that export.";
+          } tvp.packages.perl_5_28
+        );
       };
       opts = {
         pbkdf2 = false;
@@ -91,7 +95,7 @@ let
       builder = ./build-1.1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
     };
 
@@ -99,7 +103,7 @@ let
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts.forceGccName = true;
       # ECDSA self-test pointer mismatch, corrected in 1.0.0g.
@@ -114,7 +118,7 @@ let
       # test/v3ext.c omits string.h for memcmp; 1.1.1s adds it.
       opts.compileFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
     };
 
@@ -122,9 +126,22 @@ let
       builder = ./build-3.0.nix;
       base = tvp.bases.default;
       deps = {
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
     };
+
+    # 1.1.0h replaced the removed File::Glob export with OpenSSL::Glob.
+    "1.1.0h" = {
+      builder = ./build-1.1.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5;
+      };
+      opts = {
+        pbkdf2 = false;
+      };
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;

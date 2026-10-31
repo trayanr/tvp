@@ -8,12 +8,12 @@ let
       # gprofng 2.42 callbacks require pre-C23 unspecified-argument semantics.
       opts.cStandard = "gnu17";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        perl = tvp.packages.perl_5_44_0;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
-        bison = tvp.packages.bison_3_8_2;
-        texinfo = tvp.packages.texinfo_7_1;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        perl = tvp.packages.perl_5;
+        pkg-config = tvp.packages.pkg-config;
+        bison = tvp.packages.bison;
+        texinfo = tvp.packages.texinfo;
       };
     };
   };

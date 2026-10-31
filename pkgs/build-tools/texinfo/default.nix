@@ -8,8 +8,8 @@ let
       # system.h's legacy strerror() declaration conflicts under C23.
       opts.cStandard = "gnu17";
       deps = {
-        perl = tvp.packages.perl_5_44_0;
-        ncurses = tvp.packages.ncurses_6_6;
+        perl = tvp.packages.perl_5;
+        ncurses = tvp.packages.ncurses_6;
         localeTools = tvp.bases.default.stdenv.cc.libc.bin;
       };
       patches = [

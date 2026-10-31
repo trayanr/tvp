@@ -6,8 +6,8 @@ let
       builder = ./build-1.17.0.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        python = tvp.packages.python-build_3_12_5;
+        pkg-config = tvp.packages.pkg-config;
+        python = tvp.packages.python-build_3;
       };
     };
   };

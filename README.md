@@ -16,7 +16,9 @@ nix build github:trayanr/tvp#ruby_2_7_0
 nix shell github:trayanr/tvp#ruby_2_7_0
 ```
 
-An exact name (`ruby_2_7_0`) selects an upstream release. Aliases (`ruby_2_7`, `ruby_2`,
+Use `canonical.ruby_2_7_0` when you require exactly Ruby 2.7.0.
+Public full names are fallbacks and can be shadowed by a generated line alias (for
+example, `openssl_1_1_1` follows the 1.1.1 letter releases). Aliases (`ruby_2_7`, `ruby_2`,
 `ruby`) follow the latest packaged, non-broken release in that line. Pin the TVP commit
 in your flake lock to fix the dependencies and build environment too.
 
@@ -28,6 +30,20 @@ nix eval --raw github:trayanr/tvp#packages.x86_64-linux \
 ```
 
 or `nix flake show github:trayanr/tvp` for the full output tree.
+
+To inspect evaluated dependency choices without building the catalogue:
+
+```sh
+nix run .#dependencies
+nix run .#dependencies -- --json > dependencies.json
+nix run .#dependencies -- --kind exact --scope ordinary --details
+nix run .#dependencies -- --flake 'github:trayanr/tvp/REVISION' --system x86_64-linux --json
+nix run .#dependencies -- --json --compare dependencies.json
+```
+
+The report separates per-release edges from shared definition choices, requested
+selectors, and resolved releases. Bootstrap construction, matched SDK artifacts,
+broken releases, and borrowed infrastructure have separate scopes.
 
 > **Note:** TVP packages end-of-life software. It preserves and tests old versions; it
 > does **not** provide security support. Availability is not a statement that something

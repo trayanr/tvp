@@ -30,8 +30,8 @@ let
       # Empty read/math callback prototypes require pre-C23 semantics.
       opts.cStandard = "gnu17";
       deps = {
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
     "4.1.4" = {
@@ -43,10 +43,10 @@ let
       # Keep the real runtime probe, demoting this diagnostic only in configure.
       opts.configureCFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        gmp = tvp.packages.gmp_6_3_0;
-        mpfr = tvp.packages.mpfr_4_2_1;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
     "5.1.1" = {
@@ -54,20 +54,20 @@ let
       base = tvp.bases.default;
       opts.cStandard = "gnu17";
       deps = {
-        gmp = tvp.packages.gmp_6_3_0;
-        mpfr = tvp.packages.mpfr_4_2_1;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
     "5.3.1" = {
       builder = ./build-4.1.4.nix;
       base = tvp.bases.default;
       deps = {
-        gmp = tvp.packages.gmp_6_3_0;
-        mpfr = tvp.packages.mpfr_4_2_1;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
 

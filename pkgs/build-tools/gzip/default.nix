@@ -6,7 +6,7 @@ let
       builder = ./build-1.13.nix;
       base = tvp.bases.default;
       deps = {
-        gnugrep = tvp.packages.gnugrep_3_11;
+        gnugrep = tvp.packages.gnugrep;
       };
     };
   };
@@ -30,7 +30,7 @@ let
       package:
       import ./tests {
         inherit pkgs tvpLib package;
-        coreutils = tvp.packages.coreutils_9_5;
+        coreutils = tvp.packages.coreutils;
       };
     packageMeta.upstream = {
       type = "directory-index";

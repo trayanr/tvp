@@ -6,16 +6,16 @@ let
       builder = ./build-3.0.5.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
     };
     "3.4.2" = {
       builder = ./build-3.0.5.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
       # Keep the shipped manual: its configure dependency tracks version changes,
       # and this patch only corrects optional example detection.
@@ -31,8 +31,8 @@ let
       builder = ./build-3.0.5.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
       # Bundled gnulib places nodiscard after inline. GNU17 uses its GNU
       # attribute spelling; 3.8 corrects placement for the C23 spelling.

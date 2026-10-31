@@ -7,10 +7,10 @@ let
       builder = ./build-21.0.13.nix;
       base = tvp.bases.default;
       deps = {
-        patchelf = tvp.packages.patchelf_0_19_2;
-        zlib = tvp.packages.zlib_1_3_2;
-        alsa = tvp.packages.alsa-lib_1_2_16_1;
-        fontconfig = tvp.packages.fontconfig_2_18_3;
+        patchelf = tvp.packages.patchelf;
+        zlib = tvp.packages.zlib_1;
+        alsa = tvp.packages.alsa-lib_1;
+        fontconfig = tvp.packages.fontconfig_2;
       };
       opts = {
         inherit (platform) dynamicLinker;

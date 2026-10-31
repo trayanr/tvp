@@ -6,11 +6,11 @@ let
       builder = ./build-1.2.6.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        libice = tvp.packages.libice_1_1_2;
-        xorgproto = tvp.packages.xorgproto_2026_1;
-        xtrans = tvp.packages.xtrans_1_6_0;
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        libice = tvp.packages.libice_1;
+        xorgproto = tvp.packages.xorgproto;
+        xtrans = tvp.packages.xtrans_1;
       };
     };
   };

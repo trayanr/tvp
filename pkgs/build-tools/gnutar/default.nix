@@ -6,16 +6,24 @@ let
       builder = ./build-1.32.nix;
       base = tvp.bases.default;
       deps = {
-        acl = tvp.packages.acl_2_3_2;
-        attr = tvp.packages.attr_2_5_2;
+        acl = (
+          tvp.lib.packages.withConstraint {
+            reason = "tar xattrs.c defines static acl_*_at helpers with three arguments; ACL 2.4 introduces public four-argument functions of the same names. Native tar 1.32 and 1.35 fail with ACL 2.4.0; use the working 2.3 line.";
+          } tvp.packages.acl_2_3
+        );
+        attr = tvp.packages.attr_2;
       };
     };
     "1.35" = {
       builder = ./build-1.35.nix;
       base = tvp.bases.default;
       deps = {
-        acl = tvp.packages.acl_2_3_2;
-        attr = tvp.packages.attr_2_5_2;
+        acl = (
+          tvp.lib.packages.withConstraint {
+            reason = "tar xattrs.c defines static acl_*_at helpers with three arguments; ACL 2.4 introduces public four-argument functions of the same names. Native tar 1.32 and 1.35 fail with ACL 2.4.0; use the working 2.3 line.";
+          } tvp.packages.acl_2_3
+        );
+        attr = tvp.packages.attr_2;
       };
     };
   };
@@ -45,22 +53,22 @@ let
         helpers = [
           {
             bin = "gzip";
-            package = tvp.packages.gzip_1_13;
+            package = tvp.packages.gzip;
             flag = "-z";
           }
           {
             bin = "bzip2";
-            package = tvp.packages.bzip2_1_0_8;
+            package = tvp.packages.bzip2_1;
             flag = "-j";
           }
           {
             bin = "xz";
-            package = tvp.packages.xz_5_8_3;
+            package = tvp.packages.xz_5;
             flag = "-J";
           }
           {
             bin = "zstd";
-            package = tvp.packages.zstd_1_5_7;
+            package = tvp.packages.zstd_1;
             flag = "--zstd";
           }
         ];
