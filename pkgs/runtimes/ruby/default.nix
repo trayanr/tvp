@@ -126,6 +126,21 @@ let
       base = tvp.bases.default;
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts.cStandard = "gnu17";
+      # The old configure main() probe rejects __func__ with this warning.
+      # 3.1.3 regenerates it with main(void). Preserve the remaining warning list.
+      opts.extraWarnFlags = [ "-Wno-old-style-definition" ];
+      deps = {
+        openssl = tvp.packages.openssl_3_5_7;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+      };
+    };
+
+    "3.1.3" = {
+      builder = ./build-3.1.nix;
+      base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_3_5_7;
         readline = tvp.packages.readline_8_3;

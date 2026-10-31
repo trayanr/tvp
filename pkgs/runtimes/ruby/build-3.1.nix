@@ -8,6 +8,7 @@
   version,
   sha256,
   cStandard ? null,
+  extraWarnFlags ? [ ],
 
   openssl,
   readline,
@@ -111,8 +112,14 @@ stdenv.mkDerivation (
       tests = mkTests finalAttrs.finalPackage;
     };
   }
-  // lib.optionalAttrs (cStandard != null) {
-    # cflags reaches the bool probes and persists alongside normal Ruby flags.
-    env.cflags = "-std=${cStandard}";
+  // lib.optionalAttrs (cStandard != null || extraWarnFlags != [ ]) {
+    env =
+      lib.optionalAttrs (cStandard != null) {
+        # cflags reaches the bool probes and persists alongside normal Ruby flags.
+        cflags = "-std=${cStandard}";
+      }
+      // lib.optionalAttrs (extraWarnFlags != [ ]) {
+        extra_warnflags = lib.concatStringsSep " " extraWarnFlags;
+      };
   }
 )
