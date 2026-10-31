@@ -8,6 +8,7 @@
   sha256,
   cStandard ? null,
   mkmfProbeFlags ? [ ],
+  compileFlags ? [ ],
 
   openssl,
   readline,
@@ -136,12 +137,12 @@ stdenv.mkDerivation (
       cp ext/fiddle/libffi-*/config.sub ext/fiddle/libffi-*/config.guess tool/
     '';
   }
-  // lib.optionalAttrs (cStandard != null) {
+  // lib.optionalAttrs (cStandard != null || mkmfProbeFlags != [ ] || compileFlags != [ ]) {
     # Ruby appends its normal opt/debug/warning flags to lowercase cflags,
     # retaining them in RbConfig for native extension consumers as well.
-    env.cflags =
-      "-std=${cStandard}"
-      + lib.optionalString (mkmfProbeFlags != [ ]) " ${lib.concatStringsSep " " mkmfProbeFlags}";
+    env.cflags = lib.concatStringsSep " " (
+      lib.optional (cStandard != null) "-std=${cStandard}" ++ mkmfProbeFlags ++ compileFlags
+    );
   }
 
 )

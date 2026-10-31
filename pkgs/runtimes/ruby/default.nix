@@ -121,6 +121,23 @@ let
         restoreConfigScripts = true;
       };
     };
+    "2.6.7" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+      # Actual native extension callbacks retain pre-C23 ANYARGS semantics.
+      opts = {
+        cStandard = "gnu17";
+        # vm.c omits the existing mutex-destroy declaration only in this release.
+        compileFlags = [ "-Wno-error=implicit-function-declaration" ];
+        restoreConfigScripts = true;
+      };
+    };
     "3.1.0" = {
       builder = ./build-3.1.nix;
       base = tvp.bases.default;

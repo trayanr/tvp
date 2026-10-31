@@ -85,6 +85,12 @@
   }
 
   {
+    def = defs."2.6.7";
+    releases = {
+      "2.6.7" = "sha256-5CJ+i39lSF7Lczl6g+DQnc058l79QRx4K2lCTlXHqZ4=";
+    };
+  }
+  {
     def = defs."2.5.2";
     releases = {
       "2.5.2" = "sha256-syNA5koMfsvzFIbEH+QppVx5hNmA7KengTg2fZIJ9HE=";
@@ -108,7 +114,6 @@
       "2.6.4" = "sha256-T8HYunVQWzeXAgpv/IWovP9q3E2rrjQ7ZXK/KB7heTc=";
       "2.6.5" = "sha256-ZpdrcW7MH9NPm3w8Kwe703YxgVN3ouPoWlsZTP3L7X0=";
       "2.6.6" = "sha256-NksUPe82C6wbdOtW7WCxoNymQ5sAFXrhH/d9XNLpIpE=";
-      "2.6.7" = "sha256-5CJ+i39lSF7Lczl6g+DQnc058l79QRx4K2lCTlXHqZ4=";
       "2.6.8" = "sha256-GAe3hXe8CFlqOQ6KQa7eN7hRIZDgXBM7F9BQF5Goym0=";
       "2.6.9" = "sha256-63uueqxkv56yFTcQpMr65FDMu2Kub2PVc+F4YXiw77s=";
       "2.6.10" = "sha256-DcYJ8mPUnEF21XJd7vwzcnNnY5WYW14Bd4k3Poyt8W4=";
