@@ -22,7 +22,7 @@ def selector_kind(edge):
     if "selection" not in edge and edge.get("kind") == "foreign":
         return "foreign"
     if not isinstance(selection, dict):
-        return "foreign" if edge.get("resolved", {}).get("tvp") is False else "unknown"
+        return "foreign" if (edge.get("resolved") or {}).get("tvp") is False else "unknown"
     kind = selection.get("kind")
     if kind not in KINDS:
         return "unknown"
@@ -42,7 +42,7 @@ def declaration_key(edge):
     return stable([
         edge.get("scope"), edge.get("family"), edge.get("definition"),
         edge.get("dependency"), edge.get("selection"),
-        edge.get("resolved", {}).get("output"), edge.get("reason"),
+        (edge.get("resolved") or {}).get("output"), edge.get("reason"),
     ])
 
 
@@ -58,13 +58,13 @@ def counts(edges):
         and isinstance(selection.get("namespace"), str)
         and isinstance(selection.get("selector"), str)
     }
-    families = {edge["resolved"]["family"] for edge in edges if edge.get("resolved", {}).get("family")}
+    families = {edge["resolved"]["family"] for edge in edges if (edge.get("resolved") or {}).get("family")}
     releases = {
         stable([resolved.get("family"), resolved["version"]])
         for edge in edges
-        if (resolved := edge.get("resolved", {})).get("family") and resolved.get("version")
+        if (resolved := (edge.get("resolved") or {})).get("family") and resolved.get("version")
     }
-    producers = {edge["resolved"]["drv"] for edge in edges if edge.get("resolved", {}).get("drv")}
+    producers = {edge["resolved"]["drv"] for edge in edges if (edge.get("resolved") or {}).get("drv")}
     return {
         "expandedEdges": len(edges),
         "distinctDeclarationChoices": len(declarations),
@@ -108,6 +108,8 @@ def summarize(inventory):
             "expandedRoles": len(support),
             "distinctDefinitionRoles": len(support_choices),
             "selectionRoles": len(support_inputs),
+            "inputSummary": counts(support_inputs),
+            "byRole": dict(sorted(Counter(row.get("role", "repository-audit") for row in support).items())),
             "byKind": {kind: support_kinds[kind] for kind in KINDS},
             "unknownSelections": [row for row in support_inputs if selector_kind(row) == "unknown"],
             "resolvedReleases": len({stable([row["resolved"].get("family"), row["resolved"].get("version")])
@@ -115,8 +117,9 @@ def summarize(inventory):
                                      and row["resolved"].get("family") and row["resolved"].get("version")}),
             "resolvedProducers": len({row["resolved"]["drv"] for row in support
                                       if isinstance(row.get("resolved"), dict) and row["resolved"].get("drv")}),
-            "derivationRoles": sum(isinstance(row.get("resolved"), dict) and row.get("role") != "derived-string" for row in support),
+            "derivationRoles": sum(isinstance(row.get("resolved"), dict) and row.get("role") not in ("derived-string", "test-input-value") for row in support),
             "derivedStringRoles": sum(row.get("role") == "derived-string" for row in support),
+            "nonDerivationTestInputs": sum(row.get("role") == "test-input-value" for row in support),
             "nonDerivationHelpers": sum(row.get("resolved") is None for row in support),
         },
         "all": counts(edges),
@@ -205,7 +208,7 @@ def filtered(edges, args):
             if (not args.kind or selector_kind(edge) in args.kind)
             and (not args.scope or edge.get("scope") in args.scope)
             and (not args.family or edge.get("family") in args.family
-                 or edge.get("resolved", {}).get("family") in args.family)
+                 or (edge.get("resolved") or {}).get("family") in args.family)
             and (not args.exceptions or edge.get("reason")
                  or isinstance(edge.get("selection"), dict) and edge["selection"].get("reason"))]
 
@@ -226,7 +229,7 @@ def print_human(inventory, args):
     broken = [row for row in inventory.get("consumers", []) if row.get("scope") == "broken"]
     print(f"{len(broken)} declared-broken releases (inventoried without realization)")
     support_summary = inventory["summary"]["support"]
-    print(f"Infrastructure: {support_summary['selectionRoles']} package/generated-file inputs; "
+    print(f"Infrastructure: {support_summary['selectionRoles']} package/file inputs; "
           f"{support_summary['nonDerivationHelpers']} non-derivation helpers")
     if support_summary["unknownSelections"]:
         print(f"Infrastructure selectors unavailable: {len(support_summary['unknownSelections'])} "
@@ -239,7 +242,7 @@ def print_human(inventory, args):
             selection = edge.get("selection")
             request = (f"{selection.get('namespace')}.{selection.get('selector')}"
                        if isinstance(selection, dict) else "unknown request")
-            resolved = edge.get("resolved", {})
+            resolved = (edge.get("resolved") or {})
             print(f"{edge.get('scope')} {edge.get('consumer')} [{edge.get('definition')}] "
                   f"{edge.get('dependency')}: {selector_kind(edge)} {request} -> "
                   f"{resolved.get('family')} {resolved.get('version')} [{resolved.get('output')}]")

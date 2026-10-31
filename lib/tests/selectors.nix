@@ -157,6 +157,45 @@ let
     overrideMethod =
       ((consumer before.probe_1).override { dependency = after.probe_1; }).__tvpSelection.kind
       == "override";
+    actualTestInputCapture =
+      let
+        package = consumer before.probe_1;
+        suite = tvp.lib.tests.mkSuite {
+          inherit pkgs package;
+          tests.projection = {
+            script = "printf checked";
+            expected = "checked";
+            extraInputs = [
+              (lib.getDev before.probe_1_2)
+              pkgs.coreutils
+              "${pkgs.writeText "derived-test-input" "fixture"}"
+            ];
+          };
+        };
+        inventory = import ../dependencies.nix {
+          inherit pkgs;
+          canonical.fixture = package // {
+            tests = suite;
+          };
+          variants = { };
+          construction.variants = { };
+        };
+        inputs = lib.filter (
+          row:
+          builtins.elem (row.role or null) [
+            "test-input"
+            "test-input-value"
+          ]
+        ) inventory.support;
+      in
+      builtins.length inputs == 3
+      && (builtins.head inputs).selection.kind == "minor"
+      && (builtins.head inputs).resolved.output == "dev"
+      && !(builtins.elemAt inputs 1).resolved.tvp
+      && (builtins.elemAt inputs 2).selection == null
+      && (builtins.elemAt inputs 2).resolved.tvp == null
+      && (builtins.elemAt inputs 2).resolved.context != { }
+      && !(builtins.hasContext (builtins.toJSON inventory));
     noAliasCycles =
       lazyNames == [
         "lazy"

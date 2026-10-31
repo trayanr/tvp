@@ -63,6 +63,15 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(result["all"]["byKind"]["foreign"], 1)
         self.assertEqual(len(result["unknownEdges"]), 2)
 
+    def test_missing_resolution_remains_an_unknown_edge(self):
+        unresolved = edge()
+        unresolved.update(selection=None, resolved=None, details="Dynamically derived input has no identity")
+        result = report.summarize({"schema": 1, "edges": [unresolved], "support": []})
+        self.assertEqual(result["all"]["expandedEdges"], 1)
+        self.assertEqual(result["all"]["byKind"]["unknown"], 1)
+        self.assertEqual(result["all"]["resolvedReleases"], 0)
+        self.assertIn("no identity", result["unknownEdges"][0]["details"])
+
     def test_duplicate_edges_are_retained_and_diagnosed(self):
         inventory = {"schema": 1, "edges": [edge(), edge()], "support": []}
         result = report.summarize(inventory)

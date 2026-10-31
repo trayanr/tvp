@@ -178,7 +178,8 @@ versionTable = merge {
 ]
 ```
 
-Twenty-six definitions serve 340 releases. OpenSSL needs six for 221 versions.
+Many releases share a definition; a compatibility boundary adds one definition,
+without duplicating the build procedure.
 
 ### Rules
 
@@ -311,7 +312,10 @@ evaluation never queries upstream. `mkAliases.lines` declares a moving prefix
 when its only current member has no finer component, such as Readline 6.2 or Autoconf 2.13.
 
 `nix run .#dependencies` evaluates generic `recipe.deps` and package `testDeps`,
-including broken releases without building them. `--json` records namespace,
+including broken releases without building them. Actual test native inputs are
+reported separately from recipe choices; inputs without intent tags stay unknown.
+Foreign means an input lacks TVP package metadata, including infrastructure; this
+classification does not infer its source provenance. `--json` records namespace,
 selector intent, resolved release/output/producer, consumer definition and reason.
 `--flake` is snapshotted once to an immutable store source; `--system` selects the
 platform. `--kind`, `--scope`, `--family`, `--exceptions` and `--details` filter

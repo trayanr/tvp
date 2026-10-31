@@ -85,7 +85,8 @@ let
             tvp-dependencies --help > /dev/null
             cp ${./tools/dependencies/report.py} report.py
             cp ${./tools/dependencies/test_report.py} test_report.py
-            python -m unittest -v test_report 2>&1 | tee "$out"
+            python -m unittest -v test_report >&2
+            printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
           '';
       dependency-policy =
         let
@@ -96,7 +97,7 @@ let
               "public-variant"
             ]
             && (edge.selection.kind or "unknown") == "exact"
-            && edge.reason == null
+            && (edge.reason == null || edge.reason == "")
           ) tvp.dependencyInventory.edges;
         in
         if builtins.hasContext (builtins.toJSON tvp.dependencyInventory) then

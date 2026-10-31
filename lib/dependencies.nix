@@ -157,9 +157,71 @@ let
                 "Non-derivation builder helper; not a package dependency selection. Origin is not inferred."
               else
                 null;
-            reason = "Builder infrastructure, declared separately from recipe.deps.";
+            reason = if builtins.isAttrs value then value.__tvpSelection.reason or null else null;
           }
         ) (package.tvp.infra or [ ])
+      ) entries
+    );
+  # Read the actual evaluated mkTest inputs as well as recipe.testDeps. The
+  # first native input is the package under test, rather than another choice.
+  testSupportRows =
+    scope: entries:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        consumer: package:
+        lib.concatLists (
+          lib.mapAttrsToList (
+            testName: test:
+            lib.imap0
+              (i: value: {
+                inherit consumer testName;
+                ownerScope = scope;
+                scope = if (package.tvp.status.level or "ok") == "broken" then "broken" else scope;
+                dependency = "test:${testName}:input-${toString i}";
+                dependencyScope = "test-support";
+                family = package.pname or null;
+                definition = package.tvp.definition or null;
+                role = if lib.isDerivation value then "test-input" else "test-input-value";
+                selection = if builtins.isAttrs value then value.__tvpSelection or null else null;
+                resolved =
+                  if lib.isDerivation value then
+                    resolved value
+                  else
+                    {
+                      tvp = null;
+                      family = null;
+                      version = null;
+                      output = null;
+                      drv = null;
+                      out = if builtins.isString value || builtins.isPath value then plain (toString value) else null;
+                      context = if builtins.isString value then builtins.getContext value else { };
+                      type = builtins.typeOf value;
+                    };
+                reason = if builtins.isAttrs value then value.__tvpSelection.reason or null else null;
+                details =
+                  if builtins.isAttrs value && value ? __tvpSelection then
+                    null
+                  else
+                    "The evaluated test input has no requested-selector tag; its identity is recorded without inferring intent.";
+              })
+              (
+                if test ? package && test ? testName then
+                  lib.drop 1 (test.nativeBuildInputs or [ ])
+                else
+                  test.nativeBuildInputs or [ ]
+              )
+          ) (package.tests or { })
+        )
+      ) entries
+    );
+  profileTestSupport =
+    scope: entries:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        profile: packages:
+        testSupportRows scope (
+          lib.mapAttrs' (name: package: lib.nameValuePair "${profile}/${name}" package) packages
+        )
       ) entries
     );
   profileSupport =
@@ -222,11 +284,15 @@ in
           scope = "build-test-support";
           selection = value.__tvpSelection or null;
           resolved = resolved value;
-          reason = "Repository audit test interpreter.";
+          reason = value.__tvpSelection.reason or null;
+          details = "Repository audit test interpreter.";
         }) dependencies
       ) buildTestSupport
     )
     ++ supportRows "ordinary" canonical
     ++ profileSupport "public-variant" variants
-    ++ profileSupport "construction" construction.variants;
+    ++ profileSupport "construction" construction.variants
+    ++ testSupportRows "ordinary" canonical
+    ++ profileTestSupport "public-variant" variants
+    ++ profileTestSupport "construction" construction.variants;
 }
