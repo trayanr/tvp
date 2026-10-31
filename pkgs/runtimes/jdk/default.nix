@@ -10,7 +10,7 @@ let
         xorgproto = tvp.packages.xorgproto;
         libx11 = tvp.packages.libx11_1;
         libxext = tvp.packages.libxext_1;
-        libxrender = tvp.packages.libxrender_0_9;
+        libxrender = tvp.packages.libxrender;
         libxtst = tvp.packages.libxtst_1;
         libxrandr = tvp.packages.libxrandr_1;
         libxt = tvp.packages.libxt_1;

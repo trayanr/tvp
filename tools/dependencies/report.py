@@ -85,7 +85,21 @@ def summarize(inventory):
         {"scope": key[0], "consumer": key[1], "dependency": key[2], "occurrences": number}
         for key, number in seen.items() if number > 1
     ]
+    support = inventory.get("support", [])
+    support_kinds = Counter(row.get("kind") or selector_kind(row) for row in support)
+    support_choices = {stable([
+        row.get("scope"), row.get("family"), row.get("definition") or row.get("consumer"),
+        row.get("dependency"), row.get("selection"),
+        row.get("resolved", {}).get("drv") if isinstance(row.get("resolved"), dict) else None,
+    ]) for row in support}
     return {
+        "support": {
+            "expandedRoles": len(support),
+            "distinctDefinitionRoles": len(support_choices),
+            "byKind": {kind: support_kinds[kind] for kind in KINDS},
+            "derivationRoles": sum(isinstance(row.get("resolved"), dict) for row in support),
+            "nonDerivationHelpers": sum(row.get("resolved") is None for row in support),
+        },
         "all": counts(edges),
         "scopes": {scope: counts([edge for edge in edges if edge.get("scope") == scope])
                    for scope in (*SCOPES, *sorted({e.get("scope", "unknown") for e in edges} - set(SCOPES)))},

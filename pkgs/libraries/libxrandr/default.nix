@@ -10,7 +10,7 @@ let
         patchelf = tvp.packages.patchelf;
         libx11 = tvp.packages.libx11_1;
         libxext = tvp.packages.libxext_1;
-        libxrender = tvp.packages.libxrender_0_9;
+        libxrender = tvp.packages.libxrender;
         xorgproto = tvp.packages.xorgproto;
         xtrans = tvp.packages.xtrans_1;
         libxcb = tvp.packages.libxcb_1;

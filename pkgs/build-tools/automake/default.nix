@@ -7,7 +7,7 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
+        autoconf = tvp.packages.autoconf_2;
         perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
@@ -19,7 +19,7 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
+        autoconf = tvp.packages.autoconf_2;
         perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
@@ -30,7 +30,7 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
+        autoconf = tvp.packages.autoconf_2;
         perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;

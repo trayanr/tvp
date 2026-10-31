@@ -6,7 +6,7 @@ let
       builder = ./build-2.4.20.nix;
       base = tvp.bases.default;
       deps = {
-        dnssd = tvp.packages.libdns_sd_2881;
+        dnssd = tvp.packages.libdns_sd;
         pkg-config = tvp.packages.pkg-config;
         openssl = tvp.packages.openssl_3;
         zlib = tvp.packages.zlib_1;

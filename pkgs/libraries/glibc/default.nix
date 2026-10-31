@@ -8,7 +8,7 @@ let
       deps = {
         gcc = tvp.packages.gcc_13;
         binutils = tvp.packages.binutils_2;
-        linuxHeaders = tvp.packages.linux-headers_6;
+        linuxHeaders = tvp.packages.linux-headers;
         perl = tvp.packages.perl_5;
         bison = tvp.packages.bison;
         python3Minimal = tvp.packages.python-minimal_3;
