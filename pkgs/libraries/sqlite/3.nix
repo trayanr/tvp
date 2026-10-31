@@ -257,10 +257,16 @@
   }
 
   {
+    def = defs."3.6.2";
+    releases = {
+      "3.6.2" = "sha256-8uBaKhVuPdt+tQNGPpXThvLRlHRPw+1Wx2X6UJ7e7lY=";
+    };
+  }
+  {
     def = defs."3.4.2";
     releases = {
       "3.6.3" = "sha256-6ZQbXE4h26lMDC9Hq3nhmYoTBPDPTnhU+9N2bWfYNHI=";
-      "3.6.2" = "sha256-8uBaKhVuPdt+tQNGPpXThvLRlHRPw+1Wx2X6UJ7e7lY=";
+
       "3.6.1" = "sha256-5jrt3eAeScwZ6HheMlbrIVUqaeRWeUSA7p9tDjkOwdk=";
       "3.6.0" = "sha256-bVlmazhC6MeCn3kOlZ9PRPWmX/TAhpQMBC+YNkuHKj4=";
       "3.5.9" = "sha256-680VDdEnllUvCjNxx6jiZCU9MevJkvUEOXBPtvGTG0Q=";

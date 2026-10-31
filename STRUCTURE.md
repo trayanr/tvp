@@ -535,13 +535,17 @@ GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.
 also retains its test with a check-only missing-declaration diagnostic exception.
 The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
 libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
-Ruby 2.0–2.3 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,
+Ruby 2.0–3.0 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,
 Bison 3.6.4/3.7.6, and selected early OpenSSL callbacks/bool identifiers. Newer
 fixed releases retain their upstream defaults. Readline checks actual installed
 libraries because its old Makefiles can ignore failed shared-library targets;
 Perl's shared suite includes a persistent SDBM store/fetch round trip.
 Old SQLite generators select GNU17 through 3.18.2, with the missing-declaration
-diagnostic retained as a warning only through 3.4.1. Autoconf 2.12/2.13 declare
+diagnostic retained as a warning only through 3.4.1 and the missing Lemon return
+type only in 3.0.3–3.1.0. Ruby before 2.3 retains mkmf’s headerless function
+probes with a scoped diagnostic exception and requires its declared extensions
+to be installed. The dated Go bootstrap source uses GNU17; PHP 5.0–5.3
+configuration probes use GNU89. Autoconf 2.12/2.13 declare
 the GNU89 dialect needed by their generated compiler probe; dependent Automake
 consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
 and build extensions in the same declared dialect, preserving the independent

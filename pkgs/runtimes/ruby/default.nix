@@ -29,8 +29,7 @@ let
     "2.1.2" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
-      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
-      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
       opts.cStandard = "gnu17";
       # mkmf's headerless fallback intentionally probes undeclared functions.
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
@@ -49,8 +48,7 @@ let
     "2.0.0-p0" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
-      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
-      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
       opts.cStandard = "gnu17";
       # mkmf's headerless fallback intentionally probes undeclared functions.
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
@@ -66,8 +64,7 @@ let
     "2.2.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
-      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
-      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
       opts.cStandard = "gnu17";
       # mkmf's headerless fallback intentionally probes undeclared functions.
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
@@ -82,8 +79,7 @@ let
     "2.3.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
-      # ANYARGS is an old unspecified-arguments callback in C. Ruby 2.4
-      # selects GNU99 itself; older releases need a pre-C23 dialect.
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
       opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;

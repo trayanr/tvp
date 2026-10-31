@@ -302,6 +302,25 @@ let
         pkgConfigMajorMinor = true;
       };
     };
+    "3.6.2" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8_5_19;
+        readline = tvp.packages.readline_8_3;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # sqlite3PageMalloc omits its parameter type only in this release.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+        pkgConfigMajorMinor = true;
+      };
+    };
 
     "3.48.0" = {
       builder = ./build-3.48.0.nix;
