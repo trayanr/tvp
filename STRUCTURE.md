@@ -536,6 +536,9 @@ also retains its test with a check-only missing-declaration diagnostic exception
 its C99-guarded arithmetic checks remain enabled. Ruby 2.6 forwards its configured
 CFLAGS to MJIT header generation, retaining the strict header checks; only 2.6.7
 needs the isolated missing mutex-declaration diagnostic exception.
+Ruby 2.7.4–2.7.8 restore upstream's capture of declared compiler flags after
+Autoconf's implicit CFLAGS initialization, following Ruby 3.0's reset. Explicit
+user CFLAGS and the normal optimization, debug and warning flags are retained.
 The same source-preservation policy scopes older Gawk callbacks through 5.3.0,
 libxml2 before 2.9.5, Readline before 8.3, Perl 5.30–5.34 allocator probes,
 Ruby 2.0–3.0 callbacks, ncurses 6.2–6.5 C-only bool detection, Texinfo 7.1,

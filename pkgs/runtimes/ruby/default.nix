@@ -121,6 +121,19 @@ let
         restoreConfigScripts = true;
       };
     };
+    "2.7.4" = {
+      builder = ./build-2.7.4.nix;
+      base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        readline = tvp.packages.readline_8_3;
+        zlib = tvp.packages.zlib_1_3_2;
+        gdbm = tvp.packages.gdbm_1_26;
+      };
+    };
+
     "2.6.0" = {
       builder = ./build-2.6.0.nix;
       base = tvp.bases.default;
