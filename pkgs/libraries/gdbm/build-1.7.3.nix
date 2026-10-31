@@ -11,6 +11,7 @@
   version,
   sha256,
   patches ? [ ],
+  cStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -23,66 +24,70 @@ let
   # libtool, and with it a shared library, arrives at 1.8.0.
   shared = lib.versionAtLeast version "1.8.0";
 in
-stdenv.mkDerivation (finalAttrs: {
-  pname = "gdbm";
-  inherit version patches;
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "gdbm";
+    inherit version patches;
 
-  src = fetchurl {
-    urls = [
-      "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
-      "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
-    ];
-    inherit sha256;
-  };
-
-  # `install -o bin -g bin` needs a user the sandbox does not have. Unpacking
-  # gives every file one mtime, so make also regenerates the gdbm.info the
-  # tarball already ships, which would need makeinfo.
-  postPatch = ''
-    sed -i 's| -o $(BINOWN) -g $(BINGRP)||g' Makefile.in
-    touch gdbm.info
-  '';
-
-  enableParallelBuilding = true;
-
-  preInstall = ''
-    mkdir -p "$out/lib" "$out/include" "$out/share/man/man3" "$out/share/info"
-  '';
-
-  installTargets = [
-    "install"
-    "install-compat"
-  ];
-
-  installFlags = [
-    "prefix=${placeholder "out"}"
-    "libdir=${placeholder "out"}/lib"
-    "includedir=${placeholder "out"}/include"
-    "man3dir=${placeholder "out"}/share/man/man3"
-    "infodir=${placeholder "out"}/share/info"
-  ];
-
-  # Consumers written against the traditional layout include <gdbm/ndbm.h>.
-  postInstall = ''
-    install -dm755 "$out/include/gdbm"
-    ln -s ../dbm.h ../gdbm.h ../ndbm.h "$out/include/gdbm/"
-  '';
-
-  meta = {
-    description = "GNU dbm key/value database library";
-    homepage = "https://www.gnu.org/software/gdbm/";
-    license = lib.licenses.gpl3Plus;
-    platforms = lib.platforms.unix;
-  };
-
-  passthru = {
-    inherit version;
-    tvp.deps = { };
-
-    tvp.features = {
-      inherit compatLib shared;
+    src = fetchurl {
+      urls = [
+        "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
+        "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
+      ];
+      inherit sha256;
     };
 
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    # `install -o bin -g bin` needs a user the sandbox does not have. Unpacking
+    # gives every file one mtime, so make also regenerates the gdbm.info the
+    # tarball already ships, which would need makeinfo.
+    postPatch = ''
+      sed -i 's| -o $(BINOWN) -g $(BINGRP)||g' Makefile.in
+      touch gdbm.info
+    '';
+
+    enableParallelBuilding = true;
+
+    preInstall = ''
+      mkdir -p "$out/lib" "$out/include" "$out/share/man/man3" "$out/share/info"
+    '';
+
+    installTargets = [
+      "install"
+      "install-compat"
+    ];
+
+    installFlags = [
+      "prefix=${placeholder "out"}"
+      "libdir=${placeholder "out"}/lib"
+      "includedir=${placeholder "out"}/include"
+      "man3dir=${placeholder "out"}/share/man/man3"
+      "infodir=${placeholder "out"}/share/info"
+    ];
+
+    # Consumers written against the traditional layout include <gdbm/ndbm.h>.
+    postInstall = ''
+      install -dm755 "$out/include/gdbm"
+      ln -s ../dbm.h ../gdbm.h ../ndbm.h "$out/include/gdbm/"
+    '';
+
+    meta = {
+      description = "GNU dbm key/value database library";
+      homepage = "https://www.gnu.org/software/gdbm/";
+      license = lib.licenses.gpl3Plus;
+      platforms = lib.platforms.unix;
+    };
+
+    passthru = {
+      inherit version;
+      tvp.deps = { };
+
+      tvp.features = {
+        inherit compatLib shared;
+      };
+
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
+)

@@ -31,6 +31,36 @@ tvpLib.tests.mkSuite {
         expected = "42";
       };
 
+      # Exercise the installed shared libperl ABI, not only its interpreter.
+      # A failed ELF probe can otherwise select the obsolete a.out format.
+      shared-embed = {
+        script = ''
+          cat > embed.c <<'C'
+          #include <EXTERN.h>
+          #include <perl.h>
+          EXTERN_C void xs_init(pTHX);
+          static PerlInterpreter *my_perl;
+          int main(int argc, char **argv, char **env) {
+            char *program[] = { "", "-e", "use List::Util qw(sum); print sum(1,2,39)" };
+            PERL_SYS_INIT3(&argc, &argv, &env);
+            my_perl = perl_alloc();
+            perl_construct(my_perl);
+            int result = perl_parse(my_perl, xs_init, 3, program, NULL);
+            if (!result) result = perl_run(my_perl);
+            perl_destruct(my_perl);
+            perl_free(my_perl);
+            PERL_SYS_TERM();
+            return result;
+          }
+          C
+          perl -MExtUtils::Embed -e xsinit
+          $CC embed.c perlxsi.c $(perl -MExtUtils::Embed -e ccopts -e ldopts) -o embed
+          readelf -d embed | grep -q 'NEEDED.*libperl\.so'
+          ./embed
+        '';
+        expected = "42";
+      };
+
       sdbm = {
         script = ''
           perl -MSDBM_File -MFcntl=O_RDWR,O_CREAT -e '
@@ -80,6 +110,21 @@ tvpLib.tests.mkSuite {
           perl -e 'use File::Glob "glob"; print defined &glob ? "importable" : "missing"'
         '';
         expected = "importable";
+      };
+    }
+
+    // pkgs.lib.optionalAttrs (features.legacyCompilerProbes or false) {
+      # ExtUtils::Embed and XS consumers inherit these installed compiler flags.
+      compiler-options = {
+        script = ''
+          perl -MConfig -e '
+            my $flags = " $Config{ccflags} ";
+            die "missing aliasing safety flag" unless $flags =~ /\s-fno-strict-aliasing\s/;
+            die "obsolete structure-return ABI" if $flags =~ /\s-fpcc-struct-return\s/;
+            print "compiler-options-ok";
+          '
+        '';
+        expected = "compiler-options-ok";
       };
     }
 

@@ -11,8 +11,7 @@
   ncurses,
 }:
 let
-  # The compiler the package was built with, not the default one: a library
-  # built on gcc 4.9 ships headers a current C++ dialect rejects.
+  # Compile consumers with the package compiler and its declared dialects.
   cc = [ ncurses.passthru.tvp.cc ];
   features = ncurses.passthru.tvp.features or { };
 
@@ -27,6 +26,13 @@ let
     else
       "-I${ncurses}/include/${libName} -I${ncurses}/include -l${libName}";
 
+  cFlags = pkgs.lib.optionalString (
+    (features.cStandard or null) != null
+  ) "-std=${features.cStandard}";
+  cxxFlags = pkgs.lib.optionalString (
+    (features.cxxStandard or null) != null
+  ) "-std=${features.cxxStandard}";
+
   ccInputs = cc ++ pkgs.lib.optional hasPc pkgs.pkg-config;
 in
 tvpLib.tests.mkSuite {
@@ -37,7 +43,7 @@ tvpLib.tests.mkSuite {
     {
       version = {
         script = ''
-          cc ${./fixtures/version.c} ${ccFlags} -o version
+          cc ${cFlags} ${./fixtures/version.c} ${ccFlags} -o version
           ./version
         '';
         expected = ncurses.version;
@@ -48,7 +54,7 @@ tvpLib.tests.mkSuite {
       # that is data rather than code.
       terminfo = {
         script = ''
-          cc ${./fixtures/terminfo.c} ${ccFlags} -o terminfo
+          cc ${cFlags} ${./fixtures/terminfo.c} ${ccFlags} -o terminfo
           ./terminfo
         '';
         expected = "80";
@@ -67,7 +73,7 @@ tvpLib.tests.mkSuite {
       # it still installs and still passes every test above.
       panel = {
         script = ''
-          cc ${./fixtures/panel.c} -lpanel${suffix} ${ccFlags} -o panel
+          cc ${cFlags} ${./fixtures/panel.c} -lpanel${suffix} ${ccFlags} -o panel
           ./panel
         '';
         expected = "panel-ok";
@@ -87,12 +93,22 @@ tvpLib.tests.mkSuite {
       };
     }
 
-    # The C++ binding is its own library and its own dialect problem: every
-    # release from 5.0 to 6.0 needed an older compiler to build it at all.
+    // pkgs.lib.optionalAttrs (features.constUserData or false) {
+      cxx-user-pointer = {
+        script = ''
+          c++ ${cxxFlags} ${./fixtures/cxx-user-pointer.cc} -lncurses++${suffix} -lform${suffix} -lmenu${suffix} -lpanel${suffix} ${ccFlags} -o cxx-user-pointer
+          TERM=xterm ./cxx-user-pointer
+        '';
+        expected = "user-pointer-ok";
+        extraInputs = ccInputs;
+      };
+    }
+
+    # Keep the binding library and its consumer dialect covered separately.
     // pkgs.lib.optionalAttrs (features.cxx or false) {
       cxx = {
         script = ''
-          c++ ${./fixtures/cxx.cc} -lncurses++${suffix} ${ccFlags} -o cxx
+          c++ ${cxxFlags} ${./fixtures/cxx.cc} -lncurses++${suffix} ${ccFlags} -o cxx
           ./cxx
         '';
         expected = "cxx-ok";

@@ -13,7 +13,7 @@
   }
 
   {
-    def = defs."2.0";
+    def = defs."2.1";
     status = {
       level = "degraded";
       capability = "shared";

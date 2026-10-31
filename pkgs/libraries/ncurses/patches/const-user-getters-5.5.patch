@@ -1,0 +1,29 @@
+The inline user-pointer getters only inspect the hook. Make their existing
+const public callers well-formed without changing their API or operations.
+
+--- a/c++/cursesf.h
++++ b/c++/cursesf.h
+@@ -383,3 +383,3 @@
+ 
+-  inline void *get_user() {
++  inline void *get_user() const {
+     UserHook* uptr = reinterpret_cast<UserHook*>(::form_userptr (form));
+--- a/c++/cursesp.h
++++ b/c++/cursesp.h
+@@ -60,3 +60,3 @@
+ 
+-  inline UserHook *UserPointer()
++  inline UserHook *UserPointer() const
+   {
+@@ -78,3 +78,3 @@
+ 
+-  void *get_user()
++  void *get_user() const
+   {
+--- a/c++/cursesm.h
++++ b/c++/cursesm.h
+@@ -244,3 +244,3 @@
+ 
+-  inline void *get_user() {
++  inline void *get_user() const {
+     UserHook* uptr = STATIC_CAST(UserHook*)(::menu_userptr (menu));

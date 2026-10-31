@@ -16,6 +16,7 @@
   version,
   sha256,
   cStandard ? null,
+  cxxStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -42,6 +43,9 @@ stdenv.mkDerivation (finalAttrs: {
     + lib.optionalString (cStandard != null) ''
       # Only C gets this dialect; do not pass a C -std option to C++ bindings.
       export CFLAGS="''${CFLAGS:--O2} -std=${cStandard}"
+    ''
+    + lib.optionalString (cxxStandard != null) ''
+      export CXXFLAGS="''${CXXFLAGS:--O2} -std=${cxxStandard}"
     '';
 
   configureFlags = [
@@ -68,6 +72,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       widec = true;
+      inherit cStandard cxxStandard;
       libName = "ncursesw";
       pkgConfig = true;
       cxx = true;

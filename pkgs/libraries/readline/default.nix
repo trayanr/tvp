@@ -14,8 +14,20 @@ let
       };
     };
 
-    # 2.2.1 stays on the default base: only 2.0 and 2.1 rely on tentative
-    # definitions that gcc 10 stopped merging.
+    "2.1" = {
+      builder = ./build-2.0.nix;
+      base = tvp.bases.default;
+      # The configure probes and empty parameter lists require pre-C23 C.
+      opts = {
+        cStandard = "gnu89";
+        # readline.h defines rl_dispatching in every library object.
+        commonSymbols = true;
+      };
+      deps = {
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+
     "2.2.1" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;

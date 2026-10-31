@@ -16,8 +16,11 @@
 
   version,
   sha256,
+  patches ? [ ],
 
   hardeningDisable ? [ ],
+  cStandard ? null,
+  cxxStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -36,6 +39,13 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [ pkg-config ];
 
+  inherit patches;
+
+  postPatch = ''
+    # GCC now emits line markers inside macro expansions.
+    substituteInPlace ncurses/base/MKlib_gen.sh --replace-fail 'preprocessor="$1 ' 'preprocessor="$1 -P '
+  '';
+
   inherit hardeningDisable;
 
   # This generation derives the .pc directory from the pkg-config binary's own
@@ -44,9 +54,16 @@ stdenv.mkDerivation (finalAttrs: {
   # instead and says so.
   env.PKG_CONFIG_LIBDIR = "${placeholder "out"}/lib/pkgconfig";
 
-  preConfigure = ''
-    mkdir -p "$out/lib/pkgconfig"
-  '';
+  preConfigure =
+    ''
+      mkdir -p "$out/lib/pkgconfig"
+    ''
+    + lib.optionalString (cStandard != null) ''
+      export CFLAGS="''${CFLAGS:--O2} -std=${cStandard}"
+    ''
+    + lib.optionalString (cxxStandard != null) ''
+      export CXXFLAGS="''${CXXFLAGS:--O2} -std=${cxxStandard}"
+    '';
 
   configureFlags = [
     "--with-shared"
@@ -72,6 +89,8 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       widec = true;
+      inherit cStandard cxxStandard;
+      constUserData = true;
       libName = "ncursesw";
       pkgConfig = true;
       cxx = true;

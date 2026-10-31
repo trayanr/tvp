@@ -4,7 +4,8 @@ let
   defs = tvpLib.packages.mkDefs {
     "3.5.10" = {
       builder = ./build-3.5.10.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = rec {
         bash = tvp.packages.bash_5;
         openssl = (
@@ -65,7 +66,8 @@ let
     };
     "3.6.15" = {
       builder = ./build-3.5.10.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5;
         openssl = (
