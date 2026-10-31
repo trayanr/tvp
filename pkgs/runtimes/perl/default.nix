@@ -11,7 +11,7 @@ let
       patches = [
         {
           file = ./patches/configure-gcc-major.patch;
-          reason = "Configure mistakes GCC 16 for GCC 1 and selects the obsolete pcc structure-return ABI; match the GCC 1 major explicitly.";
+          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
         }
         {
           file = ./patches/linux-elf-probe.patch;
@@ -28,7 +28,7 @@ let
       patches = [
         {
           file = ./patches/configure-gcc-major.patch;
-          reason = "Configure mistakes GCC 16 for GCC 1 and selects the obsolete pcc structure-return ABI; match the GCC 1 major explicitly.";
+          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
         }
       ];
       deps = {

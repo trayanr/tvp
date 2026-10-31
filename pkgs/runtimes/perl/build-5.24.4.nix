@@ -83,6 +83,7 @@ stdenv.mkDerivation (finalAttrs: {
     # OpenSSL's Configure that TVP already patches out of 1.1.0g and earlier.
     tvp.features = {
       globImportable = lib.versionOlder version "5.30";
+      legacyCompilerProbes = true;
     };
 
     tests = mkTests finalAttrs.finalPackage;

@@ -113,6 +113,21 @@ tvpLib.tests.mkSuite {
       };
     }
 
+    // pkgs.lib.optionalAttrs (features.legacyCompilerProbes or false) {
+      # ExtUtils::Embed and XS consumers inherit these installed compiler flags.
+      compiler-options = {
+        script = ''
+          perl -MConfig -e '
+            my $flags = " $Config{ccflags} ";
+            die "missing aliasing safety flag" unless $flags =~ /\s-fno-strict-aliasing\s/;
+            die "obsolete structure-return ABI" if $flags =~ /\s-fpcc-struct-return\s/;
+            print "compiler-options-ok";
+          '
+        '';
+        expected = "compiler-options-ok";
+      };
+    }
+
     // pkgs.lib.optionalAttrs (!(features.globImportable or false)) {
       file-glob-removed = {
         script = ''

@@ -1,5 +1,14 @@
 --- a/Configure
 +++ b/Configure
+@@ -4686,7 +4686,7 @@
+ fi
+ $rm -f try try.*
+ case "$gccversion" in
+-1*) cpp=`./loc gcc-cpp $cpp $pth` ;;
++1.*) cpp=`./loc gcc-cpp $cpp $pth` ;;
+ esac
+ case "$gccversion" in
+ '') gccosandvers='' ;;
 @@ -5452,7 +5452,7 @@
  case "$hint" in
  default|recommended)
@@ -9,3 +18,21 @@
  	esac
  	case "$optimize:$DEBUGGING" in
  	*-g*:old) dflt="$dflt -DDEBUGGING";;
+@@ -5467,7 +5467,7 @@
+ 		;;
+ 	esac
+ 	case "$gccversion" in
+-	1*) ;;
++	1.*) ;;
+ 	2.[0-8]*) ;;
+ 	?*)	set strict-aliasing -fno-strict-aliasing
+ 		eval $checkccflag
+@@ -5585,7 +5585,7 @@
+     ;;
+ esac
+ case "$gccversion" in
+-1*) cppflags="$cppflags -D__GNUC__"
++1.*) cppflags="$cppflags -D__GNUC__"
+ esac
+ case "$mips_type" in
+ '');;
