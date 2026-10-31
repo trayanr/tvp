@@ -6,6 +6,8 @@ let
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_0_9_8zh;
         zlib = tvp.packages.zlib_1_3_2;
@@ -30,6 +32,8 @@ let
     "5.1.6" = {
       builder = ./build-5.1.6.nix;
       base = tvp.bases.default;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_0_9_8zh;
         zlib = tvp.packages.zlib_1_3_2;
@@ -55,6 +59,8 @@ let
     "5.2.17" = {
       builder = ./build-5.2.17.nix;
       base = tvp.bases.default;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
@@ -79,6 +85,8 @@ let
     "5.3.29" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;

@@ -16,6 +16,7 @@
 
   version,
   sha256,
+  cStandard ? null,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -36,7 +37,11 @@ stdenv.mkDerivation (
 
     # The shipped scanners define yytext in two translation units. Match the
     # common-symbol semantics used by contemporary GCC, without editing them.
-    NIX_CFLAGS_COMPILE = "-fcommon";
+    NIX_CFLAGS_COMPILE =
+      "-fcommon"
+      + lib.optionalString (
+        cStandard != null && lib.versionAtLeast stdenv.cc.version "15"
+      ) " -std=${cStandard}";
 
     nativeBuildInputs = [ pkg-config ];
 
