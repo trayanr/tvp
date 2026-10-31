@@ -32,7 +32,7 @@ def selector_kind(edge):
 
 
 def edge_key(edge):
-    return edge.get("scope"), edge.get("consumer"), edge.get("dependency")
+    return edge.get("ownerScope", edge.get("scope")), edge.get("consumer"), edge.get("dependency")
 
 
 def declaration_key(edge):
@@ -93,6 +93,13 @@ def summarize(inventory):
         row.get("resolved", {}).get("drv") if isinstance(row.get("resolved"), dict) else None,
     ]) for row in support}
     return {
+        "consumers": {
+            "releases": len(inventory.get("consumers", [])),
+            "byScope": {scope: sum(row.get("scope") == scope for row in inventory.get("consumers", []))
+                        for scope in SCOPES},
+            "withoutDeclaredDependencies": sum(not row.get("dependencies") and not row.get("testDependencies")
+                                               for row in inventory.get("consumers", [])),
+        },
         "support": {
             "expandedRoles": len(support),
             "distinctDefinitionRoles": len(support_choices),
@@ -129,12 +136,14 @@ def compare(before, after):
     for key in sorted(old.keys() | new.keys()):
         left, right = old.get(key), new.get(key)
         if left is None or right is None or (
+            left.get("scope") != right.get("scope") or
             left.get("selection") != right.get("selection") or
             left.get("resolved") != right.get("resolved") or
             left.get("reason") != right.get("reason")
         ):
             changes.append({
-                "scope": key[0], "consumer": key[1], "dependency": key[2],
+                "scope": (right or left).get("scope"), "ownerScope": key[0],
+                "consumer": key[1], "dependency": key[2],
                 "change": "added" if left is None else "removed" if right is None else "changed",
                 "before": left, "after": right,
                 "resolvedChanged": left is None or right is None or left.get("resolved") != right.get("resolved"),
@@ -146,8 +155,15 @@ def compare(before, after):
     return {
         "before": counts(before["edges"]), "after": counts(after["edges"]),
         "changedEdges": len(changes),
-        "changedResolvedIdentities": sum(change["resolvedChanged"] for change in changes),
-        "changedResolvedReleases": sum(change["releaseChanged"] for change in changes),
+        "changedConsumers": len({(change["ownerScope"], change["consumer"]) for change in changes}),
+        "distinctResolvedReleaseTransitions": len({stable([
+            (change["before"] or {}).get("resolved", {}).get("family"),
+            (change["before"] or {}).get("resolved", {}).get("version"),
+            (change["after"] or {}).get("resolved", {}).get("family"),
+            (change["after"] or {}).get("resolved", {}).get("version"),
+        ]) for change in changes if change["releaseChanged"]}),
+        "changedResolvedIdentityEdges": sum(change["resolvedChanged"] for change in changes),
+        "changedResolvedReleaseEdges": sum(change["releaseChanged"] for change in changes),
         "changes": changes,
     }
 
@@ -195,6 +211,8 @@ def print_human(inventory, args):
     for kind in KINDS:
         print(f"{kind:12} {summary['byKind'][kind]:6} {summary['declarationsByKind'][kind]:8}")
     print("Scopes: " + ", ".join(f"{scope} {number}" for scope, number in summary["byScope"].items()))
+    broken = [row for row in inventory.get("consumers", []) if row.get("scope") == "broken"]
+    print(f"{len(broken)} declared-broken releases (inventoried without realization)")
     print(f"Infrastructure support declarations: {len(inventory.get('support', []))}")
     duplicates = inventory["summary"]["duplicateEdges"]
     if duplicates:
@@ -213,11 +231,19 @@ def print_human(inventory, args):
                 print("  reason: " + (reason if isinstance(reason, str) else stable(reason)))
             if selector_kind(edge) == "unknown":
                 print("  details: " + stable(edge.get("details", selection)))
+    if args.details and not args.kind and (not args.scope or "broken" in args.scope):
+        for owner in broken:
+            if owner.get("dependencies") or owner.get("testDependencies"):
+                continue
+            if args.family and owner.get("family") not in args.family:
+                continue
+            print(f"broken {owner.get('consumer')}: no declared dependency choices; "
+                  f"{(owner.get('status') or {}).get('reason', '')}")
     comparison = inventory.get("comparison")
     if comparison:
         print(f"Compared: {comparison['changedEdges']} changed edges; "
-              f"{comparison['changedResolvedReleases']} changed resolved releases; "
-              f"{comparison['changedResolvedIdentities']} changed resolved identities")
+              f"{comparison['changedResolvedReleaseEdges']} edges with changed resolved releases; "
+              f"{comparison['changedResolvedIdentityEdges']} edges with changed resolved identities")
         if args.details:
             for change in comparison["changes"]:
                 if change["resolvedChanged"]:

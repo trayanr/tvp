@@ -70,6 +70,30 @@ let
             )
       ) entries
     );
+  owners =
+    scope: entries:
+    lib.mapAttrsToList (consumer: package: {
+      inherit consumer;
+      scope = if (package.tvp.status.level or "ok") == "broken" then "broken" else scope;
+      ownerScope = scope;
+      family = package.pname or null;
+      version = package.version or null;
+      definition = package.tvp.definition or null;
+      base = package.tvp.base or null;
+      status = package.tvp.status or null;
+      dependencies = builtins.attrNames (package.tvp.declaredDependencies or { });
+      testDependencies = builtins.attrNames (package.tvp.declaredTestDependencies or { });
+    }) entries;
+  profileOwners =
+    scope: entries:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        profile: packages:
+        owners scope (
+          lib.mapAttrs' (name: package: lib.nameValuePair "${profile}/${name}" package) packages
+        )
+      ) entries
+    );
   profiles =
     scope: entries:
     lib.concatLists (
@@ -102,6 +126,10 @@ let
 in
 {
   schema = 1;
+  consumers =
+    owners "ordinary" canonical
+    ++ profileOwners "public-variant" variants
+    ++ profileOwners "construction" construction.variants;
   edges =
     namespace "ordinary" canonical
     ++ profiles "public-variant" variants

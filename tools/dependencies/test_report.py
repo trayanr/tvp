@@ -90,9 +90,20 @@ class ReportingTests(unittest.TestCase):
         after["edges"][2]["resolved"].update(version="3.0.1", drv="/nix/store/new-openssl.drv")
         result = report.compare(before, after)
         self.assertEqual(result["changedEdges"], 3)
-        self.assertEqual(result["changedResolvedIdentities"], 2)
-        self.assertEqual(result["changedResolvedReleases"], 1)
+        self.assertEqual(result["changedResolvedIdentityEdges"], 2)
+        self.assertEqual(result["changedResolvedReleaseEdges"], 1)
         self.assertEqual(result["changes"][0]["before"]["resolved"]["version"], "1.1.1w")
+
+    def test_scope_reclassification_is_not_a_resolved_release_change(self):
+        original = edge()
+        original["ownerScope"] = "ordinary"
+        changed = copy.deepcopy(original)
+        changed["scope"] = "construction"
+        changed["reason"] = "Explicit bootstrap stage"
+        result = report.compare({"edges": [original]}, {"edges": [changed]})
+        self.assertEqual(result["changedEdges"], 1)
+        self.assertEqual(result["changedResolvedReleaseEdges"], 0)
+        self.assertEqual(result["changedResolvedIdentityEdges"], 0)
 
     @patch("report.subprocess.check_output")
     def test_flake_is_resolved_once_then_evaluated_as_immutable_source(self, run):
