@@ -180,6 +180,28 @@ let
           variants = { };
           construction.variants = { };
         };
+        reorderedInventory = import ../dependencies.nix {
+          inherit pkgs;
+          canonical.fixture = package // {
+            tests = {
+              projection = suite.projection.overrideAttrs (old: {
+                nativeBuildInputs = [ pkgs.gnumake ] ++ old.nativeBuildInputs;
+              });
+              tools-only = suite.projection.overrideAttrs (_: {
+                nativeBuildInputs = [ pkgs.gnumake ];
+              });
+            };
+          };
+          variants = { };
+          construction.variants = { };
+        };
+        reordered = lib.filter (
+          row:
+          builtins.elem (row.role or null) [
+            "test-input"
+            "test-input-value"
+          ]
+        ) reorderedInventory.support;
         inputs = lib.filter (
           row:
           builtins.elem (row.role or null) [
@@ -195,7 +217,12 @@ let
       && (builtins.elemAt inputs 2).selection == null
       && (builtins.elemAt inputs 2).resolved.tvp == null
       && (builtins.elemAt inputs 2).resolved.context != { }
-      && !(builtins.hasContext (builtins.toJSON inventory));
+      && !(builtins.hasContext (builtins.toJSON inventory))
+      && builtins.length reordered == 5
+      && (builtins.head reordered).resolved.drv == pkgs.gnumake.drvPath
+      && (builtins.elemAt reordered 1).selection.kind == "minor"
+      && (builtins.elemAt reordered 1).resolved.output == "dev"
+      && (builtins.elemAt reordered 4).resolved.drv == pkgs.gnumake.drvPath;
     noAliasCycles =
       lazyNames == [
         "lazy"

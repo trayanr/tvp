@@ -163,7 +163,8 @@ let
       ) entries
     );
   # Read the actual evaluated mkTest inputs as well as recipe.testDeps. The
-  # first native input is the package under test, rather than another choice.
+  # Package-under-test identity is explicit mkTest metadata. Exclude that
+  # output wherever it occurs, including after a native-input override.
   testSupportRows =
     scope: entries:
     lib.concatLists (
@@ -205,8 +206,10 @@ let
                     "The evaluated test input has no requested-selector tag; its identity is recorded without inferring intent.";
               })
               (
-                if test ? package && test ? testName then
-                  lib.drop 1 (test.nativeBuildInputs or [ ])
+                if test ? package && lib.isDerivation test.package then
+                  lib.filter (value: !(lib.isDerivation value && value.outPath == test.package.outPath)) (
+                    test.nativeBuildInputs or [ ]
+                  )
                 else
                   test.nativeBuildInputs or [ ]
               )
