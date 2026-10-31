@@ -5,6 +5,8 @@ let
     "2.42" = {
       builder = ./build-2.42.nix;
       base = tvp.bases.default;
+      # gprofng 2.42 callbacks require pre-C23 unspecified-argument semantics.
+      opts.cStandard = "gnu17";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
         zstd = tvp.packages.zstd_1_5_6;
