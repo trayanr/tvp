@@ -76,9 +76,13 @@ let
       dependency-inventory =
         pkgs.runCommand "tvp-dependency-inventory-tests"
           {
-            nativeBuildInputs = [ pkgs.python3 ];
+            nativeBuildInputs = [
+              pkgs.python3
+              tvp.tools.dependencies
+            ];
           }
           ''
+            tvp-dependencies --help > /dev/null
             cp ${./tools/dependencies/report.py} report.py
             cp ${./tools/dependencies/test_report.py} test_report.py
             python -m unittest -v test_report 2>&1 | tee "$out"

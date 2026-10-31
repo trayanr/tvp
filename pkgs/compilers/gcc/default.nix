@@ -20,7 +20,10 @@ let
         texinfo = tvp.packages.texinfo;
         which = tvp.packages.which;
         # Use the base libc; canonical glibc itself is built with this compiler.
-        glibc = tvp.bases.default.stdenv.cc.libc;
+        glibc = tvp.lib.packages.withConstraint {
+          category = "construction";
+          reason = "Use the completed default base's pinned libc; canonical glibc is itself built with canonical GCC. The separately pinned constructor never follows ordinary dependency aliases.";
+        } tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
         {
@@ -57,7 +60,10 @@ let
         texinfo = tvp.packages.texinfo;
         which = tvp.packages.which;
         # Canonical GCC follows the default; the constructor pins a separate variant.
-        glibc = tvp.bases.default.stdenv.cc.libc;
+        glibc = tvp.lib.packages.withConstraint {
+          category = "construction";
+          reason = "Use the completed default base's pinned libc; canonical glibc is itself built with canonical GCC. The separately pinned constructor never follows ordinary dependency aliases.";
+        } tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
         {
