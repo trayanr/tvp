@@ -557,7 +557,10 @@ selection bug](https://github.com/php/php-src/issues/13215) fixed in 8.2.16/8.3.
 Libtool through 1.4.3 declares GNU89 for its original configure and generated
 consumer probes; all shared/static/ltdl checks remain enabled. Older PHP DOM hash callbacks retain libxml2 2.9.7, and scanf callbacks through
 8.0 retain GNU17. PHP before 8.0 binds iconv probes to the base libc headers;
-the shared suite checks conversion and invalid input. PHP 5.0/5.1 create their
+the shared suite checks conversion and invalid input. It captures the original
+5.0–5.3 partial-string result plus its warning, and the later false result,
+without changing the runtime. Historical readdir probes retain their native
+execution with configure-only diagnostic flags restored before compilation. PHP 5.0/5.1 create their
 install directory before parallel helper copies and reject missing phpize tools.
 Unzip 6.0 retains GNU17 probe semantics and missing-declaration warnings; its
 generated configuration flags match the earlier compiler control. Zip 3.0 keeps

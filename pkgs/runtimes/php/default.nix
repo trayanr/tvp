@@ -8,6 +8,8 @@ let
       base = tvp.bases.default;
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -36,6 +38,8 @@ let
       base = tvp.bases.default;
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -65,6 +69,8 @@ let
       base = tvp.bases.default;
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -93,6 +99,8 @@ let
       base = tvp.bases.default;
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -120,6 +128,11 @@ let
       opts.iconvFromBase = true;
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
@@ -145,6 +158,11 @@ let
       opts.iconvFromBase = true;
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
@@ -160,6 +178,37 @@ let
       # 7.0 adds an explicit cast for the typed zlib globals constructor.
       opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
     };
+    "5.6.40" = {
+      builder = ./build-5.3.29.nix;
+      base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        zlib = tvp.packages.zlib_1_3_2;
+        libxml2 = tvp.packages.libxml2_2_9_7;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        libxcrypt = tvp.packages.libxcrypt_4_4_36;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages.pkg-config_0_29_2;
+        testAutoconf = tvp.packages.autoconf_2_73;
+      };
+      opts.parallelBuild = true;
+      # 7.0 adds an explicit cast for the typed zlib globals constructor.
+      opts.compileFlags = [
+        "-Wno-error=incompatible-pointer-types"
+        # libmagic file_replace omits its int return type in this release.
+        "-Wno-error=implicit-int"
+      ];
+    };
     "7.0.33" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
@@ -167,6 +216,11 @@ let
       opts.iconvFromBase = true;
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
@@ -187,6 +241,11 @@ let
       opts.iconvFromBase = true;
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
@@ -217,6 +276,8 @@ let
       opts.parallelBuild = true;
       # php_time() has the old unspecified-argument declaration.
       opts.cStandard = "gnu17";
+      # The runtime probe calls close(DIR*) and ignores that result.
+      opts.configureProbeFlags = [ "-Wno-error=int-conversion" ];
     };
     "7.4.33" = {
       builder = ./build-7.4.33.nix;

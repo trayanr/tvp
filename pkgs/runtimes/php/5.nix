@@ -21,8 +21,11 @@
     releases."5.4.45" = "sha256-JbxHI5VfTjUpNSWAAq8UoUqYELSRoZQA12/N+p0Eso8=";
   }
   {
+    def = defs."5.6.40";
+    releases."5.6.40" = "sha256-VvuYeNEv3ZIfagiX6Rn06YDZMBYOFUy94sxtkgaifKw=";
+  }
+  {
     def = defs."5.5.38";
     releases."5.5.38" = "sha256-T0WMm1BCaWFXFaYvGCt8L4m7goT0hL78IhtWoVcbUG4=";
-    releases."5.6.40" = "sha256-VvuYeNEv3ZIfagiX6Rn06YDZMBYOFUy94sxtkgaifKw=";
   }
 ]

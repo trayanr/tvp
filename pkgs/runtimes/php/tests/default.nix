@@ -60,7 +60,9 @@ tvpLib.tests.mkSuite {
       # Exercise successful and rejected conversions after the native iconv probes.
       iconv = {
         script = ''php ${./fixtures/iconv.php}'';
-        expected = "converted";
+        expected =
+          "converted\n"
+          + (if php.tvp.features.iconvPartialOutputOnError or false then "string::1" else "boolean:false:1");
       };
 
       # ext/dom and ext/simplexml are built by default and silently absent when
