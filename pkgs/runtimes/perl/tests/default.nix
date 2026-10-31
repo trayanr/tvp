@@ -143,13 +143,12 @@ tvpLib.tests.mkSuite {
       # alone cannot detect a missing runtime executable in the sandbox.
       cwd-pwd-fallback = {
         script = ''
-          test ! -x /bin/pwd
-          test ! -x /usr/bin/pwd
-          test ! -x /QOpenSys/bin/pwd
           perl <<'PERL'
           use strict;
           use warnings;
           use Cwd ();
+          die "unexpected FHS pwd" if grep { -x $_ }
+            qw(/bin/pwd /usr/bin/pwd /QOpenSys/bin/pwd);
           my $root = Cwd::getcwd();
           mkdir "real directory" or die "mkdir: $!";
           symlink "real directory", "alias directory" or die "symlink: $!";
