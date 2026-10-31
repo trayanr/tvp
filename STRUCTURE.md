@@ -528,8 +528,7 @@ Historical Gawk 3.x and Tcl through 8.6.8 explicitly select GNU89; GMP's older
 compiler probes use GNU89 or GNU17, and GDBM 1.19–1.24, M4 1.4.19 and
 pkg-config's bundled GLib use GNU17. These preserve source language assumptions
 under GCC16's C23 default, following the [GCC14](https://gcc.gnu.org/gcc-14/porting_to.html)
-and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Only
-libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
+and [GCC15](https://gcc.gnu.org/gcc-15/porting_to.html) porting guidance. Libffi 3.4.3/3.4.4 demote the undeclared-function diagnostic for the existing
 `int open_temp_exec_file(void)`; [upstream fixed its declaration in 3.4.5](https://github.com/libffi/libffi/commit/ce077e5565366171aa1b4438749b0922fce887a4).
 MPFR through 4.2.0 selects GNU17 only during its original upstream checks;
 GNU89 would omit a C99-guarded test. MPFR 4.2.1/4.2.2 remain unchanged. GMP 6.0.0a
@@ -541,7 +540,16 @@ Bison 3.6.4/3.7.6, and selected early OpenSSL callbacks/bool identifiers. Newer
 fixed releases retain their upstream defaults. Readline checks actual installed
 libraries because its old Makefiles can ignore failed shared-library targets;
 Perl's shared suite includes a persistent SDBM store/fetch round trip.
-The sources, upstream checks and historical failure classifications are retained.
+Old SQLite generators select GNU17 through 3.18.2, with the missing-declaration
+diagnostic retained as a warning only through 3.4.1. Autoconf 2.12/2.13 declare
+the GNU89 dialect needed by their generated compiler probe; dependent Automake
+consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
+and build extensions in the same declared dialect, preserving the independent
+compiler/header control; the fixed 3.3.9/3.4.5 and later lines stay unchanged.
+Bash 5.2.37 retains GNU17, and libxcrypt 4.4.36/OpenSSL 0.9.8s keep their isolated
+new compiler diagnostics visible as warnings rather than changing runtime sources.
+The new base also checks C/C++ LTO through its selected compiler plugin and pinned
+binutils. The sources, upstream checks and historical failure classifications are retained.
 
 Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
 retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
