@@ -19,10 +19,10 @@ let
         perl = tvp.packages.perl_5;
         texinfo = tvp.packages.texinfo;
         which = tvp.packages.which;
-        # Use the base libc; canonical glibc itself is built with this compiler.
+        # The native target runtime belongs to the completed base composition.
         glibc = tvp.lib.packages.withConstraint {
           category = "construction";
-          reason = "Use the completed default base's pinned libc; canonical glibc is itself built with canonical GCC. The separately pinned constructor never follows ordinary dependency aliases.";
+          reason = "Reuse the completed default base's pinned native target libc. The standalone canonical glibc package is rebuilt independently; moving it must not move this compiler's explicit base/runtime composition.";
         } tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
@@ -62,7 +62,7 @@ let
         # Canonical GCC follows the default; the constructor pins a separate variant.
         glibc = tvp.lib.packages.withConstraint {
           category = "construction";
-          reason = "Use the completed default base's pinned libc; canonical glibc is itself built with canonical GCC. The separately pinned constructor never follows ordinary dependency aliases.";
+          reason = "The bootstrap compiler and native target use the completed default base's pinned libc. Canonical glibc is built by this compiler, so selecting it here would also form a cycle. The separately pinned constructor never follows ordinary dependency aliases.";
         } tvp.bases.default.stdenv.cc.libc;
       };
       patches = [
