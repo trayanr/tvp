@@ -11,6 +11,7 @@
   version,
   sha256,
   cStandard ? null,
+  commonSymbols ? false,
 
   patches ? [ ],
 
@@ -49,7 +50,8 @@ stdenv.mkDerivation (
     # here — the same hidden work a distribution does, made explicit.
     env.NIX_CFLAGS_COMPILE =
       "-I${lib.getDev ncurses}/include/ncursesw"
-      + lib.optionalString (cStandard != null) " -std=${cStandard}";
+      + lib.optionalString (cStandard != null) " -std=${cStandard}"
+      + lib.optionalString commonSymbols " -fcommon";
 
     # 2.0's Makefile references $(incdir) four times and defines it nowhere, so
     # its install target tries to mkdir /readline. Later releases use
@@ -90,7 +92,7 @@ stdenv.mkDerivation (
     # Old upstream make ignores failed shared/install-shared targets.
     postInstall = ''
       test -s "$out/lib/libreadline.a"
-      test -s "$out/lib/libhistory.a"
+      ${lib.optionalString (lib.versionAtLeast version "2.2") ''test -s "$out/lib/libhistory.a"''}
     '';
   }
 )

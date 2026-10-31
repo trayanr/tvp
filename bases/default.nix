@@ -86,6 +86,8 @@ let
           inputs = construction.variants.gcc16;
         };
 
+        # Retained for broken historical declarations and frozen graph labels.
+        # All ordinary buildable GCC9/GCC4.9 consumers use the owned default.
         gcc9 = mkBase {
           name = "gcc9";
           cc = "9.5.0";
@@ -96,8 +98,7 @@ let
           stdenv = withTvpMkDerivation pkgs.gcc9Stdenv;
         };
 
-        # The oldest stdenv nixpkgs offers, and the only one that still accepts
-        # cast-as-lvalue.
+        # Historical broken zlib recipes still name this environment.
         gcc49 = mkBase {
           name = "gcc49";
           cc = "4.9.4";

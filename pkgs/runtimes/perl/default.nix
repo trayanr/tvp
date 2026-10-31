@@ -5,14 +5,32 @@ let
   defs = tvpLib.packages.mkDefs {
     "5.24.4" = {
       builder = ./build-5.24.4.nix;
-      base = tvp.bases.gcc9;
+      # Configure's malloc/free probes require pre-C23 declarations.
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      patches = [
+        {
+          file = ./patches/configure-gcc-major.patch;
+          reason = "Configure mistakes GCC 16 for GCC 1 and selects the obsolete pcc structure-return ABI; match the GCC 1 major explicitly.";
+        }
+        {
+          file = ./patches/linux-elf-probe.patch;
+          reason = "The Linux ELF probe uses implicit-int main, rejected by modern GCC even in GNU17, and wrongly selects the obsolete a.out shared-library format. Give the probe its actual int return type.";
+        }
+      ];
       deps.coreutils = tvp.packages.coreutils;
     };
     "5.28.3" = {
       builder = ./build-5.24.4.nix;
-      # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
-      # struct-return patch this builder would otherwise apply is unnecessary.
-      base = tvp.bases.gcc9;
+      # Configure's malloc/free probes require pre-C23 declarations.
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      patches = [
+        {
+          file = ./patches/configure-gcc-major.patch;
+          reason = "Configure mistakes GCC 16 for GCC 1 and selects the obsolete pcc structure-return ABI; match the GCC 1 major explicitly.";
+        }
+      ];
       deps = {
         coreutils = pkgs.coreutils;
       };

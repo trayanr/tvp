@@ -1,0 +1,11 @@
+--- a/Configure
++++ b/Configure
+@@ -5452,7 +5452,7 @@
+ case "$hint" in
+ default|recommended)
+ 	case "$gccversion" in
+-	1*) dflt="$dflt -fpcc-struct-return" ;;
++	1.*) dflt="$dflt -fpcc-struct-return" ;;
+ 	esac
+ 	case "$optimize:$DEBUGGING" in
+ 	*-g*:old) dflt="$dflt -DDEBUGGING";;

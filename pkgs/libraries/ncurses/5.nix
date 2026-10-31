@@ -18,10 +18,15 @@
     };
   }
   {
-    def = defs."4.2";
+    def = defs."5.3";
     releases = {
       "5.3" = "sha256-bKyXPdMfnnpQXkX/qbuCz6a0H4S0gy/XdeFYV+6bNdQ=";
       "5.4" = "sha256-WrzgY89DF5D05qgBqWx+6gszpB7NCXD2MS9SV1wIOzY=";
+    };
+  }
+  {
+    def = defs."5.5";
+    releases = {
       "5.5" = "sha256-J6Y/OirJ0Twe2aCjPuRJfBmmtYELj5c452VKDhIiW5M=";
       "5.6" = "sha256-+crCsxaDo31lvDcRlZl1IZigaR5GLQ0aJSz5gV9XJNU=";
       "5.7" = "sha256-Cpvepcfeje1ckyftZCkV8sw4B1PxLUrRIO99o+o0mPQ=";

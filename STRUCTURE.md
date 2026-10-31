@@ -474,7 +474,7 @@ letting `callPackage` fill it from nixpkgs.
 # pkgs/libraries/openssl/default.nix — one of six definitions serving 221 releases
 "1.1.0" = {
   builder = ./build-1.1.1.nix;
-  base = tvp.bases.gcc9;                        # a build forced this; `default` if not
+  base = tvp.bases.default;                    # older bases need measured controls
   deps = { perl = tvp.packages.perl_5_28_3; };  # derivations — the canonical graph
   opts = { pbkdf2 = false; };                   # build options
 };
@@ -501,6 +501,10 @@ letting `callPackage` fill it from nixpkgs.
 - **Public bases are the default and older bases with actual consumers.**
   Retire a superseded public base once its consumers have moved. Older TVP commits
   retain its definition; bootstrap recipes may still need it internally.
+  GCC9 and GCC4.9 currently remain for broken Readline 2.0 and ten broken zlib
+  releases, respectively, and their frozen construction graph labels. Their 36
+  formerly buildable consumers now use the owned default. Public API removal and
+  internal label relocation are deferred; no construction identity changes.
 - **`builtBy` is required**, naming the reviewed parent used to construct the base.
   Construction inputs stay pinned and must not follow the default they are building.
   `null` means nixpkgs bootstrapped it.
