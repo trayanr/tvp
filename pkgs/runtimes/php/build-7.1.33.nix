@@ -16,6 +16,7 @@
 
   version,
   sha256,
+  cStandard ? null,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -99,4 +100,7 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
+    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+  }
 )

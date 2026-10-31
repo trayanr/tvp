@@ -545,12 +545,18 @@ diagnostic retained as a warning only through 3.4.1 and the missing Lemon return
 type only in 3.0.3–3.1.0. Ruby before 2.3 retains mkmf’s headerless function
 probes with a scoped diagnostic exception and requires its declared extensions
 to be installed. The dated Go bootstrap source uses GNU17; PHP 5.0–5.3
-configuration probes use GNU89. Autoconf 2.12/2.13 declare
+configuration probes use GNU89. PHP releases before their const-error-callback
+fixes select libxml2 2.11.9; fixed 8.1.31/8.2.14/8.3.1 and later keep the newer
+dependency. PHP 8.2.0–8.2.15 and 8.3.0–8.3.2 select upstream-supported GNU99
+to use their existing GNU atomic implementation, avoiding the [Clang-only builtin
+selection bug](https://github.com/php/php-src/issues/13215) fixed in 8.2.16/8.3.3.
+Autoconf 2.12/2.13 declare
 the GNU89 dialect needed by their generated compiler probe; dependent Automake
 consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
 and build extensions in the same declared dialect, preserving the independent
 compiler/header control; the fixed 3.3.9/3.4.5 and later lines stay unchanged.
-Bash 5.2.37 retains GNU17, and libxcrypt 4.4.36/OpenSSL 0.9.8s keep their isolated
+Binutils 2.42 keeps gprofng enabled with C-only GNU17; earlier compiler
+construction variants retain their exact original flags. Bash 5.2.37 retains GNU17, and libxcrypt 4.4.36/OpenSSL 0.9.8s keep their isolated
 new compiler diagnostics visible as warnings rather than changing runtime sources.
 The new base also checks C/C++ LTO through its selected compiler plugin and pinned
 binutils. The sources, upstream checks and historical failure classifications are retained.

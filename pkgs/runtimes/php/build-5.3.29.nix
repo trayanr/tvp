@@ -18,6 +18,7 @@
   version,
   sha256,
   cStandard ? null,
+  compileFlags ? [ ],
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -103,8 +104,13 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
-  // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
-    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
-  }
+  //
+    lib.optionalAttrs
+      ((cStandard != null || compileFlags != [ ]) && lib.versionAtLeast stdenv.cc.version "15")
+      {
+        env.NIX_CFLAGS_COMPILE = lib.concatStringsSep " " (
+          compileFlags ++ lib.optional (cStandard != null) "-std=${cStandard}"
+        );
+      }
 
 )
