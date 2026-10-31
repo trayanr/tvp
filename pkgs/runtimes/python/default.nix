@@ -5,7 +5,7 @@ let
     "3.5.10" = {
       builder = ./build-3.5.10.nix;
       base = tvp.bases.gcc9;
-      deps = {
+      deps = rec {
         bash = tvp.packages.bash_5;
         openssl = (
           tvp.lib.packages.withConstraint {
@@ -18,8 +18,13 @@ let
         libffi = tvp.packages.libffi_3;
         sqlite = tvp.packages.sqlite_3;
         gdbm = tvp.packages.gdbm_1;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
+        readline = tvpLib.packages.withConstraint {
+          reason = "Keep the moving Readline 8 line linked to the same Ncurses 6.4 instance required by Python 3.5's public WINDOW field access.";
+          parameters.ncurses = ncurses.__tvpSelection;
+        } (tvp.packages.readline_8.override { inherit ncurses; });
+        ncurses = tvpLib.packages.withConstraint {
+          reason = "Modules/_cursesmodule.c reads WINDOW._flags directly. Native 6.4 header control passes; 6.5/6.6 make WINDOW opaque and reject that expression. The full 6.6 consumer silently drops _curses, caught by stdlib and linkage checks.";
+        } tvp.packages.ncurses_6_4;
         libxcrypt = tvp.packages.libxcrypt_4;
         pkg-config = tvp.packages.pkg-config;
       };

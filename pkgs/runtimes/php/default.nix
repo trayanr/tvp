@@ -136,8 +136,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+          } tvp.packages.libxml2_2_13
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -174,8 +174,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+          } tvp.packages.libxml2_2_13
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -215,8 +215,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+          } tvp.packages.libxml2_2_13
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
@@ -250,8 +250,8 @@ let
         zlib = tvp.packages.zlib_1;
         libxml2 = (
           tvp.lib.packages.withConstraint {
-            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
-          } tvp.canonical.libxml2_2_9_7
+            reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+          } tvp.packages.libxml2_2_13
         );
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;

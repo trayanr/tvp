@@ -876,8 +876,9 @@ profiles. The `python` family supplies general-purpose interpreters with explici
 FFI, databases, terminal and compression inputs, plus upstream's bundled ensurepip for
 offline virtual environments. Tk, the optional native UUID helper and NIS omissions are
 recorded in the profile rather than left to host detection. Python 3.5/3.6 use the existing
-GCC 9 compatibility base; 3.7 onward use the owned default. Python dependencies follow tested library lines; the named
-`ncurses64` Readline profile retains its separate Ncurses 6.4 constraint. Library and compiler ceilings
+GCC 9 compatibility base; 3.7 onward use the owned default. Python 3.5 needs public WINDOW fields: it selects the moving Ncurses 6.4 line
+and overrides moving Readline 8 to use that same library instance. The named
+`ncurses64` public profile retains its separate documented constraint. Library and compiler ceilings
 live in version definitions; modern C API tests remain alongside guarded legacy consumers.
 
 `go-bootstrap_20171003` builds upstream's dated C-source bootstrap distribution. Its archive
