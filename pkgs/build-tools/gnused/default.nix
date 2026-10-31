@@ -6,7 +6,7 @@ let
       builder = ./build-4.9.nix;
       base = tvp.bases.default;
       deps = {
-        acl = tvp.packages.acl_2_3_2;
+        acl = tvp.packages.acl_2;
       };
     };
   };

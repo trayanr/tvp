@@ -6,7 +6,7 @@ let
       builder = ./build-4.10.0.nix;
       base = tvp.bases.default;
       deps = {
-        coreutils = tvp.packages.coreutils_9_5;
+        coreutils = tvp.packages.coreutils;
       };
     };
   };

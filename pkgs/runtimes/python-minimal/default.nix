@@ -6,7 +6,7 @@ let
       builder = ./build-3.12.5.nix;
       base = tvp.bases.default;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
+        bash = tvp.packages.bash_5;
       };
       patches = [
         {

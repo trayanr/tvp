@@ -8,17 +8,17 @@ let
       # Upstream libcpp uses nonliteral diagnostics with no format arguments.
       opts.hardeningDisable = [ "format" ];
       deps = {
-        binutils = tvp.packages.binutils_2_42;
-        gmp = tvp.packages.gmp_6_3_0;
-        mpfr = tvp.packages.mpfr_4_2_1;
-        mpc = tvp.packages.mpc_1_3_1;
-        isl = tvp.packages.isl_0_20;
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        perl = tvp.packages.perl_5_44_0;
-        texinfo = tvp.packages.texinfo_7_1;
-        which = tvp.packages.which_2_21;
+        binutils = tvp.packages.binutils_2;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        mpc = tvp.packages.mpc_1;
+        isl = tvp.packages.isl;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        perl = tvp.packages.perl_5;
+        texinfo = tvp.packages.texinfo;
+        which = tvp.packages.which;
         # Use the base libc; canonical glibc itself is built with this compiler.
         glibc = tvp.bases.default.stdenv.cc.libc;
       };
@@ -45,17 +45,17 @@ let
       # External dependencies meet upstream configure requirements. ISL 0.28
       # is newer than the in-tree 0.24 recommendation; Graphite is tested.
       deps = {
-        binutils = tvp.packages.binutils_2_42;
-        gmp = tvp.packages.gmp_6_3_0;
-        mpfr = tvp.packages.mpfr_4_2_2;
-        mpc = tvp.packages.mpc_1_3_1;
-        isl = tvp.packages.isl_0_28;
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        perl = tvp.packages.perl_5_44_0;
-        texinfo = tvp.packages.texinfo_7_1;
-        which = tvp.packages.which_2_21;
+        binutils = tvp.packages.binutils_2;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        mpc = tvp.packages.mpc_1;
+        isl = tvp.packages.isl;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        perl = tvp.packages.perl_5;
+        texinfo = tvp.packages.texinfo;
+        which = tvp.packages.which;
         # Canonical GCC follows the default; the constructor pins a separate variant.
         glibc = tvp.bases.default.stdenv.cc.libc;
       };

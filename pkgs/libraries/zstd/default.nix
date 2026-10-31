@@ -6,8 +6,8 @@ let
       builder = ./build-1.5.6.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        xz = tvp.packages.xz_5_8_3;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
       };
     };
   };

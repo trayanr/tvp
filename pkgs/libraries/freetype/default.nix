@@ -6,10 +6,10 @@ let
       builder = ./build-2.15.0.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        pkg-config = tvp.packages.pkg-config;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };

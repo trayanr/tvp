@@ -6,7 +6,7 @@ let
     "1.97.1" = {
       builder = ./build-1.97.1.nix;
       base = tvp.bases.default;
-      deps.patchelf = tvp.packages.patchelf_0_19_2;
+      deps.patchelf = tvp.packages.patchelf;
       opts = {
         inherit (platform) dynamicLinker;
         triple = platform.config;
@@ -26,7 +26,12 @@ let
     }
   ];
   testDeps = {
-    rustc = tvp.packages.rustc_1_97_1;
+    rustc = (
+      tvp.lib.packages.withConstraint {
+        category = "artifact";
+        reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+      } tvp.canonical.rustc_1_97_1
+    );
   };
   canonical = tvpLib.packages.mkVersions {
     inherit testDeps;

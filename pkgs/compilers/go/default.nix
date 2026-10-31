@@ -7,8 +7,13 @@ let
       builder = ./build-1.17.13.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrap = tvp.packages.go-bootstrap_20171003;
-        bash = tvp.packages.bash_5_2_37;
+        bootstrap = (
+          tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
+          } tvp.canonical."go-bootstrap_20171003"
+        );
+        bash = tvp.packages.bash_5;
       };
       opts = {
         inherit (platform) goOS goArch dynamicLinker;
@@ -18,8 +23,13 @@ let
       builder = ./build-1.17.13.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrap = tvp.packages.go_1_17_13;
-        bash = tvp.packages.bash_5_2_37;
+        bootstrap = (
+          tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
+          } tvp.canonical.go_1_17_13
+        );
+        bash = tvp.packages.bash_5;
       };
       opts = {
         inherit (platform) goOS goArch dynamicLinker;
@@ -29,8 +39,13 @@ let
       builder = ./build-1.22.12.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrap = tvp.packages.go_1_20_14;
-        bash = tvp.packages.bash_5_2_37;
+        bootstrap = (
+          tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
+          } tvp.canonical.go_1_20_14
+        );
+        bash = tvp.packages.bash_5;
       };
       opts = {
         inherit (platform) goOS goArch dynamicLinker;
@@ -40,8 +55,13 @@ let
       builder = ./build-1.22.12.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrap = tvp.packages.go_1_22_12;
-        bash = tvp.packages.bash_5_2_37;
+        bootstrap = (
+          tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
+          } tvp.canonical.go_1_22_12
+        );
+        bash = tvp.packages.bash_5;
       };
       opts = {
         inherit (platform) goOS goArch dynamicLinker;
@@ -51,8 +71,13 @@ let
       builder = ./build-1.22.12.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrap = tvp.packages.go_1_24_13;
-        bash = tvp.packages.bash_5_2_37;
+        bootstrap = (
+          tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
+          } tvp.canonical.go_1_24_13
+        );
+        bash = tvp.packages.bash_5;
       };
       opts = {
         inherit (platform) goOS goArch dynamicLinker;

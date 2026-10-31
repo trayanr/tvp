@@ -17,10 +17,10 @@ let
       };
       deps = {
         autoconf = tvp.packages.autoconf_2_13;
-        platformAutomake = tvp.packages.automake_1_19;
+        platformAutomake = tvp.packages.automake_1;
         automake = tvp.packages.automake_1_3;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "1.3.5" = {
@@ -29,41 +29,41 @@ let
       # Shipped configure and ltconfig probes use implicit-int main().
       opts.cStandard = "gnu89";
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        platformAutomake = tvp.packages.automake_1_19;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        platformAutomake = tvp.packages.automake_1;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "1.5.26" = {
       builder = ./build-1.5.26.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "2.2.10" = {
       builder = ./build-2.2.10.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "2.4.7" = {
       builder = ./build-2.4.7.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
       patches = [
         {

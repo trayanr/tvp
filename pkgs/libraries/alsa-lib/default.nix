@@ -6,7 +6,7 @@ let
       builder = ./build-1.2.16.1.nix;
       base = tvp.bases.default;
       deps = {
-        patchelf = tvp.packages.patchelf_0_19_2;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };

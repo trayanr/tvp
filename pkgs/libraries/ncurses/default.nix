@@ -10,14 +10,14 @@ let
       opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
     "6.6" = {
       builder = ./build-6.0.nix;
       base = tvp.bases.default;
-      deps.pkg-config = tvp.packages.pkg-config_0_29_2;
+      deps.pkg-config = tvp.packages.pkg-config;
     };
 
     # etip.h declares `throw()` on operator new, which C++17 removed and gcc 11
@@ -26,7 +26,7 @@ let
       builder = ./build-6.0.nix;
       base = tvp.bases.gcc9;
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
@@ -36,7 +36,7 @@ let
       builder = ./build-5.8.nix;
       base = tvp.bases.gcc49;
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
       opts = {
         hardeningDisable = [ "format" ];

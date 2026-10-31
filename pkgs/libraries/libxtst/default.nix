@@ -6,17 +6,17 @@ let
       builder = ./build-1.2.6.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        libx11 = tvp.packages.libx11_1_8_14;
-        libxext = tvp.packages.libxext_1_3_7;
-        libxi = tvp.packages.libxi_1_8_4;
-        xorgproto = tvp.packages.xorgproto_2026_1;
-        xtrans = tvp.packages.xtrans_1_6_0;
-        libxcb = tvp.packages.libxcb_1_17_0;
-        libxau = tvp.packages.libxau_1_0_12;
-        libxdmcp = tvp.packages.libxdmcp_1_1_5;
-        libxfixes = tvp.packages.libxfixes_6_0_2;
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        libx11 = tvp.packages.libx11_1;
+        libxext = tvp.packages.libxext_1;
+        libxi = tvp.packages.libxi_1;
+        xorgproto = tvp.packages.xorgproto;
+        xtrans = tvp.packages.xtrans_1;
+        libxcb = tvp.packages.libxcb_1;
+        libxau = tvp.packages.libxau_1;
+        libxdmcp = tvp.packages.libxdmcp_1;
+        libxfixes = tvp.packages.libxfixes_6;
       };
     };
   };

@@ -6,9 +6,9 @@ let
       builder = ./build-1.1.5.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        xorgproto = tvp.packages.xorgproto_2026_1;
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        xorgproto = tvp.packages.xorgproto;
       };
     };
   };

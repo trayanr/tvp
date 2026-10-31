@@ -10,7 +10,7 @@ let
       # The code was correct for its era; the compiler moved.
       base = tvp.bases.gcc9;
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
 
@@ -23,7 +23,7 @@ let
       # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
       opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
 
@@ -34,7 +34,7 @@ let
       # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
       opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
       patches = [
         {
@@ -51,8 +51,8 @@ let
       # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
       opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
-        automake = tvp.packages.automake_1_19;
+        ncurses = tvp.packages.ncurses_6;
+        automake = tvp.packages.automake_1;
       };
     };
 
@@ -63,13 +63,13 @@ let
       # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
       opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
     "8.3" = {
       builder = ./build-4.3.nix;
       base = tvp.bases.default;
-      deps.ncurses = tvp.packages.ncurses_6_6;
+      deps.ncurses = tvp.packages.ncurses_6;
     };
 
   };
@@ -139,7 +139,7 @@ let
       inherit pkgs;
       profiles.ncurses64 = {
         base = tvp.bases.default;
-        versions."8.3".deps.ncurses = tvp.packages.ncurses_6_4;
+        versions."8.3".deps.ncurses = tvp.packages.ncurses_6;
       };
     }
   );
@@ -149,6 +149,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
+    lines = [ "6_2" ];
     inherit
       pname
       versionTable

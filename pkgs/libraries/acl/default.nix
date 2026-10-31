@@ -8,19 +8,19 @@ let
       # zero-length string subobject; 2.3.2 flattens it. Preserve the sources
       # and hardening on the verified compatibility compiler.
       base = tvp.bases.gcc13-owned-v3;
-      deps.attr = tvp.packages.attr_2_5_2;
+      deps.attr = tvp.packages.attr_2;
     };
     "2.3.2" = {
       builder = ./build-2.3.2.nix;
       base = tvp.bases.default;
       deps = {
-        attr = tvp.packages.attr_2_5_2;
+        attr = tvp.packages.attr_2;
       };
     };
     "2.4.0" = {
       builder = ./build-2.4.0.nix;
       base = tvp.bases.default;
-      deps.attr = tvp.packages.attr_2_5_2;
+      deps.attr = tvp.packages.attr_2;
     };
   };
   versionTable = tvpLib.packages.mkTable [

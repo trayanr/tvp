@@ -6,9 +6,9 @@ let
       builder = ./build-2.9.0.nix;
       base = tvp.bases.default;
       deps = {
-        cmake = tvp.packages.cmake_4_4_5;
-        ninja = tvp.packages.ninja_1_13_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        cmake = tvp.packages.cmake;
+        ninja = tvp.packages.ninja;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };

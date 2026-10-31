@@ -8,7 +8,7 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_5_0_5;
+      deps.gmp = tvp.packages.gmp_6;
       opts.float128 = false;
       opts.mpfrRoundingNames = false;
     };
@@ -18,7 +18,7 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_5_0_5;
+      deps.gmp = tvp.packages.gmp_6;
       opts.float128 = false;
     };
     "3.1.6" = {
@@ -27,7 +27,7 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6_3_0;
+      deps.gmp = tvp.packages.gmp_6;
       opts.float128 = false;
     };
     "4.0.2" = {
@@ -36,12 +36,12 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6_3_0;
+      deps.gmp = tvp.packages.gmp_6;
     };
     "4.2.1" = {
       builder = ./build-2.4.2.nix;
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6_3_0;
+      deps.gmp = tvp.packages.gmp_6;
     };
 
   };

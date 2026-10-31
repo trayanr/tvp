@@ -83,6 +83,24 @@ let
             cp ${./tools/dependencies/test_report.py} test_report.py
             python -m unittest -v test_report 2>&1 | tee "$out"
           '';
+      dependency-policy =
+        let
+          unexplained = pkgs.lib.filter (
+            edge:
+            builtins.elem edge.scope [
+              "ordinary"
+              "public-variant"
+            ]
+            && (edge.selection.kind or "unknown") == "exact"
+            && edge.reason == null
+          ) tvp.dependencyInventory.edges;
+        in
+        if unexplained != [ ] then
+          throw "TVP: unexplained ordinary exact dependency selections: ${
+            pkgs.lib.concatStringsSep ", " (map (edge: "${edge.consumer}/${edge.dependency}") unexplained)
+          }"
+        else
+          pkgs.writeText "tvp-dependency-policy" "No unexplained ordinary exact dependency selections.\n";
       dependency-selectors = import ./lib/tests/selectors.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };

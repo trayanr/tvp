@@ -6,11 +6,11 @@ let
       builder = ./build-9.3.1.nix;
       base = tvp.bases.default;
       deps = {
-        jdk = tvp.packages.jdk_21_0_13;
-        python = tvp.packages.python_3_12_16;
-        bash = tvp.packages.bash_5_2_37;
-        unzip = tvp.packages.unzip_6_0;
-        coreutils = tvp.packages.coreutils_9_5;
+        jdk = tvp.packages.jdk_21;
+        python = tvp.packages.python_3;
+        bash = tvp.packages.bash_5;
+        unzip = tvp.packages.unzip;
+        coreutils = tvp.packages.coreutils;
       };
       blob = {
         reason = "Pinned upstream Gradle distribution with its bundled Java bytecode and native service libraries.";

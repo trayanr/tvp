@@ -12,7 +12,7 @@ let
       # GNU89 also retains the original pointer-conversion diagnostics.
       opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
@@ -23,8 +23,8 @@ let
       # GNU89 also retains the original pointer-conversion diagnostics.
       opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        xz = tvp.packages.xz_5_8_3;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
       };
     };
 
@@ -32,8 +32,8 @@ let
       builder = ./build-2.8.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        xz = tvp.packages.xz_5_8_3;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
       };
     };
 
@@ -41,7 +41,7 @@ let
       builder = ./build-2.15.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
@@ -49,8 +49,8 @@ let
       builder = ./build-2.15.4.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        zlib = tvp.packages.zlib_1;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
   };

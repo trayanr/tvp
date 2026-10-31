@@ -6,15 +6,15 @@ let
       builder = ./build-8.23.0.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        perl = tvp.packages.perl_5_44_0;
-        python = tvp.packages.python_3_12_16;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        nghttp2 = tvp.packages.nghttp2_1_70_0;
-        ca-certificates = tvp.packages.ca-certificates_2026_10_20;
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        perl = tvp.packages.perl_5;
+        python = tvp.packages.python_3;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        nghttp2 = tvp.packages.nghttp2_1;
+        ca-certificates = tvp.packages.ca-certificates;
       };
       opts.configureOptions = [
         "--disable-ldap"

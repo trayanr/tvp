@@ -6,10 +6,10 @@ let
       builder = ./build-5.45.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        xz = tvp.packages.xz_5_8_3;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        zstd = tvp.packages.zstd_1_5_6;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
+        bzip2 = tvp.packages.bzip2_1;
+        zstd = tvp.packages.zstd_1;
       };
     };
   };

@@ -6,12 +6,12 @@ let
       builder = ./build-2.39.nix;
       base = tvp.bases.default;
       deps = {
-        gcc = tvp.packages.gcc_13_3_0;
-        binutils = tvp.packages.binutils_2_42;
-        linuxHeaders = tvp.packages."linux-headers_6_9";
-        perl = tvp.packages.perl_5_44_0;
-        bison = tvp.packages.bison_3_8_2;
-        python3Minimal = tvp.packages."python-minimal_3_12_5";
+        gcc = tvp.packages.gcc_13;
+        binutils = tvp.packages.binutils_2;
+        linuxHeaders = tvp.packages.linux-headers_6;
+        perl = tvp.packages.perl_5;
+        bison = tvp.packages.bison;
+        python3Minimal = tvp.packages.python-minimal_3;
       };
       patches = [
         {

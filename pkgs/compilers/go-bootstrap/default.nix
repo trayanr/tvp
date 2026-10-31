@@ -6,7 +6,7 @@ let
     "20171003" = {
       builder = ./build-20171003.nix;
       base = tvp.bases.default;
-      deps.bash = tvp.packages.bash_5_2_37;
+      deps.bash = tvp.packages.bash_5;
       opts = {
         # cmd/dist's dated C source defines its own int bool type.
         cStandard = "gnu17";

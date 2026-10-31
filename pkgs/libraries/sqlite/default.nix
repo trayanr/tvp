@@ -7,8 +7,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -22,8 +22,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -42,8 +42,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -64,8 +64,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -88,8 +88,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -114,8 +114,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -132,8 +132,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -151,8 +151,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -171,8 +171,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -191,8 +191,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -211,8 +211,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -227,8 +227,8 @@ let
       opts.compileFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
     };
 
@@ -236,8 +236,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -262,8 +262,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -282,8 +282,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
     };
 
@@ -291,8 +291,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -306,8 +306,8 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
@@ -326,8 +326,8 @@ let
       builder = ./build-3.48.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_6_18;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
     };
   };

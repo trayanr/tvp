@@ -6,8 +6,8 @@ let
       builder = ./build-1.13.0.nix;
       base = tvp.bases.default;
       deps = {
-        python = tvp.packages.python-minimal_3_12_5;
-        bash = tvp.packages.bash_5_2_37;
+        python = tvp.packages.python-minimal_3;
+        bash = tvp.packages.bash_5;
       };
       patches = [
         {

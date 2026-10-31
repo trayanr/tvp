@@ -6,7 +6,7 @@ let
       builder = ./build-3.11.nix;
       base = tvp.bases.default;
       deps = {
-        pcre2 = tvp.packages.pcre2_10_44;
+        pcre2 = tvp.packages.pcre2_10;
       };
     };
   };
@@ -29,7 +29,7 @@ let
       package:
       import ./tests {
         inherit pkgs tvpLib package;
-        locale = tvp.packages.glibc_2_39;
+        locale = tvp.packages.glibc_2;
       };
     packageMeta.upstream = {
       type = "directory-index";

@@ -7,16 +7,26 @@ let
       builder = ./build-3.13.7.nix;
       base = tvp.bases.default;
       deps = {
-        bootstrapDart = tvp.packages.dart-bootstrap_3_13_0_103_1_beta;
-        devtoolsAssets = tvp.packages.dart-bootstrap_3_13_7;
-        python = tvp.packages.python_3_12_16;
-        llvm = tvp.packages.llvm_23_1_4;
-        gn = tvp.packages.gn_20260707;
-        git = tvp.packages.git_2_56_0;
-        ninja = tvp.packages.ninja_1_13_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
-        ca-certificates = tvp.packages.ca-certificates_2026_10_20;
+        bootstrapDart = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical."dart-bootstrap_3_13_0_103_1_beta"
+        );
+        devtoolsAssets = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical."dart-bootstrap_3_13_7"
+        );
+        python = tvp.packages.python_3;
+        llvm = tvp.packages.llvm_23;
+        gn = tvp.packages.gn;
+        git = tvp.packages.git_2;
+        ninja = tvp.packages.ninja;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
+        ca-certificates = tvp.packages.ca-certificates;
       };
       opts = {
         inherit (platform) dynamicLinker;
@@ -50,7 +60,7 @@ let
     }
   ];
   testDeps = {
-    nodejs = tvp.packages.nodejs_26_13_0;
+    nodejs = tvp.packages.nodejs_26;
   };
   canonical = tvpLib.packages.mkVersions {
     inherit testDeps;

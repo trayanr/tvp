@@ -8,7 +8,7 @@ let
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -20,7 +20,7 @@ let
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -31,7 +31,7 @@ let
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -47,8 +47,8 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -58,8 +58,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -69,8 +69,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -80,8 +80,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -90,8 +90,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -106,8 +106,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.archiveExt = "tar.bz2";
     };
@@ -115,8 +115,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.archiveExt = "tar.bz2";
       opts.installAclocalDir = true;
@@ -125,8 +125,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.installAclocalDir = true;
     };
@@ -134,8 +134,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
     };
   };
@@ -314,5 +314,8 @@ let
 in
 {
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  aliases = tvpLib.packages.mkAliases {
+    lines = [ "1_3" ];
+    inherit pname versionTable canonical;
+  };
 }

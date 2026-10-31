@@ -13,15 +13,19 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_0_9_8zh;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_8_0;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        flex = tvp.packages.flex_2_6_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_0_9_8;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        flex = tvp.packages.flex;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts = {
         parallelBuild = true;
@@ -43,16 +47,20 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_0_9_8zh;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_8_0;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        flex = tvp.packages.flex_2_6_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_0_9_8;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        flex = tvp.packages.flex;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts = {
         parallelBuild = true;
@@ -74,15 +82,19 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_8_0;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_0;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. Use newest verified compatible 2.9.7; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts = {
         parallelBuild = true;
@@ -104,15 +116,19 @@ let
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_9_7;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_0;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts = {
         parallelBuild = true;
@@ -134,15 +150,19 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_9_7;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_0;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       # The historical typed zlib globals constructor predates this callback API.
       opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
@@ -164,15 +184,19 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_9_7;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_0;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
       # 7.0 adds an explicit cast for the typed zlib globals constructor.
@@ -191,15 +215,19 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_9_7;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_0;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
       # 7.0 adds an explicit cast for the typed zlib globals constructor.
@@ -222,15 +250,19 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_9_7;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_1;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = (
+          tvp.lib.packages.withConstraint {
+            reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+          } tvp.canonical.libxml2_2_9_7
+        );
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
     };
@@ -247,14 +279,14 @@ let
         "-Wno-error=implicit-function-declaration"
       ];
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_1;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
     };
@@ -264,14 +296,14 @@ let
       # The old iconv runtime probes include a header below this prefix.
       opts.iconvFromBase = true;
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_1;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
       # php_time() has the old unspecified-argument declaration.
@@ -287,14 +319,14 @@ let
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_1_1;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
+        testAutoconf = tvp.packages.autoconf_2;
       };
       opts.parallelBuild = true;
     };
@@ -302,14 +334,14 @@ let
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_15_3;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
@@ -317,15 +349,15 @@ let
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
         # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
@@ -333,16 +365,16 @@ let
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
         # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        libxml2 = tvp.packages.libxml2_2_13;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
     "8.2.0" = {
@@ -354,15 +386,15 @@ let
       # Installed atomic headers need the same supported dialect in extensions.
       opts.testFeatures.consumerCStandard = "gnu99";
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
         # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
     "8.2.14" = {
@@ -374,32 +406,32 @@ let
       # Installed atomic headers need the same supported dialect in extensions.
       opts.testFeatures.consumerCStandard = "gnu99";
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
         # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        libxml2 = tvp.packages.libxml2_2_13;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
     "8.2.16" = {
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
+        testAutoconf = tvp.packages.autoconf_2;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
         # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
         # still requires libxml2 before 2.14.
-        libxml2 = tvp.packages.libxml2_2_13_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        libxml2 = tvp.packages.libxml2_2_13;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
     "8.0.0" = {
@@ -408,16 +440,16 @@ let
       # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
       opts.cStandard = "gnu17";
       deps = {
-        testAutoconf = tvp.packages.autoconf_2_73;
+        testAutoconf = tvp.packages.autoconf_2;
         # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
         # RSA_SSLV23_PADDING, which 3.0.0 removed.
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        openssl = tvp.packages.openssl_1_1;
+        zlib = tvp.packages.zlib_1;
+        libxml2 = tvp.packages.libxml2_2_11;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        sqlite = tvp.packages.sqlite_3;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
   };
@@ -431,9 +463,9 @@ let
   pname = "php";
 
   testDeps = {
-    automake = tvp.packages.automake_1_19;
-    libtool = tvp.packages.libtool_2_6_2;
-    gnumake = tvp.packages.gnumake_4_4_1;
+    automake = tvp.packages.automake_1;
+    libtool = tvp.packages.libtool_2;
+    gnumake = tvp.packages.gnumake;
   };
   canonical = tvpLib.packages.mkVersions {
     inherit testDeps;

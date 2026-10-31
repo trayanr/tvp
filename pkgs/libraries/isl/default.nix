@@ -6,7 +6,7 @@ let
       builder = ./build-0.20.nix;
       base = tvp.bases.default;
       deps = {
-        gmp = tvp.packages.gmp_6_3_0;
+        gmp = tvp.packages.gmp_6;
       };
     };
   };

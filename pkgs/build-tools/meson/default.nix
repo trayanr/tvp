@@ -6,11 +6,11 @@ let
       builder = ./build-1.11.1.nix;
       base = tvp.bases.default;
       deps = {
-        python = tvp.packages.python-build_3_12_5;
-        bash = tvp.packages.bash_5_2_37;
-        ninja = tvp.packages.ninja_1_13_2;
-        cmake = tvp.packages.cmake_4_4_5;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        python = tvp.packages.python-build_3;
+        bash = tvp.packages.bash_5;
+        ninja = tvp.packages.ninja;
+        cmake = tvp.packages.cmake;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -42,7 +42,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

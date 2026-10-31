@@ -7,16 +7,16 @@ let
       builder = ./build-2.6.1.nix;
       inherit base;
       deps = {
-        bison = tvp.packages.bison_3_8_2;
-        m4 = tvp.packages.m4_1_4_21;
+        bison = tvp.packages.bison;
+        m4 = tvp.packages.m4;
       };
     };
     "2.6.2" = {
       builder = ./build-2.6.1.nix;
       inherit base;
       deps = {
-        bison = tvp.packages.bison_3_8_2;
-        m4 = tvp.packages.m4_1_4_21;
+        bison = tvp.packages.bison;
+        m4 = tvp.packages.m4;
       };
       patches = [
         {

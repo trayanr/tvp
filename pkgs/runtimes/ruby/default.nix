@@ -13,10 +13,10 @@ let
       # Keep configuration and extension callbacks in their supported dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
 
@@ -35,11 +35,11 @@ let
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
       opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
-        libffi = tvp.packages.libffi_3_8_0;
+        openssl = tvp.packages.openssl_1_0;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+        libffi = tvp.packages.libffi_3;
       };
     };
 
@@ -54,11 +54,11 @@ let
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
       opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
+        openssl = tvp.packages.openssl_1_0;
         readline = tvp.packages.readline_6_2;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
-        libffi = tvp.packages.libffi_3_8_0;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+        libffi = tvp.packages.libffi_3;
       };
     };
     "2.2.0" = {
@@ -70,10 +70,10 @@ let
       # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
       opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_0;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "2.3.0" = {
@@ -82,10 +82,10 @@ let
       # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_0;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "2.4.8" = {
@@ -94,10 +94,10 @@ let
       # Keep configuration and extension callbacks in their supported dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
       patches = [
         {
@@ -110,10 +110,10 @@ let
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
       # Actual native extension callbacks retain pre-C23 ANYARGS semantics.
       opts = {
@@ -127,10 +127,10 @@ let
       # Keep configuration and extension callbacks in their supported dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
 
@@ -140,10 +140,10 @@ let
       # Keep configuration and extension callbacks in their supported dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "2.6.7" = {
@@ -154,10 +154,10 @@ let
       # vm.c omits the existing mutex-destroy declaration only in this release.
       opts.compileFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = tvp.packages.openssl_1_1;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "3.1.0" = {
@@ -169,9 +169,9 @@ let
       # 3.1.3 regenerates it with main(void). Preserve the remaining warning list.
       opts.extraWarnFlags = [ "-Wno-old-style-definition" ];
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
@@ -181,9 +181,9 @@ let
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
@@ -193,12 +193,17 @@ let
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml_0_2;
+        libffi = tvp.packages.libffi_3;
+        rustc = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -208,11 +213,16 @@ let
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml_0_2;
+        libffi = tvp.packages.libffi_3;
+        rustc = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -223,11 +233,16 @@ let
       builder = ./build-3.3.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml_0_2;
+        libffi = tvp.packages.libffi_3;
+        rustc = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.rustc_1_97_1
+        );
       };
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts = {
@@ -240,11 +255,16 @@ let
       builder = ./build-3.3.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml_0_2;
+        libffi = tvp.packages.libffi_3;
+        rustc = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -255,11 +275,16 @@ let
       builder = ./build-4.0.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml_0_2;
+        libffi = tvp.packages.libffi_3;
+        rustc = (
+          tvp.lib.packages.withConstraint {
+            category = "artifact";
+            reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+          } tvp.canonical.rustc_1_97_1
+        );
       };
     };
   };

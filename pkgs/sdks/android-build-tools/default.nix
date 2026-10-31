@@ -7,10 +7,10 @@ let
       builder = ./build-36.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
-        jdk = tvp.packages.jdk_21_0_13;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
+        jdk = tvp.packages.jdk_21;
       };
       opts = {
         url = "https://dl.google.com/android/repository/build-tools_r36_linux.zip";
@@ -28,10 +28,10 @@ let
       builder = ./build-36.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
-        jdk = tvp.packages.jdk_21_0_13;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
+        jdk = tvp.packages.jdk_21;
       };
       opts = {
         url = "https://dl.google.com/android/repository/build-tools_r37_linux.zip";
@@ -58,8 +58,13 @@ let
     }
   ];
   testDeps = {
-    platform = tvp.packages.android-platform_36_r2;
-    zip = tvp.packages.zip_3_0;
+    platform = (
+      tvp.lib.packages.withConstraint {
+        category = "artifact";
+        reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
+      } tvp.canonical."android-platform_36_r2"
+    );
+    zip = tvp.packages.zip;
   };
   canonical = tvpLib.packages.mkVersions {
     inherit testDeps;

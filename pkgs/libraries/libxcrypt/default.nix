@@ -5,7 +5,7 @@ let
     "4.4.36" = {
       builder = ./build-4.4.36.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
       # ascii64 retains its explicit NUL and discards a redundant implicit NUL.
       # GCC15 adds this Wextra diagnostic; keep it visible and all other Werror.
       opts.compileFlags = [ "-Wno-error=unterminated-string-initialization" ];
@@ -13,7 +13,7 @@ let
     "4.5.0" = {
       builder = ./build-4.4.36.nix;
       base = tvp.bases.default;
-      deps.perl = tvp.packages.perl_5_44_0;
+      deps.perl = tvp.packages.perl_5;
     };
 
   };
