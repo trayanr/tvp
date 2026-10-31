@@ -1,6 +1,8 @@
 { tvp }:
 let
-  p = tvp.packages;
+  # These are released composition artifacts, not ordinary tool dependencies.
+  # Use the exact namespace so a future prefix alias cannot move an SDK profile.
+  p = tvp.canonical;
   mkSdk = args: tvp.lib.android.mkSdk ({ inherit (tvp.bases.default) stdenv; } // args);
   common = [
     p.android-commandline-tools_23_0

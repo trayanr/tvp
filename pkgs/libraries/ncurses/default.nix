@@ -117,6 +117,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
+    lines = [ "6_4" ];
     inherit
       pname
       versionTable

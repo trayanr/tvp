@@ -139,7 +139,9 @@ let
       inherit pkgs;
       profiles.ncurses64 = {
         base = tvp.bases.default;
-        versions."8.3".deps.ncurses = tvp.packages.ncurses_6;
+        versions."8.3".deps.ncurses = tvp.lib.packages.withConstraint {
+          reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
+        } tvp.packages.ncurses_6_4;
       };
     }
   );

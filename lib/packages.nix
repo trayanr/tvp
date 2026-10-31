@@ -27,10 +27,12 @@ rec {
           __tvpSelection = selection;
         }
         // lib.optionalAttrs (value ? override) {
-          override = args: changed "override" (value.override args);
+          override = lib.mirrorFunctionArgs value.override (args: changed "override" (value.override args));
         }
         // lib.optionalAttrs (value ? overrideAttrs) {
-          overrideAttrs = args: changed "overrideAttrs" (value.overrideAttrs args);
+          overrideAttrs = lib.mirrorFunctionArgs value.overrideAttrs (
+            args: changed "overrideAttrs" (value.overrideAttrs args)
+          );
         };
       projectedOutputs = lib.genAttrs (package.outputs or [ ]) (
         output: decorate package.${output} // projectedOutputs

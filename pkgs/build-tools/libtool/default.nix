@@ -16,9 +16,13 @@ let
         license = pkgs.lib.licenses.gpl2Plus;
       };
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
+        autoconf = tvp.packages.autoconf_2;
         platformAutomake = tvp.packages.automake_1;
-        automake = tvp.packages.automake_1_3;
+        automake = (
+          tvp.lib.packages.withConstraint {
+            reason = "Libtool 1.0 cannot parse Automake 1.5 depcomp's .deps/answer.TPlo library-object argument; current 1.19 also fails on compile -o handling. Native shared/static project passes with Automake 1.4-p6 and fails with 1.5 and 1.19; retain the moving 1.4 line.";
+          } tvp.packages.automake_1_4
+        );
         m4 = tvp.packages.m4;
         file = tvp.packages.file;
       };

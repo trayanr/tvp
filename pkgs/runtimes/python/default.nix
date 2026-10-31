@@ -18,7 +18,7 @@ let
         libffi = tvp.packages.libffi_3;
         sqlite = tvp.packages.sqlite_3;
         gdbm = tvp.packages.gdbm_1;
-        readline = tvp.variants.ncurses64.readline_8_3;
+        readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
         libxcrypt = tvp.packages.libxcrypt_4;
         pkg-config = tvp.packages.pkg-config;

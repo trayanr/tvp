@@ -315,7 +315,6 @@ in
 {
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
-    lines = [ "1_3" ];
     inherit pname versionTable canonical;
   };
 }
