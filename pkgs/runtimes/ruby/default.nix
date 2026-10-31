@@ -10,6 +10,8 @@ let
     "2.4.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         readline = tvp.packages.readline_8_3;
@@ -93,6 +95,8 @@ let
     "2.4.8" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         readline = tvp.packages.readline_8_3;
@@ -115,7 +119,9 @@ let
         zlib = tvp.packages.zlib_1_3_2;
         gdbm = tvp.packages.gdbm_1_26;
       };
+      # Actual native extension callbacks retain pre-C23 ANYARGS semantics.
       opts = {
+        cStandard = "gnu17";
         restoreConfigScripts = true;
       };
     };

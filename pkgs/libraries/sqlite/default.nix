@@ -47,9 +47,11 @@ let
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
         compileFlags = [
           "-std=gnu17"
           "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
         ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
@@ -91,9 +93,11 @@ let
       };
       # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
         compileFlags = [
           "-std=gnu17"
           "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
         ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
@@ -225,6 +229,52 @@ let
       deps = {
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
+      };
+    };
+
+    "3.0.3" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8_5_19;
+        readline = tvp.packages.readline_8_3;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+      };
+      patches = [
+        {
+          file = ./patches/3.0.1-unsigned-typedef.patch;
+          reason = "INTPTR_TYPE is defined as sqlite_int64, so `typedef unsigned INTPTR_TYPE uptr` qualifies a typedef name and no translation unit compiles. Restores the `long long` 3.0.0 used; 3.0.4 fixed it differently, with a separate UINTPTR_TYPE.";
+        }
+      ];
+    };
+
+    "3.0.6" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8_5_19;
+        readline = tvp.packages.readline_8_3;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
       };
     };
 
