@@ -17,6 +17,8 @@
 
   version,
   sha256,
+  cStandard ? null,
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -49,9 +51,15 @@ stdenv.mkDerivation (
     # buildInputs. TVP's own pkg-config is just the program, so the path is named
     # here instead — the hidden work a distribution does becomes explicit the
     # moment you own the tool.
-    preConfigure = ''
-      export PKG_CONFIG_PATH="${lib.getDev libxml2}/lib/pkgconfig:${lib.getDev openssl}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig:${lib.getDev ncurses}/lib/pkgconfig:${lib.getDev sqlite}/lib/pkgconfig"
-    '';
+    preConfigure =
+      lib.optionalString (cStandard != null) ''
+        # Configure may add a language flag to CC. CFLAGS comes after it and
+        # preserves the explicitly supported standard in every compile command.
+        export CFLAGS="''${CFLAGS:--g -O2} -std=${cStandard}"
+      ''
+      + ''
+        export PKG_CONFIG_PATH="${lib.getDev libxml2}/lib/pkgconfig:${lib.getDev openssl}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig:${lib.getDev ncurses}/lib/pkgconfig:${lib.getDev sqlite}/lib/pkgconfig"
+      '';
 
     configureFlags = [
       "--with-openssl"
@@ -96,4 +104,14 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs iconvFromBase {
+    # Keep libc iconv detection; only its generated absolute header fallback
+    # needs the owned store prefix rather than an absent /usr tree.
+    postPatch = ''
+      substituteInPlace configure --replace-fail \
+        'PHP_ICONV_PREFIX="/usr"' \
+        'PHP_ICONV_PREFIX="${lib.getDev stdenv.cc.libc}"'
+    '';
+  }
+
 )

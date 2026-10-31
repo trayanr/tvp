@@ -56,7 +56,7 @@ let
         perl = tvp.packages.perl_5_44_0;
         texinfo = tvp.packages.texinfo_7_1;
         which = tvp.packages.which_2_21;
-        # Use the unchanged base libc; GCC16 is not a construction input.
+        # Canonical GCC follows the default; the constructor pins a separate variant.
         glibc = tvp.bases.default.stdenv.cc.libc;
       };
       patches = [

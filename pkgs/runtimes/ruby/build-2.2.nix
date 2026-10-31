@@ -1,4 +1,4 @@
-# Serves 2.7 and 3.0.
+# Serves 2.2–2.5, 2.7 and 3.0; 2.6 adds its MJIT command adaptation.
 {
   lib,
   stdenv,
@@ -6,6 +6,9 @@
 
   version,
   sha256,
+  cStandard ? null,
+  mkmfProbeFlags ? [ ],
+  compileFlags ? [ ],
 
   openssl,
   readline,
@@ -59,23 +62,29 @@ stdenv.mkDerivation (
       export GEM_HOME="$out/${finalAttrs.passthru.gemPath}"
     '';
 
-    postInstall = ''
-      # Bundler tries to create this directory
-      mkdir -p $out/nix-support
-      cat > $out/nix-support/setup-hook <<EOF
-      addGemPath() {
-        addToSearchPath GEM_PATH \$1/${finalAttrs.passthru.gemPath}
-      }
-      addRubyLibPath() {
-        addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby
-        addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}
-        addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}/${stdenv.targetPlatform.system}
-      }
+    postInstall =
+      ''
+        # Bundler tries to create this directory
+        mkdir -p $out/nix-support
+        cat > $out/nix-support/setup-hook <<EOF
+        addGemPath() {
+          addToSearchPath GEM_PATH \$1/${finalAttrs.passthru.gemPath}
+        }
+        addRubyLibPath() {
+          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby
+          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}
+          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}/${stdenv.targetPlatform.system}
+        }
 
-      addEnvHooks "$hostOffset" addGemPath
-      addEnvHooks "$hostOffset" addRubyLibPath
-      EOF
-    '';
+        addEnvHooks "$hostOffset" addGemPath
+        addEnvHooks "$hostOffset" addRubyLibPath
+        EOF
+      ''
+      + lib.optionalString (mkmfProbeFlags != [ ]) ''
+        # Reject a partial interpreter whose compiler probes dropped extensions.
+        mkdir -p "$out/nix-support"
+        "$out/bin/ruby" -e '%w[fiddle gdbm openssl readline zlib socket].each { |name| require name; puts name }'         > "$out/nix-support/tvp-required-extensions"
+      '';
 
     meta = {
       description = "The Ruby programming language";
@@ -103,6 +112,7 @@ stdenv.mkDerivation (
       # Language capability has nothing in the dependency graph to read, so the
       # builder states it and the suite guards on it.
       tvp.features = {
+        consumerCStandard = cStandard;
         enumerableSum = lib.versionAtLeast version "2.4";
         yamlSafeLoad = lib.versionAtLeast version "2.1";
       };
@@ -127,4 +137,12 @@ stdenv.mkDerivation (
       cp ext/fiddle/libffi-*/config.sub ext/fiddle/libffi-*/config.guess tool/
     '';
   }
+  // lib.optionalAttrs (cStandard != null || mkmfProbeFlags != [ ] || compileFlags != [ ]) {
+    # Ruby appends its normal opt/debug/warning flags to lowercase cflags,
+    # retaining them in RbConfig for native extension consumers as well.
+    env.cflags = lib.concatStringsSep " " (
+      lib.optional (cStandard != null) "-std=${cStandard}" ++ mkmfProbeFlags ++ compileFlags
+    );
+  }
+
 )

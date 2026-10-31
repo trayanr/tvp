@@ -3,6 +3,12 @@
   tvpLib,
   package,
 }:
+let
+  consumerStandard = package.tvp.features.consumerCStandard or null;
+  configureEnv =
+    pkgs.lib.optionalString (consumerStandard != null)
+      "CFLAGS=${pkgs.lib.escapeShellArg ("-std=" + consumerStandard)} ";
+in
 tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests =
@@ -27,7 +33,7 @@ tvpLib.tests.mkSuite {
           autoreconf --install --force >&2
           mkdir build
           cd build
-          ../configure --target=${pkgs.stdenv.hostPlatform.config} --prefix="$PWD/install" >&2
+          ${configureEnv}../configure --target=${pkgs.stdenv.hostPlatform.config} --prefix="$PWD/install" >&2
           make -j"$NIX_BUILD_CORES" >&2
           make install >&2
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
@@ -54,7 +60,7 @@ tvpLib.tests.mkSuite {
           automake --add-missing --foreign >&2
           mkdir build
           cd build
-          ../configure --target=${pkgs.stdenv.hostPlatform.config} --prefix="$PWD/install" >&2
+          ${configureEnv}../configure --target=${pkgs.stdenv.hostPlatform.config} --prefix="$PWD/install" >&2
           make -j"$NIX_BUILD_CORES" >&2
           make install >&2
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
@@ -90,7 +96,7 @@ tvpLib.tests.mkSuite {
           autoreconf --install --force >&2
           mkdir build
           cd build
-          ../configure --prefix="$PWD/install" >&2
+          ${configureEnv}../configure --prefix="$PWD/install" >&2
           make -j"$NIX_BUILD_CORES" >&2
           make install >&2
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
@@ -118,7 +124,7 @@ tvpLib.tests.mkSuite {
               autoreconf --install --force >&2
               mkdir build
               cd build
-              ../configure --prefix="$PWD/install" >&2
+              ${configureEnv}../configure --prefix="$PWD/install" >&2
               make -j"$NIX_BUILD_CORES" >&2
               make install >&2
               readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'

@@ -17,6 +17,8 @@ let
     "8.6.2" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
@@ -26,13 +28,24 @@ let
     "8.6.5" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
     };
 
+    "8.6.9" = {
+      builder = ./build-8.6.0.nix;
+      base = tvp.bases.default;
+      deps.zlib = tvp.packages.zlib_1_3_2;
+    };
+
     "8.0.2" = {
       builder = ./build-8.0.2.nix;
+      # Old configure and strtod declarations require the original C dialect.
+      # Measured 8.0/8.1/8.2/8.3/8.4/8.5 failure controls remain enabled.
+      opts.cStandard = "gnu89";
       base = tvp.bases.default;
       deps = { };
       opts = {
@@ -48,6 +61,9 @@ let
 
     "8.1.0" = {
       builder = ./build-8.0.2.nix;
+      # Old configure and strtod declarations require the original C dialect.
+      # Measured 8.0/8.1/8.2/8.3/8.4/8.5 failure controls remain enabled.
+      opts.cStandard = "gnu89";
       base = tvp.bases.default;
       deps = { };
       patches = [
@@ -60,6 +76,9 @@ let
 
     "8.0.3" = {
       builder = ./build-8.0.2.nix;
+      # Old configure and strtod declarations require the original C dialect.
+      # Measured 8.0/8.1/8.2/8.3/8.4/8.5 failure controls remain enabled.
+      opts.cStandard = "gnu89";
       base = tvp.bases.default;
       deps = { };
       patches = [
@@ -72,6 +91,9 @@ let
 
     "8.0.5" = {
       builder = ./build-8.0.2.nix;
+      # Old configure and strtod declarations require the original C dialect.
+      # Measured 8.0/8.1/8.2/8.3/8.4/8.5 failure controls remain enabled.
+      opts.cStandard = "gnu89";
       base = tvp.bases.default;
       deps = { };
     };
@@ -79,6 +101,8 @@ let
     "8.6.0" = {
       builder = ./build-8.6.0.nix;
       base = tvp.bases.default;
+      # These configure probes misdetect ANSI headers/strtod under C23.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };

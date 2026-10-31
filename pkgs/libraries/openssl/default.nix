@@ -13,6 +13,14 @@ let
       };
     };
 
+    "0.9.7" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      # EVP's sign/verify callbacks use unprototyped parameter lists.
+      opts.cStandard = "gnu17";
+    };
+
     "0.9.8" = {
       builder = ./build-0.9.nix;
       base = tvp.bases.default;
@@ -24,6 +32,15 @@ let
       };
     };
 
+    "0.9.8s" = {
+      builder = ./build-0.9.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      # This release's ECDSA self-test passes unsigned char ** to const **;
+      # 0.9.8t separates the two pointers. Keep the original test and warning.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+    };
+
     "1.0.0" = {
       builder = ./build-1.0.nix;
       base = tvp.bases.default;
@@ -31,6 +48,23 @@ let
         perl = tvp.packages.perl_5_44_0;
       };
       opts.forceGccName = true;
+      # The bool identifier was renamed in 1.0.0i.
+      opts.cStandard = "gnu17";
+    };
+
+    "1.0.0i" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      opts.forceGccName = true;
+    };
+    "1.0.1" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+      opts.forceGccName = true;
+      # tasn_prn.c uses bool as an identifier; 1.0.1a renames it boolval.
+      opts.cStandard = "gnu17";
     };
 
     "1.0.2p" = {
@@ -56,6 +90,29 @@ let
     "1.1.1" = {
       builder = ./build-1.1.0.nix;
       base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
+    };
+
+    "1.0.0f" = {
+      builder = ./build-1.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.forceGccName = true;
+      # ECDSA self-test pointer mismatch, corrected in 1.0.0g.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+      # The bool identifier was renamed in 1.0.0i.
+      opts.cStandard = "gnu17";
+    };
+
+    "1.1.1q" = {
+      builder = ./build-1.1.0.nix;
+      base = tvp.bases.default;
+      # test/v3ext.c omits string.h for memcmp; 1.1.1s adds it.
+      opts.compileFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
         perl = tvp.packages.perl_5_44_0;
       };

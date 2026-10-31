@@ -16,40 +16,47 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
 }:
-stdenv.mkDerivation (finalAttrs: {
-  pname = "pkg-config";
-  inherit version;
-
-  src = fetchurl {
-    url = "https://pkg-config.freedesktop.org/releases/pkg-config-${version}.tar.gz";
-    inherit sha256;
-  };
-
-  # g_date_strftime is the last function in the file, so the pop belongs at EOF
-  # — which is exactly where 0.29.2 puts it.
-  postPatch = ''
-    sed -z -i 's|\ngsize[ \t]*\ng_date_strftime |\n#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Wformat-nonliteral"\n\ngsize\ng_date_strftime |' glib/glib/gdate.c
-    printf '\n#pragma GCC diagnostic pop\n' >> glib/glib/gdate.c
-  '';
-
-  configureFlags = [ "--with-internal-glib" ];
-
-  meta = {
-    description = "Tool that returns compiler and linker flags for installed libraries";
-    homepage = "https://www.freedesktop.org/wiki/Software/pkg-config/";
-    license = lib.licenses.gpl2Plus;
-    platforms = lib.platforms.unix;
-    mainProgram = "pkg-config";
-  };
-
-  passthru = {
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "pkg-config";
     inherit version;
-    tvp.deps = { };
 
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    src = fetchurl {
+      url = "https://pkg-config.freedesktop.org/releases/pkg-config-${version}.tar.gz";
+      inherit sha256;
+    };
+
+    # g_date_strftime is the last function in the file, so the pop belongs at EOF
+    # — which is exactly where 0.29.2 puts it.
+    postPatch = ''
+      sed -z -i 's|\ngsize[ \t]*\ng_date_strftime |\n#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Wformat-nonliteral"\n\ngsize\ng_date_strftime |' glib/glib/gdate.c
+      printf '\n#pragma GCC diagnostic pop\n' >> glib/glib/gdate.c
+    '';
+
+    configureFlags = [ "--with-internal-glib" ];
+
+    meta = {
+      description = "Tool that returns compiler and linker flags for installed libraries";
+      homepage = "https://www.freedesktop.org/wiki/Software/pkg-config/";
+      license = lib.licenses.gpl2Plus;
+      platforms = lib.platforms.unix;
+      mainProgram = "pkg-config";
+    };
+
+    passthru = {
+      inherit version;
+      tvp.deps = { };
+
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
+    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+  }
+)

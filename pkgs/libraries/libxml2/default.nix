@@ -8,12 +8,27 @@ let
     "2.7.4" = {
       builder = ./build-2.7.nix;
       base = tvp.bases.default;
+      # Old weak pthread declarations use (), requiring pre-C23 semantics;
+      # GNU89 also retains the original pointer-conversion diagnostics.
+      opts.cStandard = "gnu89";
       deps = {
         zlib = tvp.packages.zlib_1_3_2;
       };
     };
 
     "2.8.0" = {
+      builder = ./build-2.8.nix;
+      base = tvp.bases.default;
+      # Old weak pthread declarations use (), requiring pre-C23 semantics;
+      # GNU89 also retains the original pointer-conversion diagnostics.
+      opts.cStandard = "gnu89";
+      deps = {
+        zlib = tvp.packages.zlib_1_3_2;
+        xz = tvp.packages.xz_5_8_3;
+      };
+    };
+
+    "2.9.5" = {
       builder = ./build-2.8.nix;
       base = tvp.bases.default;
       deps = {

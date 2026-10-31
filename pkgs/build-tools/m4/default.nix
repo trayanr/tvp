@@ -8,6 +8,14 @@ let
       base = tvp.bases.default;
       deps = { };
     };
+    "1.4.19" = {
+      builder = ./build-1.4.17.nix;
+      base = tvp.bases.default;
+      deps = { };
+      # Bundled gnulib puts the C23 nodiscard attribute after inline. GNU17
+      # retains its supported GNU attribute form; 1.4.20 fixes the placement.
+      opts.cStandard = "gnu17";
+    };
     "1.4.21" = {
       builder = ./build-1.4.17.nix;
       base = tvp.bases.default;

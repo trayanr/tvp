@@ -6,13 +6,28 @@ let
       builder = ./build-4.4.36.nix;
       base = tvp.bases.default;
       deps.perl = tvp.packages.perl_5_44_0;
+      # ascii64 retains its explicit NUL and discards a redundant implicit NUL.
+      # GCC15 adds this Wextra diagnostic; keep it visible and all other Werror.
+      opts.compileFlags = [ "-Wno-error=unterminated-string-initialization" ];
     };
+    "4.5.0" = {
+      builder = ./build-4.4.36.nix;
+      base = tvp.bases.default;
+      deps.perl = tvp.packages.perl_5_44_0;
+    };
+
   };
   versionTable = tvpLib.packages.mkTable [
     {
       def = defs."4.4.36";
       releases = {
         "4.4.36" = "sha256-5eH0yu4KAd4q7ibjE4gH1tPKK45nKHlm0f79ZeH9iUM=";
+
+      };
+    }
+    {
+      def = defs."4.5.0";
+      releases = {
         "4.5.0" = "sha256-gl52Tk/y5jBK24FM2ilwdLIi1UoE7b2OvHz1j8OvhX0=";
         "4.5.1" = "sha256-6bRqYjl8FTcpNfanXcOSnGIWHyYgvnt/V/A9aRAsGoY=";
         "4.5.2" = "sha256-cVE6McAaQovM1TZ6Mv2V8RXW2sUPtbYMd51ceUKuwHE=";

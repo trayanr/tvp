@@ -22,6 +22,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -29,11 +30,15 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "tcl";
   inherit version;
-  env = lib.optionalAttrs linkUnwinder {
-    # glibc loads this library during pthread_exit. A direct dependency keeps
-    # it available after unused RPATHs are removed.
-    NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
-  };
+  env =
+    lib.optionalAttrs linkUnwinder {
+      # glibc loads this library during pthread_exit. A direct dependency keeps
+      # it available after unused RPATHs are removed.
+      NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
+    }
+    // lib.optionalAttrs (cStandard != null) {
+      NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+    };
 
   # 8.3.5 onwards publish tclX.Y.Z-src.tar.gz; older releases are tclX.Y.Z.tar.gz.
   src = fetchurl {

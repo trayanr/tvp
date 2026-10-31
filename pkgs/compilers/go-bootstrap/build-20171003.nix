@@ -8,50 +8,57 @@
   goArch,
   version,
   sha256,
+  cStandard ? null,
   reportedVersion,
   mkTests,
 }:
-stdenv.mkDerivation (finalAttrs: {
-  pname = "go-bootstrap";
-  inherit version;
-  src = fetchurl {
-    url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
-    inherit sha256;
-  };
-  dontConfigure = true;
-  GOOS = goOS;
-  GOARCH = goArch;
-  CGO_ENABLED = "0";
-  buildPhase = ''
-    runHook preBuild
-    export GOROOT="$PWD"
-    export GOROOT_FINAL="$out/share/go"
-    cd src
-    ${bash}/bin/bash ./make.bash
-    cd ..
-    runHook postBuild
-  '';
-  installPhase = ''
-    runHook preInstall
-    mkdir -p "$out/share/go" "$out/bin"
-    cp -a . "$out/share/go/"
-    ln -s ../share/go/bin/go "$out/bin/go"
-    ln -s ../share/go/bin/gofmt "$out/bin/gofmt"
-    runHook postInstall
-  '';
-  meta = {
-    description = "Upstream C-based Go bootstrap compiler distribution";
-    homepage = "https://go.dev/doc/install/source";
-    license = lib.licenses.bsd3;
-    platforms = [ "x86_64-linux" ];
-    mainProgram = "go";
-  };
-  passthru = {
-    tvp.deps = {
-      inherit bash;
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "go-bootstrap";
+    inherit version;
+    src = fetchurl {
+      url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
+      inherit sha256;
     };
-    tvp.reportedVersion = reportedVersion;
-    tvp.features.cgo = false;
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    dontConfigure = true;
+    GOOS = goOS;
+    GOARCH = goArch;
+    CGO_ENABLED = "0";
+    buildPhase = ''
+      runHook preBuild
+      export GOROOT="$PWD"
+      export GOROOT_FINAL="$out/share/go"
+      cd src
+      ${bash}/bin/bash ./make.bash
+      cd ..
+      runHook postBuild
+    '';
+    installPhase = ''
+      runHook preInstall
+      mkdir -p "$out/share/go" "$out/bin"
+      cp -a . "$out/share/go/"
+      ln -s ../share/go/bin/go "$out/bin/go"
+      ln -s ../share/go/bin/gofmt "$out/bin/gofmt"
+      runHook postInstall
+    '';
+    meta = {
+      description = "Upstream C-based Go bootstrap compiler distribution";
+      homepage = "https://go.dev/doc/install/source";
+      license = lib.licenses.bsd3;
+      platforms = [ "x86_64-linux" ];
+      mainProgram = "go";
+    };
+    passthru = {
+      tvp.deps = {
+        inherit bash;
+      };
+      tvp.reportedVersion = reportedVersion;
+      tvp.features.cgo = false;
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
+    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+  }
+)

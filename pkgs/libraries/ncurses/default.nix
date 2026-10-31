@@ -5,10 +5,19 @@ let
   defs = tvpLib.packages.mkDefs {
     "6.2" = {
       builder = ./build-6.0.nix;
+      # A C23 bool probe causes these releases to redefine C++ bool in
+      # curses.h. 6.6 fixes that header guard; retain C++ bindings and tests.
+      opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
         pkg-config = tvp.packages."pkg-config_0_29_2";
       };
+    };
+
+    "6.6" = {
+      builder = ./build-6.0.nix;
+      base = tvp.bases.default;
+      deps.pkg-config = tvp.packages.pkg-config_0_29_2;
     };
 
     # etip.h declares `throw()` on operator new, which C++17 removed and gcc 11

@@ -10,48 +10,53 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
 }:
-stdenv.mkDerivation (finalAttrs: {
-  pname = "libxml2";
-  inherit version;
-
-  src = fetchurl {
-    url = "https://download.gnome.org/sources/libxml2/${lib.versions.majorMinor version}/libxml2-${version}.tar.xz";
-    inherit sha256;
-  };
-
-  buildInputs = [
-    zlib
-  ];
-
-  # The Python bindings are a separate artifact with their own interpreter
-  # dependency; TVP packages the library.
-  configureFlags = [
-    "--without-python"
-    "--with-zlib=${lib.getDev zlib}"
-  ];
-
-  meta = {
-    description = "XML parsing library for C";
-    homepage = "https://gitlab.gnome.org/GNOME/libxml2";
-    license = lib.licenses.mit;
-    platforms = lib.platforms.unix;
-  };
-
-  passthru = {
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "libxml2";
     inherit version;
-    tvp.deps = {
-      inherit zlib;
+
+    src = fetchurl {
+      url = "https://download.gnome.org/sources/libxml2/${lib.versions.majorMinor version}/libxml2-${version}.tar.xz";
+      inherit sha256;
     };
 
-    tvp.features = {
-      # xmllint gained --xpath at 2.7.7, measured against its own --help.
-      xpath = lib.versionAtLeast version "2.7.7";
+    buildInputs = [
+      zlib
+    ];
+
+    # The Python bindings are a separate artifact with their own interpreter
+    # dependency; TVP packages the library.
+    configureFlags = [
+      "--without-python"
+      "--with-zlib=${lib.getDev zlib}"
+    ];
+
+    meta = {
+      description = "XML parsing library for C";
+      homepage = "https://gitlab.gnome.org/GNOME/libxml2";
+      license = lib.licenses.mit;
+      platforms = lib.platforms.unix;
     };
 
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    passthru = {
+      inherit version;
+      tvp.deps = {
+        inherit zlib;
+      };
+
+      tvp.features = {
+        # xmllint gained --xpath at 2.7.7, measured against its own --help.
+        xpath = lib.versionAtLeast version "2.7.7";
+      };
+
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
+)

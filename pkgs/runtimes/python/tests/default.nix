@@ -106,6 +106,17 @@ tvpLib.tests.mkSuite {
       bzip2-linkage = linkage deps.bzip2 "libbz2\\.so" [ "_bz2" ];
       xz-linkage = linkage deps.xz "liblzma\\.so" [ "_lzma" ];
     }
+    // pkgs.lib.optionalAttrs (package.tvp.features.linkUnwinder or false) {
+      thread-unwinder = {
+        script = ''
+          ldd ${package}/bin/python3 > linked
+          grep -F 'libgcc_s.so.1 => ${pkgs.lib.getLib package.tvp.cc.cc}/lib/libgcc_s.so.1' linked >/dev/null
+          python3 -c 'import ctypes; ctypes.pythonapi.PyThread_exit_thread()'
+          printf unwound
+        '';
+        expected = "unwound";
+      };
+    }
     // pkgs.lib.optionalAttrs (deps ? libxcrypt) {
       crypt = {
         script = ''python3 -c 'import crypt; h = crypt.crypt("tvp", "$6$tvp$"); assert crypt.crypt("tvp", h) == h and crypt.crypt("wrong", h) != h; print("verified")' '';

@@ -5,6 +5,8 @@ let
     "3.0" = {
       builder = ./build-3.0.nix;
       base = tvp.bases.default;
+      # The original Unix probes omit function declarations and return types.
+      opts.cflags = "-Wno-error=implicit-function-declaration -Wno-error=implicit-int";
       opts.hardeningDisable = [ "format" ];
       deps = {
         bash = tvp.packages.bash_5_2_37;

@@ -31,6 +31,20 @@ tvpLib.tests.mkSuite {
         expected = "42";
       };
 
+      sdbm = {
+        script = ''
+          perl -MSDBM_File -MFcntl=O_RDWR,O_CREAT -e '
+            tie my %db, "SDBM_File", "roundtrip", O_RDWR|O_CREAT, 0600 or die $!;
+            $db{answer} = 42;
+            untie %db;
+            tie %db, "SDBM_File", "roundtrip", O_RDWR, 0600 or die $!;
+            print $db{answer};
+            untie %db;
+          '
+        '';
+        expected = "42";
+      };
+
       regex = {
         script = ''
           perl -e '"tvp-1.2.3" =~ /(?<name>\w+)-(?<ver>[\d.]+)/ and print "$+{name} $+{ver}"'

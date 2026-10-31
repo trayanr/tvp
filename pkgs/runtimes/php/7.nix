@@ -8,6 +8,10 @@
     def = defs."7.1.33";
     releases."7.1.33" = "sha256-AFXzaP/v5R1aRIN1W9F0deiOdDAsCLcnlSgxxbJoLqI=";
     releases."7.2.34" = "sha256-iyd3x0HoPxiNPKbY6Y7OcmSsr+6GeHKY+uV+BdDd3Hg=";
+
+  }
+  {
+    def = defs."7.3.33";
     releases."7.3.33" = "sha256-mjacMsb1IDawqJDykDJ/FIoZBO5mqlbiyadUbaZSXsg=";
   }
   {

@@ -10,6 +10,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   patches ? [ ],
 
@@ -46,7 +47,9 @@ stdenv.mkDerivation (
     # setup hook to put them on the search path. 2.0 includes <termcap.h>
     # directly rather than reaching it through curses.h, so the path is named
     # here — the same hidden work a distribution does, made explicit.
-    env.NIX_CFLAGS_COMPILE = "-I${lib.getDev ncurses}/include/ncursesw";
+    env.NIX_CFLAGS_COMPILE =
+      "-I${lib.getDev ncurses}/include/ncursesw"
+      + lib.optionalString (cStandard != null) " -std=${cStandard}";
 
     # 2.0's Makefile references $(incdir) four times and defines it nowhere, so
     # its install target tries to mkdir /readline. Later releases use
@@ -83,4 +86,11 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs (patches != [ ]) { inherit patches; }
+  // lib.optionalAttrs (cStandard != null) {
+    # Old upstream make ignores failed shared/install-shared targets.
+    postInstall = ''
+      test -s "$out/lib/libreadline.a"
+      test -s "$out/lib/libhistory.a"
+    '';
+  }
 )

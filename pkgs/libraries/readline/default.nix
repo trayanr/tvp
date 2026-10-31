@@ -19,6 +19,9 @@ let
     "2.2.1" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -27,6 +30,9 @@ let
     "2.2" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
@@ -41,6 +47,9 @@ let
     "4.0" = {
       builder = ./build-4.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
         automake = tvp.packages.automake_1_19;
@@ -50,10 +59,19 @@ let
     "4.3" = {
       builder = ./build-4.3.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
         ncurses = tvp.packages.ncurses_6_6;
       };
     };
+    "8.3" = {
+      builder = ./build-4.3.nix;
+      base = tvp.bases.default;
+      deps.ncurses = tvp.packages.ncurses_6_6;
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;

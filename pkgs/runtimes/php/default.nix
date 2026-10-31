@@ -6,6 +6,12 @@ let
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_0_9_8zh;
         zlib = tvp.packages.zlib_1_3_2;
@@ -30,6 +36,12 @@ let
     "5.1.6" = {
       builder = ./build-5.1.6.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_0_9_8zh;
         zlib = tvp.packages.zlib_1_3_2;
@@ -55,6 +67,12 @@ let
     "5.2.17" = {
       builder = ./build-5.2.17.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
@@ -79,10 +97,16 @@ let
     "5.3.29" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # Original iconv returns partial output while reporting illegal input.
+      opts.testFeatures.iconvPartialOutputOnError = true;
+      # This configure generation uses implicit-int compiler probes.
+      opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -100,10 +124,19 @@ let
     "5.4.45" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -111,6 +144,8 @@ let
         pkg-config = tvp.packages.pkg-config_0_29_2;
         testAutoconf = tvp.packages.autoconf_2_73;
       };
+      # The historical typed zlib globals constructor predates this callback API.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
       opts = {
         parallelBuild = true;
         testFeatures.passwordApi = false;
@@ -119,10 +154,19 @@ let
     "5.5.38" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -131,14 +175,56 @@ let
         testAutoconf = tvp.packages.autoconf_2_73;
       };
       opts.parallelBuild = true;
+      # 7.0 adds an explicit cast for the typed zlib globals constructor.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+    };
+    "5.6.40" = {
+      builder = ./build-5.3.29.nix;
+      base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
+      deps = {
+        openssl = tvp.packages.openssl_1_0_2u;
+        zlib = tvp.packages.zlib_1_3_2;
+        libxml2 = tvp.packages.libxml2_2_9_7;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        libxcrypt = tvp.packages.libxcrypt_4_4_36;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages.pkg-config_0_29_2;
+        testAutoconf = tvp.packages.autoconf_2_73;
+      };
+      opts.parallelBuild = true;
+      # 7.0 adds an explicit cast for the typed zlib globals constructor.
+      opts.compileFlags = [
+        "-Wno-error=incompatible-pointer-types"
+        # libmagic file_replace omits its int return type in this release.
+        "-Wno-error=implicit-int"
+      ];
     };
     "7.0.33" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -151,10 +237,19 @@ let
     "7.1.33" = {
       builder = ./build-7.1.33.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      # Preserve execution of the original POSIX readdir_r runtime probe.
+      opts.configureProbeFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_11_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         sqlite = tvp.packages.sqlite_3_53_4;
@@ -163,13 +258,38 @@ let
       };
       opts.parallelBuild = true;
     };
-    "7.4.33" = {
-      builder = ./build-7.4.33.nix;
+    "7.3.33" = {
+      builder = ./build-7.1.33.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_11_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages.pkg-config_0_29_2;
+        testAutoconf = tvp.packages.autoconf_2_73;
+      };
+      opts.parallelBuild = true;
+      # php_time() has the old unspecified-argument declaration.
+      opts.cStandard = "gnu17";
+      # The runtime probe calls close(DIR*) and ignores that result.
+      opts.configureProbeFlags = [ "-Wno-error=int-conversion" ];
+    };
+    "7.4.33" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = tvp.packages.openssl_1_1_1w;
+        zlib = tvp.packages.zlib_1_3_2;
+        libxml2 = tvp.packages.libxml2_2_11_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         sqlite = tvp.packages.sqlite_3_53_4;
@@ -200,9 +320,8 @@ let
         testAutoconf = tvp.packages.autoconf_2_73;
         openssl = tvp.packages.openssl_3_5_7;
         zlib = tvp.packages.zlib_1_3_2;
-        # 8.3.9 and older use ATTRIBUTE_UNUSED from libxml2's public headers,
-        # which 2.14 removed.
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
+        libxml2 = tvp.packages.libxml2_2_11_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         sqlite = tvp.packages.sqlite_3_53_4;
@@ -210,16 +329,91 @@ let
       };
     };
 
+    "8.1.31" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        # Const xmlError callbacks were added at 8.1.31; ATTRIBUTE_UNUSED
+        # still requires libxml2 before 2.14.
+        libxml2 = tvp.packages.libxml2_2_13_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
+    "8.2.0" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      # C99 is upstream’s minimum. It selects the existing GNU atomic branch
+      # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
+      opts.cStandard = "gnu99";
+      # Installed atomic headers need the same supported dialect in extensions.
+      opts.testFeatures.consumerCStandard = "gnu99";
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
+        libxml2 = tvp.packages.libxml2_2_11_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
+    "8.2.14" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      # C99 is upstream’s minimum. It selects the existing GNU atomic branch
+      # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
+      opts.cStandard = "gnu99";
+      # Installed atomic headers need the same supported dialect in extensions.
+      opts.testFeatures.consumerCStandard = "gnu99";
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
+        # still requires libxml2 before 2.14.
+        libxml2 = tvp.packages.libxml2_2_13_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
+    "8.2.16" = {
+      builder = ./build-7.4.33.nix;
+      base = tvp.bases.default;
+      deps = {
+        testAutoconf = tvp.packages.autoconf_2_73;
+        openssl = tvp.packages.openssl_3_5_7;
+        zlib = tvp.packages.zlib_1_3_2;
+        # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
+        # still requires libxml2 before 2.14.
+        libxml2 = tvp.packages.libxml2_2_13_9;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+        sqlite = tvp.packages.sqlite_3_53_4;
+        pkg-config = tvp.packages."pkg-config_0_29_2";
+      };
+    };
     "8.0.0" = {
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         testAutoconf = tvp.packages.autoconf_2_73;
         # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
         # RSA_SSLV23_PADDING, which 3.0.0 removed.
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_13_9;
+        libxml2 = tvp.packages.libxml2_2_11_9;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         sqlite = tvp.packages.sqlite_3_53_4;

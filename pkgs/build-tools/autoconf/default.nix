@@ -13,6 +13,18 @@ let
       opts.modernInit = false;
       opts.license = pkgs.lib.licenses.gpl2Plus;
     };
+    "2.12" = {
+      builder = ./build-2.10.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      opts.modernInit = false;
+      opts.license = pkgs.lib.licenses.gpl2Plus;
+      # AC_PROG_CC_WORKS emits implicit-int main(), requiring its C89 dialect.
+      opts.consumerCStandard = "gnu89";
+    };
     "2.50" = {
       builder = ./build-2.10.nix;
       base = tvp.bases.default;

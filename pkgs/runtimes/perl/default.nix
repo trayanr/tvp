@@ -20,6 +20,9 @@ let
 
     "5.30.3" = {
       builder = ./build-5.30.nix;
+      # Configure's malloc()/free() probes predate C23; GNU17 detects their
+      # actual void pointer/void types. 5.36 removes these old probes.
+      opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
         coreutils = pkgs.coreutils;

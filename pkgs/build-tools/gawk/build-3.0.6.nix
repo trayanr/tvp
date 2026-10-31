@@ -5,31 +5,36 @@
   fetchurl,
   version,
   sha256,
+  cStandard ? null,
   hardeningDisable ? [ ],
   archiveExt ? "tar.bz2",
   license ? lib.licenses.gpl3Plus,
   mkTests,
 }:
-stdenv.mkDerivation (finalAttrs: {
-  pname = "gawk";
-  inherit version hardeningDisable;
-  src = fetchurl {
-    url = "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.${archiveExt}";
-    inherit sha256;
-  };
-  buildInputs = [ ];
-  enableParallelBuilding = true;
-  configureFlags = [ ];
+stdenv.mkDerivation (
+  finalAttrs:
+  {
+    pname = "gawk";
+    inherit version hardeningDisable;
+    src = fetchurl {
+      url = "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.${archiveExt}";
+      inherit sha256;
+    };
+    buildInputs = [ ];
+    enableParallelBuilding = true;
+    configureFlags = [ ];
 
-  meta = {
-    description = "GNU AWK";
-    inherit license;
-    platforms = lib.platforms.unix;
-  };
-  passthru = {
-    tvp.deps = { };
-    tvp.features.bignum = false;
-    tvp.cc = stdenv.cc;
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+    meta = {
+      description = "GNU AWK";
+      inherit license;
+      platforms = lib.platforms.unix;
+    };
+    passthru = {
+      tvp.deps = { };
+      tvp.features.bignum = false;
+      tvp.cc = stdenv.cc;
+      tests = mkTests finalAttrs.finalPackage;
+    };
+  }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
+)

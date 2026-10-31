@@ -5,6 +5,8 @@ let
     "7.1" = {
       builder = ./build-7.1.nix;
       base = tvp.bases.default;
+      # system.h's legacy strerror() declaration conflicts under C23.
+      opts.cStandard = "gnu17";
       deps = {
         perl = tvp.packages.perl_5_44_0;
         ncurses = tvp.packages.ncurses_6_6;

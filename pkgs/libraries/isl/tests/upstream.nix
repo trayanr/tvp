@@ -29,7 +29,10 @@ let
 in
 isl.stdenv.mkDerivation {
   name = "isl-${isl.version}-upstream-coverage";
-  inherit (isl) src configureFlags;
+  inherit (isl) src;
+  # The 0.20 AX_GCC_ARCHFLAG macro otherwise guesses the build host's CPU.
+  # Keep its other optimization choices and all upstream test groups.
+  configureFlags = isl.configureFlags ++ lib.optionals (!modern) [ "--without-gcc-arch" ];
   nativeBuildInputs = [
     isl.tvp.cc
     pkgs.python3
@@ -63,13 +66,29 @@ isl.stdenv.mkDerivation {
     } 2>&1 | tee "$out/log"
     runHook postCheck
   '';
-  installPhase = ''
-    cp config.log test-suite.log "$out/"
-    mkdir "$out/results"
-    cp *.trs *.log "$out/results/"
-    cp include/isl/stdint.h "$out/"
-    cp Makefile "$out/Makefile.configured"
-  '';
+  installPhase =
+    lib.optionalString (!modern) ''
+      echo 'BEGIN raw ISL configure evidence (before artifact normalization)'
+      cat config.log Makefile
+      echo 'END raw ISL configure evidence'
+    ''
+    + ''
+      cp config.log test-suite.log "$out/"
+      mkdir "$out/results"
+      cp *.trs *.log "$out/results/"
+      cp include/isl/stdint.h "$out/"
+      cp Makefile "$out/Makefile.configured"
+    ''
+    + lib.optionalString (!modern) ''
+      # Kernel release/version are observations, not configure answers. Retain
+      # the complete raw evidence in the build log and normalize only these
+      # two fields in the cached artifact after every upstream assertion.
+      for log in "$out/config.log" "$out/results/config.log"; do
+        sed -i \
+          -e 's/^uname -r = .*/uname -r = <runtime-kernel-release>/' \
+          -e 's/^uname -v = .*/uname -v = <runtime-kernel-version>/' "$log"
+      done
+    '';
   dontFixup = true;
   passthru = {
     package = isl;

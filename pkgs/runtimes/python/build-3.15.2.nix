@@ -22,6 +22,7 @@
   finalizeEx ? true,
   embedFlag ? true,
   textSubprocess ? true,
+  linkUnwinder ? false,
   disabledModules,
   upstreamModules ? [
     "test_ssl"
@@ -43,6 +44,11 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "python";
   inherit version patches;
+  env = lib.optionalAttrs linkUnwinder {
+    # Native thread exit needs glibc's lazily loaded compiler unwinder even
+    # when the interpreter has no direct reference to its symbols.
+    NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
+  };
   src = fetchurl {
     url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
     inherit sha256;
@@ -135,6 +141,7 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.features.finalizeEx = finalizeEx;
     tvp.features.embedFlag = embedFlag;
     tvp.features.textSubprocess = textSubprocess;
+    tvp.features.linkUnwinder = linkUnwinder;
     tvp.disabledModules = disabledModules;
     tvp.upstreamModules = upstreamModules;
     tests = mkTests finalAttrs.finalPackage;

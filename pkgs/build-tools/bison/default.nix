@@ -27,6 +27,18 @@ let
         }
       ];
     };
+    "3.6.4" = {
+      builder = ./build-3.0.5.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4_1_4_21;
+        perl = tvp.packages.perl_5_44_0;
+      };
+      # Bundled gnulib places nodiscard after inline. GNU17 uses its GNU
+      # attribute spelling; 3.8 corrects placement for the C23 spelling.
+      opts.cStandard = "gnu17";
+    };
+
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -43,11 +55,14 @@ let
     {
       def = defs."3.0.5";
       releases."3.5.4" = "sha256-wN0VTfq6Y1U6iS1B3EAMe6qIzAah4uJ4E/3VA3FeTCg=";
-      releases."3.6.4" = "sha256-gYPeZLU4PzY0lCx7FRvyV390JzsnMVdM3aio86CrE+k=";
-      releases."3.7.6" = "sha256-adwLtG6o/DB9TKHgthyMNV6yB9Cwxp9PhGIyjnTXueo=";
       releases."3.8" = "sha256-1dGE1CGu4VYDk5lzprDzcvkI7fskxbx0BpdJcCGtlFg=";
       releases."3.8.1" = "sha256-zjGKRxlhVft8JpErUTEC89DhR1fC5JXjRgh1e2EznFw=";
       releases."3.8.2" = "sha256-BsnhO99+sk1M62tZIFpPZ8LH5yExGWREMP6C+9FKCrs=";
+    }
+    {
+      def = defs."3.6.4";
+      releases."3.6.4" = "sha256-gYPeZLU4PzY0lCx7FRvyV390JzsnMVdM3aio86CrE+k=";
+      releases."3.7.6" = "sha256-adwLtG6o/DB9TKHgthyMNV6yB9Cwxp9PhGIyjnTXueo=";
     }
   ];
   pname = "bison";

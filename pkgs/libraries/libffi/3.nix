@@ -26,8 +26,6 @@
       "3.4.7" = "sha256-E4YH3uJovezzdK35FEwA6DnjhUH3XySh/PGLeP2kiy0=";
       "3.4.6" = "sha256-sN6p3yPIY6elDoJUQPPr/6vWXfFJcQjl1Dd0eEOJWk4=";
       "3.4.5" = "sha256-lv/05YnjsjnYiNmqRLP/MGk8K6Fhf5U5JacN3rzBArI=";
-      "3.4.4" = "sha256-1mxWrSWags8qnfxAizK/XaUjcVALhHRff7i2RXEt9nY=";
-      "3.4.3" = "sha256-RBbdkrauj8tbEEIecRxNPLMSA9d1Iad9hdAQIxHmw7g=";
       "3.4.2" = "sha256-VA+3IWGaaro73u99lA2Ong5tLBk1lbwkMkG3f/npNiA=";
       "3.3" = "sha256-cvunkicD3fp6Ao1ROsFahcjVTI1n9V+lpIAohdxlIFY=";
       "3.2.1" = "sha256-0G67jh2aItGeONY/24OVQlPzm+3F1GIyoFZFaFciyjc=";
@@ -38,6 +36,13 @@
       "3.0.11" = "sha256-cL+wE1Y2AImql9PnHj7fBdGVWZ/YIuki5Q1GoAVaYoM=";
       "3.0.10" = "sha256-8B65An6etWrq7vY2ZJh3dW1HXXFO+LR/Yn9lvF87SS8=";
       "3.0.9" = "sha256-WJ0lFSMYvHgM2JGbFGcHk/SXHZg42rRu04wys+6SxFI=";
+    };
+  }
+  {
+    def = defs."3.4.3";
+    releases = {
+      "3.4.3" = "sha256-RBbdkrauj8tbEEIecRxNPLMSA9d1Iad9hdAQIxHmw7g=";
+      "3.4.4" = "sha256-1mxWrSWags8qnfxAizK/XaUjcVALhHRff7i2RXEt9nY=";
     };
   }
 ]

@@ -12,7 +12,9 @@ let
   componentMismatch = lib.filterAttrs (
     name: value:
     value.drv != entries.${
-      lib.replaceStrings [ "bootstrapComponents.gcc13-owned-v2." ] [ "components.gcc13-owned-v3." ] name
+      lib.replaceStrings [ "bootstrapComponents.gcc13-owned-v2." ] [
+        "bootstrapComponents.gcc13-owned-v3."
+      ] name
     }.drv
   ) oldComponents;
 in

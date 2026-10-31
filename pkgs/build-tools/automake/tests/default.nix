@@ -4,6 +4,10 @@
   package,
 }:
 let
+  consumerStandard = package.tvp.deps.autoconf.tvp.features.consumerCStandard or null;
+  configureEnv =
+    pkgs.lib.optionalString (consumerStandard != null)
+      "CFLAGS=${pkgs.lib.escapeShellArg ("-std=" + consumerStandard)} ";
   # 1.0 ships macros as a single file; the aclocal command and AM_INIT_AUTOMAKE
   # arrived later. Exercise its documented interface with the same C projects.
   hasAclocal = package.tvp.features.aclocal or true;
@@ -19,7 +23,7 @@ let
       ${bootstrap}
       mkdir build
       cd build
-      ../configure --prefix="$PWD/install" >&2
+      ${configureEnv}../configure --prefix="$PWD/install" >&2
       make -j"$NIX_BUILD_CORES" >&2
       make install >&2
       ./install/bin/answer
