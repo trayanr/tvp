@@ -18,6 +18,7 @@
   version,
   sha256,
   cStandard ? null,
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -74,13 +75,18 @@ stdenv.mkDerivation (
       # PEAR fetches from the network at install time, which a sandbox forbids
       # and a reproducible build should not want.
       "--without-pear"
-    ];
+    ] ++ lib.optional iconvFromBase "--with-iconv=${lib.getDev stdenv.cc.libc}";
+
+    # install-programs does not order bindir creation before parallel copies.
+    preInstall = ''mkdir -p "$out/bin"'';
 
     # Upstream installs both SAPIs as bin/php. Preserve both under distinct
     # names after make install, independent of parallel target ordering.
     postInstall = ''
       install -m755 sapi/cli/php "$out/bin/php"
       install -m755 sapi/cgi/php "$out/bin/php-cgi"
+      test -x "$out/bin/phpize"
+      test -x "$out/bin/php-config"
     '';
 
     meta = {

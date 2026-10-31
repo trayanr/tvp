@@ -552,7 +552,13 @@ dependency. PHP 8.2.0–8.2.15 and 8.3.0–8.3.2 select upstream-supported GNU99
 to use their existing GNU atomic implementation, avoiding the [Clang-only builtin
 selection bug](https://github.com/php/php-src/issues/13215) fixed in 8.2.16/8.3.3.
 Libtool through 1.4.3 declares GNU89 for its original configure and generated
-consumer probes; all shared/static/ltdl checks remain enabled. Autoconf 2.12/2.13 declare
+consumer probes; all shared/static/ltdl checks remain enabled. Older PHP DOM hash callbacks retain libxml2 2.9.7, and scanf callbacks through
+8.0 retain GNU17. PHP before 8.0 binds iconv probes to the base libc headers;
+the shared suite checks conversion and invalid input. PHP 5.0/5.1 create their
+install directory before parallel helper copies and reject missing phpize tools.
+Unzip 6.0 retains GNU17 probe semantics and missing-declaration warnings; its
+generated configuration flags match the earlier compiler control.
+Autoconf 2.12/2.13 declare
 the GNU89 dialect needed by their generated compiler probe; dependent Automake
 consumer tests use that declaration. Affected Ruby 3.1–3.4 releases configure
 and build extensions in the same declared dialect, preserving the independent

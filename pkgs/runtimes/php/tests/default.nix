@@ -52,6 +52,12 @@ tvpLib.tests.mkSuite {
         expected = "tvp nix preserves";
       };
 
+      # Exercise successful and rejected conversions after the native iconv probes.
+      iconv = {
+        script = ''php ${./fixtures/iconv.php}'';
+        expected = "converted";
+      };
+
       # ext/dom and ext/simplexml are built by default and silently absent when
       # libxml2 is not found, so a green build alone does not prove them.
       xml = {

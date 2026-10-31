@@ -18,6 +18,7 @@
   version,
   sha256,
   cStandard ? null,
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -61,7 +62,7 @@ stdenv.mkDerivation (
       # PEAR fetches from the network at install time, which a sandbox forbids
       # and a reproducible build should not want.
       "--without-pear"
-    ];
+    ] ++ lib.optional iconvFromBase "--with-iconv=${lib.getDev stdenv.cc.libc}";
 
     meta = {
       description = "Widely-used general-purpose scripting language";

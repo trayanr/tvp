@@ -6,6 +6,8 @@ let
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -32,6 +34,8 @@ let
     "5.1.6" = {
       builder = ./build-5.1.6.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -59,6 +63,8 @@ let
     "5.2.17" = {
       builder = ./build-5.2.17.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
@@ -85,12 +91,14 @@ let
     "5.3.29" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       # This configure generation uses implicit-int compiler probes.
       opts.cStandard = "gnu89";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -108,10 +116,14 @@ let
     "5.4.45" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -129,10 +141,14 @@ let
     "5.5.38" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_0_2u;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -141,14 +157,20 @@ let
         testAutoconf = tvp.packages.autoconf_2_73;
       };
       opts.parallelBuild = true;
+      # 7.0 adds an explicit cast for the typed zlib globals constructor.
+      opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
     };
     "7.0.33" = {
       builder = ./build-5.3.29.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
-        libxml2 = tvp.packages.libxml2_2_11_9;
+        libxml2 = tvp.packages.libxml2_2_9_7;
         readline = tvp.packages.readline_8_3;
         ncurses = tvp.packages.ncurses_6_6;
         libxcrypt = tvp.packages.libxcrypt_4_4_36;
@@ -161,6 +183,10 @@ let
     "7.1.33" = {
       builder = ./build-7.1.33.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
@@ -176,6 +202,8 @@ let
     "7.3.33" = {
       builder = ./build-7.1.33.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
@@ -193,6 +221,10 @@ let
     "7.4.33" = {
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
+      # The old iconv runtime probes include a header below this prefix.
+      opts.iconvFromBase = true;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         openssl = tvp.packages.openssl_1_1_1w;
         zlib = tvp.packages.zlib_1_3_2;
@@ -308,6 +340,8 @@ let
     "8.0.0" = {
       builder = ./build-7.4.33.nix;
       base = tvp.bases.default;
+      # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+      opts.cStandard = "gnu17";
       deps = {
         testAutoconf = tvp.packages.autoconf_2_73;
         # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses

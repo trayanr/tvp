@@ -5,7 +5,9 @@ let
     "6.0" = {
       builder = ./build-6.0.nix;
       base = tvp.bases.default;
-      opts.cflags = "-fcommon";
+      # GNU17 preserves main fallthrough semantics in the original Unix probes.
+      # Retain their missing-type/declaration warnings and detected features.
+      opts.cflags = "-fcommon -std=gnu17 -Wno-error=implicit-int -Wno-error=implicit-function-declaration";
       opts.hardeningDisable = [ "format" ];
       deps = {
         bash = tvp.packages.bash_5_2_37;
