@@ -574,6 +574,11 @@ compiler/header control; the fixed 3.3.9/3.4.5 and later lines stay unchanged.
 Binutils 2.42 keeps gprofng enabled with C-only GNU17; earlier compiler
 construction variants retain their exact original flags. Bash 5.2.37 retains GNU17, and libxcrypt 4.4.36/OpenSSL 0.9.8s keep their isolated
 new compiler diagnostics visible as warnings rather than changing runtime sources.
+Python 3.9–3.15 retain the compiler unwinder explicitly, extending the existing
+3.7/3.8 dependency: glibc loads it during native thread exit even when Python has
+no direct symbol reference. A regression checks the selected compiler's runtime
+owner and Python's native thread-exit API. This also keeps Node's Python test
+harness able to finish after its upstream tests pass.
 The new base also checks C/C++ LTO through its selected compiler plugin and pinned
 binutils. The sources, upstream checks and historical failure classifications are retained.
 

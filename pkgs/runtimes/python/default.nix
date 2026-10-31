@@ -198,6 +198,7 @@ let
     "3.9.25" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_3_7;
@@ -240,6 +241,7 @@ let
     "3.10.22" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;
@@ -281,6 +283,7 @@ let
     "3.11.18" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;
@@ -311,6 +314,7 @@ let
     "3.12.16" = {
       builder = ./build-3.12.16.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;
@@ -340,6 +344,7 @@ let
     "3.13.18" = {
       builder = ./build-3.13.18.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;
@@ -367,6 +372,7 @@ let
     "3.14.10" = {
       builder = ./build-3.14.10.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;
@@ -395,6 +401,7 @@ let
     "3.15.2" = {
       builder = ./build-3.15.2.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
         bash = tvp.packages.bash_5_2_37;
         openssl = tvp.packages.openssl_3_6_3;

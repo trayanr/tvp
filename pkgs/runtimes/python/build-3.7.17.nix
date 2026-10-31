@@ -48,7 +48,7 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "python";
   inherit version patches;
   env = lib.optionalAttrs linkUnwinder {
-    # Older thread/process shutdown paths call pthread_exit. glibc needs the
+    # Native thread/process shutdown paths call pthread_exit. glibc needs the
     # shared unwinder loaded despite Python having no direct symbol reference.
     NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
   };
@@ -177,6 +177,7 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.features.finalizeEx = finalizeEx;
     tvp.features.embedFlag = embedFlag;
     tvp.features.textSubprocess = textSubprocess;
+    tvp.features.linkUnwinder = linkUnwinder;
     tvp.disabledModules = disabledModules;
     tvp.upstreamModules = upstreamModules;
     tests = mkTests finalAttrs.finalPackage;
