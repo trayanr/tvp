@@ -10,7 +10,9 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -23,7 +25,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -38,7 +45,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -53,7 +65,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -72,7 +89,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -91,7 +113,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -104,7 +131,12 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -118,7 +150,9 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -136,7 +170,9 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -154,7 +190,9 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -172,17 +210,46 @@ let
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
     };
 
     "3.7.0" = {
       builder = ./build-3.0.0.nix;
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts.compileFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
       deps = {
         tcl = tvp.packages.tcl_8_5_19;
         readline = tvp.packages.readline_8_3;
+      };
+    };
+
+    "3.19.0" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8_5_19;
+        readline = tvp.packages.readline_8_3;
+      };
+    };
+
+    "3.4.2" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8_5_19;
+        readline = tvp.packages.readline_8_3;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        compileFlags = [ "-std=gnu17" ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+        pkgConfigMajorMinor = true;
       };
     };
 

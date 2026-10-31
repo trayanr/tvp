@@ -32,6 +32,7 @@
 
   version,
   sha256,
+  compileFlags ? [ ],
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -107,4 +108,8 @@ stdenv.mkDerivation (
   // lib.optionalAttrs (!configureIsExecutable) { postPatch = "chmod +x configure"; }
   // lib.optionalAttrs (hardeningDisable != [ ]) { inherit hardeningDisable; }
   // lib.optionalAttrs (patches != [ ]) { inherit patches; }
+  // lib.optionalAttrs (compileFlags != [ ] && lib.versionAtLeast stdenv.cc.version "15") {
+    env.NIX_CFLAGS_COMPILE = lib.concatStringsSep " " compileFlags;
+  }
+
 )
