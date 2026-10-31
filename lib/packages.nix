@@ -449,7 +449,7 @@ rec {
       canonical,
       overrides ? { },
       # Opt-in lines whose current only member has no extra version component
-      # (e.g. Autoconf 2.13). Canonical still denotes the immutable release.
+      # (e.g. Readline 6.2). Canonical still denotes the immutable release.
       lines ? [ ],
     }:
     let
@@ -462,66 +462,83 @@ rec {
       prefixesOf =
         version:
         let
-          parts = lib.splitString "_" (lib.removePrefix "${pname}_" (versions.attrName pname version));
+          normal = lib.removePrefix "${pname}_" (versions.attrName pname version);
+          parts = lib.splitString "_" normal;
           n = builtins.length parts;
           join = ps: "${pname}_${lib.concatStringsSep "_" ps}";
-
-          whole = map (k: join (lib.take k parts)) (lib.range 1 (n - 1));
-
-          # A trailing letter is a member label, not a level: openssl spells 1.1.1w
-          # with no separator, so splitting on _ alone never yields its line.
-          lettered = builtins.filter (s: s != null) (
+          # Record intent at emission. Never reclassify a requested name by
+          # counting its underscores or inspecting its resolved derivation.
+          whole = map (depth: {
+            name = join (lib.take depth parts);
+            inherit depth;
+          }) (lib.range 1 (n - 1));
+          lettered = builtins.filter (entry: entry != null) (
             map (
-              k:
+              depth:
               let
-                m = builtins.match "([0-9]+)([a-z].*)" (builtins.elemAt parts (k - 1));
+                match = builtins.match "([0-9]+)([a-z].*)" (builtins.elemAt parts (depth - 1));
               in
-              if m == null then null else join (lib.take (k - 1) parts ++ [ (builtins.head m) ])
+              if match == null then
+                null
+              else
+                {
+                  name = join (lib.take (depth - 1) parts ++ [ (builtins.head match) ]);
+                  inherit depth;
+                }
             ) (lib.range 1 n)
           );
+          # Proper prefixes already occur in whole/lettered. An explicit line
+          # only adds the full prefix when today's member has no finer part.
+          explicitWhole = lib.optional (lib.elem normal lines) {
+            name = join parts;
+            depth = n;
+          };
         in
-        whole
-        ++ lettered
-        ++ map (line: "${pname}_${line}") (
-          lib.filter (
-            line:
-            let
-              normal = lib.removePrefix "${pname}_" (versions.attrName pname version);
-            in
-            normal == line || lib.hasPrefix "${line}_" normal
-          ) lines
-        );
+        whole ++ lettered ++ explicitWhole;
 
-      # name -> the greatest version underneath it, as a version string.
+      # selector -> greatest table version plus its known emitted prefix level.
       best = lib.foldl' (
         acc: version:
-        lib.foldl' (
-          a: name:
-          if !(a ? ${name}) || builtins.compareVersions version a.${name} > 0 then
-            a // { ${name} = version; }
-          else
-            a
-        ) acc ([ pname ] ++ prefixesOf version)
+        lib.foldl'
+          (
+            a: entry:
+            if !(a ? ${entry.name}) || builtins.compareVersions version a.${entry.name}.version > 0 then
+              a
+              // {
+                ${entry.name} = {
+                  inherit version;
+                  inherit (entry) depth;
+                };
+              }
+            else
+              a
+          )
+          acc
+          (
+            [
+              {
+                name = pname;
+                depth = 0;
+              }
+            ]
+            ++ prefixesOf version
+          )
       ) { } buildable;
 
       generated = lib.mapAttrs (
-        selector: version:
+        selector: choice:
         let
-          # best and the version table are pure. In particular do not inspect
-          # canonical.*.pname/version/deps here: aliases are a fixed point.
-          prefix = lib.removePrefix "${pname}_" selector;
-          depth = builtins.length (lib.splitString "_" prefix);
+          # Only pure table data determines the alias and its intent. Reading
+          # canonical.*.version/pname/deps here would introduce fixed-point cycles.
+          inherit (choice) version depth;
         in
         tagSelection {
           namespace = "packages";
-          inherit
-            selector
-            pname
-            version
-            prefix
-            ;
+          inherit selector pname version;
+          prefix = if depth == 0 then null else lib.removePrefix "${pname}_" selector;
+          prefixDepth = depth;
           kind =
-            if selector == pname then
+            if depth == 0 then
               "latest"
             else if depth == 1 then
               "major"
@@ -536,12 +553,15 @@ rec {
     generated
     // lib.mapAttrs (
       selector: package:
-      tagSelection {
-        namespace = "packages";
-        inherit selector pname;
-        kind = "override";
-        operation = "alias-override";
-      } package
+      tagSelection (
+        (package.__tvpSelection or { })
+        // {
+          namespace = "packages";
+          inherit selector pname;
+          kind = "override";
+          operation = "alias-override";
+        }
+      ) package
     ) overrides;
 
 }

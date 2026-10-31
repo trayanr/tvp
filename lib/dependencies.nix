@@ -109,18 +109,57 @@ let
     lib.concatLists (
       lib.mapAttrsToList (
         consumer: package:
-        map (dependency: {
-          inherit scope consumer dependency;
-          family = package.pname or null;
-          definition = package.tvp.definition or null;
-          kind = "foreign";
-          resolved =
-            let
-              value = package.tvp.declaredInfrastructure.${dependency} or null;
-            in
-            if lib.isDerivation value then resolved value else null;
-          reason = "Borrowed builder infrastructure, declared separately from recipe.deps.";
-        }) (package.tvp.infra or [ ])
+        map (
+          dependency:
+          let
+            value = package.tvp.declaredInfrastructure.${dependency} or null;
+            isPackage = lib.isDerivation value;
+            isDerivedString = builtins.isString value && builtins.hasContext value;
+          in
+          {
+            inherit scope consumer dependency;
+            family = package.pname or null;
+            definition = package.tvp.definition or null;
+            role =
+              if isPackage then
+                "derivation"
+              else if isDerivedString then
+                "derived-string"
+              else
+                "helper";
+            kind =
+              if isPackage && !(value ? tvp) then
+                "foreign"
+              else if isPackage || isDerivedString then
+                "unknown"
+              else
+                null;
+            selection = if builtins.isAttrs value then value.__tvpSelection or null else null;
+            resolved =
+              if isPackage then
+                resolved value
+              else if isDerivedString then
+                {
+                  tvp = null;
+                  family = null;
+                  version = null;
+                  drv = null;
+                  out = plain value;
+                  output = null;
+                  context = builtins.getContext value;
+                }
+              else
+                null;
+            details =
+              if isDerivedString then
+                "Generated infrastructure string: producer context is known, requested package selector is not available."
+              else if !isPackage then
+                "Non-derivation builder helper; not a package dependency selection. Origin is not inferred."
+              else
+                null;
+            reason = "Builder infrastructure, declared separately from recipe.deps.";
+          }
+        ) (package.tvp.infra or [ ])
       ) entries
     );
   profileSupport =

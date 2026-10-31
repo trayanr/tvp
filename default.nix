@@ -99,7 +99,9 @@ let
             && edge.reason == null
           ) tvp.dependencyInventory.edges;
         in
-        if unexplained != [ ] then
+        if builtins.hasContext (builtins.toJSON tvp.dependencyInventory) then
+          throw "TVP: dependency inventory must discard build contexts."
+        else if unexplained != [ ] then
           throw "TVP: unexplained ordinary exact dependency selections: ${
             pkgs.lib.concatStringsSep ", " (map (edge: "${edge.consumer}/${edge.dependency}") unexplained)
           }"

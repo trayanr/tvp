@@ -147,11 +147,12 @@ let
           pname = "custom";
           versionTable = { };
           canonical = { };
-          overrides.custom-choice = release "1";
+          overrides.custom-choice = api.withConstraint { reason = "Explicit fixture choice"; } (release "1");
         };
       in
       a.custom-choice.__tvpSelection.kind == "override"
-      && a.custom-choice.__tvpSelection.operation == "alias-override";
+      && a.custom-choice.__tvpSelection.operation == "alias-override"
+      && a.custom-choice.__tvpSelection.reason == "Explicit fixture choice";
     projectedOverride = (before.probe_1.bin.overrideAttrs (_: { })).__tvpSelection.kind == "override";
     overrideMethod =
       ((consumer before.probe_1).override { dependency = after.probe_1; }).__tvpSelection.kind

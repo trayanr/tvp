@@ -88,7 +88,9 @@ def summarize(inventory):
         for key, number in seen.items() if number > 1
     ]
     support = inventory.get("support", [])
-    support_kinds = Counter(row.get("kind") or selector_kind(row) for row in support)
+    support_inputs = [row for row in support if isinstance(row.get("resolved"), dict)
+                      or row.get("role") == "derived-string"]
+    support_kinds = Counter(selector_kind(row) for row in support_inputs)
     support_choices = {stable([
         row.get("scope"), row.get("family"), row.get("definition") or row.get("consumer"),
         row.get("dependency"), row.get("selection"),
@@ -105,13 +107,16 @@ def summarize(inventory):
         "support": {
             "expandedRoles": len(support),
             "distinctDefinitionRoles": len(support_choices),
+            "selectionRoles": len(support_inputs),
             "byKind": {kind: support_kinds[kind] for kind in KINDS},
+            "unknownSelections": [row for row in support_inputs if selector_kind(row) == "unknown"],
             "resolvedReleases": len({stable([row["resolved"].get("family"), row["resolved"].get("version")])
                                      for row in support if isinstance(row.get("resolved"), dict)
                                      and row["resolved"].get("family") and row["resolved"].get("version")}),
             "resolvedProducers": len({row["resolved"]["drv"] for row in support
                                       if isinstance(row.get("resolved"), dict) and row["resolved"].get("drv")}),
-            "derivationRoles": sum(isinstance(row.get("resolved"), dict) for row in support),
+            "derivationRoles": sum(isinstance(row.get("resolved"), dict) and row.get("role") != "derived-string" for row in support),
+            "derivedStringRoles": sum(row.get("role") == "derived-string" for row in support),
             "nonDerivationHelpers": sum(row.get("resolved") is None for row in support),
         },
         "all": counts(edges),
@@ -220,7 +225,12 @@ def print_human(inventory, args):
     print("Scopes: " + ", ".join(f"{scope} {number}" for scope, number in summary["byScope"].items()))
     broken = [row for row in inventory.get("consumers", []) if row.get("scope") == "broken"]
     print(f"{len(broken)} declared-broken releases (inventoried without realization)")
-    print(f"Infrastructure support declarations: {len(inventory.get('support', []))}")
+    support_summary = inventory["summary"]["support"]
+    print(f"Infrastructure: {support_summary['selectionRoles']} package/generated-file inputs; "
+          f"{support_summary['nonDerivationHelpers']} non-derivation helpers")
+    if support_summary["unknownSelections"]:
+        print(f"Infrastructure selectors unavailable: {len(support_summary['unknownSelections'])} "
+              "(identities and context remain in JSON support details)")
     duplicates = inventory["summary"]["duplicateEdges"]
     if duplicates:
         print(f"Duplicate edge keys: {len(duplicates)} (all occurrences included)")
@@ -238,6 +248,19 @@ def print_human(inventory, args):
                 print("  reason: " + (reason if isinstance(reason, str) else stable(reason)))
             if selector_kind(edge) == "unknown":
                 print("  details: " + stable(edge.get("details", selection)))
+    if args.details:
+        support_inputs = [{**row, "resolved": row.get("resolved") or {}}
+                          for row in inventory.get("support", [])
+                          if isinstance(row.get("resolved"), dict) or row.get("role") == "derived-string"]
+        for row in filtered(support_inputs, args):
+            resolved = row["resolved"]
+            print(f"support {row.get('scope')} {row.get('consumer')}.{row.get('dependency')}: "
+                  f"{selector_kind(row)} {resolved.get('family')} {resolved.get('version')} "
+                  f"{resolved.get('drv') or resolved.get('out')}")
+            if row.get("details"):
+                print("  details: " + stable(row["details"]))
+            if resolved.get("context"):
+                print("  producer context: " + stable(resolved["context"]))
     if args.details and not args.kind and (not args.scope or "broken" in args.scope):
         for owner in broken:
             if owner.get("dependencies") or owner.get("testDependencies"):
@@ -282,12 +305,19 @@ def main(argv=None):
             inventory["comparison"] = compare(before, inventory)
             def support_inventory(document):
                 return {"edges": [{**row, "resolved": row.get("resolved") or {}}
-                                  for row in document.get("support", [])]}
+                                  for row in document.get("support", [])
+                                  if isinstance(row.get("resolved"), dict) or row.get("role") == "derived-string"]}
             inventory["supportComparison"] = compare(support_inventory(before), support_inventory(inventory))
         if args.json:
             if args.kind or args.scope or args.family or args.exceptions:
                 inventory["filtered"] = filtered(inventory["edges"], args)
                 inventory["filteredSummary"] = counts(inventory["filtered"])
+                inventory["filteredSupport"] = filtered([
+                    {**row, "resolved": row.get("resolved") or {}}
+                    for row in inventory.get("support", [])
+                    if isinstance(row.get("resolved"), dict) or row.get("role") == "derived-string"
+                ], args)
+                inventory["filteredSupportSummary"] = counts(inventory["filteredSupport"])
             print(json.dumps(inventory, indent=2, sort_keys=True))
         else:
             print_human(inventory, args)
