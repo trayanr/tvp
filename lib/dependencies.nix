@@ -123,6 +123,17 @@ let
         }) (package.tvp.infra or [ ])
       ) entries
     );
+  profileSupport =
+    scope: entries:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        profile: packages:
+        supportRows scope (
+          lib.mapAttrs' (name: package: lib.nameValuePair "${profile}/${name}" package) packages
+        )
+      ) entries
+    );
+
 in
 {
   schema = 1;
@@ -165,6 +176,6 @@ in
       ) buildTestSupport
     )
     ++ supportRows "ordinary" canonical
-    ++ lib.concatLists (lib.mapAttrsToList (_: supportRows "public-variant") variants)
-    ++ lib.concatLists (lib.mapAttrsToList (_: supportRows "construction") construction.variants);
+    ++ profileSupport "public-variant" variants
+    ++ profileSupport "construction" construction.variants;
 }

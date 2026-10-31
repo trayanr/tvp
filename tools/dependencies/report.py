@@ -19,6 +19,8 @@ def stable(value):
 
 def selector_kind(edge):
     selection = edge.get("selection")
+    if "selection" not in edge and edge.get("kind") == "foreign":
+        return "foreign"
     if not isinstance(selection, dict):
         return "foreign" if edge.get("resolved", {}).get("tvp") is False else "unknown"
     kind = selection.get("kind")
@@ -104,6 +106,11 @@ def summarize(inventory):
             "expandedRoles": len(support),
             "distinctDefinitionRoles": len(support_choices),
             "byKind": {kind: support_kinds[kind] for kind in KINDS},
+            "resolvedReleases": len({stable([row["resolved"].get("family"), row["resolved"].get("version")])
+                                     for row in support if isinstance(row.get("resolved"), dict)
+                                     and row["resolved"].get("family") and row["resolved"].get("version")}),
+            "resolvedProducers": len({row["resolved"]["drv"] for row in support
+                                      if isinstance(row.get("resolved"), dict) and row["resolved"].get("drv")}),
             "derivationRoles": sum(isinstance(row.get("resolved"), dict) for row in support),
             "nonDerivationHelpers": sum(row.get("resolved") is None for row in support),
         },
@@ -273,6 +280,10 @@ def main(argv=None):
             before = json.loads(args.compare.read_text())
             summarize(before)
             inventory["comparison"] = compare(before, inventory)
+            def support_inventory(document):
+                return {"edges": [{**row, "resolved": row.get("resolved") or {}}
+                                  for row in document.get("support", [])]}
+            inventory["supportComparison"] = compare(support_inventory(before), support_inventory(inventory))
         if args.json:
             if args.kind or args.scope or args.family or args.exceptions:
                 inventory["filtered"] = filtered(inventory["edges"], args)

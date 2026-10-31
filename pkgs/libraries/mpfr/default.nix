@@ -8,7 +8,9 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6;
+      deps.gmp = tvp.lib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts.float128 = false;
       opts.mpfrRoundingNames = false;
     };
@@ -18,7 +20,9 @@ let
       # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
       opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6;
+      deps.gmp = tvp.lib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts.float128 = false;
     };
     "3.1.6" = {
