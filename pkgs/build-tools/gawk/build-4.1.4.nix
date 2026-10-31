@@ -10,6 +10,7 @@
   version,
   sha256,
   cStandard ? null,
+  configureCFlags ? [ ],
   mkTests,
 }:
 stdenv.mkDerivation (
@@ -53,4 +54,14 @@ stdenv.mkDerivation (
   // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
     env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
   }
+  // lib.optionalAttrs (configureCFlags != [ ] && lib.versionAtLeast stdenv.cc.version "14") {
+    preConfigure = ''
+      tvpGawkBuildCflags="$NIX_CFLAGS_COMPILE"
+      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${lib.concatStringsSep " " configureCFlags}"
+    '';
+    postConfigure = ''
+      export NIX_CFLAGS_COMPILE="$tvpGawkBuildCflags"
+    '';
+  }
+
 )

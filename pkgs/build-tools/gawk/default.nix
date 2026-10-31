@@ -39,6 +39,20 @@ let
       base = tvp.bases.default;
       # Empty read/math callback prototypes require pre-C23 semantics.
       opts.cStandard = "gnu17";
+      # The readline sanity probe calls open/close/dup without their headers.
+      # Keep the real runtime probe, demoting this diagnostic only in configure.
+      opts.configureCFlags = [ "-Wno-error=implicit-function-declaration" ];
+      deps = {
+        gmp = tvp.packages.gmp_6_3_0;
+        mpfr = tvp.packages.mpfr_4_2_1;
+        readline = tvp.packages.readline_8_3;
+        ncurses = tvp.packages.ncurses_6_6;
+      };
+    };
+    "5.1.1" = {
+      builder = ./build-4.1.4.nix;
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
       deps = {
         gmp = tvp.packages.gmp_6_3_0;
         mpfr = tvp.packages.mpfr_4_2_1;
@@ -74,12 +88,9 @@ let
     }
     {
       def = defs."4.1.4";
-      releases."5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
-      releases."5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
       releases."5.0.1" = "sha256-jk6G8E7XiWSLZvdXMpdDoNbftSlMO5G3VqR08c4Fp5Q=";
       releases."4.2.1" = "sha256-0RGXhedG1GqCCdKLLeQEpX+YOqSGcPTiJVMdO9wXVVE=";
       releases."4.1.4" = "sha256-U+GE4tD5De+SB4YFMYAkVjIr4JHHtI8j/cec2mWtwmY=";
-      releases."5.2.2" = "sha256-PB/OFEa0y+4c0nO9fsZLyH2J9hU3RxzT4F4zqWWiUOk=";
     }
     {
       def = defs."5.3.1";
@@ -87,6 +98,12 @@ let
       releases."5.3.2" = "sha256-+MNIZQnecFGSE4sA7ywAu73Q6Eww1cB9I/xzqdxMycw=";
       releases."5.4.0" = "sha256-PdQw8M07RCjGw/avwCG5zTwfjJP3pojcJoykKKkLSsE=";
       releases."5.4.1" = "sha256-B/b3NCt/6+QxP8LCVCrZPWT+IK2HFyABCfEFqCb1/Tc=";
+    }
+    {
+      def = defs."5.1.1";
+      releases."5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
+      releases."5.2.2" = "sha256-PB/OFEa0y+4c0nO9fsZLyH2J9hU3RxzT4F4zqWWiUOk=";
+      releases."5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
     }
   ];
   pname = "gawk";
