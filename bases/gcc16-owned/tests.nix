@@ -39,6 +39,21 @@ in
     '';
     expected = "ok";
   };
+  lto-selected-toolchain = tvpLib.bases.mkBaseTest {
+    inherit base;
+    name = "lto-selected-toolchain";
+    script = ''
+      plugin=$(cc -print-file-name=liblto_plugin.so)
+      case "$plugin" in ${compiler}/*) ;; *) exit 1 ;; esac
+      test -f "$plugin"
+      cc -O2 -flto ${../tests/fixtures/libc.c} -o lto-c
+      ./lto-c | grep -qx 45
+      c++ -O2 -flto ${../tests/fixtures/cxx.cc} -o lto-cxx
+      ./lto-cxx | grep -qx 42
+      echo ok
+    '';
+    expected = "ok";
+  };
   undeclared-runtime-owner = tvpLib.bases.mkBaseTest {
     inherit base;
     name = "undeclared-runtime-owner";
