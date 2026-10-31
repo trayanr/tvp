@@ -32,7 +32,7 @@ let
         }
       ];
       deps = {
-        coreutils = pkgs.coreutils;
+        coreutils = tvp.packages.coreutils;
       };
     };
 
@@ -43,7 +43,7 @@ let
       opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
-        coreutils = pkgs.coreutils;
+        coreutils = tvp.packages.coreutils;
       };
     };
 
