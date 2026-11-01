@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkg-config,
   package,
   baseline,
 }:
@@ -38,7 +39,7 @@ in
     recorded "abi"
       [
         package.tvp.cc
-        pkgs.pkg-config
+        pkg-config
         pkgs.binutils
       ]
       (

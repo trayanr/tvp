@@ -120,6 +120,7 @@ let
   pname = "tcl";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -132,6 +133,7 @@ let
         tcl:
         import ./tests {
           inherit pkgs tvpLib tcl;
+          pkg-config = tcl.tvp.declaredTestDependencies.pkg-config;
         }
       ) { inherit pkgs; };
     };

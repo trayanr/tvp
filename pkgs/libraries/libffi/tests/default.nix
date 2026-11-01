@@ -6,6 +6,7 @@
 # links the library — which is also how every consumer uses it.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   libffi,
 }:
@@ -50,10 +51,11 @@ tvpLib.tests.mkSuite {
 
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${libffi}/lib/pkgconfig:${libffi}/share/pkgconfig
           pkg-config --modversion libffi
         '';
         expected = libffi.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 

@@ -7,6 +7,7 @@
 # consumers find them — and from the declared library name where it does not.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   ncurses,
 }:
@@ -22,7 +23,7 @@ let
 
   ccFlags =
     if hasPc then
-      "$(pkg-config --cflags --libs ${libName})"
+      "$(PKG_CONFIG_LIBDIR=${ncurses}/lib/pkgconfig:${ncurses}/share/pkgconfig pkg-config --cflags --libs ${libName})"
     else
       "-I${ncurses}/include/${libName} -I${ncurses}/include -l${libName}";
 
@@ -33,7 +34,7 @@ let
     (features.cxxStandard or null) != null
   ) "-std=${features.cxxStandard}";
 
-  ccInputs = cc ++ pkgs.lib.optional hasPc pkgs.pkg-config;
+  ccInputs = cc ++ pkgs.lib.optional hasPc pkg-config;
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -86,10 +87,11 @@ tvpLib.tests.mkSuite {
       # first two components, so only those are compared.
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${ncurses}/lib/pkgconfig:${ncurses}/share/pkgconfig
           pkg-config --modversion ${libName} | cut -d. -f1,2
         '';
         expected = ncurses.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 

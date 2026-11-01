@@ -5,9 +5,20 @@
   pkgs,
   tvpLib,
   xz,
+  pkg-config,
+  referenceOlder,
+  referenceNewer,
 }:
 let
   message = "tvp preserves what other software is built on";
+
+  # Keep the format oracle on another release line. An absolute executable
+  # avoids adding the reference liblzma to the compiler's search paths.
+  reference = if pkgs.lib.versionOlder xz.version "5.8" then referenceNewer else referenceOlder;
+  independent =
+    reference.drvPath != xz.drvPath
+    && reference.outPath != xz.outPath
+    && (pkgs.lib.versions.majorMinor reference.version != pkgs.lib.versions.majorMinor xz.version);
 
   cc = [ xz.passthru.tvp.cc ];
   features = xz.passthru.tvp.features or { };
@@ -37,15 +48,17 @@ tvpLib.tests.mkSuite {
       };
 
       # The on-disk container, read back by an xz this build knows nothing about.
-      format = {
-        script = ''
-          cc ${./fixtures/format.c} -llzma -o format
-          ./format
-          ${pkgs.xz}/bin/xz -dc out.xz
-        '';
-        expected = "tvp";
-        extraInputs = cc;
-      };
+      format =
+        assert independent;
+        {
+          script = ''
+            cc ${./fixtures/format.c} -llzma -o format
+            ./format
+            ${reference}/bin/xz -dc out.xz
+          '';
+          expected = "tvp";
+          extraInputs = cc;
+        };
 
       cli = {
         script = ''
@@ -56,10 +69,11 @@ tvpLib.tests.mkSuite {
 
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${xz}/lib/pkgconfig
           pkg-config --modversion liblzma
         '';
         expected = xz.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 

@@ -3,6 +3,7 @@
 # Guards select whole tests; they never edit a test body.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   openssl,
 }:
@@ -50,10 +51,11 @@ tvpLib.tests.mkSuite {
       # The .pc file is what downstream builds actually read.
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${openssl}/lib/pkgconfig:${openssl}/share/pkgconfig
           pkg-config --modversion openssl
         '';
         expected = openssl.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 

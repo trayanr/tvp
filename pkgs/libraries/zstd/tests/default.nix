@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   zstd,
+  gzip,
 }:
 let
   cc = [ zstd.tvp.cc ];
@@ -39,7 +40,7 @@ tvpLib.tests.mkSuite {
       expected = "tvp";
     };
     gzip = {
-      script = ''printf 'tvp' | zstd --format=gzip -q -c | ${pkgs.gzip}/bin/gzip -dc'';
+      script = ''printf 'tvp' | zstd --format=gzip -q -c | ${gzip}/bin/gzip -dc'';
       expected = "tvp";
     };
     xz = {

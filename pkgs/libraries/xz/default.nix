@@ -26,12 +26,18 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps = {
+      pkg-config = tvp.packages.pkg-config;
+      referenceOlder = tvp.packages.xz_5_0;
+      referenceNewer = tvp.packages.xz_5_8;
+    };
 
     extraArgs = {
       mkTests =
         xz:
         import ./tests {
           inherit pkgs tvpLib xz;
+          inherit (xz.tvp.declaredTestDependencies) pkg-config referenceOlder referenceNewer;
         };
     };
 

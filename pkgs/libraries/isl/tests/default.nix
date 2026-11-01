@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   isl,
+  patchelf,
 }:
 tvpLib.tests.mkSuite {
   inherit pkgs;
@@ -23,7 +24,7 @@ tvpLib.tests.mkSuite {
 
   };
 }
-// import ./consumers.nix { inherit pkgs isl; }
+// import ./consumers.nix { inherit pkgs isl patchelf; }
 // {
   upstream-coverage = import ./upstream.nix { inherit pkgs isl; };
   tracker = import ./tracker.nix { inherit pkgs isl; };
