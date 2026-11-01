@@ -29,6 +29,7 @@ let
     inherit pname versionTable;
     testDeps = {
       patchelf = tvp.packages.patchelf;
+      python3 = tvp.packages.python_3;
     };
 
     packageMeta.upstream = {
@@ -55,7 +56,7 @@ let
       isl:
       import ./tests {
         inherit pkgs tvpLib isl;
-        inherit (isl.tvp.declaredTestDependencies) patchelf;
+        inherit (isl.tvp.declaredTestDependencies) patchelf python3;
       };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;

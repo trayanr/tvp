@@ -90,7 +90,7 @@ tvpLib.tests.mkSuite {
           ./digest
         '';
         expected = tvpDigest;
-        extraInputs = [ pkgs.stdenv.cc ];
+        extraInputs = [ openssl.tvp.cc ];
       };
     }
 

@@ -15,7 +15,7 @@ let
   message = "tvp preserves what other software is built on";
   tvpCrc32 = "85d9b6d2";
 
-  cc = [ pkgs.stdenv.cc ];
+  cc = [ zlib.tvp.cc ];
 
   features = zlib.passthru.tvp.features or { };
 

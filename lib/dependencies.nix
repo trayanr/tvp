@@ -288,7 +288,7 @@ in
           selection = value.__tvpSelection or null;
           resolved = resolved value;
           reason = value.__tvpSelection.reason or null;
-          details = "Repository audit test interpreter.";
+          details = "Explicit repository check or CLI runtime input.";
         }) dependencies
       ) buildTestSupport
     )

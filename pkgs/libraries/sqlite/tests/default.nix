@@ -100,7 +100,7 @@ tvpLib.tests.mkSuite {
             | grep -q "^${deps.readline.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ sqlite.tvp.cc.libc.bin ];
       };
     };
 }

@@ -40,7 +40,7 @@ in
       [
         package.tvp.cc
         pkg-config
-        pkgs.binutils
+        package.tvp.cc.bintools
       ]
       (
         if !pkgs.stdenv.hostPlatform.isLinux then

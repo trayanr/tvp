@@ -36,6 +36,8 @@ let
   ];
   pname = "libxcrypt";
   testDeps.pkg-config = tvp.packages.pkg-config;
+  testDeps.gnused = tvp.packages.gnused;
+  testDeps.coreutils = tvp.packages.coreutils;
   testDeps.baseline = tvp.lib.packages.withConstraint {
     category = "artifact";
     reason = "Historical libxcrypt 4.4.36 crypt-format compatibility baseline; newer releases are compared against this exact release.";
@@ -51,7 +53,7 @@ let
       import ./tests {
         inherit pkgs tvpLib package;
         pkg-config = package.tvp.declaredTestDependencies.pkg-config;
-        baseline = package.tvp.declaredTestDependencies.baseline;
+        inherit (package.tvp.declaredTestDependencies) baseline gnused coreutils;
       };
     packageMeta.upstream = {
       type = "git-tags";

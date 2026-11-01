@@ -362,12 +362,20 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
+      category = "artifact";
+      kind = "exact";
+      namespace = "bases";
+      selector = "gcc13-owned-v3.stdenv.cc";
+      reason = "Independent GCC 13 consumer control against Ruby built by GCC 16; preserves cross-compiler extension coverage, not a compatibility limit.";
+    } tvp.bases.gcc13-owned-v3.stdenv.cc;
 
     extraArgs = {
       mkTests =
         ruby:
         import ./tests {
           inherit pkgs tvpLib ruby;
+          inherit (ruby.tvp.declaredTestDependencies) consumerCompiler;
         };
     };
 

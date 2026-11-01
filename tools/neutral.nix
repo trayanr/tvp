@@ -12,6 +12,7 @@
   writeShellApplication,
   writeText,
   coreutils,
+  gawk,
   jq,
   python3,
 
@@ -41,6 +42,7 @@ writeShellApplication {
   name = "tvp-neutral";
   runtimeInputs = [
     coreutils
+    gawk
     jq
   ];
   text = ''

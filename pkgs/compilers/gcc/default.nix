@@ -107,6 +107,7 @@ let
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
+    testDeps.python3 = tvp.packages.python_3;
     packageMeta.upstream = {
       type = "directory-index";
       url = "https://gcc.gnu.org/pub/gcc/releases/";
@@ -125,7 +126,10 @@ let
       gcc:
       (import ./tests { inherit pkgs tvpLib gcc; })
       // pkgs.lib.optionalAttrs (pkgs.lib.versionAtLeast gcc.version "16.2.0") (
-        import ./tests/16.2.0.nix { inherit pkgs tvpLib gcc; }
+        import ./tests/16.2.0.nix {
+          inherit pkgs tvpLib gcc;
+          inherit (gcc.tvp.declaredTestDependencies) python3;
+        }
       )
     ) { inherit pkgs; };
   };

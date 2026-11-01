@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   gcc,
+  python3,
 }:
 let
   libc = gcc.tvp.deps.glibc;
@@ -11,7 +12,7 @@ in
   upstream-audit =
     pkgs.runCommand "gcc-${gcc.version}-upstream-audit"
       {
-        nativeBuildInputs = [ pkgs.python3 ];
+        nativeBuildInputs = [ python3 ];
         passthru = {
           package = gcc;
           testName = "upstream-audit";
@@ -40,7 +41,7 @@ in
     runtime = {
       script = ''
         ${gcc}/bin/g++ ${flags} -std=c++20 -flto ${./fixtures/runtime-16.cc} -o runtime
-        ${pkgs.binutils}/bin/readelf -l runtime | grep -F '${libc}/${gcc.platform.dynamicLinker}' >/dev/null
+        ${gcc.tvp.deps.binutils}/bin/readelf -l runtime | grep -F '${libc}/${gcc.platform.dynamicLinker}' >/dev/null
         ./runtime
       '';
       expected = "42\n${gcc}/lib/libstdc++.so.6";
