@@ -65,8 +65,9 @@ tvp_step() {
     wait "$TVP_CURRENT"
     status=$?
     set -e
+    # Cancellation can also arrive while residual descendants are cleaned up.
+    tvp_cleanup
     if [[ -n $TVP_CANCEL ]]; then
-        tvp_cleanup
         # An interrupted wait may precede actual child termination. Reap it.
         set +e
         wait "$TVP_CURRENT"
@@ -77,8 +78,6 @@ tvp_step() {
         kill -s "$TVP_CANCEL" "$$"
         exit "$status"
     fi
-    # Clean up ordinary background descendants even when their leader exited.
-    tvp_cleanup
     TVP_CURRENT=
     if (( status == 0 )); then
         tvp_log completion "$name" "$status" || :
