@@ -14,7 +14,8 @@ are nativeBuildInputs and libraries are buildInputs, with the existing native
 setup's propagation and search hooks, not a newly implemented search policy.
 The common base floor/compiler remains available. The union is a Nix dependency,
 never a global execution PATH. Caller environment is cleared except HOME,
-TMPDIR, NIX_BUILD_TOP and out; step env is applied after setup. Compiler settings
+TMPDIR, NIX_BUILD_TOP and out (the caller supplies the normal Nix output path
+for compiler use); step env is applied after setup. Compiler settings
 such as CC/CXX/CFLAGS and NIX_CFLAGS_COMPILE/NIX_CFLAGS_LINK/NIX_LDFLAGS
 are allowed; shell/loader/logging
 controls and base setup selectors are reserved. No genericBuild, named phase

@@ -38,8 +38,8 @@ def record(name, result, protocol=b"", **extra):
 
 
 def run(name, expected=0, fd="absent"):
-    with tempfile.TemporaryDirectory(prefix="step fixture ") as directory:
-        env = dict(os.environ)
+    with tempfile.TemporaryDirectory(prefix="step fixture ") as directory, tempfile.TemporaryDirectory(prefix="step-output-") as output:
+        env = dict(os.environ, out=output)
         env.pop("NIX_LOG_FD", None)
         with tempfile.TemporaryFile() as log:
             pass_fds = ()

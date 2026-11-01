@@ -331,6 +331,7 @@ in
 assert failed == [ ] || throw "Runner contracts failed: ${lib.concatStringsSep ", " failed}";
 (builtins.derivation {
   name = "tvp-build-step-runner-contracts";
+  outputs = [ "out" ];
   inherit (base.platform) system;
   builder = "${bash}/bin/bash";
   args = [
