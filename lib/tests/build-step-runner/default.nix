@@ -121,6 +121,7 @@ let
     exit143 = [ (simple "failure.numeric" "exit 143") ];
     signal143 = [ (simple "failure.numeric" ''kill -TERM "$$"'') ];
     handled = [ (simple "handled.condition" "if false; then exit 9; fi; ! false; false || :") ];
+    cores = [ (simple "environment.cores" ''printf '%s\n' "$NIX_BUILD_CORES"'') ];
     missing = [
       {
         name = "cwd.missing";

@@ -37,10 +37,14 @@ def record(name, result, protocol=b"", **extra):
                           protocol=base64.b64encode(protocol).decode(), **extra)), flush=True)
 
 
-def run(name, expected=0, fd="absent"):
+def run(name, expected=0, fd="absent", cores=None):
     with tempfile.TemporaryDirectory(prefix="step fixture ") as directory, tempfile.TemporaryDirectory(prefix="step-output-") as output:
         env = dict(os.environ, out=output)
         env.pop("NIX_LOG_FD", None)
+        if cores == "absent":
+            env.pop("NIX_BUILD_CORES", None)
+        elif cores is not None:
+            env["NIX_BUILD_CORES"] = str(cores)
         with tempfile.TemporaryFile() as log:
             pass_fds = ()
             if fd == "valid":
@@ -53,7 +57,7 @@ def run(name, expected=0, fd="absent"):
                                     start_new_session=True)
             log.seek(0)
             protocol = log.read()
-        record(name + ":" + fd, result, protocol)
+        record(name + ":" + fd, result, protocol, coreBudget=cores)
         assert result.returncode == expected, result
         rows = check_events(result.stderr, "completion" if expected == 0 else "failure")
         if expected:
@@ -77,6 +81,31 @@ def run(name, expected=0, fd="absent"):
         assert not Path(directory, "env-vars").exists()
         if name == "compiler":
             assert subprocess.check_output([str(Path(directory, "smoke"))]).strip()
+        if name == "cores":
+            actual = int(result.stdout.strip())
+            assert actual > 0
+            if cores != 0:
+                assert actual == (1 if cores == "absent" else cores), actual
+
+
+def boundary_cancel(label, command, name, terminal, finishing=False):
+    # A DEBUG timing hook schedules a real signal at a deterministic boundary.
+    # The built runner and step bodies are unmodified by the test.
+    with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as output:
+        hook = Path(directory, "probe.bash")
+        hook.write_text('''set -T
+trap 'if [[ ${BASH_COMMAND-} == "$TVP_PROBE_COMMAND" && ( $TVP_PROBE_NAME == "*" || ${name-} == "$TVP_PROBE_NAME" ) && ( $TVP_PROBE_FINISHING == no || ${TVP_FINISHING-0} == 1 ) && ${TVP_PROBE_FIRED-} != yes ]]; then TVP_PROBE_FIRED=yes; printf "PROBE: cancellation\\n" >&2; kill -s TERM "$$"; fi' DEBUG
+''')
+        env = dict(os.environ, BASH_ENV=str(hook), out=output,
+                   TVP_PROBE_COMMAND=command, TVP_PROBE_NAME=name,
+                   TVP_PROBE_FINISHING="yes" if finishing else "no")
+        env.pop("NIX_LOG_FD", None)
+        result = subprocess.run([bash, runtime + "/success", directory], env=env,
+                                capture_output=True, timeout=20, start_new_session=True)
+        record(label, result)
+        assert b"PROBE: cancellation" in result.stderr, "timing hook did not fire"
+        assert result.returncode == -signal.SIGTERM, result
+        check_events(result.stderr, terminal, 5)
 
 
 def live_group(group):
@@ -170,6 +199,11 @@ run("signal143", 143)
 run("missing", 72)
 for case in ["handled", "scopes", "lists", "literalCwd", "compiler"]:
     run(case)
+for cores in [8, 0, "absent"]:
+    run("cores", cores=cores)
+boundary_cancel("before-final-result", 'tvp_log completion "$name" "$status"', "assets.short", "cancellation")
+boundary_cancel("before-final-guard", "TVP_FINISHING=1", "*", "completion")
+boundary_cancel("after-final-guard", "tvp_reraise_cancel", "*", "completion", finishing=True)
 broken_logging()
 for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
     cancel(sig)

@@ -104,6 +104,9 @@ let
     readonly TVP_ENV=${quote "${coreutils}/bin/env"}
     ${builtins.readFile ./build-step-runner.sh}
     ${lib.concatMapStringsSep "\n" (s: "tvp_step ${quote s.name} ${quote s.script}") active}
+    # Close cancellation gaps after the last step and during normal exit.
+    TVP_FINISHING=1
+    tvp_reraise_cancel
   '';
 in
 {

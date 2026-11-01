@@ -14,7 +14,7 @@ are nativeBuildInputs and libraries are buildInputs, with the existing native
 setup's propagation and search hooks, not a newly implemented search policy.
 The common base floor/compiler remains available. The union is a Nix dependency,
 never a global execution PATH. Caller environment is cleared except HOME,
-TMPDIR, NIX_BUILD_TOP and out (the caller supplies the normal Nix output path
+TMPDIR, NIX_BUILD_TOP, NIX_BUILD_CORES and out (the caller supplies the normal Nix output path
 for compiler use); step env is applied after setup. Compiler settings
 such as CC/CXX/CFLAGS and NIX_CFLAGS_COMPILE/NIX_CFLAGS_LINK/NIX_LDFLAGS
 are allowed; shell/loader/logging
@@ -31,8 +31,12 @@ Bash supplies numeric wait status only: exit 143 and SIGTERM can both produce
 143. No child raw-signal provenance is claimed. Actual external INT/TERM/HUP
 is forwarded to the current owned process group, with two bounded one-second
 grace periods followed by KILL and leader reaping. Runner cancellation is
-re-raised to its caller (Python reports a negative signal number). Ordinary
-non-detaching descendants are covered; detached/daemonizing processes are not.
+re-raised to its caller (Python reports a negative signal number).
+Cancellation at the final-result boundary produces a cancellation event; its
+numeric child status may already be zero. Cancellation after a completed step
+still reaches the caller without adding a second terminal event for that step.
+Final-exit guards cover signals arriving after the last step.
+Ordinary non-detaching descendants are covered; detached/daemonizing processes are not.
 No supervisor or Python is part of runner runtime. Python is the test harness.
 
 Fixtures compile a small C consumer through the selected existing owned wrapper.
