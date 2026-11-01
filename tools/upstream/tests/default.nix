@@ -1,4 +1,9 @@
-{ pkgs, tvp }:
+{
+  pkgs,
+  tvp,
+  ownedCLI,
+  testDeps,
+}:
 let
   inherit (tvp) lib;
   old = "8519d0400a0369a8ddfafa18f98a1225e0fee6ea";
@@ -10,6 +15,7 @@ let
     revisions."2026-05-17" = old;
   };
   cli = pkgs.callPackage ../../upstream.nix {
+    inherit ownedCLI;
     inherit (tvp.packages)
       coreutils
       curl
@@ -36,11 +42,11 @@ in
 pkgs.runCommand "tvp-upstream-git-head-tests"
   {
     nativeBuildInputs = [
-      tvp.packages.bash
-      tvp.packages.coreutils
-      tvp.packages.git
-      tvp.packages.gnugrep
-      pkgs.jq
+      testDeps.bash
+      testDeps.coreutils
+      testDeps.git
+      testDeps.gnugrep
+      testDeps.jq
     ];
   }
   ''
@@ -127,9 +133,9 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     # Exercise response validation as well as actual local-Git error paths.
     mkdir mock
     cat > mock/git <<'EOF'
-    #!${tvp.packages.bash}/bin/bash
+    #!${testDeps.bash}/bin/bash
     if test "$1" = check-ref-format; then
-      exec ${tvp.packages.git}/bin/git "$@"
+      exec ${testDeps.git}/bin/git "$@"
     fi
     cat "$GIT_HEAD_RESPONSE"
     EOF

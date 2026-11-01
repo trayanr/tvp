@@ -72,7 +72,18 @@ let
       registry = runtimeRegistry;
     })
     // {
-      upstream-tracking = import ./tools/upstream/tests { inherit pkgs tvp; };
+      upstream-tracking = import ./tools/upstream/tests {
+        inherit pkgs tvp ownedCLI;
+        testDeps = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            git
+            gnugrep
+            ;
+          inherit (pkgs) jq;
+        };
+      };
       construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
       dependency-inventory =
         pkgs.runCommand "tvp-dependency-inventory-tests"
@@ -118,6 +129,7 @@ let
         owned = construction.bases.gcc13-owned;
         packages = construction.variants.gcc13;
       };
+      cli-packaging = import ./tools/lib/tests { inherit pkgs tvp ownedCLI; };
       test-runner = pkgs.callPackage ./tools/test-runner/tests { python3 = tvp.packages.python_3; };
       native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
       variants-evaluate =
@@ -410,20 +422,23 @@ let
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
-  # The existing wrapper hook accepts its runtime shell as a substitution.
-  cliMakeWrapper = pkgs.makeWrapper.overrideAttrs {
-    shell = "${tvp.packages.bash}/bin/bash";
+  ownedCLI = import ./tools/lib/owned-cli.nix {
+    inherit (pkgs) lib;
+    inherit (tvp.packages) bash coreutils;
+    shellcheck = pkgs.shellcheck-minimal;
+    platform = bases.default.platform;
   };
   tools = {
     dependencies = pkgs.callPackage ./tools/dependencies {
       python3 = tvp.packages.python_3;
-      makeWrapper = cliMakeWrapper;
+      inherit ownedCLI;
     };
     testRunner = pkgs.callPackage ./tools/test-runner {
       python3 = tvp.packages.python_3;
-      makeWrapper = cliMakeWrapper;
+      inherit ownedCLI;
     };
     provenance = pkgs.callPackage ./tools/provenance.nix {
+      inherit ownedCLI;
       coreutils = tvp.packages.coreutils;
       gawk = tvp.packages.gawk;
       gnused = tvp.packages.gnused;
@@ -432,6 +447,7 @@ let
       registry = runtimeRegistry;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
+      inherit ownedCLI;
       coreutils = tvp.packages.coreutils;
       curl = tvp.packages.curl;
       git = tvp.packages.git;
@@ -441,6 +457,7 @@ let
       inherit tvpLib;
     };
     neutral = pkgs.callPackage ./tools/neutral.nix {
+      inherit ownedCLI;
       coreutils = tvp.packages.coreutils;
       gawk = tvp.packages.gawk;
       python3 = tvp.packages.python_3;
@@ -449,6 +466,7 @@ let
       graph = tvp.graph;
     };
     status = pkgs.callPackage ./tools/status.nix {
+      inherit ownedCLI;
       coreutils = tvp.packages.coreutils;
       gnugrep = tvp.packages.gnugrep;
       gnused = tvp.packages.gnused;
@@ -471,6 +489,15 @@ let
         dependency-inventory.python = tvp.packages.python_3;
         test-runner.python = tvp.packages.python_3;
         cli-interpreters.python = tvp.packages.python_3;
+        cli-packaging = {
+          inherit (tvp.packages) bash coreutils gnused;
+          python = tvp.packages.python_3;
+          shellcheck = pkgs.shellcheck-minimal;
+        };
+        cli-builders = {
+          inherit (tvp.packages) bash coreutils;
+          shellcheck = pkgs.shellcheck-minimal;
+        };
         upstream-tracking = {
           inherit (tvp.packages)
             bash

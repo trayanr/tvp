@@ -2,8 +2,8 @@
 # building the catalogue reaches beyond that.
 {
   lib,
-  writeShellApplication,
-  writeText,
+  ownedCLI,
+
   coreutils,
   gnused,
   gawk,
@@ -40,7 +40,7 @@ let
   );
 
   # Trailing newline on every line, or `read` drops the last entry.
-  manifest = writeText "tvp-provenance-manifest" (
+  manifest = builtins.toFile "tvp-provenance-manifest" (
     lib.concatMapStrings (
       e:
       "${e.name}\t${
@@ -53,13 +53,13 @@ let
       }\t${e.out}\t${e.drv}\t${e.source}\n"
     ) entries
   );
-  registration = writeText "tvp-registration.json" (builtins.toJSON registry);
-  metadata = writeText "tvp-provenance-metadata.json" (builtins.toJSON entries);
+  registration = builtins.toFile "tvp-registration.json" (builtins.toJSON registry);
+  metadata = builtins.toFile "tvp-provenance-metadata.json" (builtins.toJSON entries);
 
   # Every closure below is walked here rather than by a nix invocation per
   # package. The three queries in the script return the whole graph once, and a
   # thousand traversals of it cost less than a single process start.
-  runtimeAwk = writeText "tvp-provenance-runtime.awk" ''
+  runtimeAwk = builtins.toFile "tvp-provenance-runtime.awk" ''
     function nm(p,   s) { s = p; sub(/^\/nix\/store\/[a-z0-9]*-/, "", s); return s }
     BEGIN { FS = "\t" }
     FILENAME ~ /tvp-paths$/ { tvp[$0] = 1; next }
@@ -90,7 +90,7 @@ let
     }
   '';
 
-  buildAwk = writeText "tvp-provenance-build.awk" ''
+  buildAwk = builtins.toFile "tvp-provenance-build.awk" ''
     function nm(p,   s) { s = p; sub(/^\/nix\/store\/[a-z0-9]*-/, "", s); return s }
     BEGIN { FS = "\t" }
     FILENAME ~ /candidates$/ { want[$0] = nm($0); next }
@@ -116,7 +116,7 @@ let
     END { for (m in tally) printf "%d\t%s\n", tally[m], m }
   '';
 in
-writeShellApplication {
+ownedCLI.shell {
   name = "tvp-provenance";
   runtimeInputs = [
     coreutils
