@@ -409,9 +409,19 @@ let
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
+  # The existing wrapper hook accepts its runtime shell as a substitution.
+  cliMakeWrapper = pkgs.makeWrapper.overrideAttrs {
+    shell = "${tvp.packages.bash}/bin/bash";
+  };
   tools = {
-    dependencies = pkgs.callPackage ./tools/dependencies { python3 = tvp.packages.python_3; };
-    testRunner = pkgs.callPackage ./tools/test-runner { python3 = tvp.packages.python_3; };
+    dependencies = pkgs.callPackage ./tools/dependencies {
+      python3 = tvp.packages.python_3;
+      makeWrapper = cliMakeWrapper;
+    };
+    testRunner = pkgs.callPackage ./tools/test-runner {
+      python3 = tvp.packages.python_3;
+      makeWrapper = cliMakeWrapper;
+    };
     provenance = pkgs.callPackage ./tools/provenance.nix {
       coreutils = tvp.packages.coreutils;
       gawk = tvp.packages.gawk;
@@ -461,6 +471,7 @@ let
         test-runner.python = tvp.packages.python_3;
         cli-interpreters.python = tvp.packages.python_3;
         cli-runtime = {
+          bash = tvp.packages.bash;
           inherit (tvp.packages)
             coreutils
             curl

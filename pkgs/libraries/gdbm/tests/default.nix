@@ -46,7 +46,8 @@ tvpLib.tests.mkSuite {
     # and a gdbm configured without them still builds and installs.
     ndbm = {
       script = ''
-        cc ${./fixtures/ndbm.c} ${compatFlag}-lgdbm -o ndbm
+        # Historical ndbm headers declare f(); preserve the pre-C23 dialect.
+        cc -std=gnu17 ${./fixtures/ndbm.c} ${compatFlag}-lgdbm -o ndbm
         ./ndbm
       '';
       expected = "tvp";
