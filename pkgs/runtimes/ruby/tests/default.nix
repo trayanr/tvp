@@ -66,7 +66,7 @@ tvpLib.tests.mkSuite {
             RbConfig::MAKEFILE_CONFIG["CC"] = cc
             load "./extconf.rb"
           ' ${consumerCompiler}/bin/cc ${consumerFlags} > /dev/null
-          grep -Fx 'CC = ${consumerCompiler}/bin/cc' Makefile >&2
+          grep -Fx 'CC = ${consumerCompiler}/bin/cc' Makefile >&2 || exit 1
           ${consumerCompiler}/bin/cc --version >&2
           make > /dev/null
           ruby -I. -e 'require "tvp_ext"; print TvpExt.answer'
