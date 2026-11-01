@@ -72,6 +72,7 @@ let
       registry = runtimeRegistry;
     })
     // {
+      upstream-tracking = import ./tools/upstream/tests { inherit pkgs tvp; };
       construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
       dependency-inventory =
         pkgs.runCommand "tvp-dependency-inventory-tests"
@@ -470,6 +471,17 @@ let
         dependency-inventory.python = tvp.packages.python_3;
         test-runner.python = tvp.packages.python_3;
         cli-interpreters.python = tvp.packages.python_3;
+        upstream-tracking = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            curl
+            git
+            gnugrep
+            gnused
+            ;
+          jq = pkgs.jq;
+        };
         cli-runtime = {
           bash = tvp.packages.bash;
           inherit (tvp.packages)

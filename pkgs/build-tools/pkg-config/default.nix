@@ -10,7 +10,7 @@ let
       # original dialect on modern compilers; older construction is unchanged.
       opts.cStandard = "gnu17";
       deps = {
-        gettext = pkgs.gettext;
+        gettext = tvp.packages.gettext;
       };
     };
 
