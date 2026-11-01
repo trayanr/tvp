@@ -85,7 +85,7 @@ let
             tvp-dependencies --help > /dev/null
             cp ${./tools/dependencies/report.py} report.py
             cp ${./tools/dependencies/test_report.py} test_report.py
-            python -m unittest -v test_report >&2
+            python3 -m unittest -v test_report >&2
             printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
           '';
       dependency-policy =
