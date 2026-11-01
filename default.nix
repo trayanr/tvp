@@ -128,6 +128,7 @@ let
           contracts = import ./lib/tests/build-steps.nix;
         in
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
+      build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
@@ -512,6 +513,17 @@ let
         ;
       compositions = tvp.android.profiles;
       buildTestSupport = {
+        build-step-runner = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            zlib
+            libffi
+            ;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+          python = tvp.packages.python_3;
+        };
         audit-contracts.python = tvp.packages.python_3;
         dependency-inventory.python = tvp.packages.python_3;
         test-runner.python = tvp.packages.python_3;
