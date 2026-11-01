@@ -6,20 +6,29 @@ let
     "0.27" = {
       builder = ./build-0.27.nix;
       base = tvp.bases.default;
+      # Bundled GLib uses bool as a field name, reserved by C23. Preserve its
+      # original dialect on modern compilers; older construction is unchanged.
+      opts.cStandard = "gnu17";
       deps = {
-        gettext = pkgs.gettext;
+        gettext = tvp.packages.gettext;
       };
     };
 
     "0.27.1" = {
       builder = ./build-0.27.1.nix;
       base = tvp.bases.default;
+      # Bundled GLib uses bool as a field name, reserved by C23. Preserve its
+      # original dialect on modern compilers; older construction is unchanged.
+      opts.cStandard = "gnu17";
       deps = { };
     };
 
     "0.29.2" = {
       builder = ./build-0.29.2.nix;
       base = tvp.bases.default;
+      # Bundled GLib uses bool as a field name, reserved by C23. Preserve its
+      # original dialect on modern compilers; older construction is unchanged.
+      opts.cStandard = "gnu17";
       deps = { };
     };
   };

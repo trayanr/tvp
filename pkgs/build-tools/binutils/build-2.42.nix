@@ -12,6 +12,7 @@
   version,
   sha256,
   gprofng ? true,
+  cStandard ? null,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -33,13 +34,18 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   enableParallelBuilding = true;
   # Upstream recommends an out-of-tree build; the source tree stays untouched.
-  preConfigure = ''
-    # TVP's pkg-config does not yet carry a dependency-search setup hook.
-    export PKG_CONFIG_PATH="${lib.getDev zstd}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig"
-    mkdir -p ../build
-    cd ../build
-    configureScript="$NIX_BUILD_TOP/$sourceRoot/configure"
-  '';
+  preConfigure =
+    lib.optionalString (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") ''
+      # C only: preserve configure’s default optimization/debug flags and C++ flags.
+      export CFLAGS="''${CFLAGS:--g -O2} -std=${cStandard}"
+    ''
+    + ''
+      # TVP's pkg-config does not yet carry a dependency-search setup hook.
+      export PKG_CONFIG_PATH="${lib.getDev zstd}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig"
+      mkdir -p ../build
+      cd ../build
+      configureScript="$NIX_BUILD_TOP/$sourceRoot/configure"
+    '';
   configureFlags = [
     "--with-system-zlib"
     "--with-zstd"

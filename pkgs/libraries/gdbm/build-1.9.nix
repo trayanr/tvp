@@ -6,6 +6,8 @@
 
   version,
   sha256,
+  cStandard ? null,
+  commonSymbols ? false,
 
   # 1.9 and 1.9.1 ship tests/testsuite, but package.m4 is generated during the
   # check itself, so the shipped file is stale again by the time make looks and
@@ -51,6 +53,7 @@ stdenv.mkDerivation (
     };
 
     passthru = {
+      tvp.cc = stdenv.cc;
       inherit version;
       tvp.deps = { };
 
@@ -69,5 +72,10 @@ stdenv.mkDerivation (
       make -C tests package.m4
       touch tests/testsuite
     '';
+  }
+  // lib.optionalAttrs (cStandard != null || commonSymbols) {
+    env.NIX_CFLAGS_COMPILE = lib.concatStringsSep " " (
+      lib.optional (cStandard != null) "-std=${cStandard}" ++ lib.optional commonSymbols "-fcommon"
+    );
   }
 )

@@ -7,7 +7,7 @@ let
       builder = ./build-1.17.3.nix;
       base = tvp.bases.default;
       deps = {
-        ruby = tvp.packages.ruby_2_7_0;
+        ruby = tvp.packages.ruby_2;
       };
     };
 
@@ -16,7 +16,7 @@ let
       builder = ./build-1.17.3.nix;
       base = tvp.bases.default;
       deps = {
-        ruby = tvp.packages.ruby_3_3_4;
+        ruby = tvp.packages.ruby_3;
       };
     };
   };

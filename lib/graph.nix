@@ -2,6 +2,7 @@
 {
   snapshot =
     {
+      includeRootMetadata ? false,
       canonical,
       variants,
       bases,
@@ -12,10 +13,13 @@
       },
     }:
     let
-      paths = p: {
-        drv = builtins.unsafeDiscardStringContext p.drvPath;
-        out = builtins.unsafeDiscardStringContext p.outPath;
-      };
+      paths =
+        p:
+        {
+          drv = builtins.unsafeDiscardStringContext p.drvPath;
+          out = builtins.unsafeDiscardStringContext p.outPath;
+        }
+        // lib.optionalAttrs includeRootMetadata { outputs = [ (p.outputName or "out") ]; };
       walk =
         prefix: value:
         if lib.isDerivation value then

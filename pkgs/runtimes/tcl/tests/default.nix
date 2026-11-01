@@ -3,6 +3,7 @@
 # select whole tests; they never edit a test body.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   tcl,
 }:
@@ -60,10 +61,11 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.pkgConfig or true) {
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${tcl}/lib/pkgconfig:${tcl}/share/pkgconfig
           pkg-config --modversion tcl
         '';
         expected = tcl.passthru.tvp.pkgConfigVersion or tcl.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 
@@ -83,7 +85,7 @@ tvpLib.tests.mkSuite {
           ldd "$lib" | awk '/libz\.so/ { print $3 }' | grep -q "^${deps.zlib.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ tcl.tvp.cc.libc.bin ];
       };
     };
 }

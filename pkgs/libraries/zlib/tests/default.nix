@@ -8,12 +8,14 @@
   pkgs,
   tvpLib,
   zlib,
+  pkg-config,
+  gzip,
 }:
 let
   message = "tvp preserves what other software is built on";
   tvpCrc32 = "85d9b6d2";
 
-  cc = [ pkgs.stdenv.cc ];
+  cc = [ zlib.tvp.cc ];
 
   features = zlib.passthru.tvp.features or { };
 
@@ -66,7 +68,7 @@ tvpLib.tests.mkSuite {
           gzip -dc out.gz
         '';
         expected = "tvp";
-        extraInputs = cc ++ [ pkgs.gzip ];
+        extraInputs = cc ++ [ gzip ];
       };
     }
 
@@ -99,10 +101,11 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.pkgConfig or false) {
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${zlib}/lib/pkgconfig
           pkg-config --modversion zlib
         '';
         expected = reported;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 

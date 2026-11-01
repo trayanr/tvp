@@ -6,6 +6,7 @@
   bzip2,
   patchelf,
   hardeningDisable,
+  cflags ? "",
   version,
   sha256,
   mkTests,
@@ -14,6 +15,7 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "zip";
   inherit version;
   inherit hardeningDisable;
+  env.NIX_CFLAGS_COMPILE = cflags;
   src = fetchurl {
     url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
     inherit sha256;

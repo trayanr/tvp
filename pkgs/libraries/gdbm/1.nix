@@ -17,6 +17,12 @@
     def = defs."1.8.0";
     releases = {
       "1.8.0" = "sha256-S8jhb/4n+nF7Y1LPr0eiZbIG36nhhhZlZKcotzOP9xk=";
+    };
+  }
+
+  {
+    def = defs."1.8.1";
+    releases = {
       "1.8.1" = {
         sha256 = "sha256-VqMk/7VJSuFqKwoEqAa4IWk3E4ZcPbHjIAmzbdB2WBE=";
         status = {
@@ -46,6 +52,12 @@
     def = defs."1.10";
     releases = {
       "1.10" = "sha256-I/gTTFuUu/sG11amt48HT7puYCjPL+ATQdQLJtt3NEE=";
+    };
+  }
+
+  {
+    def = defs."1.11";
+    releases = {
       "1.11" = "sha256-jZEvRPBdCxWkpdlqdvhS6QXQUbuIAi/N/Zi0O+CT48M=";
       "1.12" = "sha256-2XshZu6Gf9bKXAIu/ugHAtbzDdZq8OA+0JIoXDr5vOo=";
       "1.13" = "sha256-nSUsvX15P3sSvM6t3amNJXwU9NGJDYUcOGw3IHAAolM=";
@@ -68,6 +80,11 @@
       "1.19" = "sha256-N+0SIUEiuXLhig2UmVA55XdIGRk573QRWx1B2IETZLw=";
       "1.23" = "sha256-dLEIHSH/8TrkvXwW5dblBKTCb3zeHcoNljpIQXS7ys0=";
       "1.24" = "sha256-aV6YJ/33Y1E/EzkQvH5s/bkYeUOk/slD5XRJcj0rjb8=";
+    };
+  }
+  {
+    def = defs."1.25";
+    releases = {
       "1.25" = "sha256-0C2zxZJu2Hf4gXuBzR+S9T73TKjG21Q/u6AnGzTzk+w=";
       "1.26" = "sha256-aiRQShTeSnRBA9y5Nr6Xbfb76IzP8mBl5UwcR5RvSl4=";
     };

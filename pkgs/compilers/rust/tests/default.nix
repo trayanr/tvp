@@ -9,7 +9,7 @@
 let
   # rustc shells out to cc to link, and the sandbox has no compiler unless one
   # is named. A staticlib needs no linker, so that test deliberately omits it.
-  cc = [ pkgs.stdenv.cc ];
+  cc = [ rustc.tvp.cc ];
 in
 tvpLib.tests.mkSuite {
   inherit pkgs;

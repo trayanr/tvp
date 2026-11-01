@@ -7,8 +7,8 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -19,8 +19,10 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvpLib.packages.withConstraint {
+          reason = "1.2/1.3 define AM_PROG_INSTALL unquoted; Autoconf 2.50 aliases that name to AC_PROG_INSTALL, causing macro recursion and an unset INSTALL. Native bootstrap/header controls pass on 2.13 and fail on 2.50 and 2.73.";
+        } tvp.packages.autoconf_2_13;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -30,8 +32,8 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -47,8 +49,8 @@ let
       builder = ./build-1.0.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -58,8 +60,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.gz";
@@ -69,8 +71,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -80,8 +82,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -90,8 +92,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.automaticCcCo = false;
       opts.archiveExt = "tar.bz2";
@@ -106,8 +108,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.archiveExt = "tar.bz2";
     };
@@ -115,8 +117,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.archiveExt = "tar.bz2";
       opts.installAclocalDir = true;
@@ -125,8 +127,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
       opts.installAclocalDir = true;
     };
@@ -134,8 +136,8 @@ let
       builder = ./build-1.6.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        perl = tvp.packages.perl_5_44_0;
+        autoconf = tvp.packages.autoconf_2;
+        perl = tvp.packages.perl_5;
       };
     };
   };
@@ -314,5 +316,7 @@ let
 in
 {
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  aliases = tvpLib.packages.mkAliases {
+    inherit pname versionTable canonical;
+  };
 }

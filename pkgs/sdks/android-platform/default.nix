@@ -7,7 +7,7 @@ let
       builder = ./build-36-r2.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
+        unzip = tvp.packages.unzip;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-36_r02.zip";
@@ -25,7 +25,7 @@ let
       builder = ./build-36-r2.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
+        unzip = tvp.packages.unzip;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-36.1_r01.zip";
@@ -43,7 +43,7 @@ let
       builder = ./build-36-r2.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
+        unzip = tvp.packages.unzip;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-37.0_r02.zip";
@@ -61,7 +61,7 @@ let
       builder = ./build-36-r2.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
+        unzip = tvp.packages.unzip;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-37.1_r01.zip";
@@ -79,7 +79,7 @@ let
       builder = ./build-36-r2.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
+        unzip = tvp.packages.unzip;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-37.2_r02.zip";
@@ -117,7 +117,11 @@ let
       releases."37.2-r2" = "sha256-F6+Y7BQnof7Z6ieBhKunHlO4fsoQNlVgL5/GTvEepNM=";
     }
   ];
+  testDeps = {
+    jdk = tvp.packages.jdk_21;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -130,7 +134,7 @@ let
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
-        jdk = tvp.packages.jdk_21_0_13;
+        jdk = package.tvp.declaredTestDependencies.jdk;
       };
   };
 in

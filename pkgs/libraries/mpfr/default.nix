@@ -4,28 +4,50 @@ let
   defs = tvpLib.packages.mkDefs {
     "2.4.2" = {
       builder = ./build-2.4.2.nix;
+      # trint.c's unprototyped callback requires C99-or-newer, pre-C23
+      # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
+      opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_5_0_5;
+      deps.gmp = tvp.lib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts.float128 = false;
       opts.mpfrRoundingNames = false;
     };
     "3.0.1" = {
       builder = ./build-2.4.2.nix;
+      # trint.c's unprototyped callback requires C99-or-newer, pre-C23
+      # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
+      opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_5_0_5;
+      deps.gmp = tvp.lib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts.float128 = false;
     };
     "3.1.6" = {
       builder = ./build-2.4.2.nix;
+      # trint.c's unprototyped callback requires C99-or-newer, pre-C23
+      # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
+      opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6_3_0;
+      deps.gmp = tvp.packages.gmp_6;
       opts.float128 = false;
     };
     "4.0.2" = {
       builder = ./build-2.4.2.nix;
+      # trint.c's unprototyped callback requires C99-or-newer, pre-C23
+      # semantics. 4.2.1's ChangeLog records its typed C2x-compatible fix.
+      opts.checkCFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
-      deps.gmp = tvp.packages.gmp_6_3_0;
+      deps.gmp = tvp.packages.gmp_6;
     };
+    "4.2.1" = {
+      builder = ./build-2.4.2.nix;
+      base = tvp.bases.default;
+      deps.gmp = tvp.packages.gmp_6;
+    };
+
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -50,7 +72,14 @@ let
       def = defs."4.0.2";
       releases = {
         "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
+        "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
         "4.1.1" = "sha256-/9GVvVZ9uv/DuYsj/QCq0FN2gMmJYXHkT+P/eeKKwz0=";
+        "4.2.0" = "sha256-BqN43xNQEkjBsttaqXeiyBJq6Emp2be+JUb7Spwm2ZM=";
+      };
+    }
+    {
+      def = defs."4.2.1";
+      releases = {
         "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
         "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
       };

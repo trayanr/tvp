@@ -26,7 +26,7 @@
   }
 
   {
-    def = defs."3.7.0";
+    def = defs."3.19.0";
     releases = {
       "3.47.2" = "sha256-8e/iAAjGZJ0VRiZZVSd9V73f/zK8fzWb/K1U9D3sazw=";
       "3.47.1" = "sha256-0SkDqIdeH1uNfdNbLodWiHbOoUw0YmuGdc2Py02No1Q=";
@@ -108,6 +108,11 @@
       "3.19.2" = "sha256-q2Wi5Euu7AfZrlxYCBRsSZDKybQz+GFiiJI2n93D51E=";
       "3.19.1" = "sha256-1IFREJX4Rk7pkHBrOzyZtPUvWpcwxL631jXpjf9YtkU=";
       "3.19.0" = "sha256-P0hhlAgER4KvLF4do4z2j3kyDXLI3UJpbV7LEcHTvSE=";
+    };
+  }
+  {
+    def = defs."3.7.0";
+    releases = {
       "3.18.2" = "sha256-qPB0icsGJ4DWaYECF7+/9yDG1vocAHRaQ7WS502fcXc=";
       "3.18.1" = "sha256-Q8rU3OJHF0+dYktFTbripd1+TQuAAsG3HY6rPAtAVuM=";
       "3.18.0" = "sha256-hvl1dDJ6RnP09LJXVrY4hZSspeEW1C1J7n1xGjWR43I=";
@@ -252,10 +257,16 @@
   }
 
   {
-    def = defs."3.1.2";
+    def = defs."3.6.2";
+    releases = {
+      "3.6.2" = "sha256-8uBaKhVuPdt+tQNGPpXThvLRlHRPw+1Wx2X6UJ7e7lY=";
+    };
+  }
+  {
+    def = defs."3.4.2";
     releases = {
       "3.6.3" = "sha256-6ZQbXE4h26lMDC9Hq3nhmYoTBPDPTnhU+9N2bWfYNHI=";
-      "3.6.2" = "sha256-8uBaKhVuPdt+tQNGPpXThvLRlHRPw+1Wx2X6UJ7e7lY=";
+
       "3.6.1" = "sha256-5jrt3eAeScwZ6HheMlbrIVUqaeRWeUSA7p9tDjkOwdk=";
       "3.6.0" = "sha256-bVlmazhC6MeCn3kOlZ9PRPWmX/TAhpQMBC+YNkuHKj4=";
       "3.5.9" = "sha256-680VDdEnllUvCjNxx6jiZCU9MevJkvUEOXBPtvGTG0Q=";
@@ -269,6 +280,11 @@
       "3.5.1" = "sha256-NDcoVT5fgSrYmC6lEAbvRltVGCvV7TGadAzYPY7sYF0=";
       "3.5.0" = "sha256-kSxNmpZkDgzuJp7u1c7C9sJ2RLsmpB4KCMOCZleeeOI=";
       "3.4.2" = "sha256-YjBk/meOVeYlNhAPQZCbcdc7mB2pguM2v35rSNRZ//M=";
+    };
+  }
+  {
+    def = defs."3.1.2";
+    releases = {
       "3.4.1" = "sha256-lwtgioqYOpFLJWgG20LNed0LNsQtWnzjCU2gF1f4Vds=";
       "3.4.0" = "sha256-e5l0nX51ogt69Gl42GACplyG2rsDaaWQ+b1PHeTO+lw=";
       "3.3.17" = "sha256-EdvHZAmzfahZg6TMrtjzRLjy4sRUTmkTMr7bBbNDJGA=";
@@ -331,9 +347,6 @@
   {
     def = defs."3.0.0";
     releases = {
-      "3.0.8" = "sha256-jdc2LMB7WC4fhUEqShbh9yrFH8EYYaf2qYr3bA4YeF0=";
-      "3.0.7" = "sha256-/bAxf98TZNQCF2K5mW8sUnFIQXx5+GUCGXdFoog2MW0=";
-      "3.0.6" = "sha256-WxpC9WTJCSaNL7uHuqPWhX/00O5nuLLm5It2MEnR8xA=";
       "3.0.0" = "sha256-0hgfLvle5S43fP7pKNLKeamUNi8oYtvZO/5YQKgs1n4=";
     };
   }
@@ -349,10 +362,23 @@
   {
     def = defs."3.0.1";
     releases = {
-      "3.0.3" = "sha256-qOlqeu/eJJ6Wog6hiMyb/tKaeai9DwWv5lJHvR+pPbY=";
       "3.0.2" = "sha256-lgp5A4KxM1Z1PpBKyUN1W3kHhYzUVYnRC4wFFR61cIA=";
       "3.0.1" = "sha256-TQj6fCMj7i1KuWwaviu6rDBWcEdf7/x5Y2VX/wJwD/o=";
     };
   }
 
+  {
+    def = defs."3.0.3";
+    releases = {
+      "3.0.3" = "sha256-qOlqeu/eJJ6Wog6hiMyb/tKaeai9DwWv5lJHvR+pPbY=";
+    };
+  }
+  {
+    def = defs."3.0.6";
+    releases = {
+      "3.0.6" = "sha256-WxpC9WTJCSaNL7uHuqPWhX/00O5nuLLm5It2MEnR8xA=";
+      "3.0.7" = "sha256-/bAxf98TZNQCF2K5mW8sUnFIQXx5+GUCGXdFoog2MW0=";
+      "3.0.8" = "sha256-jdc2LMB7WC4fhUEqShbh9yrFH8EYYaf2qYr3bA4YeF0=";
+    };
+  }
 ]

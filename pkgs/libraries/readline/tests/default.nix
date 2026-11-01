@@ -16,7 +16,7 @@ let
   # readline, so ncurses has to be present at link time rather than arriving
   # through libreadline.so's own DT_NEEDED.
   cc = [
-    pkgs.stdenv.cc
+    readline.tvp.cc
     readline.tvp.deps.ncurses
   ];
 in
@@ -48,7 +48,8 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.history or true) {
       history = {
         script = ''
-          cc ${./fixtures/history.c} -lreadline -lhistory -lncursesw -o history
+          # Historical headers declare f(); retain the pre-C23 consumer dialect.
+          cc -std=gnu17 ${./fixtures/history.c} -lreadline -lhistory -lncursesw -o history
           ./history
         '';
         expected = "2 tvp";
@@ -64,7 +65,7 @@ tvpLib.tests.mkSuite {
       terminal = {
         script = ''
           cc ${./fixtures/version.c} -lreadline -o version
-          ${pkgs.glibc.bin}/bin/ldd ./version | grep -c 'libncursesw\|libtinfo'
+          ${readline.tvp.cc.libc.bin}/bin/ldd ./version | grep -c 'libncursesw\|libtinfo'
         '';
         expected = "1";
         extraInputs = cc;

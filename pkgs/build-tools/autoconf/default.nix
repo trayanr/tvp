@@ -7,18 +7,30 @@ let
       builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
       opts.modernInit = false;
       opts.license = pkgs.lib.licenses.gpl2Plus;
+    };
+    "2.12" = {
+      builder = ./build-2.10.nix;
+      base = tvp.bases.default;
+      deps = {
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
+      };
+      opts.modernInit = false;
+      opts.license = pkgs.lib.licenses.gpl2Plus;
+      # AC_PROG_CC_WORKS emits implicit-int main(), requiring its C89 dialect.
+      opts.consumerCStandard = "gnu89";
     };
     "2.50" = {
       builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
       opts.license = pkgs.lib.licenses.gpl2Plus;
     };
@@ -26,8 +38,10 @@ let
       builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_24_4;
+        m4 = tvp.packages.m4;
+        perl = tvpLib.packages.withConstraint {
+          reason = "autom4te uses do on relative autom4te.cache/requests; Perl 5.26 removes dot from @INC. Native 2.53 passes with 5.24 and fails with 5.28; Autoconf 2.58 replaces this lookup with read/eval.";
+        } tvp.packages.perl_5_24;
       };
       opts.license = pkgs.lib.licenses.gpl2Plus;
     };
@@ -35,16 +49,16 @@ let
       builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
     };
     "2.73" = {
       builder = ./build-2.10.nix;
       base = tvp.bases.default;
       deps = {
-        m4 = tvp.packages.m4_1_4_21;
-        perl = tvp.packages.perl_5_44_0;
+        m4 = tvp.packages.m4;
+        perl = tvp.packages.perl_5;
       };
     };
   };
@@ -104,6 +118,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
+    lines = [ "2_13" ];
     inherit
       pname
       versionTable

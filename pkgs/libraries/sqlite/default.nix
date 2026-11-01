@@ -7,10 +7,12 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -20,10 +22,15 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -35,10 +42,17 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -50,10 +64,15 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -69,10 +88,17 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -88,10 +114,15 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
@@ -101,10 +132,15 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+        ];
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
         pkgConfigMajorMinor = true;
@@ -115,10 +151,12 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -133,10 +171,12 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -151,10 +191,12 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
       patches = [
@@ -169,20 +211,114 @@ let
       builder = ./build-3.0.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
       opts = {
+        compileFlags = [ "-std=gnu17" ];
         configureIsExecutable = false;
       };
     };
 
     "3.7.0" = {
       builder = ./build-3.0.0.nix;
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts.compileFlags = [ "-std=gnu17" ];
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_5_19;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+    };
+
+    "3.0.3" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+      };
+      patches = [
+        {
+          file = ./patches/3.0.1-unsigned-typedef.patch;
+          reason = "INTPTR_TYPE is defined as sqlite_int64, so `typedef unsigned INTPTR_TYPE uptr` qualifies a typedef name and no translation unit compiles. Restores the `long long` 3.0.0 used; 3.0.4 fixed it differently, with a separate UINTPTR_TYPE.";
+        }
+      ];
+    };
+
+    "3.0.6" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # Lemon's preprocess_input omitted its return type until 3.1.1.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-function-declaration"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+      };
+    };
+
+    "3.19.0" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+    };
+
+    "3.4.2" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        compileFlags = [ "-std=gnu17" ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+        pkgConfigMajorMinor = true;
+      };
+    };
+    "3.6.2" = {
+      builder = ./build-3.0.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+      # Native Lemon declarations predate C23; keep all generator and package tests.
+      opts = {
+        # sqlite3PageMalloc omits its parameter type only in this release.
+        compileFlags = [
+          "-std=gnu17"
+          "-Wno-error=implicit-int"
+        ];
+        configureIsExecutable = false;
+        hardeningDisable = [ "format" ];
+        pkgConfigMajorMinor = true;
       };
     };
 
@@ -190,8 +326,8 @@ let
       builder = ./build-3.48.0.nix;
       base = tvp.bases.default;
       deps = {
-        tcl = tvp.packages.tcl_8_6_18;
-        readline = tvp.packages.readline_8_3;
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
       };
     };
   };
@@ -201,6 +337,7 @@ let
   pname = "sqlite";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -213,6 +350,7 @@ let
         sqlite:
         import ./tests {
           inherit pkgs tvpLib sqlite;
+          pkg-config = sqlite.tvp.declaredTestDependencies.pkg-config;
         }
       ) { inherit pkgs; };
     };

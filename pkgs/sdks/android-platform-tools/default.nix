@@ -7,9 +7,9 @@ let
       builder = ./build-37.0.1.nix;
       base = tvp.bases.default;
       deps = {
-        unzip = tvp.packages.unzip_6_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        bash = tvp.packages.bash_5_2_37;
+        unzip = tvp.packages.unzip;
+        patchelf = tvp.packages.patchelf;
+        bash = tvp.packages.bash_5;
       };
       opts = {
         url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip";

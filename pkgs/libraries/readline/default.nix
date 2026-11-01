@@ -10,25 +10,43 @@ let
       # The code was correct for its era; the compiler moved.
       base = tvp.bases.gcc9;
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
 
-    # 2.2.1 stays on the default base: only 2.0 and 2.1 rely on tentative
-    # definitions that gcc 10 stopped merging.
+    "2.1" = {
+      builder = ./build-2.0.nix;
+      base = tvp.bases.default;
+      # The configure probes and empty parameter lists require pre-C23 C.
+      opts = {
+        cStandard = "gnu89";
+        # readline.h defines rl_dispatching in every library object.
+        commonSymbols = true;
+      };
+      deps = {
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+
     "2.2.1" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
 
     "2.2" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
       patches = [
         {
@@ -41,19 +59,31 @@ let
     "4.0" = {
       builder = ./build-4.0.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
-        automake = tvp.packages.automake_1_19;
+        ncurses = tvp.packages.ncurses_6;
+        automake = tvp.packages.automake_1;
       };
     };
 
     "4.3" = {
       builder = ./build-4.3.nix;
       base = tvp.bases.default;
+      # Old configure/termcap declarations require the original C dialect.
+      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
+      opts.cStandard = "gnu89";
       deps = {
-        ncurses = tvp.packages.ncurses_6_6;
+        ncurses = tvp.packages.ncurses_6;
       };
     };
+    "8.3" = {
+      builder = ./build-4.3.nix;
+      base = tvp.bases.default;
+      deps.ncurses = tvp.packages.ncurses_6;
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;
@@ -121,7 +151,9 @@ let
       inherit pkgs;
       profiles.ncurses64 = {
         base = tvp.bases.default;
-        versions."8.3".deps.ncurses = tvp.packages.ncurses_6_4;
+        versions."8.3".deps.ncurses = tvp.lib.packages.withConstraint {
+          reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
+        } tvp.packages.ncurses_6_4;
       };
     }
   );
@@ -131,6 +163,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
+    lines = [ "6_2" ];
     inherit
       pname
       versionTable

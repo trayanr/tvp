@@ -42,13 +42,13 @@ in
         }
       );
   runtime-policy = pkgs.writeText "tvp-runtime-audit-policy.json" (builtins.toJSON manifest);
-  package-runtime-ownership = tvp.bases.gcc13-owned-v2.stdenv.mkDerivation {
+  package-runtime-ownership = tvp.bases.default.stdenv.mkDerivation {
     name = "tvp-catalogue-runtime-ownership";
     __structuredAttrs = true;
     exportReferencesGraph.runtime = lib.attrValues roots;
     runtimeRoots = lib.mapAttrs (_: p: builtins.unsafeDiscardStringContext p.outPath) roots;
     inherit (manifest) registeredPaths;
-    nativeBuildInputs = [ tvp.packages.python_3_12_16 ];
+    nativeBuildInputs = [ tvp.packages.python_3 ];
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;

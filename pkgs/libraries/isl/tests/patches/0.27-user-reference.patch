@@ -1,0 +1,13 @@
+--- a/interface/isl.py.core
++++ b/interface/isl.py.core
+@@ -12934,7 +12934,9 @@
+         id_free_user = cast(isl.isl_id_get_free_user(self.ptr), c_void_p)
+         if id_free_user.value != free_user.value:
+             return None
+-        return isl.isl_id_get_user(self.ptr)
++        user = isl.isl_id_get_user(self.ptr)
++        pythonapi.Py_IncRef(py_object(user))
++        return user
+     def name(arg0):
+         try:
+             if not arg0.__class__ is id:

@@ -20,6 +20,13 @@
       "2.9.2" = "sha256-7dei/tLrgyoJSZKuxh8cQRZ6CV3Yzn8+KdtCxTnrT/I=";
       "2.9.3" = "sha256-h5BiryYmkq/e5WPjUfbnJedx1XwYXn3cYkfrMyivTSA=";
       "2.9.4" = "sha256-IbKCT5zlanIpb2eBA+7VqERkF8B+kE5hdIr/ojDskHI=";
+
+    };
+  }
+
+  {
+    def = defs."2.9.5";
+    releases = {
       "2.9.5" = "sha256-qRnfd49eUp+GHMSPsbuMWyZfkmFxO2xuaVS8OfTmy+o=";
       "2.9.6" = "sha256-rBw+EcojcbhPo7hMRSFaXeK++UkVbNexZzLLM5E81E0=";
       "2.9.7" = "sha256-ZDeFXzMy/MD8JTI8XwaQHgInfhIypmK2IdyI/eNyWaw=";
@@ -83,6 +90,13 @@
       "2.15.1" = "sha256-wAi6wI/Vx7Sof3uKcfKD+lgdgNgP+NLv07JiJMObxUw=";
       "2.15.2" = "sha256-yLm8gfi1kMM6+MxsM22/8vU0CZc1iKNRyV8cYhsT0J0=";
       "2.15.3" = "sha256-eCYqbnrBcNZSjr/i78zfIgGRpa9qbNYepKmppQQsegc=";
+    };
+  }
+
+  {
+    def = defs."2.15.4";
+    releases = {
+      "2.15.4" = "sha256-mAh/0YHZBwck8/vGXHN32wMDjrkr2II3Ta/0SUATiCE=";
     };
   }
 ]

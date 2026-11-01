@@ -5,14 +5,46 @@ let
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
-      deps.m4 = tvp.packages.m4_1_4_21;
+      deps.m4 = tvp.packages.m4;
+      # The long-long configure probe defines g() then calls it with arguments.
+      # C23 interprets () as (void); retain the intended pre-C23 semantics.
+      # The procedure leaves earlier compiler construction byte-identical.
+      opts.cStandard = "gnu17";
+      # Old h(){} / g(){} configure probes omit types/declarations.
+      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
+      opts.configureCFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
     };
     "6.0.0a" = {
       builder = ./build-5.0.5.nix;
       base = tvp.bases.default;
-      deps.m4 = tvp.packages.m4_1_4_21;
+      deps.m4 = tvp.packages.m4;
+      # The long-long configure probe defines g() then calls it with arguments.
+      # C23 interprets () as (void); retain the intended pre-C23 semantics.
+      # The procedure leaves earlier compiler construction byte-identical.
+      opts.cStandard = "gnu17";
+      # Old h(){} / g(){} configure probes omit types/declarations.
+      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
+      opts.configureCFlags = [
+        "-Wno-error=implicit-int"
+        "-Wno-error=implicit-function-declaration"
+      ];
       opts.reportedVersion = "6.0.0";
+      # t-scanf.c tests HAVE_UNISTD_H before including config.h, so unlink's
+      # declaration is missed. 6.1.0 includes config.h first. Keep the warning
+      # and original upstream test, demoting only this check-time diagnostic.
+      opts.checkCFlags = [ "-Wno-error=implicit-function-declaration" ];
     };
+    "6.1.0" = {
+      builder = ./build-5.0.5.nix;
+      base = tvp.bases.default;
+      deps.m4 = tvp.packages.m4;
+      # Newer probes have explicit return types but still require pre-C23 ().
+      opts.cStandard = "gnu17";
+    };
+
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -29,9 +61,12 @@ let
       };
     }
     {
-      def = defs."5.0.5";
+      def = defs."6.1.0";
       releases = {
+        "6.1.0" = "sha256-aNrazOUVsPilT1EO3wfBtjZJK8246NVMVushYiXRaYk=";
+        "6.1.1" = "sha256-026cBd9IitYw//F+21AFHWQyNX+c4E40oJs9gYgl6DE=";
         "6.1.2" = "sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=";
+        "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
         "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
         "6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
       };

@@ -6,13 +6,13 @@ let
       builder = ./build-4.4.5.nix;
       base = tvp.bases.default;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_4_0_1;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        zstd = tvp.packages.zstd_1_5_6;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        zstd = tvp.packages.zstd_1;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -29,7 +29,11 @@ let
     }
   ];
   pname = "cmake";
+  testDeps = {
+    ninja = tvp.packages.ninja;
+  };
   canonical = tvpLib.packages.mkVersions {
+    inherit testDeps;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -39,7 +43,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        ninja = tvp.packages.ninja_1_13_2;
+        ninja = package.tvp.declaredTestDependencies.ninja;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

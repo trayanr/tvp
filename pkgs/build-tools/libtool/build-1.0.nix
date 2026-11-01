@@ -13,6 +13,7 @@
   file,
   version,
   sha256,
+  cStandard ? null,
   testFeatures ? { },
   license ? [
     lib.licenses.gpl2Plus
@@ -49,10 +50,14 @@ stdenv.mkDerivation (finalAttrs: {
     cp ${platformAutomake}/share/automake-${platformAutomake.version}/config.{guess,sub} .
   '';
   # These configure scripts treat VAR=value arguments as host names.
-  preConfigure = ''
-    export M4=${m4}/bin/m4
-    export FILECMD=${file}/bin/file
-  '';
+  preConfigure =
+    lib.optionalString (cStandard != null) ''
+      export CFLAGS="''${CFLAGS:--g -O2} -std=${cStandard}"
+    ''
+    + ''
+      export M4=${m4}/bin/m4
+      export FILECMD=${file}/bin/file
+    '';
   enableParallelBuilding = true;
   meta = {
     description = "GNU portable library build tools";
@@ -71,6 +76,7 @@ stdenv.mkDerivation (finalAttrs: {
         ;
     };
     tvp.features = {
+      consumerCStandard = cStandard;
       cxxDependencyTracking = false;
       acLibtool = true;
       ltdl = true;

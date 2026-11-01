@@ -5,32 +5,52 @@ let
   defs = tvpLib.packages.mkDefs {
     "6.2" = {
       builder = ./build-6.0.nix;
+      # A C23 bool probe causes these releases to redefine C++ bool in
+      # curses.h. 6.6 fixes that header guard; retain C++ bindings and tests.
+      opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
-    # etip.h declares `throw()` on operator new, which C++17 removed and gcc 11
-    # made the default dialect. 6.1 rewrote the header.
+    "6.6" = {
+      builder = ./build-6.0.nix;
+      base = tvp.bases.default;
+      deps.pkg-config = tvp.packages.pkg-config;
+    };
+
+    # Retain the historical C/C++ dialects: C23 bool detection breaks these
+    # headers, and 6.0 etip.h uses the pre-C++17 operator-new declaration.
     "6.0" = {
       builder = ./build-6.0.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
+      opts = {
+        cStandard = "gnu17";
+        cxxStandard = "gnu++14";
+      };
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
     };
 
-    # MKlib_gen.sh post-processes `gcc -E` output, and gcc 5 started emitting
-    # extra #line markers into it. 6.0 detects that and adds -P.
+    # MKlib_gen.sh needs -P with modern preprocessors; 6.0 adds that detection.
     "5.8" = {
       builder = ./build-5.8.nix;
-      base = tvp.bases.gcc49;
+      patches = [
+        {
+          file = ./patches/const-user-getters-5.5.patch;
+          reason = "Const UserData callers require observational getters to be const; GCC16 checks template bodies eagerly.";
+        }
+      ];
+      base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages."pkg-config_0_29_2";
+        pkg-config = tvp.packages.pkg-config;
       };
       opts = {
         hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+        cxxStandard = "gnu++98";
       };
     };
 
@@ -38,22 +58,68 @@ let
     # library. 5.3 made the include conditional on HAVE_STRSTREAM_H.
     "5.0" = {
       builder = ./build-4.2.nix;
-      base = tvp.bases.gcc49;
-      deps = { };
+      base = tvp.bases.default;
+      deps = {
+        gnu-config = tvp.packages.gnu-config;
+      };
       opts = {
         hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+        cxxStandard = "gnu++98";
         cxxBinding = false;
       };
     };
 
-    # configure clears CXX when `g++ --version` matches its `1*` template-support
-    # blacklist, which every gcc from 10 onwards does.
-    "4.2" = {
+    "5.3" = {
       builder = ./build-4.2.nix;
-      base = tvp.bases.gcc49;
-      deps = { };
+      base = tvp.bases.default;
+      deps = {
+        gnu-config = tvp.packages.gnu-config;
+      };
+      patches = [
+        {
+          file = ./patches/const-user-getters-5.3.patch;
+          reason = "Preserve const UserData API by const-qualifying observational getters; GCC16 checks the template body eagerly.";
+        }
+      ];
       opts = {
         hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+        cxxStandard = "gnu++98";
+      };
+    };
+
+    "5.5" = {
+      builder = ./build-4.2.nix;
+      base = tvp.bases.default;
+      deps = {
+        gnu-config = tvp.packages.gnu-config;
+      };
+      patches = [
+        {
+          file = ./patches/const-user-getters-5.5.patch;
+          reason = "Preserve const UserData API by const-qualifying observational getters; GCC16 checks the template body eagerly.";
+        }
+      ];
+      opts = {
+        hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+        cxxStandard = "gnu++98";
+      };
+    };
+
+    # GNU89 keeps implicit-int configure probes valid. The builder refreshes
+    # platform detection and limits the C++ blacklist to actual GCC 1.x.
+    "4.2" = {
+      builder = ./build-4.2.nix;
+      base = tvp.bases.default;
+      deps = {
+        gnu-config = tvp.packages.gnu-config;
+      };
+      opts = {
+        hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+        cxxStandard = "gnu++98";
       };
     };
   };
@@ -69,6 +135,7 @@ let
   pname = "ncurses";
 
   packageArgs = {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -80,6 +147,7 @@ let
         ncurses:
         import ./tests {
           inherit pkgs tvpLib ncurses;
+          pkg-config = ncurses.tvp.declaredTestDependencies.pkg-config;
         };
     };
 
@@ -108,6 +176,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
+    lines = [ "6_4" ];
     inherit
       pname
       versionTable

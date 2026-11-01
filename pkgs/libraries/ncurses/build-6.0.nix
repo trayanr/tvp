@@ -15,6 +15,8 @@
 
   version,
   sha256,
+  cStandard ? null,
+  cxxStandard ? null,
 
   # Supplied by default.nix. A fork that drops this argument fails to evaluate.
   mkTests,
@@ -34,9 +36,17 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [ pkg-config ];
 
   # 6.3 validates --with-pkg-config-libdir by checking the directory exists.
-  preConfigure = ''
-    mkdir -p "$out/lib/pkgconfig"
-  '';
+  preConfigure =
+    ''
+      mkdir -p "$out/lib/pkgconfig"
+    ''
+    + lib.optionalString (cStandard != null) ''
+      # Only C gets this dialect; do not pass a C -std option to C++ bindings.
+      export CFLAGS="''${CFLAGS:--O2} -std=${cStandard}"
+    ''
+    + lib.optionalString (cxxStandard != null) ''
+      export CXXFLAGS="''${CXXFLAGS:--O2} -std=${cxxStandard}"
+    '';
 
   configureFlags = [
     "--with-shared"
@@ -62,6 +72,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     tvp.features = {
       widec = true;
+      inherit cStandard cxxStandard;
       libName = "ncursesw";
       pkgConfig = true;
       cxx = true;

@@ -3,18 +3,41 @@ let
   tvpLib = tvp.lib;
   base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
-    "2.6.4" = {
-      builder = ./build-2.6.4.nix;
+    "2.6.1" = {
+      builder = ./build-2.6.1.nix;
       inherit base;
       deps = {
-        bison = tvp.packages.bison_3_8_2;
-        m4 = tvp.packages.m4_1_4_21;
+        bison = tvp.packages.bison;
+        m4 = tvp.packages.m4;
       };
+    };
+    "2.6.2" = {
+      builder = ./build-2.6.1.nix;
+      inherit base;
+      deps = {
+        bison = tvp.packages.bison;
+        m4 = tvp.packages.m4;
+      };
+      patches = [
+        {
+          file = ./patches/2.6.2-manpage-prerequisites.patch;
+          reason = "Backport the 2.6.3 man-page dependency rule: rebuilding the executable alone must not regenerate and delete the shipped manual when help2man is absent.";
+        }
+      ];
     };
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."2.6.4";
+      def = defs."2.6.1";
+      releases."2.6.1" = "sha256-PEP55ljkXoquPPafoRgD1gVQhl8COFKDDVV8XwYjwTs=";
+    }
+    {
+      def = defs."2.6.2";
+      releases."2.6.2" = "sha256-mgFDehFVx5m33CUIYgVk74BrpmJQw2v1+QNLHCB8ssk=";
+    }
+    {
+      def = defs."2.6.1";
+      releases."2.6.3" = "sha256-aLJ0IjPnR8Ri94FGKioeKZ3GIHQB2sjwu7MW9IVlwqo=";
       releases."2.6.4" = "sha256-6HquAyvwfCb4WsDtMlCZjDdiHZX4vXSLMfFbM8Re6ZU=";
     }
   ];

@@ -16,6 +16,8 @@
 
   version,
   sha256,
+  cStandard ? null,
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -36,7 +38,11 @@ stdenv.mkDerivation (
 
     # The shipped scanners define yytext in two translation units. Match the
     # common-symbol semantics used by contemporary GCC, without editing them.
-    NIX_CFLAGS_COMPILE = "-fcommon";
+    NIX_CFLAGS_COMPILE =
+      "-fcommon"
+      + lib.optionalString (
+        cStandard != null && lib.versionAtLeast stdenv.cc.version "15"
+      ) " -std=${cStandard}";
 
     nativeBuildInputs = [ pkg-config ];
 
@@ -104,4 +110,14 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs iconvFromBase {
+    # Keep libc iconv detection; only its generated absolute header fallback
+    # needs the owned store prefix rather than an absent /usr tree.
+    postPatch = ''
+      substituteInPlace configure --replace-fail \
+        'PHP_ICONV_PREFIX="/usr"' \
+        'PHP_ICONV_PREFIX="${lib.getDev stdenv.cc.libc}"'
+    '';
+  }
+
 )

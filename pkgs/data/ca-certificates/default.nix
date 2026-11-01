@@ -24,7 +24,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
-        openssl = tvp.packages.openssl_3_6_3;
+        openssl = tvp.packages.openssl;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;

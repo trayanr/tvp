@@ -48,16 +48,17 @@ let
   # reaching into this base's private assembly stages for Perl, Bash or file.
   runtimeDependencies = {
     inherit (p)
-      perl_5_44_0
-      bash_5_2_37
-      ncurses_6_6
-      file_5_45
-      zlib_1_3_2
-      xz_5_8_3
-      zstd_1_5_6
-      bzip2_1_0_8
+      perl
+      bash
+      ncurses
+      file
+      zlib
+      xz
+      zstd
+      bzip2
       ;
   };
+
   consumers = rec {
     binutils = buildConsumer p.binutils_2_42 {
       inherit (packages) bison texinfo;
@@ -93,6 +94,13 @@ let
 in
 {
   inherit inputs packages consumers;
+  # These validation roots combine bootstrap-base consumers with canonical
+  # tools. The latter retain their selected base's wrapper runtime helpers.
+  canonicalToolRuntimePaths = lib.unique (
+    lib.concatMap (package: tvp.bases.${package.tvp.base}.ownership.allowedRuntimePaths) (
+      lib.attrValues inputs ++ lib.attrValues packages ++ lib.attrValues runtimeDependencies
+    )
+  );
   tests = suite (tvp.lib.packages.merge { inherit inputs packages; });
   consumerTests = suite consumers;
   runtimePaths =

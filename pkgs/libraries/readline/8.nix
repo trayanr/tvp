@@ -8,6 +8,11 @@
       "8.1.2" = "sha256-dYmiOBqEGeaGVKR2I859/LdWgVyP7nJrmPkL9mive8Y=";
       "8.2" = "sha256-P+txcfFqhO6CyhijbXub4QmlLAT0kqBTMx19EJUAfDU=";
       "8.2.13" = "sha256-Dlvk0pN+i9m3zWDUZyHOefiKM0Fd1owtc4+1kkY49lY=";
+    };
+  }
+  {
+    def = defs."8.3";
+    releases = {
       "8.3" = "sha256-/lODIERngozUle6NHTwDen66E4nCK8agQfYnl2+QYcw=";
     };
   }

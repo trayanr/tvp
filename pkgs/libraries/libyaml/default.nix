@@ -15,6 +15,7 @@ let
   pname = "libyaml";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -26,6 +27,7 @@ let
         libyaml:
         import ./tests {
           inherit pkgs tvpLib libyaml;
+          pkg-config = libyaml.tvp.declaredTestDependencies.pkg-config;
         };
     };
 

@@ -2,19 +2,24 @@
 let
   tvpLib = tvp.lib;
 
-  # Upstream's OpenSSL bound (ext/openssl/extconf.rb) gains "< 3.0.0" at 2.7.5
-  # and again at 3.0.3, then drops the upper limit entirely at 3.1. So 2.7 and
-  # 3.0 pin 1.1.1w — the latest release their own bound admits — and 3.1 upwards
-  # pin 3.5.7, the latest LTS line TVP owns.
+  # OpenSSL API lines follow the bundled extension's compatibility. Explicit
+  # <3 checks begin at 2.7.5 and 3.0.3. Later extensions use the 3 API until
+  # their ASN.1 accessor fixes admit OpenSSL 4 (3.3.12, 3.4.10 and 4.0.6).
   defs = tvpLib.packages.mkDefs {
     "2.4.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
 
@@ -27,12 +32,21 @@ let
     "2.1.2" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
+      opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
-        libffi = tvp.packages.libffi_3_8_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+        libffi = tvp.packages.libffi_3;
       };
     };
 
@@ -41,32 +55,76 @@ let
     "2.0.0-p0" = {
       builder = ./build-2.0.nix;
       base = tvp.bases.default;
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
+      opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_6_2;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
-        libffi = tvp.packages.libffi_3_8_0;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
+        readline = (
+          tvp.lib.packages.withConstraint {
+            reason = "Ruby 2.0 ext/readline casts to Function; readline 6.3 removed the obsolete typedef present in 6.2.";
+          } tvp.packages.readline_6_2
+        );
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+        libffi = tvp.packages.libffi_3;
       };
     };
     "2.2.0" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
+      opts.cStandard = "gnu17";
+      # mkmf's headerless fallback intentionally probes undeclared functions.
+      # GCC14 default-errors survive mkmf's Werror downgrade; 2.3 adds decls.
+      opts.mkmfProbeFlags = [ "-Wno-error=implicit-function-declaration" ];
       deps = {
-        openssl = tvp.packages.openssl_1_0_2u;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+      };
+    };
+    "2.3.0" = {
+      builder = ./build-2.2.nix;
+      base = tvp.bases.default;
+      # ANYARGS callbacks require the pre-C23 unspecified-arguments semantics.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+          } tvp.packages.openssl_1_0
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "2.4.8" = {
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
       patches = [
         {
@@ -79,47 +137,125 @@ let
       builder = ./build-2.2.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_1_1_1w;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        gdbm = tvp.packages.gdbm_1_26;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
+      # Actual native extension callbacks retain pre-C23 ANYARGS semantics.
       opts = {
+        cStandard = "gnu17";
         restoreConfigScripts = true;
+      };
+    };
+    "2.7.4" = {
+      builder = ./build-2.7.4.nix;
+      base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+      };
+    };
+
+    "2.6.0" = {
+      builder = ./build-2.6.0.nix;
+      base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
+      };
+    };
+    "2.6.7" = {
+      builder = ./build-2.6.0.nix;
+      base = tvp.bases.default;
+      # Keep configuration and extension callbacks in their supported dialect.
+      opts.cStandard = "gnu17";
+      # vm.c omits the existing mutex-destroy declaration only in this release.
+      opts.compileFlags = [ "-Wno-error=implicit-function-declaration" ];
+      deps = {
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "Bundled ext/openssl uses APIs incompatible with OpenSSL 3; retain the verified 1.1 API line.";
+          } tvp.packages.openssl_1_1
+        );
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        gdbm = tvp.packages.gdbm_1;
       };
     };
     "3.1.0" = {
       builder = ./build-3.1.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
+      # The old configure main() probe rejects __func__ with this warning.
+      # 3.1.3 regenerates it with main(void). Preserve the remaining warning list.
+      opts.extraWarnFlags = [ "-Wno-old-style-definition" ];
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+      };
+    };
+
+    "3.1.3" = {
+      builder = ./build-3.1.nix;
+      base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
+      deps = {
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
     "3.2.0" = {
       builder = ./build-3.2.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        readline = tvp.packages.readline_8_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        readline = tvp.packages.readline_8;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
       };
     };
 
     "3.3.0" = {
       builder = ./build-3.3.nix;
       base = tvp.bases.default;
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
+      opts.cStandard = "gnu17";
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
       };
     };
 
@@ -130,28 +266,85 @@ let
       builder = ./build-3.3.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
       };
+      # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts = {
+        cStandard = "gnu17";
         libDir = "3.4.0+1";
       };
     };
 
+    "3.3.9" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
+    # 3.4.0's tarball declares RUBY_PATCHLEVEL -1, marking it a development
+    # build, so Ruby appends RUBY_ABI_VERSION to its lib directory. 3.4.1
+    # restored patchlevel 0 and the suffix goes away again.
     "4.0.0" = {
       builder = ./build-4.0.nix;
       base = tvp.bases.default;
       deps = {
-        openssl = tvp.packages.openssl_3_5_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        libyaml = tvp.packages.libyaml_0_2_5;
-        libffi = tvp.packages.libffi_3_8_0;
-        rustc = tvp.packages.rustc_1_97_1;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
       };
     };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "3.3.12" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "3.4.10" = {
+      builder = ./build-3.3.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
+    # This upstream release switched to OpenSSL 4 ASN.1 accessors.
+    "4.0.6" = {
+      builder = ./build-4.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+      };
+    };
+
   };
 
   inherit (tvpLib.packages) merge mkTable;
@@ -169,12 +362,20 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
+      category = "artifact";
+      kind = "exact";
+      namespace = "bases";
+      selector = "gcc13-owned-v3.stdenv.cc";
+      reason = "Independent GCC 13 consumer control against Ruby built by GCC 16; preserves cross-compiler extension coverage, not a compatibility limit.";
+    } tvp.bases.gcc13-owned-v3.stdenv.cc;
 
     extraArgs = {
       mkTests =
         ruby:
         import ./tests {
           inherit pkgs tvpLib ruby;
+          inherit (ruby.tvp.declaredTestDependencies) consumerCompiler;
         };
     };
 

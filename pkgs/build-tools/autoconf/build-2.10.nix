@@ -9,6 +9,7 @@
 
   version,
   sha256,
+  consumerCStandard ? null,
   modernInit ? true,
   license ? lib.licenses.gpl3Plus,
 
@@ -49,7 +50,9 @@ stdenv.mkDerivation (finalAttrs: {
     tvp.deps = {
       inherit m4 perl;
     };
-    tvp.features.modernInit = modernInit;
+    tvp.features = {
+      inherit modernInit consumerCStandard;
+    };
 
     tests = mkTests finalAttrs.finalPackage;
   };

@@ -6,6 +6,8 @@ let
     "1.0" = {
       builder = ./build-1.0.nix;
       inherit base;
+      # Shipped configure and ltconfig probes use implicit-int main().
+      opts.cStandard = "gnu89";
       opts = {
         testFeatures = {
           acLibtool = false;
@@ -14,52 +16,58 @@ let
         license = pkgs.lib.licenses.gpl2Plus;
       };
       deps = {
-        autoconf = tvp.packages.autoconf_2_13;
-        platformAutomake = tvp.packages.automake_1_19;
-        automake = tvp.packages.automake_1_3;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        platformAutomake = tvp.packages.automake_1;
+        automake = (
+          tvp.lib.packages.withConstraint {
+            reason = "Libtool 1.0 cannot parse Automake 1.5 depcomp's .deps/answer.TPlo library-object argument; current 1.19 also fails on compile -o handling. Native shared/static project passes with Automake 1.4-p6 and fails with 1.5 and 1.19; retain the moving 1.4 line.";
+          } tvp.packages.automake_1_4
+        );
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "1.3.5" = {
       builder = ./build-1.0.nix;
       inherit base;
+      # Shipped configure and ltconfig probes use implicit-int main().
+      opts.cStandard = "gnu89";
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        platformAutomake = tvp.packages.automake_1_19;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        platformAutomake = tvp.packages.automake_1;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "1.5.26" = {
       builder = ./build-1.5.26.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "2.2.10" = {
       builder = ./build-2.2.10.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
     };
     "2.4.7" = {
       builder = ./build-2.4.7.nix;
       inherit base;
       deps = {
-        autoconf = tvp.packages.autoconf_2_73;
-        automake = tvp.packages.automake_1_19;
-        m4 = tvp.packages.m4_1_4_21;
-        file = tvp.packages.file_5_45;
+        autoconf = tvp.packages.autoconf_2;
+        automake = tvp.packages.automake_1;
+        m4 = tvp.packages.m4;
+        file = tvp.packages.file;
       };
       patches = [
         {
@@ -92,6 +100,7 @@ let
     {
       def = defs."2.4.7";
       releases."2.4.7" = "sha256-T38hfwV85lX/IlWa0iGg/Y74StH8X8tpkM7MMzqhY10=";
+      releases."2.5.3" = "sha256-iYARIyzFm2s7u+Mhtgq6nbGsEVeKth7Q3wKZRYFGri4=";
       releases."2.5.4" = "sha256-+B9YYGZrC8fYS63e+mDRy5+m/OsjmMw7rKavqmAmZnU=";
       releases."2.6.2" = "sha256-LvEGfBbJfbkw/XQMybw9O6mlg4BK5axCzD6HGeSeGR4=";
     }

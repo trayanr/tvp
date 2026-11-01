@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "version": "16.2.0",
+  "system": "x86_64-linux",
+  "state": "Reproduced native outcomes, retained as raw FAIL/XPASS; strict upstream conformance is not claimed.",
+  "groups": [
+    {
+      "id": "release-nested-ice-policy",
+      "reason": "Both GCC13 and GCC16 release builds suppress an ICE after a prior error; un-nested deliberate ICE controls work. Upstream expectations are retained.",
+      "observedUnexpected": [
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c -fplugin=./crash_test_plugin.so  (test .sarif output for UTF-8-encoded parseable JSON)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c -fplugin=./crash_test_plugin.so  dg-regexp 13 not found: \"during GIMPLE pass: crash_test\"",
+        "XPASS: gcc.dg/plugin/crash-test-nested-ice.c -fplugin=./crash_test_plugin.so (internal compiler error)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c -fplugin=./crash_test_plugin.so (test for excess errors)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c crash-test-nested-ice-html.py::test_result",
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c crash-test-nested-ice-sarif.py::test_execution_faile",
+        "FAIL: gcc.dg/plugin/crash-test-nested-ice.c crash-test-nested-ice-sarif.py::test_notificatio",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c -fplugin=./crash_test_plugin.so  (test .sarif output for UTF-8-encoded parseable JSON)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c -fplugin=./crash_test_plugin.so  dg-regexp 13 not found: \"during GIMPLE pass: crash_test\"",
+        "XPASS: gcc.dg/plugin/crash-test-nested-write-through-null.c -fplugin=./crash_test_plugin.so (internal compiler error)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c -fplugin=./crash_test_plugin.so (test for excess errors)",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c crash-test-nested-write-through-null-html.py::test_result",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c crash-test-nested-write-through-null-sarif.py::test_execution_faile",
+        "FAIL: gcc.dg/plugin/crash-test-nested-write-through-null.c crash-test-nested-write-through-null-sarif.py::test_notificatio"
+      ],
+      "reproduction": [
+        "Built the same minimal prior-error/ICE plugin against unchanged GCC13 and GCC16. Both emit an ICE without the prior error and suppress it after the prior error.",
+        "Reproduced both exact upstream crash-plugin sources. The release-checking guard is gcc/diagnostics/context.cc."
+      ]
+    },
+    {
+      "id": "cpython312-refcount-plugin",
+      "reason": "Experimental upstream test plugin misses the Python3.12 split-field Py_INCREF diagnostic. Direct ob_refcnt increment controls emit the warning.",
+      "observedUnexpected": [
+        "FAIL: gcc.dg/plugin/cpython-plugin-test-PyList_New.c -fplugin=./analyzer_cpython_plugin.so  at line 37 (test for warnings, line 36)",
+        "FAIL: gcc.dg/plugin/cpython-plugin-test-PyLong_FromLong.c -fplugin=./analyzer_cpython_plugin.so  at line 37 (test for warnings, line 36)"
+      ],
+      "reproduction": [
+        "Built the exact upstream analyzer_cpython_plugin.cc against GCC16 plugin headers and ran both original sources with Python3.12 headers.",
+        "Separate copies replacing only Py_INCREF(p) with p->ob_refcnt++ emit the expected warning. Original tests and plugin remain unchanged."
+      ]
+    },
+    {
+      "id": "release-sarif-documentation-url",
+      "reason": "The release emits working versioned GCC16.2 documentation URLs; the source pytest expects unversioned development URLs.",
+      "observedUnexpected": [
+        "FAIL: gcc.dg/sarif-output/bad-pragma.c bad-pragma.py::test_messages_have_embedded_url"
+      ],
+      "reproduction": [
+        "Compiled the exact bad-pragma.c in the C locale and inspected emitted SARIF. The versioned GCC16.2 documentation link resolves; the pytest expects the development URL."
+      ]
+    },
+    {
+      "id": "x86-byte-swap-codegen",
+      "reason": "The exact assembly patterns are absent with both GCC13 and GCC16. Both functions pass 327680 input values at O2 and Os against an independent byte-array reference.",
+      "observedUnexpected": [
+        "FAIL: gcc.target/i386/pr115102.c scan-assembler bswaphisi2_lowpart",
+        "FAIL: gcc.target/i386/xchg-4.c scan-assembler rolw",
+        "FAIL: gcc.target/i386/xchg-4.c scan-assembler-not mov"
+      ],
+      "reproduction": [
+        "Compiled both exact assembly-scan sources with the upstream options using GCC13 and GCC16; both miss the specified patterns.",
+        "An independent byte-array reference checks 327680 inputs for each function at O2 and Os with both compilers. All executions pass."
+      ]
+    },
+    {
+      "id": "sandbox-service-database",
+      "reason": "The exact upstream resolver source succeeds outside the Nix sandbox. Its localhost/http lookup fails inside the sandbox without /etc/services; numeric-host and negative-resolution cases are not a compiler defect.",
+      "observedUnexpected": [
+        "FAIL: experimental/net/internet/resolver/ops/lookup.cc  -std=gnu++20 execution test"
+      ],
+      "reproduction": [
+        "Compiled and ran the exact upstream lookup.cc outside the Nix sandbox: exit0.",
+        "The raw sandbox failure occurs at the localhost/named-service lookup. No sandbox bypass, source skip, or expected-output change is applied."
+      ]
+    }
+  ]
+}

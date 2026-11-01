@@ -8,17 +8,32 @@ let
     "2.7.4" = {
       builder = ./build-2.7.nix;
       base = tvp.bases.default;
+      # Old weak pthread declarations use (), requiring pre-C23 semantics;
+      # GNU89 also retains the original pointer-conversion diagnostics.
+      opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
       };
     };
 
     "2.8.0" = {
       builder = ./build-2.8.nix;
       base = tvp.bases.default;
+      # Old weak pthread declarations use (), requiring pre-C23 semantics;
+      # GNU89 also retains the original pointer-conversion diagnostics.
+      opts.cStandard = "gnu89";
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
-        xz = tvp.packages.xz_5_8_3;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
+      };
+    };
+
+    "2.9.5" = {
+      builder = ./build-2.8.nix;
+      base = tvp.bases.default;
+      deps = {
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
       };
     };
 
@@ -26,7 +41,16 @@ let
       builder = ./build-2.15.nix;
       base = tvp.bases.default;
       deps = {
-        zlib = tvp.packages.zlib_1_3_2;
+        zlib = tvp.packages.zlib_1;
+      };
+    };
+
+    "2.15.4" = {
+      builder = ./build-2.15.4.nix;
+      base = tvp.bases.default;
+      deps = {
+        zlib = tvp.packages.zlib_1;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
   };
@@ -41,6 +65,11 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps = {
+      pkg-config = tvp.packages.pkg-config;
+      gzip = tvp.packages.gzip;
+      xz = tvp.packages.xz;
+    };
 
     extraArgs = {
       mkTests = pkgs.lib.makeOverridable (
@@ -48,6 +77,7 @@ let
         libxml2:
         import ./tests {
           inherit pkgs tvpLib libxml2;
+          inherit (libxml2.tvp.declaredTestDependencies) pkg-config gzip xz;
         }
       ) { inherit pkgs; };
     };

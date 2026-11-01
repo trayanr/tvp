@@ -6,6 +6,7 @@
   ncurses,
   version,
   sha256,
+  cStandard ? null,
   mkTests,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -18,7 +19,13 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = [ ncurses ];
   enableParallelBuilding = true;
   configureFlags = [ "--with-curses" ];
-  env.LIBS = "-lncursesw";
+  env =
+    {
+      LIBS = "-lncursesw";
+    }
+    // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
+      NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+    };
   postInstall = ''
     ln -s bash "$out/bin/sh"
     # Installed helpers belong to this shell, not the shell which built it.

@@ -6,14 +6,14 @@ let
       builder = ./build-2.18.3.nix;
       base = tvp.bases.default;
       deps = {
-        meson = tvp.packages.meson_1_12_1;
-        ninja = tvp.packages.ninja_1_13_2;
-        python = tvp.packages.python-build_3_12_5;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        gperf = tvp.packages.gperf_3_3;
-        freetype = tvp.packages.freetype_2_15_0;
-        expat = tvp.packages.expat_2_9_0;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        meson = tvp.packages.meson;
+        ninja = tvp.packages.ninja;
+        python = tvp.packages.python-build_3;
+        pkg-config = tvp.packages.pkg-config;
+        gperf = tvp.packages.gperf;
+        freetype = tvp.packages.freetype_2;
+        expat = tvp.packages.expat_2;
+        patchelf = tvp.packages.patchelf;
       };
     };
   };

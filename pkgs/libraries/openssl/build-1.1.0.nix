@@ -11,6 +11,7 @@
 
   version,
   sha256,
+  compileFlags ? [ ],
 
   # 1.1.0 has no `enc -pbkdf2`.
   pbkdf2 ? true,
@@ -59,7 +60,7 @@ stdenv.mkDerivation (finalAttrs: {
     "shared"
     "--libdir=lib"
     "--openssldir=etc/ssl"
-  ];
+  ] ++ compileFlags;
 
   installTargets = [ "install_sw" ];
 
@@ -75,6 +76,7 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   passthru = {
+    tvp.cc = stdenv.cc;
     inherit version;
     tvp.deps = { };
 

@@ -4,20 +4,30 @@ let
   defs = tvpLib.packages.mkDefs {
     "3.5.10" = {
       builder = ./build-3.5.10.nix;
-      base = tvp.bases.gcc9;
-      deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.variants.ncurses64.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_4;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+      base = tvp.bases.default;
+      opts.linkUnwinder = true;
+      deps = rec {
+        bash = tvp.packages.bash_5;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvpLib.packages.withConstraint {
+          reason = "Keep the moving Readline 8 line linked to the same Ncurses 6.4 instance required by Python 3.5's public WINDOW field access.";
+          parameters.ncurses = ncurses.__tvpSelection;
+        } (tvp.packages.readline_8.override { inherit ncurses; });
+        ncurses = tvpLib.packages.withConstraint {
+          reason = "Modules/_cursesmodule.c reads WINDOW._flags directly. Native 6.4 header control passes; 6.5/6.6 make WINDOW opaque and reject that expression. The full 6.6 consumer silently drops _curses, caught by stdlib and linkage checks.";
+        } tvp.packages.ncurses_6_4;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -56,20 +66,25 @@ let
     };
     "3.6.15" = {
       builder = ./build-3.5.10.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -110,18 +125,22 @@ let
       base = tvp.bases.default;
       opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_1_1_1w;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -155,18 +174,20 @@ let
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_3_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -198,19 +219,22 @@ let
     "3.9.25" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_3_7;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -240,19 +264,20 @@ let
     "3.10.22" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -281,19 +306,20 @@ let
     "3.11.18" = {
       builder = ./build-3.7.17.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -311,19 +337,20 @@ let
     "3.12.16" = {
       builder = ./build-3.12.16.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        libxcrypt = tvp.packages.libxcrypt_4_4_36;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -340,18 +367,19 @@ let
     "3.13.18" = {
       builder = ./build-3.13.18.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -367,19 +395,20 @@ let
     "3.14.10" = {
       builder = ./build-3.14.10.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        zstd = tvp.packages.zstd_1_5_6;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        zstd = tvp.packages.zstd_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -395,20 +424,21 @@ let
     "3.15.2" = {
       builder = ./build-3.15.2.nix;
       base = tvp.bases.default;
+      opts.linkUnwinder = true;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
-        bzip2 = tvp.packages.bzip2_1_0_8;
-        mpdecimal = tvp.packages.mpdecimal_4_0_1;
-        zstd = tvp.packages.zstd_1_5_6;
-        xz = tvp.packages.xz_5_8_3;
-        libffi = tvp.packages.libffi_3_8_0;
-        sqlite = tvp.packages.sqlite_3_53_4;
-        gdbm = tvp.packages.gdbm_1_26;
-        readline = tvp.packages.readline_8_3;
-        ncurses = tvp.packages.ncurses_6_6;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        bash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        mpdecimal = tvp.packages.mpdecimal_4;
+        zstd = tvp.packages.zstd_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkg-config = tvp.packages.pkg-config;
       };
       patches = [
         {
@@ -429,6 +459,7 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
+    testDeps.patch = tvp.packages.patch;
     packageMeta.upstream = {
       type = "git-tags";
       url = "https://github.com/python/cpython";
@@ -440,6 +471,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
+        inherit (package.tvp.declaredTestDependencies) patch;
 
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;

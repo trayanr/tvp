@@ -22,7 +22,19 @@ let
   # the newest 1.1.1x. The shadowed release keeps its exact name in `canonical`,
   # which is what every tool and check reads.
   canonical = universe.canonical;
-  packages = canonical // universe.aliases;
+  packages =
+    pkgs.lib.mapAttrs (
+      selector: package:
+      tvpLib.packages.tagSelection (
+        package.__tvpSelection
+        // {
+          namespace = "packages";
+          inherit selector;
+          publicFallback = true;
+        }
+      ) package
+    ) canonical
+    // universe.aliases;
   variants = universe.variants;
   allVariantPackages =
     tvpLib.packages.merge (
@@ -60,6 +72,63 @@ let
       registry = runtimeRegistry;
     })
     // {
+      upstream-tracking = import ./tools/upstream/tests {
+        inherit pkgs tvp ownedCLI;
+        testDeps = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            git
+            gnugrep
+            ;
+          inherit (pkgs) jq;
+        };
+      };
+      construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
+      dependency-inventory =
+        pkgs.runCommand "tvp-dependency-inventory-tests"
+          {
+            nativeBuildInputs = [
+              tvp.packages.python_3
+              tvp.tools.dependencies
+            ];
+          }
+          ''
+            tvp-dependencies --help > /dev/null
+            cp ${./tools/dependencies/report.py} report.py
+            cp ${./tools/dependencies/test_report.py} test_report.py
+            cp ${./tools/dependencies/recursive.py} recursive.py
+            cp ${./tools/dependencies/test_recursive.py} test_recursive.py
+            python3 -m unittest -v test_report test_recursive >&2
+            printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
+          '';
+      dependency-policy =
+        let
+          unexplained = pkgs.lib.filter (
+            edge:
+            builtins.elem edge.scope [
+              "ordinary"
+              "public-variant"
+            ]
+            && (edge.selection.kind or "unknown") == "exact"
+            && (edge.reason == null || edge.reason == "")
+          ) tvp.dependencyInventory.edges;
+        in
+        if builtins.hasContext (builtins.toJSON tvp.dependencyInventory) then
+          throw "TVP: dependency inventory must discard build contexts."
+        else if unexplained != [ ] then
+          throw "TVP: unexplained ordinary exact dependency selections: ${
+            pkgs.lib.concatStringsSep ", " (map (edge: "${edge.consumer}/${edge.dependency}") unexplained)
+          }"
+        else
+          pkgs.writeText "tvp-dependency-policy" "No unexplained ordinary exact dependency selections.\n";
+      dependency-selectors = import ./lib/tests/selectors.nix { inherit pkgs tvp; };
+      build-steps =
+        let
+          contracts = import ./lib/tests/build-steps.nix;
+        in
+        pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
+      build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
@@ -68,7 +137,8 @@ let
         owned = construction.bases.gcc13-owned;
         packages = construction.variants.gcc13;
       };
-      test-runner = pkgs.callPackage ./tools/test-runner/tests { };
+      cli-packaging = import ./tools/lib/tests { inherit pkgs tvp ownedCLI; };
+      test-runner = pkgs.callPackage ./tools/test-runner/tests { python3 = tvp.packages.python_3; };
       native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
       variants-evaluate =
         let
@@ -360,29 +430,138 @@ let
 
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
+  ownedCLI = import ./tools/lib/owned-cli.nix {
+    inherit (pkgs) lib;
+    inherit (tvp.packages) bash coreutils;
+    shellcheck = pkgs.shellcheck-minimal;
+    platform = bases.default.platform;
+  };
   tools = {
-    testRunner = pkgs.callPackage ./tools/test-runner { };
+    dependencies = pkgs.callPackage ./tools/dependencies {
+      python3 = tvp.packages.python_3;
+      inherit ownedCLI;
+    };
+    testRunner = pkgs.callPackage ./tools/test-runner {
+      python3 = tvp.packages.python_3;
+      inherit ownedCLI;
+    };
     provenance = pkgs.callPackage ./tools/provenance.nix {
+      inherit ownedCLI;
+      coreutils = tvp.packages.coreutils;
+      gawk = tvp.packages.gawk;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit tvpLib variantPackages;
       registry = runtimeRegistry;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
+      inherit ownedCLI;
+      coreutils = tvp.packages.coreutils;
+      curl = tvp.packages.curl;
+      git = tvp.packages.git;
+      gnugrep = tvp.packages.gnugrep;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit tvpLib;
     };
     neutral = pkgs.callPackage ./tools/neutral.nix {
+      inherit ownedCLI;
+      coreutils = tvp.packages.coreutils;
+      gawk = tvp.packages.gawk;
+      python3 = tvp.packages.python_3;
       packages = canonical;
       inherit tvpLib;
       graph = tvp.graph;
     };
     status = pkgs.callPackage ./tools/status.nix {
+      inherit ownedCLI;
+      coreutils = tvp.packages.coreutils;
+      gnugrep = tvp.packages.gnugrep;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit bases tvpLib;
     };
   };
 
   tvp = {
+    dependencyRoots = import ./lib/dependency-roots.nix {
+      inherit (pkgs) lib;
+      inherit tools checks;
+      graph = tvpLib.graph.snapshot {
+        includeRootMetadata = true;
+        inherit
+          canonical
+          variants
+          bases
+          construction
+          ;
+        compositions = tvp.android.profiles;
+      };
+      inventory = tvp.dependencyInventory;
+      registry = runtimeRegistry;
+      borrowed = {
+        inherit (pkgs) jq shellcheck-minimal;
+      };
+      borrowedSource = toString pkgs.path;
+    };
+    dependencyInventory = import ./lib/dependencies.nix {
+      inherit
+        pkgs
+        canonical
+        variants
+        construction
+        ;
+      compositions = tvp.android.profiles;
+      buildTestSupport = {
+        build-step-runner = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            zlib
+            libffi
+            ;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+          python = tvp.packages.python_3;
+        };
+        audit-contracts.python = tvp.packages.python_3;
+        dependency-inventory.python = tvp.packages.python_3;
+        test-runner.python = tvp.packages.python_3;
+        cli-interpreters.python = tvp.packages.python_3;
+        cli-packaging = {
+          inherit (tvp.packages) bash coreutils gnused;
+          python = tvp.packages.python_3;
+          shellcheck = pkgs.shellcheck-minimal;
+        };
+        cli-builders = {
+          inherit (tvp.packages) bash coreutils;
+          shellcheck = pkgs.shellcheck-minimal;
+        };
+        upstream-tracking = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            curl
+            git
+            gnugrep
+            gnused
+            ;
+          jq = pkgs.jq;
+        };
+        cli-runtime = {
+          bash = tvp.packages.bash;
+          inherit (tvp.packages)
+            coreutils
+            curl
+            git
+            gnugrep
+            gnused
+            gawk
+            ;
+        };
+        package-runtime-ownership.python = tvp.packages.python_3;
+      };
+    };
     graph = tvpLib.graph.snapshot {
       inherit
         canonical

@@ -6,14 +6,14 @@ let
       builder = ./build-26.13.0.nix;
       base = tvp.bases.default;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        python = tvp.packages.python_3_12_16;
-        ninja = tvp.packages.ninja_1_13_2;
-        rustc = tvp.packages.rustc_1_97_1;
-        cargo = tvp.packages.cargo-bootstrap_1_97_1;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        openssl = tvp.packages.openssl_3_6_3;
-        zlib = tvp.packages.zlib_1_3_2;
+        bash = tvp.packages.bash_5;
+        python = tvp.packages.python_3;
+        ninja = tvp.packages.ninja;
+        rustc = tvp.packages.rustc_1;
+        cargo = tvp.packages.cargo-bootstrap_1;
+        patchelf = tvp.packages.patchelf;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
       };
       patches = [
         {

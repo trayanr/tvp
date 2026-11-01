@@ -4,8 +4,8 @@
 # command and never a check.
 {
   lib,
-  writeShellApplication,
-  writeText,
+  ownedCLI,
+
   coreutils,
   curl,
   git,
@@ -40,11 +40,11 @@ let
     ];
   };
 
-  manifest = writeText "tvp-upstream-manifest.json" (
+  manifest = builtins.toFile "tvp-upstream-manifest.json" (
     builtins.toJSON (lib.mapAttrsToList describe byPname)
   );
 in
-writeShellApplication {
+ownedCLI.shell {
   name = "tvp-upstream";
   runtimeInputs = [
     coreutils
@@ -84,10 +84,12 @@ writeShellApplication {
       select=null
     fi
 
-    system=$(nix eval --raw --impure --expr 'builtins.currentSystem')
+    system=""
 
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
+
+    ${builtins.readFile ./upstream/git-head.sh}
 
     fetch_raw() {
       local type=$1 url=$2 subdir=$3 pattern=$4
@@ -125,6 +127,25 @@ writeShellApplication {
       subdir=$(jq -r '.upstream.subdirPattern // ""' <<< "$row")
       pattern=$(jq -r '.upstream.pattern // ""' <<< "$row")
 
+      # Untagged projects have snapshots, not numbered releases. Compare only
+      # the declared branch head; do not imply that its history was enumerated.
+      if [ "$type" = git-head ]; then
+        if ! upstream_git_head "$row" > "$work/head.json"; then
+          printf '%s — FAILED: commit head comparison failed\n\n' "$pname"
+          touch "$work/failed"
+          continue
+        fi
+        printf '%s — upstream branch head comparison (history not enumerated)\n' "$pname"
+        printf '  source: %s %s\n' "$type" "$url"
+        jq -r '"  ref: " + .ref,
+               "  remote head: " + .remoteHead,
+               (.packagedRevisions[] | "  packaged " + .version + ": " + .revision),
+               "  head packaged: " + (.headPackaged | tostring),
+               "  missing revision: " + (.missingRevision // "none")' "$work/head.json"
+        echo
+        continue
+      fi
+
       if ! fetch_raw "$type" "$url" "$subdir" "$pattern" | sort -u > "$work/raw"; then
         printf '%s: SKIPPED (%s)\n\n' "$pname" "$type"
         continue
@@ -132,6 +153,9 @@ writeShellApplication {
       jq -R -s 'split("\n") | map(select(length > 0))' < "$work/raw" > "$work/raw.json"
 
       # normalise raw -> version (null drops it), then apply the include predicate
+      if [ -z "$system" ]; then
+        system=$(nix eval --raw --impure --expr 'builtins.currentSystem') || exit 1
+      fi
       nix eval --impure --json --apply "
         u: let
              raw  = builtins.fromJSON (builtins.readFile \"$work/raw.json\");

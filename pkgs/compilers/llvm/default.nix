@@ -7,16 +7,16 @@ let
       builder = ./build-23.1.4.nix;
       base = tvp.bases.default;
       deps = {
-        bash = tvp.packages.bash_5_2_37;
-        python = tvp.packages.python-build_3_12_5;
-        cmake = tvp.packages.cmake_4_4_5;
-        ninja = tvp.packages.ninja_1_13_2;
-        pkg-config = tvp.packages.pkg-config_0_29_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
-        zlib = tvp.packages.zlib_1_3_2;
-        zstd = tvp.packages.zstd_1_5_6;
-        libffi = tvp.packages.libffi_3_8_0;
-        libxml2 = tvp.packages.libxml2_2_15_3;
+        bash = tvp.packages.bash_5;
+        python = tvp.packages.python-build_3;
+        cmake = tvp.packages.cmake;
+        ninja = tvp.packages.ninja;
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        libffi = tvp.packages.libffi_3;
+        libxml2 = tvp.packages.libxml2_2;
       };
       opts = {
         inherit (platform) dynamicLinker;

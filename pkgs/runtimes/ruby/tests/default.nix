@@ -5,10 +5,16 @@
   pkgs,
   tvpLib,
   ruby,
+  consumerCompiler,
 }:
 let
   inherit (ruby.passthru.tvp) deps;
   features = ruby.passthru.tvp.features or { };
+  consumerStandard = features.consumerCStandard or null;
+  # Keep the independent consumer compiler, preserving all RbConfig flags.
+  consumerFlags =
+    pkgs.lib.optionalString (consumerStandard != null)
+      ''--with-cflags="$(ruby -rrbconfig -e 'print RbConfig::CONFIG["CFLAGS"]') -std=${consumerStandard}"'';
 
   # 2.0.0 and older ship a tarball per patchlevel, so the version identifier
   # carries it and RUBY_VERSION does not. From 2.1 upstream ships one tarball
@@ -53,12 +59,25 @@ tvpLib.tests.mkSuite {
           mkdir -p ext && cd ext
           cp ${./fixtures/ext-extconf.rb} extconf.rb
           cp ${./fixtures/ext-tvp.c} tvp_ext.c
-          ruby extconf.rb > /dev/null
+          # mkmf reads the installed flags but must use the independent compiler.
+          ruby -rrbconfig -e '
+            cc = ARGV.shift
+            RbConfig::CONFIG["CC"] = cc
+            RbConfig::MAKEFILE_CONFIG["CC"] = cc
+            load "./extconf.rb"
+          ' ${consumerCompiler}/bin/cc ${consumerFlags} > /dev/null
+          grep -Fx 'CC = ${consumerCompiler}/bin/cc' Makefile >&2 || exit 1
+          ${consumerCompiler}/bin/cc --version >&2
           make > /dev/null
           ruby -I. -e 'require "tvp_ext"; print TvpExt.answer'
         '';
         expected = "42";
-        extraInputs = [ pkgs.stdenv.cc ];
+        extraInputs =
+          assert consumerCompiler.drvPath != ruby.tvp.cc.drvPath;
+          assert consumerCompiler.outPath != ruby.tvp.cc.outPath;
+          assert
+            pkgs.lib.versions.major consumerCompiler.version != pkgs.lib.versions.major ruby.tvp.cc.version;
+          [ consumerCompiler ];
       };
 
       openssl = {
@@ -187,7 +206,7 @@ tvpLib.tests.mkSuite {
           ldd "$so" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ ruby.tvp.cc.libc.bin ];
       };
     }
 
@@ -200,7 +219,7 @@ tvpLib.tests.mkSuite {
           ldd "$so" | awk '/libyaml/ { print $3 }' | grep -q "^${deps.libyaml.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ ruby.tvp.cc.libc.bin ];
       };
     }
 
@@ -211,7 +230,7 @@ tvpLib.tests.mkSuite {
           ldd "$so" | awk '/libffi\.so/ { print $3 }' | grep -q "^${deps.libffi.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ ruby.tvp.cc.libc.bin ];
       };
     };
 }

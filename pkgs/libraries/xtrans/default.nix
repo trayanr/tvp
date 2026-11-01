@@ -6,7 +6,7 @@ let
       builder = ./build-1.6.0.nix;
       base = tvp.bases.default;
       deps = {
-        pkg-config = tvp.packages.pkg-config_0_29_2;
+        pkg-config = tvp.packages.pkg-config;
       };
     };
   };

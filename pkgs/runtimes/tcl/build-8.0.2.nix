@@ -9,6 +9,7 @@
 
   version,
   sha256,
+  cStandard ? null,
 
   # 8.0.2 reports 8.0p2 — the patchlevel spelling its tarball also uses.
   reportedVersion ? version,
@@ -78,4 +79,5 @@ stdenv.mkDerivation (
       ".."
     ];
   }
+  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
 )

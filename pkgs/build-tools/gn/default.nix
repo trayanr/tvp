@@ -6,9 +6,9 @@ let
       builder = ./build-20260707.nix;
       base = tvp.bases.default;
       deps = {
-        python = tvp.packages.python-build_3_12_5;
-        ninja = tvp.packages.ninja_1_13_2;
-        patchelf = tvp.packages.patchelf_0_19_2;
+        python = tvp.packages.python-build_3;
+        ninja = tvp.packages.ninja;
+        patchelf = tvp.packages.patchelf;
       };
       opts.revision = "b8becbd4f7979f63ab3542524b2b4d8db2ce3b52";
       # GN disables -Wformat itself while enabling -Werror.

@@ -4,9 +4,11 @@
 # could be a check. The build surface reads a realised store instead.
 {
   lib,
-  writeShellApplication,
-  writeText,
+  ownedCLI,
+
   coreutils,
+  gnused,
+  gnugrep,
   jq,
 
   packages,
@@ -57,17 +59,19 @@ let
       if (b.stdenv or null) == null then null else builtins.unsafeDiscardStringContext b.stdenv.drvPath;
   }) (lib.filterAttrs (name: b: b.name == name) bases);
 
-  manifest = writeText "tvp-status.json" (
+  manifest = builtins.toFile "tvp-status.json" (
     builtins.toJSON {
       versions = rows;
       bases = baseRows;
     }
   );
 in
-writeShellApplication {
+ownedCLI.shell {
   name = "tvp-status";
   runtimeInputs = [
     coreutils
+    gnused
+    gnugrep
     jq
   ];
   text = ''

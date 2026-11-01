@@ -3,6 +3,12 @@ let
   tvpLib = tvp.lib;
 
   defs = tvpLib.packages.mkDefs {
+    "5.8.4" = {
+      builder = ./build-5.8.4.nix;
+      base = tvp.bases.default;
+      deps = { };
+    };
+
     "5.0.0" = {
       builder = ./build-5.0.0.nix;
       base = tvp.bases.default;
@@ -20,12 +26,18 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps = {
+      pkg-config = tvp.packages.pkg-config;
+      referenceOlder = tvp.packages.xz_5_0;
+      referenceNewer = tvp.packages.xz_5_8;
+    };
 
     extraArgs = {
       mkTests =
         xz:
         import ./tests {
           inherit pkgs tvpLib xz;
+          inherit (xz.tvp.declaredTestDependencies) pkg-config referenceOlder referenceNewer;
         };
     };
 

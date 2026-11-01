@@ -16,6 +16,9 @@
 
   version,
   sha256,
+  cStandard ? null,
+  configureProbeFlags ? [ ],
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -49,9 +52,14 @@ stdenv.mkDerivation (
     # buildInputs. TVP's own pkg-config is just the program, so the path is named
     # here instead — the hidden work a distribution does becomes explicit the
     # moment you own the tool.
-    preConfigure = ''
-      export PKG_CONFIG_PATH="${lib.getDev libxml2}/lib/pkgconfig:${lib.getDev openssl}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig:${lib.getDev ncurses}/lib/pkgconfig:${lib.getDev sqlite}/lib/pkgconfig"
-    '';
+    preConfigure =
+      lib.optionalString (configureProbeFlags != [ ]) ''
+        tvpPhpProductionFlags="''${NIX_CFLAGS_COMPILE-}"
+        export NIX_CFLAGS_COMPILE="$tvpPhpProductionFlags ${lib.concatStringsSep " " configureProbeFlags}"
+      ''
+      + ''
+        export PKG_CONFIG_PATH="${lib.getDev libxml2}/lib/pkgconfig:${lib.getDev openssl}/lib/pkgconfig:${lib.getDev zlib}/lib/pkgconfig:${lib.getDev ncurses}/lib/pkgconfig:${lib.getDev sqlite}/lib/pkgconfig"
+      '';
 
     configureFlags = [
       "--with-openssl=${lib.getDev openssl}"
@@ -99,4 +107,24 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs (cStandard != null && lib.versionAtLeast stdenv.cc.version "15") {
+    env.NIX_CFLAGS_COMPILE = "-std=${cStandard}";
+  }
+  // lib.optionalAttrs iconvFromBase {
+    # Keep libc iconv detection; only its generated absolute header fallback
+    # needs the owned store prefix rather than an absent /usr tree.
+    postPatch = ''
+      substituteInPlace configure --replace-fail \
+        'PHP_ICONV_PREFIX="/usr"' \
+        'PHP_ICONV_PREFIX="${lib.getDev stdenv.cc.libc}"'
+    '';
+  }
+
+  // lib.optionalAttrs (configureProbeFlags != [ ]) {
+    postConfigure = ''
+      export NIX_CFLAGS_COMPILE="$tvpPhpProductionFlags"
+      unset tvpPhpProductionFlags
+    '';
+  }
+
 )

@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkg-config,
   tvpLib,
   package,
 }:
@@ -21,4 +22,12 @@ tvpLib.tests.mkSuite {
       extraInputs = [ package.tvp.cc ];
     };
   };
+}
+// import ./expanded.nix {
+  inherit
+    pkgs
+    pkg-config
+    tvpLib
+    package
+    ;
 }

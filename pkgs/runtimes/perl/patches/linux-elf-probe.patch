@@ -1,0 +1,11 @@
+--- a/hints/linux.sh
++++ b/hints/linux.sh
+@@ -228,7 +228,7 @@
+ #include <fcntl.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+-main() {
++int main(void) {
+ 	char buffer[4];
+ 	int i=open("a.out",O_RDONLY);
+ 	if(i==-1)

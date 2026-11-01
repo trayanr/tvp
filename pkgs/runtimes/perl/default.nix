@@ -5,24 +5,45 @@ let
   defs = tvpLib.packages.mkDefs {
     "5.24.4" = {
       builder = ./build-5.24.4.nix;
-      base = tvp.bases.gcc9;
-      deps.coreutils = tvp.packages.coreutils_9_5;
+      # Configure's malloc/free probes require pre-C23 declarations.
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      patches = [
+        {
+          file = ./patches/configure-gcc-major.patch;
+          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
+        }
+        {
+          file = ./patches/linux-elf-probe.patch;
+          reason = "The Linux ELF probe uses implicit-int main, rejected by modern GCC even in GNU17, and wrongly selects the obsolete a.out shared-library format. Give the probe its actual int return type.";
+        }
+      ];
+      deps.coreutils = tvp.packages.coreutils;
     };
     "5.28.3" = {
       builder = ./build-5.24.4.nix;
-      # gcc 9 reports 9.5.0, so Configure's `1*` glob does not match and the
-      # struct-return patch this builder would otherwise apply is unnecessary.
-      base = tvp.bases.gcc9;
+      # Configure's malloc/free probes require pre-C23 declarations.
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      patches = [
+        {
+          file = ./patches/configure-gcc-major.patch;
+          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
+        }
+      ];
       deps = {
-        coreutils = pkgs.coreutils;
+        coreutils = tvp.packages.coreutils;
       };
     };
 
     "5.30.3" = {
       builder = ./build-5.30.nix;
+      # Configure's malloc()/free() probes predate C23; GNU17 detects their
+      # actual void pointer/void types. 5.36 removes these old probes.
+      opts.cStandard = "gnu17";
       base = tvp.bases.default;
       deps = {
-        coreutils = pkgs.coreutils;
+        coreutils = tvp.packages.coreutils;
       };
     };
 

@@ -5,6 +5,9 @@
   pkgs,
   tvpLib,
   libxml2,
+  pkg-config,
+  gzip,
+  xz,
 }:
 let
   deps = libxml2.passthru.tvp.deps or { };
@@ -51,7 +54,7 @@ tvpLib.tests.mkSuite {
           xmllint --noout --valid doc.xml.gz && printf gzip-ok
         '';
         expected = "gzip-ok";
-        extraInputs = [ pkgs.gzip ];
+        extraInputs = [ gzip ];
       };
 
       # Consumers compile against the installed headers, and a library that
@@ -64,15 +67,16 @@ tvpLib.tests.mkSuite {
         '';
         expected = "catalogue";
         # The declared graph, because xml2-config emits -lz and -llzma.
-        extraInputs = [ pkgs.stdenv.cc ] ++ pkgs.lib.attrValues deps;
+        extraInputs = [ libxml2.tvp.cc ] ++ pkgs.lib.attrValues deps;
       };
 
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${libxml2}/lib/pkgconfig
           pkg-config --modversion libxml-2.0
         '';
         expected = libxml2.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 
@@ -99,7 +103,7 @@ tvpLib.tests.mkSuite {
           xmllint --noout --valid doc.xml.xz && printf lzma-ok
         '';
         expected = "lzma-ok";
-        extraInputs = [ pkgs.xz ];
+        extraInputs = [ xz ];
       };
 
       # lzma above passes against any liblzma the loader reaches, never only
@@ -109,7 +113,17 @@ tvpLib.tests.mkSuite {
           ldd ${libxml2}/lib/libxml2.so | awk '/liblzma\.so/ { print $3 }' | grep -q "^${deps.xz.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ libxml2.tvp.cc.libc.bin ];
       };
     };
 }
+//
+  pkgs.lib.optionalAttrs
+    (builtins.elem libxml2.version [
+      "2.15.3"
+      "2.15.4"
+    ])
+    {
+      # These are the two reviewed corpus profiles, not an API availability boundary.
+      relaxng-corpus = import ./relaxng-corpus.nix { inherit pkgs libxml2; };
+    }

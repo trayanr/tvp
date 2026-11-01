@@ -51,10 +51,17 @@
             variants
             android
             graph
+            dependencyRoots
+            dependencyInventory
             ;
         };
 
         formatter = pkgs.nixfmt-rfc-style;
+
+        apps.dependencies = {
+          type = "app";
+          program = "${tvp.tools.dependencies}/bin/tvp-dependencies";
+        };
 
         apps.provenance = {
           type = "app";

@@ -7,19 +7,36 @@ let
       builder = ./build-1.9.nix;
       base = tvp.bases.default;
       deps = { };
+      # src/var.c uses bool as a field name; upstream 1.25 renamed it.
+      opts.cStandard = "gnu17";
     };
 
-    # Tentative definitions in libgdbmapp collide under -fno-common, which gcc
-    # 10 made the default.
+    "1.25" = {
+      builder = ./build-1.9.nix;
+      base = tvp.bases.default;
+      deps = { };
+    };
+
+    # libgdbmapp uses common symbols; its old C declarations also predate C23.
+    "1.11" = {
+      builder = ./build-1.9.nix;
+      base = tvp.bases.default;
+      deps = { };
+      opts = {
+        cStandard = "gnu89";
+        commonSymbols = true;
+      };
+    };
+
     "1.10" = {
       builder = ./build-1.9.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
       deps = { };
     };
 
     "1.9" = {
       builder = ./build-1.9.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
       deps = { };
       opts = {
         touchTestsuite = true;
@@ -28,14 +45,29 @@ let
 
     "1.8.0" = {
       builder = ./build-1.7.3.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
       deps = { };
+      opts.cStandard = "gnu89";
+      patches = [
+        {
+          file = ./patches/1.8.0-config-sub-x86_64.patch;
+          reason = "The shipped config.sub predates x86_64; accept its native CPU spelling without changing libtool's Linux rules.";
+        }
+      ];
+    };
+
+    "1.8.1" = {
+      builder = ./build-1.7.3.nix;
+      base = tvp.bases.default;
+      deps = { };
+      opts.cStandard = "gnu89";
     };
 
     "1.7.3" = {
       builder = ./build-1.7.3.nix;
-      base = tvp.bases.gcc9;
+      base = tvp.bases.default;
       deps = { };
+      opts.cStandard = "gnu89";
       patches = [
         {
           file = ./patches/1.7.3-install-compat-unbalanced-paren.patch;

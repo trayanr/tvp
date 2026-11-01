@@ -17,6 +17,8 @@
 
   version,
   sha256,
+  cStandard ? null,
+  iconvFromBase ? false,
   parallelBuild ? false,
   testFeatures ? { },
 
@@ -37,7 +39,11 @@ stdenv.mkDerivation (
 
     # The shipped scanners define yytext in two translation units. Match the
     # common-symbol semantics used by contemporary GCC, without editing them.
-    NIX_CFLAGS_COMPILE = "-fcommon";
+    NIX_CFLAGS_COMPILE =
+      "-fcommon"
+      + lib.optionalString (
+        cStandard != null && lib.versionAtLeast stdenv.cc.version "15"
+      ) " -std=${cStandard}";
 
     nativeBuildInputs = [
       pkg-config
@@ -71,11 +77,16 @@ stdenv.mkDerivation (
       "--without-pear"
     ];
 
+    # install-programs does not order bindir creation before parallel copies.
+    preInstall = ''mkdir -p "$out/bin"'';
+
     # Upstream installs both SAPIs as bin/php. Preserve both under distinct
     # names after make install, independent of parallel target ordering.
     postInstall = ''
       install -m755 sapi/cli/php "$out/bin/php"
       install -m755 sapi/cgi/php "$out/bin/php-cgi"
+      test -x "$out/bin/phpize"
+      test -x "$out/bin/php-config"
     '';
 
     meta = {
@@ -120,4 +131,14 @@ stdenv.mkDerivation (
     };
   }
   // lib.optionalAttrs parallelBuild { enableParallelBuilding = true; }
+  // lib.optionalAttrs iconvFromBase {
+    # Keep libc iconv detection; only its generated absolute header fallback
+    # needs the owned store prefix rather than an absent /usr tree.
+    postPatch = ''
+      substituteInPlace configure --replace-fail \
+        'PHP_ICONV_PREFIX="/usr"' \
+        'PHP_ICONV_PREFIX="${lib.getDev stdenv.cc.libc}"'
+    '';
+  }
+
 )

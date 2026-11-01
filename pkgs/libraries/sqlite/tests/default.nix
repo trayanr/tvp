@@ -3,6 +3,7 @@
 # Guards select whole tests; they never edit a test body.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   sqlite,
 }:
@@ -82,10 +83,11 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.pkgConfig or true) {
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${sqlite}/lib/pkgconfig:${sqlite}/share/pkgconfig
           pkg-config --modversion sqlite3
         '';
         expected = sqlite.passthru.tvp.pkgConfigVersion or sqlite.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 
@@ -98,7 +100,7 @@ tvpLib.tests.mkSuite {
             | grep -q "^${deps.readline.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ sqlite.tvp.cc.libc.bin ];
       };
     };
 }
