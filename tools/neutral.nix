@@ -9,8 +9,8 @@
 # tell those apart reports both as failures.
 {
   lib,
-  writeShellApplication,
-  writeText,
+  ownedCLI,
+
   coreutils,
   gawk,
   jq,
@@ -28,7 +28,7 @@ let
     && name == tvpLib.versions.attrName p.pname p.version
   ) packages;
 
-  snapshot = writeText "tvp-drv-snapshot.json" (
+  snapshot = builtins.toFile "tvp-drv-snapshot.json" (
     builtins.toJSON (
       lib.mapAttrs (_: p: {
         drv = builtins.unsafeDiscardStringContext p.drvPath;
@@ -36,9 +36,9 @@ let
       }) canonical
     )
   );
-  graphSnapshot = writeText "tvp-build-graph.json" (builtins.toJSON graph);
+  graphSnapshot = builtins.toFile "tvp-build-graph.json" (builtins.toJSON graph);
 in
-writeShellApplication {
+ownedCLI.shell {
   name = "tvp-neutral";
   runtimeInputs = [
     coreutils

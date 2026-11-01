@@ -4,8 +4,8 @@
 # command and never a check.
 {
   lib,
-  writeShellApplication,
-  writeText,
+  ownedCLI,
+
   coreutils,
   curl,
   git,
@@ -40,11 +40,11 @@ let
     ];
   };
 
-  manifest = writeText "tvp-upstream-manifest.json" (
+  manifest = builtins.toFile "tvp-upstream-manifest.json" (
     builtins.toJSON (lib.mapAttrsToList describe byPname)
   );
 in
-writeShellApplication {
+ownedCLI.shell {
   name = "tvp-upstream";
   runtimeInputs = [
     coreutils
