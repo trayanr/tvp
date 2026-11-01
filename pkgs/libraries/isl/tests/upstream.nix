@@ -44,13 +44,7 @@ isl.stdenv.mkDerivation {
   # ISL 0.28 fixes the generated id.user getter's borrowed-reference handling.
   # Backport that getter in this test-only source copy for Python 3.15; keep
   # every upstream binding test and the installed production package intact.
-  postPatch = lib.optionalString (isl.version == "0.27") ''
-    substituteInPlace interface/isl.py.core --replace-fail \
-      'return isl.isl_id_get_user(self.ptr)' \
-      'user = isl.isl_id_get_user(self.ptr)
-        pythonapi.Py_IncRef(py_object(user))
-        return user'
-  '';
+  patches = lib.optional (isl.version == "0.27") ./patches/0.27-user-reference.patch;
   buildInputs = [ gmp ];
   enableParallelBuilding = true;
   doCheck = true;
@@ -59,7 +53,10 @@ isl.stdenv.mkDerivation {
     set -euo pipefail
     mkdir -p "$out"
     {
-      make check
+      if ! make check; then
+        cat test-suite.log >&2
+        exit 1
+      fi
       for group in ${lib.concatStringsSep " " groups}; do
         result="$group"
         case "$group" in *.py) result="''${group%.py}" ;; esac
