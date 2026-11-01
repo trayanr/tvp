@@ -60,7 +60,7 @@ let
       builder = ./build-4.2.nix;
       base = tvp.bases.default;
       deps = {
-        gnu-config = pkgs.gnu-config;
+        gnu-config = tvp.packages.gnu-config;
       };
       opts = {
         hardeningDisable = [ "format" ];
@@ -74,7 +74,7 @@ let
       builder = ./build-4.2.nix;
       base = tvp.bases.default;
       deps = {
-        gnu-config = pkgs.gnu-config;
+        gnu-config = tvp.packages.gnu-config;
       };
       patches = [
         {
@@ -93,7 +93,7 @@ let
       builder = ./build-4.2.nix;
       base = tvp.bases.default;
       deps = {
-        gnu-config = pkgs.gnu-config;
+        gnu-config = tvp.packages.gnu-config;
       };
       patches = [
         {
@@ -114,7 +114,7 @@ let
       builder = ./build-4.2.nix;
       base = tvp.bases.default;
       deps = {
-        gnu-config = pkgs.gnu-config;
+        gnu-config = tvp.packages.gnu-config;
       };
       opts = {
         hardeningDisable = [ "format" ];

@@ -1,9 +1,11 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  gettext = import ./gettext { inherit pkgs tvp; };
   gradle = import ./gradle { inherit pkgs tvp; };
   git = import ./git { inherit pkgs tvp; };
   curl = import ./curl { inherit pkgs tvp; };
   gn = import ./gn { inherit pkgs tvp; };
+  gnu-config = import ./gnu-config { inherit pkgs tvp; };
   unzip = import ./unzip { inherit pkgs tvp; };
   zip = import ./zip { inherit pkgs tvp; };
   gperf = import ./gperf { inherit pkgs tvp; };
