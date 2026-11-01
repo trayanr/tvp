@@ -48,7 +48,8 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.history or true) {
       history = {
         script = ''
-          cc ${./fixtures/history.c} -lreadline -lhistory -lncursesw -o history
+          # Historical headers declare f(); retain the pre-C23 consumer dialect.
+          cc -std=gnu17 ${./fixtures/history.c} -lreadline -lhistory -lncursesw -o history
           ./history
         '';
         expected = "2 tvp";
