@@ -1,5 +1,9 @@
 # Supplemental upstream coverage with Python in the test environment only.
-{ pkgs, isl }:
+{
+  pkgs,
+  isl,
+  python3,
+}:
 let
   lib = pkgs.lib;
   modern = lib.versionAtLeast isl.version "0.21";
@@ -35,7 +39,7 @@ isl.stdenv.mkDerivation {
   configureFlags = isl.configureFlags ++ lib.optionals (!modern) [ "--without-gcc-arch" ];
   nativeBuildInputs = [
     isl.tvp.cc
-    pkgs.python3
+    python3
   ];
   buildInputs = [ gmp ];
   enableParallelBuilding = true;

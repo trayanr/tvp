@@ -77,7 +77,7 @@ let
         pkgs.runCommand "tvp-dependency-inventory-tests"
           {
             nativeBuildInputs = [
-              pkgs.python3
+              tvp.packages.python_3
               tvp.tools.dependencies
             ];
           }
@@ -117,7 +117,7 @@ let
         owned = construction.bases.gcc13-owned;
         packages = construction.variants.gcc13;
       };
-      test-runner = pkgs.callPackage ./tools/test-runner/tests { };
+      test-runner = pkgs.callPackage ./tools/test-runner/tests { python3 = tvp.packages.python_3; };
       native-platform-interface = import ./bases/tests/platform.nix { inherit pkgs tvpLib bases; };
       variants-evaluate =
         let
@@ -410,23 +410,37 @@ let
   # Deliberately not in `packages`: that attribute is the canonical package
   # universe, and tooling in it would also be subject to every-package-tested.
   tools = {
-    dependencies = pkgs.callPackage ./tools/dependencies { };
-    testRunner = pkgs.callPackage ./tools/test-runner { };
+    dependencies = pkgs.callPackage ./tools/dependencies { python3 = tvp.packages.python_3; };
+    testRunner = pkgs.callPackage ./tools/test-runner { python3 = tvp.packages.python_3; };
     provenance = pkgs.callPackage ./tools/provenance.nix {
+      coreutils = tvp.packages.coreutils;
+      gawk = tvp.packages.gawk;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit tvpLib variantPackages;
       registry = runtimeRegistry;
     };
     upstream = pkgs.callPackage ./tools/upstream.nix {
+      coreutils = tvp.packages.coreutils;
+      curl = tvp.packages.curl;
+      git = tvp.packages.git;
+      gnugrep = tvp.packages.gnugrep;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit tvpLib;
     };
     neutral = pkgs.callPackage ./tools/neutral.nix {
+      coreutils = tvp.packages.coreutils;
+      gawk = tvp.packages.gawk;
+      python3 = tvp.packages.python_3;
       packages = canonical;
       inherit tvpLib;
       graph = tvp.graph;
     };
     status = pkgs.callPackage ./tools/status.nix {
+      coreutils = tvp.packages.coreutils;
+      gnugrep = tvp.packages.gnugrep;
+      gnused = tvp.packages.gnused;
       packages = canonical;
       inherit bases tvpLib;
     };
@@ -443,6 +457,19 @@ let
       compositions = tvp.android.profiles;
       buildTestSupport = {
         audit-contracts.python = tvp.packages.python_3;
+        dependency-inventory.python = tvp.packages.python_3;
+        test-runner.python = tvp.packages.python_3;
+        cli-interpreters.python = tvp.packages.python_3;
+        cli-runtime = {
+          inherit (tvp.packages)
+            coreutils
+            curl
+            git
+            gnugrep
+            gnused
+            gawk
+            ;
+        };
         package-runtime-ownership.python = tvp.packages.python_3;
       };
     };

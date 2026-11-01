@@ -7,6 +7,8 @@
   writeShellApplication,
   writeText,
   coreutils,
+  gnused,
+  gnugrep,
   jq,
 
   packages,
@@ -68,6 +70,8 @@ writeShellApplication {
   name = "tvp-status";
   runtimeInputs = [
     coreutils
+    gnused
+    gnugrep
     jq
   ];
   text = ''

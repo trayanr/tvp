@@ -85,7 +85,7 @@ tvpLib.tests.mkSuite {
           ldd "$lib" | awk '/libz\.so/ { print $3 }' | grep -q "^${deps.zlib.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ tcl.tvp.cc.libc.bin ];
       };
     };
 }

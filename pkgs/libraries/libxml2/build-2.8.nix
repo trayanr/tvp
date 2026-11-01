@@ -46,6 +46,7 @@ stdenv.mkDerivation (
     };
 
     passthru = {
+      tvp.cc = stdenv.cc;
       inherit version;
       tvp.deps = {
         inherit zlib xz;

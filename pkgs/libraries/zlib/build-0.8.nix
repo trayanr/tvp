@@ -44,6 +44,7 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   passthru = {
+    tvp.cc = stdenv.cc;
     inherit version;
     tvp.deps = { };
     tvp.reportedVersion = version;

@@ -88,6 +88,7 @@ stdenv.mkDerivation (
     };
 
     passthru = {
+      tvp.cc = stdenv.cc;
       inherit version libDir;
       rubyEngine = "ruby";
       baseRuby = false;

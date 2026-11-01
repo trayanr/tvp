@@ -73,6 +73,7 @@ stdenv.mkDerivation (
     };
 
     passthru = {
+      tvp.cc = stdenv.cc;
       inherit version;
       tvp.features = {
         shared = false;

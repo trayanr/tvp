@@ -459,6 +459,7 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
+    testDeps.patch = tvp.packages.patch;
     packageMeta.upstream = {
       type = "git-tags";
       url = "https://github.com/python/cpython";
@@ -470,6 +471,7 @@ let
       package:
       import ./tests {
         inherit tvpLib package;
+        inherit (package.tvp.declaredTestDependencies) patch;
 
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;

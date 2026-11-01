@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   gcc,
+  python3,
 }:
 let
   libc = gcc.tvp.deps.glibc;
@@ -11,7 +12,7 @@ in
   upstream-audit =
     pkgs.runCommand "gcc-${gcc.version}-upstream-audit"
       {
-        nativeBuildInputs = [ pkgs.python3 ];
+        nativeBuildInputs = [ python3 ];
         passthru = {
           package = gcc;
           testName = "upstream-audit";

@@ -67,7 +67,7 @@ tvpLib.tests.mkSuite {
         '';
         expected = "catalogue";
         # The declared graph, because xml2-config emits -lz and -llzma.
-        extraInputs = [ pkgs.stdenv.cc ] ++ pkgs.lib.attrValues deps;
+        extraInputs = [ libxml2.tvp.cc ] ++ pkgs.lib.attrValues deps;
       };
 
       pkg-config = {
@@ -113,7 +113,7 @@ tvpLib.tests.mkSuite {
           ldd ${libxml2}/lib/libxml2.so | awk '/liblzma\.so/ { print $3 }' | grep -q "^${deps.xz.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = [ libxml2.tvp.cc.libc.bin ];
       };
     };
 }

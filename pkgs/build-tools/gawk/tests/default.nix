@@ -18,7 +18,7 @@ let
       printf linked
     '';
     expected = "linked";
-    extraInputs = [ pkgs.glibc.bin ];
+    extraInputs = [ package.tvp.cc.libc.bin ];
   };
 in
 tvpLib.tests.mkSuite {

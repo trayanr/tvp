@@ -16,7 +16,7 @@ let
   # readline, so ncurses has to be present at link time rather than arriving
   # through libreadline.so's own DT_NEEDED.
   cc = [
-    pkgs.stdenv.cc
+    readline.tvp.cc
     readline.tvp.deps.ncurses
   ];
 in
@@ -64,7 +64,7 @@ tvpLib.tests.mkSuite {
       terminal = {
         script = ''
           cc ${./fixtures/version.c} -lreadline -o version
-          ${pkgs.glibc.bin}/bin/ldd ./version | grep -c 'libncursesw\|libtinfo'
+          ${readline.tvp.cc.libc.bin}/bin/ldd ./version | grep -c 'libncursesw\|libtinfo'
         '';
         expected = "1";
         extraInputs = cc;

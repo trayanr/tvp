@@ -5,6 +5,7 @@
   writeShellApplication,
   writeText,
   coreutils,
+  gnused,
   gawk,
   jq,
 
@@ -119,6 +120,7 @@ writeShellApplication {
   name = "tvp-provenance";
   runtimeInputs = [
     coreutils
+    gnused
     gawk
     jq
   ];

@@ -1,4 +1,9 @@
-{ pkgs, package }:
+{
+  pkgs,
+  package,
+  gnused,
+  coreutils,
+}:
 let
   normalise = package.tvp.upstream.normalise;
   accepted = {
@@ -36,8 +41,8 @@ assert valid;
     pkgs.runCommand "libxcrypt-${package.version}-upstream-fixtures"
       {
         nativeBuildInputs = [
-          pkgs.gnused
-          pkgs.coreutils
+          gnused
+          coreutils
         ];
         passthru = {
           inherit package;

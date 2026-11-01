@@ -4,6 +4,8 @@
   tvpLib,
   package,
   baseline,
+  gnused,
+  coreutils,
 }:
 (tvpLib.tests.mkSuite {
   inherit pkgs package;
@@ -26,4 +28,11 @@
     baseline
     ;
 })
-// (import ./upstream-fixtures.nix { inherit pkgs package; })
+// (import ./upstream-fixtures.nix {
+  inherit
+    pkgs
+    package
+    gnused
+    coreutils
+    ;
+})

@@ -7,7 +7,7 @@
   gdbm,
 }:
 let
-  cc = [ pkgs.stdenv.cc ];
+  cc = [ gdbm.tvp.cc ];
   features = gdbm.passthru.tvp.features or { };
 
   # dbm and ndbm are split into libgdbm_compat at 1.8.1; below that they are

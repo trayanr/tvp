@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   package,
+  patch,
 }:
 let
   deps = package.tvp.deps;
@@ -85,7 +86,7 @@ tvpLib.tests.mkSuite {
             printf passed
           '';
         expected = "passed";
-        extraInputs = [ package.tvp.cc ] ++ pkgs.lib.optional (tlsClosurePatch != null) pkgs.patch;
+        extraInputs = [ package.tvp.cc ] ++ pkgs.lib.optional (tlsClosurePatch != null) patch;
       };
       openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
         "_ssl"
