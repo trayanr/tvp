@@ -41,6 +41,16 @@ isl.stdenv.mkDerivation {
     isl.tvp.cc
     python3
   ];
+  # ISL 0.28 fixes the generated id.user getter's borrowed-reference handling.
+  # Backport that getter in this test-only source copy for Python 3.15; keep
+  # every upstream binding test and the installed production package intact.
+  postPatch = lib.optionalString (isl.version == "0.27") ''
+    substituteInPlace interface/isl.py.core --replace-fail \
+      'return isl.isl_id_get_user(self.ptr)' \
+      'user = isl.isl_id_get_user(self.ptr)
+        pythonapi.Py_IncRef(py_object(user))
+        return user'
+  '';
   buildInputs = [ gmp ];
   enableParallelBuilding = true;
   doCheck = true;
