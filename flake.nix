@@ -51,6 +51,7 @@
             variants
             android
             graph
+            dependencyRoots
             dependencyInventory
             ;
         };
