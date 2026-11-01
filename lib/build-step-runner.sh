@@ -103,6 +103,7 @@ tvp_step() {
         tvp_log completion "$name" "$status" || :
     else
         tvp_log failure "$name" "$status" || :
+        TVP_FINISHING=1
         tvp_reraise_cancel
         exit "$status"
     fi

@@ -88,24 +88,26 @@ def run(name, expected=0, fd="absent", cores=None):
                 assert actual == (1 if cores == "absent" else cores), actual
 
 
-def boundary_cancel(label, command, name, terminal, finishing=False):
+def boundary_cancel(label, command, name, terminal, finishing=False,
+                    runner="success", count=5, sig=signal.SIGTERM):
     # A DEBUG timing hook schedules a real signal at a deterministic boundary.
     # The built runner and step bodies are unmodified by the test.
     with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as output:
         hook = Path(directory, "probe.bash")
         hook.write_text('''set -T
-trap 'if [[ ${BASH_COMMAND-} == "$TVP_PROBE_COMMAND" && ( $TVP_PROBE_NAME == "*" || ${name-} == "$TVP_PROBE_NAME" ) && ( $TVP_PROBE_FINISHING == no || ${TVP_FINISHING-0} == 1 ) && ${TVP_PROBE_FIRED-} != yes ]]; then TVP_PROBE_FIRED=yes; printf "PROBE: cancellation\\n" >&2; kill -s TERM "$$"; fi' DEBUG
+trap 'if [[ ${BASH_COMMAND-} == "$TVP_PROBE_COMMAND" && ( $TVP_PROBE_NAME == "*" || ${name-} == "$TVP_PROBE_NAME" ) && ( $TVP_PROBE_FINISHING == no || ${TVP_FINISHING-0} == 1 ) && ${TVP_PROBE_FIRED-} != yes ]]; then TVP_PROBE_FIRED=yes; printf "PROBE: cancellation\\n" >&2; kill -s "$TVP_PROBE_SIGNAL" "$$"; fi' DEBUG
 ''')
         env = dict(os.environ, BASH_ENV=str(hook), out=output,
                    TVP_PROBE_COMMAND=command, TVP_PROBE_NAME=name,
-                   TVP_PROBE_FINISHING="yes" if finishing else "no")
+                   TVP_PROBE_FINISHING="yes" if finishing else "no",
+                   TVP_PROBE_SIGNAL=signal.Signals(sig).name.removeprefix("SIG"))
         env.pop("NIX_LOG_FD", None)
-        result = subprocess.run([bash, runtime + "/success", directory], env=env,
+        result = subprocess.run([bash, runtime + "/" + runner, directory], env=env,
                                 capture_output=True, timeout=20, start_new_session=True)
         record(label, result)
         assert b"PROBE: cancellation" in result.stderr, "timing hook did not fire"
-        assert result.returncode == -signal.SIGTERM, result
-        check_events(result.stderr, terminal, 5)
+        assert result.returncode == -sig, result
+        check_events(result.stderr, terminal, count)
 
 
 def live_group(group):
@@ -204,6 +206,10 @@ for cores in [8, 0, "absent"]:
 boundary_cancel("before-final-result", 'tvp_log completion "$name" "$status"', "assets.short", "cancellation")
 boundary_cancel("before-final-guard", "TVP_FINISHING=1", "*", "completion")
 boundary_cancel("after-final-guard", "tvp_reraise_cancel", "*", "completion", finishing=True)
+for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
+    boundary_cancel("failure-exit-" + signal.Signals(sig).name,
+                    'exit "$status"', "failure.seven", "failure",
+                    finishing=True, runner="exit7", count=1, sig=sig)
 broken_logging()
 for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
     cancel(sig)
