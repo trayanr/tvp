@@ -97,7 +97,9 @@ let
             tvp-dependencies --help > /dev/null
             cp ${./tools/dependencies/report.py} report.py
             cp ${./tools/dependencies/test_report.py} test_report.py
-            python3 -m unittest -v test_report >&2
+            cp ${./tools/dependencies/recursive.py} recursive.py
+            cp ${./tools/dependencies/test_recursive.py} test_recursive.py
+            python3 -m unittest -v test_report test_recursive >&2
             printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
           '';
       dependency-policy =
@@ -476,6 +478,26 @@ let
   };
 
   tvp = {
+    dependencyRoots = import ./lib/dependency-roots.nix {
+      inherit (pkgs) lib;
+      inherit tools checks;
+      graph = tvpLib.graph.snapshot {
+        includeRootMetadata = true;
+        inherit
+          canonical
+          variants
+          bases
+          construction
+          ;
+        compositions = tvp.android.profiles;
+      };
+      inventory = tvp.dependencyInventory;
+      registry = runtimeRegistry;
+      borrowed = {
+        inherit (pkgs) jq shellcheck-minimal;
+      };
+      borrowedSource = toString pkgs.path;
+    };
     dependencyInventory = import ./lib/dependencies.nix {
       inherit
         pkgs

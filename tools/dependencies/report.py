@@ -193,6 +193,7 @@ def evaluate(flake, system):
     immutable = "path:" + source
     inventory = json.loads(subprocess.check_output(
         ["nix", "eval", "--json", "--offline", "--no-write-lock-file",
+         "--option", "allow-import-from-derivation", "false",
          immutable + "#legacyPackages." + system + ".dependencyInventory"], text=True
     ))
     inventory["snapshot"] = {
@@ -298,10 +299,28 @@ def main(argv=None):
     parser.add_argument("--family", action="append", help="Filter by consumer or dependency family; repeatable")
     parser.add_argument("--exceptions", action="store_true", help="Show choices with structured compatibility/pin reasons")
     parser.add_argument("--compare", type=Path, help="Compare against a previous --json snapshot")
+    parser.add_argument("--recursive", action="store_true", help="Inventory intended native build inputs; default roots: @canonical")
+    parser.add_argument("--root", action="append", help="Recursive root label or @group from --list-roots; repeatable")
+    parser.add_argument("--list-roots", action="store_true", help="List recursive root catalogue and groups")
+    parser.add_argument("--why", help="Explain a reachable store path in recursive mode")
     args = parser.parse_args(argv)
+    if (args.root or args.list_roots or args.why) and not args.recursive:
+        parser.error("--root, --list-roots and --why require --recursive")
+    if args.recursive and (args.compare or args.kind or args.scope or args.family or args.exceptions):
+        parser.error("--recursive does not support --compare/--kind/--scope/--family/--exceptions; select roots with --root")
+    if args.list_roots and (args.root or args.why):
+        parser.error("--list-roots cannot be combined with --root or --why")
     try:
         inventory = evaluate(args.flake, args.system)
         inventory["summary"] = summarize(inventory)
+        if args.recursive:
+            import recursive
+            inventory["recursive"] = recursive.collect(inventory["snapshot"], args.root, args.why, args.list_roots)
+            if args.json:
+                print(json.dumps(inventory, indent=2, sort_keys=True))
+            else:
+                recursive.print_human(inventory["recursive"], args.details)
+            return 1 if inventory["recursive"]["state"] == "partial" else 0
         if args.compare:
             before = json.loads(args.compare.read_text())
             summarize(before)
