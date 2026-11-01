@@ -123,6 +123,11 @@ let
         else
           pkgs.writeText "tvp-dependency-policy" "No unexplained ordinary exact dependency selections.\n";
       dependency-selectors = import ./lib/tests/selectors.nix { inherit pkgs tvp; };
+      build-steps =
+        let
+          contracts = import ./lib/tests/build-steps.nix;
+        in
+        pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
