@@ -34,6 +34,7 @@ let
   pname = "libffi";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -45,6 +46,7 @@ let
         libffi:
         import ./tests {
           inherit pkgs tvpLib libffi;
+          pkg-config = libffi.tvp.declaredTestDependencies.pkg-config;
         };
     };
 

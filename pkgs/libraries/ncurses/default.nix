@@ -135,6 +135,7 @@ let
   pname = "ncurses";
 
   packageArgs = {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -146,6 +147,7 @@ let
         ncurses:
         import ./tests {
           inherit pkgs tvpLib ncurses;
+          pkg-config = ncurses.tvp.declaredTestDependencies.pkg-config;
         };
     };
 

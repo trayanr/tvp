@@ -156,6 +156,7 @@ let
   pname = "openssl";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -168,6 +169,7 @@ let
         openssl:
         import ./tests {
           inherit pkgs tvpLib openssl;
+          pkg-config = openssl.tvp.declaredTestDependencies.pkg-config;
         }
       ) { inherit pkgs; };
     };

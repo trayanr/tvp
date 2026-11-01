@@ -27,6 +27,10 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
+    testDeps = {
+      patchelf = tvp.packages.patchelf;
+    };
+
     packageMeta.upstream = {
       type = "directory-index";
       url = "https://libisl.sourceforge.io/";
@@ -47,7 +51,12 @@ let
         in
         if match == null then null else builtins.head match;
     };
-    extraArgs.mkTests = isl: import ./tests { inherit pkgs tvpLib isl; };
+    extraArgs.mkTests =
+      isl:
+      import ./tests {
+        inherit pkgs tvpLib isl;
+        inherit (isl.tvp.declaredTestDependencies) patchelf;
+      };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
 

@@ -26,7 +26,16 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = zstd: import ./tests { inherit pkgs tvpLib zstd; };
+    testDeps = {
+      gzip = tvp.packages.gzip;
+    };
+
+    extraArgs.mkTests =
+      zstd:
+      import ./tests {
+        inherit pkgs tvpLib zstd;
+        inherit (zstd.tvp.declaredTestDependencies) gzip;
+      };
     packageMeta.upstream = {
       type = "git-tags";
       url = "https://github.com/facebook/zstd";

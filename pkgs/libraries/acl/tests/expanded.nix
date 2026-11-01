@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkg-config,
   tvpLib,
   package,
 }:
@@ -111,6 +112,7 @@ in
     };
     pkgconfig = {
       script = ''
+        export PKG_CONFIG_LIBDIR=${package}/lib/pkgconfig:${package}/share/pkgconfig
         test "$(pkg-config --modversion libacl)" = ${lib.escapeShellArg package.version}
         test -z "$(pkg-config --print-requires libacl)"
         test -z "$(pkg-config --print-requires-private libacl)"
@@ -120,7 +122,7 @@ in
       expected = "ok";
       extraInputs = [
         package.tvp.cc
-        pkgs.pkg-config
+        pkg-config
       ];
     };
   };

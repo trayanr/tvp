@@ -337,6 +337,7 @@ let
   pname = "sqlite";
 
   canonical = tvpLib.packages.mkVersions {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -349,6 +350,7 @@ let
         sqlite:
         import ./tests {
           inherit pkgs tvpLib sqlite;
+          pkg-config = sqlite.tvp.declaredTestDependencies.pkg-config;
         }
       ) { inherit pkgs; };
     };

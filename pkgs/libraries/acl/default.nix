@@ -42,11 +42,17 @@ let
   ];
   pname = "acl";
   packageArgs = {
+    testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
+    extraArgs.mkTests =
+      package:
+      import ./tests {
+        inherit pkgs tvpLib package;
+        pkg-config = package.tvp.declaredTestDependencies.pkg-config;
+      };
     packageMeta.upstream = {
       type = "directory-index";
       url = "https://download.savannah.nongnu.org/releases/acl/";

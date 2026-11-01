@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkg-config,
   tvpLib,
   package,
 }:
@@ -22,4 +23,11 @@ tvpLib.tests.mkSuite {
     };
   };
 }
-// import ./expanded.nix { inherit pkgs tvpLib package; }
+// import ./expanded.nix {
+  inherit
+    pkgs
+    pkg-config
+    tvpLib
+    package
+    ;
+}

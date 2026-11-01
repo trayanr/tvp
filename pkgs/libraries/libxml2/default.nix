@@ -65,6 +65,11 @@ let
     };
     inherit pname;
     inherit versionTable;
+    testDeps = {
+      pkg-config = tvp.packages.pkg-config;
+      gzip = tvp.packages.gzip;
+      xz = tvp.packages.xz;
+    };
 
     extraArgs = {
       mkTests = pkgs.lib.makeOverridable (
@@ -72,6 +77,7 @@ let
         libxml2:
         import ./tests {
           inherit pkgs tvpLib libxml2;
+          inherit (libxml2.tvp.declaredTestDependencies) pkg-config gzip xz;
         }
       ) { inherit pkgs; };
     };

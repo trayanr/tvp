@@ -1,4 +1,8 @@
-{ pkgs, isl }:
+{
+  pkgs,
+  isl,
+  patchelf,
+}:
 let
   lib = pkgs.lib;
   modern = lib.versionAtLeast isl.version "0.21";
@@ -12,7 +16,7 @@ let
         derivationArgs = {
           nativeBuildInputs = [
             isl.tvp.cc
-            pkgs.patchelf
+            patchelf
           ];
           buildInputs = [
             isl

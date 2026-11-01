@@ -6,6 +6,7 @@
 # links the library — which is also how every consumer uses it.
 {
   pkgs,
+  pkg-config,
   tvpLib,
   libyaml,
 }:
@@ -62,10 +63,11 @@ tvpLib.tests.mkSuite {
     // pkgs.lib.optionalAttrs (features.pkgConfig or false) {
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${libyaml}/lib/pkgconfig:${libyaml}/share/pkgconfig
           pkg-config --modversion yaml-0.1
         '';
         expected = libyaml.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     };
 }

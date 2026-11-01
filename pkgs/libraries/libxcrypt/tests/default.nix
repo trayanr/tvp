@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkg-config,
   tvpLib,
   package,
   baseline,
@@ -17,5 +18,12 @@
     };
   };
 })
-// (import ./validation.nix { inherit pkgs package baseline; })
+// (import ./validation.nix {
+  inherit
+    pkgs
+    pkg-config
+    package
+    baseline
+    ;
+})
 // (import ./upstream-fixtures.nix { inherit pkgs package; })

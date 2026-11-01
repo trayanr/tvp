@@ -5,6 +5,9 @@
   pkgs,
   tvpLib,
   libxml2,
+  pkg-config,
+  gzip,
+  xz,
 }:
 let
   deps = libxml2.passthru.tvp.deps or { };
@@ -51,7 +54,7 @@ tvpLib.tests.mkSuite {
           xmllint --noout --valid doc.xml.gz && printf gzip-ok
         '';
         expected = "gzip-ok";
-        extraInputs = [ pkgs.gzip ];
+        extraInputs = [ gzip ];
       };
 
       # Consumers compile against the installed headers, and a library that
@@ -69,10 +72,11 @@ tvpLib.tests.mkSuite {
 
       pkg-config = {
         script = ''
+          export PKG_CONFIG_LIBDIR=${libxml2}/lib/pkgconfig
           pkg-config --modversion libxml-2.0
         '';
         expected = libxml2.version;
-        extraInputs = [ pkgs.pkg-config ];
+        extraInputs = [ pkg-config ];
       };
     }
 
@@ -99,7 +103,7 @@ tvpLib.tests.mkSuite {
           xmllint --noout --valid doc.xml.xz && printf lzma-ok
         '';
         expected = "lzma-ok";
-        extraInputs = [ pkgs.xz ];
+        extraInputs = [ xz ];
       };
 
       # lzma above passes against any liblzma the loader reaches, never only
