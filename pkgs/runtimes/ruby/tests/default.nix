@@ -60,7 +60,12 @@ tvpLib.tests.mkSuite {
           cp ${./fixtures/ext-extconf.rb} extconf.rb
           cp ${./fixtures/ext-tvp.c} tvp_ext.c
           # mkmf reads the installed flags but must use the independent compiler.
-          ruby extconf.rb --with-cc=${consumerCompiler}/bin/cc ${consumerFlags} > /dev/null
+          ruby -rrbconfig -e '
+            cc = ARGV.shift
+            RbConfig::CONFIG["CC"] = cc
+            RbConfig::MAKEFILE_CONFIG["CC"] = cc
+            load "./extconf.rb"
+          ' ${consumerCompiler}/bin/cc ${consumerFlags} > /dev/null
           grep -Fx 'CC = ${consumerCompiler}/bin/cc' Makefile >&2
           ${consumerCompiler}/bin/cc --version >&2
           make > /dev/null
