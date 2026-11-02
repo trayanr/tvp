@@ -130,6 +130,7 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
+      native-meson = import ./lib/tests/native-meson.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
@@ -527,6 +528,17 @@ let
           python = tvp.packages.python_3;
         };
         audit-contracts.python = tvp.packages.python_3;
+        native-meson = {
+          inherit (tvp.packages)
+            bash
+            coreutils
+            meson
+            ninja
+            pkg-config
+            ;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
         dependency-inventory.python = tvp.packages.python_3;
         test-runner.python = tvp.packages.python_3;
         cli-interpreters.python = tvp.packages.python_3;

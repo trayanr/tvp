@@ -77,6 +77,69 @@ in
         run = ''make -j"$NIX_BUILD_CORES" install'';
       }
     ];
+  # Modern native Meson only. Preparation and finalization remain separate.
+  meson =
+    {
+      name,
+      meson,
+      ninja,
+      pkg-config,
+      tools ? [ ],
+      libraries ? [ ],
+      env ? { },
+      mesonFlags ? [ ],
+      doCheck ? true,
+    }:
+    let
+      inputs = [
+        meson
+        ninja
+        pkg-config
+      ] ++ tools;
+      # The selected Meson launcher embeds defaults: PATH alone cannot override
+      # these programs. Export the supplied arguments in every fresh shell.
+      environment = env // {
+        NINJA = "${ninja}/bin/ninja";
+        PKG_CONFIG = "${pkg-config}/bin/pkg-config";
+      };
+    in
+    steps.namespace name [
+      {
+        name = "configure";
+        tools = inputs;
+        inherit libraries;
+        env = environment;
+        cwd = "source";
+        run = ''
+          meson setup build . --prefix="$out" --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=enabled ${lib.escapeShellArgs mesonFlags}
+        '';
+      }
+      {
+        name = "build";
+        tools = inputs;
+        inherit libraries;
+        env = environment;
+        cwd = "source/build";
+        run = ''meson compile -j "$NIX_BUILD_CORES"'';
+      }
+      {
+        name = "check";
+        enabled = doCheck;
+        tools = inputs;
+        inherit libraries;
+        env = environment;
+        cwd = "source/build";
+        run = "meson test --print-errorlogs";
+      }
+      {
+        name = "install";
+        tools = inputs;
+        inherit libraries;
+        env = environment;
+        cwd = "source/build";
+        run = "meson install --no-rebuild";
+      }
+    ];
   finalize =
     {
       propagatedLibraries ? [ ],
