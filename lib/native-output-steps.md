@@ -48,3 +48,37 @@ implement no hook dispatcher, generic layout policy, shebang processing or
 manual compression. The MPFR trial disables static archives and has no installed
 scripts or manpages. `checks.native-output` exercises the implemented behavior
 with real ELF tools and recipe/edit contracts.
+
+Two additional helpers return ordinary records for explicit use by recipes:
+
+* `stripArchives { python; binutils; paths; }` strips debug data from normal
+  GNU archives of native x86_64 ELF objects, then restores their index with
+  `ranlib -D`. Both tools must succeed before installed bytes change. Hardlinks,
+  modes and timestamps survive. Thin, empty, malformed, foreign and LTO archives
+  are rejected; unrelated files in directory selections are skipped.
+* `shebangs { python; paths; names; interpreter ? null;
+  selfInterpreter ? null; }` processes executable scripts matching the selected
+  interpreter basenames. Choose exactly one absolute interpreter or a path
+  relative to the output, such as `selfInterpreter = "bin/ruby"`. There is no
+  PATH search. Direct optional arguments are preserved. Plain `env NAME` and
+  argument-free `env -S NAME` become direct shebangs. Matching env options,
+  assignments, quoting and argument-bearing forms fail explicitly. Body bytes,
+  hardlinks, modes and timestamps survive; nonexecutable files remain unchanged.
+  Unsupported env syntax mentioning a selected name may fail conservatively,
+  even when that name occurs in an argument to another interpreter.
+
+For example:
+
+```nix
+output.shebangs {
+  inherit python;
+  paths = [ "bin" ];
+  names = [ "ruby" ];
+  selfInterpreter = "bin/ruby";
+}
+```
+
+Use `steps.sequence [ record [ record record ] ]` to compose a visible plan.
+Only one level of groups is accepted; existing name and duplicate validation
+still applies. Disabled payloads stay lazy. To use a helper twice, give its
+returned record a distinct name with `// { name = "output.other-scripts"; }`.

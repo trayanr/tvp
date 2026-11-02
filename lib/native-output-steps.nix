@@ -6,8 +6,55 @@ let
   run =
     python: name: config:
     ''${python}/bin/python3 -B ${script name} "$out" ${lib.escapeShellArg (builtins.toJSON config)}'';
+  outputRun =
+    python: name: config:
+    ''${python}/bin/python3 -B ${./output-tools}/${name}.py "$out" ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}'';
 in
 {
+  # Select normal GNU native non-LTO .a archives, strip debug data, then restore
+  # their index. Fixed -S -p / -D operation; all selected tool failures fail.
+  # Example: output.stripArchives { inherit python binutils; paths = [ "lib" ]; }
+  stripArchives =
+    {
+      python,
+      binutils,
+      paths,
+    }:
+    {
+      name = "output.strip-archives";
+      tools = [
+        python
+        binutils
+      ];
+      run = outputRun python "strip-archives" {
+        inherit paths;
+        readelf = "${binutils}/bin/readelf";
+        strip = "${binutils}/bin/strip";
+        ranlib = "${binutils}/bin/ranlib";
+      };
+    };
+  # Select executable scripts by interpreter basename. Exactly one target:
+  # interpreter = "${bash}/bin/bash" (a contextual, declared runtime path), OR
+  # selfInterpreter = "bin/interpreter" (validated under this output at runtime).
+  # Example names = [ "bash" "sh" ]; paths = [ "bin" ]. No PATH discovery.
+  # Direct argument tails survive. env NAME / env -S NAME without arguments
+  # convert to direct form; matching options/assignments/argument forms fail.
+  shebangs =
+    {
+      python,
+      paths,
+      names,
+      interpreter ? null,
+      selfInterpreter ? null,
+    }:
+    {
+      name = "output.shebangs";
+      tools = [ python ];
+      run = outputRun python "shebangs" {
+        inherit paths names selfInterpreter;
+        interpreter = if interpreter == null then null else toString interpreter;
+      };
+    };
   strip =
     {
       python,
