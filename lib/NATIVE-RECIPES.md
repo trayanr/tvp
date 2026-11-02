@@ -1,5 +1,5 @@
 The native recipe adapter is an internal, opt-in experiment for one native
-output. MPFR 4.2.2 is its first package. Existing canonical, frozen and JSON-C
+output. MPFR 4.2.2 and Fontconfig 2.18.3 have opt-in variants. Existing canonical, frozen and JSON-C
 builds use their existing paths.
 
 Recipes are explicit argument functions returning package data and an ordered
@@ -45,3 +45,13 @@ It adds no expected-library references to the installed output. The MPFR tests
 also compile and run installed consumers, including float128. Closure membership
 alone does not establish ABI compatibility. Use runtime output paths explicitly
 when a dependency separates development and runtime outputs.
+
+`variants.build-steps.fontconfig_2_18_3` uses the modern native Meson helper.
+Its `fontconfig.prepare`, `fontconfig.configure`, `fontconfig.build`,
+`fontconfig.check`, `fontconfig.install` and `output.fixup` records are editable.
+For example, `.override { doCheck = false; }` skips execution of upstream tests
+while retaining their configured targets. Ninja and pkg-config overrides set
+`NINJA` and `PKG_CONFIG` explicitly, including when Meson's launcher supplies
+embedded defaults. The generator Python remains a separate recipe input from
+Meson's interpreter. Source preparation and finalization remain explicit steps.
+The installed tests use an isolated BDF fixture and private font/cache paths.
