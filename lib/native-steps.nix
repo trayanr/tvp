@@ -41,7 +41,18 @@ in
         tools = [ make ];
         inherit libraries;
         cwd = "source";
-        run = ''./configure --prefix="$out" ${lib.escapeShellArgs configureFlags}'';
+        run = ''
+          # Retain the selected base's libtool/shell corrections explicitly.
+          set +u
+          export lt_cv_deplibs_check_method=pass_all
+          while IFS= read -r -d $'\0' script; do fixLibtool "$script"; done < <(find . -name ltmain.sh -print0)
+          patchShebangs --build ./configure
+          touch -r ./configure "$TMPDIR/configure-mtime"
+          sed -i 's_/usr/bin/file_file_g' ./configure
+          touch -r "$TMPDIR/configure-mtime" ./configure
+          set -u
+          ./configure --prefix="$out" ${lib.escapeShellArgs configureFlags}
+        '';
       }
       {
         name = "build";

@@ -33,7 +33,11 @@ in
       name = "mpfr";
       make = gnumake;
       libraries = [ gmp ];
-      configureFlags = [ "--with-gmp=${lib.getDev gmp}" ];
+      configureFlags = [
+        "--disable-static"
+        "--disable-dependency-tracking"
+        "--with-gmp=${lib.getDev gmp}"
+      ];
       inherit doCheck;
     }
     ++ helpers.finalize { propagatedLibraries = [ gmp ]; };
