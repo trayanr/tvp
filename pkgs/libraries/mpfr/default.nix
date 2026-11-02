@@ -124,20 +124,30 @@ in
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
     mpfr_4_2_2 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
       recipe = import ./build-steps-4.2.2.nix;
-      args = {
-        inherit (pkgs) lib;
-        base = tvp.bases.default;
-        version = "4.2.2";
-        src = canonical.mpfr_4_2_2.src;
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnumake
-          gnutar
-          xz
-          ;
-      } // { gmp = tvp.packages.gmp_6; };
+      args =
+        {
+          inherit (pkgs) lib;
+          base = tvp.bases.default;
+          version = "4.2.2";
+          src = canonical.mpfr_4_2_2.src;
+          inherit (tvp.packages)
+            bash
+            coreutils
+            gnumake
+            gnutar
+            xz
+            ;
+        }
+        // {
+          gmp = tvp.packages.gmp_6;
+          python = tvp.packages.python_3;
+          binutils = tvp.packages.binutils_2;
+          patchelf = tvp.packages.patchelf_0;
+        };
       dependencyNames = [
+        "python"
+        "binutils"
+        "patchelf"
         "gmp"
         "bash"
         "coreutils"
