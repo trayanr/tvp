@@ -121,5 +121,60 @@ in
 {
   recipes.${pname} = packageArgs;
   inherit canonical;
+  variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+    mpfr_4_2_2 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+      recipe = import ./build-steps-4.2.2.nix;
+      args = {
+        inherit (pkgs) lib;
+        base = tvp.bases.default;
+        version = "4.2.2";
+        src = canonical.mpfr_4_2_2.src;
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnumake
+          gnutar
+          xz
+          ;
+      } // { gmp = tvp.packages.gmp_6; };
+      dependencyNames = [
+        "gmp"
+        "bash"
+        "coreutils"
+        "gnumake"
+        "gnutar"
+        "xz"
+      ];
+      infrastructure = packageArgs.infra;
+      metadata = packageArgs.packageMeta // {
+        status.level = "ok";
+        canonical = false;
+        variant = "build-steps";
+        builder = "build-steps-4.2.2.nix";
+        definition = "4.2.2";
+        declaredTestDependencies = {
+          python = tvp.packages.python_3;
+        };
+      };
+      selection = {
+        namespace = "variants.build-steps";
+        selector = "mpfr_4_2_2";
+        kind = "variant";
+        pname = "mpfr";
+        version = "4.2.2";
+        canonical = "mpfr_4_2_2";
+      };
+      mkTests =
+        package:
+        packageArgs.extraArgs.mkTests package
+        // {
+          runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
+            inherit package;
+            stdenv = package.stdenv;
+            python = tvp.packages.python_3;
+          };
+        };
+    };
+  };
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

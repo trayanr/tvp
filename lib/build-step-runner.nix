@@ -5,7 +5,10 @@
   bash,
   coreutils,
 }:
-{ plan }:
+{
+  plan,
+  temporaryDirectories ? false,
+}:
 let
   # The only selection point: never render/serialize the editable full plan.
   selected = (import ./build-steps.nix).active plan;
@@ -102,7 +105,44 @@ let
     export PATH=${quote "${coreutils}/bin"}
     readonly TVP_BASH=${quote "${bash}/bin/bash"}
     readonly TVP_ENV=${quote "${coreutils}/bin/env"}
-    ${builtins.readFile ./build-step-runner.sh}
+    ${
+      if temporaryDirectories then
+        let
+          original = builtins.readFile ./build-step-runner.sh;
+          markers = [
+            "local name=$1 script=$2 status"
+            "tvp_phase \"$name\" || :"
+            ''TMPDIR="''${TMPDIR:-/tmp}"''
+            "    tvp_cleanup\n"
+          ];
+        in
+        assert builtins.all (marker: lib.hasInfix marker original) markers;
+        lib.replaceStrings
+          [
+            "local name=$1 script=$2 status"
+            "tvp_phase \"$name\" || :"
+            ''TMPDIR="''${TMPDIR:-/tmp}"''
+            "    tvp_cleanup\n"
+          ]
+          [
+            "local name=$1 script=$2 status temporary"
+            ''
+              tvp_phase "$name" || :
+                  temporary=$(mktemp -d "''${TMPDIR:-/tmp}/tvp-step.XXXXXXXXXX") || exit $?
+            ''
+            ''TMPDIR="$temporary"''
+            ''
+              tvp_cleanup
+              if ! rm -rf -- "$temporary"; then
+                  printf 'TVP step %s: temporary cleanup failed: %s\n' "$name" "$temporary" >&2 || :
+                  if (( status == 0 )); then status=74; fi
+              fi
+            ''
+          ]
+          original
+      else
+        builtins.readFile ./build-step-runner.sh
+    }
     ${lib.concatMapStringsSep "\n" (s: "tvp_step ${quote s.name} ${quote s.script}") active}
     # Close cancellation gaps after the last step and during normal exit.
     TVP_FINISHING=1

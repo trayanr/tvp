@@ -1,4 +1,8 @@
-{ pkgs, tvp }:
+{
+  pkgs,
+  tvp,
+  temporaryDirectories ? false,
+}:
 let
   inherit (pkgs) lib;
   base = tvp.bases.default;
@@ -219,7 +223,16 @@ let
   plans = lib.mapAttrs (
     name: plan:
     adapter {
-      plan = plan ++ lib.optional (name != "success") (simple "later.forbidden" "echo later > forbidden");
+      inherit temporaryDirectories;
+      plan =
+        map (
+          step:
+          step
+          // lib.optionalAttrs temporaryDirectories {
+            run = ''printf '%s\n' "$TMPDIR" >> "$TVP_SOURCE_ROOT/temporary-paths"; '' + step.run;
+          }
+        ) (steps.active plan)
+        ++ lib.optional (name != "success") (simple "later.forbidden" "echo later > forbidden");
     }
   ) cases;
   # Actual adapter context regression, including unknown metadata and missing run.
