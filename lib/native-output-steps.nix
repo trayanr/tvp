@@ -9,6 +9,14 @@ let
   outputRun =
     python: name: config:
     ''${python}/bin/python3 -B ${./output-tools}/${name}.py "$out" ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}'';
+  selectedRun =
+    python: name: config: kinds:
+    if kinds == null then
+      run python name config
+    else
+      ''${python}/bin/python3 -B ${./elf-output.py} "$out" ${
+        lib.escapeShellArg (builtins.toJSON (config // { inherit kinds; }))
+      } ${./native-output} ${name}'';
 in
 {
   # Select normal GNU native non-LTO .a archives, strip debug data, then restore
@@ -60,6 +68,7 @@ in
       python,
       binutils,
       paths,
+      elfKinds ? null,
       flags ? [
         "-S"
         "-p"
@@ -71,11 +80,11 @@ in
         python
         binutils
       ];
-      run = run python "strip" {
+      run = selectedRun python "strip" {
         inherit paths flags;
         readelf = "${binutils}/bin/readelf";
         strip = "${binutils}/bin/strip";
-      };
+      } elfKinds;
     };
   libtool =
     { python, paths }:
@@ -90,6 +99,7 @@ in
       binutils,
       patchelf,
       paths,
+      elfKinds ? null,
       dlopenDirectories ? [ ],
     }:
     {
@@ -99,11 +109,11 @@ in
         binutils
         patchelf
       ];
-      run = run python "rpaths" {
+      run = selectedRun python "rpaths" {
         inherit paths dlopenDirectories;
         readelf = "${binutils}/bin/readelf";
         patchelf = "${patchelf}/bin/patchelf";
-      };
+      } elfKinds;
     };
   development =
     { python, libraries }:
@@ -126,6 +136,7 @@ in
       binutils,
       patchelf,
       paths,
+      elfKinds ? null,
     }:
     {
       name = "output.check-paths";
@@ -134,10 +145,10 @@ in
         binutils
         patchelf
       ];
-      run = run python "check-paths" {
+      run = selectedRun python "check-paths" {
         inherit paths;
         readelf = "${binutils}/bin/readelf";
         patchelf = "${patchelf}/bin/patchelf";
-      };
+      } elfKinds;
     };
 }

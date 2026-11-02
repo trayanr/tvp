@@ -11,6 +11,7 @@
   runtime ? { },
   tvp ? { },
   meta ? { },
+  passthru ? { },
 }:
 let
   steps = import ./build-steps.nix;
@@ -56,7 +57,7 @@ base.stdenv.mkDerivation {
     mkdir workspace
     ${bash}/bin/bash ${runner.script} "$PWD/workspace"
   '';
-  passthru = {
+  passthru = passthru // {
     inherit tvp runtime;
     buildStepRunner = runner;
   };
