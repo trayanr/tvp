@@ -10,10 +10,20 @@
   gnumake,
   gnutar,
   xz,
+  python,
+  binutils,
+  patchelf,
+  stripFlags ? [
+    "-S"
+    "-p"
+  ],
+  dlopenDirectories ? [ ],
   doCheck ? true,
 }:
 let
   helpers = import ../../../lib/native-steps.nix { inherit lib; };
+  output = import ../../../lib/native-output-steps.nix { inherit lib; };
+  elfPaths = [ "lib/libmpfr.so.6.2.2" ];
 in
 {
   pname = "mpfr";
@@ -40,7 +50,41 @@ in
       ];
       inherit doCheck;
     }
-    ++ helpers.finalize { propagatedLibraries = [ gmp ]; };
+    ++ [
+      (output.strip {
+        inherit python binutils;
+        paths = elfPaths;
+        flags = stripFlags;
+      })
+      (output.libtool {
+        inherit python;
+        paths = [ "lib/libmpfr.la" ];
+      })
+      (output.rpaths {
+        inherit
+          python
+          binutils
+          patchelf
+          dlopenDirectories
+          ;
+        paths = elfPaths;
+      })
+      (output.development {
+        inherit python;
+        libraries = [ gmp ];
+      })
+      (output.checkSymlinks {
+        inherit python;
+        paths = [
+          "lib/libmpfr.so"
+          "lib/libmpfr.so.6"
+        ];
+      })
+      (output.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ];
   runtime.libraries = [ (lib.getLib gmp) ];
   tvp.features = {
     float128 = true;

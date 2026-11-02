@@ -130,6 +130,7 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
+      native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
       native-meson = import ./lib/tests/native-meson.nix { inherit pkgs tvp; };
       native-make = import ./lib/tests/native-make.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
