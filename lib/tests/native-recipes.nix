@@ -150,6 +150,39 @@ let
       touch "$out"
     '';
   });
+  auditRunner =
+    import ../build-step-runner.nix
+      {
+        inherit lib;
+        base = tvp.bases.default;
+        inherit (tvp.packages) bash coreutils;
+      }
+      {
+        temporaryDirectories = true;
+        plan = [
+          {
+            name = "fixture.wrapper";
+            run = ''
+              mkdir -p "$out/bin"
+              printf '#!${tvp.packages.bash}/bin/bash\necho %s\n' "$NIX_BUILD_TOP/earlier-step" > "$out/bin/tool"
+              chmod +x "$out/bin/tool"
+              touch "$out/bin/.tool-wrapped"
+            '';
+          }
+        ] ++ (import ../native-steps.nix { inherit lib; }).finalize { };
+      };
+  auditControl = tvp.bases.default.stdenv.mkDerivation {
+    name = "native-shared-build-path-audit-control";
+    buildCommand = ''
+      mkdir workspace
+      if ${tvp.packages.bash}/bin/bash ${auditRunner.script} "$PWD/workspace" 2> audit.log; then
+        echo 'shared build path incorrectly accepted' >&2; exit 1
+      fi
+      grep -F 'contains a forbidden reference to' audit.log
+      rm "$out/bin/tool" "$out/bin/.tool-wrapped"
+      touch "$out/passed"
+    '';
+  };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Native recipe contracts: ${lib.concatStringsSep ", " failed}";
@@ -159,6 +192,7 @@ assert failed == [ ] || throw "Native recipe contracts: ${lib.concatStringsSep "
     test -e ${composed.tests.run}
     test -e ${runtime}
     test -e ${absent}
+    test -e ${auditControl}
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
   '';
 })
