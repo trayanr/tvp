@@ -1,5 +1,5 @@
 The native recipe adapter is an internal, opt-in experiment for one native
-output. MPFR 4.2.2 and Fontconfig 2.18.3 have opt-in variants. Existing canonical, frozen and JSON-C
+output. MPFR 4.2.2, Fontconfig 2.18.3 and Zstd 1.5.7 have opt-in variants. Existing canonical, frozen and JSON-C
 builds use their existing paths.
 
 Recipes are explicit argument functions returning package data and an ordered
@@ -55,3 +55,16 @@ while retaining their configured targets. Ninja and pkg-config overrides set
 embedded defaults. The generator Python remains a separate recipe input from
 Meson's interpreter. Source preparation and finalization remain explicit steps.
 The installed tests use an isolated BDF fixture and private font/cache paths.
+
+`variants.build-steps.zstd_1_5_7` uses the native Make helper, which returns
+editable build/check/install records and invokes the selected Make by absolute
+path. Targets, flags, tools, libraries, environment and working directory are
+helper arguments. Unpack defaults to xz; gzip requires an explicit compressor.
+Zstd retains upstream release targets, static/shared libraries and CLI codecs.
+Its optional check runs five bounded shipped CLI tests; `.override { doCheck =
+false; }` disables that step. Source placement preserves upstream assertion
+filenames, and explicit finalization retains canonical helper shebangs. Zlib and
+XZ runtime expectations follow CLI linkage, not libzstd linkage. Installed
+`zstdgrep` still needs grep and zstdcat; `zstdless` still needs less and zstd on
+PATH (or their existing environment overrides). Helper tests cover real grep
+and pager dispatch only, not interactive paging.
