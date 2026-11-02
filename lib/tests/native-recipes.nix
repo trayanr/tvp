@@ -175,7 +175,7 @@ let
     name = "native-shared-build-path-audit-control";
     buildCommand = ''
       mkdir workspace
-      if ${tvp.packages.bash}/bin/bash ${auditRunner.script} "$PWD/workspace" 2> audit.log; then
+      if ${tvp.packages.bash}/bin/bash ${auditRunner.script} "$PWD/workspace" > audit.log 2>&1; then
         echo 'shared build path incorrectly accepted' >&2; exit 1
       fi
       grep -F 'contains a forbidden reference to' audit.log
