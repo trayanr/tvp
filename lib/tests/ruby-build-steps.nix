@@ -68,6 +68,14 @@ let
     };
   };
   contracts = {
+    inventorySupport =
+      builtins.length supportRows == builtins.length (builtins.attrNames supportInputs)
+      && builtins.all (
+        row:
+        builtins.hasAttr row.dependency supportInputs
+        && row.resolved.drv == supportInputs.${row.dependency}.drvPath
+        && row.resolved.out == supportInputs.${row.dependency}.outPath
+      ) supportRows;
     passthruAuthority =
       authority.marker == "inert"
       && authority.tvp.marker
@@ -139,16 +147,27 @@ let
   python = tvp.packages.python_3;
   binutils = tvp.packages.binutils_2;
   patchelf = tvp.packages.patchelf_0;
+  nativeTools = {
+    inherit
+      python
+      binutils
+      patchelf
+      gzip
+      ;
+  };
+  checkEnvironment = tvp.bases.default.stdenv;
+  supportInputs = nativeTools // {
+    environment = checkEnvironment;
+    compiler = checkEnvironment.cc;
+  };
+  supportRows = builtins.filter (
+    row: row.scope == "build-test-support" && row.consumer == "ruby-build-steps"
+  ) tvp.dependencyInventory.support;
 in
 assert failed == [ ] || throw "Ruby step contracts: ${lib.concatStringsSep ", " failed}";
-tvp.bases.default.stdenv.mkDerivation {
+checkEnvironment.mkDerivation {
   name = "tvp-ruby-build-step-contracts";
-  nativeBuildInputs = [
-    python
-    binutils
-    patchelf
-    gzip
-  ];
+  nativeBuildInputs = builtins.attrValues nativeTools;
   buildCommand = ''
     ${python}/bin/python3 -B ${./ruby-output.py} ${../elf-output.py} ${../native-output} ${../../pkgs/runtimes/ruby/compress-manuals.py} ${binutils} ${patchelf} ${gzip}/bin/gzip "$CC"
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"

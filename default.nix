@@ -538,6 +538,14 @@ let
           environment = bases.default.stdenv;
           compiler = bases.default.stdenv.cc;
         };
+        ruby-build-steps = {
+          inherit (tvp.packages) gzip;
+          python = tvp.packages.python_3;
+          binutils = tvp.packages.binutils_2;
+          patchelf = tvp.packages.patchelf_0;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
         audit-contracts.python = tvp.packages.python_3;
         native-meson = {
           inherit (tvp.packages)
