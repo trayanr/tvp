@@ -40,9 +40,10 @@ let
       gnumake
       gnused
     ] ++ lib.optional (yjit || zjit) rustc;
-    inherit libraries run;
+    inherit libraries;
     env.LANG = "C.UTF-8";
     cwd = "../ruby-${version}";
+    inherit run;
   };
 in
 {

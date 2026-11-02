@@ -35,9 +35,16 @@ for path in files(root, config["paths"]):
         ehsize = struct.unpack_from("<H", header, 52)[0]
         shoff = struct.unpack_from("<Q", header, 40)[0]
         shsize, shnum = struct.unpack_from("<HH", header, 58)
+        size = path.stat().st_size
         if (machine != 62 or version != 1 or ehsize != 64 or shsize != 64
-                or not shnum or shoff + shsize * shnum > path.stat().st_size):
+                or not shnum or shoff < 64 or shoff + shsize * shnum > size):
             raise ValueError(f"invalid/unsupported native relocatable ELF: {path}")
+        with path.open("rb") as stream:
+            stream.seek(shoff)
+            for _ in range(shnum):
+                section = struct.unpack("<IIQQQQIIQQ", stream.read(shsize))
+                if section[1] != 8 and section[4] + section[5] > size:
+                    raise ValueError(f"truncated native relocatable ELF section: {path}")
         tool(config["readelf"], "--wide", "--file-header", "--section-headers", path)
         if "relocatable" in kinds:
             tool(config["strip"], *config["flags"], "--", path)

@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import tempfile
 import unittest
@@ -61,6 +62,21 @@ class RubyOutput(unittest.TestCase):
     def test_malformed_object_and_unsafe_paths(self):
         obj = self.root / 'lib' / 'probe.o'
         command(CC, '-g', '-c', self.source, '-o', obj)
+        contents = bytearray(obj.read_bytes())
+        shoff = struct.unpack_from('<Q', contents, 40)[0]
+        shnum = struct.unpack_from('<H', contents, 60)[0]
+        for index in range(shnum):
+            offset = shoff + 64 * index
+            section_type = struct.unpack_from('<I', contents, offset + 4)[0]
+            section_size = struct.unpack_from('<Q', contents, offset + 32)[0]
+            if section_type == 1 and section_size:
+                struct.pack_into('<Q', contents, offset + 24, len(contents) + 1)
+                break
+        else:
+            self.fail('fixture has no file-backed data section')
+        obj.write_bytes(contents)
+        self.step('rpaths', ['runtime'], success=False)
+        self.step('strip', ['relocatable'], success=False)
         obj.write_bytes(obj.read_bytes()[:64])
         self.step('rpaths', ['runtime'], success=False)
         self.step('strip', ['relocatable'], success=False, paths=['../out'])
