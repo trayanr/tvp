@@ -22,7 +22,9 @@ preserves fields. Disabled records retain names for editing and disappear
 before runner inputs or scripts are projected. The control disables checking,
 puts throwing tool/body values on that record, inserts a log between real
 build/install operations and replaces installation with an order assertion.
-No timings or probe files enter installed outputs.
+Composed packages retain the catalogue metadata needed by their family tests.
+A log can also run before source preparation. No timings or probe files enter
+installed outputs.
 
 Support is native x86_64 Linux, the selected modern CMake and GNU Make with
 Unix Makefiles, default compiler hardening and one `out`. Source extraction,
@@ -38,6 +40,7 @@ retains its output hooks: mode normalization, relative symlinks, shebangs,
 strip and archive indexing, RPATH shrinking, temporary-path auditing, output
 layout and propagation/nix-support. Only the vendored shebang/fixup helpers
 run with nounset off; errexit remains on. No pre/post phase hooks order the
-plan, and genericBuild is never called. This is neither a public API promise
+plan. The outer genericBuild dispatch calls the explicit build command; it does
+not choose or order the steps. This is neither a public API promise
 nor evidence for historical CMake, other generators, cross builds or other
 platforms. Unsupported systems omit this variant.

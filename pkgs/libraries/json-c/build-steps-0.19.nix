@@ -105,7 +105,10 @@ let
                   ""
                 else
                   ''
-                    export SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
+                    if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
+                      SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
+                      export SOURCE_DATE_EPOCH
+                    fi
                   ''
               )
               + step.run;
@@ -143,7 +146,18 @@ stdenv.mkDerivation (finalAttrs: {
     tests = mkTests finalAttrs.finalPackage;
     # Private inspection/composition points, excluded from catalogue metadata.
     buildSteps = plan;
-    withBuildSteps = changes: import ./build-steps-0.19.nix (args // changes);
+    withBuildSteps =
+      {
+        doCheck ? args.doCheck or true,
+        editSteps ? args.editSteps or (plan: plan),
+      }:
+      (import ./build-steps-0.19.nix (args // { inherit doCheck editSteps; })).overrideAttrs (old: {
+        passthru = old.passthru // {
+          # Catalogue decoration is evaluation-only, but the shared test factory
+          # needs it on the composed package as well as the registered variant.
+          tvp = finalAttrs.finalPackage.tvp // old.passthru.tvp;
+        };
+      });
     buildStepRunner = runner;
   };
 })
