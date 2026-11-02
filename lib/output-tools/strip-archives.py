@@ -43,8 +43,8 @@ def object_member(data, path):
         if offset >= len(names) or end < 0:
             reject(path, "invalid section name")
         name = names[offset:end]
-        if name.startswith((b".gnu.lto_", b".llvm", b".llvmbc")):
-            reject(path, "LTO/LLVM members are outside this native contract")
+        if name.startswith(b".gnu.lto_") or name in (b".llvm.lto", b".llvmbc"):
+            reject(path, "LTO members are outside this native contract")
 
 
 def archive(path):

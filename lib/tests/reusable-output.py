@@ -50,7 +50,7 @@ class Helpers(unittest.TestCase):
         path.chmod(0o755)
         return str(path)
 
-    def archive(self, name="probe.a", *, thin=False, lto=False):
+    def archive(self, name="probe.a", *, thin=False, lto=False, native_metadata=False):
         objects = []
         for local, code in (("first long member name", "int first(void) { return 19; }\n"),
                             ("second", "int second(void) { return 23; }\n")):
@@ -58,6 +58,12 @@ class Helpers(unittest.TestCase):
             source.write_text(code)
             obj = source.with_suffix(".o")
             command(CC, "-g", *(["-flto"] if lto else []), "-c", source, "-o", obj)
+            if native_metadata and not objects:
+                metadata = self.work / "metadata"
+                metadata.write_bytes(b"\0")
+                command(f"{BINUTILS}/bin/objcopy",
+                        "--add-section", f".llvm_addrsig={metadata}",
+                        "--add-section", f".llvmcmd={metadata}", obj)
             objects.append(obj)
         path = self.root / "lib" / name
         command(f"{BINUTILS}/bin/ar", "rcsT" if thin else "rcsD", path, *objects)
@@ -114,6 +120,29 @@ subprocess.run([{self.config[key]!r}, *sys.argv[1:]], check=True)
                       fail=f"exit status {status}")
             self.assertEqual(path.read_bytes(), original)
 
+    def test_native_metadata_is_not_lto(self):
+        path = self.archive(native_metadata=True)
+        self.step("strip-archives")
+        sections = command(self.config["readelf"], "-S", path)
+        self.assertIn(b".llvm_addrsig", sections)
+        self.assertIn(b".llvmcmd", sections)
+        consumer = self.work / "consumer.c"
+        consumer.write_text("int first(void); int second(void); int main(void) { return first()+second()!=42; }\n")
+        exe = self.work / "consumer"
+        command(CC, consumer, path, "-o", exe)
+        command(exe, env={})
+
+        obj = self.work / "first long member name.o"
+        bitcode = self.work / "unsupported-bitcode"
+        bitcode.write_bytes(b"unsupported bitcode")
+        for section in (".llvm.lto", ".llvmbc"):
+            command(f"{BINUTILS}/bin/objcopy", "--add-section", f"{section}={bitcode}", obj)
+            command(f"{BINUTILS}/bin/ar", "rcsD", path, obj)
+            original = path.read_bytes()
+            self.step("strip-archives", fail="LTO")
+            self.assertEqual(path.read_bytes(), original)
+            command(f"{BINUTILS}/bin/objcopy", "--remove-section", section, obj)
+
     def test_archive_rejects_thin_malformed_foreign_lto_and_nonobject(self):
         path = self.archive(thin=True)
         self.step("strip-archives", fail="thin archives")
@@ -124,7 +153,7 @@ subprocess.run([{self.config[key]!r}, *sys.argv[1:]], check=True)
             self.step("strip-archives", fail="unsupported/malformed native archive")
         path.unlink()
         path = self.archive(lto=True)
-        self.step("strip-archives", fail="LTO/LLVM")
+        self.step("strip-archives", fail="LTO")
         path.unlink()
         path = self.archive()
         data = bytearray(path.read_bytes())
