@@ -17,14 +17,20 @@ tvpLib.tests.mkSuite {
       <fontconfig><dir>$PWD/fonts</dir><cachedir>$XDG_CACHE_HOME/fontconfig</cachedir></fontconfig>
       EOF_CONFIG
       export FONTCONFIG_FILE="$PWD/fonts.conf" FONTCONFIG_PATH="$PWD"
-      test "$(fc-query --format '%{family}' fonts/font.bdf)" = TVP
-      test "$(fc-scan --format '%{family}' fonts/font.bdf)" = TVP
+      family=$(fc-query --format '%{family}' fonts/font.bdf)
+      test "$family" = TVP
+      family=$(fc-scan --format '%{family}' fonts/font.bdf)
+      test "$family" = TVP
       fc-cache -f fonts
-      test "$(fc-list --format '%{family}')" = TVP
-      test "$(fc-match --format '%{family}' TVP)" = TVP
-      test -n "$(find "$XDG_CACHE_HOME/fontconfig" -name '*cache-*' -print -quit)"
+      family=$(fc-list --format '%{family}')
+      test "$family" = TVP
+      family=$(fc-match --format '%{family}' TVP)
+      test "$family" = TVP
+      cache=$(find "$XDG_CACHE_HOME/fontconfig" -name '*cache-*' -print -quit)
+      test -n "$cache"
       export PKG_CONFIG_PATH="${package}/lib/pkgconfig:${package.tvp.deps.freetype}/lib/pkgconfig:${package.tvp.deps.expat}/lib/pkgconfig"
-      test "$(pkg-config --modversion fontconfig)" = ${package.version}
+      version=$(pkg-config --modversion fontconfig)
+      test "$version" = ${package.version}
       cflags=$(pkg-config --cflags fontconfig)
       libs=$(pkg-config --libs fontconfig)
       cc $cflags ${./fixtures/consumer.c} $libs -o consumer
