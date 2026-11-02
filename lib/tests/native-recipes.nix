@@ -183,6 +183,45 @@ let
       touch "$out/passed"
     '';
   };
+  epochProbe =
+    mode:
+    fixture.editSteps (_: [
+      {
+        name = "epoch.prepare";
+        run =
+          ''
+            mkdir -p "$out"
+          ''
+          + lib.optionalString (mode == "valid") ''
+            printf '%s\n' 1700000000 > source-date-epoch
+          ''
+          + lib.optionalString (mode == "invalid") ''
+            mkdir source-date-epoch
+          '';
+      }
+      {
+        name = "epoch.read";
+        run = ''printf '%s\n' "''${SOURCE_DATE_EPOCH-unset}" > "$out/observed"'';
+      }
+    ]);
+  epochControl = tvp.bases.default.stdenv.mkDerivation {
+    name = "native-source-epoch-control";
+    buildCommand = ''
+      mkdir missing-work valid-work invalid-work
+      out="$PWD/missing-out" ${tvp.packages.bash}/bin/bash ${(epochProbe "missing").buildStepRunner.script} "$PWD/missing-work"
+      test "$(cat missing-out/observed)" = 315532800
+      out="$PWD/valid-out" ${tvp.packages.bash}/bin/bash ${(epochProbe "valid").buildStepRunner.script} "$PWD/valid-work"
+      test "$(cat valid-out/observed)" = 1700000000
+      if out="$PWD/invalid-out" ${tvp.packages.bash}/bin/bash ${(epochProbe "invalid").buildStepRunner.script} "$PWD/invalid-work" > invalid.log 2>&1; then
+        echo 'unreadable source epoch incorrectly accepted' >&2; exit 1
+      else
+        test "$?" = 1
+      fi
+      grep -F 'Is a directory' invalid.log
+      test ! -e invalid-out/observed
+      touch "$out"
+    '';
+  };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Native recipe contracts: ${lib.concatStringsSep ", " failed}";
@@ -193,6 +232,7 @@ assert failed == [ ] || throw "Native recipe contracts: ${lib.concatStringsSep "
     test -e ${runtime}
     test -e ${absent}
     test -e ${auditControl}
+    test -e ${epochControl}
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
   '';
 })

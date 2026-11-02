@@ -35,7 +35,8 @@ let
               ''
                 export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " base.stdenv.cc.defaultHardeningFlags)}
                 if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
-                  export SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
+                  SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
+                  export SOURCE_DATE_EPOCH
                 fi
               ''
               + step.run;

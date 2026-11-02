@@ -1,4 +1,5 @@
 """Exercise real owned temp dirs, including failure and cancellation cleanup."""
+import json
 import os
 from pathlib import Path
 import signal
@@ -62,8 +63,6 @@ for name, expected in [('handled', 74), ('exit7', 7)]:
         paths = Path(work, 'temporary-paths').read_text().splitlines()
         assert all(Path(path).is_dir() for path in paths)
         print('cleanup-error', name, expected, flush=True)
-print('Temporary cleanup contracts passed.', flush=True)
-
 # Even a failed deletion cannot replace external cancellation's first signal.
 with tempfile.TemporaryDirectory() as work, tempfile.TemporaryDirectory() as tmp:
     hook = Path(work, 'hook')
@@ -85,3 +84,43 @@ with tempfile.TemporaryDirectory() as work, tempfile.TemporaryDirectory() as tmp
         if p.poll() is None:
             p.kill()
             p.communicate()
+
+# Allocation fails before a child exists. Still report a terminal result and
+# preserve cancellation observed while the supervisor waits for allocation.
+for sig in [None, signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
+    with tempfile.TemporaryDirectory() as work, tempfile.TemporaryDirectory() as tmp:
+        hook = Path(work, 'hook')
+        hook.write_text('''mktemp() {
+    : > allocation-ready
+    while [[ ! -e allocation-release ]]; do sleep 0.01; done
+    return 17
+}
+''')
+        p = subprocess.Popen([bash, runtime + '/handled', work],
+                             env=dict(os.environ, TMPDIR=tmp, BASH_ENV=str(hook)),
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+        try:
+            deadline = time.monotonic() + 10
+            while not Path(work, 'allocation-ready').exists():
+                assert p.poll() is None and time.monotonic() < deadline
+                time.sleep(.01)
+            if sig is not None:
+                p.send_signal(sig)
+            Path(work, 'allocation-release').touch()
+            out, err = p.communicate(timeout=10)
+            expected = 17 if sig is None else -sig
+            assert p.returncode == expected, (p.returncode, err)
+            events = [json.loads(line[len('@tvp-step '):]) for line in
+                      err.decode().splitlines() if line.startswith('@tvp-step ')]
+            assert [event['event'] for event in events] == [
+                'start', 'failure' if sig is None else 'cancellation'], events
+            assert events[-1]['status'] == 17, events
+            assert not Path(work, 'temporary-paths').exists()
+            assert not list(Path(tmp).iterdir())
+            print('allocation-error', sig, expected, flush=True)
+        finally:
+            if p.poll() is None:
+                p.kill()
+                p.communicate()
+
+print('Temporary cleanup contracts passed.', flush=True)

@@ -128,7 +128,15 @@ let
             "local name=$1 script=$2 status temporary"
             ''
               tvp_phase "$name" || :
-                  temporary=$(mktemp -d "''${TMPDIR:-/tmp}/tvp-step.XXXXXXXXXX") || exit $?
+                  if temporary=$(mktemp -d "''${TMPDIR:-/tmp}/tvp-step.XXXXXXXXXX"); then
+                      :
+                  else
+                      status=$?
+                      TVP_FINISHING=1
+                      tvp_log failure "$name" "$status" || :
+                      tvp_reraise_cancel
+                      exit "$status"
+                  fi
             ''
             ''TMPDIR="$temporary"''
             ''
