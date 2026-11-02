@@ -75,16 +75,19 @@ in
         name = "fixup";
         libraries = propagatedLibraries;
         run = ''
-          outputs=out
-          propagatedBuildInputs=(${
-            lib.concatMapStringsSep " " (p: lib.escapeShellArg (toString p)) propagatedLibraries
-          })
-          dontStrip= dontShrinkRpaths= noAuditTmpdir=
-          stripDebugList='lib lib32 lib64 libexec bin sbin'
-          stripDebugFlags='-S -p'
-          set +u
+            outputs=out
+            propagatedBuildInputs=(${
+              lib.concatMapStringsSep " " (p: lib.escapeShellArg (toString p)) propagatedLibraries
+            })
+            dontStrip= dontShrinkRpaths= noAuditTmpdir=
+            stripDebugList='lib lib32 lib64 libexec bin sbin'
+            stripDebugFlags='-S -p'
+            set +u
           fixupPhase
-          set -u
+          # The retained hook audits this step's TMPDIR. Also audit the shared
+          # build root so paths from source/build or earlier steps cannot escape.
+          ( TMPDIR="$NIX_BUILD_TOP"; auditTmpdir "$out" )
+            set -u
         '';
       }
     ];
