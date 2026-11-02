@@ -137,6 +137,50 @@ let
   context = builtins.getContext projection;
   expectedContext = builtins.getContext "${tool}${library}${environment}${script}${directory}";
   checks = {
+    sequenceOrder =
+      names (
+        steps.sequence [
+          (builtins.head json)
+          [ ]
+          (builtins.tail json)
+          assets
+        ]
+      ) == names original;
+    sequenceEmpty = steps.sequence [ [ ] ] == [ ];
+    sequenceTopList = rejects (steps.sequence { });
+    sequenceNonRecord = rejects (steps.sequence [ 1 ]);
+    sequenceDeeper = rejects (steps.sequence [ [ [ (builtins.head json) ] ] ]);
+    sequenceDuplicate = rejects (
+      steps.sequence [
+        json
+        [ (builtins.head json) ]
+      ]
+    );
+    sequenceInvalidEnabled = rejects (
+      steps.sequence [
+        [
+          {
+            name = "bad.enabled";
+            enabled = "no";
+          }
+        ]
+      ]
+    );
+    sequenceDisabledLazy = steps.active (steps.sequence [ disabled ]) == [ ];
+    sequenceContexts =
+      builtins.getContext (
+        builtins.toJSON (map (s: s.run) (steps.active (steps.sequence [ contextPlan ])))
+      ) == builtins.getContext "${script}/bin/run";
+    sequenceEditing =
+      names (
+        steps.delete "json-c.check" (
+          steps.sequence [
+            json
+            assets
+          ]
+        )
+      ) == names (steps.delete "json-c.check" original);
+
     literalComposition =
       names original == [
         "json-c.configure"

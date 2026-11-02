@@ -131,6 +131,7 @@ let
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
       native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
+      reusable-output = import ./lib/tests/reusable-output.nix { inherit pkgs tvp; };
       native-meson = import ./lib/tests/native-meson.nix { inherit pkgs tvp; };
       native-make = import ./lib/tests/native-make.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
@@ -528,6 +529,13 @@ let
           environment = bases.default.stdenv;
           compiler = bases.default.stdenv.cc;
           python = tvp.packages.python_3;
+        };
+        reusable-output = {
+          inherit (tvp.packages) bash;
+          python = tvp.packages.python_3;
+          binutils = tvp.packages.binutils_2;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
         };
         audit-contracts.python = tvp.packages.python_3;
         native-meson = {

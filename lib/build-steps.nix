@@ -79,6 +79,15 @@ let
 in
 {
   inherit validate;
+  # sequence [ record [ record record ] ... ] returns the usual validated plan.
+  # Flatten once, preserving records and lazy payloads including string contexts;
+  # deeper groups/nonrecords fail through validate. Edits and runner stay unchanged.
+  sequence =
+    groups:
+    if !builtins.isList groups then
+      fail "sequence expects a list of records or flat record groups"
+    else
+      validate (builtins.concatMap (item: if builtins.isList item then item else [ item ]) groups);
   namespace =
     prefix: records:
     if !component prefix || builtins.hasContext prefix then
