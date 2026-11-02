@@ -9,18 +9,27 @@ in
     {
       src,
       tar,
-      xz,
+      xz ? null,
+      gzip ? null,
+      compression ? "xz",
     }:
     steps.namespace "source" [
       {
         name = "unpack";
         tools = [
           tar
-          xz
+          (
+            if compression == "xz" then
+              if xz == null then throw "Native xz source requires an xz tool" else xz
+            else if compression == "gzip" then
+              if gzip == null then throw "Native gzip source requires a gzip tool" else gzip
+            else
+              throw "Unsupported native source compression: ${compression}"
+          )
         ];
         run = ''
           mkdir source
-          tar -xJf ${src} --strip-components=1 -C source
+          tar -x${if compression == "xz" then "J" else "z"}f ${src} --strip-components=1 -C source
           chmod -R u+w source
           updateSourceDateEpoch source
           printf '%s\n' "$SOURCE_DATE_EPOCH" > source-date-epoch
@@ -76,6 +85,35 @@ in
         cwd = "source";
         run = ''make -j"$NIX_BUILD_CORES" install'';
       }
+    ];
+  # Direct native Make. Keep upstream compiler/flag defaults and recursive MAKE;
+  # absolute invocation ensures a tool override also controls recursive targets.
+  make =
+    {
+      name,
+      make,
+      tools ? [ ],
+      libraries ? [ ],
+      env ? { },
+      cwd ? "source",
+      makeFlags ? [ ],
+      buildTargets ? [ ],
+      checkTargets ? [ "check" ],
+      installTargets ? [ "install" ],
+      doCheck ? true,
+    }:
+    let
+      record = phase: targets: {
+        name = phase;
+        tools = [ make ] ++ tools;
+        inherit libraries env cwd;
+        run = ''${make}/bin/make -j"$NIX_BUILD_CORES" ${lib.escapeShellArgs (makeFlags ++ targets)}'';
+      };
+    in
+    steps.namespace name [
+      (record "build" buildTargets)
+      ((record "check" checkTargets) // { enabled = doCheck; })
+      (record "install" installTargets)
     ];
   # Modern native Meson only. Preparation and finalization remain separate.
   meson =
