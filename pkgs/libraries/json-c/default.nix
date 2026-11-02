@@ -54,6 +54,54 @@ in
 {
   recipes.${pname} = packageArgs;
   inherit canonical;
+  # The experiment reuses release data; only its private builder differs.
+  variants = tvpLib.packages.mkVariants (
+    packageArgs
+    // {
+      inherit pkgs;
+      versionTable = builtins.mapAttrs (
+        _: entry:
+        entry
+        // {
+          def = entry.def // {
+            builder = ./build-steps-0.19.nix;
+          };
+        }
+      ) versionTable;
+      testDeps = packageArgs.testDeps // {
+        cmake = tvp.packages.cmake;
+      };
+      extraArgs = packageArgs.extraArgs // {
+        base = tvp.bases.default;
+        mkTests =
+          package:
+          packageArgs.extraArgs.mkTests package
+          // import ./tests/build-steps.nix {
+            inherit tvpLib package;
+            pkgs = tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = package.stdenv;
+            };
+            cmake = package.tvp.declaredTestDependencies.cmake;
+          };
+      };
+      profiles.build-steps = {
+        base = tvp.bases.default;
+        versions = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+          "0.19".deps = {
+            inherit (tvp.packages)
+              bash
+              coreutils
+              gnumake
+              gnutar
+              gzip
+              patch
+              ;
+          };
+        };
+      };
+    }
+  );
   aliases = tvpLib.packages.mkAliases {
     inherit pname versionTable canonical;
     lines = [ "0" ];
