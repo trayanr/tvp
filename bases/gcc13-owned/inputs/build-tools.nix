@@ -137,6 +137,14 @@ tvpLib.packages.mergeVariants {
   gnugrep = tvpLib.packages.mkVariants (
     recipes.gnugrep
     // {
+      extraArgs = recipes.gnugrep.extraArgs // {
+        mkTests =
+          package:
+          import ../../../pkgs/build-tools/gnugrep/tests {
+            inherit pkgs tvpLib package;
+            locale = import ./test-locale.nix { inherit tvpLib recipes; };
+          };
+      };
       inherit pkgs;
       profiles.gcc13 = {
         base = construction.bases.gcc13;
