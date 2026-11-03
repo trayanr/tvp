@@ -130,6 +130,7 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
+      owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
       owned-ruby = import ./lib/tests/owned-ruby.nix { inherit pkgs tvp; };
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
@@ -553,6 +554,19 @@ let
           compiler = bases.default.stdenv.cc;
         };
         audit-contracts.python = tvp.packages.python_3;
+        owned-mpc = {
+          mpc = tvp.canonical.mpc_1_4_1;
+          compatibleMpfr = tvp.packages.mpfr_4_2_1;
+          inherit (tvp.packages)
+            bash
+            coreutils
+            gnumake
+            pkg-config
+            ;
+          patchelf = tvp.packages.patchelf_0;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
         owned-json-c = {
           json = tvp.packages.json-c_0;
           inherit (tvp.packages)

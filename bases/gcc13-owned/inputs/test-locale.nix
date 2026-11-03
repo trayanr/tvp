@@ -20,7 +20,7 @@ let
     in
     packages.${tvpLib.versions.attrName family.pname version};
   mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { };
-  mpc = select recipes.mpc "1.4.1" { inherit mpfr; };
+  mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit mpfr; };
   zstd = select recipes.zstd.constructionRecipe "1.5.7" { };
   binutils = select recipes.binutils "2.42" { inherit zstd; };
   gcc = select recipes.gcc "16.2.0" {
