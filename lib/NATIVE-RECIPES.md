@@ -1,70 +1,52 @@
-The native recipe adapter is an internal, opt-in experiment for one native
-output. MPFR 4.2.2, Fontconfig 2.18.3 and Zstd 1.5.7 have opt-in variants. Existing canonical, frozen and JSON-C
-builds use their existing paths.
+`tvp.builder` constructs opt-in native recipes. `tvp.builder.steps` supplies
+ordered-plan editors and source helpers; `tvp.builder.outputs` supplies explicit
+installed-output operations. MPFR 4.2.2 uses the owned constructor. The other
+build-step variants retain their existing adapter.
 
-Recipes are explicit argument functions returning package data and an ordered
-plan of named records. `lib/native-recipe.nix` retains the function, current
-arguments and ordered edits outside the derivation. For example:
+A recipe accepts ordinary dependency arguments and returns specification data,
+or `final: { ... }`. `final` is the edited specification. Put editable
+`environment`, named `environments`, `runtime` and `plan` data beside each other;
+derive command fields through `final.base.environment final.environment`.
 
-```nix
-((tvp.variants.build-steps.mpfr_4_2_2.override {
-  gmp = tvp.packages.gmp_6_2_1;
-}).editSteps (steps.insertAfter "mpfr.build" [ {
-  name = "local.log";
-  run = ''echo built >&2'';
-} ])).editSteps (steps.replace "mpfr.check" (old: old // { enabled = false; }))
-```
+`.override` accepts argument replacements or a function of current arguments.
+`.edit` transforms the specification. `.editSteps` and `.editRuntime` transform
+its plan and runtime fields. Edits accumulate in order and replay after argument
+overrides. Unknown arguments, missing edit targets and duplicate names fail.
+Tests, provenance and output projections follow the customized package.
+`overrideAttrs` is not part of the owned API.
 
-Unknown arguments fail. Each override regenerates the recipe and replays all
-edits once, in order. Edits precede active selection and input projection;
-disabled payloads remain lazy. Both routes rebind tests and dependency metadata,
-including output projections. Customized selections are marked as overrides.
-Generic `overrideAttrs` is not a supported customization interface. JSON-C's
-private `withBuildSteps` keeps its replacement-callback semantics.
+Plans contain named executable records and optionally one `steps.split` marker.
+The marker accepts only `kind` and `name`. After editing, the constructor
+partitions the plan, requires enabled commands in each partition, then selects
+active inputs independently. Disabled command payloads remain lazy. The owned
+path lowers directly to Nix derivations without inherited setup hooks. Each
+command receives a fresh shell and temporary directory; the runner preserves
+logging, failure and cancellation behavior.
 
-The selected base supplies both outer stdenv and child compiler/setup. Tools
-map to nativeBuildInputs and libraries to buildInputs in each fresh shell;
-inherited setup hooks still provide compiler/search behavior. The helpers
-explicitly unpack, set source epoch, configure/build/check/install and finalize.
-Finalization calls retained fixup helpers for shebangs, relative symlinks,
-stripping/archive indexes, RPATH shrinking, temporary-path auditing and declared
-development propagation. This is a bridge, not replacement setup machinery.
+With a split, compilation installs a stable artifact. Finalization receives
+read-only `TVP_ARTIFACT_ROOT` and a fresh workspace/output. `copyArtifacts`
+copies independently; `relocateText` rewrites only declared text files. Export
+necessary handoff data explicitly. Nix rejects final references to the internal
+artifact output. Relocation of other formats requires an explicit operation.
 
-This opt-in runner creates and deletes a fresh TMPDIR for each active step after
-bounded process-group cleanup. Shared workspace and installed files survive.
-Only runner-created directories are deleted. Cleanup failure is reported and
-turns success into failure; primary command failures and external cancellation
-retain their result. Existing best-effort logs, first cancellation signal and
-ordinary non-detaching process-group limits apply. Detached processes are outside
-the contract.
+`outputs.rpaths { base = final.base; libraries = final.runtime.libraries; ...; }`
+selects authoritative non-base ELF lookup paths, retains required base/self
+paths and declared dlopen directories, and removes superseded paths. It does
+not relink or establish ABI compatibility. No global `LD_LIBRARY_PATH` is used.
+`outputs.development { libraries = [ dependency ]; ...; }` publishes the same
+selected public requirements as evaluation and installed propagation metadata.
+Consumers follow these requirements, without inheriting the producer's build
+tools. Standard include/lib/pkg-config directories can be overridden through
+the specification's `development` interface.
 
-`runtime.libraries` is a checked expectation, separate from development
-propagation and linker configuration. A test exports only the installed output's
-reference graph and compares context-free expected paths against that graph.
-It adds no expected-library references to the installed output. The MPFR tests
-also compile and run installed consumers, including float128. Closure membership
-alone does not establish ABI compatibility. Use runtime output paths explicitly
-when a dependency separates development and runtime outputs.
-
-`variants.build-steps.fontconfig_2_18_3` uses the modern native Meson helper.
-Its `fontconfig.prepare`, `fontconfig.configure`, `fontconfig.build`,
-`fontconfig.check`, `fontconfig.install` and `output.fixup` records are editable.
-For example, `.override { doCheck = false; }` skips execution of upstream tests
-while retaining their configured targets. Ninja and pkg-config overrides set
-`NINJA` and `PKG_CONFIG` explicitly, including when Meson's launcher supplies
-embedded defaults. The generator Python remains a separate recipe input from
-Meson's interpreter. Source preparation and finalization remain explicit steps.
-The installed tests use an isolated BDF fixture and private font/cache paths.
-
-`variants.build-steps.zstd_1_5_7` uses the native Make helper, which returns
-editable build/check/install records and invokes the selected Make by absolute
-path. Targets, flags, tools, libraries, environment and working directory are
-helper arguments. Unpack defaults to xz; gzip requires an explicit compressor.
-Zstd retains upstream release targets, static/shared libraries and CLI codecs.
-Its optional check runs five bounded shipped CLI tests; `.override { doCheck =
-false; }` disables that step. Source placement preserves upstream assertion
-filenames, and explicit finalization retains canonical helper shebangs. Zlib and
-XZ runtime expectations follow CLI linkage, not libzstd linkage. Installed
-`zstdgrep` still needs grep and zstdcat; `zstdless` still needs less and zstd on
-PATH (or their existing environment overrides). Helper tests cover real grep
-and pager dispatch only, not interactive paging.
+Explicit tools may export a pure `buildEnvironment { tool; libraries;
+directories; }` provider. Contributions are scalar `values`, separator/entries
+`paths`, and ordered `flags`. Compose base first, then tools; exact path dedup
+keeps first position, flags retain repeats, and conflicts identify origins.
+Recipe `overrides` replace variables before conflict validation. Runner variables
+are protected. Providers never recursively activate other tools or execute hooks.
+Pkg-config supplies an explicit provider for selected public library interfaces.
+The current owned flag encoders support the three frozen `NIX_*FLAGS` protocols:
+nonempty whitespace-free arguments only, with commas also rejected in
+`NIX_LDFLAGS`. Other flag protocols require their own encoder. Unsupported
+encodings fail explicitly; direct compiler argv remains available.

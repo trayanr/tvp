@@ -122,7 +122,7 @@ in
   recipes.${pname} = packageArgs;
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    mpfr_4_2_2 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+    mpfr_4_2_2 = tvp.builder {
       recipe = import ./build-steps-4.2.2.nix;
       args =
         {

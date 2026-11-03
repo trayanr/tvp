@@ -33,7 +33,7 @@ let
       "--preserve-dates"
     ];
   };
-  text = lib.concatStrings (map (s: s.run) rebound.buildSteps);
+  text = lib.concatStrings (map (s: s.run or "") rebound.buildSteps);
   edited = (p.editSteps (steps.delete "output.libtool")).editSteps (
     steps.replace "output.strip" (
       old:
@@ -54,7 +54,7 @@ let
     ]
   );
   contracts = {
-    ordinaryOrder = lib.drop 5 names == outputNames;
+    ordinaryOrder = lib.drop 9 names == outputNames;
     actualArguments = builtins.all (s: lib.hasInfix s text) [
       "/selected/binutils/bin/strip"
       "/selected/binutils/bin/readelf"
@@ -70,9 +70,13 @@ let
       rebound.tests.arithmetic.drvPath != p.tests.arithmetic.drvPath
       && builtins.any (v: v.outPath == rebound.outPath) rebound.tests.arithmetic.nativeBuildInputs;
     independentDeletion =
-      builtins.length (steps.active edited.buildSteps) == builtins.length p.buildSteps - 2
+      builtins.length (
+        steps.active (
+          (steps.partition edited.buildSteps).first ++ (steps.partition edited.buildSteps).second
+        )
+      ) == builtins.length p.buildSteps - 3
       && builtins.isString edited.drvPath;
-    independentInsertion = lib.elemAt (map (s: s.name) inserted.buildSteps) 8 == "local.between";
+    independentInsertion = lib.elemAt (map (s: s.name) inserted.buildSteps) 12 == "local.between";
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in

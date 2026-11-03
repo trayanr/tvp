@@ -129,6 +129,7 @@ let
         in
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
+      owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
       native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
       reusable-output = import ./lib/tests/reusable-output.nix { inherit pkgs tvp; };
@@ -614,6 +615,7 @@ let
       testBatches
       tools
       ;
+    builder = import ./lib/builder.nix { inherit (pkgs) lib; };
     lib = tvpLib;
   };
 in

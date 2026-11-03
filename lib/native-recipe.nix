@@ -1,6 +1,9 @@
 # Internal opt-in recipe call. Retain arguments/edits outside mkDerivation and
 # re-enter the same decoration for both customization routes and projections.
-{ lib }:
+{
+  lib,
+  owned ? false,
+}:
 {
   recipe,
   args,
@@ -12,15 +15,21 @@
 }:
 let
   steps = import ./build-steps.nix;
-  build = import ./native-build.nix { inherit lib; };
+  build = import (if owned then ./owned-build.nix else ./native-build.nix) { inherit lib; };
   declared = builtins.functionArgs recipe;
   call =
     current: edits: customized:
     let
       unknown = lib.subtractLists (builtins.attrNames declared) (builtins.attrNames current);
-      specification = recipe current;
-      plan = builtins.foldl' (plan: edit: edit plan) specification.plan edits;
-      package = build (specification // { inherit plan; });
+      definition = recipe current;
+      specification = lib.fix (
+        final:
+        builtins.foldl' (spec: edit: edit spec) (
+          if builtins.isFunction definition then definition final else definition
+        ) edits
+      );
+      plan = specification.plan;
+      package = build specification;
       dependencies = builtins.intersectAttrs (lib.genAttrs (
         if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
       ) (_: null)) current;
@@ -40,19 +49,42 @@ let
         selection
         // lib.optionalAttrs customized {
           kind = "override";
-          operation = "recipe/steps";
+          operation = "recipe/spec";
         };
       finalMetadata = (package.tvp or { }) // provenance;
       finalTests = mkTests result;
       decorate =
         value:
         value
+        // lib.optionalAttrs owned (
+          builtins.intersectAttrs {
+            pname = null;
+            version = null;
+            src = null;
+            stdenv = null;
+            meta = null;
+            runtime = null;
+            development = null;
+            buildEnvironment = null;
+            artifact = null;
+            buildStepRunner = null;
+          } package
+        )
         // {
           __tvpSelection = selected;
           tvp = finalMetadata;
           tests = finalTests;
-          override = overrides: call (current // overrides) edits true;
-          editSteps = edit: call current (edits ++ [ edit ]) true;
+          all = finalAll;
+          override =
+            overrides:
+            call (
+              current // (if builtins.isFunction overrides then overrides current else overrides)
+            ) edits true;
+          edit = edit: call current (edits ++ [ edit ]) true;
+          editSteps = edit: call current (edits ++ [ (spec: spec // { plan = edit spec.plan; }) ]) true;
+          editRuntime =
+            edit: call current (edits ++ [ (spec: spec // { runtime = edit (spec.runtime or { }); }) ]) true;
+          specification = specification;
           buildSteps = plan;
         }
         // lib.optionalAttrs (specification ? passthru) {
@@ -62,11 +94,12 @@ let
           };
         };
       outputs = lib.genAttrs package.outputs (name: decorate package.${name} // outputs);
+      finalAll = map (value: decorate value // outputs) package.all;
       result =
         decorate package
         // outputs
         // {
-          all = map (value: decorate value // outputs) package.all;
+          all = finalAll;
         };
     in
     if unknown != [ ] then
