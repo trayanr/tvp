@@ -79,6 +79,7 @@ Zstd and JSON-C split compilation from finalization, as MPFR does. Fontconfig
 and Ruby keep one stage because compiled data embeds configuration/load paths.
 Runtime fields are recipe data consumed by explicit output operations. Ruby's
 named providers derive its library summary; conflicting summary edits fail.
-JSON-C has no external runtime provider: its library summary stays empty, and
-optional `runtime.dlopenDirectories` directly configures ELF lookup directories.
+JSON-C needs no external runtime providers by default. Edits to
+`runtime.libraries` or `runtime.dlopenDirectories` configure additional lookup
+paths. Custom runtime fields can also supply user-inserted steps.
 An ELF lookup edit does not establish linkage or ABI compatibility.

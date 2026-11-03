@@ -11,6 +11,19 @@ let
     buildCommand = ''mkdir -p "$out/lib"; touch "$out/lib/lookup-marker"'';
   };
   runtime = p.editRuntime (r: r // { dlopenDirectories = [ "${lookup}/lib" ]; });
+  runtimeLibraries = p.editRuntime (r: r // { libraries = [ lookup ]; });
+  customRuntime = (p.editRuntime (r: r // { message = "selected"; })).edit (
+    s:
+    s
+    // {
+      plan = s.plan ++ [
+        {
+          name = "fixture.runtime-message";
+          run = ''printf '%s' ${lib.escapeShellArg s.runtime.message} > "$out/runtime-message"'';
+        }
+      ];
+    }
+  );
   disabled = (p.override { doCheck = false; }).editSteps (
     steps.replace "json-c.check" (
       old:
@@ -72,8 +85,10 @@ let
     split = (steps.partition p.buildSteps).split;
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
     noFictitiousRuntime = p.runtime.libraries == [ ] && p.development.libraries == [ ];
-    conflictingRuntime = rejects (p.editRuntime (r: r // { libraries = [ lookup ]; })).drvPath;
-    unknownRuntime = rejects (p.editRuntime (r: r // { ignored = true; })).drvPath;
+    runtimeLibraryArtifact =
+      p.artifact.drvPath == runtimeLibraries.artifact.drvPath && p.drvPath != runtimeLibraries.drvPath;
+    customRuntime =
+      p.artifact.drvPath == customRuntime.artifact.drvPath && p.drvPath != customRuntime.drvPath;
     cmakeDiscovery =
       provider.env.CMAKE_PREFIX_PATH == "${lib.getDev p}:${lib.getDev base.stdenv.cc.libc}";
     pkgConfigCompatible =
@@ -345,6 +360,8 @@ assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ",
     test -x ${consumer}/shared
     test -x ${runtimeConsumer}/shared
     test -e ${disabled}/lib/libjson-c.a
+    ${p.tvp.deps.patchelf}/bin/patchelf --print-rpath ${runtimeLibraries}/lib/libjson-c.so.5 | grep -F '${lookup}/lib'
+    test "$(cat ${customRuntime}/runtime-message)" = selected
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
   '';
 })
@@ -354,6 +371,8 @@ assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ",
       contracts
       consumer
       runtime
+      runtimeLibraries
+      customRuntime
       runtimeConsumer
       selected
       disabled

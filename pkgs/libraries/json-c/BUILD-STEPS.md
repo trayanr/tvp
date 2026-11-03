@@ -30,10 +30,10 @@ development interface, and check symlinks and runtime paths. The source epoch
 is exported in `nix-support/source-date-epoch`. Nix rejects references from the
 finished output back to its internal artifact.
 
-JSON-C requires base/self/libm only. `runtime.libraries` stays empty; conflicting
-or unknown runtime settings fail. `runtime.dlopenDirectories` configures
-additional ELF lookup directories through `.editRuntime`, without claiming new
-linkage. Finalization edits reuse the complete compilation derivation. Installed
+JSON-C requires base/self/libm only by default. `runtime.libraries` and
+`runtime.dlopenDirectories` configure additional ELF lookup paths through
+`.editRuntime`, without claiming new linkage. Custom runtime fields can supply
+user-inserted steps. Finalization edits reuse the complete compilation derivation. Installed
 shared/static C, pkg-config and CMake consumers test the final copied output.
 
 The owned path executes no inherited setup or phase hooks. Each named command

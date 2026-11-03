@@ -25,19 +25,6 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  # JSON-C needs only base/self/libm. Additional lookup directories are operative
-  # ELF configuration; a library list must not imply an external linkage claim.
-  runtime =
-    if
-      builtins.attrNames final.runtime != [
-        "dlopenDirectories"
-        "libraries"
-      ]
-      || final.runtime.libraries != [ ]
-    then
-      throw "JSON-C runtime.libraries must stay empty (base/self/libm only); edit runtime.dlopenDirectories for explicit ELF lookup directories."
-    else
-      final.runtime;
 in
 {
   pname = "json-c";
@@ -128,8 +115,8 @@ in
       inherit python binutils patchelf;
       base = final.base;
       paths = elfPaths;
-      libraries = runtime.libraries;
-      inherit (runtime) dlopenDirectories;
+      libraries = final.runtime.libraries;
+      inherit (final.runtime) dlopenDirectories;
     })
     (outputs.development {
       inherit python;
