@@ -307,7 +307,7 @@ rec {
             // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
             // (recipe.opts or { })
             // removeAttrs extraArgs [ "mkTests" ];
-          dependencyNames = lib.attrNames (checkDeps attr recipe.deps);
+          dependencyNames = recipe.dependencyNames or (lib.attrNames (checkDeps attr recipe.deps));
           infrastructure = infra;
           inherit selection;
           metadata =

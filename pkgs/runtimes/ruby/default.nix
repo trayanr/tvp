@@ -334,9 +334,29 @@ let
 
     # This upstream release switched to OpenSSL 4 ASN.1 accessors.
     "4.0.6" = {
-      builder = ./build-4.0.nix;
+      constructor = tvp.builder;
+      builder = ./build-4.0.6.nix;
+      helpers = {
+        inherit tvp;
+      };
+      dependencyNames =
+        specification:
+        builtins.filter (
+          name: name != "rustc" || specification.tvp.jit.yjit || specification.tvp.jit.zjit
+        ) (builtins.attrNames defs."4.0.6".deps);
       base = tvp.bases.default;
       deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          gzip
+          gnumake
+          gnused
+          ;
+        python = tvp.packages.python-build_3;
+        binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
+        patchelf = tvp.packages.patchelf_0;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
@@ -356,12 +376,18 @@ let
   };
   pname = "ruby";
 
-  canonical = tvpLib.packages.mkVersions {
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://cache.ruby-lang.org/pub/ruby/${pkgs.lib.versions.majorMinor version}/ruby-${version}.tar.gz";
+      inherit sha256;
+    };
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
     inherit pname;
-    inherit versionTable;
+    inherit versionTable source;
     testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
       category = "artifact";
       kind = "exact";
@@ -376,7 +402,8 @@ let
         import ./tests {
           inherit pkgs tvpLib ruby;
           inherit (ruby.tvp.declaredTestDependencies) consumerCompiler;
-        };
+        }
+        // pkgs.lib.optionalAttrs (ruby ? edit) (import ./tests/build-steps.nix { inherit pkgs tvp ruby; });
     };
 
     # The tarball index rather than git tags: the tarball name is what the
@@ -408,56 +435,27 @@ let
       };
     };
   };
+  canonical = tvpLib.packages.mkVersions packageArgs;
 
 in
 {
+  recipes.${pname} = packageArgs;
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    ruby_4_0_6 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+    ruby_4_0_6 = tvp.builder {
       recipe = import ./build-steps-4.0.6.nix;
       args = {
         inherit (pkgs) lib;
+        inherit tvp;
         base = tvp.bases.default;
         version = "4.0.6";
-        src = canonical.ruby_4_0_6.src;
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnutar
-          gzip
-          gnumake
-          gnused
-          ;
-        openssl = tvp.packages.openssl;
-        zlib = tvp.packages.zlib_1;
-        libyaml = tvp.packages.libyaml;
-        libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
-        python = tvp.packages.python_3;
-        binutils = tvp.packages.binutils_2;
-        patchelf = tvp.packages.patchelf_0;
-      };
-      dependencyNames =
-        specification:
-        [
-          "bash"
-          "coreutils"
-          "gnutar"
-          "gzip"
-          "gnumake"
-          "gnused"
-          "openssl"
-          "zlib"
-          "libyaml"
-          "libffi"
-          "python"
-          "binutils"
-          "patchelf"
-        ]
-        ++ pkgs.lib.optional (specification.tvp.jit.yjit || specification.tvp.jit.zjit) "rustc";
-      infrastructure = {
-        inherit (pkgs) lib;
-      };
+        src = source {
+          version = "4.0.6";
+          inherit (versionTable."4.0.6") sha256;
+        };
+      } // defs."4.0.6".deps;
+      dependencyNames = defs."4.0.6".dependencyNames;
+      infrastructure = packageArgs.infra;
       metadata = {
         status.level = "ok";
         canonical = false;

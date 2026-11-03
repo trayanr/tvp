@@ -1,5 +1,6 @@
-# Opt-in native recipe; the canonical 4.0 builder remains the control.
+# Owned Ruby 4.0.6. Compiled own-prefix load paths require a single stage.
 {
+  tvp,
   lib,
   base,
   src,
@@ -24,9 +25,7 @@
   doCheck ? true,
 }:
 let
-  steps = import ../../../lib/build-steps.nix;
-  helpers = import ../../../lib/native-steps.nix { inherit lib; };
-  output = import ../../../lib/native-output-steps.nix { inherit lib; };
+  inherit (tvp.builder) steps outputs;
   libraries = [
     openssl
     zlib
@@ -34,17 +33,34 @@ let
     libffi
   ];
   gemPath = "lib/ruby/gems/${libDir}";
-  record = name: run: {
-    name = "ruby.${name}";
-    tools = [
-      gnumake
-      gnused
-    ] ++ lib.optional (yjit || zjit) rustc;
-    inherit libraries;
-    env.LANG = "C.UTF-8";
-    cwd = "../ruby-${version}";
-    inherit run;
-  };
+in
+final:
+let
+  environment = final.base.environment final.environment;
+  record =
+    name: run:
+    environment
+    // {
+      name = "ruby.${name}";
+      cwd = "../ruby-${version}";
+      inherit run;
+    };
+  lookup =
+    name: paths: libraries:
+    (outputs.rpaths {
+      inherit
+        python
+        binutils
+        patchelf
+        paths
+        libraries
+        ;
+      base = final.base;
+      elfKinds = [ "runtime" ];
+    })
+    // {
+      name = "ruby.lookup.${name}";
+    };
 in
 {
   pname = "ruby";
@@ -55,8 +71,22 @@ in
     bash
     coreutils
     ;
+  environment = {
+    tools = [
+      gnumake
+      gnused
+    ] ++ lib.optional (yjit || zjit) rustc;
+    inherit libraries;
+    # LC_ALL=C from the base overrides LANG; RDoc needs UTF-8 explicitly.
+    overrides.values = {
+      LANG = "C.UTF-8";
+      LC_ALL = "C.UTF-8";
+      CONFIG_SHELL = "${bash}/bin/bash";
+      lt_cv_deplibs_check_method = "pass_all";
+    };
+  };
   plan = steps.sequence [
-    (helpers.unpack {
+    (steps.unpack {
       inherit src gzip;
       tar = gnutar;
       compression = "gzip";
@@ -66,23 +96,23 @@ in
       # Match the canonical source placement: Ruby embeds assertion filenames.
       run = ''mv source "../ruby-${version}"'';
     }
+    (steps.prepareAutotools {
+      name = "ruby.prepare";
+      inherit bash python;
+      base = final.base;
+      cwd = "../ruby-${version}";
+    })
     (record "configure" ''
-      # Retain configurePhase's selected shell/libtool corrections and tool
-      # assignments: these also become part of installed RbConfig.
-      set +u
-      export lt_cv_deplibs_check_method=pass_all
-      while IFS= read -r -d $'\0' script; do fixLibtool "$script"; done < <(find . -name ltmain.sh -print0)
-      patchShebangs --build ./configure
-      touch -r ./configure "$TMPDIR/configure-mtime"
-      sed -i 's_/usr/bin/file_file_g' ./configure
-      touch -r "$TMPDIR/configure-mtime" ./configure
-      set -u
+      # Preserve canonical bare tool assignments in installed RbConfig. The
+      # explicit environment supplies precisely these selected tool binaries.
+      test "$LC_ALL" = C.UTF-8
+      test "$(${gnused}/bin/sed -n '1p' configure)" = '#!${bash}/bin/bash'
       ./configure --prefix="$out" --enable-shared \
         --with-openssl-dir=${lib.getDev openssl} --with-zlib-dir=${lib.getDev zlib} \
         ${if yjit then "--enable-yjit" else "--disable-yjit"} \
         ${if zjit then "--enable-zjit" else "--disable-zjit"} \
-        AR="$AR" AS="$AS" CC="$CC" CXX="$CXX" LD="$LD" NM="$NM" \
-        OBJCOPY="$OBJCOPY" RANLIB="$RANLIB" STRIP="$STRIP"
+        AR=ar AS=as CC=cc CXX=c++ LD=ld NM=nm \
+        OBJCOPY=objcopy RANLIB=ranlib STRIP=strip
     '')
     (record "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     ((record "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" test-basic'') // { enabled = doCheck; })
@@ -114,7 +144,7 @@ in
         EOF
       '';
     }
-    (output.strip {
+    (outputs.strip {
       inherit python binutils;
       paths = [
         "bin"
@@ -125,7 +155,7 @@ in
         "relocatable"
       ];
     })
-    (output.rpaths {
+    (outputs.rpaths {
       inherit python binutils patchelf;
       paths = [
         "bin"
@@ -133,7 +163,19 @@ in
       ];
       elfKinds = [ "runtime" ];
     })
-    (output.shebangs {
+    # Apply only the provider needed by each ELF scope. dlopen users declare
+    # their provider too; base and own-library lookups survive the helper.
+    (lookup "ruby" [
+      "bin/ruby"
+      "lib/libruby.so.4.0.6"
+    ] [ final.runtime.zlib ])
+    (lookup "openssl" [ "lib/ruby/${libDir}/x86_64-linux/openssl.so" ] [ final.runtime.openssl ])
+    (lookup "zlib" [ "lib/ruby/${libDir}/x86_64-linux/zlib.so" ] [ final.runtime.zlib ])
+    (lookup "yaml" [ "lib/ruby/${libDir}/x86_64-linux/psych.so" ] [ final.runtime.libyaml ])
+    (lookup "ffi" [
+      "lib/ruby/gems/${libDir}/extensions/x86_64-linux/${libDir}/fiddle-1.1.8/fiddle.so"
+    ] [ final.runtime.libffi ])
+    (outputs.shebangs {
       inherit python;
       paths = [
         "bin"
@@ -150,14 +192,18 @@ in
       ];
       run = ''${python}/bin/python3 -B ${./compress-manuals.py} "$out" ${gzip}/bin/gzip'';
     }
-    (output.checkSymlinks {
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
+    (outputs.checkSymlinks {
       inherit python;
       paths = [
         "lib/libruby.so"
         "lib/libruby.so.4.0"
       ];
     })
-    (output.checkPaths {
+    (outputs.checkPaths {
       inherit python binutils patchelf;
       paths = [
         "bin"
@@ -166,7 +212,28 @@ in
       elfKinds = [ "runtime" ];
     })
   ];
-  runtime.libraries = map lib.getLib libraries;
+  runtime = {
+    inherit
+      openssl
+      zlib
+      libyaml
+      libffi
+      ;
+    libraries = [
+      final.runtime.openssl
+      final.runtime.zlib
+      final.runtime.libyaml
+      final.runtime.libffi
+    ];
+  };
+  development = {
+    includeDirectories = [
+      "include/ruby-${libDir}"
+      "include/ruby-${libDir}/x86_64-linux"
+    ];
+  };
+  buildEnvironment = import ./build-environment.nix { inherit lib; };
+
   tvp = {
     features = {
       enumerableSum = true;
