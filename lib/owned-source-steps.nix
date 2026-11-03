@@ -23,6 +23,30 @@
         printf '%s\n' "$epoch" > source-date-epoch
       '';
     };
+  # Explicit source scripts, using the same validated replacement operation as
+  # installed scripts. No interpreter discovery or recursive source-wide sweep.
+  shebangs =
+    {
+      name,
+      python,
+      paths,
+      names,
+      interpreter,
+      cwd ? "source",
+    }:
+    {
+      inherit name cwd;
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${./output-tools}/shebangs.py "$PWD" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths names;
+            interpreter = toString interpreter;
+            selfInterpreter = null;
+          }
+        )
+      } ${./native-output}'';
+    };
   prepareAutotools =
     {
       name,

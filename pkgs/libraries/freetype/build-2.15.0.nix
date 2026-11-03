@@ -40,6 +40,16 @@ stdenv.mkDerivation (finalAttrs: {
     platforms = [ "x86_64-linux" ];
   };
   passthru = {
+    # ft2build.h lives below freetype2. freetype2.pc advertises -lz and -lbz2
+    # for static consumers; publish selected development
+    # interfaces without executing setup hooks or reading built metadata.
+    development = {
+      includes = [ "${finalAttrs.finalPackage}/include/freetype2" ];
+      libraries = [
+        zlib
+        bzip2
+      ];
+    };
     tvp.deps = {
       inherit
         pkg-config

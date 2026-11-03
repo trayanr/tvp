@@ -1,6 +1,6 @@
 `tvp.builder` constructs opt-in native recipes. `tvp.builder.steps` supplies
 ordered-plan editors and source helpers; `tvp.builder.outputs` supplies explicit
-installed-output operations. MPFR 4.2.2 uses the owned constructor. The other
+installed-output operations. MPFR 4.2.2 and Fontconfig 2.18.3 use the owned constructor. The other
 build-step variants retain their existing adapter.
 
 A recipe accepts ordinary dependency arguments and returns specification data,
@@ -56,3 +56,14 @@ The current owned flag encoders support the three frozen `NIX_*FLAGS` protocols:
 nonempty whitespace-free arguments only, with commas also rejected in
 `NIX_LDFLAGS`. Other flag protocols require their own encoder. Unsupported
 encodings fail explicitly; direct compiler argv remains available.
+
+Fontconfig uses a single stage (zero `steps.split` markers). Upstream Linux
+embeds its configuration, template and cache paths in the library. Runtime
+edits therefore rebuild this recipe; no compilation reuse or binary relocation
+is claimed. Its explicit source shebang operations cover the enabled Python
+generators and installation scripts. The fifteen enabled native Meson tests
+run unless `doCheck = false`; this flag skips execution without disabling their
+build-time generation. Optional pytest, external fonts, bwrap, docs, locales,
+Fontations and installed static libraries are outside this recipe's coverage.
+The public development interface exposes FreeType headers and the selected
+private pkg-config requirements; runtime providers remain separately editable.
