@@ -1,60 +1,73 @@
-# Only the opt-in variant adds these controls; canonical test identities stay fixed.
+# Both selectors bind installed consumers and named edits to the selected output.
 {
   pkgs,
   tvpLib,
   package,
-  cmake,
 }:
 let
   steps = import ../../../../lib/build-steps.nix;
-  edited = package.withBuildSteps {
-    doCheck = false;
-    editSteps =
-      plan:
-      let
-        withoutCheck = steps.replace "json-c.check" (
-          old:
-          old
-          // {
-            tools = throw "disabled check tools were forced";
-            run = throw "disabled check body was forced";
-          }
-        ) plan;
-        checkedInstall = steps.replace "json-c.install" (
-          old:
-          old
-          // {
-            run =
-              old.run
-              + "\n"
-              + ''
-                printf 'install\n' >> edit-order
-                diff -u <(printf 'build\nbetween\ninstall\n') edit-order
-              '';
-          }
-        ) withoutCheck;
-        logged = steps.insertAfter "json-c.build" [
-          {
-            name = "probe.between";
-            run = ''
-              test -f build/libjson-c.a
-              test ! -e "$out"
-              printf 'build\nbetween\n' > edit-order
-              echo 'named insertion between build and install' >&2
+  edited = (package.override { doCheck = false; }).editSteps (
+    plan:
+    let
+      withoutCheck = steps.replace "json-c.check" (
+        old:
+        old
+        // {
+          tools = throw "disabled check tools were forced";
+          run = throw "disabled check body was forced";
+        }
+      ) plan;
+      checkedInstall = steps.replace "json-c.install" (
+        old:
+        old
+        // {
+          run =
+            old.run
+            + "\n"
+            + ''
+              printf 'install\n' >> edit-order
+              diff -u <(printf 'build\nbetween\ninstall\n') edit-order
             '';
-          }
-        ] checkedInstall;
-      in
-      steps.insertBefore "source.unpack" [
+        }
+      ) withoutCheck;
+      logged = steps.insertAfter "json-c.build" [
         {
-          name = "probe.before-source";
+          name = "probe.between";
           run = ''
-            test ! -e source-date-epoch
-            echo 'named insertion before source preparation' >&2
+            test -f build/libjson-c.a
+            test ! -e "$out"
+            printf 'build\nbetween\n' > edit-order
+            echo 'named insertion between build and install' >&2
           '';
         }
-      ] logged;
-  };
+      ] checkedInstall;
+    in
+    steps.insertBefore "source.unpack" [
+      {
+        name = "probe.before-source";
+        run = ''
+          test ! -e source-date-epoch
+          echo 'named insertion before source preparation' >&2
+        '';
+      }
+    ] logged
+  );
+  cmake = package.tvp.declaredTestDependencies.cmake;
+  environment =
+    (import ../../../../lib/build-environment.nix {
+      lib = pkgs.lib;
+      base = {
+        name = "consumer";
+        stdenv = package.stdenv;
+      };
+    })
+      {
+        tools = [
+          cmake
+          package.tvp.deps.gnumake
+        ];
+        libraries = [ package ];
+      };
 in
 tvpLib.tests.mkSuite {
   inherit pkgs package;
@@ -71,16 +84,19 @@ tvpLib.tests.mkSuite {
         cat > consumer/CMakeLists.txt <<'CMAKE'
         cmake_minimum_required(VERSION 3.16)
         project(json_c_consumer C)
-        find_package(json-c CONFIG REQUIRED NO_DEFAULT_PATH PATHS "${package}/lib/cmake/json-c")
+        find_package(json-c CONFIG REQUIRED)
         add_executable(shared ${./fixtures/api.c})
         target_link_libraries(shared PRIVATE json-c::json-c)
         add_executable(archive ${./fixtures/api.c})
         target_link_libraries(archive PRIVATE json-c::json-c-static m)
         CMAKE
-        cmake -S consumer -B consumer-build -G 'Unix Makefiles' >&2
-        cmake --build consumer-build --parallel "$NIX_BUILD_CORES" >&2
-        test "$(consumer-build/shared)" = ok
-        test "$(consumer-build/archive)" = ok
+        export CMAKE_PREFIX_PATH=${pkgs.lib.escapeShellArg environment.env.CMAKE_PREFIX_PATH}
+        ${cmake}/bin/cmake -S consumer -B consumer-build -G 'Unix Makefiles' -DCMAKE_MAKE_PROGRAM=${package.tvp.deps.gnumake}/bin/make -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF >&2
+        ${cmake}/bin/cmake --build consumer-build --parallel "$NIX_BUILD_CORES" >&2
+        test "$(env -i consumer-build/shared)" = ok
+        env -i LD_DEBUG=libs consumer-build/shared > /dev/null 2> loader
+        grep -F 'calling init: ${package}/lib/libjson-c.so.5' loader >&2
+        test "$(env -i consumer-build/archive)" = ok
         echo ok
       '';
       expected = "ok";

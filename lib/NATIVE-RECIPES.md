@@ -1,7 +1,9 @@
-`tvp.builder` constructs opt-in native recipes. `tvp.builder.steps` supplies
-ordered-plan editors and source helpers; `tvp.builder.outputs` supplies explicit
-installed-output operations. MPFR 4.2.2 and Fontconfig 2.18.3 use the owned constructor. The other
-build-step variants retain their existing adapter.
+`tvp.builder` constructs canonical and opt-in native recipes. Its `steps`
+namespace supplies ordered-plan editors and source helpers; `outputs` supplies
+explicit installed-output operations. MPFR 4.2.2, Fontconfig 2.18.3, Zstd 1.5.7,
+Ruby 4.0.6 and JSON-C 0.19 use the owned constructor for both canonical and
+build-step selectors. Historical construction controls retain their explicitly
+selected recipes.
 
 A recipe accepts ordinary dependency arguments and returns specification data,
 or `final: { ... }`. `final` is the edited specification. Put editable
@@ -43,8 +45,8 @@ tools. Standard include/lib/pkg-config directories can be overridden through
 the specification's `development` interface.
 
 Explicit tools may export a pure `buildEnvironment { tool; libraries;
-directories; }` provider. Contributions are scalar `values`, separator/entries
-`paths`, and ordered `flags`. Compose base first, then tools; exact path dedup
+directories; base; ... }` provider. The base is explicit selected data.
+Contributions are scalar `values`, separator/entries `paths`, and ordered `flags`. Compose base first, then tools; exact path dedup
 keeps first position, flags retain repeats, and conflicts identify origins.
 Executable lookup puts explicitly selected tools before base fallback tools;
 provider contribution order remains base then tools. Path entries must be
@@ -52,6 +54,11 @@ nonempty and must not contain their separator.
 Recipe `overrides` replace variables before conflict validation. Runner variables
 are protected. Providers never recursively activate other tools or execute hooks.
 Pkg-config supplies an explicit provider for selected public library interfaces.
+CMake adds development prefixes and the selected base libc without compiler
+probes or hooks. Its native `CMAKE_PREFIX_PATH` uses colons; cache-list arguments
+use semicolons. `steps.cmake` prepares explicit selected CMake/CTest/Make calls,
+Unix Makefiles, Release, libdir=lib, disabled registries and the generator install
+target. Editable flags and source/build directories stay ordinary helper inputs.
 The current owned flag encoders support the three frozen `NIX_*FLAGS` protocols:
 nonempty whitespace-free arguments only, with commas also rejected in
 `NIX_LDFLAGS`. Other flag protocols require their own encoder. Unsupported
@@ -67,3 +74,11 @@ build-time generation. Optional pytest, external fonts, bwrap, docs, locales,
 Fontations and installed static libraries are outside this recipe's coverage.
 The public development interface exposes FreeType headers and the selected
 private pkg-config requirements; runtime providers remain separately editable.
+
+Zstd and JSON-C split compilation from finalization, as MPFR does. Fontconfig
+and Ruby keep one stage because compiled data embeds configuration/load paths.
+Runtime fields are recipe data consumed by explicit output operations. Ruby's
+named providers derive its library summary; conflicting summary edits fail.
+JSON-C has no external runtime provider: its library summary stays empty, and
+optional `runtime.dlopenDirectories` directly configures ELF lookup directories.
+An ELF lookup edit does not establish linkage or ABI compatibility.

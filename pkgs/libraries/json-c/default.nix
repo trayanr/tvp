@@ -3,10 +3,26 @@ let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
     "0.19" = {
+      constructor = tvp.builder;
       builder = ./build-0.19.nix;
+      helpers = {
+        inherit tvp;
+      };
       base = tvp.bases.default;
-      deps.cmake = tvp.packages.cmake;
-      opts.tagDate = "20260627";
+      deps = {
+        inherit (tvp.packages)
+          cmake
+          bash
+          coreutils
+          gnumake
+          gnutar
+          gzip
+          patch
+          ;
+        python = tvp.packages.python-build_3;
+        binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
+        patchelf = tvp.packages.patchelf_0;
+      };
       patches = [
         {
           file = ./patches/posix-test-byte.patch;
@@ -22,22 +38,39 @@ let
       releases."0.19" = "sha256-N60CSZAuMBvZBSv3EuUR/Mas/07KrUtZAKrZzlZOJt4=";
     }
   ];
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://github.com/json-c/json-c/releases/download/json-c-${version}-20260627/json-c-${version}.tar.gz";
+      inherit sha256;
+    };
   packageArgs = {
-    inherit pname versionTable;
-    testDeps.pkg-config = tvp.packages.pkg-config;
+    inherit pname versionTable source;
+    testDeps = {
+      inherit (tvp.packages) pkg-config cmake;
+    };
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
+      let
+        testPkgs = tvpLib.tests.withBase {
           inherit pkgs;
           base.stdenv = package.stdenv;
         };
+      in
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = testPkgs;
         pkg-config = package.tvp.declaredTestDependencies.pkg-config;
-      };
+      }
+      // import ./tests/build-steps.nix {
+        inherit tvpLib package;
+        pkgs = testPkgs;
+      }
+    ) { inherit pkgs; };
     packageMeta.upstream = {
       type = "git-tags";
       url = "https://github.com/json-c/json-c.git";
@@ -54,50 +87,14 @@ in
 {
   recipes.${pname} = packageArgs;
   inherit canonical;
-  # The experiment reuses release data; only its private builder differs.
   variants = tvpLib.packages.mkVariants (
     packageArgs
     // {
       inherit pkgs;
-      versionTable = builtins.mapAttrs (
-        _: entry:
-        entry
-        // {
-          def = entry.def // {
-            builder = ./build-steps-0.19.nix;
-          };
-        }
-      ) versionTable;
-      testDeps = packageArgs.testDeps // {
-        cmake = tvp.packages.cmake;
-      };
-      extraArgs = packageArgs.extraArgs // {
-        base = tvp.bases.default;
-        mkTests =
-          package:
-          packageArgs.extraArgs.mkTests package
-          // import ./tests/build-steps.nix {
-            inherit tvpLib package;
-            pkgs = tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = package.stdenv;
-            };
-            cmake = package.tvp.declaredTestDependencies.cmake;
-          };
-      };
       profiles.build-steps = {
         base = tvp.bases.default;
         versions = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-          "0.19".deps = {
-            inherit (tvp.packages)
-              bash
-              coreutils
-              gnumake
-              gnutar
-              gzip
-              patch
-              ;
-          };
+          "0.19" = { };
         };
       };
     }

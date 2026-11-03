@@ -78,6 +78,7 @@ stdenv.mkDerivation (finalAttrs: {
         ;
     };
     tvp.cc = stdenv.cc;
+    buildEnvironment = import ./build-environment.nix { inherit lib; };
     tests = mkTests finalAttrs.finalPackage;
   };
 })
