@@ -1,5 +1,6 @@
 # Modern MPFR only. Source/features match the canonical 4.2.2 control.
 {
+  tvp,
   lib,
   base,
   src,
@@ -21,10 +22,7 @@
   doCheck ? true,
 }:
 let
-  steps =
-    (import ../../../lib/build-steps.nix)
-    // (import ../../../lib/owned-source-steps.nix { inherit lib; });
-  output = import ../../../lib/native-output-steps.nix { inherit lib; };
+  inherit (tvp.builder) steps outputs;
   elfPaths = [ "lib/libmpfr.so.6.2.2" ];
 in
 final:
@@ -76,24 +74,24 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "mpfr.finalize")
-    (output.copyArtifacts { inherit coreutils; })
-    (output.relocateText {
+    (outputs.copyArtifacts { inherit coreutils; })
+    (outputs.relocateText {
       inherit python;
       paths = [
         "lib/pkgconfig/mpfr.pc"
         "lib/libmpfr.la"
       ];
     })
-    (output.strip {
+    (outputs.strip {
       inherit python binutils;
       paths = elfPaths;
       flags = stripFlags;
     })
-    (output.libtool {
+    (outputs.libtool {
       inherit python;
       paths = [ "lib/libmpfr.la" ];
     })
-    (output.rpaths {
+    (outputs.rpaths {
       inherit
         python
         binutils
@@ -104,18 +102,18 @@ in
       libraries = final.runtime.libraries;
       paths = elfPaths;
     })
-    (output.development {
+    (outputs.development {
       inherit python;
       libraries = [ gmp ];
     })
-    (output.checkSymlinks {
+    (outputs.checkSymlinks {
       inherit python;
       paths = [
         "lib/libmpfr.so"
         "lib/libmpfr.so.6"
       ];
     })
-    (output.checkPaths {
+    (outputs.checkPaths {
       inherit python binutils patchelf;
       paths = elfPaths;
     })

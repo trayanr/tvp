@@ -126,6 +126,7 @@ in
       recipe = import ./build-steps-4.2.2.nix;
       args =
         {
+          inherit tvp;
           inherit (pkgs) lib;
           base = tvp.bases.default;
           version = "4.2.2";
