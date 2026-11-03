@@ -12,6 +12,7 @@
   selection,
   mkTests,
   infrastructure ? { },
+  passthru ? { },
 }:
 let
   steps = import ./build-steps.nix;
@@ -55,7 +56,8 @@ let
       finalTests = mkTests result;
       decorate =
         value:
-        value
+        lib.optionalAttrs owned passthru
+        // value
         // lib.optionalAttrs owned (
           builtins.intersectAttrs {
             pname = null;
@@ -87,11 +89,14 @@ let
           specification = specification;
           buildSteps = plan;
         }
-        // lib.optionalAttrs (specification ? passthru) {
-          passthru = package.passthru // {
-            tvp = finalMetadata;
-            tests = finalTests;
-          };
+        // lib.optionalAttrs (owned || specification ? passthru) {
+          passthru =
+            (package.passthru or { })
+            // passthru
+            // {
+              tvp = finalMetadata;
+              tests = finalTests;
+            };
         };
       outputs = lib.genAttrs package.outputs (name: decorate package.${name} // outputs);
       finalAll = map (value: decorate value // outputs) package.all;

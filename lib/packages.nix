@@ -36,7 +36,12 @@ rec {
           overrideAttrs = lib.mirrorFunctionArgs value.overrideAttrs (
             args: changed "overrideAttrs" (value.overrideAttrs args)
           );
-        };
+        }
+        // lib.genAttrs (lib.filter (name: value ? ${name}) [
+          "edit"
+          "editSteps"
+          "editRuntime"
+        ]) (name: edit: changed name (value.${name} edit));
       projectedAll = map (value: decorate value // projectedOutputs) (package.all or [ ]);
       projectedOutputs = lib.genAttrs (package.outputs or [ ]) (
         output: decorate package.${output} // projectedOutputs
@@ -233,6 +238,9 @@ rec {
       extraArgs ? { },
       packageMeta ? { },
       testDeps ? { },
+      # A family resolves sources; recipes receive the selected source directly.
+      source ? null,
+      variant ? null,
     }:
     lib.mapAttrs' (
       version: rawEntry:
@@ -271,63 +279,122 @@ rec {
           // (recipe.opts or { })
           // extraArgs
         );
+        selection = {
+          namespace = if variant == null then "canonical" else "variants.${variant}";
+          selector = attr;
+          kind = if variant == null then "exact" else "variant";
+          inherit pname version;
+          canonical = attr;
+        };
+        owned = recipe ? constructor;
+        ownedPackage = recipe.constructor {
+          recipe = builder;
+          args =
+            builtins.intersectAttrs (builtins.functionArgs builder) infra
+            // (recipe.helpers or { })
+            // {
+              inherit base version;
+              src =
+                if source == null then
+                  throw "TVP: owned definition ${attr} requires a family source factory."
+                else
+                  source {
+                    inherit version;
+                    inherit (entry) sha256;
+                  };
+            }
+            // checkDeps attr recipe.deps
+            // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
+            // (recipe.opts or { })
+            // removeAttrs extraArgs [ "mkTests" ];
+          dependencyNames = lib.attrNames (checkDeps attr recipe.deps);
+          infrastructure = infra;
+          inherit selection;
+          metadata =
+            packageMeta
+            // {
+              inherit status definition;
+              builder = baseNameOf recipe.builder;
+              declaredTestDependencies = checkDeps "${attr} tests" testDeps;
+              dependencyReasons = recipe.dependencyReasons or { };
+            }
+            // lib.optionalAttrs (variant != null) {
+              canonical = false;
+              inherit variant;
+            }
+            // lib.optionalAttrs (patches != [ ]) {
+              patches = map (p: {
+                inherit (p) reason;
+                file = baseNameOf p.file;
+              }) patches;
+            }
+            // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
+          mkTests =
+            package: removeAttrs ((extraArgs.mkTests or (_: { })) package) (status.knownTestFailures or [ ]);
+          passthru = lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+            inherit (extraArgs) mkTests;
+          };
+        };
       in
       lib.nameValuePair attr (
-        tagSelection
-          {
-            namespace = "canonical";
-            selector = attr;
-            kind = "exact";
-            inherit pname version;
-            canonical = attr;
-          }
-          (
-            pkg.overrideAttrs (old: {
-              passthru =
-                old.passthru
-                // {
-                  tvp =
-                    (old.passthru.tvp or { })
-                    // packageMeta
-                    // {
-                      inherit status;
-                      # The name, not the record: passthru is read by tooling, and a
-                      # whole stdenv in it makes `nix eval` unusable.
-                      base = if base == null then null else base.name;
-                      # The filename, so `builder-names` can compare it against the lowest
-                      # version that reaches it. A path here would print a store path.
-                      builder = baseNameOf recipe.builder;
-                      inherit definition;
-                      # Names only, for the same reason.
-                      infra = lib.attrNames infra;
-                      declaredInfrastructure = infra;
-                      # Generic declared edges include build/test tools even when a
-                      # particular builder does not put them in its own tvp.deps.
-                      declaredDependencies = checkDeps attr recipe.deps;
-                      declaredTestDependencies = checkDeps "${attr} tests" testDeps;
-                      dependencyReasons = recipe.dependencyReasons or { };
-                    }
-                    // lib.optionalAttrs (patches != [ ]) {
-                      patches = map (p: {
-                        inherit (p) reason;
-                        file = baseNameOf p.file;
-                      }) patches;
-                    }
-                    // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
+        if owned then
+          tagSelection selection ownedPackage
+        else
+          tagSelection
+            {
+              namespace = "canonical";
+              selector = attr;
+              kind = "exact";
+              inherit pname version;
+              canonical = attr;
+            }
+            (
+              pkg.overrideAttrs (old: {
+                passthru =
+                  old.passthru
+                  // {
+                    tvp =
+                      (old.passthru.tvp or { })
+                      // packageMeta
+                      // {
+                        inherit status;
+                        # The name, not the record: passthru is read by tooling, and a
+                        # whole stdenv in it makes `nix eval` unusable.
+                        base = if base == null then null else base.name;
+                        # The filename, so `builder-names` can compare it against the lowest
+                        # version that reaches it. A path here would print a store path.
+                        builder = baseNameOf recipe.builder;
+                        inherit definition;
+                        # Names only, for the same reason.
+                        infra = lib.attrNames infra;
+                        declaredInfrastructure = infra;
+                        # Generic declared edges include build/test tools even when a
+                        # particular builder does not put them in its own tvp.deps.
+                        declaredDependencies = checkDeps attr recipe.deps;
+                        declaredTestDependencies = checkDeps "${attr} tests" testDeps;
+                        dependencyReasons = recipe.dependencyReasons or { };
+                      }
+                      // lib.optionalAttrs (patches != [ ]) {
+                        patches = map (p: {
+                          inherit (p) reason;
+                          file = baseNameOf p.file;
+                        }) patches;
+                      }
+                      // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
 
-                  # A test a release is known to fail is dropped from the suite, never
-                  # silently, and only where the status says which and why. Keeping it
-                  # would make CI red forever and train everyone to ignore it; deleting
-                  # the test would hide the defect from every other version.
-                  tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
-                }
-                // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
-                  # Packages opt into rebinding their test environment locally. Keep
-                  # the factory outside tvp metadata, which catalogue tools serialize.
-                  inherit (extraArgs) mkTests;
-                };
-            })
-          )
+                    # A test a release is known to fail is dropped from the suite, never
+                    # silently, and only where the status says which and why. Keeping it
+                    # would make CI red forever and train everyone to ignore it; deleting
+                    # the test would hide the defect from every other version.
+                    tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
+                  }
+                  // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+                    # Packages opt into rebinding their test environment locally. Keep
+                    # the factory outside tvp metadata, which catalogue tools serialize.
+                    inherit (extraArgs) mkTests;
+                  };
+              })
+            )
       )
     ) versionTable;
 
@@ -367,6 +434,7 @@ rec {
           removeAttrs args [
             "pkgs"
             "profiles"
+            "constructionRecipe"
           ]
           // {
             versionTable = lib.mapAttrs (
@@ -390,6 +458,7 @@ rec {
                   };
                 }
             ) profile.versions;
+            variant = profileName;
             extraArgs =
               extraArgs
               // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
@@ -415,14 +484,17 @@ rec {
             canonical = versions.attrName args.pname package.version;
           }
           (
-            package.overrideAttrs (old: {
-              passthru = old.passthru // {
-                tvp = old.passthru.tvp // {
-                  canonical = false;
-                  variant = profileName;
+            if args.versionTable.${package.version}.def ? constructor then
+              package
+            else
+              package.overrideAttrs (old: {
+                passthru = old.passthru // {
+                  tvp = old.passthru.tvp // {
+                    canonical = false;
+                    variant = profileName;
+                  };
                 };
-              };
-            })
+              })
           )
       ) variantPackages
     ) profiles;
