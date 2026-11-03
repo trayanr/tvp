@@ -56,7 +56,8 @@ let
       finalTests = mkTests result;
       decorate =
         value:
-        value
+        lib.optionalAttrs owned passthru
+        // value
         // lib.optionalAttrs owned (
           builtins.intersectAttrs {
             pname = null;

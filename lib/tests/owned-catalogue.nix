@@ -145,7 +145,20 @@ let
     passthru =
       changed.tests.version.drvPath == changed.passthru.tests.version.drvPath
       && changed.tvp.deps.gmp.drvPath == changed.passthru.tvp.deps.gmp.drvPath;
-    testFactory = p.passthru ? mkTests && p.out.passthru ? mkTests;
+    testFactory =
+      p ? mkTests
+      && p.mkTests ? override
+      && p.passthru ? mkTests
+      && p.out ? mkTests
+      && p.out.passthru ? mkTests
+      && (builtins.head p.all) ? mkTests;
+    testFactoryReplay =
+      (changed.mkTests changed).version.drvPath == changed.tests.version.drvPath
+      && (changed.out.mkTests changed.out).version.drvPath == changed.tests.version.drvPath
+      && (changed.passthru.mkTests changed).version.drvPath == changed.tests.version.drvPath
+      &&
+        ((changed.mkTests.override { inherit pkgs; }) changed).version.drvPath
+        == changed.tests.version.drvPath;
     projections =
       changed.out.tvp.customization == changed.tvp.customization
       && (builtins.head changed.all).tests.version.drvPath == changed.tests.version.drvPath;
