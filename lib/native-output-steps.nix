@@ -140,8 +140,10 @@ in
           ''${python}/bin/python3 -B ${./owned-output/rpaths.py} "$out" ${
             lib.escapeShellArg (
               builtins.toJSON {
-                inherit paths dlopenDirectories;
-                libraries = map (p: "${lib.getLib p}/lib") libraries;
+                inherit paths dlopenDirectories elfKinds;
+                libraries = lib.concatMap (
+                  p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
+                ) libraries;
                 baseDirectories = [
                   "${base.stdenv.cc.libc}/lib"
                   "${base.stdenv.cc.cc}/lib"

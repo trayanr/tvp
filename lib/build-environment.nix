@@ -179,7 +179,9 @@ let
             || !builtins.isString e.value.separator
             || e.value.separator == ""
             || !builtins.isList e.value.entries
-            || !builtins.all builtins.isString e.value.entries
+            || !builtins.all (
+              p: builtins.isString p && p != "" && !lib.hasInfix e.value.separator p
+            ) e.value.entries
           )
         then
           fail "${e.key}: invalid paths from ${e.origin}"
@@ -221,11 +223,14 @@ let
   ) merged;
 in
 {
-  tools = [
-    cc
-    cc.bintools
-    (lib.getBin cc.libc)
-  ] ++ base.stdenv.initialPath ++ tools;
+  tools =
+    tools
+    ++ [
+      cc
+      cc.bintools
+      (lib.getBin cc.libc)
+    ]
+    ++ base.stdenv.initialPath;
   libraries = resolved;
   inherit env;
   # Structured data remains inspectable until the adapter renders it.

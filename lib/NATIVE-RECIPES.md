@@ -31,8 +31,11 @@ artifact output. Relocation of other formats requires an explicit operation.
 
 `outputs.rpaths { base = final.base; libraries = final.runtime.libraries; ...; }`
 selects authoritative non-base ELF lookup paths, retains required base/self
-paths and declared dlopen directories, and removes superseded paths. It does
-not relink or establish ABI compatibility. No global `LD_LIBRARY_PATH` is used.
+paths and declared dlopen directories, and removes superseded paths. It rebases
+artifact self RPATHs onto the copied output before shrinking. Library
+directory exceptions use the selected provider's `development.libraryDirectories`.
+`elfKinds = [ "runtime" ]` validates and skips relocatable objects in mixed trees.
+It does not relink or establish ABI compatibility. No global `LD_LIBRARY_PATH` is used.
 `outputs.development { libraries = [ dependency ]; ...; }` publishes the same
 selected public requirements as evaluation and installed propagation metadata.
 Consumers follow these requirements, without inheriting the producer's build
@@ -43,6 +46,9 @@ Explicit tools may export a pure `buildEnvironment { tool; libraries;
 directories; }` provider. Contributions are scalar `values`, separator/entries
 `paths`, and ordered `flags`. Compose base first, then tools; exact path dedup
 keeps first position, flags retain repeats, and conflicts identify origins.
+Executable lookup puts explicitly selected tools before base fallback tools;
+provider contribution order remains base then tools. Path entries must be
+nonempty and must not contain their separator.
 Recipe `overrides` replace variables before conflict validation. Runner variables
 are protected. Providers never recursively activate other tools or execute hooks.
 Pkg-config supplies an explicit provider for selected public library interfaces.

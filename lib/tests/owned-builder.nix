@@ -42,9 +42,19 @@ let
       && (builtins.head runtimeEdit.all).out.tvp.customization.customized;
     runtimeTests = runtimeEdit.tests.version.drvPath != p.tests.version.drvPath;
     functionOverride =
-      (p.override (args: {
+      let
+        prior = (p.editRuntime (r: r // { libraries = r.libraries ++ [ coreutils ]; })).override {
+          gmp = tvp.packages.gmp_6_2_1;
+          doCheck = true;
+        };
+      in
+      (prior.override (args: {
+        gmp = args.gmp;
+        doCheck = !args.doCheck;
+      })).out.tests.version.drvPath == (prior.override {
+        gmp = tvp.packages.gmp_6_2_1;
         doCheck = false;
-      })).drvPath == (p.override { doCheck = false; }).drvPath;
+      }).tests.version.drvPath;
     orderedReplay =
       ((p.editRuntime (r: r // { libraries = r.libraries ++ [ coreutils ]; })).override {
         gmp = tvp.packages.gmp_6_2_1;
@@ -172,6 +182,26 @@ let
           };
         })
       ] { }).EXAMPLE == "a:b:c";
+    emptyPathRejected = rejects (
+      merge [
+        (tool "empty" {
+          paths.EXAMPLE = {
+            separator = ":";
+            entries = [ "" ];
+          };
+        })
+      ] { }
+    );
+    pathSeparatorRejected = rejects (
+      merge [
+        (tool "separator" {
+          paths.EXAMPLE = {
+            separator = ":";
+            entries = [ "a:b" ];
+          };
+        })
+      ] { }
+    );
     repeatedFlags =
       (base.environment {
         overrides.flags.NIX_CFLAGS_COMPILE = [
@@ -290,7 +320,7 @@ let
   # Same SONAME, different behavior. Building against A then selecting B must
   # actually load B, with A removed from the installed lookup path.
   provider =
-    value:
+    value: directory:
     tvp.builder {
       recipe =
         {
@@ -315,10 +345,12 @@ let
               // {
                 name = "provider.build";
                 run = ''
-                  mkdir -p "$out/lib"
+                  mkdir -p "$out/${directory}" "$out/bin"
                   printf 'int selected(void) { return %s; }\n' ${toString value} > selected.c
-                  "$CC" -shared -Wl,-soname,libselected.so.1 selected.c -o "$out/lib/libselected.so.1"
-                  ln -s libselected.so.1 "$out/lib/libselected.so"
+                  "$CC" -shared -Wl,-soname,libselected.so.1 selected.c -o "$out/${directory}/libselected.so.1"
+                  ln -s libselected.so.1 "$out/${directory}/libselected.so"
+                  printf '#!${bash}/bin/bash\nprintf selected-tool\n' > "$out/bin/make"
+                  chmod +x "$out/bin/make"
                 '';
               }
             )
@@ -334,8 +366,74 @@ let
       selection.kind = "fixture";
       mkTests = _: { };
     };
-  a = provider 11;
-  b = provider 22;
+  a = provider 11 "lib";
+  b =
+    let
+      package = provider 22 "lib64";
+    in
+    package // { development.libraryDirectories = [ "${package}/lib64" ]; };
+  selfLinked = tvp.builder {
+    recipe =
+      {
+        base,
+        bash,
+        coreutils,
+        src,
+        version,
+      }:
+      {
+        pname = "owned-self-consumer";
+        inherit
+          base
+          bash
+          coreutils
+          src
+          version
+          ;
+        plan = [
+          (
+            (base.environment { tools = [ a ]; })
+            // {
+              name = "self.build";
+              run = ''
+                test "$(make)" = selected-tool
+                mkdir -p "$out/lib" "$out/bin"
+                printf 'int self(void) { return 42; }\n' > self.c
+                "$CC" -fPIC -c self.c -o "$out/lib/self.o"
+                "$CC" -shared -Wl,-soname,libself.so self.c -o "$out/lib/libself.so"
+                printf 'extern int self(void); int main(void) { return self() != 42; }\n' > main.c
+                "$CC" main.c -L"$out/lib" -Wl,-rpath,"$out/lib" -lself -o "$out/bin/app"
+              '';
+            }
+          )
+          (steps.split "self.finalize")
+          (outputs.copyArtifacts { inherit coreutils; })
+          (outputs.rpaths {
+            inherit
+              python
+              binutils
+              patchelf
+              base
+              ;
+            paths = [
+              "bin"
+              "lib"
+            ];
+            elfKinds = [ "runtime" ];
+            libraries = [ ];
+          })
+        ];
+      };
+    args = {
+      inherit base bash coreutils;
+      src = p.src;
+      version = "1";
+    };
+    dependencyNames = [ ];
+    metadata = { };
+    selection.kind = "fixture";
+    mkTests = _: { };
+  };
   linked = tvp.builder {
     recipe =
       {
@@ -407,8 +505,13 @@ assert linked.artifact.drvPath == changed.artifact.drvPath;
     test -x ${consumer}/consumer
     test "$(env -i ${linked}/bin/selected)" = 11
     test "$(env -i ${changed}/bin/selected)" = 22
+    env -i ${selfLinked}/bin/app
+    test -f ${selfLinked}/lib/self.o
+    selfRpath=$(${patchelf}/bin/patchelf --print-rpath ${selfLinked}/bin/app)
+    [[ "$selfRpath" == *"${selfLinked}/lib"* ]]
+    [[ "$selfRpath" != *"${selfLinked.artifact}"* ]]
     rpath=$(${patchelf}/bin/patchelf --print-rpath ${changed}/bin/selected)
-    [[ "$rpath" == *"${b}/lib"* ]]
+    [[ "$rpath" == *"${b}/lib64"* ]]
     [[ "$rpath" != *"${a}/lib"* ]]
     [[ "$rpath" == *"${tvp.packages.zlib}/lib"* ]]
     test "$(cat ${p}/nix-support/propagated-build-inputs)" = '${toString tvp.packages.gmp_6} '
@@ -423,6 +526,7 @@ assert linked.artifact.drvPath == changed.artifact.drvPath;
       linked
       changed
       runtimeEdit
+      selfLinked
       ;
   };
 }
