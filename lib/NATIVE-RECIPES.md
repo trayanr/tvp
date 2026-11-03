@@ -2,8 +2,9 @@
 namespace supplies ordered-plan editors and source helpers; `outputs` supplies
 explicit installed-output operations. MPFR 4.2.2, Fontconfig 2.18.3, Zstd 1.5.7,
 Ruby 4.0.6 and JSON-C 0.19 use the owned constructor for both canonical and
-build-step selectors. Historical construction controls retain their explicitly
-selected recipes.
+build-step selectors. MPC 1.4.1 also uses the owned constructor; older MPC
+releases retain their legacy recipes. Historical construction controls retain
+their explicitly selected recipes.
 
 A recipe accepts ordinary dependency arguments and returns specification data,
 or `final: { ... }`. `final` is the edited specification. Put editable
@@ -83,3 +84,10 @@ JSON-C needs no external runtime providers by default. Edits to
 `runtime.libraries` or `runtime.dlopenDirectories` configure additional lookup
 paths. Custom runtime fields can also supply user-inserted steps.
 An ELF lookup edit does not establish linkage or ABI compatibility.
+
+MPC 1.4.1 splits shared-only compilation from runtime finalization. Its public
+interface exports the selected GMP and MPFR headers and pkg-config requirements.
+Runtime provider edits preserve compilation inputs and configure MPC's own ELF
+lookup. A consumer that links MPFR directly may select that same-SONAME provider
+first; the MPC-only numeric probe verifies producer lookup separately. The tested
+MPFR 4.2.1 substitution is a concrete compatibility check, not a general ABI promise.

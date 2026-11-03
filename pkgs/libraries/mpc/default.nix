@@ -29,6 +29,28 @@ let
       };
       opts.archiveExt = "tar.xz";
     };
+    "1.4.1" = {
+      constructor = tvp.builder;
+      builder = ./build-1.4.1.nix;
+      base = tvp.bases.default;
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnumake
+          gnutar
+          xz
+          ;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        python = tvp.packages.python_3;
+        binutils = tvp.packages.binutils_2;
+        patchelf = tvp.packages.patchelf_0;
+      };
+    };
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -51,10 +73,19 @@ let
       def = defs."1.4.0";
       releases = {
         "1.4.0" = "sha256-MhCzpUaxywDClso2CJHXdA7m/wbesCono1sgzTwLsaU=";
-        "1.4.1" = "sha256-kSBM0y8WS9O3yZLUpqjOZRlRGq2rMPeLaYLQv41z6TE=";
       };
     }
+    {
+      def = defs."1.4.1";
+      releases."1.4.1" = "sha256-kSBM0y8WS9O3yZLUpqjOZRlRGq2rMPeLaYLQv41z6TE=";
+    }
   ];
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.xz";
+      inherit sha256;
+    };
   pname = "mpc";
   packageArgs = {
     infra = {
@@ -85,11 +116,24 @@ let
       include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  publicArgs = packageArgs // {
+    inherit source;
+  };
+  # Retain the complete historical construction, including its original test factory.
+  constructionRecipe = packageArgs // {
+    versionTable = versionTable // {
+      "1.4.1" = versionTable."1.4.1" // {
+        def = defs."1.4.0";
+      };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }
