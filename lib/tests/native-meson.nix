@@ -7,7 +7,7 @@ let
   # Wrappers retain the selected owned tools and record actual subprocess use.
   traceTool =
     name: tool:
-    tvp.bases.default.stdenv.mkDerivation {
+    (tvp.bases.default.stdenv.mkDerivation {
       name = "meson-probe-${name}";
       buildCommand = ''
         mkdir -p "$out/bin"
@@ -18,7 +18,8 @@ let
         SCRIPT
         chmod +x "$out/bin/${name}"
       '';
-    };
+    })
+    // lib.optionalAttrs (tool ? buildEnvironment) { inherit (tool) buildEnvironment; };
   ninja = traceTool "ninja" tvp.packages.ninja;
   pkg-config = traceTool "pkg-config" tvp.packages.pkg-config;
   fixture = import ../native-recipe.nix { inherit lib; } {
@@ -133,6 +134,18 @@ let
       doCheck = false;
     }).editSteps
       (steps.replace "fontconfig.check" (old: old // { run = throw "disabled Fontconfig check"; }));
+  tracedFontconfig = customized.editSteps (
+    steps.append [
+      {
+        name = "fontconfig.verify-invocations";
+        run = ''
+          grep -Fx ninja "$NIX_BUILD_TOP/tool-invocations"
+          grep -Fx pkg-config "$NIX_BUILD_TOP/tool-invocations"
+          cp "$NIX_BUILD_TOP/tool-invocations" "$out/tool-invocations"
+        '';
+      }
+    ]
+  );
   contracts = {
     replay = selected.drvPath == alternate.drvPath;
     noOpHelperOverride = (fixture.override { }).drvPath == fixture.drvPath;
@@ -164,12 +177,19 @@ assert failed == [ ] || throw "Native Meson contracts: ${lib.concatStringsSep ",
   buildCommand = ''
     test -x ${fixture}/bin/probe
     test -e ${traced.tests.run}
+    test -e ${tracedFontconfig.tests.installed}
+    test -e ${tracedFontconfig}/tool-invocations
     cat ${traced}/tool-invocations
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
   '';
 })
 // {
   passthru = {
-    inherit contracts traced customized;
+    inherit
+      contracts
+      traced
+      customized
+      tracedFontconfig
+      ;
   };
 }

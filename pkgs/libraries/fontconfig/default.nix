@@ -3,9 +3,20 @@ let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
     "2.18.3" = {
+      constructor = tvp.builder;
       builder = ./build-2.18.3.nix;
+      helpers = {
+        inherit tvp;
+      };
       base = tvp.bases.default;
       deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          xz
+          ;
+        binutils = tvp.packages.binutils_2;
         meson = tvp.packages.meson;
         ninja = tvp.packages.ninja;
         python = tvp.packages.python-build_3;
@@ -24,11 +35,17 @@ let
       releases."2.18.3" = "sha256-T3tVSjjN94wDP2ZsiHHzdJ4UoJT2Wgf2MMke0LQ9NeM=";
     }
   ];
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
+      inherit sha256;
+    };
   packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
-    inherit pname versionTable;
+    inherit pname versionTable source;
     extraArgs.mkTests =
       package:
       import ./tests {
@@ -38,20 +55,32 @@ let
           base.stdenv = package.stdenv;
         };
 
+      }
+      // import ./tests/installed.nix {
+        inherit package tvpLib;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
       };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
 in
 {
+  recipes.${pname} = packageArgs;
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    fontconfig_2_18_3 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+    fontconfig_2_18_3 = tvp.builder {
       recipe = import ./build-steps-2.18.3.nix;
       args = {
         inherit (pkgs) lib;
+        inherit tvp;
         base = tvp.bases.default;
         version = "2.18.3";
-        src = canonical.fontconfig_2_18_3.src;
+        src = source {
+          version = "2.18.3";
+          inherit (versionTable."2.18.3") sha256;
+        };
         inherit (tvp.packages)
           bash
           coreutils
@@ -60,6 +89,7 @@ in
           ;
       } // defs."2.18.3".deps;
       dependencyNames = [
+        "binutils"
         "bash"
         "coreutils"
         "gnutar"
@@ -93,13 +123,6 @@ in
       mkTests =
         package:
         packageArgs.extraArgs.mkTests package
-        // import ./tests/installed.nix {
-          inherit package tvpLib;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
-        }
         // {
           runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
             inherit package;
