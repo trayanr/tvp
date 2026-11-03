@@ -1,5 +1,6 @@
-# Opt-in direct-Make recipe, retaining upstream release and install defaults.
+# Direct Make defaults: lib-release/zstd-release and the upstream install layout.
 {
+  tvp,
   lib,
   base,
   src,
@@ -13,13 +14,52 @@
   gnugrep,
   diffutils,
   python,
+  binutils,
+  patchelf,
   zlib,
   xz,
   doCheck ? true,
 }:
 let
-  helpers = import ../../../lib/native-steps.nix { inherit lib; };
-  upstreamTests = "basic/help.sh basic/version.sh compression/basic.sh compression/gzip-compat.sh decompression/pass-through.sh";
+  inherit (tvp.builder) steps outputs;
+  upstreamTests = [
+    "basic/help.sh"
+    "basic/version.sh"
+    "compression/basic.sh"
+    "compression/gzip-compat.sh"
+    "decompression/pass-through.sh"
+  ];
+  cwd = "../zstd-${version}";
+  elfPaths = [
+    "bin/zstd"
+    "lib/libzstd.so.${version}"
+  ];
+in
+final:
+let
+  environment = final.base.environment final.environment;
+  checkEnvironment = final.base.environment (
+    final.environment
+    // {
+      tools = final.environment.tools ++ [
+        python
+        gnugrep
+        diffutils
+      ];
+    }
+  );
+  command =
+    name: run:
+    environment
+    // {
+      inherit name cwd;
+      run =
+        ''
+          export PREFIX="$out"
+        ''
+        + run;
+    };
+  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash HAVE_ZLIB=1 HAVE_LZMA=1 HAVE_LZ4=0'';
 in
 {
   pname = "zstd";
@@ -30,96 +70,145 @@ in
     bash
     coreutils
     ;
-  plan =
-    helpers.unpack {
+  environment = {
+    tools = [
+      gnumake
+      gnused
+    ];
+    libraries = [
+      zlib
+      xz
+    ];
+  };
+  runtime.libraries = [
+    zlib
+    xz
+  ];
+  plan = steps.sequence [
+    (steps.unpack {
       inherit src gzip;
       tar = gnutar;
       compression = "gzip";
+    })
+    {
+      name = "zstd.prepare";
+      # Upstream realpath/__FILE__ assertions embed this source placement in code.
+      run = ''mv source "../zstd-${version}"'';
     }
-    ++ [
-      {
-        name = "zstd.prepare";
-        # libzstd's Makefile uses realpath, and an enabled assertion embeds
-        # __FILE__. Retain canonical source placement for byte-identical code.
-        run = ''mv source "../zstd-${version}"'';
-      }
-    ]
-    ++
-      map
-        (
-          step:
-          step
-          // {
-            tools =
-              step.tools
-              ++ lib.optionals (step.name == "zstd.check") [
-                python
-                gnugrep
-                diffutils
-              ];
-            # PREFIX is an upstream ?= default, exported to every recursive Make.
-            # Keep CC/CXX/AR and flags from the selected base/setup and upstream.
-            run =
-              ''export PREFIX="$out"''
-              + "\n"
-              + step.run
-              + "\n"
-              + lib.optionalString (step.name == "zstd.check") ''
-                # Patch only test launchers; shipped helper scripts are finalized
-                # exactly as in the canonical build.
-                export NIX_STORE=${lib.escapeShellArg builtins.storeDir}
-                set +u
-                patchShebangs --build tests/cli-tests
-                set -u
-                ${python}/bin/python3 tests/cli-tests/run.py --zstd "$PWD/programs/zstd" --datagen "$PWD/tests/datagen" ${upstreamTests}
-              '';
-          }
-        )
-        (
-          helpers.make {
-            name = "zstd";
-            cwd = "../zstd-${version}";
-            make = gnumake;
-            tools = [ gnused ];
-            libraries = [
-              zlib
-              xz
-            ];
-            makeFlags = [
-              "SHELL=${bash}/bin/bash"
-              "HAVE_ZLIB=1"
-              "HAVE_LZMA=1"
-              "HAVE_LZ4=0"
-            ];
-            # Empty build targets select default: lib-release and zstd-release.
-            inherit doCheck;
-            checkTargets = [
-              "-C"
-              "tests"
-              "datagen"
-            ];
-          }
-        )
-    # A bounded selection from the shipped CLI suite, not the upstream long
-    # test/fuzz/benchmark targets. Python executes the installed test scripts.
-    ++ map (
-      step:
-      step
+    (
+      (steps.shebangs {
+        name = "zstd.prepare-tests";
+        inherit python cwd;
+        paths = [ "tests/cli-tests" ];
+        names = [
+          "sh"
+          "bash"
+        ];
+        interpreter = "${bash}/bin/bash";
+      })
       // {
-        # The retained shebang hook needs this in a fresh runner environment.
-        run = "export NIX_STORE=${lib.escapeShellArg builtins.storeDir}\n" + step.run;
+        enabled = doCheck;
       }
-    ) (helpers.finalize { });
-  runtime.libraries = [
-    (lib.getLib zlib)
-    (lib.getLib xz)
+    )
+    (command "zstd.build" make)
+    (
+      (command "zstd.check" ''
+        ${make} -C tests datagen
+        ${python}/bin/python3 tests/cli-tests/run.py --zstd "$PWD/programs/zstd" --datagen "$PWD/tests/datagen" ${lib.escapeShellArgs upstreamTests}
+      '')
+      // {
+        enabled = doCheck;
+        tools = checkEnvironment.tools;
+        env = checkEnvironment.env;
+      }
+    )
+    (command "zstd.install" ''
+      ${make} install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (steps.split "zstd.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = [ "lib/pkgconfig/libzstd.pc" ];
+    })
+    (outputs.strip {
+      inherit python binutils;
+      paths = elfPaths;
+    })
+    (outputs.stripArchives {
+      inherit python binutils;
+      paths = [ "lib/libzstd.a" ];
+    })
+    (outputs.shebangs {
+      inherit python;
+      paths = [
+        "bin/zstdgrep"
+        "bin/zstdless"
+      ];
+      names = [ "sh" ];
+      interpreter = "${builtins.dirOf final.base.stdenv.shell}/sh";
+    })
+    # Only the CLI uses the optional codecs. libzstd has no codec DT_NEEDED.
+    (outputs.rpaths {
+      inherit python binutils patchelf;
+      base = final.base;
+      paths = [ "bin/zstd" ];
+      libraries = final.runtime.libraries;
+    })
+    (
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = [ "lib/libzstd.so.${version}" ];
+        libraries = [ ];
+      })
+      // {
+        name = "output.library-rpaths";
+      }
+    )
+    # Public shared/static API headers do not require the CLI's optional codecs.
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
+    {
+      name = "output.manuals";
+      tools = [ gzip ];
+      run = ''
+        for name in zstd zstdgrep zstdless; do
+          ${gzip}/bin/gzip -cn "$out/share/man/man1/$name.1" > "$out/share/man/man1/$name.1.gz"
+          rm "$out/share/man/man1/$name.1"
+        done
+        for name in unzstd zstdcat; do
+          rm "$out/share/man/man1/$name.1"
+          ln -s zstd.1.gz "$out/share/man/man1/$name.1.gz"
+        done
+      '';
+    }
+    (outputs.checkSymlinks {
+      inherit python;
+      paths = [
+        "bin/unzstd"
+        "bin/zstdcat"
+        "bin/zstdmt"
+        "lib/libzstd.so"
+        "lib/libzstd.so.1"
+        "share/man/man1/unzstd.1.gz"
+        "share/man/man1/zstdcat.1.gz"
+      ];
+    })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = elfPaths;
+    })
   ];
   tvp.features = {
-    inherit doCheck;
+    inherit doCheck upstreamTests;
     gzip = true;
     lzma = true;
     lz4 = false;
-    upstreamTests = lib.splitString " " upstreamTests;
   };
   meta = {
     description = "Zstandard compression library and command-line tools";

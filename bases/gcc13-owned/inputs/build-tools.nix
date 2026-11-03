@@ -57,6 +57,34 @@ tvpLib.packages.mergeVariants {
   gnutar = tvpLib.packages.mkVariants (
     recipes.gnutar
     // {
+      # Preserve the exact historical helper selections in this frozen suite.
+      extraArgs.mkTests =
+        package:
+        import ../../../pkgs/build-tools/gnutar/tests {
+          inherit pkgs package tvpLib;
+          helpers = [
+            {
+              bin = "gzip";
+              package = (tvpLib.packages.mkVersions recipes.gzip).gzip_1_15;
+              flag = "-z";
+            }
+            {
+              bin = "bzip2";
+              package = (tvpLib.packages.mkVersions recipes.bzip2).bzip2_1_0_8;
+              flag = "-j";
+            }
+            {
+              bin = "xz";
+              package = (tvpLib.packages.mkVersions recipes.xz).xz_5_8_4;
+              flag = "-J";
+            }
+            {
+              bin = "zstd";
+              package = (tvpLib.packages.mkVersions recipes.zstd.constructionRecipe).zstd_1_5_7;
+              flag = "--zstd";
+            }
+          ];
+        };
       inherit pkgs;
       profiles.gcc13 = {
         base = construction.bases.gcc13;
