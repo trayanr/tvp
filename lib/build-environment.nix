@@ -129,7 +129,7 @@ let
       data =
         if tool ? buildEnvironment then
           tool.buildEnvironment {
-            inherit tool;
+            inherit tool base;
             libraries = resolved;
             inherit directories;
           }

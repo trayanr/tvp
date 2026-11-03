@@ -10,6 +10,6 @@ in
       inherit lib;
       owned = true;
     };
-  steps = edits // source;
+  steps = edits // source // { cmake = import ./cmake-steps.nix { inherit lib; }; };
   outputs = import ./native-output-steps.nix { inherit lib; };
 }

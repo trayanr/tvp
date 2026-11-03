@@ -3,6 +3,7 @@
   tool,
   libraries,
   directories,
+  ...
 }:
 {
   values = {
