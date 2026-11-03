@@ -10,16 +10,52 @@ let
         xz = tvp.packages.xz_5;
       };
     };
+    "1.5.7" = {
+      constructor = tvp.builder;
+      builder = ./build-1.5.7.nix;
+      helpers = {
+        inherit tvp;
+      };
+      base = tvp.bases.default;
+      deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          gzip
+          gnumake
+          gnused
+          gnugrep
+          diffutils
+          ;
+        python = tvp.packages.python-build_3;
+        # Use the selected base toolchain: public Binutils itself consumes Zstd.
+        binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
+        patchelf = tvp.packages.patchelf_0;
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
+      };
+    };
   };
   versionTable = tvpLib.packages.mkTable [
     {
       def = defs."1.5.6";
       releases = {
         "1.5.6" = "sha256-jCngbPQqrMHq/EB3ri7Gxvy5amJhV+BZPV6Co0/UA8E=";
-        "1.5.7" = "sha256-6zPlH0mhXgI5UM14Jcp0pKK0Pbg1SCWsJPwbfuCeb6M=";
+
       };
     }
+    {
+      def = defs."1.5.7";
+      releases."1.5.7" = "sha256-6zPlH0mhXgI5UM14Jcp0pKK0Pbg1SCWsJPwbfuCeb6M=";
+    }
   ];
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
+      inherit sha256;
+    };
   pname = "zstd";
   packageArgs = {
     infra = {
@@ -35,6 +71,12 @@ let
       import ./tests {
         inherit pkgs tvpLib zstd;
         inherit (zstd.tvp.declaredTestDependencies) gzip;
+      }
+      // pkgs.lib.optionalAttrs (zstd ? edit) {
+        helpers = import ./tests/helpers.nix {
+          package = zstd;
+          inherit (zstd.tvp.deps) bash coreutils gnugrep;
+        };
       };
     packageMeta.upstream = {
       type = "git-tags";
@@ -43,19 +85,37 @@ let
       include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  publicArgs = packageArgs // {
+    inherit source;
+  };
+  # Retain the complete pre-migration recipe for historical test construction.
+  constructionRecipe = packageArgs // {
+    versionTable = versionTable // {
+      "1.5.7" = versionTable."1.5.7" // {
+        def = defs."1.5.6";
+      };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    zstd_1_5_7 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+    zstd_1_5_7 = tvp.builder {
       recipe = import ./build-steps-1.5.7.nix;
       args = {
         inherit (pkgs) lib;
+        inherit tvp;
         base = tvp.bases.default;
-        inherit (canonical.zstd_1_5_7) src version;
+        version = "1.5.7";
+        src = source {
+          version = "1.5.7";
+          inherit (versionTable."1.5.7") sha256;
+        };
         inherit (tvp.packages)
           bash
           coreutils
@@ -67,7 +127,7 @@ in
           diffutils
           ;
         python = tvp.packages.python-build_3;
-      } // defs."1.5.6".deps;
+      } // defs."1.5.7".deps;
       dependencyNames = [
         "bash"
         "coreutils"
@@ -78,6 +138,8 @@ in
         "gnugrep"
         "diffutils"
         "python"
+        "binutils"
+        "patchelf"
         "zlib"
         "xz"
       ];
@@ -107,7 +169,7 @@ in
         // {
           helpers = import ./tests/helpers.nix {
             package = zstd;
-            inherit (tvp.packages) bash coreutils gnugrep;
+            inherit (zstd.tvp.deps) bash coreutils gnugrep;
           };
           runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
             package = zstd;

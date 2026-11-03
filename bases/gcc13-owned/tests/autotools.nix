@@ -7,7 +7,7 @@
 let
   packages = {
     automake = tvp.packages.automake_1_19;
-    libtool = tvp.packages.libtool_2_6_2;
+    libtool = (import ./construction-tools.nix { inherit pkgs tvp; }).libtool;
     flex = tvp.packages.flex_2_6_4;
   };
 in

@@ -51,12 +51,11 @@ let
       perl
       bash
       ncurses
-      file
       zlib
       xz
-      zstd
       bzip2
       ;
+    inherit (import ./construction-tools.nix { inherit pkgs tvp; }) file zstd;
   };
 
   consumers = rec {

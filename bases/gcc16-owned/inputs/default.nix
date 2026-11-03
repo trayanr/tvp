@@ -9,6 +9,17 @@
 let
   parent = construction.bases.gcc13-owned-v3;
   inputs = construction.variants.gcc16;
+  # Audit parsers keep their complete historical Python codec graph too.
+  frozenTests =
+    recipe:
+    recipe
+    // {
+      testDeps = recipe.testDeps // {
+        python3 = recipe.testDeps.python3.override {
+          zstd = (tvpLib.packages.mkVersions recipes.zstd.constructionRecipe).zstd_1_5_7;
+        };
+      };
+    };
   select =
     recipe: versions:
     tvpLib.packages.mkVariants (
@@ -23,7 +34,7 @@ let
     );
 in
 tvpLib.packages.mergeVariants {
-  gcc = select recipes.gcc {
+  gcc = select (frozenTests recipes.gcc) {
     "16.2.0" = {
       deps = {
         binutils = inputs.binutils_2_42;
@@ -80,7 +91,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  isl = select recipes.isl {
+  isl = select (frozenTests recipes.isl) {
     "0.28" = {
       deps = {
         gmp = inputs.gmp_6_3_0;
@@ -90,7 +101,7 @@ tvpLib.packages.mergeVariants {
   zlib = select recipes.zlib {
     "1.3.2" = { };
   };
-  zstd = select recipes.zstd {
+  zstd = select recipes.zstd.constructionRecipe {
     "1.5.6" = {
       deps = {
         xz = inputs.xz_5_8_3;

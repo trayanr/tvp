@@ -4,17 +4,30 @@
     {
       src,
       tar,
-      xz,
+      xz ? null,
+      gzip ? null,
+      compression ? "xz",
     }:
+    let
+      codec =
+        if compression == "xz" then
+          if xz == null then throw "Owned xz source requires an xz tool" else xz
+        else if compression == "gzip" then
+          if gzip == null then throw "Owned gzip source requires a gzip tool" else gzip
+        else
+          throw "Unsupported owned source compression: ${compression}";
+    in
     {
       name = "source.unpack";
       tools = [
         tar
-        xz
+        codec
       ];
       run = ''
         mkdir source
-        PATH=${lib.escapeShellArg "${xz}/bin"}:"$PATH" ${tar}/bin/tar -xJf ${src} --strip-components=1 -C source
+        PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
+          if compression == "xz" then "J" else "z"
+        }f ${src} --strip-components=1 -C source
         chmod -R u+w source
         # Match the source epoch policy: regular files, bounded by build start.
         epoch=$(find source -type f -not -newer "$NIX_BUILD_TOP/.." -printf '%T@\n' | sort -n | tail -n1)

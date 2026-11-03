@@ -8,7 +8,18 @@
 }:
 let
   inherit (pkgs) lib;
-  p = tvp.packages;
+  historical = import ./construction-tools.nix { inherit pkgs tvp; };
+  p = tvp.packages // {
+    php_8_5_12 =
+      (import ../../../pkgs/runtimes/php {
+        inherit pkgs;
+        tvp = tvp // {
+          packages = tvp.packages // {
+            libtool_2 = historical.libtool;
+          };
+        };
+      }).canonical.php_8_5_12;
+  };
   testPkgs = pkgs // {
     inherit stdenv;
     glibc = components.libc;
