@@ -47,6 +47,16 @@ let
     };
   lookup =
     name: paths: libraries:
+    # Named providers select distinct ELF scopes. Reject edits to their derived
+    # summary rather than silently changing only runtime-expectation metadata.
+    assert
+      map toString final.runtime.libraries == map toString [
+        final.runtime.openssl
+        final.runtime.zlib
+        final.runtime.libyaml
+        final.runtime.libffi
+      ]
+      || throw "Ruby runtime.libraries is derived; edit runtime.openssl, zlib, libyaml or libffi instead.";
     (outputs.rpaths {
       inherit
         python

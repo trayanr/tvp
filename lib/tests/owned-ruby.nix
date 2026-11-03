@@ -276,6 +276,15 @@ let
     sameRecipe = p.drvPath == pilot.drvPath;
     zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
     runtimeRebuilds = p.drvPath != runtime.drvPath && !(runtime ? artifact);
+    runtimeSummaryGuard =
+      !(builtins.tryEval (p.editRuntime (r: r // { libraries = [ ]; })).drvPath).success;
+    runtimeSummaryFollowsProviders =
+      map toString runtime.runtime.libraries == map toString [
+        runtime.runtime.openssl
+        compatibleZlib
+        runtime.runtime.libyaml
+        runtime.runtime.libffi
+      ];
     compileInputsPreserved = p.specification.environment == runtime.specification.environment;
     operativeRuntime = lib.hasInfix (builtins.unsafeDiscardStringContext (toString compatibleZlib)) (
       lib.concatStrings (map (s: s.run) (lib.filter (s: s.name == "ruby.lookup.zlib") runtime.buildSteps))
