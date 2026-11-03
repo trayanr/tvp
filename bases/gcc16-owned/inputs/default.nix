@@ -60,7 +60,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  mpfr = select recipes.mpfr {
+  mpfr = select recipes.mpfr.constructionRecipe {
     "4.2.1" = {
       deps = {
         gmp = inputs.gmp_6_3_0;

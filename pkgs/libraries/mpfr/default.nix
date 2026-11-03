@@ -48,6 +48,27 @@ let
       deps.gmp = tvp.packages.gmp_6;
     };
 
+    "4.2.2" = {
+      constructor = tvp.builder;
+      builder = ./build-4.2.2.nix;
+      base = tvp.bases.default;
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnumake
+          gnutar
+          xz
+          ;
+        gmp = tvp.packages.gmp_6;
+        python = tvp.packages.python_3;
+        binutils = tvp.packages.binutils_2;
+        patchelf = tvp.packages.patchelf_0;
+      };
+    };
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -81,10 +102,19 @@ let
       def = defs."4.2.1";
       releases = {
         "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
-        "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
       };
     }
+    {
+      def = defs."4.2.2";
+      releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
+    }
   ];
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+      inherit sha256;
+    };
   pname = "mpfr";
   packageArgs = {
     infra = {
@@ -115,22 +145,39 @@ let
       include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  publicArgs = packageArgs // {
+    inherit source;
+  };
+  # Capture the entire legacy call, including its definition, dependencies,
+  # options, infrastructure and test factory. Frozen compilers select it explicitly.
+  constructionRecipe = packageArgs // {
+    versionTable = versionTable // {
+      "4.2.2" = versionTable."4.2.2" // {
+        def = defs."4.2.1";
+      };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
     mpfr_4_2_2 = tvp.builder {
-      recipe = import ./build-steps-4.2.2.nix;
+      recipe = import ./build-4.2.2.nix;
       args =
         {
           inherit tvp;
           inherit (pkgs) lib;
           base = tvp.bases.default;
           version = "4.2.2";
-          src = canonical.mpfr_4_2_2.src;
+          src = source {
+            version = "4.2.2";
+            inherit (versionTable."4.2.2") sha256;
+          };
           inherit (tvp.packages)
             bash
             coreutils

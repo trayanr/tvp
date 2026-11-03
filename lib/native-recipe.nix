@@ -12,6 +12,7 @@
   selection,
   mkTests,
   infrastructure ? { },
+  passthru ? { },
 }:
 let
   steps = import ./build-steps.nix;
@@ -87,11 +88,14 @@ let
           specification = specification;
           buildSteps = plan;
         }
-        // lib.optionalAttrs (specification ? passthru) {
-          passthru = package.passthru // {
-            tvp = finalMetadata;
-            tests = finalTests;
-          };
+        // lib.optionalAttrs (owned || specification ? passthru) {
+          passthru =
+            (package.passthru or { })
+            // passthru
+            // {
+              tvp = finalMetadata;
+              tests = finalTests;
+            };
         };
       outputs = lib.genAttrs package.outputs (name: decorate package.${name} // outputs);
       finalAll = map (value: decorate value // outputs) package.all;
