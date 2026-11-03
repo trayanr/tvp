@@ -76,7 +76,22 @@ let
     };
   };
 
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  # Evaluation metadata only: keep the existing producers and installed paths.
+  withProvider =
+    package:
+    let
+      decorate =
+        value:
+        value
+        // {
+          buildEnvironment = import ../../../lib/pkg-config-environment.nix;
+          override = args: withProvider (package.override args);
+          overrideAttrs = args: withProvider (package.overrideAttrs args);
+        };
+      outputs = pkgs.lib.genAttrs package.outputs (name: decorate package.${name} // outputs);
+    in
+    decorate package // outputs // { all = map (value: decorate value // outputs) package.all; };
+  canonical = pkgs.lib.mapAttrs (_: withProvider) (tvpLib.packages.mkVersions packageArgs);
 
 in
 {

@@ -31,7 +31,16 @@ let
           let
             name = checkName step.name;
           in
-          if !builtins.isBool (step.enabled or true) then
+          if
+            (step.kind or "command") == "split"
+            &&
+              builtins.attrNames step != [
+                "kind"
+                "name"
+              ]
+          then
+            fail "${name}: split accepts only kind and name"
+          else if !builtins.isBool (step.enabled or true) then
             fail "${name}: enabled must be a Boolean"
           else if builtins.hasAttr name seen then
             fail "duplicate name '${name}'"
@@ -79,6 +88,43 @@ let
 in
 {
   inherit validate;
+  split = name: {
+    kind = "split";
+    name = checkName name;
+  };
+  partition =
+    plan:
+    let
+      checked = validate plan;
+      count = builtins.length (builtins.filter (s: (s.kind or "command") == "split") checked);
+      parts =
+        builtins.foldl'
+          (
+            acc: step:
+            if (step.kind or "command") == "split" then
+              acc // { after = true; }
+            else if acc.after then
+              acc // { second = acc.second ++ [ step ]; }
+            else
+              acc // { first = acc.first ++ [ step ]; }
+          )
+          {
+            first = [ ];
+            second = [ ];
+            after = false;
+          }
+          checked;
+      enabled = xs: builtins.any (s: s.enabled or true) xs;
+    in
+    if count > 1 then
+      fail "at most one split is supported"
+    else if !enabled parts.first || (count == 1 && !enabled parts.second) then
+      fail "empty active partition"
+    else
+      {
+        inherit (parts) first second;
+        split = count == 1;
+      };
   # sequence [ record [ record record ] ... ] returns the usual validated plan.
   # Flatten once, preserving records and lazy payloads including string contexts;
   # deeper groups/nonrecords fail through validate. Edits and runner stay unchanged.
@@ -119,7 +165,15 @@ in
   active =
     plan:
     let
-      selected = map activeShape (builtins.filter (step: step.enabled or true) (validate plan));
+      selected = map activeShape (
+        builtins.filter (
+          step:
+          if (step.kind or "command") == "split" then
+            fail "partition split before selecting commands"
+          else
+            step.enabled or true
+        ) (validate plan)
+      );
     in
     builtins.seq (builtins.foldl' (ok: step: builtins.seq step ok) true selected) selected;
 }

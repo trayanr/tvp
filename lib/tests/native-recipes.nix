@@ -46,7 +46,7 @@ let
     baseCoherence =
       other.stdenv.drvPath == otherBase.stdenv.drvPath
       && other.tvp.cc.drvPath == otherBase.stdenv.cc.drvPath
-      && lib.hasInfix (builtins.unsafeDiscardStringContext "${otherBase.stdenv}/setup") (
+      && !lib.hasInfix (builtins.unsafeDiscardStringContext "${otherBase.stdenv}/setup") (
         lib.concatStrings other.buildStepRunner.childScripts
       );
     dependencies =

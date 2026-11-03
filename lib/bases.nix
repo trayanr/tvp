@@ -29,18 +29,25 @@ rec {
     else if actualFloor != floor then
       throw "TVP: base '${name}' floor is not what TVP declares. Declared: ${lib.concatStringsSep " " floor}. stdenv carries: ${lib.concatStringsSep " " actualFloor}."
     else
-      {
-        inherit
-          name
-          cc
-          binutils
-          libc
-          floor
-          builtBy
-          stdenv
-          ;
-        platform = platforms.forStdenv stdenv;
-      };
+      let
+        result = {
+          inherit
+            name
+            cc
+            binutils
+            libc
+            floor
+            builtBy
+            stdenv
+            ;
+          platform = platforms.forStdenv stdenv;
+          environment = import ./build-environment.nix {
+            inherit lib;
+            base = result;
+          };
+        };
+      in
+      result;
 
   # A base test runs *on* the base, so it is built by that base's own stdenv
   # rather than by runCommand.

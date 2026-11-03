@@ -8,6 +8,7 @@
 {
   plan,
   temporaryDirectories ? false,
+  owned ? false,
 }:
 let
   # The only selection point: never render/serialize the editable full plan.
@@ -63,31 +64,51 @@ let
       keys = builtins.attrNames step.env;
       bad = builtins.filter reserved keys;
       # Explicit known-field projection: additional metadata stays lazy.
-      scriptText = ''
-        set -euo pipefail
-        shopt -s inherit_errexit
-        set +m
-        readonly TVP_SOURCE_ROOT="$1"
-        cd -- "$TVP_SOURCE_ROOT"
-        nativeBuildInputs=(${lib.concatMapStringsSep " " (p: quote (toString p)) step.tools})
-        buildInputs=(${lib.concatMapStringsSep " " (p: quote (toString p)) step.libraries})
-        # Input/environment setup hooks intentionally remain underneath the fixture.
-        # Neither genericBuild nor phase hooks choose/order the step body.
-        noDumpEnvVars=1
-        source ${quote "${base.stdenv}/setup"}
-        trap - EXIT
-        set -euo pipefail
-        shopt -s inherit_errexit
-        ${lib.concatMapStringsSep "\n" (key: "export ${key}=${quote step.env.${key}}") keys}
-        TVP_CWD=${quote step.cwd}
-        if [[ "$TVP_CWD" != /* ]]; then TVP_CWD="$TVP_SOURCE_ROOT/$TVP_CWD"; fi
-        if [[ ! -d "$TVP_CWD" ]]; then
-          printf 'TVP step %s: missing cwd: %s\n' ${quote step.name} "$TVP_CWD" >&2
-          exit 72
-        fi
-        cd -- "$TVP_CWD"
-        ${step.run}
-      '';
+      scriptText =
+        if owned then
+          ''
+            set -euo pipefail
+            shopt -s inherit_errexit
+            set +m
+            readonly TVP_SOURCE_ROOT="$1"
+            cd -- "$TVP_SOURCE_ROOT"
+            export PATH=${quote (lib.concatMapStringsSep ":" (p: "${lib.getBin p}/bin") step.tools)}
+            ${lib.concatMapStringsSep "\n" (key: "export ${key}=${quote step.env.${key}}") keys}
+            TVP_CWD=${quote step.cwd}
+            if [[ "$TVP_CWD" != /* ]]; then TVP_CWD="$TVP_SOURCE_ROOT/$TVP_CWD"; fi
+            if [[ ! -d "$TVP_CWD" ]]; then
+              printf 'TVP step %s: missing cwd: %s\n' ${quote step.name} "$TVP_CWD" >&2
+              exit 72
+            fi
+            cd -- "$TVP_CWD"
+            ${step.run}
+          ''
+        else
+          ''
+            set -euo pipefail
+            shopt -s inherit_errexit
+            set +m
+            readonly TVP_SOURCE_ROOT="$1"
+            cd -- "$TVP_SOURCE_ROOT"
+            nativeBuildInputs=(${lib.concatMapStringsSep " " (p: quote (toString p)) step.tools})
+            buildInputs=(${lib.concatMapStringsSep " " (p: quote (toString p)) step.libraries})
+            # Input/environment setup hooks intentionally remain underneath the fixture.
+            # Neither genericBuild nor phase hooks choose/order the step body.
+            noDumpEnvVars=1
+            source ${quote "${base.stdenv}/setup"}
+            trap - EXIT
+            set -euo pipefail
+            shopt -s inherit_errexit
+            ${lib.concatMapStringsSep "\n" (key: "export ${key}=${quote step.env.${key}}") keys}
+            TVP_CWD=${quote step.cwd}
+            if [[ "$TVP_CWD" != /* ]]; then TVP_CWD="$TVP_SOURCE_ROOT/$TVP_CWD"; fi
+            if [[ ! -d "$TVP_CWD" ]]; then
+              printf 'TVP step %s: missing cwd: %s\n' ${quote step.name} "$TVP_CWD" >&2
+              exit 72
+            fi
+            cd -- "$TVP_CWD"
+            ${step.run}
+          '';
     in
     if bad != [ ] then
       throw "TVP step ${step.name}: reserved or malformed env key: ${lib.concatStringsSep ", " bad}"
