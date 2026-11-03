@@ -139,7 +139,7 @@ let
     noArchive = !(builtins.elem "output.strip-archives" (map (s: s.name) p.buildSteps));
     sixteenSharedTests =
       builtins.all (n: builtins.hasAttr n p.tests) (builtins.attrNames tvp.canonical.ruby_4_0_6.tests)
-      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 16;
+      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 19;
     independentConsumer = p.tvp.declaredTestDependencies.consumerCompiler.drvPath != p.tvp.cc.drvPath;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

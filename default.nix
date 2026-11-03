@@ -130,6 +130,7 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
+      owned-ruby = import ./lib/tests/owned-ruby.nix { inherit pkgs tvp; };
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
       owned-fontconfig = import ./lib/tests/owned-fontconfig.nix { inherit pkgs tvp; };
       owned-catalogue = import ./lib/tests/owned-catalogue.nix { inherit pkgs tvp; };
@@ -551,6 +552,17 @@ let
           compiler = bases.default.stdenv.cc;
         };
         audit-contracts.python = tvp.packages.python_3;
+        owned-ruby = {
+          ruby = tvp.canonical.ruby_4_0_6;
+          compatibleZlib = tvp.packages.zlib_1_3_1;
+          inherit (tvp.packages) bash coreutils;
+          make = tvp.packages.gnumake;
+          pkgConfig = tvp.packages.pkg-config;
+          python = tvp.packages.python-build_3;
+          sed = tvp.packages.gnused;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
         owned-zstd = {
           inherit (tvp.packages) bash coreutils;
           pkgConfig = tvp.packages.pkg-config;

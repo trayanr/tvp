@@ -13,7 +13,9 @@ let
       d = interface p;
     in
     {
-      includes = d.includes or [ "${lib.getDev p}/include" ];
+      includes =
+        d.includes
+          or (map (directory: "${lib.getDev p}/${directory}") (d.includeDirectories or [ "include" ]));
       libraries = d.libraryDirectories or [ "${lib.getLib p}/lib" ];
       pkgconfig =
         d.pkgconfig or [
