@@ -21,7 +21,9 @@ let
       specification = recipe current;
       plan = builtins.foldl' (plan: edit: edit plan) specification.plan edits;
       package = build (specification // { inherit plan; });
-      dependencies = builtins.intersectAttrs (lib.genAttrs dependencyNames (_: null)) current;
+      dependencies = builtins.intersectAttrs (lib.genAttrs (
+        if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
+      ) (_: null)) current;
       provenance = metadata // {
         base = specification.base.name;
         cc = specification.base.stdenv.cc;
@@ -40,16 +42,24 @@ let
           kind = "override";
           operation = "recipe/steps";
         };
+      finalMetadata = (package.tvp or { }) // provenance;
+      finalTests = mkTests result;
       decorate =
         value:
         value
         // {
           __tvpSelection = selected;
-          tvp = (package.tvp or { }) // provenance;
-          tests = mkTests result;
+          tvp = finalMetadata;
+          tests = finalTests;
           override = overrides: call (current // overrides) edits true;
           editSteps = edit: call current (edits ++ [ edit ]) true;
           buildSteps = plan;
+        }
+        // lib.optionalAttrs (specification ? passthru) {
+          passthru = package.passthru // {
+            tvp = finalMetadata;
+            tests = finalTests;
+          };
         };
       outputs = lib.genAttrs package.outputs (name: decorate package.${name} // outputs);
       result =

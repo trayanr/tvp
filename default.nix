@@ -132,6 +132,7 @@ let
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
       native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
       reusable-output = import ./lib/tests/reusable-output.nix { inherit pkgs tvp; };
+      ruby-build-steps = import ./lib/tests/ruby-build-steps.nix { inherit pkgs tvp; };
       native-meson = import ./lib/tests/native-meson.nix { inherit pkgs tvp; };
       native-make = import ./lib/tests/native-make.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
@@ -534,6 +535,14 @@ let
           inherit (tvp.packages) bash;
           python = tvp.packages.python_3;
           binutils = tvp.packages.binutils_2;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
+        ruby-build-steps = {
+          inherit (tvp.packages) gzip;
+          python = tvp.packages.python_3;
+          binutils = tvp.packages.binutils_2;
+          patchelf = tvp.packages.patchelf_0;
           environment = bases.default.stdenv;
           compiler = bases.default.stdenv.cc;
         };

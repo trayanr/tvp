@@ -412,6 +412,77 @@ let
 in
 {
   inherit canonical;
+  variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+    ruby_4_0_6 = import ../../../lib/native-recipe.nix { inherit (pkgs) lib; } {
+      recipe = import ./build-steps-4.0.6.nix;
+      args = {
+        inherit (pkgs) lib;
+        base = tvp.bases.default;
+        version = "4.0.6";
+        src = canonical.ruby_4_0_6.src;
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          gzip
+          gnumake
+          gnused
+          ;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        libyaml = tvp.packages.libyaml;
+        libffi = tvp.packages.libffi_3;
+        rustc = tvp.packages.rustc_1;
+        python = tvp.packages.python_3;
+        binutils = tvp.packages.binutils_2;
+        patchelf = tvp.packages.patchelf_0;
+      };
+      dependencyNames =
+        specification:
+        [
+          "bash"
+          "coreutils"
+          "gnutar"
+          "gzip"
+          "gnumake"
+          "gnused"
+          "openssl"
+          "zlib"
+          "libyaml"
+          "libffi"
+          "python"
+          "binutils"
+          "patchelf"
+        ]
+        ++ pkgs.lib.optional (specification.tvp.jit.yjit || specification.tvp.jit.zjit) "rustc";
+      infrastructure = {
+        inherit (pkgs) lib;
+      };
+      metadata = {
+        status.level = "ok";
+        canonical = false;
+        variant = "build-steps";
+        builder = "build-steps-4.0.6.nix";
+        definition = "4.0.6";
+        declaredTestDependencies = canonical.ruby_4_0_6.tvp.declaredTestDependencies;
+      };
+      selection = {
+        namespace = "variants.build-steps";
+        selector = "ruby_4_0_6";
+        kind = "variant";
+        pname = "ruby";
+        version = "4.0.6";
+        canonical = "ruby_4_0_6";
+      };
+      mkTests =
+        ruby:
+        (import ./tests {
+          inherit pkgs ruby tvpLib;
+          inherit (ruby.tvp.declaredTestDependencies) consumerCompiler;
+        })
+        // (import ./tests/build-steps.nix { inherit pkgs tvp ruby; });
+    };
+  };
   aliases = tvpLib.packages.mkAliases {
     inherit
       pname
