@@ -207,7 +207,7 @@ def observe_store(plan, supplied, store):
     expected = {}
     for item in items:
         previous = expected.setdefault(item["drv"], item["outputs"])
-        require(previous == item["outputs"], "Conflicting outputs for shared derivation")
+        require(set(previous) == set(item["outputs"]), "Conflicting outputs for shared derivation")
     drvs = store.derivations([plan["aggregate"]] + list(expected))
     for drv, outputs in expected.items():
         metadata = drvs[drv]

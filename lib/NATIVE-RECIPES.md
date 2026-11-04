@@ -37,9 +37,11 @@ locations, separate from package environment contributions.
 Named projections (`package.validation`, `package.bin`), `all`, tests, provenance
 and customization retain the selected output. `lib.getBin` and `lib.getOutput`
 select the corresponding path. Tests continue to describe the customized whole
-package. Split plans currently support only `[ "out" ]`; combining a split with
-multiple outputs fails at evaluation. Use an unsplit plan when installing to
-multiple compiled prefixes.
+package. Test plans retain the selected output as each occurrence's link target,
+and verify the complete declared output set even when another occurrence selects
+a different output of the same derivation. Split plans currently support only
+`[ "out" ]`; combining a split with multiple outputs fails at evaluation. Use an
+unsplit plan when installing to multiple compiled prefixes.
 
 With a split, compilation installs a stable artifact. Finalization receives
 read-only `TVP_ARTIFACT_ROOT` and a fresh workspace/output. `copyArtifacts`

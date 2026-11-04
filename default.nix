@@ -133,8 +133,10 @@ let
       # Keep fixture outputs individually visible to plan/output publication.
       named-outputs-validation = tvp.checks.named-outputs.passthru.validation;
       named-outputs-bin = tvp.checks.named-outputs.passthru.binary;
-      named-outputs-validation-rebound = tvp.checks.named-outputs.passthru.changed.out;
-      named-outputs-bin-rebound = tvp.checks.named-outputs.passthru.binChanged.out;
+      named-outputs-validation-selected = tvp.checks.named-outputs.passthru.validation.validation;
+      named-outputs-bin-selected = tvp.checks.named-outputs.passthru.binary.bin;
+      named-outputs-validation-rebound = tvp.checks.named-outputs.passthru.changed;
+      named-outputs-bin-rebound = tvp.checks.named-outputs.passthru.binChanged;
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
