@@ -47,7 +47,9 @@ for job in plan['jobs']:
             Path(out).write_text('ok')
 print('@nix '+json.dumps({'action':'stop','id':7}), file=sys.stderr, flush=True)
 if not failed:
-    link.write_text('complete')
+    aggregate=Path(os.environ['FAKE_PLAN']).with_name('aggregate')
+    aggregate.write_text('complete')
+    link.symlink_to(aggregate)
 sys.exit(1 if failed else 0)
 '''
 
@@ -160,6 +162,11 @@ class RunnerTests(unittest.TestCase):
         targets=[arg for arg in json.loads((self.run/'command.json').read_text()) if arg.endswith('^*')]
         self.assertEqual(targets,[self.plan['aggregate']+'^*',selected['drv']+'^*',nested['drv']+'^*'])
         self.assertTrue(all(Path(out).exists() for item in [selected,nested] for out in item['outputs']))
+        command=json.loads((self.run/'command.json').read_text())
+        self.assertEqual(command[command.index('--out-link')+1],str(self.run/'roots/build'))
+        self.assertEqual((self.run/'result').resolve(),self.plan_file.with_name('aggregate'))
+        self.assertTrue((self.run/'roots/build').is_symlink())
+        self.assertEqual(list(self.run.glob('result-*')),[])
 
     def test_partial_suite_requests_nested_multioutputs(self):
         nested={'name':'nested','drv':'/fake/nested.drv',

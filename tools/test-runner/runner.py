@@ -117,8 +117,13 @@ def work(run, global_fd, lease_fd):
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     targets = build_targets(plan, state["full"])
+    multioutput = any(len(item["outputs"]) > 1 for job in plan["jobs"]
+                      for item in [job] + job.get("tests", []))
+    # Nix names secondary links with output suffixes. Keep these additional
+    # roots together; result remains the stable handle for the first target.
+    out_link = run / "roots" / "build" if multioutput else run / "result"
     command = ["nix", "build", "--show-trace", "--keep-going", "--log-format", "internal-json",
-               "--out-link", str(run / "result")]
+               "--out-link", str(out_link)]
     if state.get("maxJobs") is not None:
         command += ["--max-jobs", str(state["maxJobs"])]
     if state.get("cores") is not None:
@@ -173,6 +178,8 @@ def work(run, global_fd, lease_fd):
                         os.killpg(child.pid, signal.SIGKILL)
             code = child.wait()
             reader.join()
+        if code == 0 and multioutput:
+            root_path(run / "result", out_link.resolve(strict=True))
         state["cancelled"] = stopped.is_set()
         observe(plan, state, run, final=True)
         all_passed = all(job["status"] == "passed" for job in state["jobs"].values())
