@@ -56,6 +56,11 @@ let
       finalTests = mkTests result;
       decorate =
         value:
+        let
+          reselect =
+            changed:
+            if owned && builtins.length package.outputs > 1 then changed.${value.outputName} else changed;
+        in
         lib.optionalAttrs owned ((package.passthru or { }) // passthru)
         // value
         // lib.optionalAttrs owned (
@@ -79,13 +84,19 @@ let
           all = finalAll;
           override =
             overrides:
-            call (
-              current // (if builtins.isFunction overrides then overrides current else overrides)
-            ) edits true;
-          edit = edit: call current (edits ++ [ edit ]) true;
-          editSteps = edit: call current (edits ++ [ (spec: spec // { plan = edit spec.plan; }) ]) true;
+            reselect (
+              call (
+                current // (if builtins.isFunction overrides then overrides current else overrides)
+              ) edits true
+            );
+          edit = edit: reselect (call current (edits ++ [ edit ]) true);
+          editSteps =
+            edit: reselect (call current (edits ++ [ (spec: spec // { plan = edit spec.plan; }) ]) true);
           editRuntime =
-            edit: call current (edits ++ [ (spec: spec // { runtime = edit (spec.runtime or { }); }) ]) true;
+            edit:
+            reselect (
+              call current (edits ++ [ (spec: spec // { runtime = edit (spec.runtime or { }); }) ]) true
+            );
           specification = specification;
           buildSteps = plan;
         }
@@ -109,6 +120,12 @@ let
     in
     if unknown != [ ] then
       throw "TVP native recipe: unknown arguments: ${lib.concatStringsSep ", " unknown}"
+    else if
+      owned
+      && builtins.length package.outputs > 1
+      && lib.intersectLists package.outputs (builtins.attrNames passthru) != [ ]
+    then
+      throw "TVP named outputs: output name collides with catalogue passthru metadata"
     else
       result;
 in

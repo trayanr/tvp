@@ -9,11 +9,14 @@
   plan,
   temporaryDirectories ? false,
   owned ? false,
+  outputs ? [ "out" ],
 }:
 let
   # The only selection point: never render/serialize the editable full plan.
   selected = (import ./build-steps.nix).active plan;
   quote = lib.escapeShellArg;
+  outputNames = import ./named-outputs.nix { inherit lib; } outputs;
+  multiOutput = outputNames != [ "out" ];
   reserved =
     key:
     builtins.match "[a-zA-Z_][a-zA-Z0-9_]*" key == null
@@ -62,7 +65,7 @@ let
     step:
     let
       keys = builtins.attrNames step.env;
-      bad = builtins.filter reserved keys;
+      bad = builtins.filter (key: reserved key || builtins.elem key outputNames) keys;
       # Explicit known-field projection: additional metadata stays lazy.
       scriptText =
         if owned then
@@ -72,7 +75,9 @@ let
             set +m
             readonly TVP_SOURCE_ROOT="$1"
             cd -- "$TVP_SOURCE_ROOT"
-            export PATH=${quote (lib.concatMapStringsSep ":" (p: "${lib.getBin p}/bin") step.tools)}
+            ${
+              lib.optionalString multiOutput ("readonly " + lib.concatStringsSep " " outputNames + "\n")
+            }export PATH=${quote (lib.concatMapStringsSep ":" (p: "${lib.getBin p}/bin") step.tools)}
             ${lib.concatMapStringsSep "\n" (key: "export ${key}=${quote step.env.${key}}") keys}
             TVP_CWD=${quote step.cwd}
             if [[ "$TVP_CWD" != /* ]]; then TVP_CWD="$TVP_SOURCE_ROOT/$TVP_CWD"; fi
@@ -119,7 +124,7 @@ let
         script = writeScript "tvp-step-${step.name}.sh" scriptText;
       };
   active = map render selected;
-  text = ''
+  originalText = ''
     #!${bash}/bin/bash
     set -euo pipefail
     shopt -s inherit_errexit
@@ -177,6 +182,18 @@ let
     TVP_FINISHING=1
     tvp_reraise_cancel
   '';
+  # Only named-output runners replace the single-output binding. Keep the shared
+  # shell file and all default/split-singleout script bytes unchanged.
+  binding = ''out="''${out:-$TVP_SOURCE_ROOT/result}"'';
+  text =
+    if multiOutput then
+      assert owned || throw "TVP named outputs: requires the owned runner";
+      assert lib.hasInfix binding originalText;
+      lib.replaceStrings [ binding ] [
+        (lib.concatMapStringsSep " " (name: ''${name}="''${${name}:?missing output ${name}}"'') outputNames)
+      ] originalText
+    else
+      originalText;
 in
 {
   inherit text;
