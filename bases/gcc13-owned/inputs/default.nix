@@ -7,6 +7,10 @@
 }:
 let
   inherit (pkgs) lib;
+  historical = import ./test-public.nix { inherit pkgs tvp recipes; };
+  testRecipes = recipes // {
+    inherit (historical.recipes) gzip isl libxcrypt;
+  };
   inherit (tvpLib.bases) mkBase;
   withTvpMkDerivation =
     stdenv:
@@ -53,7 +57,10 @@ let
     };
 
     gcc13-owned = import ../. {
-      inherit pkgs tvp;
+      inherit pkgs;
+      tvp = tvp // {
+        packages = historical.public;
+      };
       builtBy = construction.bases.gcc13;
       inputs = construction.variants.gcc13;
     };
@@ -68,34 +75,34 @@ let
     ) generations;
     variants = tvpLib.packages.mergeVariants {
       build-tools = import ./build-tools.nix {
+        recipes = testRecipes;
         inherit
           pkgs
           tvpLib
-          recipes
           construction
           ;
       };
       compilers = import ./compilers.nix {
+        inherit recipes;
         inherit
           pkgs
           tvpLib
-          recipes
           construction
           ;
       };
       libraries = import ./libraries.nix {
+        recipes = testRecipes;
         inherit
           pkgs
           tvpLib
-          recipes
           construction
           ;
       };
       runtimes = import ./runtimes.nix {
+        inherit recipes;
         inherit
           pkgs
           tvpLib
-          recipes
           construction
           ;
       };

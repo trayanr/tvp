@@ -98,7 +98,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   which = tvpLib.packages.mkVariants (
-    recipes.which
+    recipes.which.constructionRecipe
     // {
       inherit pkgs;
       profiles = {
@@ -110,7 +110,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   gnumake = tvpLib.packages.mkVariants (
-    recipes.gnumake
+    recipes.gnumake.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -222,7 +222,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   patchelf = tvpLib.packages.mkVariants (
-    (removeAttrs recipes.patchelf [ "constructionBuilder" ])
+    recipes.patchelf.constructionRecipe
     // {
       inherit pkgs;
       versionTable = builtins.mapAttrs (
@@ -233,7 +233,7 @@ tvpLib.packages.mergeVariants {
             builder = recipes.patchelf.constructionBuilder;
           };
         }
-      ) recipes.patchelf.versionTable;
+      ) recipes.patchelf.constructionRecipe.versionTable;
       profiles.gcc13-owned = {
         base = construction.bases.gcc13-owned;
         versions."0.19.2" = { };
@@ -323,7 +323,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   m4 = tvpLib.packages.mkVariants (
-    recipes.m4
+    recipes.m4.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

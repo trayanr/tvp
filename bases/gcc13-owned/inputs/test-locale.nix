@@ -19,12 +19,20 @@ let
       );
     in
     packages.${tvpLib.versions.attrName family.pname version};
-  mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { };
-  mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit mpfr; };
+  m4 = select recipes.m4.constructionRecipe "1.4.21" { };
+  which = select recipes.which.constructionRecipe "2.21" { };
+  bison = select recipes.bison "3.8.2" { inherit m4; };
+  gmp = select recipes.gmp "6.3.0" { inherit m4; };
+  isl = select recipes.isl "0.28" { inherit gmp; };
+  mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { inherit gmp; };
+  mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit gmp mpfr; };
   zstd = select recipes.zstd.constructionRecipe "1.5.7" { };
-  binutils = select recipes.binutils "2.42" { inherit zstd; };
+  binutils = select recipes.binutils "2.42" { inherit bison zstd; };
   gcc = select recipes.gcc "16.2.0" {
     inherit
+      gmp
+      isl
+      which
       mpfr
       mpc
       zstd
@@ -32,4 +40,4 @@ let
       ;
   };
 in
-select recipes.glibc "2.39" { inherit gcc binutils; }
+select recipes.glibc "2.39" { inherit gcc binutils bison; }

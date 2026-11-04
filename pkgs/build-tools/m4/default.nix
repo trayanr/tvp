@@ -66,11 +66,74 @@ let
     };
   };
 
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  completed = tvp.bases.default;
+  seed =
+    reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    };
+  ownedDefs = tvpLib.packages.mkDefs {
+    "1.4.21" = {
+      constructor = tvp.builder;
+      builder = ./owned/build-1.4.21.nix;
+      base = completed;
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = seed "Build-only completed Coreutils: selecting canonical Coreutils would close M4 -> Coreutils -> GMP -> M4." completed.components.floor.coreutils;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        python = seed "Build-only completed libc construction interpreter for explicit source and output operations; avoids rebuilding the unported Python helper through this tool wave." completed.components.libc.tvp.deps.python3Minimal;
+        binutils = seed "Build-only completed binutils for ELF finalization: canonical binutils needs Bison, which needs M4." completed.components.binutils;
+        patchelf = tvp.packages.patchelf_0;
+      };
+    };
+  };
+  publicVersionTable = versionTable // {
+    "1.4.21" = versionTable."1.4.21" // {
+      def = ownedDefs."1.4.21";
+    };
+  };
+  source =
+    { version, sha256 }:
+    pkgs.fetchurl {
+      urls = [
+        "https://mirrors.kernel.org/gnu/m4/m4-${version}.tar.gz"
+        "https://ftp.gnu.org/gnu/m4/m4-${version}.tar.gz"
+      ];
+      inherit sha256;
+    };
+  publicArgs = packageArgs // {
+    versionTable = publicVersionTable;
+    inherit source;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
+      // pkgs.lib.optionalAttrs (package.version == "1.4.21") (
+        import ./tests/owned.nix {
+          inherit tvp tvpLib package;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = package.stdenv;
+          };
+        }
+      )
+    ) { inherit pkgs; };
+  };
+  # Preserve the exact prior definition and test constructor for frozen bases.
+  constructionRecipe = packageArgs;
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
     inherit
