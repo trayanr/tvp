@@ -26,6 +26,25 @@ path lowers directly to Nix derivations without inherited setup hooks. Each
 command receives a fresh shell and temporary directory; the runner preserves
 logging, failure and cancellation behavior.
 
+Specifications may declare `outputs = [ "out" "validation" ];` or
+`outputs = [ "out" "bin" ];`. The default is `[ "out" ]`; `out` must be first.
+Names are unique, context-free lowercase shell identifiers (`[a-z][a-z0-9_]*`);
+constructor, primitive and projected metadata names are reserved. Every fresh
+command receives the declared build paths. In multioutput plans these variables
+are read-only and cannot be supplied through step `env`. Output paths are build
+locations, separate from package environment contributions.
+
+Named projections (`package.validation`, `package.bin`), `all`, tests, provenance
+and customization retain the selected output. `lib.getBin` and `lib.getOutput`
+select the corresponding path. Tests continue to describe the customized whole
+package. Test plans retain the selected output as each occurrence's link target,
+and verify the complete declared output set even when another occurrence selects
+a different output of the same derivation. The test runner explicitly realizes
+multioutput jobs and tests alongside the aggregate: substituting a cached
+aggregate alone may leave unreferenced sibling outputs absent. Split plans currently support only
+`[ "out" ]`; combining a split with multiple outputs fails at evaluation. Use an
+unsplit plan when installing to multiple compiled prefixes.
+
 With a split, compilation installs a stable artifact. Finalization receives
 read-only `TVP_ARTIFACT_ROOT` and a fresh workspace/output. `copyArtifacts`
 copies independently; `relocateText` rewrites only declared text files. Export

@@ -119,6 +119,13 @@ rec {
     let
       jobs = suiteJobs { inherit batches checks; };
       broken = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") == "broken") canonical;
+      outputPaths =
+        drv:
+        let
+          selected = builtins.unsafeDiscardStringContext drv.outPath;
+          declared = map (output: builtins.unsafeDiscardStringContext drv.${output}.outPath) drv.outputs;
+        in
+        [ selected ] ++ builtins.filter (output: output != selected) declared;
     in
     pkgs.writeText "tvp-test-plan.json" (
       builtins.toJSON {
@@ -133,11 +140,11 @@ rec {
         jobs = lib.mapAttrsToList (name: drv: {
           inherit name;
           drv = builtins.unsafeDiscardOutputDependency drv.drvPath;
-          outputs = map (output: builtins.unsafeDiscardStringContext drv.${output}.outPath) drv.outputs;
+          outputs = outputPaths drv;
           tests = lib.mapAttrsToList (testName: test: {
             name = testName;
             drv = builtins.unsafeDiscardOutputDependency test.drvPath;
-            outputs = map (output: builtins.unsafeDiscardStringContext test.${output}.outPath) test.outputs;
+            outputs = outputPaths test;
           }) (drv.testSuite or { });
         }) jobs;
         skipped = lib.mapAttrsToList (name: p: {

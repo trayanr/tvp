@@ -129,6 +129,14 @@ let
         in
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
+      named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
+      # Keep fixture outputs individually visible to plan/output publication.
+      named-outputs-validation = tvp.checks.named-outputs.passthru.validation;
+      named-outputs-bin = tvp.checks.named-outputs.passthru.binary;
+      named-outputs-validation-selected = tvp.checks.named-outputs.passthru.validation.validation;
+      named-outputs-bin-selected = tvp.checks.named-outputs.passthru.binary.bin;
+      named-outputs-validation-rebound = tvp.checks.named-outputs.passthru.changed;
+      named-outputs-bin-rebound = tvp.checks.named-outputs.passthru.binChanged;
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
@@ -538,6 +546,15 @@ let
           compiler = bases.default.stdenv.cc;
           python = tvp.packages.python_3;
         };
+        named-outputs =
+          {
+            inherit (tvp.packages) bash coreutils;
+          }
+          // pkgs.lib.listToAttrs (
+            pkgs.lib.imap0 (
+              i: p: pkgs.lib.nameValuePair "floor${toString i}" p
+            ) bases.default.stdenv.initialPath
+          );
         reusable-output = {
           inherit (tvp.packages) bash;
           python = tvp.packages.python_3;

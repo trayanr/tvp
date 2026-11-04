@@ -16,6 +16,26 @@ def execute(argv, **kwargs):
     return subprocess.run(argv, check=True, **kwargs)
 
 
+def check_flake(candidate, evidence):
+    log = evidence / "flake-check.log"
+    print("Checking flake evaluation; full log: evidence/flake-check.log", flush=True)
+    try:
+        with log.open("wb") as stream:
+            execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)],
+                    stdout=stream, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        print("Flake evaluation failed; last 40 lines (full log: evidence/flake-check.log):",
+              file=sys.stderr, flush=True)
+        with log.open("rb") as stream:
+            stream.seek(0, os.SEEK_END)
+            stream.seek(max(0, stream.tell() - 16000))
+            tail = stream.read().decode("utf-8", errors="replace").splitlines()[-40:]
+        if tail:
+            print("\n".join(tail), file=sys.stderr, flush=True)
+        raise
+    print("Flake evaluation passed; full log: evidence/flake-check.log", flush=True)
+
+
 def checkout(repository, revision, destination):
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("A full immutable commit SHA is required")
@@ -110,7 +130,7 @@ def validate_owned(args, owner_path):
         for key in ("added", "changed", "removed"):
             for name in difference[key]:
                 print(f"  {key}: {name}", flush=True)
-    execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)])
+    check_flake(candidate, evidence)
     start = subprocess.check_output([
         "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
         "--system", "x86_64-linux", "--state-dir", str(root / "validation"),

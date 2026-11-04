@@ -10,6 +10,16 @@ let
     coreutils
     plan
     ;
+  outputNames =
+    let
+      names = import ./named-outputs.nix { inherit lib; } (spec.outputs or [ "out" ]);
+      collisions = lib.intersectLists names (builtins.attrNames (spec.passthru or { }));
+    in
+    if names != [ "out" ] && collisions != [ ] then
+      throw "TVP named outputs: output name collides with passthru metadata"
+    else
+      names;
+  multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
   stage =
@@ -48,6 +58,7 @@ let
             ) selected;
             temporaryDirectories = true;
             owned = true;
+            outputs = outputNames;
           };
       drv = builtins.derivation (
         {
@@ -60,13 +71,18 @@ let
             "-euc"
             ''
               source "$NIX_ATTRS_SH_FILE"
-              export out="''${outputs[out]}"
+              ${
+                if multiOutput then
+                  lib.concatMapStringsSep "\n" (name: ''export ${name}="''${outputs[${name}]}"'') outputNames
+                else
+                  ''export out="''${outputs[out]}"''
+              }
               export NIX_BUILD_TOP="$PWD"
               ${coreutils}/bin/mkdir workspace
               ${bash}/bin/bash ${runner.script} "$PWD/workspace"
             ''
           ];
-          outputs = [ "out" ];
+          outputs = outputNames;
         }
         // lib.optionalAttrs (artifact != null) {
           # Native Nix output checks; never introduce a reference merely to test it.
@@ -85,6 +101,9 @@ let
     steps.active (parts.first ++ parts.second)
   );
 in
+assert
+  !(multiOutput && parts.split)
+  || throw "TVP named outputs: split with multiple outputs is not supported";
 package
 // {
   inherit pname version;

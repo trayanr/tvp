@@ -74,20 +74,41 @@ def useful_event(event, active):
     )
 
 
+def build_targets(plan, full):
+    targets = [plan["aggregate"]] if full else [job["drv"] for job in plan["jobs"]]
+    # A cached suite retains only the output selected by each installed link.
+    # Request siblings explicitly, including multioutput tests in partial suites.
+    targets += [item["drv"] for job in plan["jobs"]
+                for item in [job] + job.get("tests", []) if len(item["outputs"]) > 1]
+    return list(dict.fromkeys(targets))
+
+
 def work(run, global_fd, lease_fd):
     plan = json.loads((run / "plan.json").read_text())
     state = json.loads((run / "state.json").read_text())
     state.update(phase="running", pid=os.getpid(), buildStartedAt=time.time(), active={})
     write_json(run / "state.json", state)
     stopped = threading.Event()
+    wake = threading.Event()
     finished = threading.Event()
     owner_gone = threading.Event()
     child = None
     active = {}
     lock = threading.Lock()
+    protected = set()
+
+    def checkpoint():
+        with lock:
+            state["active"] = dict(active)
+        write_json(run / "state.json", state)
+
+    def rooting(completed, total):
+        state.update(operation="registering-roots", rooting={"completed": completed, "total": total})
+        checkpoint()
 
     def stop(_signum, _frame):
         stopped.set()
+        wake.set()
         if child is not None and child.poll() is None:
             try:
                 os.killpg(child.pid, signal.SIGTERM)
@@ -107,9 +128,14 @@ def work(run, global_fd, lease_fd):
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    targets = [plan["aggregate"]] if state["full"] else [job["drv"] for job in plan["jobs"]]
+    targets = build_targets(plan, state["full"])
+    multioutput = any(len(item["outputs"]) > 1 for job in plan["jobs"]
+                      for item in [job] + job.get("tests", []))
+    # Nix names secondary links with output suffixes. Keep these additional
+    # roots together; result remains the stable handle for the first target.
+    out_link = run / "roots" / "build" if multioutput else run / "result"
     command = ["nix", "build", "--show-trace", "--keep-going", "--log-format", "internal-json",
-               "--out-link", str(run / "result")]
+               "--out-link", str(out_link)]
     if state.get("maxJobs") is not None:
         command += ["--max-jobs", str(state["maxJobs"])]
     if state.get("cores") is not None:
@@ -141,22 +167,23 @@ def work(run, global_fd, lease_fd):
                         events.write(line)
                         log.write(line)
                 events.flush()
+                wake.set()
 
             reader = threading.Thread(target=read_events, daemon=True)
             reader.start()
             while True:
                 try:
-                    observe(plan, state, run)
+                    observe(plan, state, run, protected=protected, on_roots=rooting)
                     state.pop("monitorError", None)
+                    state["operation"] = "building"
                 except (OSError, RuntimeError, subprocess.SubprocessError) as error:
                     # Progress queries must not cancel a valid long-running build.
                     state["monitorError"] = str(error)
-                with lock:
-                    state["active"] = dict(active)
-                write_json(run / "state.json", state)
+                checkpoint()
                 if child.poll() is not None:
                     break
-                stopped.wait(5)
+                wake.wait(5)
+                wake.clear()
                 if stopped.is_set():
                     try:
                         child.wait(timeout=30)
@@ -164,8 +191,13 @@ def work(run, global_fd, lease_fd):
                         os.killpg(child.pid, signal.SIGKILL)
             code = child.wait()
             reader.join()
+        if code == 0 and multioutput:
+            root_path(run / "result", out_link.resolve(strict=True))
         state["cancelled"] = stopped.is_set()
-        observe(plan, state, run, final=True)
+        state["operation"] = "checking-outputs"
+        checkpoint()
+        observe(plan, state, run, final=True, protected=protected, on_roots=rooting)
+        state.pop("monitorError", None)
         all_passed = all(job["status"] == "passed" for job in state["jobs"].values())
         state.update(phase="cancelled" if stopped.is_set() else "passed" if code == 0 and all_passed else "failed",
                      returnCode=code, finishedAt=time.time(), active={})
@@ -259,7 +291,7 @@ def start(args):
     return 0
 
 
-def status(run, as_json=False, attempt_only=False):
+def status(run, as_json=False, attempt_only=False, inspect_store=True):
     state = json.loads((run / "state.json").read_text())
     if state["phase"] not in TERMINAL and not lease_held(run / "worker.lock"):
         state["phase"] = "interrupted"
@@ -269,7 +301,7 @@ def status(run, as_json=False, attempt_only=False):
     state["counts"] = dict(counts)
     state["run"] = str(run)
     plan = json.loads((run / "plan.json").read_text()) if (run / "plan.json").exists() else {}
-    if plan and state["phase"] not in {"preparing", "starting", "error"}:
+    if inspect_store and plan and state["phase"] not in {"preparing", "starting", "error"}:
         try:
             observe(plan, state, run, final=state["phase"] in TERMINAL, root_completed=False)
             state.pop("monitorError", None)
@@ -278,15 +310,23 @@ def status(run, as_json=False, attempt_only=False):
     counts = collections.Counter(job["status"] for job in state["jobs"].values())
     state["counts"] = dict(counts)
     state["source"] = plan.get("source")
+    state["revision"] = plan.get("revision")
     state["declaredBroken"] = plan.get("skipped", [])
     if not attempt_only:
-        state = combine(run, state, lambda path: status(path, as_json=None, attempt_only=True))
+        state = combine(run, state, lambda path: status(
+            path, as_json=None, attempt_only=True, inspect_store=inspect_store))
         counts = collections.Counter(state["counts"])
     if as_json is None:
         return state
     if as_json:
         print(json.dumps(state, indent=2))
         return state
+    print_status(run, state)
+    return state
+
+
+def print_status(run, state):
+    counts = collections.Counter(state["counts"])
     duration = state["elapsedSeconds"]
     print("Run:", run)
     print(f"{state['phase']} | {duration // 3600:02}:{duration // 60 % 60:02}:{duration % 60:02} elapsed")
@@ -296,14 +336,20 @@ def status(run, as_json=False, attempt_only=False):
         print(f"Tests/checks: {tests['passed']}/{sum(tests.values())} passed; {tests['failed-or-blocked']} failed/blocked; {tests['pending']} pending; {tests['cancelled']} cancelled")
     if state.get("retrySuites"):
         print(f"Latest retry results: {state['retrySuites']} suites across {len(state['attempts']) - 1} linked attempt(s).")
-    print(f"Cached at start: {sum(x['cachedAtStart'] for x in state['jobs'].values())}; declared broken: {len(plan.get('skipped', []))}")
-    if plan.get("source"):
-        print("Snapshot:", plan.get("revision") or "uncommitted", Path(plan["source"]).name)
+    print(f"Cached at start: {sum(x['cachedAtStart'] for x in state['jobs'].values())}; declared broken: {len(state.get('declaredBroken', []))}")
+    if state.get("source"):
+        print("Snapshot:", state.get("revision") or "uncommitted", Path(state["source"]).name)
     for activity in state.get("active", {}).values():
         name = Path(activity["drv"]).name[33:].removesuffix(".drv")
         print(f"  {name}: {activity['phase']} ({int(time.time() - activity['startedAt'])}s)")
-    if state["phase"] == "running" and not state.get("active"):
-        print("Nix is resolving dependencies, checking caches or starting builds.")
+    if state["phase"] == "running":
+        if state.get("operation") == "registering-roots":
+            roots = state["rooting"]
+            print(f"Registering GC roots: {roots['completed']}/{roots['total']} outputs protected")
+        elif state.get("operation") == "checking-outputs":
+            print("Checking completed outputs.")
+        elif not state.get("active"):
+            print("Waiting for Nix to finish.")
     failed = [name for name, job in state["jobs"].items() if job["status"] == "failed-or-blocked"]
     for name in failed[:10]:
         print("  failed/blocked:", name)
@@ -315,8 +361,38 @@ def status(run, as_json=False, attempt_only=False):
         print("Progress query:", state["monitorError"])
     for error in state.get("retryErrors", []):
         print("Retry error:", error["error"], "(" + error["run"] + ")")
-    print("Logs:", run / "nix.log")
-    return state
+    print("Logs:", run / "nix.log", flush=True)
+
+
+def progress_key(state):
+    fields = {key: state.get(key) for key in (
+        "phase", "operation", "counts", "testCounts", "rooting", "error", "monitorError",
+        "retryErrors", "retrySuites")}
+    fields["active"] = sorted((item["drv"], item["phase"]) for item in state.get("active", {}).values())
+    fields["failed"] = sorted(name for name, job in state["jobs"].items()
+                              if job["status"] == "failed-or-blocked")
+    fields["attempts"] = len(state.get("attempts", []))
+    return json.dumps(fields, sort_keys=True)
+
+
+def wait(run):
+    previous, printed_at = None, None
+    while True:
+        # The worker publishes observations and rooting progress. Waiting on its
+        # snapshot avoids a second process continually querying the same store.
+        state = status(run, as_json=None, inspect_store=False)
+        key, now = progress_key(state), time.monotonic()
+        if key != previous:
+            print_status(run, state)
+            previous, printed_at = key, now
+        elif now - printed_at >= 60:
+            operation = state.get("operation", state["phase"])
+            label = {"registering-roots": "registering GC roots", "checking-outputs": "checking outputs"}.get(operation, operation)
+            print(f"Still {label}; {state['elapsedSeconds']}s elapsed.", flush=True)
+            printed_at = now
+        if state["phase"] in TERMINAL:
+            return 0 if state["phase"] == "passed" else 1
+        time.sleep(1)
 
 
 def positive(value):
@@ -369,13 +445,10 @@ def main():
             os.kill(state["pid"], signal.SIGTERM)
             print("Stopping:", run)
             return 0
-        while True:
-            state = status(run, getattr(args, "json", False), getattr(args, "attempt_only", False))
-            if args.command != "wait":
-                return 0
-            if state["phase"] in TERMINAL:
-                return 0 if state["phase"] == "passed" else 1
-            time.sleep(10)
+        if args.command == "wait":
+            return wait(run)
+        status(run, args.json, args.attempt_only)
+        return 0
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
         print(str(error), file=sys.stderr)
         return 1

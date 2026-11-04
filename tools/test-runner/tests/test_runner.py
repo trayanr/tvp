@@ -34,28 +34,50 @@ if any('#testPlans.' in a for a in args):
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[plan['jobs'][0]['drv']]}), file=sys.stderr, flush=True)
 time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
+targets=set(args)
 for job in plan['jobs']:
     if job['name']==os.environ.get('FAKE_FAILURE'):
         failed=True
         continue
-    for out in job['outputs']:
-        Path(out).write_text('ok')
+    for item in [job]+job.get('tests',[]):
+        # Substituting a cached aggregate/suite restores selected links only.
+        # Unreferenced siblings require an explicit all-outputs build target.
+        outputs=item['outputs'] if item['drv']+'^*' in targets else item['outputs'][:1]
+        for out in outputs:
+            Path(out).write_text('ok')
 print('@nix '+json.dumps({'action':'stop','id':7}), file=sys.stderr, flush=True)
 if not failed:
-    link.write_text('complete')
+    aggregate=Path(os.environ['FAKE_PLAN']).with_name('aggregate')
+    aggregate.write_text('complete')
+    link.symlink_to(aggregate)
 sys.exit(1 if failed else 0)
 '''
 
 FAKE_STORE = r'''
 from pathlib import Path
-import sys
+import os, sys, time
 args=sys.argv[1:]
 if '--check-validity' in args:
     missing=[p for p in sys.stdin.read().splitlines() if not Path(p).exists()]
     print('\n'.join(missing), end='\n' if missing else '')
     sys.exit(1 if missing else 0)
 if '--add-root' in args:
-    Path(args[args.index('--add-root')+1]).symlink_to(args[-1])
+    if '--stdin' in args:
+        time.sleep(float(os.environ.get('FAKE_ROOT_DELAY','0')))
+        if os.environ.get('FAKE_ROOT_FAILURE'):
+            sys.exit(1)
+        once=os.environ.get('FAKE_ROOT_FAIL_ONCE')
+        if once and not Path(once).exists():
+            Path(once).touch()
+            sys.exit(1)
+    link=Path(args[args.index('--add-root')+1])
+    paths=sys.stdin.read().splitlines() if '--stdin' in args else [args[-1]]
+    if any(not Path(path).exists() for path in paths):
+        sys.exit(1)
+    for i,path in enumerate(paths):
+        root=link if i==0 else link.with_name(link.name+'-'+str(i+1))
+        root.unlink(missing_ok=True)
+        root.symlink_to(path)
 '''
 
 
@@ -119,7 +141,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(state['phase'],'failed')
         self.assertEqual(state['jobs']['first']['status'],'passed')
         self.assertEqual(state['jobs']['second']['status'],'failed-or-blocked')
-        self.assertTrue((self.run/'roots/first-test-0').is_symlink())
+        self.assertIn(self.plan['jobs'][0]['outputs'][0],
+                      [str(p.readlink()) for p in (self.run/'roots').iterdir()])
         self.assertEqual(self.cli('wait','--run',str(self.run)).returncode,1)
 
     def test_success_distinguishes_preexisting_cache(self):
@@ -138,6 +161,42 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(state['jobs']['second']['cachedAtStart'])
         self.assertGreaterEqual(state['finishedAt'],state['startedAt'])
         self.assertEqual(self.cli('wait','--run',str(self.run)).returncode,0)
+
+    def test_cached_aggregate_restores_unreferenced_output_siblings(self):
+        selected=self.plan['jobs'][0]
+        selected['outputs'].append(str(self.root/'unreferenced-primary'))
+        # Repeated occurrences must not add repeated build targets.
+        repeated=dict(selected,name='repeated',outputs=list(selected['outputs']))
+        self.plan['jobs'].append(repeated)
+        nested={'name':'nested','drv':'/fake/nested.drv',
+                'outputs':[str(self.root/'nested-secondary'),str(self.root/'nested-primary')]}
+        self.plan['jobs'][1]['tests']=[nested]
+        self.plan_file.write_text(json.dumps(self.plan))
+        self.start()
+        state=self.wait_done()
+        self.assertEqual(state['phase'],'passed',state)
+        targets=[arg for arg in json.loads((self.run/'command.json').read_text()) if arg.endswith('^*')]
+        self.assertEqual(targets,[self.plan['aggregate']+'^*',selected['drv']+'^*',nested['drv']+'^*'])
+        self.assertTrue(all(Path(out).exists() for item in [selected,nested] for out in item['outputs']))
+        command=json.loads((self.run/'command.json').read_text())
+        self.assertEqual(command[command.index('--out-link')+1],str(self.run/'roots/build'))
+        self.assertEqual((self.run/'result').resolve(),self.plan_file.with_name('aggregate'))
+        self.assertTrue((self.run/'roots/build').is_symlink())
+        self.assertEqual(list(self.run.glob('result-*')),[])
+
+    def test_partial_suite_requests_nested_multioutputs(self):
+        nested={'name':'nested','drv':'/fake/nested.drv',
+                'outputs':[str(self.root/'nested-secondary'),str(self.root/'nested-primary')]}
+        self.plan['jobs'][0]['tests']=[nested]
+        self.plan_file.write_text(json.dumps(self.plan))
+        self.start('--only','first')
+        self.assertEqual(self.wait_done()['phase'],'passed')
+        targets=[arg for arg in json.loads((self.run/'command.json').read_text()) if arg.endswith('^*')]
+        self.assertEqual(targets,['/fake/first.drv^*','/fake/nested.drv^*'])
+
+    def test_single_output_targets_keep_the_aggregate_first(self):
+        self.assertEqual(runner.build_targets(self.plan,True),[self.plan['aggregate']])
+        self.assertEqual(runner.build_targets(self.plan,False),[job['drv'] for job in self.plan['jobs']])
 
     def test_json_start_identifies_exact_frozen_run(self):
         result=self.cli('start','--state-dir',str(self.state),'--json')
@@ -205,6 +264,52 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(completed.read_text(),'cached')
         self.assertEqual(state['jobs']['first']['status'],'passed')
         self.assertEqual(state['jobs']['second']['status'],'cancelled')
+        self.assertIn(str(completed),[str(p.readlink()) for p in (self.run/'roots').iterdir()])
+
+    def test_cancellation_during_rooting_keeps_completed_outputs_protected(self):
+        self.env['FAKE_ROOT_DELAY']='0.5'
+        for job in self.plan['jobs']:Path(job['outputs'][0]).touch()
+        self.start()
+        deadline=time.monotonic()+5
+        while json.loads((self.run/'state.json').read_text()).get('operation')!='registering-roots':
+            self.assertLess(time.monotonic(),deadline)
+            time.sleep(0.02)
+        self.assertEqual(self.cli('stop','--run',str(self.run)).returncode,0)
+        self.assertEqual(self.wait_done()['phase'],'cancelled')
+        self.assertTrue({j['outputs'][0] for j in self.plan['jobs']}.issubset(
+            {str(p.readlink()) for p in (self.run/'roots').iterdir()}))
+
+    def test_root_registration_failure_cannot_report_a_successful_run(self):
+        self.env['FAKE_ROOT_FAILURE']='1'
+        self.start()
+        self.assertEqual(self.wait_done()['phase'],'error')
+        self.assertEqual(self.cli('wait','--run',str(self.run)).returncode,1)
+
+    def test_root_failure_in_linked_retry_cannot_make_original_run_green(self):
+        self.env['FAKE_FAILURE']='second'
+        self.start()
+        self.assertEqual(self.wait_done()['phase'],'failed')
+        original=self.run
+        self.env.pop('FAKE_FAILURE')
+        self.env['FAKE_ROOT_FAILURE']='1'
+        result=self.cli('start','--state-dir',str(self.root/'retry-state'),
+                        '--only','second','--retry-of',str(original))
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.run=(self.root/'retry-state/latest').resolve()
+        self.assertEqual(self.wait_done()['phase'],'error')
+        self.assertEqual(self.cli('wait','--run',str(original)).returncode,1)
+        combined=json.loads(self.cli('status','--run',str(original),'--json').stdout)
+        self.assertEqual(combined['phase'],'error')
+        self.assertTrue(combined['retryErrors'])
+
+    def test_final_root_retry_clears_a_recovered_monitor_error(self):
+        self.env['FAKE_ROOT_FAIL_ONCE']=str(self.root/'root-failed-once')
+        for job in self.plan['jobs']:Path(job['outputs'][0]).touch()
+        self.start()
+        state=self.wait_done()
+        self.assertTrue(Path(self.env['FAKE_ROOT_FAIL_ONCE']).exists())
+        self.assertEqual(state['phase'],'passed',state)
+        self.assertNotIn('monitorError',state)
 
     def test_unheld_owner_lock_cannot_launch_detached_work(self):
         result=self.cli('start','--state-dir',str(self.state),'--owner-lock',str(self.root/'unheld.lock'))
@@ -291,6 +396,36 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(result['jobs']['first']['status'],'failed-or-blocked')
         self.assertEqual(result['reportedFailedDerivations'],['/nix/store/bad-first.drv'])
 
+    def test_cancelled_interrupted_and_global_failed_retry_never_become_green(self):
+        for phase in ['cancelled','interrupted','failed']:
+            with self.subTest(phase=phase):
+                original,base=self.retry_fixture('original-'+phase,{'first':'failed-or-blocked'})
+                retry,current=self.retry_fixture('retry-'+phase,{'first':'passed'},2)
+                current['phase']=phase
+                attempts.register_retry(original,retry)
+                self.assertEqual(attempts.combine(original,base,lambda _:current)['phase'],phase)
+
+    def test_fully_superseded_infrastructure_error_does_not_block_good_retry(self):
+        original,base=self.retry_fixture('original-error',{'first':'passed'})
+        base.update(phase='error',error='rooting failed',monitorError='old root query failure')
+        retry,current=self.retry_fixture('good-retry',{'first':'passed'},2)
+        current['phase']='passed'
+        attempts.register_retry(original,retry)
+        result=attempts.combine(original,base,lambda _:current)
+        self.assertEqual(result['phase'],'passed')
+        self.assertNotIn('error',result)
+        self.assertNotIn('monitorError',result)
+
+    def test_combined_progress_reports_the_active_retry_operation(self):
+        original,base=self.retry_fixture('original-progress',{'first':'failed-or-blocked'})
+        base['operation']='checking-outputs'
+        retry,current=self.retry_fixture('retry-progress',{'first':'pending'},2)
+        current.update(operation='registering-roots',rooting={'completed':2,'total':3})
+        attempts.register_retry(original,retry)
+        result=attempts.combine(original,base,lambda _:current)
+        self.assertEqual(result['operation'],'registering-roots')
+        self.assertEqual(result['rooting'],{'completed':2,'total':3})
+
     def test_retry_rejects_cycles_and_platform_mismatch(self):
         original,_=self.retry_fixture('original',{'first':'pending'})
         retry,_=self.retry_fixture('retry',{'first':'pending'},2)
@@ -338,7 +473,81 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse((self.root/'summary.out').exists())
         self.assertEqual(state['jobs']['suite']['status'],'passed')
         self.assertEqual(state['testCounts']['passed'],1)
-        self.assertTrue((run/'roots/suite-test-0').is_symlink())
+        self.assertIn(str(output),[str(p.readlink()) for p in (run/'roots').iterdir()])
+
+    def test_root_batches_deduplicate_share_and_skip_already_protected_outputs(self):
+        run,plan,state=self.observe_fixture([])
+        paths=[]
+        for i in range(2050):
+            path=self.root/('output-'+str(i));path.touch();paths.append(str(path))
+        protected=set();updates=[]
+        with mock.patch.dict(os.environ,self.env), mock.patch.object(
+                progress.subprocess,'run',wraps=subprocess.run) as command:
+            progress.root_paths(run,paths+paths[:10],protected,on_progress=lambda *p:updates.append(p))
+            self.assertEqual(command.call_count,3)
+            for call in command.call_args_list:
+                args=call.args[0]
+                self.assertIn('--stdin',args)
+                self.assertEqual(args[args.index('--max-jobs')+1],'0')
+                self.assertIn(['--option','builders',''],[args[i:i+3] for i in range(len(args)-2)])
+                self.assertIn(['--option','substituters',''],[args[i:i+3] for i in range(len(args)-2)])
+            progress.root_paths(run,paths,protected)
+            self.assertEqual(command.call_count,3)
+        self.assertEqual(protected,set(paths))
+        self.assertEqual(updates,[(0,2050),(1024,2050),(2048,2050),(2050,2050)])
+        self.assertEqual({str(p.readlink()) for p in (run/'roots').iterdir()},set(paths))
+
+    def test_root_failure_is_not_marked_protected_and_retry_is_stable(self):
+        run,_,_=self.observe_fixture([])
+        output=self.root/'good';output.touch();protected=set();prefixes=[]
+        def partial(args,**kwargs):
+            prefixes.append(args[args.index('--add-root')+1])
+            Path(prefixes[-1]).symlink_to(output)
+            raise subprocess.CalledProcessError(1,args)
+        with mock.patch.object(progress.subprocess,'run',side_effect=partial):
+            with self.assertRaises(subprocess.CalledProcessError):
+                progress.root_paths(run,[str(output)],protected)
+        self.assertEqual(protected,set())
+        with mock.patch.dict(os.environ,self.env), mock.patch.object(
+                progress.subprocess,'run',wraps=subprocess.run) as command:
+            progress.root_paths(run,[str(output)],protected)
+            self.assertEqual(command.call_args.args[0][2],prefixes[0])
+        self.assertEqual(protected,{str(output)})
+
+    def test_missing_root_target_fails_without_claiming_protection(self):
+        run,_,_=self.observe_fixture([]);protected=set()
+        with mock.patch.dict(os.environ,self.env):
+            with self.assertRaises(subprocess.CalledProcessError):
+                progress.root_paths(run,[str(self.root/'missing')],protected)
+        self.assertEqual(protected,set())
+        self.assertEqual(list((run/'roots').iterdir()),[])
+
+    def test_wait_prints_changes_and_a_single_heartbeat_without_store_queries(self):
+        base={'phase':'running','operation':'building','elapsedSeconds':0,'counts':{'passed':0,'pending':2},
+              'jobs':{name:{'status':'pending','cachedAtStart':True} for name in ['first','second']}}
+        states=[dict(base,elapsedSeconds=t) for t in [0,1,61]]
+        rooted=dict(base,operation='registering-roots',rooting={'completed':1,'total':2},elapsedSeconds=62)
+        finished=dict(rooted,phase='passed',elapsedSeconds=64,counts={'passed':2},
+                      jobs={name:{'status':'passed','cachedAtStart':True} for name in ['first','second']})
+        states.extend([rooted,dict(rooted,elapsedSeconds=63),finished])
+        with mock.patch.object(runner,'status',side_effect=states) as status, \
+             mock.patch.object(runner.time,'monotonic',side_effect=[0,1,61,62,63,64]), \
+             mock.patch.object(runner.time,'sleep'), contextlib.redirect_stdout(io.StringIO()) as console:
+            self.assertEqual(runner.wait(self.root),0)
+        text=console.getvalue()
+        self.assertEqual(text.count('Run:'),3)
+        self.assertEqual(text.count('Still building'),1)
+        self.assertIn('Registering GC roots: 1/2',text)
+        self.assertNotIn('resolving dependencies',text)
+        for call in status.call_args_list:self.assertFalse(call.kwargs['inspect_store'])
+
+    def test_snapshot_status_skips_observation_and_preserves_terminal_failure(self):
+        run,_,_=self.observe_fixture([])
+        (run/'plan.json').write_text(json.dumps({'jobs':[],'skipped':[]}))
+        (run/'state.json').write_text(json.dumps({'phase':'failed','startedAt':0,'finishedAt':1,'jobs':{}}))
+        with mock.patch.object(runner,'observe') as observe:
+            self.assertEqual(runner.status(run,as_json=None,inspect_store=False)['phase'],'failed')
+            observe.assert_not_called()
 
     def test_live_failure_is_deduplicated_and_success_wins(self):
         good=self.root/'good.out';good.write_text('passed')

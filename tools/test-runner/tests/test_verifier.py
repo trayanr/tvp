@@ -204,6 +204,9 @@ class VerifierTests(unittest.TestCase):
         plan = copy.deepcopy(self.plan)
         for item in [i for j in plan['jobs'] for i in [j]+j['tests']]:
             item['outputs'] = [str(self.root/Path(p).name) for p in item['outputs']]
+        # Two occurrences select different outputs of the same derivation.
+        # Their link targets differ, while both declare the complete output set.
+        plan['jobs'][0]['tests'][1]['outputs'].reverse()
         plan['source'] = str(self.root/'source'); Path(plan['source']).mkdir()
         aggregate = self.root/'aggregate'; aggregate.mkdir()
         drvs = {}
