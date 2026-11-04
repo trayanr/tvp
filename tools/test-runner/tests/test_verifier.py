@@ -148,7 +148,9 @@ class VerifierTests(unittest.TestCase):
 
     def test_unsupported_optional_shapes_fail_with_reports(self):
         self.args.invariants = self.root/'invariants'
-        for value in ([], {'schema': True}, {'schema': 1, 'planJobs': []}):
+        for value in ([], {'schema': True}, {'schema': 1, 'planJobs': []},
+                      {'schema': 1, 'planJobs': {'typo': None}},
+                      {'schema': 1, 'graphEntries': {'typo': None}}):
             self.args.invariants.write_text(json.dumps(value))
             self.assertEqual(self.report()['result'], 'FAIL')
         self.args.invariants = None
@@ -185,6 +187,8 @@ class VerifierTests(unittest.TestCase):
             result = v.verify(self.args)
         self.assertEqual(result['result'], 'FAIL')
         self.assertIn('hash changed', result['failure'])
+        with self.assertRaisesRegex(ValueError, "Input hash changed"):
+            v.atomic_report(self.root/"new-report", report, report["inputs"])
 
     def test_actual_links_all_outputs_and_derivation_bindings(self):
         # A fake store adapter supplies metadata, but all link observations are real.

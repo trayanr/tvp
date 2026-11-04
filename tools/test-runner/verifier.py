@@ -47,6 +47,7 @@ def atomic_report(path, report, inputs):
     """Create immutable evidence with no clobber, including competing writers."""
     path = Path(path).absolute()
     require(all(path.resolve() != Path(p).resolve() for p in inputs), "Output aliases an input")
+    require(all(digest(p) == h for p, h in inputs.items()), "Input hash changed before report publication")
     data = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode()
     if path.exists() or path.is_symlink():
         require(not path.is_symlink() and path.read_bytes() == data, "Conflicting report already exists")
@@ -364,10 +365,14 @@ def verify(args, store=None):
             if "graphDelta" in policy:
                 check("expected-graph-delta", lambda: require(report["graphDelta"] == policy["graphDelta"], "Graph delta differs"))
             for name, value in policy.get("graphEntries", {}).items():
-                check("graph-entry:" + name, lambda n=name, v=value: require(args.graph_after and after.get(n) == v, "Graph invariant differs"))
+                require(isinstance(value, dict) and all(isinstance(value.get(k), str) and value[k]
+                        for k in ("drv", "out")), "Invalid graph invariant identity")
+                check("graph-entry:" + name, lambda n=name, v=value: require(args.graph_after and n in after and after[n] == v, "Graph invariant differs"))
             indexed = {j["name"]: j for j in plan["jobs"]}
             for name, value in policy.get("planJobs", {}).items():
-                check("plan-job:" + name, lambda n=name, v=value: require(indexed.get(n) == v, "Plan invariant differs"))
+                require(isinstance(value, dict) and value.get("name") == name, "Invalid plan invariant identity")
+                validate_plan(plan | {"jobs": [value]})
+                check("plan-job:" + name, lambda n=name, v=value: require(n in indexed and indexed[n] == v, "Plan invariant differs"))
             if "skipped" in policy:
                 check("exclusions", lambda: require(plan["skipped"] == policy["skipped"], "Exclusions differ"))
         check("input-stability", lambda: require(all(digest(p) == h for p, h in inputs.items()), "Input hash changed"))
