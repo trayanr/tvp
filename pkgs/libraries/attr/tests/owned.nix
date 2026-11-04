@@ -31,6 +31,16 @@ in
 tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests = {
+    capability-runner = {
+      extraInputs = [ package.tvp.declaredDependencies.python ];
+      script = ''
+        ${package.tvp.declaredDependencies.python}/bin/python3 -B \
+          ${../../../../lib/tests/test-filesystem-runner.py} \
+          ${../../../../lib/tests/filesystem-test-runner.py} >&2
+        echo ok
+      '';
+      expected = "ok";
+    };
     isolated-discovery = {
       extraInputs = [
         compiler

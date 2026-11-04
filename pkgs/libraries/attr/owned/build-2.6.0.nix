@@ -77,13 +77,20 @@ in
     (command "attr.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (
       (command "attr.check" ''
+        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
         status=0
-              ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check || status=$?
-              cat test-suite.log
-              exit "$status"'')
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
+          RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} attr $PWD/.tvp-filesystem-probe $PWD/test/run" \
+          || status=$?
+        cat test-suite.log
+        exit "$status"
+      '')
       // {
         enabled = doCheck;
-        tools = environment.tools ++ [ perl ];
+        tools = environment.tools ++ [
+          perl
+          python
+        ];
       }
     )
     (command "attr.install" ''

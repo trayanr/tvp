@@ -119,6 +119,12 @@ recipes and their test factories remain separately selectable. XZ, Attr, ACL and
 libxcrypt explicitly add static archives to their prior shared-library layout.
 ACL 2.4 uses Attr's error-context headers during compilation, without linking
 libattr or publishing it as a public requirement; older ACL recipes retain
-their original propagation. The Attr upstream filesystem checks require user
-xattrs. An unsupported filesystem can fail those upstream checks; the recipe
-keeps them enabled and does not convert that failure into a pass.
+their original propagation.
+
+Attr and ACL run upstream checks through independent libc capability probes.
+Nix's syscall filter blocks xattr/ACL writes and set-ID modes. Only cases
+requiring an unavailable operation exit 77; all other cases use the original
+upstream runner. Unexpected probe errors and upstream failures still fail.
+Skipped filesystem cases need separate non-root host validation; a successful
+package build does not establish that coverage. Privileged and NFS cases keep
+their upstream limitations.
