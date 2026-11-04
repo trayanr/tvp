@@ -18,7 +18,7 @@ let
       (
         name:
         let
-          recipe = recipes.${name}.constructionRecipe;
+          recipe = universe.recipes.${name}.constructionRecipe;
           canonical = tvp.lib.packages.mkVersions recipe;
         in
         {
@@ -35,6 +35,12 @@ let
         "which"
         "patch"
         "patchelf"
+        "bzip2"
+        "zlib"
+        "xz"
+        "attr"
+        "acl"
+        "libxcrypt"
       ];
   public =
     universe.canonical

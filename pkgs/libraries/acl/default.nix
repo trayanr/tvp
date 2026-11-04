@@ -66,11 +66,74 @@ let
         if m == null then null else builtins.head m;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  completed = tvp.bases.default;
+  seed =
+    reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    };
+  floorTool =
+    name:
+    seed
+      "Completed default-base ${name} is a build-only seed; the canonical Coreutils/Tar graph consumes Attr/ACL and would recurse through these libraries."
+      completed.components.floor.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "2.4.0" = {
+      constructor = tvp.builder;
+      builder = ./owned/build-2.4.0.nix;
+      base = completed;
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        attr = tvp.packages.attr_2;
+        bash = floorTool "bash";
+        coreutils = floorTool "coreutils";
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = floorTool "gnutar";
+        gzip = floorTool "gzip";
+        python = seed "Completed libc-build Python runs source/output operations without a canonical Python dependency cycle." completed.components.libc.tvp.deps.python3Minimal;
+        perl = seed "Completed base Perl executes the build-only upstream test harness without a canonical Perl/libxcrypt prerequisite cycle." completed.components.perl;
+        binutils = seed "Completed base Binutils supplies build-only stripping and inspection before its compression prerequisites advance." completed.components.binutils;
+        patchelf = seed "Completed base Patchelf finalizes ELF without recursing through its XZ archive prerequisites." completed.fixupTools.patchelf;
+      };
+    };
+  };
+  publicVersionTable = versionTable // {
+    "2.4.0" = versionTable."2.4.0" // {
+      def = ownedDefs."2.4.0";
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = publicVersionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://download.savannah.nongnu.org/releases/acl/acl-${version}.tar.gz";
+        inherit sha256;
+      };
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package.version == "2.4.0") (
+        import ./tests/owned.nix {
+          inherit tvpLib package;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = package.stdenv;
+          };
+        }
+      );
+  };
+  constructionRecipe = packageArgs;
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

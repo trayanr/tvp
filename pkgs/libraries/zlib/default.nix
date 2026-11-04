@@ -158,11 +158,70 @@ let
     };
   };
 
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  completed = tvp.bases.default;
+  seed =
+    reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    };
+  ownedDefs = tvpLib.packages.mkDefs {
+    "1.3.2" = {
+      constructor = tvp.builder;
+      builder = ./owned/build-1.3.2.nix;
+      base = completed;
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = seed "Completed Coreutils for build/output operations: canonical Coreutils depends on GMP and would recurse through archive and finalization prerequisites." completed.components.floor.coreutils;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = seed "Completed Tar for source extraction: canonical Tar depends on ACL, which shares this prerequisite library wave." completed.components.floor.gnutar;
+        gzip = seed "Completed gzip for extraction and manual compression, before rebuilding archive-tool reverse dependencies." completed.components.floor.gzip;
+        python = seed "Completed libc construction Python is build-only for explicit source and output operations." completed.components.libc.tvp.deps.python3Minimal;
+        binutils = seed "Completed Binutils is build-only for ELF/archive inspection and stripping, without following the canonical compiler graph." completed.components.binutils;
+        patchelf = seed "Completed Patchelf is build-only for ELF finalization; canonical Patchelf can require this wave's archive libraries." completed.fixupTools.patchelf;
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "1.3.2" = versionTable."1.3.2" // {
+        def = ownedDefs."1.3.2";
+      };
+    };
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+        inherit sha256;
+      };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
+      // pkgs.lib.optionalAttrs (package.version == "1.3.2") (
+        import ./tests/owned.nix {
+          inherit tvp tvpLib package;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = package.stdenv;
+          };
+          inherit (package.tvp.declaredTestDependencies) pkg-config;
+        }
+      )
+    ) { inherit pkgs; };
+  };
+  # Frozen construction selects the complete retained call and test factory.
+  constructionRecipe = packageArgs;
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
     inherit

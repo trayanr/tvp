@@ -110,3 +110,15 @@ Runtime provider edits preserve compilation inputs and configure MPC's own ELF
 lookup. A consumer that links MPFR directly may select that same-SONAME provider
 first; the MPC-only numeric probe verifies producer lookup separately. The tested
 MPFR 4.2.1 substitution is a concrete compatibility check, not a general ABI promise.
+
+Bzip2 1.0.8, zlib 1.3.2, XZ 5.8.4, Attr 2.6.0, ACL 2.4.0 and
+libxcrypt 4.5.2 have selected owned recipes with explicit source, check,
+installation and finalization steps. They retain one configured output prefix;
+no compilation reuse across runtime edits is claimed. Historical construction
+recipes and their test factories remain separately selectable. XZ, Attr, ACL and
+libxcrypt explicitly add static archives to their prior shared-library layout.
+ACL 2.4 uses Attr's error-context headers during compilation, without linking
+libattr or publishing it as a public requirement; older ACL recipes retain
+their original propagation. The Attr upstream filesystem checks require user
+xattrs. An unsupported filesystem can fail those upstream checks; the recipe
+keeps them enabled and does not convert that failure into a pass.

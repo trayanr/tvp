@@ -35,7 +35,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   acl = tvpLib.packages.mkVariants (
-    recipes.acl
+    recipes.acl.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -64,7 +64,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   libxcrypt = tvpLib.packages.mkVariants (
-    recipes.libxcrypt
+    recipes.libxcrypt.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -78,7 +78,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   xz = tvpLib.packages.mkVariants (
-    recipes.xz
+    recipes.xz.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -140,7 +140,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   attr = tvpLib.packages.mkVariants (
-    recipes.attr
+    recipes.attr.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -165,7 +165,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   zlib = tvpLib.packages.mkVariants (
-    recipes.zlib
+    recipes.zlib.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
