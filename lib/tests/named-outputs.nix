@@ -8,6 +8,7 @@ let
     name: body:
     builtins.derivation {
       inherit name;
+      outputs = [ "out" ];
       inherit (base.platform) system;
       builder = "${bash}/bin/bash";
       args = [
@@ -145,6 +146,8 @@ let
         changed.out.outPath
         changed.outPath
       ];
+    projectionOutputs =
+      changed.outputs == validation.outputs && builtins.all (p: p.outputs == binary.outputs) binary.all;
     recursiveProjection = (builtins.head changed.all).validation.outPath == changed.outPath;
     reboundTests =
       changed.tests.read.drvPath != validation.tests.read.drvPath
@@ -173,6 +176,9 @@ let
           ]
         )
         [
+          "script"
+          "status"
+          "temporary"
           "bad-name"
           "bad\nname"
           "x;touch injected"

@@ -8,6 +8,11 @@ let
   reserved = [
     "auto_resume"
     "histchars"
+    "script"
+    "status"
+    "temporary"
+    "attempt"
+    "event"
     "all"
     "args"
     "artifact"

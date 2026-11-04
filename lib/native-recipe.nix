@@ -65,6 +65,7 @@ let
         // value
         // lib.optionalAttrs owned (
           builtins.intersectAttrs {
+            outputs = null;
             pname = null;
             version = null;
             src = null;
