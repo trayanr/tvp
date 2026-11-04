@@ -26,8 +26,11 @@ let
   isl = select recipes.isl "0.28" { inherit gmp; };
   mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { inherit gmp; };
   mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit gmp mpfr; };
-  zstd = select recipes.zstd.constructionRecipe "1.5.7" { };
-  binutils = select recipes.binutils "2.42" { inherit bison zstd; };
+  zlib = select recipes.zlib.constructionRecipe "1.3.2" { };
+  xz = select recipes.xz.constructionRecipe "5.8.4" { };
+  libxcrypt = select recipes.libxcrypt.constructionRecipe "4.5.2" { };
+  zstd = select recipes.zstd.constructionRecipe "1.5.7" { inherit xz zlib; };
+  binutils = select recipes.binutils "2.42" { inherit bison zstd zlib; };
   gcc = select recipes.gcc "16.2.0" {
     inherit
       gmp
@@ -36,6 +39,8 @@ let
       mpfr
       mpc
       zstd
+      zlib
+      libxcrypt
       binutils
       ;
   };

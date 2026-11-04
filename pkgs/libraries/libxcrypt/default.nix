@@ -66,11 +66,69 @@ let
         if matched == null then null else builtins.head matched;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  completed = tvp.bases.default;
+  seed =
+    reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    };
+  owned =
+    (tvpLib.packages.mkDefs {
+      "4.5.2" = {
+        constructor = tvp.builder;
+        builder = ./build-4.5.2.nix;
+        base = completed;
+        helpers = {
+          inherit tvp;
+        };
+        deps = {
+          bash = tvp.packages.bash_5;
+          gnumake = tvp.packages.gnumake_4;
+          perl = tvp.packages.perl_5;
+          coreutils = seed "Completed floor Coreutils breaks the canonical Coreutils/libxcrypt prerequisite cycle during library construction." completed.components.floor.coreutils;
+          gnutar = seed "Completed floor Tar unpacks libxcrypt without following Tar's ACL/Attr prerequisites." completed.components.floor.gnutar;
+          xz = seed "Completed floor XZ unpacks the selected libxcrypt source without rebuilding its canonical archive graph." completed.components.floor.xz;
+          gzip = seed "Completed floor Gzip compresses installed manuals without introducing a canonical archive cycle." completed.components.floor.gzip;
+          python = seed "Completed libc helper Python performs build-only explicit source and output operations." completed.components.libc.tvp.deps.python3Minimal;
+          binutils = seed "Completed base Binutils performs build-only output inspection and stripping." completed.components.binutils;
+          patchelf = seed "Completed base Patchelf performs build-only ELF finalization without following the canonical archive graph." completed.fixupTools.patchelf;
+        };
+      };
+    })."4.5.2";
+  constructionRecipe = packageArgs;
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "4.5.2" = versionTable."4.5.2" // {
+        def = owned;
+      };
+    };
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://github.com/besser82/libxcrypt/releases/download/v${version}/libxcrypt-${version}.tar.xz";
+        inherit sha256;
+      };
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package.version == "4.5.2") (
+        import ./tests/owned.nix {
+          inherit tvp tvpLib package;
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base.stdenv = package.stdenv;
+          };
+        }
+      );
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

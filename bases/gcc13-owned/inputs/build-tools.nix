@@ -70,12 +70,12 @@ tvpLib.packages.mergeVariants {
             }
             {
               bin = "bzip2";
-              package = (tvpLib.packages.mkVersions recipes.bzip2).bzip2_1_0_8;
+              package = (tvpLib.packages.mkVersions recipes.bzip2.constructionRecipe).bzip2_1_0_8;
               flag = "-j";
             }
             {
               bin = "xz";
-              package = (tvpLib.packages.mkVersions recipes.xz).xz_5_8_4;
+              package = (tvpLib.packages.mkVersions recipes.xz.constructionRecipe).xz_5_8_4;
               flag = "-J";
             }
             {
@@ -313,7 +313,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   bzip2 = tvpLib.packages.mkVariants (
-    recipes.bzip2
+    recipes.bzip2.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

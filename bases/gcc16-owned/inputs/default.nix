@@ -15,9 +15,7 @@ let
     recipe
     // {
       testDeps = recipe.testDeps // {
-        python3 = recipe.testDeps.python3.override {
-          zstd = (tvpLib.packages.mkVersions recipes.zstd.constructionRecipe).zstd_1_5_7;
-        };
+        python3 = construction.variants.gcc13.isl_0_20.tvp.declaredTestDependencies.python3;
       };
     };
   select =
@@ -109,7 +107,7 @@ tvpLib.packages.mergeVariants {
           };
         };
       };
-  zlib = select recipes.zlib {
+  zlib = select recipes.zlib.constructionRecipe {
     "1.3.2" = { };
   };
   zstd = select recipes.zstd.constructionRecipe {
@@ -123,10 +121,13 @@ tvpLib.packages.mergeVariants {
   libxcrypt =
     select
       (
-        recipes.libxcrypt
+        recipes.libxcrypt.constructionRecipe
         // {
           testDeps = recipes.libxcrypt.testDeps // {
-            coreutils = construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies.coreutils;
+            inherit (construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies)
+              coreutils
+              gnused
+              ;
           };
         }
       )
@@ -173,7 +174,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  xz = select recipes.xz {
+  xz = select recipes.xz.constructionRecipe {
     "5.8.3" = { };
   };
 }

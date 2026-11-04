@@ -9,7 +9,12 @@ let
   inherit (pkgs) lib;
   historical = import ./test-public.nix { inherit pkgs tvp recipes; };
   testRecipes = recipes // {
-    inherit (historical.recipes) gzip isl libxcrypt;
+    inherit (historical.recipes)
+      gzip
+      isl
+      libxcrypt
+      zstd
+      ;
   };
   inherit (tvpLib.bases) mkBase;
   withTvpMkDerivation =
