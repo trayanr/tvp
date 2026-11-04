@@ -26,6 +26,16 @@ in
 tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests = {
+    compiler-discovery = {
+      script = ''
+        status=0
+        env -i PATH=/absent ${package}/bin/make -pf /dev/null > database || status=$?
+        test "$status" = 2
+        grep -E '^(CC|CXX) = ' database | sort
+      '';
+      expected = "CC = cc\nCXX = c++";
+    };
+
     runtime-shell = {
       extraInputs = [
         runtime

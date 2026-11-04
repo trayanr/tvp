@@ -45,6 +45,9 @@ in
     coreutils
     ;
   environment = {
+    # Configure publishes CXX as Make's built-in command. Preserve PATH discovery
+    # rather than retaining this build's compiler wrapper as a runtime tool.
+    overrides.values.CXX = "c++";
     tools = [
       gnumake
       perl
