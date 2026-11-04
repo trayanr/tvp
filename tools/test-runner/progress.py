@@ -1,6 +1,7 @@
 """Observe test outputs and reported failures without scheduling any builds."""
 
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -44,6 +45,30 @@ def root_path(link, target):
         ["nix-store", "--add-root", str(link), "--indirect", "--realise", str(target)],
         check=True, stdout=subprocess.DEVNULL,
     )
+
+
+def root_paths(run, paths, protected=None, on_progress=None):
+    protected = set() if protected is None else protected
+    paths = set(paths)
+    pending = sorted(paths - protected)
+    if not pending:
+        return
+    if on_progress:
+        on_progress(len(paths & protected), len(paths))
+    for offset in range(0, len(pending), 1024):
+        chunk = pending[offset:offset + 1024]
+        # Keep these names: Nix's indirect GC roots point back to them.
+        # A partial failure can safely retry the same deterministic batch.
+        identifier = hashlib.sha256("\n".join(chunk).encode()).hexdigest()
+        subprocess.run(
+            ["nix-store", "--add-root", str(run / "roots" / ("completed-" + identifier)),
+             "--indirect", "--realise", "--stdin", "--max-jobs", "0",
+             "--option", "builders", "", "--option", "substituters", ""],
+            input="\n".join(chunk) + "\n", text=True, check=True, stdout=subprocess.DEVNULL,
+        )
+        protected.update(chunk)
+        if on_progress:
+            on_progress(len(paths & protected), len(paths))
 
 
 def members(plan, run):
@@ -118,12 +143,13 @@ def failures(run):
     return failed
 
 
-def observe(plan, state, run, final=False, root_completed=True):
+def observe(plan, state, run, final=False, root_completed=True, protected=None, on_roots=None):
     jobs = members(plan, run)
     units = [test for job in jobs for test in (job.get("tests") or [job])]
     present = valid_paths(output for unit in units for output in unit["outputs"])
     failed = failures(run)
     counts = {"passed": 0, "failed-or-blocked": 0, "pending": 0, "cancelled": 0}
+    completed = set()
     for job in jobs:
         entry = state["jobs"][job["name"]]
         tests = job.get("tests") or [job]
@@ -139,14 +165,8 @@ def observe(plan, state, run, final=False, root_completed=True):
                 result = "pending"
             counts[result] += 1
             results.append(result)
-        if root_completed:
-            index = 0
-            for test, result in zip(tests, results):
-                for output in test["outputs"]:
-                    link = run / "roots" / (job["name"] + f"-test-{index}")
-                    if result == "passed" and not link.is_symlink():
-                        root_path(link, output)
-                    index += 1
+            if result == "passed":
+                completed.update(test["outputs"])
         if all(result == "passed" for result in results):
             entry.update(status="passed")
             entry.setdefault("completedAt", time.time())
@@ -160,3 +180,5 @@ def observe(plan, state, run, final=False, root_completed=True):
     state["testCounts"] = counts
     state["reportedFailedDerivations"] = sorted(failed)
     state["updatedAt"] = time.time()
+    if root_completed:
+        root_paths(run, completed, protected=protected, on_progress=on_roots)

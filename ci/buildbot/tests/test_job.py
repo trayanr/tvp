@@ -45,7 +45,10 @@ class FrozenValidation(unittest.TestCase):
             raise AssertionError(argv)
         def run(argv, **kwargs):
             commands.append(argv)
-            return subprocess.CompletedProcess(argv, 0 if 'merge-base' in argv else wait_code)
+            if argv[:3] == ["nix", "flake", "check"]:
+                kwargs["stdout"].write(b"flake evaluation output\n")
+                self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
+            return subprocess.CompletedProcess(argv, wait_code if 'wait' in argv else 0)
         args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, target_branch="master", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
              patch.object(job.subprocess, "check_output", side_effect=output), \
@@ -157,6 +160,91 @@ class FrozenValidation(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError), patch.object(job.subprocess, 'check_output') as output:
                 job.require_current_target('trayanr/tvp', Path('candidate'), 'c' * 40, 'a' * 40, branch)
             output.assert_not_called()
+
+
+class PreflightLogging(unittest.TestCase):
+    output = b"".join(f"checking derivation {i}\n".encode() for i in range(4200))
+    diagnostics = b"".join(f"trace detail {i}\n".encode() for i in range(60)) + b"error: invalid fixture\n"
+
+    def execute_check(self, argv, **kwargs):
+        self.assertEqual(argv[:3], ["nix", "flake", "check"])
+        self.assertIn("--show-trace", argv)
+        self.assertIn("--no-build", argv)
+        self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
+        # Use real stdout/stderr file descriptors so the test catches accidental
+        # console inheritance and lost diagnostics, rather than just kwargs.
+        script = ("import sys; sys.stdout.buffer.write(" + repr(self.output) + "); "
+                  "sys.stdout.flush(); sys.stderr.buffer.write(" + repr(self.diagnostics) + "); "
+                  "sys.stderr.flush(); sys.exit(" + str(self.exit_code) + ")")
+        return subprocess.run([sys.executable, "-c", script], check=True, **kwargs)
+
+    def test_success_keeps_all_output_in_artifact_and_console_short(self):
+        self.exit_code = 0
+        with directory(), patch.object(job, "execute", side_effect=self.execute_check), \
+             patch("sys.stdout", new_callable=StringIO) as stdout, \
+             patch("sys.stderr", new_callable=StringIO) as stderr:
+            Path("evidence").mkdir()
+            job.check_flake(Path("candidate"), Path("evidence"))
+            self.assertEqual(Path("evidence/flake-check.log").read_bytes(), self.output + self.diagnostics)
+            self.assertEqual(len(stdout.getvalue().splitlines()), 2)
+            self.assertIn("Flake evaluation passed", stdout.getvalue())
+            self.assertNotIn("checking derivation", stdout.getvalue())
+            self.assertEqual(stderr.getvalue(), "")
+
+    def test_failure_keeps_full_log_and_prints_only_bounded_tail(self):
+        self.exit_code = 23
+        with directory(), patch.object(job, "execute", side_effect=self.execute_check), \
+             patch("sys.stdout", new_callable=StringIO) as stdout, \
+             patch("sys.stderr", new_callable=StringIO) as stderr:
+            Path("evidence").mkdir()
+            with self.assertRaises(subprocess.CalledProcessError) as failure:
+                job.check_flake(Path("candidate"), Path("evidence"))
+            self.assertEqual(failure.exception.returncode, 23)
+            self.assertEqual(Path("evidence/flake-check.log").read_bytes(), self.output + self.diagnostics)
+            self.assertNotIn("passed", stdout.getvalue())
+            self.assertIn("error: invalid fixture", stderr.getvalue())
+            self.assertIn("evidence/flake-check.log", stderr.getvalue())
+            self.assertNotIn("checking derivation 0", stderr.getvalue())
+            self.assertLessEqual(len(stderr.getvalue().splitlines()), 41)
+            self.assertLess(len(stderr.getvalue().encode()), 16300)
+
+    def test_preflight_failure_stops_before_catalogue_start(self):
+        self.exit_code = 23
+        commands = []
+        def execute(argv, **kwargs):
+            commands.append(argv)
+            if argv[:3] == ["nix", "flake", "check"]:
+                return self.execute_check(argv, **kwargs)
+            kwargs["stdout"].write("{}")
+            return subprocess.CompletedProcess(argv, 0)
+        args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base="",
+                               target_branch="master", tools_ref="pinned", compare="compare.py")
+        with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=execute), \
+             patch.object(job.subprocess, "check_output", return_value="nix (Nix) 2.34.9\n") as output, \
+             patch("sys.stdout", new_callable=StringIO), patch("sys.stderr", new_callable=StringIO):
+            with self.assertRaises(subprocess.CalledProcessError):
+                job.validate(args)
+            self.assertTrue(Path("evidence/flake-check.log").is_file())
+            self.assertEqual(output.call_args_list, [unittest.mock.call(["nix", "--version"], text=True)])
+            self.assertFalse(Path("evidence/launch.json").exists())
+
+    def test_early_failure_still_writes_error_evidence_and_bounded_protocol(self):
+        self.exit_code = 23
+        def validate(_args):
+            Path("evidence").mkdir()
+            job.check_flake(Path("candidate"), Path("evidence"))
+        with directory(), patch.object(job, "execute", side_effect=self.execute_check), \
+             patch.object(job, "validate", side_effect=validate), \
+             patch.object(sys, "argv", ["job.py", "--repository", "test/repo", "--head", "a" * 40,
+                                        "--tools-ref", "pinned", "--compare", "compare.py"]), \
+             patch("sys.stdout", new_callable=StringIO) as stdout, \
+             patch("sys.stderr", new_callable=StringIO):
+            self.assertEqual(job.main(), 2)
+            self.assertEqual(json.loads(Path("evidence/status.json").read_text())["phase"], "error")
+            self.assertEqual(Path("evidence/flake-check.log").read_bytes(), self.output + self.diagnostics)
+            protocol = stdout.getvalue().splitlines()[-1]
+            self.assertTrue(protocol.startswith("TVP_CI_RESULT="))
+            self.assertLess(len(protocol.encode()), 4096)
 
 
 class ResultProtocol(unittest.TestCase):

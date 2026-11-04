@@ -86,10 +86,29 @@ def combine(run, original, snapshot):
         tests.update(job.get("tests", {job["status"]: 1}))
     result["testCounts"] = {key: tests[key] for key in ("passed", "failed-or-blocked", "pending", "cancelled")}
     running = any(state["phase"] not in TERMINAL for _, state in attempts)
+    contributing = [state for path, state in attempts if path in selected.values()]
     if running:
         result["phase"] = "running"
+        current = next(state for _, state in reversed(attempts) if state["phase"] not in TERMINAL)
+        for key in ("operation", "rooting"):
+            result.pop(key, None)
+            if key in current:
+                result[key] = current[key]
+    elif any(state["phase"] == "error" or state.get("error") or state.get("monitorError")
+             for state in contributing):
+        # Valid outputs alone do not certify a completed attempt: rooting or
+        # another infrastructure step may have failed after the tests finished.
+        result["phase"] = "error"
     elif all(job["status"] == "passed" for job in jobs.values()):
-        result["phase"] = "passed"
+        if any(state["phase"] == "cancelled" for state in contributing):
+            result["phase"] = "cancelled"
+        elif any(state["phase"] == "interrupted" for state in contributing):
+            result["phase"] = "interrupted"
+        elif any(state["phase"] == "failed" and all(job["status"] == "passed" for job in state["jobs"].values())
+                 for state in contributing):
+            result["phase"] = "failed"
+        else:
+            result["phase"] = "passed"
     elif any(job["status"] == "failed-or-blocked" for job in jobs.values()):
         result["phase"] = "failed"
     elif any(job["status"] == "cancelled" for job in jobs.values()):
@@ -108,4 +127,5 @@ def combine(run, original, snapshot):
     result.pop("returnCode", None)
     if result["phase"] == "passed":
         result.pop("error", None)
+        result.pop("monitorError", None)
     return result
