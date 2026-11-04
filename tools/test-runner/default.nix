@@ -7,6 +7,8 @@ ownedCLI.python {
     "runner.py" = ./runner.py;
     "progress.py" = ./progress.py;
     "attempts.py" = ./attempts.py;
+    "verifier.py" = ./verifier.py;
+    "graph_compare.py" = ../graph/compare.py;
   };
   entrypoint = "runner.py";
   systemVariable = "TVP_TEST_SYSTEM";

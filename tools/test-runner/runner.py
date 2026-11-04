@@ -349,8 +349,12 @@ def main():
         if name == "status":
             command.add_argument("--json", action="store_true")
             command.add_argument("--attempt-only", action="store_true", help="show this frozen attempt without linked retries")
+    from verifier import add_parser, dispatch
+    add_parser(commands)
     args = parser.parse_args()
     try:
+        if args.command == "verify":
+            return dispatch(args)
         if args.command == "start":
             return start(args)
         run = (args.run or args.state_dir / "latest").resolve()

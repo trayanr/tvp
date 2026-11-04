@@ -15,6 +15,8 @@ from unittest import mock
 import runner
 import progress
 import attempts
+import verifier
+import graph_compare
 
 
 FAKE_NIX = r'''
@@ -67,6 +69,8 @@ class RunnerTests(unittest.TestCase):
         shutil.copy(runner.__file__, self.script)
         shutil.copy(progress.__file__, self.script.with_name('progress.py'))
         shutil.copy(attempts.__file__, self.script.with_name('attempts.py'))
+        shutil.copy(verifier.__file__, self.script.with_name('verifier.py'))
+        shutil.copy(graph_compare.__file__, self.script.with_name('graph_compare.py'))
         binaries=self.root/'bin'
         binaries.mkdir()
         for name, code in [('nix',FAKE_NIX),('nix-store',FAKE_STORE)]:
