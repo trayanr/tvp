@@ -64,6 +64,14 @@ class VerifierTests(unittest.TestCase):
             self.assertEqual(result[drv]['outputs']['out']['path'], '/nix/store/'+basename)
             self.assertEqual(query.call_args.args[0], ['nix', 'derivation', 'show', drv])
 
+    def test_preparation_events_exclude_nix_quote_and_ellipsis(self):
+        log = self.root / 'prepare.log'
+        paths = ['/nix/store/' + '0' * 32 + '-' + n for n in ('plan.drv', 'tool.drv', 'bare.drv')]
+        log.write_text(f"building '{paths[0]}'...\nfetching \"{paths[1]}\"...\nbuilding {paths[2]}\n")
+        observed = v.execution(self.state, None, log)['preparation']
+        self.assertEqual(observed, {'status': 'observed', 'events': [
+            ('building', paths[0]), ('fetching', paths[1]), ('building', paths[2])]})
+
     def test_raw_run_result_binding_and_read_only_files(self):
         self.save()
         (self.root/'worker.lock').touch()

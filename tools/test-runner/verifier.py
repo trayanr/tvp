@@ -261,7 +261,7 @@ def worker_observation(run, state):
 def execution(state, log, prepare):
     result = {"cachedAtStart": sum(j["cachedAtStart"] for j in state["jobs"].values())}
     for key, path, pattern in (("loggedActivity", log, r"^(building|fetching) (\S+)"),
-                               ("preparation", prepare, r"^(building|fetching) ['\"]?(\S+?)['\"]?(?:\s|$)")):
+                               ("preparation", prepare, r"^(building|fetching) ['\"]?(/nix/store/[^'\"\s]+)")):
         result[key] = ({"status": "observed", "events": re.findall(pattern, path.read_text(), re.M)}
                        if path else {"status": "unavailable"})
     return result
