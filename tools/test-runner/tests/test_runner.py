@@ -34,12 +34,17 @@ if any('#testPlans.' in a for a in args):
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[plan['jobs'][0]['drv']]}), file=sys.stderr, flush=True)
 time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
+targets=set(args)
 for job in plan['jobs']:
     if job['name']==os.environ.get('FAKE_FAILURE'):
         failed=True
         continue
-    for out in job['outputs']:
-        Path(out).write_text('ok')
+    for item in [job]+job.get('tests',[]):
+        # Substituting a cached aggregate/suite restores selected links only.
+        # Unreferenced siblings require an explicit all-outputs build target.
+        outputs=item['outputs'] if item['drv']+'^*' in targets else item['outputs'][:1]
+        for out in outputs:
+            Path(out).write_text('ok')
 print('@nix '+json.dumps({'action':'stop','id':7}), file=sys.stderr, flush=True)
 if not failed:
     link.write_text('complete')
@@ -138,6 +143,37 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(state['jobs']['second']['cachedAtStart'])
         self.assertGreaterEqual(state['finishedAt'],state['startedAt'])
         self.assertEqual(self.cli('wait','--run',str(self.run)).returncode,0)
+
+    def test_cached_aggregate_restores_unreferenced_output_siblings(self):
+        selected=self.plan['jobs'][0]
+        selected['outputs'].append(str(self.root/'unreferenced-primary'))
+        # Repeated occurrences must not add repeated build targets.
+        repeated=dict(selected,name='repeated',outputs=list(selected['outputs']))
+        self.plan['jobs'].append(repeated)
+        nested={'name':'nested','drv':'/fake/nested.drv',
+                'outputs':[str(self.root/'nested-secondary'),str(self.root/'nested-primary')]}
+        self.plan['jobs'][1]['tests']=[nested]
+        self.plan_file.write_text(json.dumps(self.plan))
+        self.start()
+        state=self.wait_done()
+        self.assertEqual(state['phase'],'passed',state)
+        targets=[arg for arg in json.loads((self.run/'command.json').read_text()) if arg.endswith('^*')]
+        self.assertEqual(targets,[self.plan['aggregate']+'^*',selected['drv']+'^*',nested['drv']+'^*'])
+        self.assertTrue(all(Path(out).exists() for item in [selected,nested] for out in item['outputs']))
+
+    def test_partial_suite_requests_nested_multioutputs(self):
+        nested={'name':'nested','drv':'/fake/nested.drv',
+                'outputs':[str(self.root/'nested-secondary'),str(self.root/'nested-primary')]}
+        self.plan['jobs'][0]['tests']=[nested]
+        self.plan_file.write_text(json.dumps(self.plan))
+        self.start('--only','first')
+        self.assertEqual(self.wait_done()['phase'],'passed')
+        targets=[arg for arg in json.loads((self.run/'command.json').read_text()) if arg.endswith('^*')]
+        self.assertEqual(targets,['/fake/first.drv^*','/fake/nested.drv^*'])
+
+    def test_single_output_targets_keep_the_aggregate_first(self):
+        self.assertEqual(runner.build_targets(self.plan,True),[self.plan['aggregate']])
+        self.assertEqual(runner.build_targets(self.plan,False),[job['drv'] for job in self.plan['jobs']])
 
     def test_json_start_identifies_exact_frozen_run(self):
         result=self.cli('start','--state-dir',str(self.state),'--json')

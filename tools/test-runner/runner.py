@@ -74,6 +74,15 @@ def useful_event(event, active):
     )
 
 
+def build_targets(plan, full):
+    targets = [plan["aggregate"]] if full else [job["drv"] for job in plan["jobs"]]
+    # A cached suite retains only the output selected by each installed link.
+    # Request siblings explicitly, including multioutput tests in partial suites.
+    targets += [item["drv"] for job in plan["jobs"]
+                for item in [job] + job.get("tests", []) if len(item["outputs"]) > 1]
+    return list(dict.fromkeys(targets))
+
+
 def work(run, global_fd, lease_fd):
     plan = json.loads((run / "plan.json").read_text())
     state = json.loads((run / "state.json").read_text())
@@ -107,7 +116,7 @@ def work(run, global_fd, lease_fd):
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    targets = [plan["aggregate"]] if state["full"] else [job["drv"] for job in plan["jobs"]]
+    targets = build_targets(plan, state["full"])
     command = ["nix", "build", "--show-trace", "--keep-going", "--log-format", "internal-json",
                "--out-link", str(run / "result")]
     if state.get("maxJobs") is not None:
