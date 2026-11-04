@@ -150,7 +150,8 @@ class VerifierTests(unittest.TestCase):
         self.args.invariants = self.root/'invariants'
         for value in ([], {'schema': True}, {'schema': 1, 'planJobs': []},
                       {'schema': 1, 'planJobs': {'typo': None}},
-                      {'schema': 1, 'graphEntries': {'typo': None}}):
+                      {'schema': 1, 'graphEntries': {'typo': None}},
+                      {'schema': 1, 'graphDelta': None}, {'schema': 1, 'graphDelta': {}}):
             self.args.invariants.write_text(json.dumps(value))
             self.assertEqual(self.report()['result'], 'FAIL')
         self.args.invariants = None

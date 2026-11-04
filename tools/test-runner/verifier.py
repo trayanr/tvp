@@ -363,6 +363,8 @@ def verify(args, store=None):
             for field in ("graphEntries", "planJobs"):
                 require(field not in policy or isinstance(policy[field], dict), "Invalid invariant " + field)
             if "graphDelta" in policy:
+                require(isinstance(policy["graphDelta"], dict) and args.graph_before,
+                        "Expected graph delta requires snapshots and an object")
                 check("expected-graph-delta", lambda: require(report["graphDelta"] == policy["graphDelta"], "Graph delta differs"))
             for name, value in policy.get("graphEntries", {}).items():
                 require(isinstance(value, dict) and all(isinstance(value.get(k), str) and value[k]
@@ -374,6 +376,7 @@ def verify(args, store=None):
                 validate_plan(plan | {"jobs": [value]})
                 check("plan-job:" + name, lambda n=name, v=value: require(n in indexed and indexed[n] == v, "Plan invariant differs"))
             if "skipped" in policy:
+                validate_plan(plan | {"skipped": policy["skipped"]})
                 check("exclusions", lambda: require(plan["skipped"] == policy["skipped"], "Exclusions differ"))
         check("input-stability", lambda: require(all(digest(p) == h for p, h in inputs.items()), "Input hash changed"))
         report["result"] = "PASS"
