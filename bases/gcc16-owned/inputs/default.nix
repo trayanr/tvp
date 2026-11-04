@@ -91,13 +91,24 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  isl = select (frozenTests recipes.isl) {
-    "0.28" = {
-      deps = {
-        gmp = inputs.gmp_6_3_0;
+  isl =
+    select
+      (frozenTests (
+        recipes.isl
+        // {
+          testDeps = recipes.isl.testDeps // {
+            # This is the identical old public helper computation, not a gcc13-profile tool.
+            patchelf = construction.variants.gcc13.isl_0_20.tvp.declaredTestDependencies.patchelf;
+          };
+        }
+      ))
+      {
+        "0.28" = {
+          deps = {
+            gmp = inputs.gmp_6_3_0;
+          };
+        };
       };
-    };
-  };
   zlib = select recipes.zlib {
     "1.3.2" = { };
   };
@@ -109,13 +120,23 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  libxcrypt = select recipes.libxcrypt {
-    "4.4.36" = {
-      deps = {
-        perl = inputs.perl_5_44_0;
+  libxcrypt =
+    select
+      (
+        recipes.libxcrypt
+        // {
+          testDeps = recipes.libxcrypt.testDeps // {
+            coreutils = construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies.coreutils;
+          };
+        }
+      )
+      {
+        "4.4.36" = {
+          deps = {
+            perl = inputs.perl_5_44_0;
+          };
+        };
       };
-    };
-  };
   perl = select recipes.perl {
     "5.44.0" = { };
   };
@@ -128,10 +149,10 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  which = select recipes.which {
+  which = select recipes.which.constructionRecipe {
     "2.21" = { };
   };
-  m4 = select recipes.m4 {
+  m4 = select recipes.m4.constructionRecipe {
     "1.4.21" = { };
   };
   pkg-config = select recipes.pkg-config {
