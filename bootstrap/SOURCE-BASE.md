@@ -162,3 +162,26 @@ provider loading and a local TLS handshake with application data over memory
 BIOs. Source overrides use alternate archives without rebuilding an interpreter.
 The separate origin/runtime observers preserve the earlier audits and keep the
 compiler's development capability outside native executable permissions.
+
+Owned CMake is an opt-in single-stage tool with its installed CTest, CPack and
+module tree. It retains the canonical TLS and four system-codec choices and
+exports the pure development-prefix provider through the owned specification.
+Bootstrap per-codec selectors accompany the cache flags so `--no-system-libs`
+retains the selected exceptions.
+JSON-C reuses its existing recipe and split finalization.
+
+```
+nix build -f bootstrap/source-cmake.nix cmake
+nix build -f bootstrap/source-cmake.nix jsonC
+nix build -f bootstrap/source-cmake-tests.nix consumer sourceOverrideCmake sourceOverrideJson runtimeJson
+nix eval --json -f bootstrap/source-cmake-tests.nix contracts
+python3 bootstrap/source-cmake-origin-audit.py > origin.json
+python3 bootstrap/source-cmake-runtime-audit.py origin.json
+```
+
+The consumer checks both generators, rebuilds and failures, installed APIs,
+CPack codec roundtrips, locally verified HTTPS and four upstream RunCMake script
+families. This is a bounded upstream subset; production `BUILD_TESTING` stays
+off. Successful phase logs live in CMake's `evidence` output and JSON-C's build
+artifact. Consumer logs have a separate `evidence` output. Runtime auditing keeps
+module source and build/development references separate from native ELF roles.
