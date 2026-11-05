@@ -9,6 +9,7 @@ let
   platform = {
     inherit system;
     config = "x86_64-unknown-linux-musl";
+    isMusl = true;
     isLittleEndian = true;
     is64bit = true;
     isAarch64 = false;
@@ -255,6 +256,104 @@ let
       dynamicLinkerGlob = "${musl}/lib/libc.so";
       staticLibgcc = true;
     };
+    gcc16-gmp = callPackage ./recipes/gcc/gmp.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      gcc-buildbuild = gcc10;
+    };
+
+    gcc16-mpfr = callPackage ./recipes/gcc/mpfr.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      libgmp = gcc16-gmp;
+    };
+
+    gcc16-mpc = callPackage ./recipes/gcc/mpc.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      libgmp = gcc16-gmp;
+      libmpfr = gcc16-mpfr;
+    };
+
+    gcc16-libbacktrace = callPackage ./recipes/gcc/libbacktrace.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+
+    };
+
+    gcc16-libiberty = callPackage ./recipes/gcc/libiberty.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+
+    };
+
+    gcc-latest-unwrapped = callPackage ./recipes/gcc/ng.nix {
+      gcc = gcc10;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      gcc-buildbuild = gcc10;
+      binutils-buildbuild = binutils;
+      binutils-buildtarget = binutils;
+      binutils-hosttarget = binutils;
+      libc = musl;
+      libc-headers = musl;
+      targetPlatform = platform;
+      libgmp = gcc16-gmp;
+      libmpfr = gcc16-mpfr;
+      libmpc = gcc16-mpc;
+      libbacktrace = gcc16-libbacktrace;
+      libiberty = gcc16-libiberty;
+    };
+
+    gcc16-libgcc = callPackage ./recipes/gcc/libgcc.nix {
+      gcc = gcc-latest-unwrapped;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      gcc-buildbuild = gcc10;
+      binutils-buildbuild = binutils;
+      enableShared = false;
+      libc = musl;
+      libc-headers = musl;
+      libgmp = gcc16-gmp;
+      libmpfr = gcc16-mpfr;
+      libmpc = gcc16-mpc;
+      libiberty = gcc16-libiberty;
+    };
+
+    gcc16-libstdcxx = callPackage ./recipes/gcc/libstdcxx.nix {
+      gcc = gcc-latest-unwrapped;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+      libgcc = gcc16-libgcc;
+      libc = musl;
+      dynamicLinkerGlob = "${musl}/lib/libc.so";
+      staticLibgcc = true;
+    };
+
+    gcc-latest = callPackage ./recipes/gcc/wrapper.nix {
+      gcc-unwrapped = gcc-latest-unwrapped;
+      bash-build = bash;
+      libc = musl;
+      libgcc = gcc16-libgcc;
+      libstdcxx = gcc16-libstdcxx;
+      targetPlatform = platform;
+      dynamicLinkerGlob = "${musl}/lib/libc.so";
+      staticLibgcc = true;
+    };
+
   };
   tests = import ./tests.nix { inherit scope; };
 in
@@ -295,6 +394,15 @@ in
     gnutar-latest
     gcc10-unwrapped
     gcc10
+    gcc16-gmp
+    gcc16-mpfr
+    gcc16-mpc
+    gcc16-libbacktrace
+    gcc16-libiberty
+    gcc-latest-unwrapped
+    gcc16-libgcc
+    gcc16-libstdcxx
+    gcc-latest
     ;
   inherit tests;
   compiler = scope.tinycc-mes.compiler;

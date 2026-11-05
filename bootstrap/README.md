@@ -1,7 +1,7 @@
-# Standalone construction through GCC10
+# Standalone construction through GCC16
 
-This private x86_64 Linux entrypoint constructs GCC 10.4.0 C and C++ with an
-owned wrapper and static target libstdc++, from one **229-byte AMD64 hex0 seed**.
+This private x86_64 Linux entrypoint constructs GCC 16.2.0 C and C++ with an
+owned wrapper and matching split static libgcc/libstdc++, from one **229-byte AMD64 hex0 seed**.
 It is an intermediate compiler milestone, not a complete modern TVP base. The catalogue,
 default base and frozen construction remain separate and unchanged.
 
@@ -11,6 +11,11 @@ nix build --file bootstrap gnutar-latest --no-link -L
 nix build --file bootstrap gcc10-unwrapped --no-link -L
 nix build --file bootstrap gcc10 --no-link -L
 nix build --file bootstrap tests.gcc10-archives 'tests.gcc10^*' --no-link -L
+nix build --file bootstrap gcc16-gmp gcc16-mpfr gcc16-mpc gcc16-libbacktrace gcc16-libiberty --no-link -L
+nix build --file bootstrap gcc-latest-unwrapped --no-link -L
+nix build --file bootstrap gcc16-libgcc --no-link -L
+nix build --file bootstrap gcc16-libstdcxx --no-link -L
+nix build --file bootstrap gcc-latest 'tests.gcc16^*' --no-link -L
 python3 bootstrap/audit.py > executable-inputs.json
 ```
 
@@ -107,3 +112,47 @@ probes are bounded, with no upstream GCC/libstdc++ conformance claim. A modern
 compiler, later-generation comparisons, complete owned tools/base construction
 and coherent candidate/catalogue validation remain necessary before proposing
 any default-base change.
+
+## Modern native-musl checkpoint
+
+The exact construction pin selects GCC 16.2.0, independently of the ordinary
+catalogue's moving compiler selector. Private `gcc16-gmp` (6.3.0, assembly disabled,
+M4=false), `gcc16-mpfr` (4.2.2), `gcc16-mpc` (1.3.1), `gcc16-libbacktrace` and PIC
+`gcc16-libiberty` use GCC10. Both compiler roles of `gcc-latest-unwrapped` use
+GCC10; all three binutils roles use the existing owned binutils. The common GCC
+source applies the pinned regular-directory and skip-target-library patches.
+The compiler stage skips target libraries; separate `gcc16-libgcc` and
+`gcc16-libstdcxx` build static archives with the new compiler and GCC-built musl.
+`gcc-latest` assembles them through the existing hardened wrapper/scripts.
+
+The raw GCC16 driver (`gcc/gcc.cc`) binds sysroot, headers, default startfile and
+library searches, assembler/linker and every loader alternative to owned stages.
+Compiler host code uses O1; split target runtime code uses O0. C/C++ only,
+disabled bootstrap/analyzer/LTO/plugins/ISL/multilib/NLS and upstream's bounded
+compiler-stage configuration are retained. Installed compiler maintenance tools
+are omitted as unused; helper/runtime configure and copied source subtrees are
+pruned after installation. Public headers (including .tcc), static archives and
+licenses remain. Native musl uses `os/generic` without a fake glibc tuple link.
+
+`tests.gcc16` explicitly supplies split runtime/header paths to raw compiler
+probes. In an empty environment with declared owned tools it checks exact
+version/tuple, C compile/link/run, separately compiled C-object ABI, retained
+C++14/STL/templates/exceptions/destructor unwinding/RTTI and bounded C++20
+concepts/span/ranges. Fully static and dynamic-musl executables use static GCC/C++
+runtimes. It inspects specs, search directories, selected tools/archives/headers
+and ELF interpreters, dependencies and runtime paths, and exercises comma paths
+with empty/hostile NIX_STORE. Observer runtime audits independently inspect numeric
+ELF architecture, closure provenance, loaders, symlinks and script interpreters.
+GMP/MPFR/MPC `make check` suites pass and retain separate `checks` outputs.
+Libiberty checks pass; libbacktrace checks record failure because the upstream
+suite requests disabled LTO. Their logs and exit codes are separate `checks`
+outputs; helper check failures are evidence, not a conformance gate. No borrowed
+DejaGNU/Tcl/Expect is introduced: GCC/libstdc++ conformance is not claimed.
+
+This is an opt-in musl compiler checkpoint. It does not establish the complete
+owned default base or a matching current GNU catalogue base. Later work needs
+modern compiler/libc/tool rebuild comparisons and a source-built headers/libc/
+sysroot transition for that GNU base, or explicit review of a coherent musl base
+candidate. Complete candidate review and catalogue validation precede any default
+switch. `--disable-bootstrap` provides no self-comparison, DDC or reproducibility
+proof. Historical failures and strict=false conformance evidence remain unwaived.
