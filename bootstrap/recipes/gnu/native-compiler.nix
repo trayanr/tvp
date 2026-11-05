@@ -103,6 +103,12 @@ bash.runCommand name
             test -f "$file" || continue
             ln -sf "$file" "$out/lib/gcc/${targetTuple}/16.2.0/"
           done
+          # Target runtime public headers belong in the driver's intrinsic include
+          # directory too. Copying only regular runtime files omits unwind.h.
+          for header in "$rt"/include/*; do
+            test -f "$header" || continue
+            ln -s "$header" "$out/lib/gcc/${targetTuple}/16.2.0/include/$(basename "$header")"
+          done
           "$out/bin/gcc" -dumpspecs > specs
           # Native raw mode must find the selected target runtime without a wrapper
           # or ambient environment; old dtags also serve libc's unwinder dlopen.

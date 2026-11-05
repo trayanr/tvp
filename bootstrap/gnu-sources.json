@@ -14,7 +14,8 @@
     "GNU Bash getcwd(0,0) cross premise measured by actual G executable before selecting its cache result",
     "Consumer fixtures compiled from local copies, avoiding source-file symbol metadata in runtime closures",
     "Separate C-only cancellation with no libgcc_s DT_NEEDED tests libc unwinder loading; static EH tested separately",
-    "Install only the main libbacktrace helper archive and metadata; preserve raw cross-check failure separately from native observer validation"
+    "Install only the main libbacktrace helper archive and metadata; preserve raw cross-check failure separately from native observer validation",
+    "Expose matching GNU libgcc public headers in the native driver intrinsic include directory; raw/wrapped C probes require unwind.h"
   ],
   "archives": [
     {
@@ -47,7 +48,7 @@
     "gnu-probe.c": {
       "license": "TVP original",
       "origins": [],
-      "ownedSHA256": "bd0268e1d9a236789ac4de003e68a04eea2a4be79d5749e1d3f6011a4ad30ae5"
+      "ownedSHA256": "ea7474c7c428a664f35b9e11cd27d06da6e011287a12906db10f12e1a74e608e"
     },
     "gnu-runtime-audit.py": {
       "license": "TVP original",
@@ -213,7 +214,7 @@
           "sha256": "8966fd6c6b6e1d5bbb5b044e5bf840d995fed4895d0e12a13f7b03ac6ec73e05"
         }
       ],
-      "ownedSHA256": "1f0def4fa56aab729b6d4d55b4005df6fd29b5a290ec74203466c27c832dc10a"
+      "ownedSHA256": "9f5b30bdb00c7a23891621a1b85d2d0a5adeb82ad6df77ac53d81660be0287d4"
     },
     "recipes/gnu/native-tools.nix": {
       "license": "MIT recipe adaptation; source licenses retained in outputs",
