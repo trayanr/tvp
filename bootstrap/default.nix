@@ -454,6 +454,18 @@ in
     inherit scope;
     gnu = import ./gnu.nix { inherit scope; };
   };
+  gnu-tool-floor = import ./gnu-tool-floor.nix {
+    inherit scope;
+    gnu = import ./gnu.nix { inherit scope; };
+  };
+  gnu-tool-floor-tests = import ./gnu-tool-floor-tests.nix {
+    inherit scope;
+    gnu = import ./gnu.nix { inherit scope; };
+    floor = import ./gnu-tool-floor.nix {
+      inherit scope;
+      gnu = import ./gnu.nix { inherit scope; };
+    };
+  };
   inherit tests;
   compiler = scope.tinycc-mes.compiler;
   libc = scope.tinycc-mes.libs;
