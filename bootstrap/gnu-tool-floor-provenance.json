@@ -1,0 +1,111 @@
+{
+  "additionalNixpkgsFilesUsed": [],
+  "baseline": {
+    "commit": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+    "tree": "537c73af1c2a34ba92da3b681fb3f0af3a3a7943"
+  },
+  "files": {
+    "bootstrap/default.nix": {
+      "license": "TVP original with existing attributed recipes unchanged",
+      "origins": [
+        {
+          "path": "bootstrap/default.nix",
+          "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+          "sha256": "7e9e32ae1c260311db0d23d10ad49a2e28072c3f8914a4158a32529e0b124e2b"
+        }
+      ],
+      "ownedSHA256": "4480ebe2dada39fa0ffa1c62b7fe24885367747b25344d6f88dee79dba8ac5a4"
+    },
+    "bootstrap/gnu-tool-floor-audit.py": {
+      "license": "TVP original",
+      "origins": [
+        {
+          "path": "bootstrap/gnu-origin-audit.py",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+          "sha256": "bc9a90b8ccb4cebdd7627769d7307ee3d1a890e0f9c58edcd26fc4b916512f0c"
+        },
+        {
+          "path": "bootstrap/audit.py",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+          "sha256": "db0dba19a9379ff40c3f58f78b89dbb67c2cb8e57129d66ca3f11c246f61b8b0"
+        }
+      ],
+      "ownedSHA256": "6ce0254b8f20ff53eef0ab87cd19c6f25859f16cc1fb157000004ea7aa5b8d56"
+    },
+    "bootstrap/gnu-tool-floor-checks.py": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "2ac76f998e87837c90b58f5d693dad1093e6381808e00c29bcf5b0092fbfe719"
+    },
+    "bootstrap/gnu-tool-floor-finalize.py": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "fdcf9be7474b442dbe1d5cfe0acfb09d94dbec36729c94020e7f8a70520a320d"
+    },
+    "bootstrap/gnu-tool-floor-prepare.py": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "10286750be089f5ac93e57c2e2ca20993929ea228d5fd38f498f66ab2230c069"
+    },
+    "bootstrap/gnu-tool-floor-sources.json": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "0339f23afc93abf215dcfe41db204b29a9aff0798b41bb86e68b603abbfc7309"
+    },
+    "bootstrap/gnu-tool-floor-tests.nix": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "48034dc91d77ae9d240a94fe296032aa1e2dd48976e0092bc15c6953ef0adb1a"
+    },
+    "bootstrap/gnu-tool-floor-tests.sh": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "6664be2dd050f8162311b9607e141488a6c2159782ccc588b65f496bffc01000"
+    },
+    "bootstrap/gnu-tool-floor.nix": {
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "9690c344320c33c5fb5e5a41980fe7af492bc909e40a05d7ad8998545509443f"
+    }
+  },
+  "reusedFiles": {
+    "lib/tests/filesystem-capabilities.c": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "d9138f1d82e9add04b037677ec21c70b8668b77f93fd88f8aaa12a4b37ecafbc",
+      "use": "direct source input; not a borrowed executable"
+    },
+    "pkgs/build-tools/gnumake/owned/check-upstream.py": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "7d6456a270d25d557103d080c15d3de3f4c1dd55daec044be473139916f04541",
+      "use": "read only; checker not executed because Perl harness absent"
+    },
+    "pkgs/build-tools/gnumake/owned/prepare.py": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "6af02ddcda8c27cfb983c531aa0f4b2e6397c54195a77b0b02c91b2bedd98452",
+      "use": "direct source input; not a borrowed executable"
+    },
+    "pkgs/libraries/acl/tests/fixtures/acl.c": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "d93216d637c5b8c2f59d2d5f889176b852949319f852d10a3efc99445142716d",
+      "use": "direct source input; not a borrowed executable"
+    },
+    "pkgs/libraries/acl/tests/fixtures/native.c": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "987c252cc4895695a7ed9538be631e33496636213326d7f4955ad5cac79dff8a",
+      "use": "direct source input; not a borrowed executable"
+    },
+    "pkgs/libraries/attr/tests/fixtures/api.c": {
+      "revision": "4661cb78bdf2b306d22ca0822a88c4e53ea5740d",
+      "sha256": "9a9ef3b6a6de6a736b27f0ad18ffad6180cc6275b08d4e9c66cdf26c0a158b10",
+      "use": "direct source input; not a borrowed executable"
+    }
+  },
+  "schema": 1,
+  "unchangedUpstreamRecipeControl": {
+    "narHash": "sha256-Jdi1t9zAcMpQg/BUIVoxlwImZ5hed1yGWNbPXnAU4vI=",
+    "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c"
+  },
+  "upstreamArchiveInputs": "gnu-tool-floor-sources.json; builtin fetchurl; source licenses installed"
+}
