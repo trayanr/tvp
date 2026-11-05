@@ -144,10 +144,18 @@ in
                 libraries = lib.concatMap (
                   p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
                 ) libraries;
-                baseDirectories = [
-                  "${base.stdenv.cc.libc}/lib"
-                  "${base.stdenv.cc.cc}/lib"
-                ];
+                baseDirectories =
+                  if base ? runtimeDirectories then
+                    assert builtins.isList base.runtimeDirectories;
+                    assert builtins.all (
+                      p: builtins.isString p && builtins.hasContext p && lib.hasPrefix "/nix/store/" p
+                    ) base.runtimeDirectories;
+                    base.runtimeDirectories
+                  else
+                    [
+                      "${base.stdenv.cc.libc}/lib"
+                      "${base.stdenv.cc.cc}/lib"
+                    ];
                 readelf = "${binutils}/bin/readelf";
                 patchelf = "${patchelf}/bin/patchelf";
               }

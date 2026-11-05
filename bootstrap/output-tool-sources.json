@@ -1,0 +1,10 @@
+{
+  "patchelf": {
+    "url": "https://github.com/NixOS/patchelf/releases/download/0.19.2/patchelf-0.19.2.tar.bz2",
+    "hash": "sha256-1K2aTlxongkRnOLzCpSw6LT5jHhZASPqIWZeNMaSiAE="
+  },
+  "mpfr": {
+    "url": "https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.2.tar.xz",
+    "hash": "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="
+  }
+}
