@@ -75,7 +75,7 @@ bash.runCommand "${pname}-${version}"
     # patch popen/system to search in PATH instead of hardcoding /bin/sh
     sed -i 's|posix_spawn(&pid, "/bin/sh",|posix_spawnp(\&pid, "sh",|' \
       src/stdio/popen.c src/process/system.c
-    sed -i 's|execl("/bin/sh", "sh", "-c",|execlp("sh", "-c",|'\
+    sed -i 's|execl("/bin/sh", "sh", "-c",|execlp("sh", "sh", "-c",|'\
       src/misc/wordexp.c
 
     # Configure

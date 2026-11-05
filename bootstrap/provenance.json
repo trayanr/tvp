@@ -15,7 +15,8 @@
       "Use owned shells and a declared musl loader in TinyCC specs",
       "Bind GCC default library searches, assembler/linker and every loader spec alternative to owned outputs",
       "Select musl wrapper bin output explicitly in upstream C tests",
-      "Use owned interpreters in installed GCC maintenance scripts; omit unneeded Bash bug mailer"
+      "Use owned interpreters in installed GCC maintenance scripts; omit unneeded Bash bug mailer",
+      "Preserve wordexp shell argv[0] while searching declared PATH with execlp"
     ]
   },
   "stage0Release": {

@@ -4,12 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <wordexp.h>
 static __thread int tls_value = 7;
 int main(void) {
     void *p = 0;
     char *end, text[32];
     FILE *pipe;
     int status;
+    wordexp_t words;
     if (tls_value++ != 7 || tls_value != 8) return 1;
     if (posix_memalign(&p, 64, 128) || ((unsigned long)p % 64)) return 2;
     memset(p, 0x5a, 128);
@@ -23,6 +25,12 @@ int main(void) {
     if (pclose(pipe)) return 7;
     status = system("exit 7");
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 7) return 8;
-    puts("musl allocation/conversion/math/errno/TLS/popen/system: PASS");
+    if (setenv("TVP_WORDEXP_VALUE", "owned value", 1)) return 9;
+    if (wordexp("\"$TVP_WORDEXP_VALUE\" $(printf shell) $((6 * 7))", &words, 0)) return 10;
+    if (words.we_wordc != 3 || strcmp(words.we_wordv[0], "owned value") ||
+        strcmp(words.we_wordv[1], "shell") || strcmp(words.we_wordv[2], "42")) return 11;
+    wordfree(&words);
+    if (wordexp("$(exit 99)", &words, WRDE_NOCMD) != WRDE_CMDSUB) return 12;
+    puts("musl allocation/conversion/math/errno/TLS/popen/system/wordexp: PASS");
     return 0;
 }

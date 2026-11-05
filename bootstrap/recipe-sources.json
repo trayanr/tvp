@@ -193,12 +193,12 @@
     },
     "musl/default.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
-      "ownedSHA256": "2816115980254eee3ce128d51672cc99196d04ededdb07691b70fd8b187839cb",
+      "ownedSHA256": "25d7b9fc10d0c830820d45c03023b2b35b66b10ac8b2f67c150f356f03282ea8",
       "upstreamSHA256": "52f91ca8ebd84187cb4a1facc5bb45470ed2ac8b7a8a5bdd52f032813033c310"
     },
     "musl/tcc.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
-      "ownedSHA256": "ea123ed75cc2185b918693527a8740f872260bd25e0367f44a6ee1f597952b0a",
+      "ownedSHA256": "a8a2c38a6c5db59ea5d8316c83b2bc51dc63316781a1e961076f0d1865522a20",
       "upstreamSHA256": "ea123ed75cc2185b918693527a8740f872260bd25e0367f44a6ee1f597952b0a"
     },
     "tinycc/musl.nix": {

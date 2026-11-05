@@ -6,22 +6,10 @@ intermediate compiler milestone, not a complete modern TVP base. The catalogue,
 default base and frozen construction remain separate and unchanged.
 
 ```sh
-nix build --file bootstrap compiler --no-link -L
-nix build --file bootstrap musl-tcc-intermediate --no-link -L
-nix build --file bootstrap tinycc-musl-intermediate.libs --no-link -L
-nix build --file bootstrap musl-tcc --no-link -L
-nix build --file bootstrap tinycc-musl.libs --no-link -L
-nix build --file bootstrap binutils --no-link -L
-nix build --file bootstrap gcc46 --no-link -L
-nix build --file bootstrap musl --no-link -L
 nix build --file bootstrap gcc46-cxx --no-link -L
 nix build --file bootstrap tests.cxx tests.libc tests.tools tests.transitions tests.stage-comparison --no-link -L
 python3 bootstrap/audit.py > executable-inputs.json
 ```
-
-Run expensive compiler targets separately and sequentially. Recipe-local serial
-builds retain upstream stability constraints. No global Nix scheduling setting
-is changed by this construction.
 
 ## Construction boundary
 
@@ -67,7 +55,7 @@ The original Mes wait-status initialization is unchanged.
 unwinding, RTTI and a separately compiled C object in an empty environment with
 explicit owned inputs. It checks fully static and dynamic-musl executables with
 static libstdc++/libgcc. `tests.libc` probes allocation, conversion, math, errno,
-TLS and shell spawning on GCC-built musl. Tool-function checks exercise patch,
+TLS, shell spawning and word expansion on GCC-built musl. Tool-function checks exercise patch,
 make/shell selection, text processing, search and archive/compression roundtrips.
 Upstream transition tests are retained, with musl's wrapper output selected
 explicitly. Their C hello program is not a C++ test.
