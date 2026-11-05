@@ -117,7 +117,7 @@ def audit_graph(raw, sources, provenance, stage0_pins, early_outputs=()):
 def audit():
     raw = nix_json("derivation", "show", "--recursive", "--file", str(ROOT),
                    "tests.consumer", "tests.versions", "tests.cxx", "tests.tools", "tests.transitions", "tests.libc", "tests.stage-comparison",
-                   "tests.gcc10", "tests.gcc10-archives", "tests.gcc16")
+                   "tests.gcc10", "tests.gcc10-archives", "tests.gcc16", "tests.prerequisites")
     sources = nix_json("eval", "--json", "--impure", "--expr",
                        f'let b = import {ROOT} {{}}; in builtins.mapAttrs (_: p: toString p) b.sources')
     early = nix_json("derivation", "show", "--recursive", "--file", str(ROOT), "compiler", "libc")

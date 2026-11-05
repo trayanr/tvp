@@ -156,3 +156,44 @@ sysroot transition for that GNU base, or explicit review of a coherent musl base
 candidate. Complete candidate review and catalogue validation precede any default
 switch. `--disable-bootstrap` provides no self-comparison, DDC or reproducibility
 proof. Historical failures and strict=false conformance evidence remain unwaived.
+
+## Private GNU build prerequisites
+
+`linux-headers` exports sanitized Linux 6.9 x86 userspace headers and separate
+license/exception texts. Its host generators use the owned GCC16 wrapper and
+Bash. `make headers` needs neither rsync nor Perl for this selected target.
+`build-m4` (1.4.21), `build-bison` (3.8.2), `build-python` (3.12.5) and
+`build-grep` (3.12) use that existing compiler and the sufficient owned tool floor.
+These helpers are musl-hosted; their names make no static-linkage claim. Headers
+are source data, distinct from executable build dependencies.
+
+```sh
+nix build --file bootstrap linux-headers 'build-m4^*' 'build-bison^*' --no-link -L
+nix build --file bootstrap build-python 'build-grep^*' --no-link -L
+nix build --file bootstrap 'tests.prerequisites^*' --no-link -L
+```
+
+M4 binds its syscmd shell. Bison binds M4 and retains its installed skeletons;
+yacc uses owned Bash. Grep's egrep/fgrep bind both Bash and the selected grep.
+Release configure/parser timestamps survive extraction. Native M4/Bison/grep
+checks retain their actual logs and exit status in separate `checks` outputs;
+these evidence outputs do not imply a strict complete-suite pass. The opt-in
+functional contracts independently require header compilation, M4 shell/macro
+expansion, compiled Bison/yacc parsers and grep modes/status/argument handling.
+
+Python adapts the existing TVP 3.12.5 minimal profile, not upstream's 3.14 recipe.
+It disables the listed external extension modules, ensurepip installation,
+readline and test extension modules. It binds build/install make shells,
+subprocess's default shell, installed entrypoints and python-config helpers;
+compileall uses the declared per-build CPU allocation. Its supported scope is
+build scripts, with temporary-file/subprocess and module-absence contracts.
+`os.system()` remains unsupported because libc selects `/bin/sh`; the selected
+glibc 2.39 Python scripts do not call it. The tests run actual glibc script help
+and constant-generation fixtures with the owned compiler, without building libc.
+`prerequisite-sources.json` records each file's real origins and adaptations.
+
+These private opt-in endpoints do not extend the normal catalogue, change a
+base, establish GCC16/glibc2.39 compatibility, or complete GNU construction.
+A GNU-target compiler/core-libgcc bridge, libc/sysroot, matching GNU runtimes,
+GNU-hosted compiler and a complete candidate base still require implementation
+and validation. Existing compiler and frozen catalogue identities remain controls.
