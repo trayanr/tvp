@@ -1,0 +1,10 @@
+{
+  "cmake": {
+    "url": "https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5.tar.gz",
+    "hash": "sha256-oMVMiKu4B43Y7MrbcX/GuxlL8Y59RMhjCZECiIhuBOI="
+  },
+  "json-c": {
+    "url": "https://github.com/json-c/json-c/releases/download/json-c-0.19-20260627/json-c-0.19.tar.gz",
+    "hash": "sha256-N60CSZAuMBvZBSv3EuUR/Mas/07KrUtZAKrZzlZOJt4="
+  }
+}
