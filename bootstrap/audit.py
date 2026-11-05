@@ -1,0 +1,97 @@
+"""Observer-only audit; Python/Nix CLI are never bootstrap derivation inputs."""
+import base64
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent
+STORE = "/nix/store/"
+
+
+def nix_json(*args):
+    return json.loads(subprocess.check_output(["nix", *args], text=True))
+
+
+def store_path(value):
+    return STORE + value if not value.startswith(STORE) else value
+
+
+def audit():
+    raw = nix_json("derivation", "show", "--recursive", "--file", str(ROOT),
+                   "tests.consumer", "tests.versions")
+    # Accept both Nix's v4 graph envelope and the older direct attrset.
+    graph = {store_path(k): v for k, v in raw.get("derivations", raw).items()}
+    outputs = {store_path(output.get("path", node["env"][name])): drv
+               for drv, node in graph.items()
+               for name, output in node["outputs"].items()}
+    provenance = json.loads((ROOT / "provenance.json").read_text())
+    pins = {pin["url"]: pin["hash"] for pin in provenance["archives"]}
+    pins[provenance["seed"]["url"]] = provenance["seed"]["narHash"]
+    sources = nix_json("eval", "--json", "--impure", "--expr",
+                       f'let b = import {ROOT} {{}}; in builtins.mapAttrs (_: p: toString p) b.sources')
+    failures, nodes, source_data = [], {}, {}
+    for drv, node in graph.items():
+        env = node["env"]
+        inputs = node.get("inputs", {})
+        dependencies = [store_path(p) for p in inputs.get("drvs", node.get("inputDrvs", {}))]
+        builder = node["builder"]
+        path = env.get("PATH")
+        if builder == "builtin:fetchurl":
+            url = env.get("url")
+            expected = pins.get(url)
+            # Nix serializes outputHash as hexadecimal or SRI depending on version.
+            actual = env.get("outputHash", "")
+            expected_hex = base64.b64decode(expected.split("-", 1)[1]).hex() if expected else None
+            if not expected or actual not in (expected, expected_hex):
+                failures.append(f"unrecognized download/hash: {drv}")
+            origin = "explicit-seed" if url == provenance["seed"]["url"] else "pinned-source-archive"
+            if (env.get("executable") == "1") != (origin == "explicit-seed"):
+                failures.append(f"unexpected executable download: {drv}")
+        else:
+            origin = "source-built-stage"
+            root = re.match(r"/nix/store/[^/]+", builder)
+            producer = outputs.get(root[0]) if root else None
+            if not producer or producer not in dependencies:
+                failures.append(f"undeclared executable builder: {drv}: {builder}")
+            if path is None:
+                failures.append(f"missing explicit PATH: {drv}")
+            for entry in (path or "").split(":"):
+                if entry and (not entry.endswith("/bin") or outputs.get(entry[:-4]) not in dependencies):
+                    failures.append(f"unclassified PATH executable input: {drv}: {entry}")
+            if env.get("allowSubstitutes") != "":
+                failures.append(f"source stage permits substitution: {drv}")
+        nodes[drv] = {"origin": origin, "builder": builder, "PATH": path,
+                      "previousStages": dependencies, "outputs": node["outputs"]}
+        for src in inputs.get("srcs", node.get("inputSrcs", [])):
+            src = store_path(src)
+            if src in sources.values():
+                kind = "pinned-stage0-source-tree"
+            else:
+                kind = "owned-source-or-nix-generated-text"
+                if not Path(src).is_file():
+                    failures.append(f"unknown source directory: {src}")
+                    continue
+            paths = Path(src).rglob("*") if Path(src).is_dir() else [Path(src)]
+            for p in paths:
+                if p.is_file():
+                    data = p.read_bytes()
+                    if data.startswith((b"\x7fELF", b"MZ")):
+                        failures.append(f"native executable in source data: {p}")
+            source_data[src] = {"origin": kind}
+            if Path(src).is_file():
+                source_data[src]["sha256"] = hashlib.sha256(Path(src).read_bytes()).hexdigest()
+    return {"schema": 1, "boundary": ["host Nix evaluator/downloader/daemon", "x86_64 Linux kernel"],
+            "nodes": nodes, "sourceData": source_data,
+            "constructionPins": provenance,
+            "stage0Pins": json.loads((ROOT / "stage0-sources.json").read_text()),
+            "failures": sorted(set(failures)),
+            "limits": "Classifies executable origins/edges, not compiler correctness or a trust proof."}
+
+
+if __name__ == "__main__":
+    result = audit()
+    print(json.dumps(result, indent=2, sort_keys=True))
+    sys.exit(bool(result["failures"]))

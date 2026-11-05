@@ -1,0 +1,50 @@
+{
+  "amd64": {
+    "url": "https://github.com/oriansj/stage0-posix-amd64/archive/82efa0d6be1c9bb993a7a62af1cccd8d2cda91f6.tar.gz",
+    "rev": "82efa0d6be1c9bb993a7a62af1cccd8d2cda91f6",
+    "sha256": "0k6cpjyn01gzw5z097hyxm3vjvdbwnvrv4hqcz717f4rn66mhgv3",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/stage0-posix-amd64"
+  },
+  "m2planet": {
+    "url": "https://github.com/oriansj/M2-Planet/archive/bd2fe4b0659fd0ad3f476a5ad0ef801bd134665d.tar.gz",
+    "rev": "bd2fe4b0659fd0ad3f476a5ad0ef801bd134665d",
+    "sha256": "0n0lapdlk301cb7lyfyj4cp9ww47435k97q4n355rcv8rcfgh173",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/M2-Planet"
+  },
+  "m2mesoplanet": {
+    "url": "https://github.com/oriansj/M2-Mesoplanet/archive/4b011a85da73a7c97212468d41f17e806ba99547.tar.gz",
+    "rev": "4b011a85da73a7c97212468d41f17e806ba99547",
+    "sha256": "1mzs2brc356552ajgzg2bhg9q164p9x7rcrhlp8hyv4vrx9xbfqq",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/M2-Mesoplanet"
+  },
+  "m2libc": {
+    "url": "https://github.com/oriansj/M2libc/archive/68a23cfd05d5a355ba7a30c770d684cbe86fcc4e.tar.gz",
+    "rev": "68a23cfd05d5a355ba7a30c770d684cbe86fcc4e",
+    "sha256": "0ih0wx0l2mlfvgcmw7jcp2hvrfkbqgi7a4n9xcc6qinvr7zfy7yv",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/M2libc"
+  },
+  "mesccToolsSrc": {
+    "url": "https://github.com/oriansj/mescc-tools/archive/5adfbf3364261a77109878a56b100aeeb6ef9ac4.tar.gz",
+    "rev": "5adfbf3364261a77109878a56b100aeeb6ef9ac4",
+    "sha256": "0sdysgmxigl49xkby17nx8v56b7hcyak9qzyhn8cx2w3d1lia9rn",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/mescc-tools"
+  },
+  "mesccToolsExtraSrc": {
+    "url": "https://github.com/oriansj/mescc-tools-extra/archive/a151c245e512076971a3c85bb1502cf92cfa83b6.tar.gz",
+    "rev": "a151c245e512076971a3c85bb1502cf92cfa83b6",
+    "sha256": "0axn8vm4nxq6ws98bma33ivjlaszqi5l6na4qb8l65c1cgc0hqkb",
+    "license": "GPL-3.0-or-later",
+    "kind": "source-tree",
+    "upstream": "https://github.com/oriansj/mescc-tools-extra"
+  }
+}
