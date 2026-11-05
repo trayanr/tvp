@@ -1,0 +1,10 @@
+{
+  "pkg-config": {
+    "url": "https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz",
+    "hash": "sha256-b8acAWiMlFilfrmhZkyaujcszaQgoCv0Qp/mEOfn1ZE="
+  },
+  "ninja": {
+    "url": "https://github.com/ninja-build/ninja/archive/refs/tags/v1.13.2.tar.gz",
+    "hash": "sha256-l01rL07u+iViXTTaPLNr3Ovn+85A9MFqwINf0cDLrhc="
+  }
+}
