@@ -230,8 +230,9 @@ in
     ++ [
       cc
       cc.bintools
-      (lib.getBin cc.libc)
     ]
+    # Reduced libc profiles may explicitly declare no executable tools.
+    ++ (cc.libcTools or [ (lib.getBin cc.libc) ])
     ++ base.stdenv.initialPath;
   libraries = resolved;
   inherit env;
