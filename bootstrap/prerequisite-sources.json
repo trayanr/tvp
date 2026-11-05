@@ -1,0 +1,108 @@
+{
+  "files": {
+    "prerequisite-python.py": {
+      "adaptations": [
+        "Original minimal interpreter contracts; os.system explicitly unsupported"
+      ],
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "5f0a55489a2f8422b857a5cf257cdb3d10abc50432e0fd8ac962ab3fd603ada5"
+    },
+    "prerequisite-tests.nix": {
+      "adaptations": [
+        "Original scoped functional probes; glibc2.39 archive is only fixture data, not an executable input"
+      ],
+      "license": "TVP original",
+      "origins": [],
+      "ownedSHA256": "ac7fc6fda9f48243b9ac5e29e8fd8b804bab05bb586083a306f87029c8da9b68"
+    },
+    "prerequisites.nix": {
+      "adaptations": [
+        "Consolidated focused raw owned Bash builders; no upstream scope/stdenv import",
+        "Linux6.9 from TVP; make headers ARCH=x86, explicit GCC16 CC/HOSTCC/CONFIG_SHELL/SHELL; public .h only and separate LICENSES",
+        "M4 Linux UAPI CFLAGS and owned --with-syscmd-shell",
+        "Bison explicit M4 and owned yacc shebang; installed skeletons retained",
+        "TVP Python3.12.5 disabled-module profile and patch, NOT upstream Python3.14.6; explicit make SHELL for build/install and controlled compileall",
+        "Installed Python/config script interpreters and config helper paths bound to owned outputs",
+        "grep3.12 selected static.nix command logic, without a static linkage claim; egrep/fgrep bind shell and grep",
+        "Native M4/Bison/grep check output preserves actual exit and logs, independently of functional contracts"
+      ],
+      "license": "MIT recipe adaptation; source licenses retained in outputs",
+      "origins": [
+        {
+          "path": "pkgs/os-specific/linux/minimal-bootstrap/default.nix",
+          "repository": "https://github.com/NixOS/nixpkgs",
+          "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+          "sha256": "cb2dc728cc61907636fa5f172e6c508ea58e453fe4e612739bb3e491d4397a26"
+        },
+        {
+          "path": "pkgs/os-specific/linux/minimal-bootstrap/linux-headers/default.nix",
+          "repository": "https://github.com/NixOS/nixpkgs",
+          "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+          "sha256": "98b709734c6cb085fbef424cdc6a5d7a747e76dda9aecc77a364fdd2063ab4fe"
+        },
+        {
+          "path": "pkgs/os-specific/linux/minimal-bootstrap/gnum4/default.nix",
+          "repository": "https://github.com/NixOS/nixpkgs",
+          "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+          "sha256": "2016ef333d7b2b68af714ac92765ee66d46e6f523cd9b0e5cc85fd7a42c48b36"
+        },
+        {
+          "path": "pkgs/os-specific/linux/minimal-bootstrap/bison/default.nix",
+          "repository": "https://github.com/NixOS/nixpkgs",
+          "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+          "sha256": "dbe3dec60cea5e06919910bfc4a2c73edbbb44ad0c69c97ca20ef49490fcf55c"
+        },
+        {
+          "path": "pkgs/os-specific/linux/minimal-bootstrap/gnugrep/static.nix",
+          "repository": "https://github.com/NixOS/nixpkgs",
+          "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+          "sha256": "20cfcd9c93d43a84cbd8f09353a001d2d531fd8b5b9b8966a92133545f327bad"
+        },
+        {
+          "path": "pkgs/libraries/linux-headers/build-6.9.nix",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "c2e80cb93778fc8f81bb4d2f2eb5e777986a4a5a",
+          "sha256": "f0d54dc10ea7ac8c903a030d7acc49d28e274c399e992ee463b9911e7cab4bd8"
+        },
+        {
+          "path": "pkgs/runtimes/python-minimal/default.nix",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "c2e80cb93778fc8f81bb4d2f2eb5e777986a4a5a",
+          "sha256": "fcf7e8558b133c3126e60ab2123437e396267c6a75da324f8be37a11ef937763"
+        },
+        {
+          "path": "pkgs/runtimes/python-minimal/build-3.12.5.nix",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "c2e80cb93778fc8f81bb4d2f2eb5e777986a4a5a",
+          "sha256": "fdc919cd3c2a1fce41ab86dc744b0d590657ee46c8c9216c17f7b9e75ba47bbc"
+        },
+        {
+          "path": "pkgs/runtimes/python-minimal/patches/subprocess-shell.patch",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "c2e80cb93778fc8f81bb4d2f2eb5e777986a4a5a",
+          "sha256": "665fb46aac0506cd9c960b22255ef6db588b28331ca65bcc06fd86ac6978886d"
+        }
+      ],
+      "ownedSHA256": "53b3ce863b25d435210778da1ff2931df9408931de4b707fcaa66586d557be14"
+    },
+    "recipes/build-python/subprocess-shell.patch": {
+      "adaptations": [
+        "Byte-identical copy; @TVP_SHELL@ bound by builder"
+      ],
+      "license": "TVP source patch; changes CPython PSF-2.0 code",
+      "origins": [
+        {
+          "path": "pkgs/runtimes/python-minimal/patches/subprocess-shell.patch",
+          "repository": "https://github.com/trayanr/tvp",
+          "revision": "c2e80cb93778fc8f81bb4d2f2eb5e777986a4a5a",
+          "sha256": "665fb46aac0506cd9c960b22255ef6db588b28331ca65bcc06fd86ac6978886d"
+        }
+      ],
+      "ownedSHA256": "665fb46aac0506cd9c960b22255ef6db588b28331ca65bcc06fd86ac6978886d"
+    }
+  },
+  "schema": 1,
+  "upstreamNAR": "sha256-Jdi1t9zAcMpQg/BUIVoxlwImZ5hed1yGWNbPXnAU4vI=",
+  "upstreamTree": "fea5920a5f97185f1daaa0c74cd8fb1e2a0a5634"
+}

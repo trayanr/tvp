@@ -343,6 +343,14 @@ let
       staticLibgcc = true;
     };
 
+    inherit (import ./prerequisites.nix { inherit scope; })
+      linux-headers
+      build-m4
+      build-bison
+      build-python
+      build-grep
+      ;
+
     gcc-latest = callPackage ./recipes/gcc/wrapper.nix {
       gcc-unwrapped = gcc-latest-unwrapped;
       bash-build = bash;
@@ -403,6 +411,11 @@ in
     gcc16-libgcc
     gcc16-libstdcxx
     gcc-latest
+    linux-headers
+    build-m4
+    build-bison
+    build-python
+    build-grep
     ;
   inherit tests;
   compiler = scope.tinycc-mes.compiler;
