@@ -5,6 +5,7 @@ let
   helpers = rec {
     optional = condition: value: if condition then [ value ] else [ ];
     optionalString = condition: value: if condition then value else "";
+    getExe' = value: program: "${value}/bin/${program}";
     getExe = value: "${value}/bin/${value.meta.mainProgram or value.pname}";
     concatMapStringsSep =
       separator: f: values:
@@ -36,6 +37,8 @@ let
       gpl3Only = "GPL-3.0-only";
       gpl2Plus = "GPL-2.0-or-later";
       lgpl21Plus = "LGPL-2.1-or-later";
+      lgpl3Only = "LGPL-3.0-only";
+      gpl2Only = "GPL-2.0-only";
       lgpl3Plus = "LGPL-3.0-or-later";
       lgpl21Only = "LGPL-2.1-only";
       mit = "MIT";

@@ -13,3 +13,4 @@ in
 }
 // import ./ladder-tests.nix { inherit scope; }
 // import ./gcc10-tests.nix { inherit scope; }
+// import ./gcc16-tests.nix { inherit scope; }
