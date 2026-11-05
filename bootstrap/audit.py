@@ -36,7 +36,7 @@ def store_path(value):
     return STORE + value if not value.startswith(STORE) else value
 
 
-def audit_graph(raw, sources, provenance, stage0_pins):
+def audit_graph(raw, sources, provenance, stage0_pins, early_outputs=()):
     # Accept both Nix's v4 graph envelope and the older direct attrset.
     graph = {store_path(k): v for k, v in raw.get("derivations", raw).items()}
     outputs = {store_path(output.get("path", node["env"][name])): drv
@@ -92,6 +92,10 @@ def audit_graph(raw, sources, provenance, stage0_pins):
                     continue
             paths = Path(src).rglob("*") if Path(src).is_dir() else [Path(src)]
             for p in paths:
+                if p.is_symlink():
+                    resolved = str(p.resolve())
+                    if resolved != src and not resolved.startswith(src + "/"):
+                        failures.append(f"escaping source symlink: {p}")
                 if p.is_file():
                     data = p.read_bytes()
                     if data.startswith((b"\x7fELF", b"MZ")):
@@ -99,8 +103,11 @@ def audit_graph(raw, sources, provenance, stage0_pins):
             source_data[src] = {"origin": kind}
             if Path(src).is_file():
                 source_data[src]["sha256"] = hashlib.sha256(Path(src).read_bytes()).hexdigest()
+    forbidden = set(early_outputs) | {p for p, drv in outputs.items()
+                                            if nodes[drv]["origin"] == "explicit-seed"}
     return {"schema": 1, "boundary": ["host Nix evaluator/downloader/daemon", "x86_64 Linux kernel"],
             "nodes": nodes, "sourceData": source_data,
+            "runtimeForbiddenExecutableRoots": sorted(forbidden),
             "constructionPins": provenance,
             "stage0Pins": stage0_pins,
             "failures": sorted(set(failures)),
@@ -109,12 +116,17 @@ def audit_graph(raw, sources, provenance, stage0_pins):
 
 def audit():
     raw = nix_json("derivation", "show", "--recursive", "--file", str(ROOT),
-                   "tests.consumer", "tests.versions", "tests.cxx", "tests.tools", "tests.transitions", "tests.libc", "tests.stage-comparison")
+                   "tests.consumer", "tests.versions", "tests.cxx", "tests.tools", "tests.transitions", "tests.libc", "tests.stage-comparison",
+                   "tests.gcc10", "tests.gcc10-archives")
     sources = nix_json("eval", "--json", "--impure", "--expr",
                        f'let b = import {ROOT} {{}}; in builtins.mapAttrs (_: p: toString p) b.sources')
+    early = nix_json("derivation", "show", "--recursive", "--file", str(ROOT), "compiler", "libc")
+    early_outputs = [store_path(output.get("path", node["env"][name]))
+                     for node in early.get("derivations", early).values()
+                     for name, output in node["outputs"].items()]
     return audit_graph(raw, sources,
                        json.loads((ROOT / "provenance.json").read_text()),
-                       json.loads((ROOT / "stage0-sources.json").read_text()))
+                       json.loads((ROOT / "stage0-sources.json").read_text()), early_outputs)
 
 
 if __name__ == "__main__":

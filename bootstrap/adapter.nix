@@ -4,6 +4,8 @@ let
   concatStringsSep = builtins.concatStringsSep;
   helpers = rec {
     optional = condition: value: if condition then [ value ] else [ ];
+    optionalString = condition: value: if condition then value else "";
+    getExe = value: "${value}/bin/${value.meta.mainProgram or value.pname}";
     concatMapStringsSep =
       separator: f: values:
       concatStringsSep separator (map f values);
@@ -37,6 +39,7 @@ let
       lgpl3Plus = "LGPL-3.0-or-later";
       lgpl21Only = "LGPL-2.1-only";
       mit = "MIT";
+      bsdOriginal = "BSD-4-Clause";
     };
     teams.minimal-bootstrap = "upstream minimal-bootstrap contributors";
     platforms.all = [ system ];

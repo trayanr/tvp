@@ -1,13 +1,16 @@
-# Standalone construction through first C++
+# Standalone construction through GCC10
 
-This private x86_64 Linux entrypoint constructs GCC 4.6.4 C and C++, including
-static target libstdc++, from one **229-byte AMD64 hex0 seed**. It is an
-intermediate compiler milestone, not a complete modern TVP base. The catalogue,
+This private x86_64 Linux entrypoint constructs GCC 10.4.0 C and C++ with an
+owned wrapper and static target libstdc++, from one **229-byte AMD64 hex0 seed**.
+It is an intermediate compiler milestone, not a complete modern TVP base. The catalogue,
 default base and frozen construction remain separate and unchanged.
 
 ```sh
-nix build --file bootstrap gcc46-cxx --no-link -L
-nix build --file bootstrap tests.cxx tests.libc tests.tools tests.transitions tests.stage-comparison --no-link -L
+nix build --file bootstrap bzip2 --no-link -L
+nix build --file bootstrap gnutar-latest --no-link -L
+nix build --file bootstrap gcc10-unwrapped --no-link -L
+nix build --file bootstrap gcc10 --no-link -L
+nix build --file bootstrap tests.gcc10-archives 'tests.gcc10^*' --no-link -L
 python3 bootstrap/audit.py > executable-inputs.json
 ```
 
@@ -35,6 +38,20 @@ limitations end at the GCC-built musl stage. GCC 4.6 C builds the full musl,
 then the C+C++ rebuild uses private GMP 4.3.2, MPFR 2.4.2 and MPC 1.0.3.
 The C++ recipe uses the full default make target with shared libraries disabled.
 
+The next private endpoints add bzip2 1.0.8, Tar 1.35, `gcc10-unwrapped` and `gcc10`.
+Tar explicitly selects musl's separate wrapper output. Bzip2 retains its archive
+binaries and omits optional host-dependent pager/grep/diff scripts. GCC10 uses
+in-tree GMP 6.2.1 (the last supporting GCC4.6), MPFR 4.2.2 and MPC 1.4.1, without
+ISL. The pinned recipe deliberately avoids GCC10.5 (GCC bug 110716). Host code uses
+O1 and target code O0. Bootstrap self-comparison, analyzer, decimal float, shared
+libraries, LTO, multilib, plugins, NLS, optional runtimes and filesystem TS are
+disabled. Installation merges lib64 into lib and links lib64 to lib.
+
+The owned GCC10 wrappers preserve argument boundaries, use the fixed native
+store for RPATH selection even with empty `NIX_STORE`, and retain libtool's `-v`
+special case. C++ headers precede libc for include_next; musl's -B precedes
+libgcc for gnulib detection. Static libstdc++ adds no compiler RPATH.
+
 The explicit native tuple is `x86_64-unknown-linux-musl`. Old config.sub handling
 retains upstream's reduced tuple where necessary. GCC's driver library searches,
 assembler/linker paths and loader defaults are bound to owned stages, alongside
@@ -60,6 +77,15 @@ make/shell selection, text processing, search and archive/compression roundtrips
 Upstream transition tests are retained, with musl's wrapper output selected
 explicitly. Their C hello program is not a C++ test.
 
+`tests.gcc10` exercises raw and wrapped C/C++14 in an empty environment: relaxed
+constexpr, generic lambdas, deduced returns, variable templates, make_unique and
+integer_sequence, alongside STL, exceptions/unwinding, RTTI and separate C-object
+ABI linkage. Static and dynamic-musl consumers use static libstdc++/libgcc.
+Search directories, specs, selected assembler/linker and archives are inspected.
+`tests.gcc10-archives` checks bzip2 roundtrips and gzip/bzip2/xz Tar extraction,
+including executable mode, mtime and execution. Runtime compiler checks are
+explicit opt-in targeted builds; ordinary CI runs only offline contracts.
+
 `tests.stage-comparison` records adjacent TinyCC compiler and C-object byte
 comparisons. The original version chain only executes compiler versions. Neither
 is a fixed-point, diverse-compilation, reproducibility or upstream conformance
@@ -70,11 +96,14 @@ build inputs. `audit.py` recursively classifies seed, source and executable
 origins, pins, builders, PATH and shell edges; it rejects unknown or escaping
 inputs. `runtime-audit.py` takes that report, an observer readelf path and realized
 output roots to inspect ELF loaders/libraries, script interpreters and symlinks.
-Runtime source-text references are classified separately from executables.
+ELF architecture uses numeric e_machine 62. Runtime source-text references are
+classified separately from executables; early-chain executable roots are forbidden
+in runtime closures while remaining valid construction inputs.
 The offline `bootstrap-audit-contracts` repository check does not compile these
 stages; compiler/runtime realization is separate targeted evidence.
 
-`negative.nix` preserves the earlier expected-failure controls. GCC 10, a modern
-compiler meeting the C++14 prerequisite, later-generation rebuild comparisons,
-complete owned tools/base construction and coherent candidate/catalogue validation
-remain necessary before proposing any default-base change.
+`negative.nix` preserves the earlier expected-failure controls. GCC10 capability
+probes are bounded, with no upstream GCC/libstdc++ conformance claim. A modern
+compiler, later-generation comparisons, complete owned tools/base construction
+and coherent candidate/catalogue validation remain necessary before proposing
+any default-base change.

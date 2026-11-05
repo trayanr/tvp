@@ -12,3 +12,4 @@ in
   versions = tinycc-mes.compiler.tests.chain;
 }
 // import ./ladder-tests.nix { inherit scope; }
+// import ./gcc10-tests.nix { inherit scope; }

@@ -3,6 +3,7 @@ import copy
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -105,6 +106,24 @@ class AuditTests(unittest.TestCase):
             self.assertTrue(any("undeclared shell" in f for f in self.failures()))
         self.graph[self.stage_drv]["env"]["SHELL"] = self.seed + "/bin/sh"
         self.assertEqual(self.failures(), [])
+
+    def test_source_symlink_cannot_escape_its_owned_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'source'
+            root.mkdir()
+            outside = Path(temporary) / 'foreign.sh'
+            outside.write_text('#!/bin/sh\n')
+            (root / 'escaped').symlink_to(outside)
+            self.graph[self.stage_drv]['inputSrcs'] = [str(root)]
+            # Temporary fixtures live outside the real Nix store.
+            with patch.object(a, 'store_path', side_effect=lambda value: value):
+                result = a.audit_graph(self.graph, {'fixture': str(root)}, self.provenance, {})
+            self.assertTrue(any('escaping source symlink' in f for f in result['failures']))
+
+    def test_runtime_exclusion_is_separate_from_valid_build_origins(self):
+        result = a.audit_graph(self.graph, {}, self.provenance, {}, [self.stage])
+        self.assertEqual(result['failures'], [])
+        self.assertEqual(set(result['runtimeForbiddenExecutableRoots']), {self.seed, self.stage})
 
     def test_all_nix_hash_serializations_keep_exact_pin_identity(self):
         expected = "sha256-DCzZduYrix9yOeJoem/Jhz/WDzAss7UWwjZbkXJq6Ms="

@@ -16,7 +16,11 @@
       "Bind GCC default library searches, assembler/linker and every loader spec alternative to owned outputs",
       "Select musl wrapper bin output explicitly in upstream C tests",
       "Use owned interpreters in installed GCC maintenance scripts; omit unneeded Bash bug mailer",
-      "Preserve wordexp shell argv[0] while searching declared PATH with execlp"
+      "Preserve wordexp shell argv[0] while searching declared PATH with execlp",
+      "Port pinned GCC10.4.0 with in-tree GMP6.2.1/MPFR4.2.2/MPC1.4.1 and without ISL; preserve bounded upstream configuration",
+      "Select musl.bin for Tar1.35 native CC; omit unused host-dependent bzip2 pager/grep/diff scripts",
+      "Use fixed native store and Bash arrays in GCC wrappers to preserve caller argument boundaries",
+      "Pass caller RPATHs as separate linker arguments so commas remain part of the path"
     ]
   },
   "stage0Release": {
@@ -306,6 +310,36 @@
       "hash": "sha256-wd2Aev1zPJXy3q933aiup5p1IMKzVJBquAyl3gbK4PU=",
       "license": "GPL-3.0-or-later",
       "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gcc/gcc-10.4.0/gcc-10.4.0.tar.xz",
+      "hash": "sha256-ySl9W818tD89/C/tU4npSMkxL9li72pM5FXP+WPr5PE=",
+      "license": "GPL-3.0-or-later; target runtime includes GCC-exception-3.1"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gmp/gmp-6.2.1.tar.xz",
+      "hash": "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/mpfr/mpfr-4.2.2.tar.xz",
+      "hash": "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=",
+      "license": "LGPL-3.0-or-later"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/mpc/mpc-1.4.1.tar.xz",
+      "hash": "sha256-kSBM0y8WS9O3yZLUpqjOZRlRGq2rMPeLaYLQv41z6TE=",
+      "license": "LGPL-3.0-or-later"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/tar/tar-1.35.tar.gz",
+      "hash": "sha256-FNVeMgY+qVJuBX+/Nfyr1TN452l4fv95GcN1WwLStX4=",
+      "license": "GPL-3.0-or-later"
+    },
+    {
+      "url": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
+      "hash": "sha256-q1oDF27hBtPw+pDjgdpHjdrkBZGBU8yiSOaCzQxKImk=",
+      "license": "bzip2-1.0.6 (upstream recipe labels BSD-4-Clause)"
     }
   ],
   "lnBoot": {

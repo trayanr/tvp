@@ -3,13 +3,15 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+import struct
 import sys
 
 
 def origin_paths(report):
     if (not isinstance(report, dict) or report.get('schema') != 1
             or report.get('failures') != [] or not isinstance(report.get('nodes'), dict)
-            or not report['nodes'] or not isinstance(report.get('sourceData'), dict)):
+            or not report['nodes'] or not isinstance(report.get('sourceData'), dict)
+            or not isinstance(report.get('runtimeForbiddenExecutableRoots'), list)):
         raise ValueError('A successful executable-origin report is required')
     known = {}
     for node in report['nodes'].values():
@@ -22,6 +24,8 @@ def origin_paths(report):
         if source['origin'] not in {'pinned-stage0-source-tree', 'owned-source-or-nix-generated-text'}:
             raise ValueError('Unknown source origin')
         known[path] = source['origin']
+    if any(path not in known for path in report['runtimeForbiddenExecutableRoots']):
+        raise ValueError('Unknown early executable root')
     return known
 
 
@@ -56,7 +60,12 @@ def audit(report, readelf, roots):
     for root in sorted(paths):
         if root not in known:
             failures.append('unknown runtime output: ' + root)
-        for file in sorted(Path(root).rglob('*')):
+        root_path = Path(root)
+        if root_path.is_symlink():
+            if not within(str(root_path.resolve()), paths):
+                failures.append('escaping symlink: ' + str(root_path))
+            continue
+        for file in sorted(root_path.rglob('*')) if root_path.is_dir() else [root_path]:
             if file.is_symlink():
                 if not within(str(file.resolve()), paths):
                     failures.append('escaping symlink: ' + str(file))
@@ -66,6 +75,8 @@ def audit(report, readelf, roots):
             with file.open('rb') as stream:
                 head = stream.read(256)
             if head.startswith(b'\x7fELF'):
+                if root in report.get('runtimeForbiddenExecutableRoots', []):
+                    failures.append('early executable in runtime closure: ' + str(file))
                 info = subprocess.check_output([readelf, '-h', '-l', '-d', str(file)], text=True)
                 interpreter = re.findall(r'Requesting program interpreter: ([^\]]+)', info)
                 needed = re.findall(r'\(NEEDED\).*\[([^\]]+)\]', info)
@@ -75,10 +86,21 @@ def audit(report, readelf, roots):
                 for library in needed:
                     if not owned_library(library, paths):
                         failures.append('unresolved runtime library: ' + str(file) + ': ' + library)
-                if 'Advanced Micro Devices X86-64' not in info:
+                # readelf wording varies by version; ELF e_machine is numeric.
+                byteorder = {1: '<', 2: '>'}.get(head[5])
+                machine = struct.unpack(byteorder + 'H', head[18:20])[0] if byteorder else None
+                if machine != 62:
                     failures.append('unexpected ELF architecture: ' + str(file))
-                files[str(file)] = {'kind': 'ELF', 'interpreter': interpreter, 'needed': needed}
+                rpaths = re.findall(r'\((?:RPATH|RUNPATH)\).*\[([^\]]*)\]', info)
+                for entries in rpaths:
+                    for entry in entries.split(':'):
+                        if not entry or not within(entry, paths) or not within(str(Path(entry).resolve()), paths):
+                            failures.append('foreign runtime search path: ' + str(file) + ': ' + entry)
+                files[str(file)] = {'kind': 'ELF', 'machine': machine, 'interpreter': interpreter,
+                                    'needed': needed, 'rpaths': rpaths}
             elif head.startswith(b'#!'):
+                if root in report.get('runtimeForbiddenExecutableRoots', []):
+                    failures.append('early executable in runtime closure: ' + str(file))
                 shell = head.splitlines()[0][2:].decode().split()[0]
                 if not owned_executable(shell, paths):
                     failures.append('foreign script interpreter: ' + str(file) + ': ' + shell)
