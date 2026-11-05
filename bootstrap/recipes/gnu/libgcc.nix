@@ -1,5 +1,6 @@
 {
   enableShared,
+  installThreadHeaders ? false,
   libc-headers,
   libc ? null,
   lib,
@@ -66,135 +67,142 @@ bash.runCommand "tvp-bootstrap-gnu-${pname}-${common.version}"
       xz
     ];
   }
-  ''
-    # Build from a local copy: diagnostic/configure source paths must not retain
-    # the entire patched source tree (and its unused scripts) in runtime closures.
-    cp -pr ${common.monorepoSrc} source
-    chmod -R u+w source
-    taskSrc="$PWD/source"
+  (
+    ''
+      # Build from a local copy: diagnostic/configure source paths must not retain
+      # the entire patched source tree (and its unused scripts) in runtime closures.
+      cp -pr ${common.monorepoSrc} source
+      chmod -R u+w source
+      taskSrc="$PWD/source"
 
-    # Configure
-    mkdir -p build-${buildPlatform.config}/libiberty/
-    ln -s ${libiberty}/lib/libiberty.a build-${buildPlatform.config}/libiberty/
+      # Configure
+      mkdir -p build-${buildPlatform.config}/libiberty/
+      ln -s ${libiberty}/lib/libiberty.a build-${buildPlatform.config}/libiberty/
 
-    mkdir -p gcc/
-    cd gcc/
+      mkdir -p gcc/
+      cd gcc/
 
-    (
-    export AS_FOR_BUILD=${lib.getExe' binutils-buildbuild "as"}
-    export CC_FOR_BUILD="${lib.getExe' gcc-buildbuild "gcc"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
-    export CPP_FOR_BUILD="${lib.getExe' gcc-buildbuild "cpp"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
-    export CXX_FOR_BUILD="${lib.getExe' gcc-buildbuild "g++"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
-    export LD_FOR_BUILD="${lib.getExe' binutils-buildbuild "ld"}"
-    export OBJDUMP_FOR_BUILD=${lib.getExe' binutils-buildbuild "objdump"}
+      (
+      export AS_FOR_BUILD=${lib.getExe' binutils-buildbuild "as"}
+      export CC_FOR_BUILD="${lib.getExe' gcc-buildbuild "gcc"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
+      export CPP_FOR_BUILD="${lib.getExe' gcc-buildbuild "cpp"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
+      export CXX_FOR_BUILD="${lib.getExe' gcc-buildbuild "g++"} -I${libgmp}/include -I${libmpfr}/include -I${libmpc}/include"
+      export LD_FOR_BUILD="${lib.getExe' binutils-buildbuild "ld"}"
+      export OBJDUMP_FOR_BUILD=${lib.getExe' binutils-buildbuild "objdump"}
 
-    export AS=$AS_FOR_BUILD
-    export CC=$CC_FOR_BUILD
-    export CPP=$CPP_FOR_BUILD
-    export CXX=$CXX_FOR_BUILD
-    export LD=$LD_FOR_BUILD
-    export OBJDUMP=$OBJDUMP_FOR_BUILD
+      export AS=$AS_FOR_BUILD
+      export CC=$CC_FOR_BUILD
+      export CPP=$CPP_FOR_BUILD
+      export CXX=$CXX_FOR_BUILD
+      export LD=$LD_FOR_BUILD
+      export OBJDUMP=$OBJDUMP_FOR_BUILD
 
-    export AS_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
-    export CC_FOR_TARGET="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
-    export CPP_FOR_TARGET=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
-    export LD_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
-    export OBJDUMP_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}objdump"}
+      export AS_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
+      export CC_FOR_TARGET="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
+      export CPP_FOR_TARGET=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
+      export LD_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
+      export OBJDUMP_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}objdump"}
 
-    export CFLAGS_FOR_BUILD="-DGENERATOR_FILE=1"
-    $taskSrc/gcc/configure \
-      --build=${buildPlatform.config} \
-      --host=${buildPlatform.config} \
-      --target=${hostPlatform.config} \
-      --disable-bootstrap \
-      --disable-multilib \
-      --enable-languages=c \
-      --disable-fixincludes \
-      --disable-gcov \
-      --disable-intl \
-      --disable-lto \
-      --disable-libatomic \
-      --disable-libbacktrace \
-      --disable-libcpp \
-      --disable-libssp \
-      --disable-libquadmath \
-      --disable-libgomp \
-      --disable-libvtv \
-      --disable-vtable-verify \
-      --with-sysroot=${libc} \
-      --with-native-system-header-dir=/include
+      export CFLAGS_FOR_BUILD="-DGENERATOR_FILE=1"
+      $taskSrc/gcc/configure \
+        --build=${buildPlatform.config} \
+        --host=${buildPlatform.config} \
+        --target=${hostPlatform.config} \
+        --disable-bootstrap \
+        --disable-multilib \
+        --enable-languages=c \
+        --disable-fixincludes \
+        --disable-gcov \
+        --disable-intl \
+        --disable-lto \
+        --disable-libatomic \
+        --disable-libbacktrace \
+        --disable-libcpp \
+        --disable-libssp \
+        --disable-libquadmath \
+        --disable-libgomp \
+        --disable-libvtv \
+        --disable-vtable-verify \
+        --with-sysroot=${libc} \
+        --with-native-system-header-dir=/include
 
-    sed -i 's,libgcc.mvars:.*$,libgcc.mvars:,' -i Makefile
+      sed -i 's,libgcc.mvars:.*$,libgcc.mvars:,' -i Makefile
 
-    make \
-      config.h \
-      libgcc.mvars \
-      tconfig.h \
-      tm.h \
-      options.h \
-      insn-constants.h \
-      version.h
-    )
-    mkdir -p include
+      make \
+        config.h \
+        libgcc.mvars \
+        tconfig.h \
+        tm.h \
+        options.h \
+        insn-constants.h \
+        version.h
+      )
+      mkdir -p include
 
-    mkdir -p ${hostPlatform.config}/libgcc
-    cd ${hostPlatform.config}/libgcc
+      mkdir -p ${hostPlatform.config}/libgcc
+      cd ${hostPlatform.config}/libgcc
 
-    export AS_FOR_BUILD=${lib.getExe' binutils-buildbuild "as"}
-    export CC_FOR_BUILD=${lib.getExe' gcc-buildbuild "gcc"}
-    export CPP_FOR_BUILD=${lib.getExe' gcc-buildbuild "cpp"}
-    export CXX_FOR_BUILD=${lib.getExe' gcc-buildbuild "g++"}
-    export LD_FOR_BUILD=${lib.getExe' binutils-buildbuild "ld"}
+      export AS_FOR_BUILD=${lib.getExe' binutils-buildbuild "as"}
+      export CC_FOR_BUILD=${lib.getExe' gcc-buildbuild "gcc"}
+      export CPP_FOR_BUILD=${lib.getExe' gcc-buildbuild "cpp"}
+      export CXX_FOR_BUILD=${lib.getExe' gcc-buildbuild "g++"}
+      export LD_FOR_BUILD=${lib.getExe' binutils-buildbuild "ld"}
 
-    export AS=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
-    export CC="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
-    export CPP=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
-    export LD=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
-    export AS_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
-    export CC_FOR_TARGET="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
-    export CPP_FOR_TARGET=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
-    export LD_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
+      export AS=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
+      export CC="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
+      export CPP=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
+      export LD=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
+      export AS_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}as"}
+      export CC_FOR_TARGET="${lib.getExe' gcc "${hostPlatform.config}-gcc"}"
+      export CPP_FOR_TARGET=${lib.getExe' gcc "${binutilsTargetPrefix}cpp"}
+      export LD_FOR_TARGET=${lib.getExe' binutils "${binutilsTargetPrefix}ld"}
 
-    export CFLAGS="-O2 ${lib.optionalString hostPlatform.isMusl "-isystem ${gcc}/lib/gcc/${hostPlatform.config}/${common.version}/include-fixed"}"
+      export CFLAGS="-O2 ${lib.optionalString hostPlatform.isMusl "-isystem ${gcc}/lib/gcc/${hostPlatform.config}/${common.version}/include-fixed"}"
 
-    $taskSrc/libgcc/configure --disable-dependency-tracking \
-     --prefix="$out" \
-     --build=${buildPlatform.config} \
-     --host=${hostPlatform.config} \
-      gcc_cv_target_thread_file=posix \
-      ${
-        if enableShared then "--enable-shared --enable-static" else "--disable-shared --enable-static"
-      } \
-      cross_compiling=true
+      $taskSrc/libgcc/configure --disable-dependency-tracking \
+       --prefix="$out" \
+       --build=${buildPlatform.config} \
+       --host=${hostPlatform.config} \
+        gcc_cv_target_thread_file=posix \
+        ${
+          if enableShared then "--enable-shared --enable-static" else "--disable-shared --enable-static"
+        } \
+        cross_compiling=true
 
-    export CFLAGS="-O2"
-    export LDFLAGS="${lib.optionalString (libc != null) "-B${libc}/lib"}"
-    make -j $NIX_BUILD_CORES MULTIBUILDTOP:=../
+      export CFLAGS="-O2"
+      export LDFLAGS="${lib.optionalString (libc != null) "-B${libc}/lib"}"
+      make -j $NIX_BUILD_CORES MULTIBUILDTOP:=../
 
-    make -j $NIX_BUILD_CORES install-strip MULTIBUILDTOP:=../
-    mkdir -p "$out/include"
-    install -c -m 644 gthr-default.h "$out/include/"
+      make -j $NIX_BUILD_CORES install-strip MULTIBUILDTOP:=../
+      mkdir -p "$out/include"
+      install -c -m 644 gthr-default.h "$out/include/"
 
-    if [ -d "$out/lib64" ]; then
-      shopt -s dotglob
-      for lib in $out/lib64/*; do
+      if [ -d "$out/lib64" ]; then
+        shopt -s dotglob
+        for lib in $out/lib64/*; do
+          mv --no-clobber "$lib" "$out/lib/gcc/${hostPlatform.config}/${common.version}/"
+        done
+        shopt -u dotglob
+        rm -rf "$out/lib64"
+        ln -s lib "$out/lib64"
+      fi
+      # On 32-bit platforms, libs might be placed into $out/lib rather than lib64.
+      # Move to unified directory, so that gcc-wrapper finds them
+      shopt -s nullglob
+      for lib in $out/lib/*.*; do
         mv --no-clobber "$lib" "$out/lib/gcc/${hostPlatform.config}/${common.version}/"
       done
-      shopt -u dotglob
-      rm -rf "$out/lib64"
-      ln -s lib "$out/lib64"
-    fi
-    # On 32-bit platforms, libs might be placed into $out/lib rather than lib64.
-    # Move to unified directory, so that gcc-wrapper finds them
-    shopt -s nullglob
-    for lib in $out/lib/*.*; do
-      mv --no-clobber "$lib" "$out/lib/gcc/${hostPlatform.config}/${common.version}/"
-    done
-    shopt -u nullglob
+      shopt -u nullglob
 
-    test -f "$out/lib/gcc/${hostPlatform.config}/${common.version}/libgcc_eh.a"
-    test ! -L "$out/lib/gcc/${hostPlatform.config}/${common.version}/libgcc_eh.a"
-    find "$out/lib/gcc/${hostPlatform.config}/${common.version}/" -type f -exec ${binutilsTargetPrefix}strip --strip-debug {} + || true
-    mkdir -p "$out/share/licenses/${pname}"
-    cp $taskSrc/COPYING* "$out/share/licenses/${pname}/"
-  ''
+      test -f "$out/lib/gcc/${hostPlatform.config}/${common.version}/libgcc_eh.a"
+      test ! -L "$out/lib/gcc/${hostPlatform.config}/${common.version}/libgcc_eh.a"
+      find "$out/lib/gcc/${hostPlatform.config}/${common.version}/" -type f -exec ${binutilsTargetPrefix}strip --strip-debug {} + || true
+      mkdir -p "$out/share/licenses/${pname}"
+      cp $taskSrc/COPYING* "$out/share/licenses/${pname}/"
+    ''
+    + lib.optionalString installThreadHeaders ''
+      runtimeInclude="$out/lib/gcc/${hostPlatform.config}/${common.version}/include"
+      install -m 644 "$taskSrc/libgcc/gthr.h" "$taskSrc/libgcc/gthr-posix.h" \
+        gthr-default.h "$runtimeInclude/"
+    ''
+  )
