@@ -1,0 +1,60 @@
+{
+  "recipeOrigin": {
+    "repository": "https://github.com/NixOS/nixpkgs",
+    "revision": "97059e5ecd707df94f104cfd77b0ac0e2c14881c",
+    "directory": "pkgs/os-specific/linux/minimal-bootstrap",
+    "license": "MIT; retain per-file GPL-3.0-or-later notices",
+    "adaptations": [
+      "Owned pure scope/raw derivation adapter",
+      "Fetch Stage0 source components separately at the release's gitlink revisions",
+      "Use builtin source downloaders",
+      "Explicit empty PATH on raw derivations",
+      "Initialize Mes wait status for M2's word-sized int"
+    ]
+  },
+  "stage0Release": {
+    "repository": "https://github.com/oriansj/stage0-posix",
+    "revision": "45d90f5955b6907dc6cdea9ebafce558359edcd3",
+    "tag": "Release_1.9.1",
+    "answersUrl": "https://raw.githubusercontent.com/oriansj/stage0-posix/45d90f5955b6907dc6cdea9ebafce558359edcd3/amd64.answers",
+    "answersSha256": "9772685821a8b37fa1377809f4cd01e8ff15f31cefb60fb70a2a5f544c858541"
+  },
+  "seed": {
+    "url": "https://github.com/oriansj/bootstrap-seeds/raw/cedec6b8066d1db229b6c77d42d120a23c6980ed/POSIX/AMD64/hex0-seed",
+    "license": "GPL-3.0-or-later",
+    "size": 229,
+    "sha256": "66c95985e668f20f2465c2b876f83fef066fd7c8c2dd3adb51a969f2d7120c8b",
+    "narHash": "sha256-DCzZduYrix9yOeJoem/Jhz/WDzAss7UWwjZbkXJq6Ms="
+  },
+  "archives": [
+    {
+      "url": "https://ftpmirror.gnu.org/mes/mes-0.27.1.tar.gz",
+      "hash": "sha256-GDpA6kfqSfih470bnRLmdjdNZNY7x557wa59Zz398l0=",
+      "license": "GPL-3.0-or-later"
+    },
+    {
+      "url": "https://download.savannah.nongnu.org/releases/nyacc/nyacc-1.09.1.tar.gz",
+      "hash": "sha256-DsmuU34NlReBpQ3jx5KayXqFwdS16F5dUVQuN1ECJxc=",
+      "license": "LGPL-3.0-or-later"
+    },
+    {
+      "url": "https://gitlab.com/janneke/tinycc/-/archive/ea3900f6d5e71776c5cfabcabee317652e3a19ee/tinycc-ea3900f6d5e71776c5cfabcabee317652e3a19ee.tar.gz",
+      "hash": "sha256-16JBGJATAWP+lPylOi3+lojpdv0SR5pqyxOV2PiVx0A=",
+      "license": "LGPL-2.1-only"
+    },
+    {
+      "url": "https://repo.or.cz/tinycc.git/snapshot/cb41cbfe717e4c00d7bb70035cda5ee5f0ff9341.tar.gz",
+      "hash": "sha256-MRuqq3TKcfIahtUWdhAcYhqDiGPkAjS8UTMsDE+/jGU=",
+      "license": "LGPL-2.1-only"
+    }
+  ],
+  "lnBoot": {
+    "license": "MIT",
+    "origin": "recipeOrigin/ln-boot/ln.c"
+  },
+  "liveBootstrapRecipeReferences": [
+    "https://github.com/fosslinux/live-bootstrap/blob/737bf61a26152fb82510a2797f0d712de918aa78/sysa/mes-0.25/mes-0.25.kaem",
+    "https://github.com/fosslinux/live-bootstrap/blob/1bc4296091c51f53a5598050c8956d16e945b0f5/sysa/tcc-0.9.26/tcc-0.9.26.kaem",
+    "https://github.com/fosslinux/live-bootstrap/blob/1bc4296091c51f53a5598050c8956d16e945b0f5/sysa/tcc-0.9.27/tcc-0.9.27.kaem"
+  ]
+}
