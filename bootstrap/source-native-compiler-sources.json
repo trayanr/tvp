@@ -1,0 +1,11 @@
+{
+  "gcc": {
+    "url": "https://ftpmirror.gnu.org/gcc/gcc-16.2.0/gcc-16.2.0.tar.xz",
+    "hash": "sha256-5nOOKVl/czJwcxqpBgDzf/3ARQed/CfsfoGSzIEIXD4="
+  },
+  "layout": {
+    "name": "regular-libdir-includedir.patch",
+    "url": "https://inbox.sourceware.org/gcc-patches/20250717174911.1536129-1-git@JohnEricson.me/raw",
+    "hash": "sha256-Cn7rvg1FI7H/26GzSe4pv5VW/gvwbwGqivAqEeawkwk="
+  }
+}
