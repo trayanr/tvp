@@ -124,9 +124,11 @@ in
       paths,
       elfKinds ? null,
       dlopenDirectories ? [ ],
+      forceRpath ? false,
       base ? null,
       libraries ? null,
     }:
+    assert !forceRpath || (base != null && libraries != null && dlopenDirectories != [ ]);
     {
       name = "output.rpaths";
       tools = [
@@ -137,7 +139,9 @@ in
       run =
         if libraries != null then
           assert base != null;
-          ''${python}/bin/python3 -B ${./owned-output/rpaths.py} "$out" ${
+          ''${python}/bin/python3 -B ${
+            if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py
+          } "$out" ${
             lib.escapeShellArg (
               builtins.toJSON {
                 inherit paths dlopenDirectories elfKinds;
@@ -160,7 +164,7 @@ in
                 patchelf = "${patchelf}/bin/patchelf";
               }
             )
-          } ${./native-output}''
+          } ${./native-output}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}''
         else
           selectedRun python "rpaths" {
             inherit paths dlopenDirectories;
