@@ -33,6 +33,9 @@ rec {
   hasPrefix = prefix: value: builtins.substring 0 (builtins.stringLength prefix) value == prefix;
   hasInfix = infix: value: infix == "" || builtins.replaceStrings [ infix ] [ "" ] value != value;
   escapeShellArg = value: "'" + builtins.replaceStrings [ "'" ] [ "'\\''" ] (toString value) + "'";
+  escapeShellArgs = values: concatStringsSep " " (map escapeShellArg values);
+  # Metadata only, from the same small attributed pure adapter.
+  inherit (early) licenses;
   getOutput = name: p: if p ? ${name} then p.${name} else p;
   getBin = getOutput "bin";
   getDev = getOutput "dev";

@@ -6,6 +6,7 @@
       tar,
       xz ? null,
       gzip ? null,
+      findutils ? null,
       compression ? "xz",
     }:
     let
@@ -22,7 +23,7 @@
       tools = [
         tar
         codec
-      ];
+      ] ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
         PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
@@ -30,7 +31,9 @@
         }f ${src} --strip-components=1 -C source
         chmod -R u+w source
         # Match the source epoch policy: regular files, bounded by build start.
-        epoch=$(find source -type f -not -newer "$NIX_BUILD_TOP/.." -printf '%T@\n' | sort -n | tail -n1)
+        epoch=$(${
+          if findutils == null then "find" else "${findutils}/bin/find"
+        } source -type f -not -newer "$NIX_BUILD_TOP/.." -printf '%T@\n' | sort -n | tail -n1)
         epoch=''${epoch%%.*}
         if (( ''${epoch:-0} < 315532800 )); then epoch=315532800; fi
         printf '%s\n' "$epoch" > source-date-epoch
