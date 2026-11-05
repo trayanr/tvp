@@ -54,6 +54,7 @@ in
   environment = {
     tools = [
       gnumake
+      python
       sed
       grep
       diffutils
@@ -96,6 +97,20 @@ in
       ];
       interpreter = "${bash}/bin/bash";
     })
+    (command "pkg-config.charset-source" ''
+      # GNU libc supplies canonical codeset names; upstream installs no alias
+      # file here. Keep its missing-file fallback and the environment override,
+      # with a stable runtime directory rather than the split artifact prefix.
+      ${python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.stdenv.cc.libc}/lib"} <<'PYCODE'
+      import json, sys
+      from pathlib import Path
+      path = Path('glib/glib/libcharset/localcharset.c')
+      text = path.read_text()
+      old = 'dir = relocate (LIBDIR);'
+      assert text.count(old) == 1
+      path.write_text(text.replace(old, 'dir = ' + json.dumps(sys.argv[1]) + ';'))
+      PYCODE
+    '')
     (logged "configure" ''
       # Empty compiled default: only explicitly provided public .pc directories.
       ./configure --prefix="$out" --with-internal-glib --with-pc-path= --disable-dependency-tracking
@@ -106,6 +121,24 @@ in
       (logged "check" ''
         # The complete pkg-config discovery suite; not bundled GLib's own suite.
         ${gnumake}/bin/make -C check -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash TESTS_SHELL=${bash}/bin/bash check
+        # Exercise the actual vendored object, including the path passed to
+        # fopen. CLI output alone need not call GLib's charset alias helper.
+        mapfile -t charsetArchives < <(${findutils}/bin/find glib/glib -type f -name libcharset.a)
+        test "''${#charsetArchives[@]}" = 1
+        "$CC" ${./owned/charset-check.c} "''${charsetArchives[0]}" \
+          -Wl,--wrap=fopen,--wrap=fopen64 -o "$out/.tvp-evidence/charset-probe"
+        mkdir charset-fixture
+        printf 'TVP_ALIAS UTF-8\n' > charset-fixture/charset.alias
+        {
+          env -i "$out/.tvp-evidence/charset-probe" C \
+            ${final.base.stdenv.cc.libc}/lib/charset.alias TVP_ALIAS ANSI_X3.4-1968
+          env -i "$out/.tvp-evidence/charset-probe" C.UTF-8 \
+            ${final.base.stdenv.cc.libc}/lib/charset.alias TVP_ALIAS UTF-8
+          env -i CHARSETALIASDIR="$PWD/charset-fixture" "$out/.tvp-evidence/charset-probe" C.UTF-8 \
+            "$PWD/charset-fixture/charset.alias" UTF-8 UTF-8
+          env -i CHARSETALIASDIR="$PWD/charset-missing" "$out/.tvp-evidence/charset-probe" C \
+            "$PWD/charset-missing/charset.alias" TVP_ALIAS ANSI_X3.4-1968
+        } > "$out/.tvp-evidence/charset-check.log" 2>&1
       '')
       // {
         enabled = doCheck;
@@ -122,33 +155,6 @@ in
       inherit python binutils;
       paths = [ "bin" ];
     })
-    {
-      name = "pkg-config.charset-directory";
-      tools = [ python ];
-      run = ''
-        # Internal GLib's libcharset embeds LIBDIR, even with an empty pc path.
-        # Rebase only that NUL-terminated constant after stripping debug data.
-        ${python}/bin/python3 -B - "$out" "$TVP_ARTIFACT_ROOT" <<'PYCODE'
-        from pathlib import Path
-        import sys
-        root, artifact = sys.argv[1:]
-        # The optimized charset constant can fold overlapping literal tails;
-        # identify its store hash and validate the complete /lib string.
-        prefix = artifact.rsplit('/', 1)[0] + '/' + artifact.rsplit('/', 1)[1].split('-', 1)[0] + '-'
-        new = (root + '/lib').encode() + b'\0'
-        for path in (Path(root) / 'bin').iterdir():
-            data = path.read_bytes()
-            start = data.find(prefix.encode())
-            if start >= 0:
-                assert data.count(prefix.encode()) == 1
-                end = data.index(b'\0', start) + 1
-                old = data[start:end]
-                assert old.endswith(b'/lib\0') and len(new) <= len(old), old
-                path.write_bytes(data[:start] + new.ljust(len(old), b'\0') + data[end:])
-                print('rebased internal GLib charset directory:', path.name, repr(old))
-        PYCODE
-      '';
-    }
     (outputs.rpaths {
       inherit python binutils patchelf;
       base = final.base;

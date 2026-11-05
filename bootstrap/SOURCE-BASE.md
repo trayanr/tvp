@@ -79,10 +79,12 @@ provider is exported through the owned specification's `buildEnvironment` field.
 `base.environment { tools = [ pkgConfig ]; libraries = [ mpc ]; }` supplies
 `PKG_CONFIG`, empty PATH/SYSROOT overrides, and only the resolved public MPC,
 GMP, and MPFR development directories. Explicit module directories still work.
-No setup hooks are installed or sourced. Internal GLib's compiled libcharset
-fallback directory is rebased during finalization; the byte operation validates
-one NUL-terminated store `/lib` constant, retains its allocation size, and changes
-no executable instructions. Split compilation artifacts remain reusable.
+No setup hooks are installed or sourced. Internal GLib's charset alias default
+is bound in source to the selected GNU libc's `lib` directory. Upstream requires
+no alias file for glibc; its missing-file fallback and `CHARSETALIASDIR` override
+remain intact. A probe linked to the actual vendored object checks the opened
+path, C/C.UTF-8 codesets, and present/missing override files. Finalization does
+not rewrite executable constants. Split compilation artifacts remain reusable.
 
 Ninja binds the existing store-shell patch to source-owned GNU Bash. The existing
 minimal musl Python bootstraps it and runs the upstream syntax tests. Python
