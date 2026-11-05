@@ -85,6 +85,7 @@ let
         };
       };
       construction-preserved = import ./bases/tests/construction.nix { inherit pkgs tvp; };
+      bootstrap-audit-contracts = import ./bootstrap/check.nix { inherit tvp; };
       dependency-inventory =
         pkgs.runCommand "tvp-dependency-inventory-tests"
           {
@@ -571,6 +572,12 @@ let
           compiler = bases.default.stdenv.cc;
         };
         audit-contracts.python = tvp.packages.python_3;
+        bootstrap-audit-contracts = {
+          inherit (tvp.packages) bash coreutils;
+          python = tvp.packages.python_3;
+          environment = bases.default.stdenv;
+          compiler = bases.default.stdenv.cc;
+        };
         owned-mpc = {
           mpc = tvp.canonical.mpc_1_4_1;
           compatibleMpfr = tvp.packages.mpfr_4_2_1;

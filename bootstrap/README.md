@@ -15,9 +15,8 @@ nix build --file bootstrap tests.consumer tests.versions --no-link -L
 python3 bootstrap/audit.py > executable-inputs.json
 ```
 
-The first three realization commands are separate targets so their compiler
-work can be scheduled sequentially. Python and the Nix CLI in the audit are
-observer tools, never production build inputs. `negative.nix` contains expected
+Python and the Nix CLI in the audit are observer tools, never production build
+inputs. `negative.nix` contains expected
 failures to realize individually: `ambient-shell`, `ambient-env`, `missing-stage`,
 `wrong-stage`, `seed-hash`, `seed-mutation`; evaluate `source-hash` to test tree hash rejection.
 
@@ -62,6 +61,9 @@ observer audit walks all input derivations, checks downloader pins, classifies
 builders and PATH origins, and rejects native executable files in source trees.
 It establishes input provenance, not diverse double compilation or a general
 trust proof. Mes libc is a bootstrap libc with limited POSIX coverage.
+
+The repository's `bootstrap-audit-contracts` check tests the observer's rejection
+rules offline. Compiler and consumer realization are separate targeted checks.
 
 Next comes the source-built shell/make/text/archive tool ladder, the TinyCC/musl
 transition, GCC 4.6 C then C++, GCC 10, and a modern compiler satisfying GCC's

@@ -2,7 +2,7 @@
 import base64
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
@@ -19,19 +19,14 @@ def store_path(value):
     return STORE + value if not value.startswith(STORE) else value
 
 
-def audit():
-    raw = nix_json("derivation", "show", "--recursive", "--file", str(ROOT),
-                   "tests.consumer", "tests.versions")
+def audit_graph(raw, sources, provenance, stage0_pins):
     # Accept both Nix's v4 graph envelope and the older direct attrset.
     graph = {store_path(k): v for k, v in raw.get("derivations", raw).items()}
     outputs = {store_path(output.get("path", node["env"][name])): drv
                for drv, node in graph.items()
                for name, output in node["outputs"].items()}
-    provenance = json.loads((ROOT / "provenance.json").read_text())
     pins = {pin["url"]: pin["hash"] for pin in provenance["archives"]}
     pins[provenance["seed"]["url"]] = provenance["seed"]["narHash"]
-    sources = nix_json("eval", "--json", "--impure", "--expr",
-                       f'let b = import {ROOT} {{}}; in builtins.mapAttrs (_: p: toString p) b.sources')
     failures, nodes, source_data = [], {}, {}
     for drv, node in graph.items():
         env = node["env"]
@@ -52,7 +47,10 @@ def audit():
                 failures.append(f"unexpected executable download: {drv}")
         else:
             origin = "source-built-stage"
-            root = re.match(r"/nix/store/[^/]+", builder)
+            canonical = (isinstance(builder, str)
+                         and str(PurePosixPath(builder)) == builder
+                         and ".." not in PurePosixPath(builder).parts)
+            root = re.match(r"/nix/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[^/\s]+", builder) if canonical else None
             producer = outputs.get(root[0]) if root else None
             if not producer or producer not in dependencies:
                 failures.append(f"undeclared executable builder: {drv}: {builder}")
@@ -86,9 +84,19 @@ def audit():
     return {"schema": 1, "boundary": ["host Nix evaluator/downloader/daemon", "x86_64 Linux kernel"],
             "nodes": nodes, "sourceData": source_data,
             "constructionPins": provenance,
-            "stage0Pins": json.loads((ROOT / "stage0-sources.json").read_text()),
+            "stage0Pins": stage0_pins,
             "failures": sorted(set(failures)),
             "limits": "Classifies executable origins/edges, not compiler correctness or a trust proof."}
+
+
+def audit():
+    raw = nix_json("derivation", "show", "--recursive", "--file", str(ROOT),
+                   "tests.consumer", "tests.versions")
+    sources = nix_json("eval", "--json", "--impure", "--expr",
+                       f'let b = import {ROOT} {{}}; in builtins.mapAttrs (_: p: toString p) b.sources')
+    return audit_graph(raw, sources,
+                       json.loads((ROOT / "provenance.json").read_text()),
+                       json.loads((ROOT / "stage0-sources.json").read_text()))
 
 
 if __name__ == "__main__":
