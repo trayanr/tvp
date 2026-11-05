@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "scope": "Private compiler/data adapter and owned-builder discovery fixtures; no new compiler or libc generation",
+  "originalWork": "TVP private base data, pure helper adapter, protocol integration, tiny source fixtures, assertions and opt-in audit profile",
+  "responseParser": {
+    "origin": "GCC 16.2.0 libiberty/argv.c buildargv quoting rules, translated into non-evaluating Bash scanning",
+    "sourcePin": "Existing bootstrap/recipe-sources.json GCC16 pin and source-owned GNU native source endpoint; no new download",
+    "copyright": "Copyright (C) 1992-2026 Free Software Foundation, Inc.; original argv.c written by Fred Fish at Cygnus Support",
+    "license": "LGPL-2.0-or-later",
+    "licenseFile": "COPYING.LIBIBERTY",
+    "changes": "Bash arrays, recursive mode-only inspection, unchanged original argv forwarding, explicit bounded nesting and unreadable-protocol failure"
+  },
+  "reuse": [
+    "Existing lib/builder.nix, native-recipe.nix and owned-build.nix without modifications",
+    "Existing environment composition with additive explicit cc.libcTools override",
+    "Existing strict origin and GNU runtime auditors; old profiles and negative contracts unchanged",
+    "Exact existing GNU raw compiler, GNU shell, Coreutils, binutils, MPFR and GMP outputs"
+  ]
+}
