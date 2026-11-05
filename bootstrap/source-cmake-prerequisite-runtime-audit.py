@@ -74,16 +74,17 @@ def run(origin):
           p=import {ROOT}/gnu-target-profile.nix {{}}; b=import {ROOT} {{}};
       in {{ packages=builtins.mapAttrs (_: x: toString x) {{inherit (t.f) perl openssl zlib bzip2 xz zstd;}};
             consumer=toString t.consumer; evidence=toString t.consumer.evidence;
+            runtimePaths=toString t.runtimePaths;
             native=map toString [p.libc p.libgcc p.libstdcxx];
             helper=map toString [b.gnu-bash b.gnu-libc b.gnu-libgcc];
             nativeData=[(toString b.linux-headers)];
             priorShell=toString b.gnu-bash;
             loader="${{p.libc}}/lib/ld-linux-x86-64.so.2";
             readelf="${{b.gnu-binutils}}/bin/readelf"; }}''')
-    permitted = set(m['native'] + list(m['packages'].values()) + [m['consumer']])
+    permitted = set(m['native'] + list(m['packages'].values()) + [m['consumer'], m['runtimePaths']])
     assert permitted <= strict.executable_outputs(origin)
     assert not permitted & set(origin['runtimeForbiddenExecutableRoots'])
-    files, failures = scan(list(m['packages'].values())+[m['consumer']],permitted,m['loader'],m['readelf'])
+    files, failures = scan(list(m['packages'].values())+[m['consumer'],m['runtimePaths']],permitted,m['loader'],m['readelf'])
     full = audit.nix_json('path-info','--json','--recursive',m['packages']['perl'])
     closure = sorted(full if isinstance(full,dict) else (x['path'] for x in full))
     known = strict.origin_paths(origin)
@@ -117,6 +118,8 @@ def run(origin):
             paths = sorted(set(re.findall(r'/nix/store/[^\s]+',path.read_text())))
             if any(not strict.owned_executable(p,permitted) for p in paths):
                 failures.append('Foreign actual process map: '+str(path))
+            if path.name == 'embed-installed.log' and not paths:
+                failures.append('Missing embedding process maps')
             maps[path.name] = paths
     zstd_features = subprocess.check_output([m['packages']['zstd']+'/bin/zstd','-vvV'],env={},text=True,stderr=subprocess.STDOUT)
     if any(s not in zstd_features for s in ['gzip, lzma, xz', 'zlib version 1.3.2', 'lzma version 5.8.4', 'lz4 version Unsupported']):

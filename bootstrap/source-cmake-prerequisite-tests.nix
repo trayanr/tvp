@@ -240,6 +240,48 @@ let
       ];
     }
   );
+  runtimePaths = make (
+    { }:
+    {
+      pname = "source-perl-runtime-paths";
+      version = "1";
+      src = null;
+      inherit base bash coreutils;
+      plan = [
+        {
+          name = "fixture.copy";
+          run = ''
+            mkdir -p "$out/bin" "$out/lib"
+            cp -p ${f.perl}/lib/5.44.0/x86_64-linux/CORE/libperl.so "$out/lib/"
+            cp -p ${f.perl}/lib/5.44.0/x86_64-linux/auto/Cwd/Cwd.so "$out/lib/"
+          '';
+        }
+        (builtins.head (
+          builtins.filter (x: x.name == "output.rpaths")
+            (f.perl.editRuntime (r: r // { libraries = [ f.zlib ]; })).buildSteps
+        ))
+        {
+          name = "fixture.verify";
+          tools = [
+            python
+            patchelf
+          ];
+          run = ''
+            ${python}/bin/python3 -B - "$out/lib" <<'PY'
+            from pathlib import Path
+            import stat
+            import subprocess
+            import sys
+            for path in Path(sys.argv[1]).iterdir():
+                rpath = subprocess.check_output(['${patchelf}/bin/patchelf', '--print-rpath', str(path)], text=True)
+                assert '${f.zlib}/lib' in rpath.splitlines()[0].split(':')
+                assert stat.S_IMODE(path.stat().st_mode) == 0o555
+            PY
+          '';
+        }
+      ];
+    }
+  );
 in
 assert builtins.all (x: x) (builtins.attrValues contracts);
 {
@@ -248,6 +290,7 @@ assert builtins.all (x: x) (builtins.attrValues contracts);
     consumer
     contracts
     alternate
+    runtimePaths
     ;
   sourceOverridePerl = probe "perl";
   sourceOverrideOpenssl = probe "openssl";

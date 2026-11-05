@@ -17,7 +17,7 @@ def run():
     raw = audit.nix_json('derivation', 'show', '--recursive', '--file',
                          str(ROOT / 'source-cmake-prerequisite-tests.nix'), 'consumer',
                          *[f'f.evidence.{n}' for n in ['perl','openssl','zlib','bzip2','xz','zstd']],
-                         'sourceOverridePerl', 'sourceOverrideOpenssl')
+                         'sourceOverridePerl', 'sourceOverrideOpenssl', 'runtimePaths')
     graph = raw.get('derivations', raw)
     normalized = copy.deepcopy(graph)
     roles = audit.nix_json('eval', '--json', '--impure', '--expr', f'''
@@ -32,6 +32,7 @@ def run():
                     ('bzip2','1.0.8'), ('xz','5.8.4'), ('zstd','1.5.7'),
                     ('zstd','1.5.7-artifacts'), ('source-zstd-evidence','1.5.7'),
                     ('source-prerequisite-consumer','1'), ('source-prerequisite-alternate','1'),
+                    ('source-perl-runtime-paths','1'),
                     ('source-perl-override','5.44.0'), ('source-openssl-override','4.0.1')]}
     stage_names |= {'source-' + n + '-evidence-' + v for n,v in
                     [('perl','5.44.0'),('openssl','4.0.1'),('zlib','1.3.2'),('bzip2','1.0.8'),('xz','5.8.4')]}

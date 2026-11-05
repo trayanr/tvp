@@ -73,7 +73,7 @@ Path('embed.c').write_text('''#include <EXTERN.h>
 #include <perl.h>
 int main(int argc,char **argv,char **env) {
 PERL_SYS_INIT3(&argc,&argv,&env); PerlInterpreter *p=perl_alloc(); perl_construct(p);
-char *args[]={"embedded","-e","print qq(shared libperl embed PASS\\n)",NULL};
+char *args[]={"embedded","-e","open my $f, q(<), q(/proc/self/maps) or die $!; print while <$f>; print qq(shared libperl embed PASS\\n)",NULL};
 int r=perl_parse(p,NULL,3,args,NULL); if(!r)r=perl_run(p);
 perl_destruct(p);perl_free(p);PERL_SYS_TERM();return r;}
 ''')

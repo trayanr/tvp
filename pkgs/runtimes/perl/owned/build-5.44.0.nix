@@ -34,6 +34,16 @@ let
       cwd = "source";
     };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'';
+  rpaths = outputs.rpaths {
+    inherit python binutils patchelf;
+    base = final.base;
+    paths = [
+      "bin"
+      "lib"
+    ];
+    elfKinds = [ "runtime" ];
+    libraries = final.runtime.libraries;
+  };
 in
 {
   pname = "perl";
@@ -105,15 +115,36 @@ in
       }
     )
     (command "perl.install" ''${make} install'')
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      # Perl installs libperl read-only. Retain compiler-generated native paths
-      # and original library bytes/modes; the bounded observer checks every
-      # libperl/core XS ELF directly. Runtime edits rebind the interpreter.
-      paths = [ "bin" ];
-      libraries = final.runtime.libraries;
-    })
+    (
+      rpaths
+      // {
+        # installperl makes libperl and XS read-only. Restore their modes even if
+        # finalization fails; runtime edits apply to the interpreter and libraries.
+        run = ''
+          ${python}/bin/python3 -B - "$out" ${lib.escapeShellArg rpaths.run} <<'PY'
+          from pathlib import Path
+          import stat
+          import subprocess
+          import sys
+          modes = []
+          try:
+              for path in (Path(sys.argv[1]) / 'lib').rglob('*'):
+                  if path.is_symlink() or not path.is_file():
+                      continue
+                  with path.open('rb') as stream:
+                      header = stream.read(18)
+                  if header[:4] == b'\x7fELF' and int.from_bytes(header[16:18], 'little') in (2, 3):
+                      mode = stat.S_IMODE(path.stat().st_mode)
+                      modes.append((path, mode))
+                      path.chmod(mode | stat.S_IWUSR)
+              subprocess.run(['${bash}/bin/bash', '-euc', sys.argv[2]], check=True)
+          finally:
+              for path, mode in modes:
+                  path.chmod(mode)
+          PY
+        '';
+      }
+    )
   ];
   meta = {
     description = "Native shared Perl interpreter and development interface";

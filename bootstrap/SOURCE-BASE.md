@@ -145,8 +145,11 @@ retain the full invocation, avoiding a toolchain reference from native libcrypto
 The Perl Pod::Html test helper binds its hardcoded diff lookup to declared
 Diffutils so its expected-failure assertions retain their upstream semantics.
 Its harness uses the existing Nix core count and upstream parallel scheduling.
-Libperl and core XS retain their compiler-generated native search paths; the
-strict observer checks each installed ELF and its actual loader resolution.
+Runtime edits apply to the interpreter, libperl and core XS. Finalization makes
+read-only libraries writable temporarily and restores their installation modes,
+including on failure. The strict observer checks each installed ELF and its
+actual loader resolution. A small copied-library fixture verifies runtime path
+edits and mode restoration without compiling a second interpreter.
 Both ports use a single derivation stage because installed paths contain that
 prefix. Their runtime edits rebuild the derivation.
 
