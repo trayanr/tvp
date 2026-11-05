@@ -1,0 +1,14 @@
+{
+  "python": {
+    "url": "https://www.python.org/ftp/python/3.12.5/Python-3.12.5.tar.xz",
+    "hash": "sha256-+oouEsXmILCfU+ZbzYdVDS5aHi4Ev4upkdzFUROHY5c="
+  },
+  "meson": {
+    "url": "https://github.com/mesonbuild/meson/releases/download/1.12.1/meson-1.12.1.tar.gz",
+    "hash": "sha256-qwpsoJ+O9wxWTIJB+1ojlXiGoLU/tYQSteB+rwfbp0M="
+  },
+  "openssl3": {
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.21/openssl-3.0.21.tar.gz",
+    "hash": "sha256-YX4pr45CH0ZklISkk35IxoXkf0ZIgWfJgviLxOwdUi8="
+  }
+}
