@@ -13,6 +13,7 @@ let
     is64bit = true;
     isAarch64 = false;
     isRiscV = false;
+    canExecute = other: other.system == system;
   };
   pins = builtins.fromJSON (builtins.readFile ./stage0-sources.json);
   sourceTrees = builtins.mapAttrs (
@@ -228,6 +229,32 @@ let
       gnumake = gnumake-musl;
       gnutar = gnutar-musl;
     };
+    bzip2 = callPackage ./recipes/bzip2 {
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    gnutar-latest = callPackage ./recipes/gnutar/latest.nix {
+      gcc = gcc46;
+      gnumake = gnumake-musl;
+      gnutarBoot = gnutar-musl;
+    };
+    gcc10-unwrapped = callPackage ./recipes/gcc/10.nix {
+      gcc = gcc46-cxx;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-latest;
+    };
+    gcc10 = callPackage ./recipes/gcc/wrapper.nix {
+      gcc-unwrapped = gcc10-unwrapped;
+      bash-build = bash;
+      libc = musl;
+      libgcc = gcc10-unwrapped;
+      libstdcxx = gcc10-unwrapped;
+      targetPlatform = platform;
+      dynamicLinkerGlob = "${musl}/lib/libc.so";
+      staticLibgcc = true;
+    };
   };
   tests = import ./tests.nix { inherit scope; };
 in
@@ -264,6 +291,10 @@ in
     gcc46
     musl
     gcc46-cxx
+    bzip2
+    gnutar-latest
+    gcc10-unwrapped
+    gcc10
     ;
   inherit tests;
   compiler = scope.tinycc-mes.compiler;

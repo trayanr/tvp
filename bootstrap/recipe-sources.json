@@ -41,6 +41,11 @@
       "ownedSHA256": "2b28fea3b9f0e0aa9b1f4bdc334bbe0b7079ed869363b3a2709a11538e8f27b9",
       "upstreamSHA256": "2b28fea3b9f0e0aa9b1f4bdc334bbe0b7079ed869363b3a2709a11538e8f27b9"
     },
+    "bzip2/default.nix": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "1370a6c0e3172bfab1e1075c16346f95399495a0be944ce021fa85bbf66b7d68",
+      "upstreamSHA256": "beea8462c3e5308e6229149238c4fb99f9294fbb7cb8132852a02b71f263e0d2"
+    },
     "coreutils/common.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
       "ownedSHA256": "3848e304b1bd53000eaac24538818cb76a05547f722ce3cdb19792419c7346ca",
@@ -91,6 +96,11 @@
       "ownedSHA256": "49f82138ff44aa34dfc7c2abdb6c7d47938fbe82f565e6bbecad41d6ef4f8d50",
       "upstreamSHA256": "49f82138ff44aa34dfc7c2abdb6c7d47938fbe82f565e6bbecad41d6ef4f8d50"
     },
+    "gcc/10.nix": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "2cf802f7c432d34f7dc8cb22c754c86d1ee1d9ecc6027df422b8141976aa30ee",
+      "upstreamSHA256": "c868e922edd489121125652ebd5cc52a3d31c08553515e56d9952e8c11a9e3f7"
+    },
     "gcc/4.6.cxx.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
       "ownedSHA256": "6f51159b6b67a71bd9373b0f2e63dd81aa2f7fdcfd3364a76440d6dccfd63f16",
@@ -105,6 +115,21 @@
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
       "ownedSHA256": "9245a2d4162f5ad220ad876b5aaf4643d68c50c4be53a648a324fbffeb1277c9",
       "upstreamSHA256": "9245a2d4162f5ad220ad876b5aaf4643d68c50c4be53a648a324fbffeb1277c9"
+    },
+    "gcc/wrapper.nix": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "9c26c6d819de6217832c6f3642fdca92675ae75adf8f7e49afc4cc9dfbca6a29",
+      "upstreamSHA256": "9c26c6d819de6217832c6f3642fdca92675ae75adf8f7e49afc4cc9dfbca6a29"
+    },
+    "gcc/wrapper.sh": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "007ce7de68f461387aa928d2bab54bbe956682bc31827140bb08e159ab994c58",
+      "upstreamSHA256": "331e181083be08d59cbe3c5eb5032c82d275e16f1d080dae9be16f2c1376cdf8"
+    },
+    "gcc/wrappercxx.sh": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "6d5c34ed0a3accac94344a23a243c8ade7983ab04a6492d984c4348fc17fc576",
+      "upstreamSHA256": "190d071b3ca69ef463e5329d6c962e79514dee4b5aa74990bd3f012e4424ae62"
     },
     "gnugrep/default.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
@@ -170,6 +195,11 @@
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
       "ownedSHA256": "2106b428dd1d57e13213de0a51d8502512160b1e7371b7c07319a81901f54625",
       "upstreamSHA256": "2106b428dd1d57e13213de0a51d8502512160b1e7371b7c07319a81901f54625"
+    },
+    "gnutar/latest.nix": {
+      "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
+      "ownedSHA256": "7624515f71e2ff066231362365a3e7bad43dcbd10df91e4995428f66c822f129",
+      "upstreamSHA256": "65adcaedf46b39c5007b9146eaa1aa5ac37d2812a231e9478cb550d082916f20"
     },
     "gnutar/mes.nix": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
