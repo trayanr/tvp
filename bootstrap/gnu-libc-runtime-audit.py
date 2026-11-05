@@ -111,6 +111,9 @@ def audit(report, profile, closure=None):
                 files[str(file)] = dict(kind='ELF', generation=name, interpreter=interp,
                     needed=resolved, search=search, rawSearch=raw_search, actualLoaderListing=listing)
             elif head.startswith(b'#!'):
+                if root not in assignments:
+                    failures.append('Script in data root: ' + str(file))
+                    continue
                 words = head.split(b'\n', 1)[0][2:].decode().split()
                 interpreter = words[0] if words else ''
                 if not strict.owned_executable(interpreter, set(assignments)):

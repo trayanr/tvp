@@ -15,6 +15,8 @@ UTF-8 ↔ ISO-8859-1 and UTF-8 ↔ UTF-16LE, including invalid, incomplete and
 output-buffer exhaustion cases. They identify loaded converter modules and libc
 by their actual paths. Empty environments exercise compiled locale/converter
 defaults without LOCPATH or GCONV_PATH.
+The probe rejects supplied lookup variables as test preconditions; this does
+not claim that libc forbids those variables.
 
 Libc's system.c SHELL_PATH and generic/Linux paths.h _PATH_BSHELL point to the
 **previous source-built GNU Bash** bin/sh. The dependency is deliberately:

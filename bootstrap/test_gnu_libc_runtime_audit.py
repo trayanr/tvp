@@ -95,6 +95,14 @@ class Generations(unittest.TestCase):
         (self.data / 'elf').write_bytes((self.a / 'tool').read_bytes())
         self.assertTrue(any('ELF in data' in s for s in self.audit()['failures']))
 
+    def test_owned_script_output_accepted(self):
+        (self.a / 'script').write_text('#!' + str(self.b / 'ld.so') + '\n')
+        self.assertEqual(self.audit()['failures'], [])
+
+    def test_script_in_data_rejected(self):
+        (self.data / 'script').write_text('#!' + str(self.b / 'ld.so') + '\n')
+        self.assertTrue(any('Script in data' in s for s in self.audit()['failures']))
+
 
 if __name__ == '__main__':
     unittest.main()
