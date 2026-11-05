@@ -3,8 +3,8 @@
 This opt-in wave builds Attr 2.6.0, ACL 2.4.0, Coreutils 9.5, Make 4.4.1,
 Findutils 4.11.0 and Diffutils 3.12 with the source-owned GNU GCC 16.2.0
 checkpoint. Coreutils 9.5 is the selected catalogue release. No releases,
-aliases, default base, compiler generation, libc profile or ServerCI functional
-jobs change here.
+aliases, default base, compiler generation, libc profile or ordinary functional
+test jobs change here.
 
 ```
 nix-build bootstrap -A gnu-tool-floor
@@ -38,7 +38,7 @@ installed `diff -l` runs it in the minimal GNU environment. Installed libraries,
 commands, scripts and symlinks are checked by the unchanged strict GNU runtime
 auditor using an exact additional profile, not a broader global allowlist.
 
-Raw upstream results on Tower are bounded by declared prerequisites:
+Raw upstream results are bounded by declared prerequisites:
 
 - Attr/ACL cannot run the Perl filesystem harness. Its raw failures/XFAILs are
   retained; they are not filesystem capability allowances or package passes.
@@ -54,7 +54,7 @@ Raw upstream results on Tower are bounded by declared prerequisites:
 
 Installed Attr/ACL consumers always check linkage and in-memory behavior;
 filesystem round-trips run only after independent kernel/libc preflight.
-Tower's sandbox rejects user xattrs and named ACLs with EOPNOTSUPP. Separate
+The validation sandbox rejects user xattrs and named ACLs with EOPNOTSUPP. Separate
 nonprivileged host-filesystem observer coverage can run the same GNU binaries
 and GNU-only command environment; it is explicitly distinct from sandbox
 coverage. No host commands enter the source builds.

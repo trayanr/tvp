@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import sys
 
+assert len(sys.argv) == 7, "Expected all six family evidence directories"
 results = {}
 for family, directory in zip(['attr', 'acl', 'coreutils', 'make', 'findutils', 'diffutils'], sys.argv[1:]):
     root = Path(directory)
@@ -14,12 +15,13 @@ for family, directory in zip(['attr', 'acl', 'coreutils', 'make', 'findutils', '
     if family in {'attr', 'acl'}:
         suite = (root / 'test-suite.log').read_text()
         failures = 3 if family == 'attr' else 14
-        assert status == 2 and summaries[-1]['fail'] == failures
+        expected = dict(total=3, **{'pass':0}, skip=0, xfail=0, fail=3, xpass=0, error=0) if family == 'attr' else dict(total=16, **{'pass':0}, skip=0, xfail=2, fail=14, xpass=0, error=0)
+        assert status == 2 and summaries == [expected]
         assert suite.count('bad interpreter: No such file or directory') == failures + (2 if family == 'acl' else 0)
         assert '/usr/bin/perl:' in suite
         classification = 'Perl harness unavailable; no executed upstream filesystem coverage'
     elif family == 'make':
-        assert status == 0 and "Can't find a working Perl (perl)" in log
+        assert status == 0 and not summaries and "Can't find a working Perl (perl)" in log
         classification = 'Upstream returns zero without executing its Perl regression suite'
     elif family == 'coreutils':
         suite = (root / 'tests/test-suite.log').read_text()
@@ -28,7 +30,8 @@ for family, directory in zip(['attr', 'acl', 'coreutils', 'make', 'findutils', '
         # Every fail assignment in this case follows the set-ID permission denial.
         assert block.count('+ fail=1') > 0
         assert block.count('+ fail=1') == block.count("Operation not permitted\n+ fail=1")
-        assert summaries[-1] == dict(total=653, **{'pass':429}, skip=223, xfail=0, fail=1, xpass=0, error=0)
+        expected = dict(total=653, **{'pass':429}, skip=223, xfail=0, fail=1, xpass=0, error=0)
+        assert summaries and all(summary == expected for summary in summaries)
         classification = 'One set-ID sandbox permission failure; independent preflight recorded by installed contracts'
     else:
         assert status == 0 and summaries and all(s['fail'] == s['error'] == s['xpass'] == 0 for s in summaries)
