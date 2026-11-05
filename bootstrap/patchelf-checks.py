@@ -12,7 +12,12 @@ def require(condition, message):
 
 
 def summary(text, expected):
-    rows = re.findall(r'^# (TOTAL|PASS|SKIP|XFAIL|FAIL|XPASS|ERROR):\s+(\d+)\s*$', text, re.M)
+    keys = 'TOTAL|PASS|SKIP|XFAIL|FAIL|XPASS|ERROR'
+    lines = [line for line in text.splitlines()
+             if re.match(r'^\s*#\s*(?:' + keys + r')\s*:', line)]
+    rows = [re.fullmatch(r'# (' + keys + r'):[ \t]+(\d+)[ \t]*', line) for line in lines]
+    require(all(rows), 'Malformed summary field')
+    rows = [match.groups() for match in rows]
     require(len(rows) == 7 and len(dict(rows)) == 7, 'Missing or repeated summary')
     counts = {key: int(value) for key, value in rows}
     require(counts == expected, 'Unexpected upstream summary: ' + str(counts))
@@ -22,12 +27,15 @@ def summary(text, expected):
 def results(paths):
     observed = {}
     for path in paths:
-        rows = re.findall(r'^:test-result: (\S+)\s*$', path.read_text(), re.M)
-        require(len(rows) == 1 and rows[0] in {'PASS', 'SKIP', 'FAIL', 'XFAIL', 'XPASS', 'ERROR'},
+        lines = [line for line in path.read_text().splitlines()
+                 if line.lstrip().startswith(':test-result')]
+        rows = [re.fullmatch(r':test-result: (\S+)[ \t]*', line) for line in lines]
+        require(len(rows) == 1 and rows[0] is not None
+                and rows[0][1] in {'PASS', 'SKIP', 'FAIL', 'XFAIL', 'XPASS', 'ERROR'},
                 'Malformed test result: ' + str(path))
         name = path.name.removesuffix('.trs')
         require(name not in observed, 'Duplicate test result: ' + str(path))
-        observed[name] = rows[0]
+        observed[name] = rows[0][1]
     return observed
 
 
