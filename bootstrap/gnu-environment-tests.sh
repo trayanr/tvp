@@ -77,6 +77,12 @@ NIX_CFLAGS_LINK=-Wl,--defsym,adapter_link=43 NIX_LDFLAGS='--defsym adapter_ld=47
 grep_symbol() { local line; while IFS= read -r line; do [[ $line == *"$1" ]] && return 0; done < symbols.txt; return 1; }
 grep_symbol '000000000000002b A adapter_link'
 grep_symbol '000000000000002f A adapter_ld'
+# Mode-looking operands belong to their option, including in response files.
+NIX_CFLAGS_LINK='-Xlinker -E' "$cc" main.c -o export-direct
+env -i ./export-direct
+printf '%s\n' '-Xlinker -E' > link-operand.rsp
+NIX_CFLAGS_LINK=@link-operand.rsp "$cc" main.c -o export-response
+env -i ./export-response
 # The declared order of library directories changes the chosen implementation.
 mkdir first second
 printf '%s\n' 'int chosen(void) { return 1; }' > first.c

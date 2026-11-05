@@ -67,11 +67,17 @@ expand 0 "$@"
 direct=("${expanded[@]}")
 expanded=()
 expand 0 "${compile[@]}" "$@"
+takes_operand() {
+    case $1 in
+        -o|-x|-I|-isystem|-iquote|-idirafter|-include|-imacros|-iprefix|-iwithprefix|-iwithprefixbefore|-isysroot|--sysroot|-L|-B|-Xlinker|-Xassembler|-Xpreprocessor|-MF|-MT|-MQ|-aux-info|-dumpbase|-dumpdir|-dumpbase-ext) return 0;;
+        *) return 1;;
+    esac
+}
 mode=link operand=0 query=0
 for arg in "${expanded[@]}"; do
     if (( operand )); then operand=0; continue; fi
+    if takes_operand "$arg"; then operand=1; continue; fi
     case $arg in
-        -o|-x|-I|-isystem|-iquote|-idirafter|-include|-imacros|-iprefix|-iwithprefix|-iwithprefixbefore|-isysroot|--sysroot|-L|-B|-Xlinker|-Xassembler|-Xpreprocessor|-MF|-MT|-MQ|-aux-info|-dumpbase|-dumpdir|-dumpbase-ext) operand=1;;
         -static-pie) fail 'static PIE is unsupported by this reduced GNU checkpoint';;
         -m32|-mx32|-mmusl|-mbionic|-muclibc) fail 'unsupported GNU checkpoint ABI mode';;
         -c|--compile|-S|--assemble|-E|--preprocess|-M|-MM|-fsyntax-only) mode=compile;;
@@ -87,7 +93,10 @@ case $program in cc|gcc) program=gcc;; c++|g++) program=g++;; cpp) [[ $mode == q
 if [[ $mode == link ]]; then
     expanded=()
     expand 0 "${link[@]}"
+    operand=0
     for arg in "${expanded[@]}"; do
+        if (( operand )); then operand=0; continue; fi
+        if takes_operand "$arg"; then operand=1; continue; fi
         case $arg in
             -static-pie) fail 'static PIE is unsupported by this reduced GNU checkpoint';;
             -m32|-mx32|-mmusl|-mbionic|-muclibc) fail 'unsupported GNU checkpoint ABI mode';;

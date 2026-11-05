@@ -62,6 +62,19 @@ class ProtocolArgv(unittest.TestCase):
         self.assertEqual(argv, ['-DCOMPILE=1', '-DLINK=1', *args,
                                 '-Xlinker', '-rpath', '-Xlinker', '/literal/$HOME;*'])
 
+    def test_mode_looking_option_operands(self):
+        for words in ['-Xlinker -E', '-Xlinker -m32', '-o -c']:
+            with self.subTest(words=words):
+                flags = dict(NIX_CFLAGS_LINK=words, NIX_LDFLAGS='')
+                self.assertEqual(self.capture(['input.c'], flags=flags),
+                                 (0, ['-DCOMPILE=1', *words.split(), 'input.c']))
+                flags['NIX_CFLAGS_LINK'] = '@flags.rsp'
+                self.assertEqual(self.capture(['input.c'], flags=flags, response=words),
+                                 (0, ['-DCOMPILE=1', '@flags.rsp', 'input.c']))
+                direct = [*words.split(), 'input.c']
+                self.assertEqual(self.capture(direct, flags=dict(NIX_LDFLAGS='')),
+                                 (0, ['-DCOMPILE=1', '-DLINK=1', *direct]))
+
     def test_clear_unsupported_modes_and_encoding(self):
         for flags in [dict(NIX_HARDENING_ENABLE='fortify'), dict(NIX_LDFLAGS='a,b'),
                       dict(NIX_CFLAGS_LINK='-static-pie')]:

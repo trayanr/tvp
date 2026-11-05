@@ -43,7 +43,7 @@ let
       plan = [
         (prepare final "a.build" ''
           mkdir -p "$out/include" "$out/lib"
-          printf '%s\n' '#define A_VALUE VALUE' 'int a_value(void);' > "$out/include/adapter_a.h"
+          printf '%s\n' '#define A_VALUE ${toString value}' 'int a_value(void);' > "$out/include/adapter_a.h"
           printf '%s\n' 'int a_value(void) { return VALUE; }' > a.c
           "$CC" -fPIC -shared a.c -o "$out/lib/libadapter_a.so"
           "$CC" -c a.c -o a.o
@@ -94,7 +94,6 @@ let
         tools = [
           (flagTool {
             NIX_CFLAGS_COMPILE = [
-              "-DVALUE=7"
               "-DEXPECT=${toString expected}"
             ];
           })
@@ -107,7 +106,7 @@ let
       plan = [
         (prepare final "consumer.build" ''
           mkdir -p "$out/bin"
-          printf '%s\n' '#include <adapter_b.h>' 'int main(void) { return b_value() != EXPECT; }' > consumer.c
+          printf '%s\n' '#include <adapter_b.h>' '_Static_assert(A_VALUE + 1 == EXPECT, "public value");' 'int main(void) { return b_value() != EXPECT || a_value() != A_VALUE; }' > consumer.c
           "$CC" consumer.c -ladapter_b -ladapter_a -o "$out/bin/consumer"
           env -i "$out/bin/consumer"
           printf '%s\n' '${toString final.runtime.expected}' > "$out/runtime-expectation"
@@ -129,7 +128,6 @@ let
           tools = [
             (flagTool {
               NIX_CFLAGS_COMPILE = [
-                "-DVALUE=11"
                 "-DEXPECT=12"
               ];
             })

@@ -29,11 +29,12 @@ locale/conversion coverage, or libc shell APIs.
 `gnu-environment-fixtures.nix` calls the actual `lib/builder.nix` factory. A public
 B→A development interface supplies headers, link search and runtime search to a
 consumer declaring only B. MPFR/GMP overlays reuse exact existing outputs.
-Override, specification/environment edits, runtime edits and a step customization
-recompute through the existing fixed point. Run these fixtures explicitly with
+Overrides, specification/environment edits and a step customization recompute
+through the existing fixed point. The runtime edit fixture changes expectation
+data consumed by its step; it does not demonstrate runtime-library retargeting. Run these fixtures explicitly with
 `nix-build bootstrap/gnu-environment-fixtures.nix -A protocol -A consumer
 -A override -A edited -A customized -A mpfrConsumer`.
-They are not ordinary catalogue/Server CI dependencies.
+These fixtures are opt-in.
 
 The opt-in construction auditor adds a precise owned-runner profile to the
 existing strict origin audit. It checks structured prepared input edges and the
