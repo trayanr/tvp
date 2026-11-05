@@ -351,6 +351,23 @@ let
       build-grep
       ;
 
+    inherit (import ./gnu.nix { inherit scope; })
+      gnu-gcc
+      gnu-gcc-unwrapped
+      gnu-cross
+      gnu-core-bridge
+      gnu-libc
+      gnu-libgcc
+      gnu-libstdcxx
+      gnu-bash
+      gnu-binutils
+      gnu-gmp
+      gnu-mpfr
+      gnu-mpc
+      gnu-libiberty
+      gnu-libbacktrace
+      ;
+
     gcc-latest = callPackage ./recipes/gcc/wrapper.nix {
       gcc-unwrapped = gcc-latest-unwrapped;
       bash-build = bash;
@@ -417,6 +434,26 @@ in
     build-python
     build-grep
     ;
+  inherit (scope)
+    gnu-gcc
+    gnu-gcc-unwrapped
+    gnu-cross
+    gnu-core-bridge
+    gnu-libc
+    gnu-libgcc
+    gnu-libstdcxx
+    gnu-bash
+    gnu-binutils
+    gnu-gmp
+    gnu-mpfr
+    gnu-mpc
+    gnu-libiberty
+    gnu-libbacktrace
+    ;
+  gnu-tests = import ./gnu-tests.nix {
+    inherit scope;
+    gnu = import ./gnu.nix { inherit scope; };
+  };
   inherit tests;
   compiler = scope.tinycc-mes.compiler;
   libc = scope.tinycc-mes.libs;
