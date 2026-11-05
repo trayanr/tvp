@@ -14,15 +14,15 @@ let
   shell = "${b.gnu-bash}/bin/bash";
   coreutils = b.gnu-tool-floor.gnu-coreutils;
   driver = b.bash.runCommand "tvp-capability-gnu-target-driver" { } ''
-    mkdir -p "$out/bin" "$out/target/include" "$out/selected/bin"
+    mkdir -p "$out/bin" "$out/include" "$out/target" "$out/selected/bin"
     # Preserve only genuine compiler intrinsic headers. Runtime header symlinks
     # installed by native-compiler.nix must be rebound to this generation.
     for header in ${rawPrefix}/include/*; do
-      if [ ! -L "$header" ]; then ln -s "$header" "$out/target/include/"; fi
+      if [ ! -L "$header" ]; then ln -s "$header" "$out/include/"; fi
     done
     for header in ${rt}/include/* ${libgcc}/include/*; do
       test -f "$header"
-      ln -sf "$header" "$out/target/include/"
+      ln -sf "$header" "$out/include/"
     done
     for file in ${rt}/* ${libstdcxx}/lib/* ${libc}/lib/*; do
       test -f "$file" || continue
@@ -38,7 +38,7 @@ let
       ${rawPrefix}/specs > rebound.specs
     ${b.gnused}/bin/sed \
       -e '/^\*link:$/ { n; s|^|--sysroot=${libc} |; }' \
-      -e '/^\*cpp:$/ { n; s|$| %{!nostdinc:-nostdinc -idirafter '"$out"'/target/include -idirafter ${libc}/include}|; }' \
+      -e '/^\*cpp:$/ { n; s|$| %{!nostdinc:-nostdinc -idirafter '"$out"'/include -idirafter ${libc}/include}|; }' \
       -e '/^\*cc1plus:$/ { n; s|^|%{!nostdinc:%{!nostdinc++:-isystem ${cxx} -isystem ${cxx}/x86_64-unknown-linux-gnu -isystem ${cxx}/backward}} |; }' \
       rebound.specs > "$out/target/specs"
     for tool in gcc g++ cpp; do

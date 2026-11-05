@@ -12,7 +12,8 @@ these target outputs. The compiler executables and intrinsic headers remain
 prior-generation host roles. A separate prefix supplies the new CRT and
 runtime files. The complete installed GCC specs are rebound, including the
 loader, sysroot and runtime search paths. Default C++ headers are suppressed;
-selected C++ headers precede intrinsic and libc headers. GCC still chooses the
+the intrinsic headers live outside the runtime prefix so `-B` cannot insert
+them ahead of selected C++ headers. C++ headers precede intrinsic and libc headers. GCC still chooses the
 frontend for each input language, including mixed inputs and `-x`.
 
 Supported ordinary modes include preprocessing, dependencies, assembly,
@@ -38,7 +39,8 @@ installed fixture uses explicit `dlopenDirectories` and the additive
 `builder.outputs.rpaths { forceRpath = true; ... }` option. This runs the existing
 provider/shrink algorithm, then preserves a transitive DT_RPATH for that lookup.
 The option requires explicit dlopen directories and the owned base/libraries
-form. Existing callers retain their exact command and derivation identities.
+form. Runtime-only selection also leaves installed relocatable objects untouched.
+Existing callers retain their exact command and derivation identities.
 
 `gnu-target-origin-audit.py` extends the existing construction ledger with
 validated owned runners and a finite source-only probe tree. It preserves all

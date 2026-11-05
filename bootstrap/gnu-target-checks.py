@@ -122,11 +122,17 @@ Path('headers.cc').write_text('#include <vector>\n#include <unwind.h>\n#include 
 trace = call('headers', [cxx, '-E', '-v', '-H', 'headers.cc'])
 assert stdcxx + '/include/c++/16.2.0' in trace
 assert libc + '/include' in trace
-prefix = Path(cc).parent.parent / 'target/include'
+prefix = Path(cc).parent.parent / 'include'
 assert (prefix / 'unwind.h').resolve() == Path(rt + '/include/unwind.h').resolve()
 for file in prefix.iterdir():
     if file.name in ('unwind.h', 'gthr.h', 'gthr-posix.h', 'gthr-default.h'):
         assert str(file.resolve()).startswith(str(Path(rt).parent.parent.parent.parent) + '/')
+search_order = trace.split('#include <...> search starts here:\n', 1)[1].split('End of search list.', 1)[0]
+assert search_order.index(stdcxx + '/include/c++/16.2.0') < search_order.index(str(prefix))
+# -B must not insert the intrinsic C header before its C++ compatibility wrapper.
+Path('atomic.cc').write_text('#include <stdatomic.h>\nint main(){atomic_int value{1};return value.load()!=1;}\n')
+call('atomic-cxx23-build', [cxx, '-std=c++23', 'atomic.cc', '-o', out / 'bin/atomic'])
+call('atomic-cxx23-run', [out / 'bin/atomic'])
 call('deps', [cc, '-M', 'mixed.c'])
 call('assemble', [cc, '-S', 'mixed.c', '-o', 'mixed.s'])
 # Startup/library suppression retains real GCC semantics.

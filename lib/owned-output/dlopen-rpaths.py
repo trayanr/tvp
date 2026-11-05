@@ -1,28 +1,23 @@
 """Opt-in transitive RPATH for consumers whose libc dlopens an unwinder.
 
-Use the existing provider/shrink algorithm first. RUNPATH is not inherited by
-libc's dlopen call, so explicit dlopen directories also need the RPATH tag.
+Run the provider/shrink algorithm and reuse its selector and normalized paths.
+RUNPATH is not inherited by libc's dlopen call, so preserve the RPATH tag too.
 """
-from pathlib import Path
-import subprocess
+import runpy
 import sys
 
-subprocess.run([sys.executable, '-B', sys.argv[4],
-                *sys.argv[1:4]], check=True)
-sys.path.insert(0, sys.argv[3])
-from common import elf, files, invocation, preserving_times, tool
-
-root, config = invocation()
-if not config['dlopenDirectories']:
+original = runpy.run_path(sys.argv[4])
+root, config = original['root'], original['config']
+if not original['preserve']:
     raise ValueError('transitive RPATH requires explicit dlopen directories')
-for path in files(root, config['paths']):
-    classification = elf(path, config['readelf'])
+for path in original['files'](root, config['paths']):
+    classification = original['runtime_elf'](path)
     if classification is None or not classification[0]:
         continue
     def configure():
-        value = tool(config['patchelf'], '--print-rpath', path).rstrip('\n')
-        for directory in config['dlopenDirectories']:
+        value = original['tool'](config['patchelf'], '--print-rpath', path).rstrip('\n')
+        for directory in original['preserve']:
             if directory not in value.split(':'):
                 raise ValueError('dlopen directory lost during shrinking: ' + directory)
-        tool(config['patchelf'], '--force-rpath', '--set-rpath', value, path)
-    preserving_times(path, configure)
+        original['tool'](config['patchelf'], '--force-rpath', '--set-rpath', value, path)
+    original['preserving_times'](path, configure)
