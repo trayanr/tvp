@@ -47,9 +47,10 @@ environment expands its declared MPFR/GMP development requirements. Consumers
 exercise large integers, directed 512-bit rounding, complex arithmetic, C++
 exceptions, and installed static GMP/GMPXX archives. Link maps, include/CRT
 selection, ELF metadata, loader traces, and actual process mappings belong to a
-separate evidence output. The MPC-only link derives GNU ld `-rpath-link`
-directories from that expanded public interface, as required under the target
-sysroot; these are link-time flags. Programs execute with `env -i`, without library-path
+separate evidence output. The source base's linker contributes GNU ld
+`-rpath-link` directories through the ordinary tool environment API. It derives
+them from the expanded public interfaces, so an MPC-only consumer needs no
+special compiler arguments for indirect libraries under the target sysroot. Programs execute with `env -i`, without library-path
 overrides. The separate origin and runtime audits extend the existing strict
 per-generation observers and retain their negative controls.
 

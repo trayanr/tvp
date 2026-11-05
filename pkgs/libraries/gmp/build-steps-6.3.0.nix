@@ -67,7 +67,7 @@ in
     (command "gmp.configure" ''
       export CONFIG_SHELL=${bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
-      ./configure --prefix="$out" --build=${base.platform.config} --host=${base.platform.config} \
+      ./configure --prefix="$out" --build=${final.base.platform.config} --host=${final.base.platform.config} \
         --enable-cxx --enable-shared --enable-static --with-pic --disable-dependency-tracking
     '')
     (command "gmp.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')

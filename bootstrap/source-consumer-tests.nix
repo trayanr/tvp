@@ -20,16 +20,6 @@ let
   binutils = b.gnu-binutils;
   patchelf = (import ./output-tool-prerequisites.nix { inherit bootstrap; }).patchelf;
   provider = base.environment { libraries = [ mpc ]; };
-  # GNU ld under --sysroot needs explicit link-time lookup for indirect DSOs.
-  # Derive it from MPC's expanded public interface, never separate dependencies.
-  indirectSearch = lib.escapeShellArgs (
-    lib.concatMap (
-      p:
-      map (d: "-Wl,-rpath-link,${d}") (
-        (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
-      )
-    ) provider.libraries
-  );
   replacement = cc // {
     outPath = "${cc}-constructor-contract";
   };
@@ -51,6 +41,11 @@ let
       gmp
     ];
     transitiveLinkDirs = builtins.all (p: lib.hasInfix "-L${p}/lib" provider.env.NIX_LDFLAGS) [
+      mpc
+      mpfr
+      gmp
+    ];
+    indirectLinkDirs = builtins.all (p: lib.hasInfix "-rpath-link ${p}/lib" provider.env.NIX_LDFLAGS) [
       mpc
       mpfr
       gmp
@@ -112,9 +107,10 @@ let
         environment = {
           libraries = [ mpc ];
         };
+        runtime.libraries = (final.base.environment final.environment).libraries;
         plan = [
           (
-            (base.environment final.environment)
+            (final.base.environment final.environment)
             // {
               name = "consumer.compile";
               run = ''
@@ -131,7 +127,7 @@ let
                 "$CXX" -v -Wl,-t -Wl,-Map,static.map \
                   '-DTARGET_LIBC="${profile.libc}"' '-DTARGET_GCC="${profile.libgcc}/lib/gcc/x86_64-unknown-linux-gnu/16.2.0"' '-DTARGET_CXX="${profile.libstdcxx}"' source-static.cc \
                   ${gmp}/lib/libgmpxx.a ${gmp}/lib/libgmp.a -o "$out/bin/arithmetic-static-gmp" > "$evidence/static-link.log" 2>&1
-                "$CC" ${indirectSearch} -v -Wl,-Map,mpc-only.map ${../pkgs/libraries/mpc/tests/fixtures/owned.c} -lmpc -o "$out/bin/mpc-only" > "$evidence/mpc-only-link.log" 2>&1
+                "$CC" -v -Wl,-Map,mpc-only.map ${../pkgs/libraries/mpc/tests/fixtures/owned.c} -lmpc -o "$out/bin/mpc-only" > "$evidence/mpc-only-link.log" 2>&1
                 cp mpc-only.map c.map cxx.map static.map "$evidence/"
                 "$CC" -E -v ${defines} source-arithmetic.c > /dev/null 2> "$evidence/includes.log"
                 "$CC" --print-file-name=crt1.o > "$evidence/crt1"
@@ -147,13 +143,9 @@ let
               python
               binutils
               patchelf
-              base
               ;
-            libraries = [
-              mpc
-              mpfr
-              gmp
-            ];
+            base = final.base;
+            libraries = final.runtime.libraries;
             paths = [ "bin" ];
           })
           (builder.outputs.checkPaths {

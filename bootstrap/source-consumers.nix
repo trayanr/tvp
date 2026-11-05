@@ -75,13 +75,7 @@ let
         plan:
         let
           unpacked = steps.replace "source.unpack" (
-            _:
-            steps.unpack {
-              src = sources.${name};
-              tar = b.gnutar-latest;
-              xz = b.xz;
-              inherit findutils;
-            }
+            old: old // { tools = lib.unique (old.tools ++ [ findutils ]); }
           ) plan;
           shells = steps.insertAfter "${name}.prepare" [
             (steps.shebangs {

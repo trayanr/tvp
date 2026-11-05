@@ -10,6 +10,31 @@ let
   lib = import ./owned-lib.nix { inherit system; };
   bash = bootstrap.gnu-bash;
   coreutils = bootstrap.gnu-tool-floor.gnu-coreutils;
+  # GNU ld needs link-time lookup for the selected libraries' indirect DSOs
+  # under this sysroot. The real linker contributes through the normal tool API.
+  linker = compiler.bintools // {
+    buildEnvironment =
+      context:
+      let
+        existing = (compiler.bintools.buildEnvironment or (_: { })) context;
+        flags = existing.flags or { };
+      in
+      existing
+      // {
+        flags = flags // {
+          NIX_LDFLAGS =
+            (flags.NIX_LDFLAGS or [ ])
+            ++ lib.concatMap (
+              library:
+              lib.concatMap (directory: [
+                "-rpath-link"
+                directory
+              ]) (context.directories library).libraries
+            ) context.libraries;
+        };
+      };
+  };
+  prepare = import ../lib/build-environment.nix { inherit lib base; };
   base = {
     name = "source-gnu";
     platform = {
@@ -26,7 +51,7 @@ let
       ];
     };
     runtimeDirectories = compiler.runtimeDirectories;
-    environment = import ../lib/build-environment.nix { inherit lib base; };
+    environment = args: prepare (args // { tools = [ linker ] ++ (args.tools or [ ]); });
   };
 in
 {
