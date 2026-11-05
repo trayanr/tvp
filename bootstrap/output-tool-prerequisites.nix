@@ -42,7 +42,7 @@ let
     };
   command =
     final: name: run:
-    (base.environment final.environment)
+    (final.base.environment final.environment)
     // {
       inherit name run;
       cwd = "source";
@@ -115,8 +115,12 @@ let
           ${b.gnumake-musl}/bin/make -j"$NIX_BUILD_CORES" check > "$evidence/check.log" 2>&1 || status=$?
           printf '%s\n' "$status" > "$evidence/check.status"
           ${b.findutils}/bin/find tests -name '*.log' -exec cp --parents '{}' "$evidence" \;
+          ${b.findutils}/bin/find tests -name '*.trs' -exec cp --parents '{}' "$evidence" \;
           mv "$evidence/tests" "$evidence/full-suite"
           ${b.gnu-binutils}/bin/readelf -d tests/no-rpath tests/libshared-rpath.so > "$evidence/raw-fixtures.elf"
+          ${python}/bin/python3 -B ${./patchelf-checks.py} full \
+            "$evidence/full-suite" "$evidence/check.status" "$evidence/raw-fixtures.elf" \
+            > "$evidence/full-suite-classification.json"
           # The raw compiler always embeds its owned runtime paths. These two
           # tests require deliberately different fixture RPATHs. Retain the raw
           # full-suite result, then establish precisely their upstream premises.
@@ -131,6 +135,9 @@ let
           printf '%s\n' "$status" > "$evidence/fixture-recheck.status"
           cat "$evidence/fixture-recheck.log"
           test "$status" = 0
+          ${python}/bin/python3 -B ${./patchelf-checks.py} recheck \
+            "$evidence/fixture-recheck.log" "$evidence/fixture-recheck.status" tests \
+            > "$evidence/fixture-recheck-classification.json"
           ${b.findutils}/bin/find tests -name '*.log' -exec cp --parents '{}' "$evidence" \;
           ${b.gnumake-musl}/bin/make install > "$evidence/install.log" 2>&1
           ${b.gnu-binutils}/bin/strip -S -p "$out/bin/patchelf"
@@ -234,7 +241,7 @@ let
       environment.libraries = [ library ];
       plan = [
         (
-          (base.environment final.environment)
+          (final.base.environment final.environment)
           // {
             name = "consumer.build";
             run = ''

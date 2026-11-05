@@ -68,7 +68,7 @@ in
       && lib.hasInfix "${b.findutils}/bin/find source" explicit.run;
     legacyFind = !(builtins.elem b.findutils legacy.tools) && lib.hasInfix "$(find source" legacy.run;
     noFakeCompiler = lib.hasInfix (builtins.toJSON dirs) (runtime dirs);
-    order =
+    serializedOrder =
       runtime dirs != runtime [
         (builtins.elemAt dirs 1)
         (builtins.elemAt dirs 0)

@@ -32,6 +32,11 @@ are retained. A separate three-test recheck removes the no-rpath fixture's
 RPATH and links the libc-free shared-string fixture directly with owned `ld`.
 All three rechecks pass. This does not turn the raw full suite into a pass;
 architecture-dependent skips also remain recorded.
+The gate checks every individual test result and the exact summary. Only the
+recorded fixture failure and four named skips are accepted; any changed result
+stops the build. All three supplemental checks must execute and pass.
+Upstream lists `empty-note.sh` twice, so its summary counts 71 occurrences
+from 70 distinct test results.
 
 MPFR 4.2.2 calls the existing recipe through `lib/builder.nix`, with normal spec
 and step edits for declared configure tools and explicit Findutils. The actual
@@ -48,7 +53,9 @@ not SSL, SQLite, ctypes or a general interpreter capability profile.
 New unpack calls may select `findutils`; omitted arguments preserve the previous
 step text and tools. New independently composed bases may set ordered,
 contextual `runtimeDirectories`; the explicit list (including an empty list)
-overrides the old `cc.libc` / `cc.cc` fallback. Coreutils remains the explicit
+overrides the old `cc.libc` / `cc.cc` fallback. It filters retained base paths;
+their final order still follows the existing ELF. The recipe's runtime libraries
+select and order the added providers. Coreutils remains the explicit
 floor for sorting and epoch handling. The contracts exercise xz/gzip archives,
 a known epoch, missing Findutils, runtime order/context and malformed metadata.
 
