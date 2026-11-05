@@ -11,3 +11,4 @@ in
   '';
   versions = tinycc-mes.compiler.tests.chain;
 }
+// import ./ladder-tests.nix { inherit scope; }

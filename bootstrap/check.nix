@@ -17,6 +17,7 @@ tvp.builder {
           tools = [ python ];
           run = ''
             ${python}/bin/python3 -B ${./test_audit.py} ${./audit.py} > "$out"
+            ${python}/bin/python3 -B ${./test_runtime_audit.py} ${./runtime-audit.py} >> "$out"
           '';
         }
       ];

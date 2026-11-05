@@ -8,6 +8,16 @@ let
       separator: f: values:
       concatStringsSep separator (map f values);
     inherit concatStringsSep;
+    inherit (builtins) replaceStrings;
+    removeSuffix =
+      suffix: value:
+      let
+        n = builtins.stringLength value - builtins.stringLength suffix;
+      in
+      if n >= 0 && builtins.substring n (builtins.stringLength suffix) value == suffix then
+        builtins.substring 0 n value
+      else
+        value;
     makeBinPath = values: concatMapStringsSep ":" (value: "${value}/bin") values;
     removePrefix =
       prefix: value:
@@ -21,6 +31,9 @@ let
     strings = helpers;
     licenses = {
       gpl3Plus = "GPL-3.0-or-later";
+      gpl3Only = "GPL-3.0-only";
+      gpl2Plus = "GPL-2.0-or-later";
+      lgpl21Plus = "LGPL-2.1-or-later";
       lgpl3Plus = "LGPL-3.0-or-later";
       lgpl21Only = "LGPL-2.1-only";
       mit = "MIT";
