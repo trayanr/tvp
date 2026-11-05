@@ -61,6 +61,10 @@ def audit(report, readelf, roots):
         if root not in known:
             failures.append('unknown runtime output: ' + root)
         root_path = Path(root)
+        if root_path.is_symlink():
+            if not within(str(root_path.resolve()), paths):
+                failures.append('escaping symlink: ' + str(root_path))
+            continue
         for file in sorted(root_path.rglob('*')) if root_path.is_dir() else [root_path]:
             if file.is_symlink():
                 if not within(str(file.resolve()), paths):

@@ -55,6 +55,24 @@ class RuntimeTests(unittest.TestCase):
         program.symlink_to(self.outside)
         self.assertFalse(a.owned_executable(str(program), self.paths))
 
+    def test_root_symlink_must_resolve_inside_classified_closure(self):
+        header = bytearray(64)
+        header[:6] = b'\x7fELF\x02\x01'
+        header[18:20] = (62).to_bytes(2, 'little')
+        (self.root / 'program').write_bytes(header)
+        alias = self.directory / 'alias'
+        alias.symlink_to(self.root, target_is_directory=True)
+        known = {str(p): 'source-built-stage' for p in [alias, self.root]}
+        for paths, escapes in [([alias], True), ([alias, self.root], False)]:
+            def command(args, **kwargs):
+                if args[:2] == ['nix', 'path-info']:
+                    return json.dumps([{'path': str(p)} for p in paths])
+                return 'Machine: AMD x86-64\n'
+            with patch.object(a, 'origin_paths', return_value=known), \
+                 patch.object(a.subprocess, 'check_output', side_effect=command):
+                result = a.audit({}, '/observer/readelf', [str(alias)])
+            self.assertEqual(any('escaping symlink' in f for f in result['failures']), escapes)
+
     def test_failed_or_malformed_origin_report_rejects_before_nix(self):
         good = {'schema': 1, 'failures': [], 'sourceData': {}, 'runtimeForbiddenExecutableRoots': [], 'nodes': {
             'fixture.drv': {'origin': 'source-built-stage', 'outputs': {

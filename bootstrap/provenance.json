@@ -19,7 +19,8 @@
       "Preserve wordexp shell argv[0] while searching declared PATH with execlp",
       "Port pinned GCC10.4.0 with in-tree GMP6.2.1/MPFR4.2.2/MPC1.4.1 and without ISL; preserve bounded upstream configuration",
       "Select musl.bin for Tar1.35 native CC; omit unused host-dependent bzip2 pager/grep/diff scripts",
-      "Use fixed native store and Bash arrays in GCC wrappers to preserve caller argument boundaries"
+      "Use fixed native store and Bash arrays in GCC wrappers to preserve caller argument boundaries",
+      "Pass caller RPATHs as separate linker arguments so commas remain part of the path"
     ]
   },
   "stage0Release": {

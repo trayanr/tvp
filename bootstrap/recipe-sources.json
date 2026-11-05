@@ -123,12 +123,12 @@
     },
     "gcc/wrapper.sh": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
-      "ownedSHA256": "007ce7de68f461387aa928d2bab54bbe956682bc31827140bb08e159ab994c58",
+      "ownedSHA256": "b1ee7499bdcfe0534e8c7a14efff582f9eaf8bc15100adacdb0af2e005eb0c72",
       "upstreamSHA256": "331e181083be08d59cbe3c5eb5032c82d275e16f1d080dae9be16f2c1376cdf8"
     },
     "gcc/wrappercxx.sh": {
       "license": "MIT (nixpkgs recipe; source package licenses in provenance.json)",
-      "ownedSHA256": "6d5c34ed0a3accac94344a23a243c8ade7983ab04a6492d984c4348fc17fc576",
+      "ownedSHA256": "c1eb8821f89cbab2aec41167dabe5fe814b08f1c17268a86d5bf3288e2ad6482",
       "upstreamSHA256": "190d071b3ca69ef463e5329d6c962e79514dee4b5aa74990bd3f012e4424ae62"
     },
     "gnugrep/default.nix": {

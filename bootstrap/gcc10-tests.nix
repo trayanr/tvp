@@ -66,7 +66,14 @@ in
               if test "$compiler" = ${gcc10}; then tag=wrapper; fi
               "$compiler/bin/gcc" -std=c11 -static ${./consumer.c} -o '"$out"'/bin/$tag-c
               '"$out"'/bin/$tag-c
+              # Caller paths must remain one linker argument, including commas.
+              "$compiler/bin/gcc" -std=c11 -static -L'"$out"'/unused,comma \
+                ${./consumer.c} -o comma-c
+              ./comma-c
               "$compiler/bin/gcc" -std=c11 -c ${./consumer-abi.c} -o abi.o
+              "$compiler/bin/g++" -std=c++14 -static -L'"$out"'/unused,comma \
+                ${./consumer14.cc} abi.o -o comma-cxx
+              ./comma-cxx
               "$compiler/bin/g++" -std=c++14 -O2 -static ${./consumer14.cc} abi.o -o '"$out"'/bin/$tag-static
               '"$out"'/bin/$tag-static
               "$compiler/bin/g++" -std=c++14 -O2 -static-libstdc++ -static-libgcc \

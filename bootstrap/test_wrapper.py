@@ -10,6 +10,19 @@ RECIPES = Path(sys.argv.pop(1))
 
 
 class WrapperTests(unittest.TestCase):
+    def rpaths(self, args):
+        forwarded = []
+        i = 0
+        while i < len(args):
+            if args[i] == '-Xlinker':
+                i += 1
+                forwarded.append(args[i])
+            elif args[i].startswith('-Wl,'):
+                forwarded.extend(args[i][4:].split(','))
+            i += 1
+        return [forwarded[i + 1] for i, arg in enumerate(forwarded[:-1])
+                if arg == '-rpath']
+
     def capture(self, template, args, store=''):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -40,8 +53,7 @@ class WrapperTests(unittest.TestCase):
                     args = ['-L', '/tmp/outside lib', '-B/usr/bin', '/tmp/foreign.so', '-c', 'input with spaces.cc']
                     result = self.capture(template, args, store)
                     self.assertEqual(result[-len(args):], args)
-                    self.assertEqual([a for a in result if a.startswith('-Wl,-rpath,')],
-                                     ['-Wl,-rpath,/nix/store/musl/lib'])
+                    self.assertEqual(self.rpaths(result), ['/nix/store/musl/lib'])
 
     def test_store_rpath_and_caller_argv_boundaries(self):
         for template in ['wrapper.sh', 'wrappercxx.sh']:
@@ -49,14 +61,24 @@ class WrapperTests(unittest.TestCase):
                     '-DVALUE=two words', '', 'input with spaces.cc']
             result = self.capture(template, args)
             self.assertEqual(result[-len(args):], args)
-            self.assertIn('-Wl,-rpath,/nix/store/a dir/lib', result)
-            self.assertIn('-Wl,-rpath,/nix/store/tools/bin', result)
-            self.assertIn('-Wl,-rpath,/nix/store/other/lib', result)
+            self.assertIn('/nix/store/a dir/lib', self.rpaths(result))
+            self.assertIn('/nix/store/tools/bin', self.rpaths(result))
+            self.assertIn('/nix/store/other/lib', self.rpaths(result))
             self.assertLess(result.index('-B/nix/store/musl/lib/..'),
                             result.index('-B/nix/store/compiler/lib/gcc/target/10.4.0'))
             if template == 'wrappercxx.sh':
                 self.assertLess(result.index('/nix/store/compiler/include/c++'),
                                 result.index('-B/nix/store/musl/lib/..'))
+
+    def test_comma_in_library_path_remains_one_linker_argument(self):
+        for template in ['wrapper.sh', 'wrappercxx.sh']:
+            args = ['-L/nix/store/compiler/unused,comma', '-L', '/nix/store/lib with,comma',
+                    '/nix/store/other,path/lib/test.so', 'input.cc']
+            result = self.capture(template, args)
+            self.assertEqual(result[-len(args):], args)
+            self.assertEqual(self.rpaths(result), [
+                '/nix/store/compiler/unused,comma', '/nix/store/lib with,comma',
+                '/nix/store/other,path/lib', '/nix/store/musl/lib'])
 
     def test_libtool_version_special_case(self):
         for template in ['wrapper.sh', 'wrappercxx.sh']:

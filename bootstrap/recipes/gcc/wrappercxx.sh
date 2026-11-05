@@ -17,7 +17,7 @@ for param in "$@"; do
     -L | -B)
       case "$param" in
         "$store"/*)
-          extraRpath+=("-Wl,-rpath,${param}")
+          extraRpath+=(-Xlinker -rpath -Xlinker "$param")
           ;;
         *)
           ;;
@@ -26,10 +26,10 @@ for param in "$@"; do
     *)
       case "$param" in
         -L"$store"/* | -B"$store"/*)
-          extraRpath+=("-Wl,-rpath,${param:2}")
+          extraRpath+=(-Xlinker -rpath -Xlinker "${param:2}")
           ;;
         "$store"/*.so | "$store"/*.so.*)
-          extraRpath+=("-Wl,-rpath,${param%/*}")
+          extraRpath+=(-Xlinker -rpath -Xlinker "${param%/*}")
           ;;
         *)
           ;;
