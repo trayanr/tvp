@@ -1,12 +1,13 @@
 """Finite installed BUILD-profile proofs; raw upstream results are not conformance."""
+import errno
 import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
 import shlex
-import re
 import shutil
+import stat
 import socket
 import ssl
 import subprocess
@@ -111,29 +112,77 @@ sys.path.append(sys.argv[1])
 names=sys.argv[2:]
 suite=unittest.TestLoader().loadTestsFromNames(names)
 r=unittest.TextTestRunner(verbosity=2).run(suite)
-print('TVP_RESULT='+json.dumps(dict(tests=r.testsRun,failures=len(r.failures),errors=len(r.errors),skips=len(r.skipped))))
+details=lambda rows:[dict(id=t.id(),case=str(t),traceback=tb) for t,tb in rows]
+print('TVP_RESULT='+json.dumps(dict(tests=r.testsRun,failures=len(r.failures),errors=len(r.errors),skips=len(r.skipped),failureDetails=details(r.failures),errorDetails=details(r.errors))))
 raise SystemExit(not r.wasSuccessful())
 ''')
+# Independent syscall controls distinguish sandbox limits from library defects.
+mode_probe = Path('mode-probe'); mode_probe.touch(); mode_probe.chmod(0o644)
+try:
+    os.chmod(mode_probe, 0o7777)
+    mode_errno = 0
+except OSError as exc:
+    mode_errno = exc.errno
+mode_control = dict(requested=0o7777, actual=stat.S_IMODE(mode_probe.stat().st_mode), errno=mode_errno)
+mode_probe.unlink()
+def credential_control(kind):
+    # Call the syscall directly after fork, independent of subprocess.Popen.
+    read_fd, write_fd = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        os.close(read_fd)
+        try:
+            getattr(os, 'set' + kind)(65534)
+            result = 0
+        except OSError as exc:
+            result = exc.errno
+        os.write(write_fd, str(result).encode()); os._exit(0)
+    os.close(write_fd)
+    result = int(os.read(read_fd, 32)); os.close(read_fd)
+    _, status = os.waitpid(pid, 0); assert status == 0
+    ranges = [list(map(int, line.split())) for line in Path('/proc/self/' + kind + '_map').read_text().splitlines()]
+    return dict(target=65534, errno=result, ranges=ranges,
+                mapped=any(start <= 65534 < start + length for start, outside, length in ranges))
+controls = dict(mode=mode_control, uid=credential_control('uid'), gid=credential_control('gid'))
+(evidence/'sandbox-controls.json').write_text(json.dumps(controls, indent=2))
 regress={}
 for family in ['test_zlib','test_bz2','test_lzma','test_zipfile','test_gzip','test_tarfile','test_ssl','test_subprocess']:
     p=run('upstream-'+family,[sys.executable,'regress.py',lib,'test.'+family],ok=False)
     regress[family]={'status':p.returncode,'raw':'upstream-'+family+'.log'}
-    for line in p.stdout.splitlines():
-        if line.startswith('TVP_RESULT='): regress[family].update(json.loads(line.split('=',1)[1]))
+    summaries = [line for line in p.stdout.splitlines() if line.startswith('TVP_RESULT=')]
+    assert len(summaries) == 1, (family, p.returncode, summaries)
+    regress[family].update(json.loads(summaries[0].split('=', 1)[1]))
 (evidence/'summary.json').write_text(json.dumps(dict(modules=modules,disabled=c['disabled'],openssl=ssl.OPENSSL_VERSION,tls=results,regressions=regress,sysconfig={k:sysconfig.get_config_var(k) for k in ['CC','CFLAGS','LDFLAGS','CONFIG_ARGS','SOABI','Py_ENABLE_SHARED','LIBRARY']},limits='Bounded source harness with installed stdlib; disabled test extensions remain absent. os.system remains outside shell contract.'),indent=2))
-# Keep measured unsupported families visible; require meaningful successful cases.
-assert sum(v.get('tests',0) for v in regress.values() if v['status']==0)>100
+# Require terminal summaries even for qualified families; crashes are never evidence.
+def validate_regressions(regress, controls):
+    for family, row in regress.items():
+        assert row['status'] in (0, 1), (family, row)
+        assert row.get('tests', 0) > 0 and all(k in row for k in
+            ['failures', 'errors', 'skips', 'failureDetails', 'errorDetails']), (family, row)
+        assert row['failures'] == len(row['failureDetails']) and row['errors'] == len(row['errorDetails'])
+        assert row['status'] == bool(row['failures'] or row['errors']), (family, row)
+        if family == 'test_tarfile' and row['status']:
+            assert row['errors'] == 0 and row['failures'] == 1
+            failure = row['failureDetails'][0]
+            assert failure['id'] == 'test.test_tarfile.TestExtractionFilters.test_modes'
+            assert "AssertionError: '?rw-r--r--' != '?rwsrwsrwt'" in failure['traceback']
+            assert controls['mode'] == dict(requested=0o7777, actual=0o644, errno=errno.EPERM), controls
+        elif family == 'test_subprocess' and row['status']:
+            assert row['failures'] == 0 and row['errors'] == 8
+            for kind in ['uid', 'gid']:
+                assert controls[kind]['errno'] == errno.EINVAL and not controls[kind]['mapped'], controls
+            expected = set()
+            for kind, identities in [('user', ['65534', "'nobody'"]), ('group', ['65534', "'nogroup'"])]:
+                for identity in identities:
+                    for close in ['False', 'True']:
+                        expected.add(f"test_{kind} (test.test_subprocess.POSIXProcessTestCase.test_{kind}) ({kind}={identity}, close_fds={close})")
+            assert {error['case'] for error in row['errorDetails']} == expected
+            assert all(error['traceback'].rstrip().endswith('OSError: [Errno 22] Invalid argument')
+                       for error in row['errorDetails'])
+        else:
+            assert row['status'] == 0, (family, row)
 
-# Keep raw environmental failures; fail on every other unexpected regression.
-for family in ['test_zlib','test_bz2','test_lzma','test_zipfile','test_gzip','test_ssl']:
-    assert regress[family]['status']==0, regress[family]
-allowed={'test_tarfile': {'test_modes'}, 'test_subprocess': {'test_user','test_group'}}
-for family,names in allowed.items():
-    raw=(evidence/('upstream-'+family+'.log')).read_text()
-    measured=set(re.findall(r'^(?:FAIL|ERROR): (\w+)',raw,re.M))
-    assert measured <= names, (family,measured)
+validate_regressions(regress, controls)
 (evidence/'sandbox-limits.json').write_text(json.dumps(dict(
-    uidMap=Path('/proc/self/uid_map').read_text(),gidMap=Path('/proc/self/gid_map').read_text(),
-    uid=os.getuid(),gid=os.getgid(),
-    limits={k:sorted(v) for k,v in allowed.items()},
-    qualification='Raw nonzeros retained: archive special-mode expectation and subprocess unmapped uid/gid transitions. No full family PASS claim.'),indent=2))
+    controls=controls, uid=os.getuid(), gid=os.getgid(),
+    qualification='Raw failures retained; only exact completed results matching independent syscall restrictions are qualified. No full family PASS claim.'), indent=2))

@@ -55,6 +55,8 @@ data while the tested standard library remains installed.
 The separate origin/runtime observers independently require the previous audits,
 then classify new source and native endpoints. Compiler/development references
 remain visible in the full reference closure and grant no native runtime
-permission. Raw upstream failures, skips and environment limits remain evidence;
+permission. Python regression gates require completed result records; independent chmod and
+UID/GID syscall probes must explain the exact qualified sandbox failures.
+Raw upstream failures, skips and environment limits remain evidence;
 these bounded checks do not establish full CPython/Meson conformance or promote
 a default. Publication, parent review, CI and merge remain separate work.
