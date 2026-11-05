@@ -1,0 +1,112 @@
+"""Opt-in extension; independently audit old and new graphs before their union."""
+import copy
+import hashlib
+import importlib
+import json
+from pathlib import Path
+import sys
+import audit
+
+ROOT = Path(__file__).resolve().parent
+
+
+def run():
+    prior = importlib.import_module('source-consumer-origin-audit').run()
+    if prior['failures']:
+        raise ValueError('Prior construction audit failed')
+    raw = audit.nix_json('derivation', 'show', '--recursive', '--file',
+                         str(ROOT / 'source-build-tool-tests.nix'), 'consumer',
+                         'tools.evidence.pkgConfig', 'tools.evidence.ninja',
+                         'sourceOverridePkgConfig', 'sourceOverrideNinja')
+    graph = raw.get('derivations', raw)
+    normalized = copy.deepcopy(graph)
+    roles = audit.nix_json('eval', '--json', '--impure', '--expr', f'''
+      let f=import {ROOT}/source-build-tools.nix {{}}; b=import {ROOT} {{}};
+      in {{ shell="${{f.composition.bash}}/bin/bash";
+            coreutils=toString f.composition.coreutils;
+            build=map toString [b.gnu-gcc-unwrapped b.gnu-binutils b.build-python b.build-m4
+              b.gnu-tool-floor.gnu-make b.gnu-tool-floor.gnu-findutils b.gnupatch b.gnused];
+            target=map toString [f.composition.cc.libc f.pkgConfig f.ninja]; }}''')
+    producers = {audit.store_path(o.get('path', n['env'][name])): audit.store_path(d)
+                 for d, n in graph.items() for name, o in n['outputs'].items()}
+    profiles, failures = {}, []
+    stage_names = {'pkg-config-0.29.2', 'pkg-config-0.29.2-artifacts',
+                   'ninja-1.13.2', 'ninja-1.13.2-artifacts',
+                   'source-pkg-config-evidence-0.29.2', 'source-ninja-evidence-1.13.2',
+                   'source-build-tool-project-1', 'source-build-tool-alternate-1',
+                   'source-pkg-config-override-0.29.2', 'source-ninja-override-1.13.2'}
+    for drv, n in normalized.items():
+        full = audit.store_path(drv)
+        if full in prior['ownedRunnerProfile']:
+            n['env']['PATH'] = ''; n['env']['allowSubstitutes'] = ''
+            continue
+        if full in prior['nodes']:
+            continue
+        deps = {audit.store_path(p) for p in n.get('inputs', {}).get('drvs', {})}
+        name = n.get('name', n['env'].get('name', ''))
+        if 'structuredAttrs' in n:
+            data = n['structuredAttrs']
+            expected_fields = {'builder', 'name', 'outputs', 'stageInputs', 'system'}
+            checks_valid = True
+            if name in {'pkg-config-0.29.2', 'ninja-1.13.2'}:
+                expected_fields.add('outputChecks')
+                refs = data.get('outputChecks', {}).get('out', {}).get('disallowedReferences', [])
+                checks_valid = (len(refs) == 1 and producers.get(refs[0]) in deps
+                                and refs[0].endswith(name + '-artifacts')
+                                and data['outputChecks'] == {'out': {'disallowedReferences': refs}})
+            valid = (checks_valid and name in stage_names and n['builder'] == roles['shell']
+                     and n['args'][0] == '-euc'
+                     and n['args'][1].startswith('source "$NIX_ATTRS_SH_FILE"\n')
+                     and set(data) == expected_fields
+                     and all(producers.get(p) in deps for p in data['stageInputs']))
+            kind = 'owned-structured-stage'
+        elif name == 'tvp-build-step-runner' or name.startswith('tvp-step-'):
+            env = n['env']
+            valid = (n['builder'] == roles['shell']
+                     and n['args'] == ['-euc', roles['coreutils'] + '/bin/cp "$textPath" "$out"']
+                     and env.get('passAsFile') == 'text' and env.get('allowSubstitutes') == '1'
+                     and 'text' in env and 'PATH' not in env
+                     and producers.get(roles['coreutils']) in deps)
+            kind = 'owned-text-copy'
+        else:
+            continue
+        if not valid:
+            failures.append('Invalid source build-tool runner: ' + full)
+            continue
+        profiles[full] = dict(kind=kind, actualEnvironment=graph[drv]['env'],
+                             actualStructuredAttrs=graph[drv].get('structuredAttrs'),
+                             commandSHA256=hashlib.sha256(json.dumps(n['args']).encode()).hexdigest(),
+                             substitutionPolicy='Nix default; execution recorded separately')
+        n['env']['PATH'] = ''; n['env']['allowSubstitutes'] = ''
+    # Prior auditor has just checked these exact data directories. Their source
+    # classification grants no builder/interpreter/runtime executable permission.
+    for n in normalized.values():
+        srcs = n.get('inputs', {}).get('srcs', [])
+        for src in srcs[:]:
+            p = audit.store_path(src)
+            if p in prior['sourceData'] and Path(p).is_dir():
+                srcs.remove(src)
+    pins = copy.deepcopy(prior['constructionPins'])
+    pins['archives'] += list(json.loads((ROOT / 'source-build-tool-sources.json').read_text()).values())
+    sources = audit.nix_json('eval', '--json', '--impure', '--expr',
+        f'let b=import {ROOT} {{}}; in builtins.mapAttrs (_: toString) b.sources')
+    result = audit.audit_graph(normalized, sources, pins, prior['stage0Pins'],
+                               prior['runtimeForbiddenExecutableRoots'])
+    # Compare independent results BEFORE restoring records or forming a union.
+    overlapping = set(result['nodes']) & set(prior['nodes'])
+    mismatches = [k for k in overlapping if result['nodes'][k] != prior['nodes'][k]]
+    failures += ['Prior node changed: ' + k for k in mismatches]
+    result['priorPreserved'] = dict(nodes=len(prior['nodes']), profiles=len(prior['ownedRunnerProfile']),
+        independentlyCompared=len(overlapping), exact=not mismatches)
+    result['failures'] += failures
+    result['nodes'] = prior['nodes'] | result['nodes']
+    result['sourceData'] = prior['sourceData'] | result['sourceData']
+    result['ownedRunnerProfile'] = prior['ownedRunnerProfile'] | profiles
+    result['roles'] = roles
+    return result
+
+
+if __name__ == '__main__':
+    result = run()
+    print(json.dumps(result, indent=2, sort_keys=True))
+    sys.exit(bool(result['failures']))

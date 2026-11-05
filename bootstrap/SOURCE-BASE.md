@@ -58,3 +58,64 @@ This remains x86_64 Linux only, with the existing hardening and static-PIE
 limitations. It does not promote a public base, change ordinary producers or
 defaults, rebuild compiler frontends/libc/runtimes, or establish full conformance,
 self-hosting, a fixed point, or reproducibility.
+
+## Opt-in build tools
+
+`source-build-tools.nix` supplies owned-step pkg-config 0.29.2 and Ninja 1.13.2.
+The canonical definitions and public defaults remain unchanged. Build and inspect
+these endpoints independently:
+
+```sh
+nix build --impure -f bootstrap/source-build-tools.nix pkgConfig
+nix build --impure -f bootstrap/source-build-tools.nix ninja
+nix build --impure -f bootstrap/source-build-tools.nix evidence.pkgConfig evidence.ninja
+nix build --impure -f bootstrap/source-build-tool-tests.nix consumer sourceOverridePkgConfig sourceOverrideNinja
+```
+
+Pkg-config uses bundled internal GLib and GNU17, retaining upstream warnings.
+Its compiled default `.pc` path is empty because store installations have no
+shared global development prefix. The existing `lib/pkg-config-environment.nix`
+provider is exported through the owned specification's `buildEnvironment` field.
+`base.environment { tools = [ pkgConfig ]; libraries = [ mpc ]; }` supplies
+`PKG_CONFIG`, empty PATH/SYSROOT overrides, and only the resolved public MPC,
+GMP, and MPFR development directories. Explicit module directories still work.
+No setup hooks are installed or sourced. Internal GLib's charset alias default
+is bound in source to the selected GNU libc's `lib` directory. Upstream requires
+no alias file for glibc; its missing-file fallback and `CHARSETALIASDIR` override
+remain intact. A probe linked to the actual vendored object checks the opened
+path, C/C.UTF-8 codesets, and present/missing override files. Finalization does
+not rewrite executable constants. Split compilation artifacts remain reusable.
+
+Ninja binds the existing store-shell patch to source-owned GNU Bash. The existing
+minimal musl Python bootstraps it and runs the upstream syntax tests. Python
+remains a BUILD helper: the optional Python web browser feature is disabled, and
+installed `ninja_syntax.py` is nonexecutable source data with its unused shebang
+removed. The upstream manual source and license are retained. There is no
+`/bin/sh` or `/usr/bin/env` runtime fallback.
+
+The raw upstream scope is the complete 30-test pkg-config discovery suite
+(`check/`, excluding bundled GLib's own tests), and Ninja's nonempty upstream
+`misc/ninja_syntax_test.py` subset. Ninja's C++ harness requires GoogleTest,
+absent from the pinned archive; it is not built. Its terminal-output suite also
+requires PTY/`script` helpers outside this selected floor. These limits do not
+constitute full Ninja coverage.
+
+The installed owned project exercises C/C++ arithmetic using actual pkg-config
+flags and Ninja execution. It removes the environment's duplicate library flags
+so public discovery is required. Direct GMP/MPFR calls request those modules in
+addition to MPC; MPC's private dependencies do not become dynamic direct-link
+flags automatically. Header changes rebuild both object files and change program
+results; subsequent builds do no work. A failing command returns Ninja status 23,
+with the raw child status 23 retained in Ninja output. The project verifies the
+exact Bash, installed module import, clean-environment execution, loader and ELF
+metadata. Build logs, selected `.pc` files, command lists, link maps and test
+statuses live in separate evidence outputs. Alternate real archives prove source
+overrides reach both unpack steps. Evaluation contracts cover final base and
+environment edits, provider export, and artifact-preserving runtime edits.
+
+The separate build-tool construction and per-generation runtime audits retain
+the arithmetic-stage audits and negative controls. BUILD compiler/Python tools
+are never permitted in the new native runtime. Prior shell runtime uses its own
+loader; the capability-libc tools and consumers use the new loader and matching
+GCC runtime libraries. These endpoints make no promotion, full-conformance,
+self-hosting, fixed-point, or reproducibility claim.
