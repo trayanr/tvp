@@ -8,6 +8,7 @@ let
   inherit (adapter) lib derivationWithMeta;
   platform = {
     inherit system;
+    config = "x86_64-unknown-linux-musl";
     isLittleEndian = true;
     is64bit = true;
     isAarch64 = false;
@@ -107,6 +108,126 @@ let
     mes-libc = callPackage ./recipes/mes/libc.nix { };
     tinycc-bootstrappable = callPackage ./recipes/tinycc/bootstrappable.nix { };
     tinycc-mes = callPackage ./recipes/tinycc/mes.nix { };
+    gnupatch = callPackage ./recipes/gnupatch { tinycc = tinycc-mes; };
+    gnumake = callPackage ./recipes/gnumake { tinycc = tinycc-bootstrappable; };
+    coreutils = callPackage ./recipes/coreutils { tinycc = tinycc-mes; };
+    bash_2_05 = callPackage ./recipes/bash/2.nix { tinycc = tinycc-mes; };
+    gnused-mes = callPackage ./recipes/gnused/mes.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-bootstrappable;
+    };
+    gnugrep = callPackage ./recipes/gnugrep {
+      bash = bash_2_05;
+      tinycc = tinycc-mes;
+    };
+    gnutar = callPackage ./recipes/gnutar/mes.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-mes;
+      gnused = gnused-mes;
+    };
+    gzip = callPackage ./recipes/gzip {
+      bash = bash_2_05;
+      tinycc = tinycc-bootstrappable;
+      gnused = gnused-mes;
+    };
+    gawk-mes = callPackage ./recipes/gawk/mes.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-mes;
+      gnused = gnused-mes;
+    };
+    musl-tcc-intermediate = callPackage ./recipes/musl/tcc.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-mes;
+      gnused = gnused-mes;
+    };
+    tinycc-musl-intermediate = callPackage ./recipes/tinycc/musl.nix {
+      bash = bash_2_05;
+      musl = musl-tcc-intermediate;
+      tinycc = tinycc-mes;
+    };
+    musl-tcc = callPackage ./recipes/musl/tcc.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-musl-intermediate;
+      gnused = gnused-mes;
+    };
+    tinycc-musl = callPackage ./recipes/tinycc/musl.nix {
+      bash = bash_2_05;
+      musl = musl-tcc;
+      tinycc = tinycc-musl-intermediate;
+    };
+    gnutar-musl = callPackage ./recipes/gnutar/musl.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnused = gnused-mes;
+    };
+    gnumake-musl = callPackage ./recipes/gnumake/musl.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gawk = gawk-mes;
+      gnumakeBoot = gnumake;
+      gnutar = gnutar-musl;
+    };
+    coreutils-musl = callPackage ./recipes/coreutils/musl.nix {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    gnused = callPackage ./recipes/gnused {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnused = gnused-mes;
+    };
+    gawk = callPackage ./recipes/gawk {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+      bootGawk = gawk-mes;
+    };
+    xz = callPackage ./recipes/xz {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    diffutils = callPackage ./recipes/diffutils {
+      bash = bash_2_05;
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    findutils = callPackage ./recipes/findutils {
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    bash = callPackage ./recipes/bash {
+      bootBash = bash_2_05;
+      tinycc = tinycc-musl;
+      coreutils = coreutils-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    binutils = callPackage ./recipes/binutils {
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    gcc46 = callPackage ./recipes/gcc/4.6.nix {
+      tinycc = tinycc-musl;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
+    musl = callPackage ./recipes/musl {
+      gcc = gcc46;
+      gnumake = gnumake-musl;
+    };
+    gcc46-cxx = callPackage ./recipes/gcc/4.6.cxx.nix {
+      gcc = gcc46;
+      gnumake = gnumake-musl;
+      gnutar = gnutar-musl;
+    };
   };
   tests = import ./tests.nix { inherit scope; };
 in
@@ -117,6 +238,32 @@ in
     mes-libc
     tinycc-bootstrappable
     tinycc-mes
+    gnupatch
+    gnumake
+    coreutils
+    bash_2_05
+    gnused-mes
+    gnugrep
+    gnutar
+    gzip
+    gawk-mes
+    musl-tcc-intermediate
+    tinycc-musl-intermediate
+    musl-tcc
+    tinycc-musl
+    gnutar-musl
+    gnumake-musl
+    coreutils-musl
+    gnused
+    gawk
+    xz
+    diffutils
+    findutils
+    bash
+    binutils
+    gcc46
+    musl
+    gcc46-cxx
     ;
   inherit tests;
   compiler = scope.tinycc-mes.compiler;

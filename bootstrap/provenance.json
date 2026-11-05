@@ -9,7 +9,13 @@
       "Fetch Stage0 source components separately at the release's gitlink revisions",
       "Use builtin source downloaders",
       "Explicit empty PATH on raw derivations",
-      "Initialize Mes wait status for M2's word-sized int"
+      "Initialize Mes wait status for M2's word-sized int",
+      "Port only the required tool/musl/GCC 4.6 closure and exact upstream overrides",
+      "Declare native musl platform tuple; retain old config.sub tuple workaround",
+      "Use owned shells and a declared musl loader in TinyCC specs",
+      "Bind GCC default library searches, assembler/linker and every loader spec alternative to owned outputs",
+      "Select musl wrapper bin output explicitly in upstream C tests",
+      "Use owned interpreters in installed GCC maintenance scripts; omit unneeded Bash bug mailer"
     ]
   },
   "stage0Release": {
@@ -46,6 +52,259 @@
       "url": "https://repo.or.cz/tinycc.git/snapshot/cb41cbfe717e4c00d7bb70035cda5ee5f0ff9341.tar.gz",
       "hash": "sha256-MRuqq3TKcfIahtUWdhAcYhqDiGPkAjS8UTMsDE+/jGU=",
       "license": "LGPL-2.1-only"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/expr-strcmp.patch",
+      "hash": "sha256-SaVxnAzFoHLjT/95ly8Yhzxc6UnbO3H3xzyGqh0Nw6U=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/patches/dev-tty.patch",
+      "hash": "sha256-SZYy5Zej3n7wNZ4E3g1ovAdnlaeSvO6xVPEfVzbVJYw=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/patches/locale.patch",
+      "hash": "sha256-qS9r9z98NQr7Wiy20x13BftsYLK3gUk6kk87BakOONw=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/mpc/mpc-1.0.3.tar.gz",
+      "hash": "sha256-YX3sxuoJiJ+wjt4zCRegCxaAm424jCnDG/u0nL+I7MM=",
+      "license": "LGPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/patches/mes-libc.patch",
+      "hash": "sha256-XwQ7PVtoXsuO222epR6E0BwfhsH0mochuWOtb5xsen4=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+      "hash": "sha256-1YX9O2E8ZhUfwySejtRPdwIMtebB5jWmFtP5+CRgUSo=",
+      "license": "MIT",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/sed/sed-4.0.9.tar.gz",
+      "hash": "sha256-w2WHR5QYf4RE5dIpmM1YiP+kfzbe9Ld1F6gI3sJ8BgA=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/patches/tinycc.patch",
+      "hash": "sha256-QrIn817UuKsGVqekOUquxGZncod3UxjmV3QiRfIUTRA=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/mk/main.mk",
+      "hash": "sha256-RIJW46RIcYo77d0k7UTf/izq0t53do3CBWcMfAdOQkI=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/findutils/findutils-4.11.0.tar.xz",
+      "hash": "sha256-v9GcsGzHHzNS1WfpAoTYzawCrIl3S76t8LUzsMEUMv0=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/sort-locale.patch",
+      "hash": "sha256-zEShwIcwdMa6b/jHEDJ16apLFgfaYf8M9d37W1GArC0=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/mbstate.patch",
+      "hash": "sha256-fo/C2F0NzlGtuV+iQwW9sr4TB1oH6V4I2bI/6jRg42c=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/ls-strcmp.patch",
+      "hash": "sha256-5pZCTaMtkAKuU76/tB3leBXrJ3DS5LWY3WvgrsnPqFM=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/coreutils/coreutils-5.0.tar.gz",
+      "hash": "sha256-wnznXj9iRV9PrPTz/VW8njh30KsdXAQmyU2haMw0mIM=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/mpfr/mpfr-2.4.2.tar.gz",
+      "hash": "sha256-JG1+GEBIsfxI02lt0wLJd04k6SEgQiFUB0XlRkAitjc=",
+      "license": "LGPL-2.1-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/coreutils/coreutils-9.11.tar.gz",
+      "hash": "sha256-IDO4owScBr/0mp486nK99Gg7zQy+uXUhHdVtuvi3Nq4=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gawk/gawk-3.0.6.tar.gz",
+      "hash": "sha256-q/J24Qx7hxMy0HvytlITOidBlnfRVzgwl7vRU+WKi/w=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/1bc4296091c51f53a5598050c8956d16e945b0f5/sysa/sed-4.0.9/mk/main.mk",
+      "hash": "sha256-ytfBjQhTmdZA4jp/63CzajeO1/fdUFPDUPSXB2IuLnA=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/make/make-4.4.1.tar.gz",
+      "hash": "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/mk/builtins.mk",
+      "hash": "sha256-kiKa79nstqFZzEysC7N0CZT5qB2GGyl1dbAHv4pvaSQ=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gawk/gawk-5.4.1.tar.gz",
+      "hash": "sha256-izsOqDkwMRo/MJBdPOiY0yxhA8L+INapC0A0EXGxdN4=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gmp/gmp-4.3.2.tar.gz",
+      "hash": "sha256-e+OtFkG5mxf2qL5ql28flU6ZfEHpGa1+DEGP6EjBPJc=",
+      "license": "LGPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/binutils/binutils-2.47.tar.xz",
+      "hash": "sha256-FUqyO2AHDo8nATwil38RKUJdZ9HorNbhMBDmF4EeTP8=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gcc/gcc-4.6.4/gcc-core-4.6.4.tar.gz",
+      "hash": "sha256-5TSlywWrg51897JJb9XfQudjUpJsHPDZTedhhMJqc5w=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/touch-dereference.patch",
+      "hash": "sha256-qjnadcdkb0TSk8xWv+pjmh32O+bMm2ec5x0JMEcufnI=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/patch/patch-2.5.9.tar.gz",
+      "hash": "sha256-7LXGRp1zK88B1uwa/p5k8WaMq6W/2xA8KNf1N7o824o=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/patches/missing-defines.patch",
+      "hash": "sha256-RE6Lj4EehWFphrta7oOHYxVVTilxHk8xnnLnWuQME+A=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/tar/tar-1.12.tar.gz",
+      "hash": "sha256-xsN+iIsTbM76uQPFEUn0t71lnWnUrqISRfYQU6V6pgo=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/sed/sed-4.2.tar.gz",
+      "hash": "sha256-20XNY/0BDmUFN9ZdXfznaJplJ0UjZgbl5ceCk3Jn2YM=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://tukaani.org/xz/xz-5.8.3.tar.gz",
+      "hash": "sha256-PToblzryGBFPT4ibuqL0wDfequDI6BXuw4HD1Ua5dKA=",
+      "license": "GPL-2.0-or-later AND LGPL-2.1-or-later AND 0BSD",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/grep/grep-2.4.tar.gz",
+      "hash": "sha256-oyAyurNiCFCUZmVN8S9QdgDf4DE/7rvNIYwypwv3KhY=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/modechange.patch",
+      "hash": "sha256-RddxUzLzTo/xYNDzfnu2fSv820QQYqP70NJrwYsiqhM=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/bash/bash-2.05b.tar.gz",
+      "hash": "sha256-ugPUEpmMxUvQsPLWwyEAln0xNwmK/9wtMubnwRsWP+Q=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gzip/gzip-1.2.4.tar.gz",
+      "hash": "sha256-HKQYGKI8nFnvHV4dAMDV6qIoXZMcD7BZY318DMAq2Wc=",
+      "license": "GPL-2.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/touch-getdate.patch",
+      "hash": "sha256-qhISPP99SWV1GaOdKC8q19PfWVoQ2KI3ykfOTU/5o/U=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/c0494d9af84b9e8c3e76e34c6e898978013a3b39/steps/bash-2.05b/mk/common.mk",
+      "hash": "sha256-9BzUJPz6Vx+r69i2SQlqRTH9ihgLaUp1JSYGlTbWWu8=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/mk/main.mk",
+      "hash": "sha256-zdGb+WebOqRY5X1bQXqrzlJo4NEULVoz1Rm7zlgnT1o=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/a8752029f60217a5c41c548b16f5cdd2a1a0e0db/sysa/coreutils-5.0/patches/uniq-fopen.patch",
+      "hash": "sha256-1w2zfx+Mw2cC4b9D0SR18pGc+326yLLJgEQm2j3URmM=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/bash/bash-5.3.tar.gz",
+      "hash": "sha256-DVzYaWX4aaJs9k9Lcb57lvkKO6iz104n6OnZ1VUPMbo=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/diffutils/diffutils-3.8.tar.xz",
+      "hash": "sha256-pr3X0bMSZtEcT03mwbdI1GB6sCMa9RiPwlM9CuJDj+w=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
+    },
+    {
+      "url": "https://ftpmirror.gnu.org/gcc/gcc-4.6.4/gcc-g++-4.6.4.tar.gz",
+      "hash": "sha256-aQpdT2ZBgGQNsoB540YUaBksSEw31vZx3eS1On+ZGLs=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data",
+      "runtimeLicense": "GPL-3.0-or-later WITH GCC-exception-3.1 (libstdc++ runtime)"
+    },
+    {
+      "url": "https://github.com/fosslinux/live-bootstrap/raw/d98f97e21413efc32c770d0356f1feda66025686/sysa/musl-1.1.24/patches/sigsetjmp.patch",
+      "hash": "sha256-wd2Aev1zPJXy3q933aiup5p1IMKzVJBquAyl3gbK4PU=",
+      "license": "GPL-3.0-or-later",
+      "role": "source-or-build-recipe-data"
     }
   ],
   "lnBoot": {

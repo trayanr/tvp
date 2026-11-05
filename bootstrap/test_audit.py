@@ -99,6 +99,21 @@ class AuditTests(unittest.TestCase):
                 with self.subTest(magic=magic), patch.object(Path, "read_bytes", return_value=magic):
                     self.assertTrue(any("native executable in source" in f for f in self.failures()))
 
+    def test_shell_interpreters_must_be_canonical_direct_dependencies(self):
+        for value in ["/bin/sh", self.seed + "/../bin/sh", store("foreign") + "/bin/bash"]:
+            self.graph[self.stage_drv]["env"]["SHELL"] = value
+            self.assertTrue(any("undeclared shell" in f for f in self.failures()))
+        self.graph[self.stage_drv]["env"]["SHELL"] = self.seed + "/bin/sh"
+        self.assertEqual(self.failures(), [])
+
+    def test_all_nix_hash_serializations_keep_exact_pin_identity(self):
+        expected = "sha256-DCzZduYrix9yOeJoem/Jhz/WDzAss7UWwjZbkXJq6Ms="
+        self.provenance["seed"]["narHash"] = expected
+        for encoded in a.hash_forms(expected):
+            self.graph[self.seed_drv]["env"]["outputHash"] = encoded
+            self.assertEqual(self.failures(), [])
+        self.assertEqual(a.hash_forms(expected)[2], "1jz8d9r92nrnq8bbbcrc607xcgw7r5ppls7275r1z2rbwrvdjb0c")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
