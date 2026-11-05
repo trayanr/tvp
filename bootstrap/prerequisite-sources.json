@@ -14,7 +14,7 @@
       ],
       "license": "TVP original",
       "origins": [],
-      "ownedSHA256": "ac7fc6fda9f48243b9ac5e29e8fd8b804bab05bb586083a306f87029c8da9b68"
+      "ownedSHA256": "2e205f851f26ab1c73c0feb3ac931b3828d870bac22416fed3677d5a9201049a"
     },
     "prerequisites.nix": {
       "adaptations": [

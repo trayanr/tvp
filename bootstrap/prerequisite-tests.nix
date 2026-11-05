@@ -1,4 +1,4 @@
-# Explicit opt-in Tower contracts. Never part of the ordinary catalogue plan.
+# Explicit opt-in prerequisite contracts. Never part of the ordinary catalogue plan.
 { scope }:
 let
   inherit (scope)
