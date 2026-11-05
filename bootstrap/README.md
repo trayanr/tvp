@@ -197,3 +197,33 @@ base, establish GCC16/glibc2.39 compatibility, or complete GNU construction.
 A GNU-target compiler/core-libgcc bridge, libc/sysroot, matching GNU runtimes,
 GNU-hosted compiler and a complete candidate base still require implementation
 and validation. Existing compiler and frozen catalogue identities remain controls.
+
+The private GNU checkpoint is opt-in through `gnu-gcc` (wrapped),
+`gnu-gcc-unwrapped`, `gnu-libc`, `gnu-libgcc`, `gnu-libstdcxx`, and
+`gnu-tests`. `gnu.nix` keeps the ABI roles local: M is
+`x86_64-unknown-linux-musl`, G is `x86_64-unknown-linux-gnu`. The M/M/G
+compiler has an empty target sysroot. It constructs glibc 2.39 against the
+unchanged Linux 6.9 headers; its temporary arithmetic archive and CRT bridge
+are construction inputs only. Proper G core libgcc, static EH, shared
+unwinding and static/shared C++ runtimes are built separately with POSIX
+threads. GNU-host math libraries, Bash and binutils 2.42 precede the M/G/G
+compiler. Build generators and their archive remain M.
+
+GNU source and loader configuration never change the musl recipes. The raw
+GNU driver binds its sysroot, runtime libraries and GNU assembler/linker;
+the wrapper binds GNU Bash/tools and preserves argument boundaries. Transitive
+RPATH supplies glibc's cancellation unwinder without `LD_LIBRARY_PATH`.
+`gnu-origin-audit.py` classifies the entire construction graph;
+`gnu-runtime-audit.py` requires an exact GNU profile, excludes construction
+outputs, distinguishes executable outputs from source data, and checks actual
+loader resolution. `gnu-sources.json` records pins and adaptations.
+
+This is a reduced bootstrap GNU sysroot: generated locales, gconv modules,
+installed libc tools, nscd, timezone tools, profiling and mathvec are omitted.
+Libc shell APIs using `/bin/sh` are outside this profile. Multilib and alternate
+libc modes are unsupported; the wrapper rejects them. LTO, plugins and ISL are
+disabled. Scoped probes cover native execution, dynamic/static C and C++14,
+explicit PIE, C++20, shared ABI, pthread/TLS, dlopen and cancellation unwinding.
+They do not establish full GCC/glibc conformance, self-comparison, DDC,
+reproducibility, a complete base or a default change. A later G/G/G generation
+and parent review/publication/CI gates remain separate.
