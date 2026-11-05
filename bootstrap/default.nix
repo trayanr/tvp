@@ -450,6 +450,12 @@ in
     gnu-libiberty
     gnu-libbacktrace
     ;
+  gnu-libc-capabilities = import ./recipes/gnu/glibc-profile.nix {
+    inherit scope;
+    cross = scope.gnu-cross;
+    bridge = scope.gnu-core-bridge;
+    priorShell = scope.gnu-bash;
+  };
   gnu-tests = import ./gnu-tests.nix {
     inherit scope;
     gnu = import ./gnu.nix { inherit scope; };

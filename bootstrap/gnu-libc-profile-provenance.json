@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "role": "opt-in staged GNU libc capabilities, not a compiler generation or public base",
+  "source": {
+    "url": "https://mirrors.kernel.org/gnu/glibc/glibc-2.39.tar.xz",
+    "hash": "sha256-93vUfPgXDFc2Wue/hmlsEYrbOxINMlnGTFAtPcHi2SY=",
+    "patch": "recipes/gnu/glibc-fnmatch-gcc16.patch"
+  },
+  "shellStage": "new libc -> exact existing source-built GNU Bash bin/sh -> prior reduced GNU libc",
+  "shellConstants": [
+    "sysdeps/posix/system.c:SHELL_PATH",
+    "sysdeps/generic/paths.h:_PATH_BSHELL",
+    "sysdeps/unix/sysv/linux/paths.h:_PATH_BSHELL"
+  ],
+  "locale": ["C.UTF-8"],
+  "conversionsMeasured": ["UTF-8<->ISO-8859-1", "UTF-8<->UTF-16LE"],
+  "converterRetention": "complete installed modules and metadata; not a measured minimum",
+  "runtimeAudit": "separate exact output-root to generation/loader/search mapping",
+  "excludedClaims": ["static-PIE fix", "C++ equivalence", "generation equivalence", "full conformance", "fixed point", "production default"]
+}
