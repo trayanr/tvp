@@ -13,7 +13,8 @@
     "GNU Bash/binutils explicit optimization and debug stripping to eliminate construction-only header paths",
     "GNU Bash getcwd(0,0) cross premise measured by actual G executable before selecting its cache result",
     "Consumer fixtures compiled from local copies, avoiding source-file symbol metadata in runtime closures",
-    "Separate C-only cancellation with no libgcc_s DT_NEEDED tests libc unwinder loading; static EH tested separately"
+    "Separate C-only cancellation with no libgcc_s DT_NEEDED tests libc unwinder loading; static EH tested separately",
+    "Install only the main libbacktrace helper archive and metadata; preserve raw cross-check failure separately from native observer validation"
   ],
   "archives": [
     {
@@ -152,7 +153,7 @@
           "sha256": "56fd20e7e6b6174cef10df0ab3f16609ec633b015c083074d3ecc0541ef6a79b"
         }
       ],
-      "ownedSHA256": "dfe0491e3d64b7ca7c09e833de7d940ed2314105e88550f2ff26f10baf300ef4"
+      "ownedSHA256": "34be2bcc9d04ae5987c47ba74d5768df3241c8a043b2ae5dfe351b380271254c"
     },
     "recipes/gnu/libgcc.nix": {
       "license": "MIT recipe adaptation; source licenses retained in outputs",

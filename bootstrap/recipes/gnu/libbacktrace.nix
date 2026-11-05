@@ -96,8 +96,9 @@ bash.runCommand "tvp-bootstrap-gnu-${pname}-${common.version}"
     # Install
     mkdir -p "$out/lib/"
     mkdir -p "$out/include/"
-    cp .libs/*.a "$out/lib/"
-    cp libbacktrace*.la "$out/lib"
+    # Install the compiler helper, excluding allocation-test-only artifacts.
+    cp .libs/libbacktrace.a "$out/lib/"
+    cp libbacktrace.la "$out/lib"
 
     chmod +w "$out/include"
     cp backtrace-supported.h "$out/include/"
