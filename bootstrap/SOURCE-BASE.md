@@ -119,3 +119,43 @@ are never permitted in the new native runtime. Prior shell runtime uses its own
 loader; the capability-libc tools and consumers use the new loader and matching
 GCC runtime libraries. These endpoints make no promotion, full-conformance,
 self-hosting, fixed-point, or reproducibility claim.
+
+## Opt-in CMake prerequisites
+
+`source-cmake-prerequisites.nix` composes Perl 5.44.0, OpenSSL 4.0.1,
+zlib 1.3.2, Bzip2 1.0.8, XZ 5.8.4 and Zstd 1.5.7 against the same selected
+GNU base. Only Perl and OpenSSL introduce new recipes; the four codecs reuse
+the existing owned recipes. CMake itself is a later stage.
+
+```sh
+nix build -f bootstrap/source-cmake-prerequisites.nix perl
+nix build -f bootstrap/source-cmake-prerequisites.nix openssl zlib bzip2 xz zstd
+nix build -f bootstrap/source-cmake-prerequisite-tests.nix consumer sourceOverridePerl sourceOverrideOpenssl
+nix build -f bootstrap/source-cmake-prerequisites.nix evidence.perl evidence.openssl evidence.zlib evidence.bzip2 evidence.xz evidence.zstd
+```
+
+Perl retains its shared interpreter, core XS and truthful Config/ExtUtils tool
+metadata. Its reference closure therefore includes development compiler tools;
+that closure is reported separately from the bounded interpreter/libperl/XS
+ELF generation. OpenSSL uses this Perl only for building, retains serial make,
+and installs shared libraries and provider modules under its final prefix.
+Its generated wrappers bind owned Perl/Bash explicitly. The OpenSSL version
+diagnostic reports the compiler basename and original flags; raw build logs
+retain the full invocation, avoiding a toolchain reference from native libcrypto.
+The Perl Pod::Html test helper binds its hardcoded diff lookup to declared
+Diffutils so its expected-failure assertions retain their upstream semantics.
+Its harness uses the existing Nix core count and upstream parallel scheduling.
+Libperl and core XS retain their compiler-generated native search paths; the
+strict observer checks each installed ELF and its actual loader resolution.
+Both ports use a single derivation stage because installed paths contain that
+prefix. Their runtime edits rebuild the derivation.
+
+Sibling evidence outputs retain raw upstream phase logs. Zstd keeps its existing
+artifact split and exposes artifact logs through a separate evidence observer.
+Its upstream scope remains the five explicitly named CLI tests, not the full
+Zstd suite. Installed consumers exercise shared/static codec roundtrips, real
+pkg-config interfaces, shared-libperl embedding, a fresh ExtUtils XS build,
+provider loading and a local TLS handshake with application data over memory
+BIOs. Source overrides use alternate archives without rebuilding an interpreter.
+The separate origin/runtime observers preserve the earlier audits and keep the
+compiler's development capability outside native executable permissions.
