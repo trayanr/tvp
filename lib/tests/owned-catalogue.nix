@@ -116,7 +116,33 @@ let
       && (edit constrained.out).__tvpSelection.selector == selector
       && (edit (builtins.head constrained.all)).__tvpSelection.reason == "Catalogue constraint fixture."
     ) edits;
+  candidate = import ../../bases/source-gnu { };
+  sentinel = (import ../../bases/source-gnu/tests/probes.nix { }).sentinel;
+  contextChanged =
+    (p.override {
+      bash = tvp.packages.bash;
+      coreutils = tvp.bases.default.components.floor.coreutils;
+    }).edit
+      (spec: spec // { base = candidate.base.override { compiler = sentinel; }; });
+  contextBatch = contextChanged.testContext.mkBatch {
+    name = "context-rebound";
+    suite = contextChanged.tests;
+  };
   contracts = {
+    currentContext =
+      contextChanged.tests.arithmetic.specification.base.compiler.drvPath == sentinel.drvPath
+      && contextChanged.tests.arithmetic.specification.bash.drvPath == tvp.packages.bash.drvPath
+      &&
+        contextChanged.tests.arithmetic.specification.coreutils.drvPath
+        == tvp.bases.default.components.floor.coreutils.drvPath
+      && contextChanged.tests.arithmetic.package.drvPath == contextChanged.drvPath
+      && contextChanged.tests.arithmetic.tvp.cc.drvPath == sentinel.drvPath
+      && contextBatch.specification.base.compiler.drvPath == sentinel.drvPath
+      && contextBatch.testSuite.arithmetic.drvPath == contextChanged.tests.arithmetic.drvPath
+      && !(p.tvp ? testContext)
+      && !(p.tests ? testContext);
+    variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.bases.default.name;
+
     canonicalOwned = p.tvp.builder == "build-4.2.2.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
     distinctPilot =

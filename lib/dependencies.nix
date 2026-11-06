@@ -182,7 +182,9 @@ let
           inherit value;
           role = name;
         }) values;
-      active = (import ./build-steps.nix).active test.buildSteps;
+      steps = import ./build-steps.nix;
+      parts = steps.partition test.buildSteps;
+      active = steps.active (parts.first ++ parts.second);
       declared =
         role "shell" [ spec.bash ]
         ++ role "coreutils" [ spec.coreutils ]
