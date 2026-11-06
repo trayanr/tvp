@@ -14,9 +14,9 @@ let
     else
       throw "TVP owned tests: unsafe name";
   make =
-    recipe: args: dependencies: passthru:
+    recipe: args: dependencies:
     builder {
-      inherit recipe args passthru;
+      inherit recipe args;
       dependencyNames = dependencies;
       infrastructure = {
         shell = base.shell;
@@ -53,6 +53,10 @@ rec {
           src = null;
           inherit base coreutils;
           bash = final.base.shell;
+          passthru = {
+            inherit package;
+            testName = name;
+          };
           plan = [
             (
               (final.base.environment {
@@ -89,11 +93,7 @@ rec {
         "package"
         "tools"
         "libraries"
-      ]
-      {
-        inherit package;
-        testName = name;
-      };
+      ];
 
   mkSuite =
     {
@@ -131,6 +131,7 @@ rec {
         src = null;
         inherit base coreutils;
         bash = final.base.shell;
+        passthru.testSuite = suite;
         plan = [
           (
             (final.base.environment { tools = [ coreutils ]; })
@@ -148,5 +149,5 @@ rec {
           )
         ];
       }
-    ) { inherit suite; } [ "suite" ] { testSuite = suite; };
+    ) { inherit suite; } [ "suite" ];
 }

@@ -80,6 +80,15 @@ let
     name = "model";
     inherit suite;
   };
+  replacement = package // {
+    pname = "replacement";
+    outPath = "${data}/replacement";
+  };
+  changedPackage = p.override { package = replacement; };
+  replacementSuite = {
+    replacement = suite.empty;
+  };
+  changedBatch = batch.override { suite = replacementSuite; };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   results = {
     direct = !(p ? stdenv) && !(p ? mkDerivation) && !(p ? runCommand);
@@ -142,6 +151,23 @@ let
     batchLinks =
       batch.testSuite.value.drvPath == suite.value.drvPath
       && batch.passthru.testSuite.empty.drvPath == suite.empty.drvPath;
+    packageOverride =
+      changedPackage.package == replacement
+      && changedPackage.passthru.package == replacement
+      && changedPackage.tvp.declaredDependencies.package == replacement
+      && builtins.elem replacement (builtins.head changedPackage.buildSteps).tools
+      && changedPackage.drvPath != p.drvPath;
+    suiteOverride =
+      builtins.attrNames changedBatch.testSuite == [ "replacement" ]
+      && changedBatch.testSuite.replacement.drvPath == suite.empty.drvPath
+      && changedBatch.passthru.testSuite.replacement.drvPath == suite.empty.drvPath
+      && changedBatch.tvp.declaredDependencies.suite.replacement.drvPath == suite.empty.drvPath
+      &&
+        (builtins.head changedBatch.buildSteps).run == ''
+          mkdir -- "$out"
+          ln -s -- ${lib.escapeShellArg (toString suite.empty)} "$out"/'replacement'
+        ''
+      && changedBatch.drvPath != batch.drvPath;
     provenance =
       p.package == package
       && p.testName == "value"
