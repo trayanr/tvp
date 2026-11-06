@@ -184,6 +184,22 @@ in
         )
       ) == "/explicit-environment-compiler";
     sourceReplacement = (f.which.override { src = f.sources.isl; }).drvPath != f.which.drvPath;
+    sourceEditPropagation =
+      builtins.all
+        (
+          p:
+          let
+            changed = p.edit (s: s // { src = "/source-edit-only/archive.tar"; });
+            unpack = builtins.head changed.buildSteps;
+          in
+          f.composition.lib.hasInfix "/source-edit-only/archive.tar" unpack.run
+        )
+        [
+          f.isl
+          f.ncurses
+          f.texinfo
+        ];
+
     stepEdit =
       (consumer.editSteps (
         builder.steps.replace "prerequisites.consumers" (s: s // { run = s.run + "\ntrue"; })

@@ -37,5 +37,19 @@ class UpstreamCompletion(unittest.TestCase):
             (root/'isl.check.status').write_text('0\n')
             with self.assertRaises(AssertionError): inspect('isl',root)
 
+    def test_footer_classes_must_match_records(self):
+        inspect=importlib.import_module('source-full-gcc-prerequisite-upstream').inspect
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); (root/'raw').mkdir()
+            (root/'isl.check.status').write_text('0\n')
+            (root/'raw/test.trs').write_text(':test-result: PASS\n')
+            footer='# TOTAL: 1\n# PASS: 1\n# SKIP: 0\n# XFAIL: 0\n# FAIL: 0\n# XPASS: 0\n# ERROR: 0\n'
+            (root/'isl.check.log').write_text(footer)
+            self.assertEqual(inspect('isl',root)['counts'], {'PASS':1})
+            for outcome in ['SKIP','XFAIL','FAIL','XPASS','ERROR']:
+                (root/'isl.check.log').write_text(footer.replace('# PASS: 1','# PASS: 0').replace('# '+outcome+': 0','# '+outcome+': 1'))
+                with self.subTest(outcome=outcome), self.assertRaises(AssertionError):
+                    inspect('isl',root)
+
 
 if __name__=='__main__': unittest.main()

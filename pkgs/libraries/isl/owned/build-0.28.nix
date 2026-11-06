@@ -43,7 +43,8 @@ in
   runtime.libraries = [ gmp ];
   plan = steps.sequence [
     (steps.unpack {
-      inherit src xz;
+      src = final.src;
+      inherit xz;
       tar = gnutar;
     })
     (steps.prepareAutotools {

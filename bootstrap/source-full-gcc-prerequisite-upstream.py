@@ -26,6 +26,8 @@ def inspect(name, root, compiler=None):
         for m in re.findall(r'# TOTAL:\s+(\d+)\n# PASS:\s+(\d+)\n# SKIP:\s+(\d+)\n# XFAIL:\s+(\d+)\n# FAIL:\s+(\d+)\n# XPASS:\s+(\d+)\n# ERROR:\s+(\d+)',log)]
     if name!='which':
         assert summaries and sum(x['TOTAL'] for x in summaries)==sum(counts.values()), (name,summaries,counts)
+        for outcome in ['PASS','SKIP','XFAIL','FAIL','XPASS','ERROR']:
+            assert sum(x[outcome] for x in summaries)==counts[outcome], (name,outcome,summaries,counts)
     compilers=re.findall(r'libtool: compile:\s+(\S+)', (root/(name+'.build.log')).read_text()) if compiler else []
     if compiler:
         build=(root/(name+'.build.log')).read_text()
