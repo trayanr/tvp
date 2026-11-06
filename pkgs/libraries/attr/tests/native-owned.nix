@@ -15,7 +15,7 @@ let
   compiler = package.tvp.cc;
   pkg-config = package.tvp.declaredTestDependencies.pkg-config;
   binutils = package.tvp.declaredDependencies.binutils;
-  coreutils = package.tvp.declaredDependencies.coreutils;
+  coreutils = package.specification.coreutils;
   custom = (package.override { doCheck = false; }).editRuntime (
     r:
     r

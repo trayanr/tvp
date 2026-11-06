@@ -165,6 +165,23 @@ let
     "libxcrypt_4_5_2"
   ];
   contracts = {
+    foundationEditedCoreutils =
+      lib.all
+        (
+          q:
+          let
+            helper = tvp.packages.coreutils;
+            edited = q.edit (spec: spec // { coreutils = helper; });
+            test = edited.tests.isolated-discovery;
+          in
+          lib.hasInfix "${helper}/bin/env" (builtins.head test.buildSteps).run
+          && test.specification.coreutils.drvPath == helper.drvPath
+          && test.package.drvPath == edited.drvPath
+        )
+        [
+          tvp.canonical.attr_2_6_0
+          tvp.canonical.acl_2_4_0
+        ];
     foundationCurrentContext = lib.all (
       q:
       let
