@@ -54,7 +54,8 @@ in
   };
   plan = steps.sequence [
     (steps.unpack {
-      inherit src gzip;
+      src = final.src;
+      inherit gzip;
       tar = gnutar;
       compression = "gzip";
     })

@@ -1,0 +1,8 @@
+project('candidate-arithmetic', 'c', 'cpp')
+mpc = dependency('mpc', method: 'pkg-config')
+gmpxx = dependency('gmpxx', method: 'pkg-config')
+mpfr = dependency('mpfr', method: 'pkg-config')
+c = executable('native-c', 'arithmetic.c', dependencies: [mpc, mpfr], install: true)
+cxx = executable('native-cxx', 'arithmetic.cc', dependencies: [mpc, mpfr, gmpxx], install: true)
+test('native-c', c)
+test('native-cxx', cxx)

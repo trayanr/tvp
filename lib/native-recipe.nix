@@ -36,7 +36,11 @@ let
       ) (_: null)) current;
       provenance = metadata // {
         base = specification.base.name;
-        cc = specification.base.stdenv.cc;
+        cc =
+          if owned && specification.base ? compiler then
+            specification.base.compiler
+          else
+            specification.base.stdenv.cc;
         deps = dependencies;
         declaredDependencies = dependencies;
         declaredInfrastructure = infrastructure;
@@ -70,6 +74,7 @@ let
             version = null;
             src = null;
             stdenv = null;
+            compiler = null;
             meta = null;
             runtime = null;
             development = null;

@@ -19,6 +19,7 @@ let
     "base"
     "bash"
     "builder"
+    "compiler"
     "coreutils"
     "development"
     "drvPath"

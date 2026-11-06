@@ -11,6 +11,8 @@
 {
   paths.CMAKE_PREFIX_PATH = {
     separator = ":";
-    entries = map (p: "${lib.getDev p}") libraries ++ [ "${lib.getDev base.stdenv.cc.libc}" ];
+    entries = map (p: "${lib.getDev p}") libraries ++ [
+      "${lib.getDev (if base ? compiler then base.compiler.libc else base.stdenv.cc.libc)}"
+    ];
   };
 }

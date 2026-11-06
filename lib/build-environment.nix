@@ -83,7 +83,9 @@ in
 }:
 let
   resolved = expand libraries;
-  cc = base.stdenv.cc;
+  direct = base ? compiler;
+  cc = if direct then base.compiler else base.stdenv.cc;
+  baselineTools = if direct then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
   baseline = {
     values = {
       CC = "${cc}/bin/cc";
@@ -135,7 +137,7 @@ let
           }
         else
           { };
-    }) tools;
+    }) ((lib.optional direct base.shell) ++ (if direct then base.tools else [ ]) ++ tools);
   entries =
     origin: data:
     lib.concatMap
@@ -233,7 +235,7 @@ in
     ]
     # Reduced libc profiles may explicitly declare no executable tools.
     ++ (cc.libcTools or [ (lib.getBin cc.libc) ])
-    ++ base.stdenv.initialPath;
+    ++ baselineTools;
   libraries = resolved;
   inherit env;
   # Structured data remains inspectable until the adapter renders it.
