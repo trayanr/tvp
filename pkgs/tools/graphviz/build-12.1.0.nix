@@ -79,7 +79,6 @@ in
       zlib
     ];
   };
-  runtime.selfDlopenDirectories = [ "lib/graphviz" ];
   runtime.libraries = [
     gd
     freetype

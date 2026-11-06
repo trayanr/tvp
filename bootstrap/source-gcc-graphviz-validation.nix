@@ -68,7 +68,7 @@ in
                     previousEvidence = toString priorValidation.consumer.evidence;
                   }
                 )
-              }
+              } ${./source-gcc-graphviz-upstream.py}
             '';
           }
         )

@@ -1,5 +1,6 @@
 """Installed, content-sensitive GCC diagram contracts and native public clients."""
 import ast
+import importlib.util
 import hashlib
 import json
 import os
@@ -18,6 +19,7 @@ env=dict(HOME=str(work/'home'),XDG_CACHE_HOME=str(work/'cache'),
          FONTCONFIG_FILE=m['fonts']+'/etc/fonts/fonts.conf',LC_ALL='C.UTF-8',
          PATH=p['graphviz']+'/bin',TZ='UTC')
 Path(env['HOME']).mkdir();Path(env['XDG_CACHE_HOME']).mkdir()
+spec=importlib.util.spec_from_file_location('upstream',sys.argv[4]);upstream_results=importlib.util.module_from_spec(spec);spec.loader.exec_module(upstream_results)
 commands=[]
 def run(name,args,input=None,expected=0,extra=None):
     e=env | (extra or {})
@@ -152,36 +154,7 @@ hashc=work/'hash.c';hashc.write_text('#include <string.h>\n#include <assert.h>\n
 run('gperf-compile',[m['compiler']+'/bin/cc',hashc,'-o',work/'hash'])
 run('gperf-run',[work/'hash'])
 # Keep upstream outcomes and qualify only the actual supported scope.
-upstream={}
-for name,root in m['upstream'].items():
-    e=Path(root);statuses={x.name:int(x.read_text()) for x in e.glob('*.status')}
-    log=(e/(name+'.check.log')).read_text()
-    status=statuses[name+'.check.status']
-    classification=dict(path=root,statuses=statuses)
-    if name in {'flex','png'}:
-        counts={k.lower():int(v) for k,v in re.findall(r'^# (TOTAL|PASS|SKIP|XFAIL|FAIL|XPASS|ERROR):\s*(\d+)',log,re.M)}
-        assert set(counts)=={'total','pass','skip','xfail','fail','xpass','error'}
-        assert counts['total']==sum(counts[k] for k in counts if k!='total') and counts['total']>0
-        assert counts['fail']==counts['error']==counts['xpass']==status==0
-        classification['cases']=counts
-    elif name in {'gd','expat'}:
-        records=re.findall(r'\d+/\d+ Test\s+#?\d+:.*?(Passed|Skipped|Failed)',log)
-        total=int(re.search(r'(?:tests failed|tests passed) out of (\d+)',log)[1])
-        assert len(records)==total>0 and 'Failed' not in records and status==0
-        classification['cases']=dict(total=total,passed=records.count('Passed'),skipped=records.count('Skipped'),failed=0)
-    elif name=='fontconfig':
-        total=int(re.search(r'Ok:\s*(\d+)',log)[1]);assert total==15 and 'Fail:              0' in log and status==0
-        classification['cases']=dict(total=total,passed=total,failed=0)
-    elif name=='gperf':
-        comparisons=len(re.findall(r'^diff ',log,re.M));assert comparisons>0 and status==0
-        classification['scope']=dict(expectedOutputComparisons=comparisons,checkTargetStatus=0)
-    elif name=='graphviz':
-        assert status==8 and 'No tests were found' in log
-        classification['scope']='No CTest cases in selected profile; C++ suite needs omitted optional providers. No upstream PASS claim.'
-    else:
-        assert status==0
-        classification['scope']='No upstream cases in this check target; installed native interfaces covered separately.'
-    upstream[name]=classification
+upstream={name:upstream_results.inspect(name,root) for name,root in m['upstream'].items()}
 summary=dict(result='PASS',compilerPNG=generated_png,gccHTMLPNG=htmlpng,richPNG=richpng,richSVG=richsvg,glyphs=glyphs,
              font=match,registry=str(config),registrySHA256=hashlib.sha256(registry).hexdigest(),upstream=upstream,
              contracts=['unchanged GCC dg-check-dot proc / dot -O -Tpng FILE','GCC graphviz.cc expected HTML DOT / dot -Tsvg stdin'],
