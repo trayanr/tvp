@@ -23,12 +23,27 @@ let
       script = ''
         set -euo pipefail
         mkdir "$out"
+        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o filesystem-preflight
+        status=0
+        ./filesystem-preflight acls > "$out/preflight.log" 2>&1 || status=$?
+        cat "$out/preflight.log" >&2
+        case "$status" in
+          0) ;;
+          77)
+            echo 'SKIP: independent kernel ACL preflight unavailable' > "$out/status"
+            exit 0
+            ;;
+          *) exit "$status" ;;
+        esac
         status=0
         bash -euo pipefail -c ${lib.escapeShellArg script} > "$out/log" 2>&1 || status=$?
         cat "$out/log" >&2
         case "$status" in
           0) echo PASS > "$out/status" ;;
-          77) echo 'SKIP: filesystem rejects named ACLs' > "$out/status" ;;
+          77)
+            echo 'ACL test returned skip after successful kernel preflight' >&2
+            exit 1
+            ;;
           *) exit "$status" ;;
         esac
       '';

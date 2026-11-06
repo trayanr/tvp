@@ -165,6 +165,19 @@ let
     "libxcrypt_4_5_2"
   ];
   contracts = {
+    foundationEditedSource = lib.all (
+      q:
+      let
+        source = builtins.toFile "foundation-source-edit-fixture" "source model";
+        edited = q.edit (spec: spec // { src = source; });
+        unpack = lib.findFirst (step: step.name == "source.unpack") null edited.buildSteps;
+      in
+      edited.src == source
+      && lib.hasInfix (builtins.unsafeDiscardStringContext (toString source)) unpack.run
+      && !(lib.hasInfix (builtins.unsafeDiscardStringContext (toString q.src)) unpack.run)
+      && edited.drvPath != q.drvPath
+      && edited.drvPath == (q.override { src = source; }).drvPath
+    ) foundation;
     foundationEditedCoreutils =
       lib.all
         (

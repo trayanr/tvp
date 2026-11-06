@@ -62,7 +62,8 @@ in
   runtime.libraries = [ ];
   plan = steps.sequence [
     (steps.unpack {
-      inherit src xz findutils;
+      src = final.src;
+      inherit xz findutils;
       tar = gnutar;
     })
     (steps.prepareAutotools {

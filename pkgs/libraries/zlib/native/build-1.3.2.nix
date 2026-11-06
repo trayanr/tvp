@@ -60,7 +60,8 @@ in
   runtime.libraries = [ ];
   plan = steps.sequence [
     (steps.unpack {
-      inherit src gzip findutils;
+      src = final.src;
+      inherit gzip findutils;
       tar = gnutar;
       compression = "gzip";
     })
