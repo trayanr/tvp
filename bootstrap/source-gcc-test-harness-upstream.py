@@ -5,6 +5,11 @@ from pathlib import Path
 import re
 import sys
 
+LABELS = {'PASS': 'expected passes', 'FAIL': 'unexpected failures',
+          'XFAIL': 'expected failures', 'XPASS': 'unexpected successes',
+          'UNRESOLVED': 'unresolved testcases', 'UNSUPPORTED': 'unsupported tests',
+          'UNTESTED': 'untested testcases', 'ERROR': 'framework errors'}
+
 
 def inspect(name, root):
     root = Path(root)
@@ -38,11 +43,16 @@ def inspect(name, root):
         texts = [p.read_text() for p in files]
         counts = Counter(re.findall(r'^(PASS|FAIL|XPASS|XFAIL|UNRESOLVED|UNSUPPORTED|UNTESTED|ERROR):', texts[0], re.M))
         assert counts['PASS'] > 0 and not any(counts[x] for x in ['FAIL','XPASS','UNRESOLVED','ERROR'])
-        assert 'runtest completed at ' in texts[1]
-        for value in texts:
+        for index, value in enumerate(texts):
             summary = value[value.rindex('=== '+tool+' Summary ==='):]
-            assert int(re.search(r'# of expected passes\s+(\d+)', summary)[1]) == counts['PASS']
-            assert not re.search(r'# of (unexpected failures|unexpected successes|unresolved testcases)', summary)
+            if index == 1:
+                # Nested DejaGNU self-tests print their own completions. Only
+                # completion after the final outer summary closes this run.
+                completed = re.findall(r'^runtest completed at .+$', summary, re.M)
+                assert len(completed) == 1, 'missing/duplicate outer completion'
+            for key, label in LABELS.items():
+                footer = re.findall(r'^# of ' + label + r'\s+(\d+)\s*$', summary, re.M)
+                assert len(footer) <= 1 and int(footer[0] if footer else 0) == counts[key], (tool, key, counts, footer)
         tools[tool] = dict(counts=dict(counts), complete=True,
                           logScope='Final footer agrees with sum records; log additionally contains intentional nested child output')
     assert sum(x['counts']['PASS'] for x in tools.values()) > 500

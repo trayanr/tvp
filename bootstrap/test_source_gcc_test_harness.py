@@ -27,6 +27,36 @@ class Completion(unittest.TestCase):
 
 
 class UpstreamCompletion(unittest.TestCase):
+    def test_dejagnu_outcome_footers_and_outer_completion(self):
+        upstream = importlib.import_module('source-gcc-test-harness-upstream')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'dejagnu.check.status').write_text('0\n')
+            (root/'dejagnu.check.log').write_text('upstream self-tests\n')
+            (root/'raw/build').mkdir(parents=True)
+            for tool in ['launcher', 'libdejagnu', 'report-card', 'runtest']:
+                records = ''.join('PASS: case '+str(n)+'\n' for n in range(130))
+                records += 'XFAIL: known case\nUNSUPPORTED: unavailable target\nUNTESTED: manual case\n'
+                summary = '\t=== '+tool+' Summary ===\n'
+                summary += '# of expected passes\t130\n# of expected failures\t1\n'
+                summary += '# of unsupported tests\t1\n# of untested testcases\t1\n'
+                (root/'raw/build'/(tool+'.sum')).write_text(records+summary)
+                # Nested child output is not part of the outer test records.
+                log = 'FAIL: intentional child\nruntest completed at nested child\n'
+                log += records+summary+'runtest completed at outer run\n'
+                (root/'raw/build'/(tool+'.log')).write_text(log)
+            self.assertEqual(upstream.inspect('dejagnu', root)['tools']['runtest']['counts']['PASS'], 130)
+            path = root/'raw/build/runtest.log'
+            good = path.read_text()
+            for bad in [good.replace('runtest completed at outer run\n', ''),
+                        good+'# of expected passes\t130\n',
+                        good+'# of framework errors\t1\n'] + [
+                            good.replace('# of '+label+'\t1', '# of '+label+'\t2')
+                            for label in ['expected failures', 'unsupported tests', 'untested testcases']]:
+                path.write_text(bad)
+                with self.subTest(bad=bad[-250:]), self.assertRaises(AssertionError):
+                    upstream.inspect('dejagnu', root)
+
     def test_zero_exit_without_a_real_suite_is_rejected(self):
         upstream = importlib.import_module('source-gcc-test-harness-upstream')
         with tempfile.TemporaryDirectory() as directory:
