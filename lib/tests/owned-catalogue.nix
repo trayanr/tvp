@@ -176,10 +176,14 @@ let
     foundationRuntimeDirectories = lib.all (
       q:
       let
-        edited = q.editRuntime (_: {
-          libraries = [ ];
-          dlopenDirectories = [ "/foundation-runtime-probe" ];
-        });
+        edited = q.editRuntime (
+          r:
+          r
+          // {
+            libraries = [ ];
+            dlopenDirectories = [ "/foundation-runtime-probe" ];
+          }
+        );
       in
       edited.drvPath != q.drvPath
       &&
