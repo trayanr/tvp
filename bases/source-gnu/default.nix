@@ -11,20 +11,16 @@ let
     config = "x86_64-unknown-linux-gnu";
     isMusl = false;
   };
-  base =
-    (builder.base {
-      name = "source-gnu-candidate";
-      inherit platform;
-      compiler = toolchain.driver;
-      shell = tools.bash;
-      tools = [
-        tools.coreutils
-        tools.linker
-      ];
-    })
-    // {
-      inherit referencePackages;
-    };
+  base = builder.base {
+    name = "source-gnu-candidate";
+    inherit platform referencePackages;
+    compiler = toolchain.driver;
+    shell = tools.bash;
+    tools = [
+      tools.coreutils
+      tools.linker
+    ];
+  };
 in
 {
   inherit

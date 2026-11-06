@@ -124,6 +124,19 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(result["byKind"]["unknown"], 1)
         self.assertEqual(result["derivationRoles"] + result["derivedStringRoles"] + result["nonDerivationHelpers"], 3)
 
+    def test_owned_runtime_directories_are_values_not_derivation_roles(self):
+        package = {"role": "owned-test-input", "resolved": {"drv": "compiler.drv"}}
+        directory = {"role": "owned-test-input", "roles": ["runtime-directory"],
+                     "resolved": {"drv": None, "out": "/nix/store/compiler/lib", "type": "string",
+                                  "context": {"compiler.drv": {"outputs": ["out"]}}}}
+        legacy_value = {"role": "test-input-value", "resolved": {"drv": None, "type": "string"}}
+        result = report.summarize({"schema": 1, "edges": [],
+                                   "support": [package, directory, legacy_value]})["support"]
+        self.assertEqual(result["derivationRoles"], 1)
+        self.assertEqual(result["nonDerivationTestInputs"], 2)
+        self.assertEqual(result["resolvedProducers"], 1)
+        self.assertEqual(result["derivationRoles"] + result["nonDerivationTestInputs"], result["expandedRoles"])
+
     def test_scope_reclassification_is_not_a_resolved_release_change(self):
         original = edge()
         original["ownerScope"] = "ordinary"

@@ -125,7 +125,7 @@ in
         binutils
         patchelf
         ;
-      dlopenDirectories = final.runtime.dlopenDirectories;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       base = final.base;
       libraries = final.runtime.libraries;
       paths = elfPaths;

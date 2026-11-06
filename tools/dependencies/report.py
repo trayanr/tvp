@@ -120,9 +120,10 @@ def summarize(inventory):
                                      and row["resolved"].get("family") and row["resolved"].get("version")}),
             "resolvedProducers": len({row["resolved"]["drv"] for row in support
                                       if isinstance(row.get("resolved"), dict) and row["resolved"].get("drv")}),
-            "derivationRoles": sum(isinstance(row.get("resolved"), dict) and row.get("role") not in ("derived-string", "test-input-value") for row in support),
+            "derivationRoles": sum(bool((row.get("resolved") or {}).get("drv")) for row in support),
             "derivedStringRoles": sum(row.get("role") == "derived-string" for row in support),
-            "nonDerivationTestInputs": sum(row.get("role") == "test-input-value" for row in support),
+            "nonDerivationTestInputs": sum(row.get("role") in ("test-input-value", "owned-test-input")
+                                          and not (row.get("resolved") or {}).get("drv") for row in support),
             "nonDerivationHelpers": sum(row.get("resolved") is None for row in support),
         },
         "all": counts(edges),

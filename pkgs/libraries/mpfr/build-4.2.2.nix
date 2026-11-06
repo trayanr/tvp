@@ -128,8 +128,8 @@ in
         python
         binutils
         patchelf
-        dlopenDirectories
         ;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       base = final.base;
       libraries = final.runtime.libraries;
       paths = elfPaths;
@@ -150,7 +150,10 @@ in
       paths = elfPaths;
     })
   ];
-  runtime.libraries = [ gmp ];
+  runtime = {
+    libraries = [ gmp ];
+    inherit dlopenDirectories;
+  };
   tvp.features = {
     float128 = true;
     mpfrRoundingNames = true;

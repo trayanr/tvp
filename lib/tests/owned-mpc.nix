@@ -100,6 +100,10 @@ let
     legacy = legacy ? overrideAttrs && !(legacy ? edit) && tvp.canonical.mpc_1_4_0 ? overrideAttrs;
     oldConstraint = tvp.canonical.mpc_1_0_3.tvp.deps.mpfr.version == "3.1.6";
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
+    runtimeReplacement =
+      (p.editRuntime (_: {
+        inherit (p.runtime) libraries;
+      })).drvPath == p.drvPath;
     compileInputs =
       p.specification.environment.libraries == runtime.specification.environment.libraries;
     publicRequirements =

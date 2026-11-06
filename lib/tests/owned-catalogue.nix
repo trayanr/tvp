@@ -20,6 +20,14 @@ let
   runtime = p.editRuntime (_: {
     libraries = [ gmp ];
   });
+  dlopenDirectory = "/tvp-runtime-directory-fixture";
+  runtimeDirectories = p.editRuntime (r: r // { dlopenDirectories = [ dlopenDirectory ]; });
+  referenceRebound = p.override { base = p.specification.base.override { }; };
+  reboundRegistry = tvp.lib.provenance.registry {
+    canonical.fixture = referenceRebound;
+    variants = { };
+    bases = { };
+  };
   variants = api.mkVariants (
     family
     // {
@@ -149,6 +157,17 @@ let
     construction.variants = { };
   };
   contracts = {
+    referenceRebinding =
+      referenceRebound.drvPath == p.drvPath
+      && referenceRebound.specification.base.referencePackages == p.specification.base.referencePackages
+      &&
+        contextChanged.tests.arithmetic.specification.base.referencePackages
+        == p.specification.base.referencePackages
+      &&
+        map (row: row.path) (lib.filter (row: row.kind == "definition-reference") reboundRegistry)
+        == map (
+          package: builtins.unsafeDiscardStringContext (toString package)
+        ) p.specification.base.referencePackages;
     sourceReferenceRegistration =
       lib.all
         (
@@ -234,6 +253,13 @@ let
       changed.out.tvp.customization == changed.tvp.customization
       && (builtins.head changed.all).tests.version.drvPath == changed.tests.version.drvPath;
     runtimeArtifact = runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
+    runtimeDirectories =
+      runtimeDirectories.artifact.drvPath == p.artifact.drvPath
+      && runtimeDirectories.drvPath != p.drvPath
+      &&
+        lib.hasInfix dlopenDirectory
+          (lib.findFirst (step: step.name == "output.rpaths") null runtimeDirectories.buildSteps).run
+      && runtimeDirectories.drvPath == (p.override { dlopenDirectories = [ dlopenDirectory ]; }).drvPath;
     metadataOnly = (p.edit (s: s // { meta.description = "fixture"; })).drvPath == p.drvPath;
     unknownArgument = rejects (p.override { unknownArgument = true; }).drvPath;
     noOp = (p.override { }).drvPath == p.drvPath;
