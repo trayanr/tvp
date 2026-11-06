@@ -93,6 +93,18 @@ let
       && (p.editSteps (s: s)).drvPath == p.drvPath
       && (p.editRuntime (r: r)).drvPath == p.drvPath;
     provenance = p.tvp.cc == a && p.compiler == a && !(p ? stdenv) && !(p ? mkDerivation);
+    reservedCompilerOutput = rejects (
+      p.edit (
+        s:
+        s
+        // {
+          outputs = [
+            "out"
+            "compiler"
+          ];
+        }
+      )
+    );
     missing = rejects (base.override { compiler = null; });
     platform = rejects (
       base.override {
