@@ -1,0 +1,182 @@
+{
+  "Cython": {
+    "hash": "sha256-cUbdKvhoK0ymEzGFHmrrzp/lFY51MAND+AwHyoCx+v8=",
+    "url": "https://files.pythonhosted.org/packages/84/4d/b720d6000f4ca77f030bd70f12550820f0766b568e43f11af7f7ad9061aa/cython-3.0.11.tar.gz"
+  },
+  "PyYAML": {
+    "hash": "sha256-1YTZ7JGtZYYcwI1C6DQyTviQoILlkQN6vhFIUP97vD4=",
+    "url": "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz"
+  },
+  "arrow": {
+    "hash": "sha256-1FQGF2SMtfiVcw8a2MgqZfLa0BZvV7dfPKVHWcTWeoU=",
+    "url": "https://files.pythonhosted.org/packages/2e/00/0f6e8fcdb23ea632c866620cc872729ff43ed91d284c866b515c6342b173/arrow-1.3.0.tar.gz"
+  },
+  "attrs": {
+    "hash": "sha256-k13DtSnCYvbPduUId9NaS9PB3hlP1B9HoreujxmXHzA=",
+    "url": "https://files.pythonhosted.org/packages/e3/fc/f800d51204003fa8ae392c4e8278f256206e7a919b708eef054f5f4b650d/attrs-23.2.0.tar.gz"
+  },
+  "calver": {
+    "hash": "sha256-4FSTo7F1F+8XSPvmENoR8QSF+qfEFrnTP9SlLXSJT4s=",
+    "url": "https://files.pythonhosted.org/packages/b5/00/96cbed7c019c49ee04b8a08357a981983db7698ae6de402e57097cefc9ad/calver-2022.6.26.tar.gz"
+  },
+  "certifi": {
+    "hash": "sha256-Wh52RbwOxhoJ4mw29hBt1M9Axts6H7Y1KwJE5/sFfHs=",
+    "url": "https://files.pythonhosted.org/packages/c2/02/a95f2b11e207f68bc64d7aae9666fed2e2b3f307748d5123dffb72a1bbea/certifi-2024.7.4.tar.gz"
+  },
+  "charset-normalizer": {
+    "hash": "sha256-8ww8szskRUqC+uyvAbGcGFYrHolVj7bFbeTZEYoDL9U=",
+    "url": "https://files.pythonhosted.org/packages/63/09/c1bc53dab74b1816a00d8d030de5bf98f724c52c1635e07681d312f20be8/charset-normalizer-3.3.2.tar.gz"
+  },
+  "check-jsonschema": {
+    "hash": "sha256-axdFmbXxogjnsis9Fphwim2UiiqQqzQToCXlwCF+4FY=",
+    "url": "https://files.pythonhosted.org/packages/91/d7/0e031767feed17a18e38d75ff3cd255fb2257c625bc213ee8ea796d21577/check-jsonschema-0.23.3.tar.gz"
+  },
+  "check-jsonschema-tests": {
+    "hash": "sha256-Lxwsht/zmMK1WoXsZx25cPNzLJeOqUoRHhh/H4h20zQ=",
+    "url": "https://codeload.github.com/python-jsonschema/check-jsonschema/tar.gz/refs/tags/0.23.3"
+  },
+  "click": {
+    "hash": "sha256-yphTrUWeeH4hkiEVeMyQfnWU4pTHzMg0MQcitBucpt4=",
+    "url": "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz"
+  },
+  "flit_core": {
+    "hash": "sha256-cq0mYXbEo/z6tfKTDXaJYFmFEkBXDOmphzO2WMt4bro=",
+    "url": "https://files.pythonhosted.org/packages/c4/e6/c1ac50fe3eebb38a155155711e6e864e254ce4b6e17fe2429b4c4d5b9e80/flit_core-3.9.0.tar.gz"
+  },
+  "fqdn": {
+    "hash": "sha256-EF7TZ352f7XKCGoMH0u2brw8EAvlGPDg11XZ6uFk2J8=",
+    "url": "https://files.pythonhosted.org/packages/30/3e/a80a8c077fd798951169626cde3e239adeba7dab75deb3555716415bd9b0/fqdn-1.5.1.tar.gz"
+  },
+  "hatch-fancy-pypi-readme": {
+    "hash": "sha256-RN0jnxp3m53PjryUAaYR/X9+PhRXjc8iwmXfr3wVFLg=",
+    "url": "https://files.pythonhosted.org/packages/b4/c2/c9094283a07dd96c5a8f7a5f1910259d40d2e29223b95dd875a6ca13b58f/hatch_fancy_pypi_readme-24.1.0.tar.gz"
+  },
+  "hatch-vcs": {
+    "hash": "sha256-CTgQdI/gHbDUUfq88sGsJojK79Iy1O3pZwkLHBsH2fc=",
+    "url": "https://files.pythonhosted.org/packages/f5/c9/54bb4fa27b4e4a014ef3bb17710cdf692b3aa2cbc7953da885f1bf7e06ea/hatch_vcs-0.4.0.tar.gz"
+  },
+  "hatchling": {
+    "hash": "sha256-cGRjGlEmELUiUKTT/xvYFVHW0UMcTre3LnNN9sdPQmI=",
+    "url": "https://files.pythonhosted.org/packages/a3/51/8a4a67a8174ce59cf49e816e38e9502900aea9b4af672d0127df8e10d3b0/hatchling-1.25.0.tar.gz"
+  },
+  "idna": {
+    "hash": "sha256-Ao/zqt8GCcH9J42OowiSmUEqeoub0AXdCLn4KFvLXPw=",
+    "url": "https://files.pythonhosted.org/packages/21/ed/f86a79a07470cb07819390452f178b3bef1d375f2ec021ecfc709fc7cf07/idna-3.7.tar.gz"
+  },
+  "iniconfig": {
+    "hash": "sha256-LZHhNb9y0xpBCxfBbaYQqCy1X2sEd9GpAhNLJKRVuLM=",
+    "url": "https://files.pythonhosted.org/packages/d7/4b/cbd8e699e64a6f16ca3a8220661b5f83792b3017d0f79807cb8708d33913/iniconfig-2.0.0.tar.gz"
+  },
+  "isoduration": {
+    "hash": "sha256-rC+QFRN5NSeerGcflPiesAWE+UD13ElGKgxO5pK6G9k=",
+    "url": "https://files.pythonhosted.org/packages/7c/1a/3c8edc664e06e6bd06cce40c6b22da5f1429aa4224d0c590f3be21c91ead/isoduration-20.11.0.tar.gz"
+  },
+  "json5": {
+    "hash": "sha256-VI5Bub4EP5Qmd28F34Y1oA/gYQTqUe0ktn+QiFbhUa4=",
+    "url": "https://files.pythonhosted.org/packages/91/59/51b032d53212a51f17ebbcc01bd4217faab6d6c09ed0d856a987a5f42bbc/json5-0.9.25.tar.gz"
+  },
+  "jsonpointer": {
+    "hash": "sha256-Ky1ynyCRUi1hw7MfguEYcPYLaPQ/vHBct2v0uDKvWe8=",
+    "url": "https://files.pythonhosted.org/packages/6a/0a/eebeb1fa92507ea94016a2a790b93c2ae41a7e18778f85471dc54475ed25/jsonpointer-3.0.0.tar.gz"
+  },
+  "jsonschema": {
+    "hash": "sha256-D4ZEN6uLYHa6ZwdFPvj5imoNUSqA6T+KvbZ29zfstg0=",
+    "url": "https://files.pythonhosted.org/packages/36/3d/ca032d5ac064dff543aa13c984737795ac81abc9fb130cd2fcff17cfabc7/jsonschema-4.17.3.tar.gz"
+  },
+  "packaging": {
+    "hash": "sha256-Am7XLI7T/M5b+JUFciWGmJJ/0dvaEKXpgc3wrDf08AI=",
+    "url": "https://files.pythonhosted.org/packages/51/65/50db4dda066951078f0a96cf12f4b9ada6e4b811516bf0262c0f4f7064d4/packaging-24.1.tar.gz"
+  },
+  "pathspec": {
+    "hash": "sha256-pILVFQOhqzOxxnpsOBOiaVPb3HHDHayu+ag4xOKfVxI=",
+    "url": "https://files.pythonhosted.org/packages/ca/bc/f35b8446f4531a7cb215605d100cd88b7ac6f44ab3fc94870c120ab3adbf/pathspec-0.12.1.tar.gz"
+  },
+  "pluggy": {
+    "hash": "sha256-LP+ojpT9yXjExXTxX55Zt/QgHUORlcNxXKniSG8dDPE=",
+    "url": "https://files.pythonhosted.org/packages/96/2d/02d4312c973c6050a18b314a5ad0b3210edb65a906f868e31c111dede4a6/pluggy-1.5.0.tar.gz"
+  },
+  "pygments": {
+    "hash": "sha256-eG/4AvMukTEb/ziJ9umoboFQX+mfJzW7bWCuDFAE8Zk=",
+    "url": "https://files.pythonhosted.org/packages/8e/62/8336eff65bcbc8e4cb5d05b55faf041285951b6e80f33e2bff2024788f31/pygments-2.18.0.tar.gz"
+  },
+  "pyrsistent": {
+    "hash": "sha256-GimUdzcGu7SZXDGpe8lPFBgxSSO9EEjG2WSDcEA3ZEA=",
+    "url": "https://files.pythonhosted.org/packages/bf/90/445a7dbd275c654c268f47fa9452152709134f61f09605cf776407055a89/pyrsistent-0.19.3.tar.gz"
+  },
+  "pytest": {
+    "hash": "sha256-wTI0XRLOVRJCyHJp3oEkg/W8yHzbtHIuSEh7oZT5/c4=",
+    "url": "https://files.pythonhosted.org/packages/b4/8c/9862305bdcd6020bc7b45b1b5e7397a6caf1a33d3025b9a003b39075ffb2/pytest-8.3.2.tar.gz"
+  },
+  "python-dateutil": {
+    "hash": "sha256-N91UII2n4c2HU4ghfV4A69QXkkn5D7ckN+kaNUWaCtM=",
+    "url": "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz"
+  },
+  "requests": {
+    "hash": "sha256-VTZUF3NOsYJVWQqf+euX6eHaho1MzWQCOZ6vaK8gp2A=",
+    "url": "https://files.pythonhosted.org/packages/63/70/2bf7780ad2d390a8d301ad0b550f1581eadbd9a20f896afe06353c2a2913/requests-2.32.3.tar.gz"
+  },
+  "responses": {
+    "hash": "sha256-xNmqn8iIGI8MZz7/eaja2+LnW3/oedyAoiGgbgpoE48=",
+    "url": "https://files.pythonhosted.org/packages/fa/4f/5033bf66528c832e7fcc48e76f540bf401302c55041c7fb488b4fbaaec4a/responses-0.23.1.tar.gz"
+  },
+  "rfc3339-validator": {
+    "hash": "sha256-E4oqvfkzBK1gUwFn5R0t+5VJUhqDaHG4jX9GldACL2s=",
+    "url": "https://files.pythonhosted.org/packages/28/ea/a9387748e2d111c3c2b275ba970b735e04e15cdb1eb30693b6b5708c4dbd/rfc3339_validator-0.1.4.tar.gz"
+  },
+  "rfc3986-validator": {
+    "hash": "sha256-PUS955IbO57Drk463KNwQ47M68Z2RWRJsUXVM7JA0FU=",
+    "url": "https://files.pythonhosted.org/packages/da/88/f270de456dd7d11dcc808abfa291ecdd3f45ff44e3b549ffa01b126464d0/rfc3986_validator-0.1.1.tar.gz"
+  },
+  "rfc3987": {
+    "hash": "sha256-08TSV6Vg1UTpgms4vIHbZ2iQx5q516ySs5x6JT1cpzM=",
+    "url": "https://files.pythonhosted.org/packages/14/bb/f1395c4b62f251a1cb503ff884500ebd248eed593f41b469f89caa3547bd/rfc3987-1.3.8.tar.gz"
+  },
+  "ruamel.yaml": {
+    "hash": "sha256-7JOQY3YZFOFFQpcqXLptM8I7CFmrY0L2HPBwz8YA78I=",
+    "url": "https://files.pythonhosted.org/packages/63/dd/b4719a290e49015536bd0ab06ab13e3b468d8697bec6c2f668ac48b05661/ruamel.yaml-0.17.32.tar.gz"
+  },
+  "setuptools": {
+    "hash": "sha256-bB/M2sBal+WY+wrju+1ZBMyzFzN6UROdzVFFNhG7uYc=",
+    "url": "https://files.pythonhosted.org/packages/d6/4f/b10f707e14ef7de524fe1f8988a294fb262a29c9b5b12275c7e188864aed/setuptools-69.5.1.tar.gz"
+  },
+  "setuptools-scm": {
+    "hash": "sha256-bFCDRadxqtfVbr/w5wYovysOx1c3Yr6ZYCFHMN4njyc=",
+    "url": "https://files.pythonhosted.org/packages/98/12/2c1e579bb968759fc512391473340d0661b1a8c96a59fb7c65b02eec1321/setuptools_scm-7.1.0.tar.gz"
+  },
+  "six": {
+    "hash": "sha256-HmHDdHehYmRY4297HYKqXJsJT6SAKJIHLknenGDEySY=",
+    "url": "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz"
+  },
+  "trove-classifiers": {
+    "hash": "sha256-gyjyrCzj/Xc8uzfHZaDteoP4ncVkx9RS8Dm2kknQrDU=",
+    "url": "https://files.pythonhosted.org/packages/78/c9/83f915c3f6f94f4c862c7470284fd714f312cce8e3cf98361312bc02493d/trove_classifiers-2024.7.2.tar.gz"
+  },
+  "types-PyYAML": {
+    "hash": "sha256-0UBahvlXZoIjTvg7y05v/3yTBcix+61eC81Pfb3JxYc=",
+    "url": "https://files.pythonhosted.org/packages/92/7d/a95df0a11f95c8f48d7683f03e4aed1a2c0fc73e9de15cca4d38034bea1a/types-PyYAML-6.0.12.20240917.tar.gz"
+  },
+  "types-python-dateutil": {
+    "hash": "sha256-lwbDtoKEwlrf/Ecxnsx5R+W7hrN3P4Q8c5Bv1Zi8F24=",
+    "url": "https://files.pythonhosted.org/packages/3e/d9/9c9ec2d870af7aa9b722ce4fd5890bb55b1d18898df7f1d069cab194bb2a/types-python-dateutil-2.9.0.20240906.tar.gz"
+  },
+  "typing_extensions": {
+    "hash": "sha256-Gn6tVcflWd1N7ohW46iLQSJav+HOjfV7fBORX+Eh/7g=",
+    "url": "https://files.pythonhosted.org/packages/df/db/f35a00659bc03fec321ba8bce9420de607a1d37f8342eee1863174c69557/typing_extensions-4.12.2.tar.gz"
+  },
+  "uri-template": {
+    "hash": "sha256-DgD462XhjH3iDVlaFDNunzN+rVgMcJNBQWJLbR/9rMc=",
+    "url": "https://files.pythonhosted.org/packages/31/c7/0336f2bd0bcbada6ccef7aaa25e443c118a704f828a0620c6fa0207c1b64/uri-template-1.3.0.tar.gz"
+  },
+  "urllib3": {
+    "hash": "sha256-3VBUhVSaelUoM9peYGNjnQ0XfATyO8OGTkHl3F9hIWg=",
+    "url": "https://files.pythonhosted.org/packages/43/6d/fa469ae21497ddc8bc93e5877702dca7cb8f911e337aca7452b5724f1bb6/urllib3-2.2.2.tar.gz"
+  },
+  "webcolors": {
+    "hash": "sha256-CLB68oagG80w1YOnrK32KVg9H3m/7yfdLCxcJjgXJ30=",
+    "url": "https://files.pythonhosted.org/packages/fe/f8/53150a5bda7e042840b14f0236e1c0a4819d403658e3d453237983addfac/webcolors-24.8.0.tar.gz"
+  },
+  "wheel": {
+    "hash": "sha256-opw/KBfpWriapGYGga1UfA6VR/IOdbBWL+dyPJoqnUk=",
+    "url": "https://files.pythonhosted.org/packages/b7/a0/95e9e962c5fd9da11c1e28aa4c0d8210ab277b1ada951d2aee336b505813/wheel-0.44.0.tar.gz"
+  }
+}

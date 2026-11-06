@@ -1,0 +1,7 @@
+--- a/src/check_jsonschema/schema_loader/resolver.py
++++ b/src/check_jsonschema/schema_loader/resolver.py
+@@ -46 +46,3 @@
+-    base_uri = schema.get("$id", schema_uri)
++    # Draft04 uses `id`; newer drafts use `$id`. Use the engine's dialect
++    # definition so local internal references resolve without fetching that URI.
++    base_uri = jsonschema.validators.validator_for(schema).ID_OF(schema) or schema_uri
