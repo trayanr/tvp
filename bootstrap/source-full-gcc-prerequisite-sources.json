@@ -1,0 +1,22 @@
+{
+  "isl": {
+    "hash": "sha256-PcMbjhsYMp5C1d+/hN1V4VxZthVpoqskb2FJfZWS9yc=",
+    "url": "https://libisl.sourceforge.io/isl-0.28.tar.xz"
+  },
+  "libxcrypt": {
+    "hash": "sha256-cVE6McAaQovM1TZ6Mv2V8RXW2sUPtbYMd51ceUKuwHE=",
+    "url": "https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz"
+  },
+  "ncurses": {
+    "hash": "sha256-NVtMu+2ICwOBoExGYXt2VuNiWF1S6c+Epn4gCbdJ/xE=",
+    "url": "https://mirrors.kernel.org/gnu/ncurses/ncurses-6.6.tar.gz"
+  },
+  "texinfo": {
+    "hash": "sha256-3u7J8Z8VngRv34rSIjGYGAbawzLMNy8cdjUErYKzCVM=",
+    "url": "https://mirrors.kernel.org/gnu/texinfo/texinfo-7.1.tar.xz"
+  },
+  "which": {
+    "hash": "sha256-9KJFuUEks3fYtJZGv0IfkVXTaqdhS26/g3BdP/x26q0=",
+    "url": "https://ftp.gnu.org/gnu/which/which-2.21.tar.gz"
+  }
+}
