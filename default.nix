@@ -138,6 +138,14 @@ let
       named-outputs-bin-selected = tvp.checks.named-outputs.passthru.binary.bin;
       named-outputs-validation-rebound = tvp.checks.named-outputs.passthru.changed;
       named-outputs-bin-rebound = tvp.checks.named-outputs.passthru.binChanged;
+      owned-base = pkgs.writeText "tvp-owned-base-contracts" (
+        builtins.toJSON (
+          import ./lib/tests/owned-base.nix {
+            inherit (pkgs) lib;
+            inherit (tvp) builder;
+          }
+        )
+      );
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };

@@ -1,0 +1,53 @@
+# Select retained producers by role. These tools keep their measured host
+# generations; selecting the full target compiler does not rebuild the tools.
+{ bootstrap }:
+let
+  full = import ../../bootstrap/source-full-gcc.nix { inherit bootstrap; };
+  native = import ../../bootstrap/source-native-compiler.nix { inherit bootstrap; };
+  cmake = import ../../bootstrap/source-cmake.nix { inherit bootstrap; };
+  pythonMeson = import ../../bootstrap/source-python-meson.nix { inherit bootstrap; };
+  prerequisites = import ../../bootstrap/source-full-gcc-prerequisites.nix { inherit bootstrap; };
+  lib = import ../../bootstrap/owned-lib.nix { system = "x86_64-linux"; };
+  # This selected GNU linker owns indirect-DSO lookup. Generic composition knows
+  # neither GNU ld policy nor a library-scanning flag convention.
+  linker = native.binutils // {
+    buildEnvironment =
+      context:
+      let
+        existing = (native.binutils.buildEnvironment or (_: { })) context;
+        flags = existing.flags or { };
+      in
+      existing
+      // {
+        flags = flags // {
+          NIX_LDFLAGS =
+            (flags.NIX_LDFLAGS or [ ])
+            ++ lib.concatMap (
+              library:
+              lib.concatMap (directory: [
+                "-rpath-link"
+                directory
+              ]) (context.directories library).libraries
+            ) context.libraries;
+        };
+      };
+  };
+in
+{
+  toolchain = {
+    compiler = full.compiler;
+    driver = full.driver;
+    libc = native.profile.libc;
+    binutils = native.binutils;
+    runtime = full.compiler;
+  };
+  tools = prerequisites.tools // {
+    inherit linker;
+    inherit (cmake) cmake;
+    inherit (pythonMeson) python meson;
+    inherit (pythonMeson.tools) ninja pkgConfig;
+    m4 = bootstrap.build-m4;
+    bzip2 = bootstrap.bzip2;
+    inherit (prerequisites) perl texinfo;
+  };
+}

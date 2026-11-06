@@ -56,7 +56,8 @@ in
   };
   plan = [
     (steps.unpack {
-      inherit src xz findutils;
+      src = final.src;
+      inherit xz findutils;
       tar = gnutar;
     })
     (steps.prepareAutotools {

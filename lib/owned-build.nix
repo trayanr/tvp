@@ -19,6 +19,8 @@ let
       throw "TVP named outputs: output name collides with passthru metadata"
     else
       names;
+  compiler = if base ? compiler then base.compiler else base.stdenv.cc;
+  baselineTools = if base ? compiler then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
   multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
@@ -41,10 +43,10 @@ let
               step:
               step
               // {
-                tools = lib.unique (step.tools ++ base.stdenv.initialPath);
+                tools = lib.unique (step.tools ++ baselineTools);
                 run =
                   ''
-                    export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " base.stdenv.cc.defaultHardeningFlags)}
+                    export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " compiler.defaultHardeningFlags)}
                     export SOURCE_DATE_EPOCH=315532800
                     if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
                       SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
@@ -108,7 +110,6 @@ package
 // {
   inherit pname version;
   inherit (spec) src;
-  stdenv = base.stdenv;
   meta = spec.meta or { };
   tvp = spec.tvp or { };
   runtime = spec.runtime or { };
@@ -118,4 +119,5 @@ package
   buildEnvironment = spec.buildEnvironment or (_: { });
   passthru = spec.passthru or { };
 }
+// (if base ? compiler then { inherit compiler; } else { stdenv = base.stdenv; })
 // lib.optionalAttrs parts.split { artifact = artifact; }
