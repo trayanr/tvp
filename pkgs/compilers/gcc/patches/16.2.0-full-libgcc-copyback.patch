@@ -1,0 +1,7 @@
+--- a/libgcc/Makefile.in
++++ b/libgcc/Makefile.in
+@@ -121,3 +121,3 @@
+ 	# of the build tree, for now.
+ 	$(MAKE) install-leaf DESTDIR=$(gcc_objdir) \
+-	  slibdir= libsubdir= MULTIOSDIR=$(MULTIDIR)
++	  slibdir= libdir= MULTIOSDIR=$(MULTIDIR)
