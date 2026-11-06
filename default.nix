@@ -414,10 +414,16 @@ let
       builtins.mapAttrs
         (
           name: pkg:
-          tvpLib.tests.mkBatch {
-            inherit pkgs name;
-            suite = pkg.tests;
-          }
+          (
+            if pkg ? testContext then
+              pkg.testContext.mkBatch
+            else
+              args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
+          )
+            {
+              inherit name;
+              suite = pkg.tests;
+            }
         )
         (
           pkgs.lib.filterAttrs (
@@ -446,10 +452,16 @@ let
     ) construction.bases;
     variants = pkgs.lib.mapAttrs (
       name: package:
-      tvpLib.tests.mkBatch {
-        inherit pkgs name;
-        suite = package.tests;
-      }
+      (
+        if package ? testContext then
+          package.testContext.mkBatch
+        else
+          args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
+      )
+        {
+          inherit name;
+          suite = package.tests;
+        }
     ) (pkgs.lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") allVariantPackages);
   };
 
@@ -593,10 +605,10 @@ let
           inherit (tvp.packages)
             bash
             coreutils
-            gnumake
             pkg-config
             ;
-          patchelf = tvp.packages.patchelf_0;
+          gnumake = tvp.canonical.mpc_1_4_1.tvp.deps.gnumake;
+          patchelf = tvp.canonical.mpc_1_4_1.tvp.deps.patchelf;
           environment = bases.default.stdenv;
           compiler = bases.default.stdenv.cc;
         };

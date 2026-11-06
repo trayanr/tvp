@@ -22,6 +22,9 @@ def selector_kind(edge):
     if "selection" not in edge and edge.get("kind") == "foreign":
         return "foreign"
     if not isinstance(selection, dict):
+        if (edge.get("resolved") or {}).get("origin") == "source-bootstrap":
+            # An explicit source-built role supplies no catalogue selector intent.
+            return "unknown"
         return "foreign" if (edge.get("resolved") or {}).get("tvp") is False else "unknown"
     kind = selection.get("kind")
     if kind not in KINDS:

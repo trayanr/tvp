@@ -20,6 +20,12 @@ def edge(consumer="ruby_3_0_1", *, kind="major", selector="openssl_1", version="
 
 
 class ReportingTests(unittest.TestCase):
+    def test_source_role_is_not_a_foreign_or_invented_catalogue_selection(self):
+        row = {"selection": None, "resolved": {"tvp": False, "origin": "source-bootstrap"}}
+        self.assertEqual(report.selector_kind(row), "unknown")
+        row["resolved"].pop("origin")
+        self.assertEqual(report.selector_kind(row), "foreign")
+
     def test_shared_definition_choices_and_resolved_releases_are_distinct_measures(self):
         rows = [edge("ruby_3_0_1"), edge("ruby_3_0_2"), edge("ruby_3_0_3")]
         rows.append(edge("ruby_3_1_0", kind="minor", selector="openssl_1_1"))

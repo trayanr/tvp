@@ -10,14 +10,20 @@
 let
   inherit (pkgs) lib;
   plain = builtins.unsafeDiscardStringContext;
-  resolved = dependency: {
-    tvp = dependency ? tvp;
-    family = dependency.pname or null;
-    version = dependency.version or null;
-    output = dependency.outputName or "out";
-    drv = if (dependency.tvp.status.level or "ok") == "broken" then null else plain dependency.drvPath;
-    out = if (dependency.tvp.status.level or "ok") == "broken" then null else plain dependency.outPath;
-  };
+  resolved =
+    dependency:
+    {
+      tvp = dependency ? tvp;
+      family = dependency.pname or null;
+      version = dependency.version or null;
+      output = dependency.outputName or "out";
+      drv = if (dependency.tvp.status.level or "ok") == "broken" then null else plain dependency.drvPath;
+      out = if (dependency.tvp.status.level or "ok") == "broken" then null else plain dependency.outPath;
+    }
+    // lib.optionalAttrs (dependency.isFromMinBootstrap or false) {
+      origin = "source-bootstrap";
+      evidence = if dependency ? evidence then plain (toString dependency.evidence) else null;
+    };
   rows =
     scope: consumer: package:
     lib.mapAttrsToList (dependency: value: {
@@ -162,6 +168,51 @@ let
         ) (package.tvp.infra or [ ])
       ) entries
     );
+  # Owned tests expose actual stage roles, not a synthetic nativeBuildInputs.
+  # Deduplicate by selected output, retaining every role in deterministic order.
+  ownedTestInputs =
+    test:
+    let
+      spec = test.specification;
+      base = spec.base;
+      compiler = if base ? compiler then base.compiler else base.stdenv.cc;
+      role =
+        name: values:
+        map (value: {
+          inherit value;
+          role = name;
+        }) values;
+      active = (import ./build-steps.nix).active test.buildSteps;
+      declared =
+        role "shell" [ spec.bash ]
+        ++ role "coreutils" [ spec.coreutils ]
+        ++ role "compiler" [ compiler ]
+        ++ role "compiler-binutils" [ compiler.bintools ]
+        ++ role "compiler-libc" [ compiler.libc ]
+        ++ role "runtime-directory" (compiler.runtimeDirectories or [ ])
+        ++ role "base-tool" (if base ? compiler then base.tools else base.stdenv.initialPath)
+        ++ lib.concatMap (
+          step: role "step-tool" (step.tools or [ ]) ++ role "step-library" (step.libraries or [ ])
+        ) active;
+      key = value: plain (toString value);
+      values = lib.foldl' (
+        acc: input:
+        let
+          k = key input.value;
+        in
+        if test ? package && k == toString test.package then
+          acc
+        else
+          acc
+          // {
+            ${k} = {
+              inherit (input) value;
+              roles = lib.unique ((acc.${k}.roles or [ ]) ++ [ input.role ]);
+            };
+          }
+      ) { } declared;
+    in
+    map (k: values.${k}) (lib.attrNames values);
   # Read the actual evaluated mkTest inputs as well as recipe.testDeps. The
   # Package-under-test identity is explicit mkTest metadata. Exclude that
   # output wherever it occurs, including after a native-input override.
@@ -174,44 +225,63 @@ let
           lib.mapAttrsToList (
             testName: test:
             lib.imap0
-              (i: value: {
-                inherit consumer testName;
-                ownerScope = scope;
-                scope = if (package.tvp.status.level or "ok") == "broken" then "broken" else scope;
-                dependency = "test:${testName}:input-${toString i}";
-                dependencyScope = "test-support";
-                family = package.pname or null;
-                definition = package.tvp.definition or null;
-                role = if lib.isDerivation value then "test-input" else "test-input-value";
-                selection = if builtins.isAttrs value then value.__tvpSelection or null else null;
-                resolved =
-                  if lib.isDerivation value then
-                    resolved value
-                  else
-                    {
-                      tvp = null;
-                      family = null;
-                      version = null;
-                      output = null;
-                      drv = null;
-                      out = if builtins.isString value || builtins.isPath value then plain (toString value) else null;
-                      context = if builtins.isString value then builtins.getContext value else { };
-                      type = builtins.typeOf value;
-                    };
-                reason = if builtins.isAttrs value then value.__tvpSelection.reason or null else null;
-                details =
-                  if builtins.isAttrs value && value ? __tvpSelection then
-                    null
-                  else
-                    "The evaluated test input has no requested-selector tag; its identity is recorded without inferring intent.";
-              })
               (
-                if test ? package && lib.isDerivation test.package then
-                  lib.filter (value: !(lib.isDerivation value && value.outPath == test.package.outPath)) (
-                    test.nativeBuildInputs or [ ]
-                  )
+                i: input:
+                let
+                  value = input.value;
+                in
+                {
+                  inherit consumer testName;
+                  ownerScope = scope;
+                  scope = if (package.tvp.status.level or "ok") == "broken" then "broken" else scope;
+                  dependency = "test:${testName}:input-${toString i}";
+                  dependencyScope = "test-support";
+                  family = package.pname or null;
+                  definition = package.tvp.definition or null;
+                  role =
+                    if input ? roles then
+                      "owned-test-input"
+                    else if lib.isDerivation value then
+                      "test-input"
+                    else
+                      "test-input-value";
+
+                  selection = if builtins.isAttrs value then value.__tvpSelection or null else null;
+                  resolved =
+                    if lib.isDerivation value then
+                      resolved value
+                    else
+                      {
+                        tvp = null;
+                        family = null;
+                        version = null;
+                        output = null;
+                        drv = null;
+                        out = if builtins.isString value || builtins.isPath value then plain (toString value) else null;
+                        context = if builtins.isString value then builtins.getContext value else { };
+                        type = builtins.typeOf value;
+                      };
+                  reason = if builtins.isAttrs value then value.__tvpSelection.reason or null else null;
+                  details =
+                    if builtins.isAttrs value && value ? __tvpSelection then
+                      null
+                    else
+                      "The evaluated test input has no requested-selector tag; its identity is recorded without inferring intent.";
+                }
+                // lib.optionalAttrs (input ? roles) { inherit (input) roles; }
+              )
+              (
+                if test ? specification then
+                  ownedTestInputs test
                 else
-                  test.nativeBuildInputs or [ ]
+                  map (value: { inherit value; }) (
+                    if test ? package && lib.isDerivation test.package then
+                      lib.filter (value: !(lib.isDerivation value && value.outPath == test.package.outPath)) (
+                        test.nativeBuildInputs or [ ]
+                      )
+                    else
+                      test.nativeBuildInputs or [ ]
+                  )
               )
           ) (package.tests or { })
         )

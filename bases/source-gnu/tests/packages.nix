@@ -174,7 +174,7 @@ let
     )
   );
   mpc = qualify "mpc" (
-    make (import ../../../pkgs/libraries/mpc/build-1.4.1.nix) (
+    make (import ../../../pkgs/libraries/mpc/build-steps-1.4.1.nix) (
       common
       // {
         src = sources.mpc;

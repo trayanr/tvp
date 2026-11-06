@@ -9,6 +9,12 @@ tvpLib.packages.mergeVariants {
   gzip = tvpLib.packages.mkVariants (
     recipes.gzip
     // {
+      extraArgs.mkTests =
+        package:
+        import ../../../pkgs/build-tools/gzip/tests {
+          inherit pkgs tvpLib package;
+          coreutils = import ./test-tools.nix { inherit tvpLib recipes; };
+        };
       inherit pkgs;
       profiles.gcc13 = {
         base = construction.bases.gcc13;

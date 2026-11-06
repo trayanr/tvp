@@ -3,6 +3,22 @@ rec {
   # Opt-in owned construction; catalogue factories must select this explicitly.
   forBase = import ./owned-tests.nix { inherit lib; };
 
+  # Catalogue opt-in. Recompute after override/edit, including shell/Coreutils.
+  fromPackage =
+    { builder, package }:
+    let
+      spec = package.specification;
+      base =
+        if spec.base ? compiler then
+          spec.base.override { shell = spec.bash; }
+        else
+          spec.base // { shell = spec.bash; };
+    in
+    forBase {
+      inherit builder base;
+      coreutils = spec.coreutils;
+    };
+
   # Keep the test builder on the selected base as well as the test compiler.
   # Overriding pkgs.stdenv alone does not change pkgs.runCommand's closure.
   withBase =

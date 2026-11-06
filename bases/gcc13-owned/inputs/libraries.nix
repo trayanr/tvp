@@ -66,6 +66,9 @@ tvpLib.packages.mergeVariants {
   libxcrypt = tvpLib.packages.mkVariants (
     recipes.libxcrypt.constructionRecipe
     // {
+      testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
+        coreutils = import ./test-tools.nix { inherit tvpLib recipes; };
+      };
       inherit pkgs;
       profiles.gcc13 = {
         base = construction.bases.gcc13;
@@ -98,7 +101,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   gmp = tvpLib.packages.mkVariants (
-    recipes.gmp
+    recipes.gmp.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

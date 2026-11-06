@@ -119,9 +119,15 @@ let
   contracts = {
     canonicalOwned = p.tvp.builder == "build-4.2.2.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
-    samePilot = p.drvPath == tvp.variants.build-steps.mpfr_4_2_2.drvPath;
-    sameArtifact = p.artifact.drvPath == tvp.variants.build-steps.mpfr_4_2_2.artifact.drvPath;
-    sameSource = p.src.drvPath == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
+    distinctPilot =
+      p.drvPath != tvp.variants.build-steps.mpfr_4_2_2.drvPath
+      && p.tvp.base == "source-gnu-candidate"
+      && tvp.variants.build-steps.mpfr_4_2_2.tvp.base == tvp.bases.default.name;
+    distinctArtifact = p.artifact.drvPath != tvp.variants.build-steps.mpfr_4_2_2.artifact.drvPath;
+    archiveHash =
+      p.src.outputHash == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.outputHash;
+    distinctSourceProducer =
+      p.src.drvPath != (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
     legacyPreserved = !(tvp.canonical.mpfr_4_2_1 ? edit) && tvp.canonical.mpfr_4_2_1 ? overrideAttrs;
     exactEdits = tagged "mpfr_4_2_2" p;
     publicExactEdits = tagged "mpfr_4_2_2" tvp.packages.mpfr_4_2_2;
@@ -141,7 +147,8 @@ let
       && lib.count (s: s.name == "fixture.log") changed.buildSteps == 1;
     testsRebound =
       changed.tests.version.drvPath != p.tests.version.drvPath
-      && lib.any (v: v.outPath == changed.outPath) changed.tests.version.nativeBuildInputs;
+      && changed.tests.version.package.outPath == changed.outPath
+      && changed.tests.version.compiler.drvPath == changed.compiler.drvPath;
     passthru =
       changed.tests.version.drvPath == changed.passthru.tests.version.drvPath
       && changed.tvp.deps.gmp.drvPath == changed.passthru.tvp.deps.gmp.drvPath;
@@ -213,11 +220,16 @@ let
         "bash"
         "binutils"
         "coreutils"
+        "diffutils"
+        "findutils"
+        "gawk"
         "gmp"
         "gnumake"
         "gnutar"
+        "grep"
         "patchelf"
         "python"
+        "sed"
         "xz"
       ];
     helperNotDependency = !(p.tvp.declaredDependencies ? tvp) && !(p.tvp.declaredInfrastructure ? tvp);

@@ -62,7 +62,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  gmp = select recipes.gmp {
+  gmp = select recipes.gmp.constructionRecipe {
     "6.3.0" = {
       deps = {
         m4 = inputs.m4_1_4_21;

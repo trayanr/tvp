@@ -1,6 +1,46 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
+  owned = {
+    constructor = tvp.builder;
+    builder = ./build-6.3.0.nix;
+    base = candidate.base;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
+        inherit sha256;
+      };
+    testContext =
+      package:
+      tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        inherit package;
+      };
+    helpers = {
+      inherit tvp;
+    };
+    deps = {
+      inherit (candidate.tools)
+        bash
+        coreutils
+        xz
+        python
+        binutils
+        patchelf
+        sed
+        grep
+        gawk
+        diffutils
+        findutils
+        ;
+      gnumake = candidate.tools.make;
+      gnutar = candidate.tools.tar;
+      m4 = candidate.tools.m4;
+    };
+  };
   defs = tvpLib.packages.mkDefs {
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
@@ -45,6 +85,16 @@ let
       opts.cStandard = "gnu17";
     };
 
+    "6.3.0" =
+      if native then
+        owned
+      else
+        {
+          builder = ./build-5.0.5.nix;
+          base = tvp.bases.default;
+          deps.m4 = tvp.packages.m4;
+          opts.cStandard = "gnu17";
+        };
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -68,8 +118,12 @@ let
         "6.1.2" = "sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=";
         "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
         "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
-        "6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
+
       };
+    }
+    {
+      def = defs."6.3.0";
+      releases."6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
     }
   ];
   pname = "gmp";
@@ -83,10 +137,14 @@ let
       gmp:
       import ./tests {
         inherit tvpLib gmp;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = gmp.stdenv;
-        };
+        pkgs =
+          if gmp ? testContext then
+            pkgs
+          else
+            tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = gmp.stdenv;
+            };
       }
     ) { inherit pkgs; };
     packageMeta.upstream = {
@@ -102,11 +160,20 @@ let
       include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
     };
   };
+  constructionRecipe = packageArgs // {
+    versionTable = versionTable // {
+      "6.3.0" = versionTable."6.3.0" // {
+        def = defs."6.1.0";
+      };
+    };
+  };
   canonical = tvpLib.packages.mkVersions packageArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = packageArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

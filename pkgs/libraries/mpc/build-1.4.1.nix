@@ -1,4 +1,4 @@
-# MPC 1.4.1 only; older releases retain their historical construction.
+# MPC 1.4.1: native source-GNU catalogue procedure; earlier host routes stay independent.
 {
   tvp,
   lib,
@@ -15,6 +15,11 @@
   python,
   binutils,
   patchelf,
+  sed,
+  grep,
+  gawk,
+  diffutils,
+  findutils,
   stripFlags ? [
     "-S"
     "-p"
@@ -47,7 +52,14 @@ in
     coreutils
     ;
   environment = {
-    tools = [ gnumake ];
+    tools = [
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+    ];
     libraries = [
       gmp
       mpfr
@@ -56,13 +68,26 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      inherit xz;
+      inherit xz findutils;
       tar = gnutar;
     })
     (steps.prepareAutotools {
       name = "mpc.prepare";
       inherit bash python;
       base = final.base;
+    })
+    (steps.shebangs {
+      name = "mpc.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "build-aux"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${bash}/bin/bash";
     })
     (command "mpc.configure" ''
       export CONFIG_SHELL=${bash}/bin/bash
@@ -138,6 +163,6 @@ in
   meta = {
     description = "Multiple-precision complex arithmetic library";
     license = lib.licenses.lgpl3Plus;
-    platforms = lib.platforms.unix;
+    platforms = [ "x86_64-linux" ];
   };
 }
