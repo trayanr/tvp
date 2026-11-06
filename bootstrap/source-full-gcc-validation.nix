@@ -112,6 +112,19 @@ in
   contracts = {
     driverCustomizationMaintainsInterface =
       (f.driver.editSteps (plan: plan)).bintools.drvPath == f.native.binutils.drvPath;
+    driverCompilerOverride =
+      lib.hasInfix "/replacement/raw-compiler/"
+        (builtins.head (
+          (f.driver.override {
+            compiler = f.compiler // {
+              outPath = "/replacement/raw-compiler";
+              evidence = "/replacement/compiler-evidence";
+            };
+          }).buildSteps
+        )).run;
+    driverLibcOverride =
+      builtins.head ((f.driver.override { libc = "/replacement/libc"; }).runtimeDirectories)
+      == "/replacement/libc/lib";
     sourceEdit =
       lib.hasInfix "/replacement/source"
         (builtins.head ((f.compiler.edit (s: s // { src = "/replacement/source"; })).buildSteps)).run;

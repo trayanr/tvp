@@ -111,14 +111,18 @@ p=run('ubsan-negative',[ubsan],expected=None);assert 'runtime error: signed inte
 sanitizers={}
 for name in ['thread','leak']:
     exe=build('sanitizer-'+name,Path(hello).read_text(),['-fsanitize='+name])
-    p=subprocess.run([exe],text=True,capture_output=True,env=env)
+    p=loaded('sanitizer-'+name,exe,['libtsan' if name=='thread' else 'liblsan'])
+    assert p.stdout=='42\n',(name,p.stdout,p.stderr)
     sanitizers[name]=dict(status=p.returncode,stdout=p.stdout,stderr=p.stderr)
-p=run('sanitizer-hwaddress-scope',[cc,'-fsanitize=hwaddress',hello,'-o','hwaddress'],expected='any')
+p=run('sanitizer-hwaddress-scope',[cc,'-fsanitize=hwaddress',hello,'-o','hwaddress'])
 sanitizers['hwaddress']=dict(compilerStatus=p.returncode,compilerDiagnostic=p.stderr)
-if p.returncode==0:
-    execution=run('sanitizer-hwaddress-run',[work/'hwaddress'],expected='any',extra={'LD_DEBUG':'libs'})
-    sanitizers['hwaddress'].update(runtimeStatus=execution.returncode,runtimeDiagnostic=execution.stderr)
-    assert m['compiler']+'/lib/libhwasan.so' in execution.stderr
+execution=run('sanitizer-hwaddress-run',[work/'hwaddress'],expected='any',extra={'LD_DEBUG':'libs'})
+sanitizers['hwaddress'].update(runtimeStatus=execution.returncode,runtimeDiagnostic=execution.stderr)
+assert m['compiler']+'/lib/libhwasan.so' in execution.stderr
+if execution.returncode==0:
+    assert execution.stdout=='42\n'
+else:
+    assert execution.returncode==99 and 'FATAL: HWAddressSanitizer requires a kernel with tagged address ABI.' in execution.stderr,execution.stderr
 
 # Real assembler/linker selection: sentinel forwarding wrappers retain invocations.
 sentinels=work/'sentinels';sentinels.mkdir()

@@ -7,14 +7,16 @@
 }:
 let
   b = bootstrap;
-  rt = "${compiler}/lib/gcc/x86_64-unknown-linux-gnu/${compiler.version}";
-  rawPrefix = "${compiler}/lib/gcc/x86_64-unknown-linux-gnu/${compiler.version}";
-  cxx = "${compiler}/include/c++/${compiler.version}";
   shell = "${b.gnu-bash}/bin/bash";
   coreutils = b.gnu-tool-floor.gnu-coreutils;
   composition = import ./source-base.nix { inherit bootstrap; };
   driver = make (
-    { }:
+    { compiler, libc }:
+    let
+      rt = "${compiler}/lib/gcc/x86_64-unknown-linux-gnu/${compiler.version}";
+      rawPrefix = rt;
+      cxx = "${compiler}/include/c++/${compiler.version}";
+    in
     {
       pname = "source-full-gnu-driver";
       version = compiler.version;
@@ -85,6 +87,6 @@ let
         }
       ];
     }
-  ) { };
+  ) { inherit compiler libc; };
 in
 driver
