@@ -128,7 +128,33 @@ let
     name = "context-rebound";
     suite = contextChanged.tests;
   };
+  splitTest = p.tests.arithmetic.editSteps (
+    plan:
+    plan
+    ++ [
+      (steps.split "fixture.inventory")
+      {
+        name = "fixture.second";
+        tools = [ candidate.tools.pkgConfig ];
+        run = ":";
+      }
+    ]
+  );
+  splitInventory = import ../dependencies.nix {
+    inherit pkgs;
+    canonical.fixture = p // {
+      tests.arithmetic = splitTest;
+    };
+    variants = { };
+    construction.variants = { };
+  };
   contracts = {
+    splitTestInventory = lib.any (
+      row:
+      row.dependencyScope or "" == "test-support"
+      && row.resolved.drv == candidate.tools.pkgConfig.drvPath
+      && lib.elem "step-tool" row.roles
+    ) splitInventory.support;
     currentContext =
       contextChanged.tests.arithmetic.specification.base.compiler.drvPath == sentinel.drvPath
       && contextChanged.tests.arithmetic.specification.bash.drvPath == tvp.packages.bash.drvPath
