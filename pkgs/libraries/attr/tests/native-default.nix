@@ -71,7 +71,7 @@ in
         test "$(readlink ${package}/lib/libattr.so)" = "libattr.so.1.1.$revision"
         test "$(readlink ${package}/lib/libattr.so.1)" = "libattr.so.1.1.$revision"
         readelf -d ${package}/lib/libattr.so | grep -Fq 'Library soname: [libattr.so.1]'
-        "$CC" ${./fixtures/api.c} -lattr -ldl -o api
+        "$CC" -fPIC -pie ${./fixtures/api.c} -lattr -ldl -o api
         ./api ${package}/lib/libattr.so.1 --linkage-only
       '';
       expected = "ok";
@@ -82,7 +82,7 @@ in
     };
     operation = {
       script = ''
-        "$CC" ${./fixtures/policy.c} -lattr -o policy
+        "$CC" -fPIC -pie ${./fixtures/policy.c} -lattr -o policy
         ./policy
       '';
       expected = "ok";
@@ -101,7 +101,7 @@ in
     script = ''
       set -euo pipefail
       mkdir "$out"
-      "$CC" ${./fixtures/xattr-support.c} -o preflight
+      "$CC" -fPIC -pie ${./fixtures/xattr-support.c} -o preflight
       status=0
       ./preflight 2> "$out/preflight.log" || status=$?
       cat "$out/preflight.log" >&2
@@ -109,7 +109,7 @@ in
         echo 'SKIP: user xattrs unavailable (EOPNOTSUPP)' > "$out/status"
       else
         test "$status" = 0
-        "$CC" ${./fixtures/api.c} -lattr -ldl -o api
+        "$CC" -fPIC -pie ${./fixtures/api.c} -lattr -ldl -o api
         ./api ${package}/lib/libattr.so.1 > "$out/api.log"
         bash ${./fixtures/restore.sh} ${package.version} > "$out/restore.log"
         test "$(cat "$out/api.log")" = ok

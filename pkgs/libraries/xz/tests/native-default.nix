@@ -66,7 +66,7 @@ xz.testContext.mkSuite {
             ${reference}/bin/xz -dc out.xz
           '';
           expected = "tvp";
-          tools = commonTools ++ cc;
+          tools = commonTools ++ cc ++ [ reference ];
         };
 
       cli = {

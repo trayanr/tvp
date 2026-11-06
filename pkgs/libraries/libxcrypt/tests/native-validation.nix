@@ -35,7 +35,7 @@ in
       ''
     else
       ''
-        "$CC" -Wall -Wextra -Werror -I${package}/include ${./fixtures}/api.c \
+        "$CC" -fPIC -pie -Wall -Wextra -Werror -I${package}/include ${./fixtures}/api.c \
           -L${package}/lib -Wl,-rpath,${package}/lib -lcrypt -ldl -o api
         ./api ${package}/lib/libcrypt.so.1 ${package.version}
       ''
@@ -60,7 +60,7 @@ in
             test "$(pkg-config --variable=includedir libxcrypt)" = ${package}/include
             test "$(pkg-config --variable=libdir libxcrypt)" = ${package}/lib
             pkg-config --cflags --libs libxcrypt | tee "$out/pkg-config.log"
-            "$CC" -Wall -Wextra -Werror $(pkg-config --cflags libxcrypt) ${./fixtures/crypt.c} \
+            "$CC" -fPIC -pie -Wall -Wextra -Werror $(pkg-config --cflags libxcrypt) ${./fixtures/crypt.c} \
               $(pkg-config --libs libxcrypt) -Wl,-rpath,${package}/lib -o consumer
             test "$(./consumer)" = ok
             for name in libxcrypt.so libowcrypt.so libowcrypt.so.1; do
@@ -70,7 +70,7 @@ in
             done
             test -f ${package}/include/xcrypt.h
             printf '%s\n' '#include <xcrypt.h>' 'int main(void) { return !xcrypt("abc", "$6$salt$"); }' > compat.c
-            "$CC" -I${package}/include compat.c -L${package}/lib -Wl,-rpath,${package}/lib -lxcrypt -o compat
+            "$CC" -fPIC -pie -I${package}/include compat.c -L${package}/lib -Wl,-rpath,${package}/lib -lxcrypt -o compat
             ./compat
             readelf -d ${package}/lib/libcrypt.so.1 > "$out/dynamic.log"
             grep -F 'Library soname: [libcrypt.so.1]' "$out/dynamic.log"
@@ -90,7 +90,7 @@ in
             diff -u "$out/baseline.exports" "$out/candidate.exports"
             # Link once against 4.4.36, then use the new SONAME with its original
             # symbol-version requirements and header layout, without relinking.
-            "$CC" -I${baseline}/include ${./fixtures}/api.c -L${baseline}/lib \
+            "$CC" -fPIC -pie -I${baseline}/include ${./fixtures}/api.c -L${baseline}/lib \
               -Wl,--enable-new-dtags,-rpath,${baseline}/lib -lcrypt -ldl -o old-consumer
             readelf --version-info old-consumer > "$out/consumer-versions.log"
             LD_LIBRARY_PATH=${package}/lib ./old-consumer ${package}/lib/libcrypt.so.1 ${package.version}
