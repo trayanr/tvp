@@ -1,0 +1,40 @@
+--- a/cmake/FindGD.cmake
++++ b/cmake/FindGD.cmake
+@@ -81,15 +81,28 @@
+     if("GD_GIF" IN_LIST GD_FEATURES_LIST)
+       set(HAVE_GD_GIF 1)
+     endif()
+-  elseif(APPLE OR GDLIB_FOUND)
+-    # At time of writing, Macports does not package libgd. So assume the user
+-    # obtained this through Homebrew and hard code the options the Homebrew
+-    # package enables.
+-    set(HAVE_GD_PNG 1)
+-    set(HAVE_GD_JPEG 1)
+-    set(HAVE_GD_FONTCONFIG 1)
+-    set(HAVE_GD_FREETYPE 1)
+-    set(HAVE_GD_GIF 1)
++  elseif(GDLIB_FOUND)
++    # gdlib.pc does not describe optional features. Probe the native library
++    # instead of assuming the codecs enabled by an unrelated distribution.
++    include(CheckCSourceRuns)
++    set(CMAKE_REQUIRED_INCLUDES ${GD_INCLUDE_DIRS})
++    set(CMAKE_REQUIRED_LIBRARIES ${GD_LIBRARIES})
++    foreach(codec PNG JPEG GIF XPM)
++      string(TOLOWER "${codec}" extension)
++      check_c_source_runs("#include <gd.h>
++        int main(void) { return !gdSupportsFileType(\"probe.${extension}\", 1); }"
++        HAVE_GD_${codec})
++    endforeach()
++    check_c_source_runs("#include <gd.h>
++      int main(void) { return !gdFTUseFontConfig(1); }" HAVE_GD_FONTCONFIG)
++    check_c_source_runs("#include <gd.h>
++      #include <string.h>
++      int main(void) { int box[8]; char *error = gdImageStringFT(0, box, 0,
++        \"/missing/font.ttf\", 12, 0, 0, 0, \"probe\");
++        return error && strstr(error, \"not built with FreeType\") != 0; }"
++      HAVE_GD_FREETYPE)
++    unset(CMAKE_REQUIRED_INCLUDES)
++    unset(CMAKE_REQUIRED_LIBRARIES)
+   else()
+     message(
+       WARNING
