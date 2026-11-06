@@ -120,10 +120,16 @@ in
     (
       (command "acl.check" ''
         "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
-        # The preload test DSO also enters retained musl command tools.
-        # GNU17 keeps strtol on its shared pre-C23 ABI (not __isoc23_strtol).
+        # Upstream preloads its glibc user/group lookup DSO into every command.
+        # Retained Grep uses musl and performs no user/group lookup. Keep that
+        # explicit command outside the interposer; tested ACL programs keep it.
+        mkdir -p "$PWD/.tvp-check-tools"
+        printf '%s\n' '#!${bash}/bin/bash' 'unset LD_PRELOAD' \
+          'exec ${grep}/bin/grep "$@"' > .tvp-check-tools/grep
+        chmod +x .tvp-check-tools/grep
+        export PATH="$PWD/.tvp-check-tools:$PATH"
         status=0
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check CFLAGS="-g -O2 -std=gnu17" \
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
           RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} acl $PWD/.tvp-filesystem-probe $PWD/test/runwrapper" \
           || status=$?
         cat test-suite.log
