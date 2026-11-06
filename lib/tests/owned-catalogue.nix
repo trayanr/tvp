@@ -156,7 +156,40 @@ let
     variants = { };
     construction.variants = { };
   };
+  foundation = map (name: tvp.canonical.${name}) [
+    "bzip2_1_0_8"
+    "zlib_1_3_2"
+    "xz_5_8_4"
+    "attr_2_6_0"
+    "acl_2_4_0"
+    "libxcrypt_4_5_2"
+  ];
   contracts = {
+    foundationCurrentContext = lib.all (
+      q:
+      let
+        edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
+      in
+      edited.tests.version.package.drvPath == edited.drvPath
+    ) (lib.take 5 foundation);
+    foundationNoPublicBuildLibraries = lib.all (q: q.development.libraries == [ ]) foundation;
+    foundationRuntimeDirectories = lib.all (
+      q:
+      let
+        edited = q.editRuntime (_: {
+          libraries = [ ];
+          dlopenDirectories = [ "/foundation-runtime-probe" ];
+        });
+      in
+      edited.drvPath != q.drvPath
+      &&
+        lib.hasInfix "/foundation-runtime-probe"
+          (lib.findFirst (step: step.name == "output.rpaths") null edited.buildSteps).run
+    ) foundation;
+    foundationRejectUnknown = lib.all (
+      q: rejects (q.override { undeclaredExecutable = p; }).drvPath
+    ) foundation;
+
     referenceRebinding =
       referenceRebound.drvPath == p.drvPath
       && referenceRebound.specification.base.referencePackages == p.specification.base.referencePackages

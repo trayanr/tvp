@@ -120,8 +120,10 @@ in
     (
       (command "acl.check" ''
         "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
+        # The preload test DSO also enters retained musl command tools.
+        # GNU17 keeps strtol on its shared pre-C23 ABI (not __isoc23_strtol).
         status=0
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check CFLAGS="-g -O2 -std=gnu17" \
           RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} acl $PWD/.tvp-filesystem-probe $PWD/test/runwrapper" \
           || status=$?
         cat test-suite.log
@@ -130,6 +132,7 @@ in
       // {
         enabled = doCheck;
         tools = environment.tools ++ [
+          attr
           perl
           python
         ];
