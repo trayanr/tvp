@@ -80,6 +80,7 @@ let
       ;
     gnumake = p.tvp.deps.gnumake;
     patchelf = p.tvp.deps.patchelf;
+    grep = p.tvp.deps.grep;
     environment = base.stdenv;
     compiler = base.stdenv.cc;
   };
@@ -309,6 +310,7 @@ let
     steps.insertBefore "mpc.finalize" [
       {
         name = "fixture.selected-tools";
+        tools = [ p.tvp.deps.grep ];
         run = ''
           grep -E -- '^-j[0-9]+ check$' "$NIX_BUILD_TOP/selected-make"
           grep -E -- '^-j[0-9]+ install$' "$NIX_BUILD_TOP/selected-make"

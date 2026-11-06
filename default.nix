@@ -609,6 +609,7 @@ let
             ;
           gnumake = tvp.canonical.mpc_1_4_1.tvp.deps.gnumake;
           patchelf = tvp.canonical.mpc_1_4_1.tvp.deps.patchelf;
+          grep = tvp.canonical.mpc_1_4_1.tvp.deps.grep;
           environment = bases.default.stdenv;
           compiler = bases.default.stdenv.cc;
         };
