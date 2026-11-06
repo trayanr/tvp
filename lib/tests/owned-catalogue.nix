@@ -149,6 +149,18 @@ let
     construction.variants = { };
   };
   contracts = {
+    sourceReferenceRegistration =
+      lib.all
+        (
+          target:
+          lib.any (
+            row: row.kind == "definition-reference" && row.path == toString target
+          ) tvp.dependencyRoots.outputRegistrations
+        )
+        [
+          candidate.toolchain.compiler
+          candidate.toolchain.libc
+        ];
     splitTestInventory = lib.any (
       row:
       row.dependencyScope or "" == "test-support"

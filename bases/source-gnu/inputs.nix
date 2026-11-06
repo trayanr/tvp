@@ -34,6 +34,37 @@ let
   };
 in
 {
+  # Definition/reference ownership only. These are the selected target providers
+  # and the older source-built generations their installed interfaces reference.
+  # This list grants no executable permission; native origin/runtime audits remain
+  # separate, with explicit target roles.
+  referencePackages = [
+    full.compiler
+    full.driver
+    native.profile.libc
+    native.profile.libgcc
+    native.profile.libstdcxx
+    native.gmp
+    native.mpfr
+    native.mpc
+    full.compiler.tvp.deps.isl
+    full.compiler.tvp.deps.libxcrypt
+    prerequisites.zlib
+    prerequisites.zstd
+    native.prior.prerequisites.xz
+    bootstrap.linux-headers
+    bootstrap.gnu-libc
+    bootstrap.gnu-libgcc
+    bootstrap.gnu-libstdcxx
+    bootstrap.gnu-bash
+    bootstrap.gnu-gmp
+    bootstrap.gnu-tool-floor.gnu-attr
+    bootstrap.gnu-tool-floor.gnu-acl
+    bootstrap.gnu-tool-floor.gnu-coreutils
+    bootstrap.gnu-binutils
+    bootstrap.musl
+    bootstrap.gnused
+  ];
   toolchain = {
     compiler = full.compiler;
     driver = full.driver;
