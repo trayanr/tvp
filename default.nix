@@ -147,6 +147,7 @@ let
         )
       );
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
+      owned-tests = (import ./lib/tests/owned-tests-native.nix { }).check;
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
       owned-ruby = import ./lib/tests/owned-ruby.nix { inherit pkgs tvp; };

@@ -1,5 +1,8 @@
 { lib }:
 rec {
+  # Opt-in owned construction; catalogue factories must select this explicitly.
+  forBase = import ./owned-tests.nix { inherit lib; };
+
   # Keep the test builder on the selected base as well as the test compiler.
   # Overriding pkgs.stdenv alone does not change pkgs.runCommand's closure.
   withBase =
