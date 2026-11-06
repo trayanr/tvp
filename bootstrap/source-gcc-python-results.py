@@ -12,10 +12,14 @@ def inspect(log, report, status):
     for tag,key in [('failure','failures'),('error','errors'),('skipped','skipped')]:
         assert sum(c.find(tag) is not None for c in cases)==counts[key]
     counts['passed']=counts['tests']-sum(counts[k] for k in ['failures','errors','skipped'])
-    footers=re.findall(r'^=+ (.* in .*s) =+\s*$',log,re.M)
-    assert footers and log.rstrip().endswith('='), 'Missing terminal pytest completion'
-    footer=footers[-1]
-    outcomes={label:int(n) for n,label in re.findall(r'(\d+) (passed|failed|skipped|errors?|xfailed|xpassed)',footer)}
+    last_line=log.rstrip().splitlines()[-1] if log.strip() else ''
+    terminal=re.fullmatch(r'=+ (.* in .*s) =+',last_line)
+    assert terminal, 'Missing terminal pytest completion'
+    footer=terminal[1]
+    records=[('errors' if label=='error' else label,int(n))
+             for n,label in re.findall(r'(\d+) (passed|failed|skipped|errors?|xfailed|xpassed)',footer)]
+    assert len(records)==len({label for label,_ in records}), 'Duplicate pytest outcome'
+    outcomes=dict(records)
     assert counts['passed']==outcomes.get('passed',0)+outcomes.get('xpassed',0), (counts,footer)
     assert counts['failures']==outcomes.get('failed',0)
     assert counts['errors']==outcomes.get('error',outcomes.get('errors',0))

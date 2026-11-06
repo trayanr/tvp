@@ -25,7 +25,7 @@ let
       mkTests = _: { };
     };
   package =
-    name: version: buildModules: runtimeModules: environmentValues:
+    name: version: buildModules: runtimeModules: options:
     make (import ./recipes/python/pep517.nix) {
       inherit
         lib
@@ -35,8 +35,8 @@ let
         version
         buildModules
         runtimeModules
-        environmentValues
         ;
+      environmentValues = options.environmentValues or { };
       tvp = {
         inherit builder;
       };
@@ -44,9 +44,7 @@ let
       gnutar = tools.tar;
       inherit (tools) gzip findutils;
       patch = tools.patch;
-      patches = lib.optional (
-        name == "check-jsonschema"
-      ) ./recipes/python/patches/check-jsonschema-draft-id.patch;
+      patches = options.patches or [ ];
       pname = "source-python-${name}";
       src = sources.${name};
     };
@@ -63,13 +61,13 @@ let
     "Cython" = package "Cython" "3.0.11" [
       packages.setuptools
       packages.wheel
-    ] [ ] { NO_CYTHON_COMPILE = "true"; };
+    ] [ ] { environmentValues.NO_CYTHON_COMPILE = "true"; };
     "typing_extensions" = package "typing_extensions" "4.12.2" [ packages."flit_core" ] [ ] { };
     "PyYAML" = package "PyYAML" "6.0.2" [
       packages.Cython
       packages."setuptools"
       packages."wheel"
-    ] [ ] { PYYAML_FORCE_LIBYAML = "0"; };
+    ] [ ] { environmentValues.PYYAML_FORCE_LIBYAML = "0"; };
     "arrow" = package "arrow" "1.3.0" [ packages."flit_core" ] [
       packages."python-dateutil"
       packages."types-python-dateutil"
@@ -90,7 +88,7 @@ let
     "charset-normalizer" = package "charset-normalizer" "3.3.2" [
       packages."setuptools"
       packages."wheel"
-    ] [ ] { CHARSET_NORMALIZER_USE_MYPYC = "0"; };
+    ] [ ] { environmentValues.CHARSET_NORMALIZER_USE_MYPYC = "0"; };
     "check-jsonschema" =
       package "check-jsonschema" "0.23.3"
         [
@@ -112,7 +110,9 @@ let
           packages."uri-template"
           packages."webcolors"
         ]
-        { };
+        {
+          patches = [ ./recipes/python/patches/check-jsonschema-draft-id.patch ];
+        };
     "click" = package "click" "8.1.7" [
       packages."setuptools"
       packages."wheel"
@@ -179,7 +179,7 @@ let
     "pyrsistent" = package "pyrsistent" "0.19.3" [
       packages."setuptools"
       packages."wheel"
-    ] [ ] { PYRSISTENT_SKIP_EXTENSION = "1"; };
+    ] [ ] { environmentValues.PYRSISTENT_SKIP_EXTENSION = "1"; };
     "pytest" =
       package "pytest" "8.3.2"
         [
