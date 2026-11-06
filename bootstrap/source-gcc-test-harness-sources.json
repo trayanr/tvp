@@ -1,0 +1,14 @@
+{
+  "dejagnu": {
+    "hash": "sha256-h9rvrNeVi0pp+IxoVtvRY0JhljxBQHnQw3H1ic1mouM=",
+    "url": "https://mirrors.kernel.org/gnu/dejagnu/dejagnu-1.6.3.tar.gz"
+  },
+  "expect": {
+    "hash": "sha256-Safag7C92fRtBKBN7sGcd2e7mjI+QMR4H4nK92C5LDQ=",
+    "url": "https://prdownloads.sourceforge.net/expect/expect5.45.4.tar.gz"
+  },
+  "tcl": {
+    "hash": "sha256-FPmvMrF2f/cYR3qPl0rQPDQ0EJfmtD9M5UZE7pdOJo4=",
+    "url": "https://prdownloads.sourceforge.net/tcl/tcl8.6.18-src.tar.gz"
+  }
+}
