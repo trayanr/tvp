@@ -1,0 +1,42 @@
+{
+  "graphviz": {
+    "url": "https://gitlab.com/graphviz/graphviz/-/archive/12.1.0/graphviz-12.1.0.tar.gz",
+    "hash": "sha256-SUbuyzT6xJml9sGT7FoICUz6JuALdASE2okXiJY3kjo="
+  },
+  "gd": {
+    "url": "https://github.com/libgd/libgd/archive/refs/tags/gd-2.3.3.tar.gz",
+    "hash": "sha256-JEKfnQ2+D4ZaqksaY1WCQjlrqRNObP0yyl5IaoRIM1A="
+  },
+  "png": {
+    "url": "https://downloads.sourceforge.net/libpng/libpng-1.6.43.tar.xz",
+    "hash": "sha256-alygZSOSotfJ2yrltAIQhDwLvAgcvUEIJasAzFnxSmw="
+  },
+  "freetype": {
+    "url": "https://download.savannah.gnu.org/releases/freetype/freetype-2.15.0.tar.xz",
+    "hash": "sha256-k81H63GcMlEH8tPPCH0GKZ6UTDtIpAtVU3MCME3qHdU="
+  },
+  "expat": {
+    "url": "https://github.com/libexpat/libexpat/releases/download/R_2_9_0/expat-2.9.0.tar.xz",
+    "hash": "sha256-HmNxhizDGZmzaMO4m0mZTwZ34bq18bK4WuN0H12AMFE="
+  },
+  "fontconfig": {
+    "url": "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.3/fontconfig-2.18.3.tar.xz",
+    "hash": "sha256-T3tVSjjN94wDP2ZsiHHzdJ4UoJT2Wgf2MMke0LQ9NeM="
+  },
+  "flex": {
+    "url": "https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz",
+    "hash": "sha256-6HquAyvwfCb4WsDtMlCZjDdiHZX4vXSLMfFbM8Re6ZU="
+  },
+  "gperf": {
+    "url": "https://mirrors.kernel.org/gnu/gperf/gperf-3.3.tar.gz",
+    "hash": "sha256-/Yfgq6fkOuBUg3r9bNTbA6PyaT3rNhkIXm7Z2NlgStg="
+  },
+  "ltdl": {
+    "url": "https://mirrors.kernel.org/gnu/libtool/libtool-2.4.7.tar.xz",
+    "hash": "sha256-T38hfwV85lX/IlWa0iGg/Y74StH8X8tpkM7MMzqhY10="
+  },
+  "fonts": {
+    "url": "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2",
+    "hash": "sha256-+pyk0Thx3RIvYSWKgNAXUdYDtNPuFAldZUU7ToRuF9c="
+  }
+}
