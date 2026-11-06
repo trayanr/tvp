@@ -174,7 +174,9 @@ let
             edited = q.edit (spec: spec // { coreutils = helper; });
             test = edited.tests.isolated-discovery;
           in
-          lib.hasInfix "${helper}/bin/env" (builtins.head test.buildSteps).run
+          lib.hasInfix (builtins.unsafeDiscardStringContext "${helper}/bin/env") (
+            builtins.unsafeDiscardStringContext (builtins.head test.buildSteps).run
+          )
           && test.specification.coreutils.drvPath == helper.drvPath
           && test.package.drvPath == edited.drvPath
         )

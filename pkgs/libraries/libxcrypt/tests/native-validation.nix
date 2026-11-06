@@ -90,8 +90,10 @@ in
             diff -u "$out/baseline.exports" "$out/candidate.exports"
             # Link once against 4.4.36, then use the new SONAME with its original
             # symbol-version requirements and header layout, without relinking.
-            "$CC" -fPIC -pie -I${baseline}/include ${./fixtures}/api.c -L${baseline}/lib \
+            env NIX_CFLAGS_COMPILE= NIX_CFLAGS_LINK= NIX_LDFLAGS= \
+              "$CC" -fPIC -pie -I${baseline}/include ${./fixtures}/api.c -L${baseline}/lib \
               -Wl,--enable-new-dtags,-rpath,${baseline}/lib -lcrypt -ldl -o old-consumer
+            ./old-consumer ${baseline}/lib/libcrypt.so.1 ${baseline.version}
             readelf --version-info old-consumer > "$out/consumer-versions.log"
             LD_LIBRARY_PATH=${package}/lib ./old-consumer ${package}/lib/libcrypt.so.1 ${package.version}
             LD_DEBUG=libs LD_LIBRARY_PATH=${package}/lib ./consumer 2> "$out/loader.log"
