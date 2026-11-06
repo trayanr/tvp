@@ -1,5 +1,6 @@
 # Pure native base data. Re-enter on replacement so no environment captures an
 # earlier compiler. Shell is a package and contributes to PATH before base tools.
+# referencePackages records definition ownership without adding execution inputs.
 { lib }:
 let
   make =
@@ -9,6 +10,7 @@ let
       compiler,
       shell,
       tools,
+      referencePackages ? [ ],
     }:
     let
       fail = message: throw "TVP owned base: ${message}";
@@ -81,6 +83,7 @@ let
           compiler
           shell
           tools
+          referencePackages
           ;
         runtimeDirectories = compiler.runtimeDirectories;
         environment = composeEnvironment;

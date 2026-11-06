@@ -1,6 +1,47 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
+  owned = {
+    constructor = tvp.builder;
+    builder = ./build-1.4.1.nix;
+    base = candidate.base;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.xz";
+        inherit sha256;
+      };
+    testContext =
+      package:
+      tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        inherit package;
+      };
+    helpers = {
+      inherit tvp;
+    };
+    deps = {
+      inherit (candidate.tools)
+        bash
+        coreutils
+        xz
+        python
+        binutils
+        patchelf
+        sed
+        grep
+        gawk
+        diffutils
+        findutils
+        ;
+      gnumake = candidate.tools.make;
+      gnutar = candidate.tools.tar;
+      gmp = tvp.packages.gmp_6;
+      mpfr = tvp.packages.mpfr_4;
+    };
+  };
   defs = tvpLib.packages.mkDefs {
     "1.0.3" = {
       builder = ./build-1.0.3.nix;
@@ -29,28 +70,32 @@ let
       };
       opts.archiveExt = "tar.xz";
     };
-    "1.4.1" = {
-      constructor = tvp.builder;
-      builder = ./build-1.4.1.nix;
-      base = tvp.bases.default;
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnumake
-          gnutar
-          xz
-          ;
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-        python = tvp.packages.python_3;
-        binutils = tvp.packages.binutils_2;
-        patchelf = tvp.packages.patchelf_0;
-      };
-    };
+    "1.4.1" =
+      if native then
+        owned
+      else
+        {
+          constructor = tvp.builder;
+          builder = ./build-steps-1.4.1.nix;
+          base = tvp.bases.default;
+          helpers = {
+            inherit tvp;
+          };
+          deps = {
+            inherit (tvp.packages)
+              bash
+              coreutils
+              gnumake
+              gnutar
+              xz
+              ;
+            gmp = tvp.packages.gmp_6;
+            mpfr = tvp.packages.mpfr_4;
+            python = tvp.packages.python_3;
+            binutils = tvp.packages.binutils_2;
+            patchelf = tvp.packages.patchelf_0;
+          };
+        };
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -97,10 +142,14 @@ let
       mpc:
       import ./tests {
         inherit tvpLib mpc;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = mpc.stdenv;
-        };
+        pkgs =
+          if mpc ? testContext then
+            pkgs
+          else
+            tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = mpc.stdenv;
+            };
       }
     ) { inherit pkgs; };
     packageMeta.upstream = {

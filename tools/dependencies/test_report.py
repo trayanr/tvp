@@ -20,6 +20,12 @@ def edge(consumer="ruby_3_0_1", *, kind="major", selector="openssl_1", version="
 
 
 class ReportingTests(unittest.TestCase):
+    def test_source_role_is_not_a_foreign_or_invented_catalogue_selection(self):
+        row = {"selection": None, "resolved": {"tvp": False, "origin": "source-bootstrap"}}
+        self.assertEqual(report.selector_kind(row), "unknown")
+        row["resolved"].pop("origin")
+        self.assertEqual(report.selector_kind(row), "foreign")
+
     def test_shared_definition_choices_and_resolved_releases_are_distinct_measures(self):
         rows = [edge("ruby_3_0_1"), edge("ruby_3_0_2"), edge("ruby_3_0_3")]
         rows.append(edge("ruby_3_1_0", kind="minor", selector="openssl_1_1"))
@@ -117,6 +123,19 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(result["byKind"]["foreign"], 1)
         self.assertEqual(result["byKind"]["unknown"], 1)
         self.assertEqual(result["derivationRoles"] + result["derivedStringRoles"] + result["nonDerivationHelpers"], 3)
+
+    def test_owned_runtime_directories_are_values_not_derivation_roles(self):
+        package = {"role": "owned-test-input", "resolved": {"drv": "compiler.drv"}}
+        directory = {"role": "owned-test-input", "roles": ["runtime-directory"],
+                     "resolved": {"drv": None, "out": "/nix/store/compiler/lib", "type": "string",
+                                  "context": {"compiler.drv": {"outputs": ["out"]}}}}
+        legacy_value = {"role": "test-input-value", "resolved": {"drv": None, "type": "string"}}
+        result = report.summarize({"schema": 1, "edges": [],
+                                   "support": [package, directory, legacy_value]})["support"]
+        self.assertEqual(result["derivationRoles"], 1)
+        self.assertEqual(result["nonDerivationTestInputs"], 2)
+        self.assertEqual(result["resolvedProducers"], 1)
+        self.assertEqual(result["derivationRoles"] + result["nonDerivationTestInputs"], result["expandedRoles"])
 
     def test_scope_reclassification_is_not_a_resolved_release_change(self):
         original = edge()

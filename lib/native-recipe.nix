@@ -13,6 +13,7 @@
   mkTests,
   infrastructure ? { },
   passthru ? { },
+  testContext ? null,
 }:
 let
   steps = import ./build-steps.nix;
@@ -105,6 +106,9 @@ let
             );
           specification = specification;
           buildSteps = plan;
+        }
+        // lib.optionalAttrs (testContext != null) {
+          testContext = testContext result;
         }
         // lib.optionalAttrs (owned || specification ? passthru) {
           passthru =

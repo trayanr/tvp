@@ -80,6 +80,7 @@ let
       ;
     gnumake = p.tvp.deps.gnumake;
     patchelf = p.tvp.deps.patchelf;
+    grep = p.tvp.deps.grep;
     environment = base.stdenv;
     compiler = base.stdenv.cc;
   };
@@ -95,10 +96,15 @@ let
         && r.resolved.out == supportInputs.${r.dependency}.outPath
       ) supportRows;
     split = (steps.partition p.buildSteps).split;
-    source = p.src.drvPath == legacy.src.drvPath;
+    sourceArchiveHash = p.src.outputHash == legacy.src.outputHash;
+    sourceProducer = p.src.drvPath != legacy.src.drvPath;
     legacy = legacy ? overrideAttrs && !(legacy ? edit) && tvp.canonical.mpc_1_4_0 ? overrideAttrs;
     oldConstraint = tvp.canonical.mpc_1_0_3.tvp.deps.mpfr.version == "3.1.6";
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
+    runtimeReplacement =
+      (p.editRuntime (_: {
+        inherit (p.runtime) libraries;
+      })).drvPath == p.drvPath;
     compileInputs =
       p.specification.environment.libraries == runtime.specification.environment.libraries;
     publicRequirements =
@@ -304,10 +310,11 @@ let
     steps.insertBefore "mpc.finalize" [
       {
         name = "fixture.selected-tools";
+        tools = [ p.tvp.deps.grep ];
         run = ''
           grep -E -- '^-j[0-9]+ check$' "$NIX_BUILD_TOP/selected-make"
           grep -E -- '^-j[0-9]+ install$' "$NIX_BUILD_TOP/selected-make"
-          grep -F '${base.stdenv.cc}/bin/cc' source/config.log
+          grep -F '${p.compiler}/bin/cc' source/config.log
           printf '%s\n' compiler make-build make-check make-install > "$out/selected-tools"
         '';
       }

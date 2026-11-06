@@ -20,6 +20,14 @@ let
   runtime = p.editRuntime (_: {
     libraries = [ gmp ];
   });
+  dlopenDirectory = "/tvp-runtime-directory-fixture";
+  runtimeDirectories = p.editRuntime (r: r // { dlopenDirectories = [ dlopenDirectory ]; });
+  referenceRebound = p.override { base = p.specification.base.override { }; };
+  reboundRegistry = tvp.lib.provenance.registry {
+    canonical.fixture = referenceRebound;
+    variants = { };
+    bases = { };
+  };
   variants = api.mkVariants (
     family
     // {
@@ -116,12 +124,93 @@ let
       && (edit constrained.out).__tvpSelection.selector == selector
       && (edit (builtins.head constrained.all)).__tvpSelection.reason == "Catalogue constraint fixture."
     ) edits;
+  candidate = import ../../bases/source-gnu { };
+  sentinel = (import ../../bases/source-gnu/tests/probes.nix { }).sentinel;
+  contextChanged =
+    (p.override {
+      bash = tvp.packages.bash;
+      coreutils = tvp.bases.default.components.floor.coreutils;
+    }).edit
+      (spec: spec // { base = candidate.base.override { compiler = sentinel; }; });
+  contextBatch = contextChanged.testContext.mkBatch {
+    name = "context-rebound";
+    suite = contextChanged.tests;
+  };
+  splitTest = p.tests.arithmetic.editSteps (
+    plan:
+    plan
+    ++ [
+      (steps.split "fixture.inventory")
+      {
+        name = "fixture.second";
+        tools = [ candidate.tools.pkgConfig ];
+        run = ":";
+      }
+    ]
+  );
+  splitInventory = import ../dependencies.nix {
+    inherit pkgs;
+    canonical.fixture = p // {
+      tests.arithmetic = splitTest;
+    };
+    variants = { };
+    construction.variants = { };
+  };
   contracts = {
+    referenceRebinding =
+      referenceRebound.drvPath == p.drvPath
+      && referenceRebound.specification.base.referencePackages == p.specification.base.referencePackages
+      &&
+        contextChanged.tests.arithmetic.specification.base.referencePackages
+        == p.specification.base.referencePackages
+      &&
+        map (row: row.path) (lib.filter (row: row.kind == "definition-reference") reboundRegistry)
+        == map (
+          package: builtins.unsafeDiscardStringContext (toString package)
+        ) p.specification.base.referencePackages;
+    sourceReferenceRegistration =
+      lib.all
+        (
+          target:
+          lib.any (
+            row: row.kind == "definition-reference" && row.path == toString target
+          ) tvp.dependencyRoots.outputRegistrations
+        )
+        [
+          candidate.toolchain.compiler
+          candidate.toolchain.libc
+        ];
+    splitTestInventory = lib.any (
+      row:
+      row.dependencyScope or "" == "test-support"
+      && row.resolved.drv == candidate.tools.pkgConfig.drvPath
+      && lib.elem "step-tool" row.roles
+    ) splitInventory.support;
+    currentContext =
+      contextChanged.tests.arithmetic.specification.base.compiler.drvPath == sentinel.drvPath
+      && contextChanged.tests.arithmetic.specification.bash.drvPath == tvp.packages.bash.drvPath
+      &&
+        contextChanged.tests.arithmetic.specification.coreutils.drvPath
+        == tvp.bases.default.components.floor.coreutils.drvPath
+      && contextChanged.tests.arithmetic.package.drvPath == contextChanged.drvPath
+      && contextChanged.tests.arithmetic.tvp.cc.drvPath == sentinel.drvPath
+      && contextBatch.specification.base.compiler.drvPath == sentinel.drvPath
+      && contextBatch.testSuite.arithmetic.drvPath == contextChanged.tests.arithmetic.drvPath
+      && !(p.tvp ? testContext)
+      && !(p.tests ? testContext);
+    variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.bases.default.name;
+
     canonicalOwned = p.tvp.builder == "build-4.2.2.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
-    samePilot = p.drvPath == tvp.variants.build-steps.mpfr_4_2_2.drvPath;
-    sameArtifact = p.artifact.drvPath == tvp.variants.build-steps.mpfr_4_2_2.artifact.drvPath;
-    sameSource = p.src.drvPath == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
+    distinctPilot =
+      p.drvPath != tvp.variants.build-steps.mpfr_4_2_2.drvPath
+      && p.tvp.base == "source-gnu-candidate"
+      && tvp.variants.build-steps.mpfr_4_2_2.tvp.base == tvp.bases.default.name;
+    distinctArtifact = p.artifact.drvPath != tvp.variants.build-steps.mpfr_4_2_2.artifact.drvPath;
+    archiveHash =
+      p.src.outputHash == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.outputHash;
+    distinctSourceProducer =
+      p.src.drvPath != (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
     legacyPreserved = !(tvp.canonical.mpfr_4_2_1 ? edit) && tvp.canonical.mpfr_4_2_1 ? overrideAttrs;
     exactEdits = tagged "mpfr_4_2_2" p;
     publicExactEdits = tagged "mpfr_4_2_2" tvp.packages.mpfr_4_2_2;
@@ -141,7 +230,8 @@ let
       && lib.count (s: s.name == "fixture.log") changed.buildSteps == 1;
     testsRebound =
       changed.tests.version.drvPath != p.tests.version.drvPath
-      && lib.any (v: v.outPath == changed.outPath) changed.tests.version.nativeBuildInputs;
+      && changed.tests.version.package.outPath == changed.outPath
+      && changed.tests.version.compiler.drvPath == changed.compiler.drvPath;
     passthru =
       changed.tests.version.drvPath == changed.passthru.tests.version.drvPath
       && changed.tvp.deps.gmp.drvPath == changed.passthru.tvp.deps.gmp.drvPath;
@@ -163,6 +253,13 @@ let
       changed.out.tvp.customization == changed.tvp.customization
       && (builtins.head changed.all).tests.version.drvPath == changed.tests.version.drvPath;
     runtimeArtifact = runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
+    runtimeDirectories =
+      runtimeDirectories.artifact.drvPath == p.artifact.drvPath
+      && runtimeDirectories.drvPath != p.drvPath
+      &&
+        lib.hasInfix dlopenDirectory
+          (lib.findFirst (step: step.name == "output.rpaths") null runtimeDirectories.buildSteps).run
+      && runtimeDirectories.drvPath == (p.override { dlopenDirectories = [ dlopenDirectory ]; }).drvPath;
     metadataOnly = (p.edit (s: s // { meta.description = "fixture"; })).drvPath == p.drvPath;
     unknownArgument = rejects (p.override { unknownArgument = true; }).drvPath;
     noOp = (p.override { }).drvPath == p.drvPath;
@@ -213,11 +310,16 @@ let
         "bash"
         "binutils"
         "coreutils"
+        "diffutils"
+        "findutils"
+        "gawk"
         "gmp"
         "gnumake"
         "gnutar"
+        "grep"
         "patchelf"
         "python"
+        "sed"
         "xz"
       ];
     helperNotDependency = !(p.tvp.declaredDependencies ? tvp) && !(p.tvp.declaredInfrastructure ? tvp);

@@ -39,6 +39,23 @@ rec {
             blob = p.tvp.blob or null;
           }) p.outputs
         ) (lib.attrNames (buildable packages));
+      referenceRows =
+        packages:
+        lib.concatMap (
+          name:
+          let
+            p = packages.${name};
+          in
+          lib.imap0 (i: reference: {
+            name = "reference:${name}:${toString i}";
+            kind = "definition-reference";
+            output = reference.outputName or "out";
+            path = builtins.unsafeDiscardStringContext (toString reference);
+            source = "source";
+            base = p.tvp.base or null;
+            blob = null;
+          }) (p.specification.base.referencePackages or [ ])
+        ) (lib.attrNames (buildable packages));
       registeredBases =
         bases
         // lib.mapAttrs' (name: b: lib.nameValuePair "bootstrap.${name}" b) construction.bases;
@@ -59,9 +76,10 @@ rec {
       ) (lib.attrNames (lib.filterAttrs (_: b: b ? ownership) registeredBases));
     in
     packageRows "canonical" canonical
+    ++ referenceRows canonical
     ++ lib.concatMap (
       profile:
-      packageRows "variant" (
+      (entries: packageRows "variant" entries ++ referenceRows entries) (
         lib.mapAttrs' (name: p: lib.nameValuePair "${profile}/${name}" p) variants.${profile}
       )
     ) (lib.attrNames variants)

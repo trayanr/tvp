@@ -55,3 +55,18 @@ owned outputs with no `stdenv` compatibility interface.
 strict failure behavior with the opt-in source GNU base. Its negative derivations
 are separate from the passing suite. The attached `owned-tests` check runs their
 actual runners in subprocesses, without nested Nix builds.
+
+Ordinary catalogue definitions opt in with a context factory outside `tvp` metadata:
+
+```nix
+testContext = package:
+  tvp.lib.tests.fromPackage { builder = tvp.builder; inherit package; };
+```
+
+The regular factory uses `package.testContext.mkSuite`, with `libraries = [ package ];`
+and scripts invoking `"$CC"` or `"$CXX"`. The normal catalogue builds its batch with
+that same context. `override`, `edit` and `editSteps` reconstruct the context from
+the current specification's base, Bash and Coreutils. A base or shell replacement
+must provide a compatible native tool interface. Public development libraries expand
+transitively. Context functions remain outside serializable package metadata and
+named test leaves. The final all-batch and plan writer still use legacy infrastructure.

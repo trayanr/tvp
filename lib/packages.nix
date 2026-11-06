@@ -241,6 +241,7 @@ rec {
       # A family resolves sources; recipes receive the selected source directly.
       source ? null,
       variant ? null,
+      rebindTests ? null,
     }:
     lib.mapAttrs' (
       version: rawEntry:
@@ -258,6 +259,18 @@ rec {
         inherit (recipe) base;
 
         builder = import recipe.builder;
+        currentExtraArgs =
+          extraArgs
+          // lib.optionalAttrs
+            (
+              rebindTests != null
+              && !(recipe ? testContext)
+              && extraArgs ? mkTests
+              && extraArgs.mkTests ? override
+            )
+            {
+              mkTests = rebindTests extraArgs.mkTests;
+            };
 
         pkg = lib.makeOverridable builder (
           builtins.intersectAttrs (builtins.functionArgs builder) infra
@@ -277,7 +290,7 @@ rec {
           // checkDeps attr recipe.deps
           // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
           // (recipe.opts or { })
-          // extraArgs
+          // currentExtraArgs
         );
         selection = {
           namespace = if variant == null then "canonical" else "variants.${variant}";
@@ -295,10 +308,10 @@ rec {
             // {
               inherit base version;
               src =
-                if source == null then
+                if (recipe.source or source) == null then
                   throw "TVP: owned definition ${attr} requires a family source factory."
                 else
-                  source {
+                  (recipe.source or source) {
                     inherit version;
                     inherit (entry) sha256;
                   };
@@ -306,10 +319,11 @@ rec {
             // checkDeps attr recipe.deps
             // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
             // (recipe.opts or { })
-            // removeAttrs extraArgs [ "mkTests" ];
+            // removeAttrs currentExtraArgs [ "mkTests" ];
           dependencyNames = recipe.dependencyNames or (lib.attrNames (checkDeps attr recipe.deps));
           infrastructure = infra;
           inherit selection;
+          testContext = recipe.testContext or null;
           metadata =
             packageMeta
             // {
@@ -330,9 +344,10 @@ rec {
             }
             // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
           mkTests =
-            package: removeAttrs ((extraArgs.mkTests or (_: { })) package) (status.knownTestFailures or [ ]);
-          passthru = lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
-            inherit (extraArgs) mkTests;
+            package:
+            removeAttrs ((currentExtraArgs.mkTests or (_: { })) package) (status.knownTestFailures or [ ]);
+          passthru = lib.optionalAttrs (currentExtraArgs ? mkTests && currentExtraArgs.mkTests ? override) {
+            inherit (currentExtraArgs) mkTests;
           };
         };
       in
@@ -388,10 +403,10 @@ rec {
                     # the test would hide the defect from every other version.
                     tests = removeAttrs (old.passthru.tests or { }) (status.knownTestFailures or [ ]);
                   }
-                  // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
+                  // lib.optionalAttrs (currentExtraArgs ? mkTests && currentExtraArgs.mkTests ? override) {
                     # Packages opt into rebinding their test environment locally. Keep
                     # the factory outside tvp metadata, which catalogue tools serialize.
-                    inherit (extraArgs) mkTests;
+                    inherit (currentExtraArgs) mkTests;
                   };
               })
             )
@@ -459,14 +474,13 @@ rec {
                 }
             ) profile.versions;
             variant = profileName;
-            extraArgs =
-              extraArgs
-              // lib.optionalAttrs (extraArgs ? mkTests && extraArgs.mkTests ? override) {
-                mkTests = extraArgs.mkTests.override {
-                  pkgs = tests.withBase {
-                    inherit pkgs;
-                    base = profile.base;
-                  };
+            inherit extraArgs;
+            rebindTests =
+              factory:
+              factory.override {
+                pkgs = tests.withBase {
+                  inherit pkgs;
+                  base = profile.base;
                 };
               };
           }

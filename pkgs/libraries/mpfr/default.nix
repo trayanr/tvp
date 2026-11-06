@@ -1,6 +1,46 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
+  owned = {
+    constructor = tvp.builder;
+    builder = ./build-4.2.2.nix;
+    base = candidate.base;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+        inherit sha256;
+      };
+    testContext =
+      package:
+      tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        inherit package;
+      };
+    helpers = {
+      inherit tvp;
+    };
+    deps = {
+      inherit (candidate.tools)
+        bash
+        coreutils
+        xz
+        python
+        binutils
+        patchelf
+        sed
+        grep
+        gawk
+        diffutils
+        findutils
+        ;
+      gnumake = candidate.tools.make;
+      gnutar = candidate.tools.tar;
+      gmp = tvp.packages.gmp_6;
+    };
+  };
   defs = tvpLib.packages.mkDefs {
     "2.4.2" = {
       builder = ./build-2.4.2.nix;
@@ -48,27 +88,31 @@ let
       deps.gmp = tvp.packages.gmp_6;
     };
 
-    "4.2.2" = {
-      constructor = tvp.builder;
-      builder = ./build-4.2.2.nix;
-      base = tvp.bases.default;
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnumake
-          gnutar
-          xz
-          ;
-        gmp = tvp.packages.gmp_6;
-        python = tvp.packages.python_3;
-        binutils = tvp.packages.binutils_2;
-        patchelf = tvp.packages.patchelf_0;
-      };
-    };
+    "4.2.2" =
+      if native then
+        owned
+      else
+        {
+          constructor = tvp.builder;
+          builder = ./build-steps-4.2.2.nix;
+          base = tvp.bases.default;
+          helpers = {
+            inherit tvp;
+          };
+          deps = {
+            inherit (tvp.packages)
+              bash
+              coreutils
+              gnumake
+              gnutar
+              xz
+              ;
+            gmp = tvp.packages.gmp_6;
+            python = tvp.packages.python_3;
+            binutils = tvp.packages.binutils_2;
+            patchelf = tvp.packages.patchelf_0;
+          };
+        };
   };
   versionTable = tvpLib.packages.mkTable [
     {
@@ -126,10 +170,14 @@ let
       mpfr:
       import ./tests {
         inherit tvpLib mpfr;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = mpfr.stdenv;
-        };
+        pkgs =
+          if mpfr ? testContext then
+            pkgs
+          else
+            tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = mpfr.stdenv;
+            };
       }
     ) { inherit pkgs; };
     packageMeta.upstream = {
@@ -167,7 +215,7 @@ in
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
     mpfr_4_2_2 = tvp.builder {
-      recipe = import ./build-4.2.2.nix;
+      recipe = import ./build-steps-4.2.2.nix;
       args =
         {
           inherit tvp;
