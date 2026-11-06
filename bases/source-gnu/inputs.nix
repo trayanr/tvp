@@ -62,7 +62,7 @@ in
     bootstrap.gnu-tool-floor.gnu-acl
     bootstrap.gnu-tool-floor.gnu-coreutils
     bootstrap.gnu-binutils
-    bootstrap.musl
+    bootstrap.musl-tcc
     bootstrap.gnused
   ];
   toolchain = {
