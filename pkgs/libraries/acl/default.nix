@@ -1,6 +1,8 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
   defs = tvpLib.packages.mkDefs {
     "2.3.0" = {
       builder = ./build-2.3.0.nix;
@@ -78,7 +80,7 @@ let
     seed
       "Completed default-base ${name} is a build-only seed; the canonical Coreutils/Tar graph consumes Attr/ACL and would recurse through these libraries."
       completed.components.floor.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
+  legacyDefs = tvpLib.packages.mkDefs {
     "2.4.0" = {
       constructor = tvp.builder;
       builder = ./owned/build-2.4.0.nix;
@@ -100,9 +102,51 @@ let
       };
     };
   };
+  ownedDefs = tvpLib.packages.mkDefs {
+    "2.4.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-2.4.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://download.savannah.nongnu.org/releases/acl/acl-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          perl
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        attr = tvp.packages.attr_2;
+      };
+    };
+  };
   publicVersionTable = versionTable // {
     "2.4.0" = versionTable."2.4.0" // {
-      def = ownedDefs."2.4.0";
+      def = if native then ownedDefs."2.4.0" else legacyDefs."2.4.0";
     };
   };
   publicArgs = packageArgs // {
@@ -119,10 +163,14 @@ let
       // pkgs.lib.optionalAttrs (package.version == "2.4.0") (
         import ./tests/owned.nix {
           inherit tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
+          pkgs =
+            if package ? testContext then
+              pkgs
+            else
+              tvpLib.tests.withBase {
+                inherit pkgs;
+                base.stdenv = package.stdenv;
+              };
         }
       );
   };

@@ -1,6 +1,8 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
 
   defs = tvpLib.packages.mkDefs {
     "1.1.3" = {
@@ -165,7 +167,7 @@ let
       category = "construction";
       inherit reason;
     };
-  ownedDefs = tvpLib.packages.mkDefs {
+  legacyDefs = tvpLib.packages.mkDefs {
     "1.3.2" = {
       constructor = tvp.builder;
       builder = ./owned/build-1.3.2.nix;
@@ -185,10 +187,50 @@ let
       };
     };
   };
+  ownedDefs = tvpLib.packages.mkDefs {
+    "1.3.2" = {
+      constructor = tvp.builder;
+      builder = ./native/build-1.3.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
       "1.3.2" = versionTable."1.3.2" // {
-        def = ownedDefs."1.3.2";
+        def = if native then ownedDefs."1.3.2" else legacyDefs."1.3.2";
       };
     };
     source =
@@ -204,10 +246,14 @@ let
       // pkgs.lib.optionalAttrs (package.version == "1.3.2") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
+          pkgs =
+            if package ? testContext then
+              pkgs
+            else
+              tvpLib.tests.withBase {
+                inherit pkgs;
+                base.stdenv = package.stdenv;
+              };
           inherit (package.tvp.declaredTestDependencies) pkg-config;
         }
       )

@@ -1,6 +1,8 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  candidate = import ../../../bases/source-gnu { };
   defs = tvpLib.packages.mkDefs {
     "4.4.36" = {
       builder = ./build-4.4.36.nix;
@@ -73,7 +75,7 @@ let
       category = "construction";
       inherit reason;
     };
-  owned =
+  legacy =
     (tvpLib.packages.mkDefs {
       "4.5.2" = {
         constructor = tvp.builder;
@@ -97,10 +99,52 @@ let
       };
     })."4.5.2";
   constructionRecipe = packageArgs;
+  ownedDefs = tvpLib.packages.mkDefs {
+    "4.5.2" = {
+      constructor = tvp.builder;
+      builder = ./native/build-4.5.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/besser82/libxcrypt/releases/download/v${version}/libxcrypt-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          perl
+          xz
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
       "4.5.2" = versionTable."4.5.2" // {
-        def = owned;
+        def = if native then ownedDefs."4.5.2" else legacy;
       };
     };
     source =
@@ -115,10 +159,14 @@ let
       // pkgs.lib.optionalAttrs (package.version == "4.5.2") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
+          pkgs =
+            if package ? testContext then
+              pkgs
+            else
+              tvpLib.tests.withBase {
+                inherit pkgs;
+                base.stdenv = package.stdenv;
+              };
         }
       );
   };
