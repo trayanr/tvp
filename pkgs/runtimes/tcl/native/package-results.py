@@ -1,5 +1,5 @@
 """Bounded receipts for the full 8.6.18 bundle, including external-client limits."""
-import ctypes
+import subprocess
 import json
 from pathlib import Path
 import re
@@ -14,7 +14,7 @@ def strings(text, name):
 
 
 if sys.argv[1] == 'preflight':
-    source, output = map(Path, sys.argv[2:])
+    source, output, probe = map(Path, sys.argv[2:])
     result = {}
     for package, stem, prefix in [
         ('tdbcmysql1.1.13', 'mysql', 'lib'),
@@ -27,14 +27,11 @@ if sys.argv[1] == 'preflight':
         candidates = [prefix + name + '.so' + suffix for name in names for suffix in suffixes]
         found = []
         for name in candidates:
-            try:
-                ctypes.CDLL(name)
-            except OSError as error:
-                # A found but broken library is a failure, not a missing capability.
-                if str(error) != f'{name}: cannot open shared object file: No such file or directory':
-                    raise
-            else:
+            attempt = subprocess.run([str(probe), name], capture_output=True, text=True)
+            if attempt.returncode == 0:
                 found.append(name)
+            elif attempt.returncode != 77:
+                raise RuntimeError(f'{name}: preflight failed {attempt.returncode}: {attempt.stderr}')
         result[package] = {'status': 0 if found else 77, 'candidates': candidates, 'available': found}
     output.write_text(json.dumps(result, indent=2) + '\n')
 else:

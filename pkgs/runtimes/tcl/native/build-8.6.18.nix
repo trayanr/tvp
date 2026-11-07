@@ -116,11 +116,12 @@ in
     )
     (
       (command "check-packages" ''
-          export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
-          export LD_LIBRARY_PATH="$PWD"
-          ${python}/bin/python3 -B ${./package-results.py} preflight "$PWD/.." client-preflight.json
-        ${coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
-          ${python}/bin/python3 -B ${./package-results.py} classify package-tests.log client-preflight.json package-results.json
+            export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
+            export LD_LIBRARY_PATH="$PWD"
+            "$CC" ${./client-probe.c} -ldl -o client-probe
+        ${python}/bin/python3 -B ${./package-results.py} preflight "$PWD/.." client-preflight.json "$PWD/client-probe"
+          ${coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
+            ${python}/bin/python3 -B ${./package-results.py} classify package-tests.log client-preflight.json package-results.json
       '')
       // {
         enabled = doCheck;
