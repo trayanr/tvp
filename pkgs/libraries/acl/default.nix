@@ -103,6 +103,46 @@ let
     };
   };
   ownedDefs = tvpLib.packages.mkDefs {
+    "2.3.2" = {
+      constructor = tvp.builder;
+      builder = ./native/build-2.3.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://download.savannah.nongnu.org/releases/acl/acl-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          perl
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        attr = tvp.packages.attr_2;
+      };
+    };
     "2.4.0" = {
       constructor = tvp.builder;
       builder = ./native/build-2.4.0.nix;
@@ -145,6 +185,9 @@ let
     };
   };
   publicVersionTable = versionTable // {
+    "2.3.2" = versionTable."2.3.2" // {
+      def = if native then ownedDefs."2.3.2" else defs."2.3.2";
+    };
     "2.4.0" = versionTable."2.4.0" // {
       def = if native then ownedDefs."2.4.0" else legacyDefs."2.4.0";
     };
@@ -160,7 +203,7 @@ let
     extraArgs.mkTests =
       package:
       packageArgs.extraArgs.mkTests package
-      // pkgs.lib.optionalAttrs (package.version == "2.4.0") (
+      // pkgs.lib.optionalAttrs (package.version == "2.4.0" || package ? testContext) (
         import ./tests/owned.nix {
           inherit tvpLib package;
           pkgs =

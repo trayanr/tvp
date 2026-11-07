@@ -61,7 +61,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   gnutar = tvpLib.packages.mkVariants (
-    recipes.gnutar
+    recipes.gnutar.constructionRecipe
     // {
       # Preserve the exact historical helper selections in this frozen suite.
       extraArgs.mkTests =
@@ -136,7 +136,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   findutils = tvpLib.packages.mkVariants (
-    recipes.findutils
+    recipes.findutils.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -259,7 +259,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   gnused = tvpLib.packages.mkVariants (
-    recipes.gnused
+    recipes.gnused.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -290,7 +290,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   diffutils = tvpLib.packages.mkVariants (
-    recipes.diffutils
+    recipes.diffutils.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -304,7 +304,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   coreutils = tvpLib.packages.mkVariants (
-    recipes.coreutils
+    recipes.coreutils.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

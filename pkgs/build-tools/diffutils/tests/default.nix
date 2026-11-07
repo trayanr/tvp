@@ -3,6 +3,9 @@
   tvpLib,
   package,
 }:
+if package ? testContext then
+  import ./native-default.nix { inherit pkgs tvpLib package; }
+else
 tvpLib.tests.mkSuite {
   inherit pkgs package;
   tests = {

@@ -41,11 +41,60 @@ let
         if archive == null then null else builtins.head archive;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  # Complete capture, including the old table and test/source factories.
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool = name: tvpLib.packages.withConstraint {
+    category = "construction";
+    reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
+  } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "3.12" = {
+      constructor = tvp.builder;
+      builder = ./native/build-3.12.nix;
+      base = candidate.base;
+      source = { version, sha256 }: import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/diffutils/diffutils-${version}.tar.xz";
+        inherit sha256;
+      };
+      testContext = package: tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; };
+      helpers = { inherit tvp; };
+      deps = {
+        bash = constructionTool "bash";
+        buildCoreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        coreutils = tvp.packages.coreutils;
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
+      builder = tvp.builder;
+      base = candidate.base;
+      inherit (candidate.tools) bash coreutils tar xz;
+      libc = candidate.toolchain.libc;
+    };
+    versionTable = versionTable // {
+      "3.12" = versionTable."3.12" // { def = if native then ownedDefs."3.12" else versionTable."3.12".def; };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // { inherit constructionRecipe; };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }
