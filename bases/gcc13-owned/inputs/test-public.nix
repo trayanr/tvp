@@ -53,6 +53,7 @@ let
         "gnugrep"
         "gawk"
         "perl"
+        "texinfo"
         "openssl"
         "libffi"
         "gdbm"

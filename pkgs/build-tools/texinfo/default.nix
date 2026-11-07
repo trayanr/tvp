@@ -48,11 +48,25 @@ let
       }
     ) { inherit pkgs; };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  # Preserve the complete old factory for frozen construction graphs. Ordinary
+  # XS uses the compiler published by the selected owned Perl's Config.
+  constructionRecipe = packageArgs;
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "7.1" = versionTable."7.1" // {
+        def = versionTable."7.1".def // {
+          builder = if tvp.packages.perl_5 ? testContext then ./build-7.1-owned-perl.nix else ./build-7.1.nix;
+        };
+      };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

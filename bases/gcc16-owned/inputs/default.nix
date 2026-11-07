@@ -162,7 +162,7 @@ tvpLib.packages.mergeVariants {
   perl = select recipes.perl.constructionRecipe {
     "5.44.0" = { };
   };
-  texinfo = select recipes.texinfo {
+  texinfo = select recipes.texinfo.constructionRecipe {
     "7.1" = {
       deps = {
         perl = inputs.perl_5_44_0;
