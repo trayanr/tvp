@@ -55,6 +55,7 @@ in
       gawk
       diffutils
       findutils
+      python
     ];
     libraries = [
       zlib
@@ -115,10 +116,11 @@ in
     )
     (
       (command "check-packages" ''
-        export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
-        export LD_LIBRARY_PATH="$PWD"
+          export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
+          export LD_LIBRARY_PATH="$PWD"
+          ${python}/bin/python3 -B ${./package-results.py} preflight "$PWD/.." client-preflight.json
         ${coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
-        if grep -E 'Failed[[:space:]]+[1-9][0-9]*' package-tests.log; then exit 1; fi
+          ${python}/bin/python3 -B ${./package-results.py} classify package-tests.log client-preflight.json package-results.json
       '')
       // {
         enabled = doCheck;
@@ -126,7 +128,9 @@ in
     )
     (command "install" ''
       export LD_LIBRARY_PATH="$PWD"
-      ${make} install TCLSH_NATIVE="$PWD/tclsh"
+      ${make} install install-private-headers TCLSH_NATIVE="$PWD/tclsh"
+      mkdir -p "$out/nix-support"
+      if test -f package-results.json; then cp package-results.json "$out/nix-support/bundled-upstream.json"; fi
       ln -s tclsh8.6 "$out/bin/tclsh"
       chmod -R u+w "$out"
     '')

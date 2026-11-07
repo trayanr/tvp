@@ -41,6 +41,14 @@ package.testContext.mkSuite {
           if {[db onecolumn {select sum(n) from t}] != 42} {error sqlite-query}
           db backup fixture.db
           db close
+          if {[package require tdbc::sqlite3] ne "1.1.13"} {error tdbc-sqlite-version}
+          tdbc::sqlite3::connection create conn :memory:
+          set statement [conn prepare {select 40+2 as answer}]
+          set result [$statement execute]
+          if {![$result nextdict row] || [dict get $row answer] != 42} {error tdbc-sqlite-query}
+          $result close
+          $statement close
+          conn close
           if {[package require Itcl] ne "4.3.7"} {error itcl-version}
           itcl::class Counter { public variable n 40; method add {} {incr n 2} }
           Counter c
@@ -65,6 +73,7 @@ package.testContext.mkSuite {
       script = ''
         . ${package}/lib/tclConfig.sh
         test -f ${package}/lib/libtclstub8.6.a
+        test -f ${package}/include/tclInt.h
         cat > answer.c <<'C'
         #define USE_TCL_STUBS
         #include <tcl.h>
