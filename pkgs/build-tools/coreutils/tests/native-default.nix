@@ -7,6 +7,24 @@ package.testContext.mkSuite {
   inherit package;
   tools = package.specification.environment.tools ++ [ package.tvp.declaredDependencies.binutils ];
   tests = {
+    stdbuf = {
+      tools = package.specification.environment.tools ++ [ package.tvp.cc ];
+      script = ''
+        cat > buffering.c <<'C'
+        #include <stdio.h>
+        #include <stdlib.h>
+        int main(void) { fputs("buffered", stdout); _Exit(0); }
+        C
+        "$CC" buffering.c -o buffering
+        ./buffering > without
+        test ! -s without
+        LD_DEBUG=libs ${package}/bin/stdbuf -o0 ./buffering > with 2> loader
+        test "$(cat with)" = buffered
+        grep -F 'calling init: ${package}/libexec/coreutils/libstdbuf.so' loader >&2
+        echo installed-stdbuf-helper
+      '';
+      expected = "installed-stdbuf-helper";
+    };
     version = {
       script = ''
         ${package}/bin/sort --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'

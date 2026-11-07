@@ -8,6 +8,12 @@ package.testContext.mkSuite {
   inherit package;
   tools = package.specification.environment.tools;
   tests = {
+    remote-helper = {
+      script = ''
+        ${package}/libexec/rmt --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
+      '';
+      expected = package.version;
+    };
     version = {
       script = ''
         ${package}/bin/tar --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'

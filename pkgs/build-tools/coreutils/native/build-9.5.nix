@@ -141,7 +141,10 @@ in
     }
     (outputs.strip {
       inherit python binutils;
-      paths = [ "bin" ];
+      paths = [
+        "bin"
+        "libexec"
+      ];
       elfKinds = [ "runtime" ];
     })
     (outputs.rpaths {
@@ -149,12 +152,18 @@ in
       base = final.base;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [ "bin" ];
+      paths = [
+        "bin"
+        "libexec"
+      ];
       elfKinds = [ "runtime" ];
     })
     (outputs.checkPaths {
       inherit python binutils patchelf;
-      paths = [ "bin" ];
+      paths = [
+        "bin"
+        "libexec"
+      ];
       elfKinds = [ "runtime" ];
     })
   ];
