@@ -141,7 +141,7 @@ package.testContext.mkSuite {
       };
     }
 
-    // pkgs.lib.optionalAttrs ((perl.passthru.tvp.deps or { }) ? coreutils) {
+    // pkgs.lib.optionalAttrs (features.externalPwdFallback or false) {
       # These releases embed an external pwd in installed Cwd.pm for miniperl
       # and the non-XS fallback. Invoke it directly: the normal XS getcwd path
       # alone cannot detect a missing runtime executable in the sandbox.
