@@ -131,7 +131,7 @@ in
         export PATH="$PWD/.tvp-check-tools:$PATH"
         status=0
         ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
-          RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} acl $PWD/.tvp-filesystem-probe $PWD/test/runwrapper" \
+          TEST_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/ordinary-test-runner.py} acl23 $PWD/.tvp-filesystem-probe $PWD/test/runwrapper" \
           || status=$?
         cat test-suite.log
         exit "$status"

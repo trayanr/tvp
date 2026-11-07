@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import tarfile
 
-archive, output = sys.argv[1:]
+archive, output, domain = sys.argv[1:]
 output = Path(output)
 with tarfile.open(archive) as source:
     entries = source.getmembers()
@@ -15,16 +15,18 @@ with tarfile.open(archive) as source:
             po = next(p for p in entries if p.name == entry.name[:-4] + '.po')
             assert entry.mtime >= po.mtime, (entry.name, 'catalog regeneration required')
             shipped[language] = hashlib.sha256(source.extractfile(entry).read()).hexdigest()
+    stamps = [p for p in entries if p.name.endswith('/po/stamp-po')]
+    assert len(stamps) == 1
+    catalog_inputs = [p for p in entries if '/po/' in p.name and p.name.endswith(('.po', '.pot'))]
+    assert all(p.mtime <= stamps[0].mtime for p in catalog_inputs), 'stamp-po regeneration required'
     assert shipped, 'empty shipped catalog set'
-installed = {}
-for catalog in (output / 'share/locale').glob('*/LC_MESSAGES/*.mo'):
-    language = catalog.parent.parent.name
-    digest = hashlib.sha256(catalog.read_bytes()).hexdigest()
-    # GNU Coreutils installs a second domain with the same shipped catalog.
-    assert language in shipped and digest == shipped[language], catalog
-    installed.setdefault(language, []).append(catalog)
-assert set(installed) == set(shipped), (set(installed) - set(shipped), set(shipped) - set(installed))
+categories = ['LC_MESSAGES', 'LC_TIME'] if domain == 'coreutils' else ['LC_MESSAGES']
+expected = {f'{language}/{category}/{domain}.mo': digest
+            for language, digest in shipped.items() for category in categories}
+installed = {str(p.relative_to(output / 'share/locale')): hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in (output / 'share/locale').rglob('*.mo')}
+assert installed == expected, (set(installed) - set(expected), set(expected) - set(installed))
 assert '#define ENABLE_NLS 1' in (output / 'nix-support/config.h').read_text()
 log = (output / 'nix-support/config.log').read_text()
 assert 'GNU gettext in libc' in log
-print(f'PASS {len(shipped)} shipped languages; {sum(map(len, installed.values()))} installed catalogs match')
+print(f'PASS {len(shipped)} shipped languages; {len(installed)} installed catalogs match')

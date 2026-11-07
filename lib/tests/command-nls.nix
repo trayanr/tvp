@@ -12,7 +12,14 @@ package.testContext.mkSuite {
   ];
   tests.nls = {
     script = ''
-      ${deps.python}/bin/python3 -B ${./release-catalogs.py} ${package.src} ${package} >&2
+      ${deps.python}/bin/python3 -B ${./release-catalogs.py} ${package.src} ${package} ${
+        if package.pname == "gnused" then
+          "sed"
+        else if package.pname == "gnutar" then
+          "tar"
+        else
+          package.pname
+      } >&2
       LC_ALL=C ${package}/bin/${command} --help > untranslated
       LOCPATH=${locale} LC_ALL=fr_FR.UTF-8 ${package}/bin/${command} --help > translated
       test -s translated
