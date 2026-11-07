@@ -7,7 +7,7 @@
 }:
 tvpLib.packages.mergeVariants {
   perl = tvpLib.packages.mkVariants (
-    recipes.perl
+    recipes.perl.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

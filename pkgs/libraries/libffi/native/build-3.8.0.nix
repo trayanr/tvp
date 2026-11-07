@@ -1,0 +1,140 @@
+# Ordinary native 3.8.0 only: the selected ABI/closure implementation uses root public headers and a shared-only ordinary output.
+# Earlier releases and source-bootstrap generations retain independent procedures.
+{
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  bash,
+  coreutils,
+  pkgConfig,
+  gnumake,
+  gnutar,
+  gzip,
+  findutils,
+  sed,
+  grep,
+  gawk,
+  diffutils,
+  python,
+  binutils,
+  patchelf,
+
+  dejagnu,
+  doCheck ? true,
+}:
+final:
+let
+  inherit (tvp.builder) steps outputs;
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "libffi.${name}";
+      cwd = "source";
+      inherit run;
+    };
+  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+in
+{
+  pname = "libffi";
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
+  environment = {
+    tools = [
+      dejagnu
+      pkgConfig
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+    ];
+    libraries = [ ];
+  };
+  runtime.libraries = [ ];
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "libffi.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+      cwd = "source";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      ./configure --prefix="$out" --enable-shared --disable-static
+    '')
+    (command "build" make)
+    ((command "check" ''${make} check'') // { enabled = doCheck; })
+    (command "install" ''${make} install'')
+    (command "receipt" ''
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (outputs.shebangs {
+      inherit python;
+      paths = [
+        "bin"
+        "lib"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (outputs.strip {
+      inherit python binutils;
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      inherit python binutils patchelf;
+      base = final.base;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+  ];
+  tvp.features = {
+    headersInIncludedir = true;
+    variadic = true;
+    versionFunction = true;
+    shared = true;
+    static = false;
+  };
+  meta.platforms = [ "x86_64-linux" ];
+}

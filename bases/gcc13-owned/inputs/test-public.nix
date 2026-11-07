@@ -51,6 +51,12 @@ let
         "readline"
         "gnugrep"
         "gawk"
+        "perl"
+        "openssl"
+        "libffi"
+        "gdbm"
+        "mpdecimal"
+        "tcl"
       ];
   public =
     universe.canonical

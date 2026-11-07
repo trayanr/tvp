@@ -28,7 +28,7 @@ let
       releases."4.0.1" = "sha256-ltM6u0uwBwx74P7UJGzThBYYgyX4IEaCFEcZOFRbGsg=";
     }
   ];
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -55,8 +55,74 @@ let
         };
       };
   };
+  # Preserve the complete pre-promotion factory/table and its historical callers.
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is the explicit host generation, independent of the ordinary target being built.";
+    } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "4.0.1" = {
+      constructor = tvp.builder;
+      builder = ./native/build-4.0.1.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        pkgConfig = constructionTool "pkgConfig";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        gzip = constructionTool "gzip";
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "4.0.1" = versionTable."4.0.1" // {
+        def = if native then ownedDefs."4.0.1" else versionTable."4.0.1".def;
+      };
+    };
+    extraArgs.mkTests =
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        constructionRecipe.extraArgs.mkTests package;
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
+
 in
 {
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

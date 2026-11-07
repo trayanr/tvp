@@ -158,7 +158,7 @@ tvpLib.packages.mergeVariants {
           };
         };
       };
-  perl = select recipes.perl {
+  perl = select recipes.perl.constructionRecipe {
     "5.44.0" = { };
   };
   texinfo = select recipes.texinfo {
