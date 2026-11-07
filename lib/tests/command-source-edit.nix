@@ -8,7 +8,6 @@
 let
   deps = package.tvp.declaredDependencies;
   spec = package.specification;
-  steps = tvp.builder.steps;
   codec = if compression == "xz" then deps.xz else deps.gzip;
   fixture = tvp.builder {
     recipe =

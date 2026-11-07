@@ -106,10 +106,10 @@ in
     (command "coreutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (
       (command "coreutils.check" ''
-            export TZDIR=${timezoneData}/share/zoneinfo
+        export TZDIR=${timezoneData}/share/zoneinfo
         "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
-          ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
-            SH_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/ordinary-test-runner.py} coreutils $PWD/.tvp-filesystem-probe ${final.bash}/bin/bash"
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
+          SH_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/ordinary-test-runner.py} coreutils $PWD/.tvp-filesystem-probe ${final.bash}/bin/bash"
       '')
       // {
         enabled = doCheck;
