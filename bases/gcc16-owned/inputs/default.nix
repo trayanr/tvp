@@ -107,17 +107,37 @@ tvpLib.packages.mergeVariants {
           };
         };
       };
-  zlib = select recipes.zlib.constructionRecipe {
-    "1.3.2" = { };
-  };
-  zstd = select recipes.zstd.constructionRecipe {
-    "1.5.6" = {
-      deps = {
-        xz = inputs.xz_5_8_3;
-        zlib = inputs.zlib_1_3_2;
+  zlib =
+    select
+      (
+        recipes.zlib.constructionRecipe
+        // {
+          testDeps = recipes.zlib.constructionRecipe.testDeps // {
+            gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
+          };
+        }
+      )
+      {
+        "1.3.2" = { };
       };
-    };
-  };
+  zstd =
+    select
+      (
+        recipes.zstd.constructionRecipe
+        // {
+          testDeps = recipes.zstd.constructionRecipe.testDeps // {
+            gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
+          };
+        }
+      )
+      {
+        "1.5.6" = {
+          deps = {
+            xz = inputs.xz_5_8_3;
+            zlib = inputs.zlib_1_3_2;
+          };
+        };
+      };
   libxcrypt =
     select
       (
@@ -167,7 +187,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  ncurses = select recipes.ncurses {
+  ncurses = select recipes.ncurses.constructionRecipe {
     "6.6" = {
       deps = {
         pkg-config = inputs.pkg-config_0_29_2;

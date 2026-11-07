@@ -56,6 +56,37 @@ rec {
             blob = null;
           }) (p.specification.base.referencePackages or [ ])
         ) (lib.attrNames (buildable packages));
+      # A definition can select a customized TVP recipe without publishing it
+      # as a named variant. Register that declared build, not its entire closure.
+      dependencyRows =
+        packages:
+        let
+          isRecipeOverride =
+            p:
+            let
+              selection = p.__tvpSelection or { };
+              original = canonical.${selection.canonical or ""} or null;
+            in
+            lib.isDerivation p
+            && lib.elem (selection.namespace or null) [
+              "canonical"
+              "packages"
+            ]
+            && (selection.kind or null) == "override"
+            && original != null
+            && (p.tvp.customization.customized or false)
+            && (p.tvp.builder or null) != null
+            && (p.tvp.definition or null) != null
+            && p.tvp.builder == (original.tvp.builder or null)
+            && p.tvp.definition == (original.tvp.definition or null);
+          overrides = lib.concatMapAttrs (
+            owner: p:
+            lib.mapAttrs' (dependency: value: lib.nameValuePair "${owner}/${dependency}" value) (
+              lib.filterAttrs (_: value: isRecipeOverride value) (p.tvp.declaredDependencies or { })
+            )
+          ) (buildable packages);
+        in
+        packageRows "definition-dependency" overrides ++ referenceRows overrides;
       registeredBases =
         bases
         // lib.mapAttrs' (name: b: lib.nameValuePair "bootstrap.${name}" b) construction.bases;
@@ -77,15 +108,16 @@ rec {
     in
     packageRows "canonical" canonical
     ++ referenceRows canonical
+    ++ dependencyRows canonical
     ++ lib.concatMap (
       profile:
-      (entries: packageRows "variant" entries ++ referenceRows entries) (
+      (entries: packageRows "variant" entries ++ referenceRows entries ++ dependencyRows entries) (
         lib.mapAttrs' (name: p: lib.nameValuePair "${profile}/${name}" p) variants.${profile}
       )
     ) (lib.attrNames variants)
     ++ lib.concatMap (
       profile:
-      packageRows "bootstrap" (
+      (entries: packageRows "bootstrap" entries ++ dependencyRows entries) (
         lib.mapAttrs' (
           name: p: lib.nameValuePair "bootstrap/${profile}/${name}" p
         ) construction.variants.${profile}
