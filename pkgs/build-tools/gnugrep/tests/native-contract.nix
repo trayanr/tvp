@@ -1,5 +1,7 @@
 { package }:
-let d = package.tvp.deps; in
+let
+  d = package.tvp.deps;
+in
 package.testContext.mkSuite {
   inherit package;
   tools = package.specification.environment.tools ++ [ d.binutils ];

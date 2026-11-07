@@ -148,21 +148,32 @@ let
   constructionRecipe = packageArgs;
   candidate = import ../../../bases/source-gnu { };
   native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool = name: tvpLib.packages.withConstraint {
-    category = "construction";
-    reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
-  } candidate.tools.${name};
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
+    } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
     "8.3" = {
       constructor = tvp.builder;
       builder = ./native/build-8.3.nix;
       base = candidate.base;
-      source = { version, sha256 }: import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
-        inherit sha256;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
       };
-      testContext = package: tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; };
-      helpers = { inherit tvp; };
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";
@@ -184,11 +195,16 @@ let
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
-      "8.3" = versionTable."8.3" // { def = if native then ownedDefs."8.3" else versionTable."8.3".def; };
+      "8.3" = versionTable."8.3" // {
+        def = if native then ownedDefs."8.3" else versionTable."8.3".def;
+      };
     };
-    extraArgs.mkTests = package:
-      if package ? testContext then import ./tests/native-default.nix { inherit pkgs tvpLib package; }
-      else constructionRecipe.extraArgs.mkTests package;
+    extraArgs.mkTests =
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        constructionRecipe.extraArgs.mkTests package;
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   variants = tvpLib.packages.mkVariants (
@@ -206,7 +222,9 @@ let
 
 in
 {
-  recipes.${pname} = publicArgs // { inherit constructionRecipe; };
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical variants;
   aliases = tvpLib.packages.mkAliases {
     lines = [ "6_2" ];

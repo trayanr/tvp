@@ -30,24 +30,75 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
-  command = name: run: (final.base.environment final.environment) // {
-    name = "gawk.${name}";
-    cwd = "source";
-    inherit run;
-  };
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "gawk.${name}";
+      cwd = "source";
+      inherit run;
+    };
 in
 {
   pname = "gawk";
-  inherit base src version bash coreutils;
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   environment = {
-    tools = [ localeProvider gnumake sed grep gawk diffutils findutils perl ];
-    libraries = [ gmp mpfr readline ncurses ];
+    tools = [
+      localeProvider
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      perl
+    ];
+    libraries = [
+      gmp
+      mpfr
+      readline
+      ncurses
+    ];
   };
-  runtime.libraries = [ gmp mpfr readline ncurses ];
+  runtime.libraries = [
+    gmp
+    mpfr
+    readline
+    ncurses
+  ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; tar = gnutar; inherit xz findutils; compression = "xz"; })
-    (steps.prepareAutotools { name = "gawk.prepare"; bash = final.bash; inherit python; base = final.base; })
-    (steps.shebangs { name = "gawk.source-shells"; inherit python; paths = ["build-aux" "test" "extension"]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit xz findutils;
+      compression = "xz";
+    })
+    (steps.prepareAutotools {
+      name = "gawk.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "gawk.source-shells";
+      inherit python;
+      paths = [
+        "build-aux"
+        "test"
+        "extension"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       ./configure --prefix="$out" --enable-nls --with-readline=${readline} --with-mpfr=${mpfr} --with-gmp=${gmp}
@@ -56,8 +107,14 @@ in
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    ((command "check" ''export LOCPATH=${localeProvider}/lib/locale GAWKLOCALE=C.UTF-8 PAGER=cat
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'') // { enabled = doCheck; })
+    (
+      (command "check" ''
+        export LOCPATH=${localeProvider}/lib/locale GAWKLOCALE=C.UTF-8 PAGER=cat
+              ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+      // {
+        enabled = doCheck;
+      }
+    )
     (command "install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
@@ -65,14 +122,65 @@ in
       cp config.h "$out/nix-support/config.h"
       grep -Ex 'gt_cv_func_gnugettext[0-9]+_libc=yes' config.log > "$out/nix-support/gettext-libc"
     '')
-    (outputs.shebangs { inherit python; paths = [ "bin" "lib" ]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
-    ((outputs.shebangs { inherit python; paths = [ "bin" ]; names = [ "awk" "gawk" ]; selfInterpreter = "bin/gawk"; }) // { name = "output.awk-shebangs"; })
-    (outputs.strip { inherit python binutils; paths = [ "bin" "lib" ]; })
-    (outputs.rpaths { inherit python binutils patchelf; base = final.base; libraries = final.runtime.libraries; dlopenDirectories = final.runtime.dlopenDirectories or [ ]; paths = [ "bin" "lib" ]; })
-    (outputs.development { inherit python; libraries = [ ]; })
-    (outputs.checkPaths { inherit python binutils patchelf; paths = [ "bin" "lib" ]; })
+    (outputs.shebangs {
+      inherit python;
+      paths = [
+        "bin"
+        "lib"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (
+      (outputs.shebangs {
+        inherit python;
+        paths = [ "bin" ];
+        names = [
+          "awk"
+          "gawk"
+        ];
+        selfInterpreter = "bin/gawk";
+      })
+      // {
+        name = "output.awk-shebangs";
+      }
+    )
+    (outputs.strip {
+      inherit python binutils;
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
+    (outputs.rpaths {
+      inherit python binutils patchelf;
+      base = final.base;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
   ];
-  tvp.features = { bignum = true; nls = true; };
+  tvp.features = {
+    bignum = true;
+    nls = true;
+  };
   tvp.readlineProgram = "gawk";
   meta.platforms = [ "x86_64-linux" ];
 }

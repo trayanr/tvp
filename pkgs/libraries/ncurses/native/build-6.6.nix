@@ -25,25 +25,68 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
-  command = name: run: (final.base.environment final.environment) // {
-    name = "ncurses.${name}";
-    cwd = "source";
-    inherit run;
-  };
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "ncurses.${name}";
+      cwd = "source";
+      inherit run;
+    };
 in
 {
   pname = "ncurses";
-  inherit base src version bash coreutils;
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   environment = {
-    tools = [ gnumake sed grep gawk diffutils findutils pkgConfig ];
-    libraries = [  ];
+    tools = [
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      pkgConfig
+    ];
+    libraries = [ ];
   };
-  runtime.libraries = [  ];
-  development.includeDirectories = [ "include/ncursesw" "include" ];
+  runtime.libraries = [ ];
+  development.includeDirectories = [
+    "include/ncursesw"
+    "include"
+  ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; tar = gnutar; inherit gzip findutils; compression = "gzip"; })
-    (steps.prepareAutotools { name = "ncurses.prepare"; bash = final.bash; inherit python; base = final.base; })
-    (steps.shebangs { name = "ncurses.source-shells"; inherit python; paths = ["misc" "progs" "mk-1st.awk"]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "ncurses.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "ncurses.source-shells";
+      inherit python;
+      paths = [
+        "misc"
+        "progs"
+        "mk-1st.awk"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       mkdir -p "$out/lib/pkgconfig"
@@ -59,7 +102,10 @@ in
     '')
     {
       name = "ncurses.self-rpaths";
-      tools = [ python patchelf ];
+      tools = [
+        python
+        patchelf
+      ];
       run = ''
         ${python}/bin/python3 -B - "$out" ${patchelf}/bin/patchelf <<'PYTHON'
         from pathlib import Path
@@ -74,13 +120,59 @@ in
         PYTHON
       '';
     }
-    (outputs.shebangs { inherit python; paths = [ "bin" "lib" ]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
-    (outputs.strip { inherit python binutils; paths = [ "bin" "lib" ]; })
-    (outputs.stripArchives { inherit python binutils; paths = [ "lib" ]; })
-    (outputs.rpaths { inherit python binutils patchelf; base = final.base; libraries = final.runtime.libraries; dlopenDirectories = final.runtime.dlopenDirectories or [ ]; paths = [ "bin" "lib" ]; })
-    (outputs.development { inherit python; libraries = [ ]; })
-    (outputs.checkPaths { inherit python binutils patchelf; paths = [ "bin" "lib" ]; })
+    (outputs.shebangs {
+      inherit python;
+      paths = [
+        "bin"
+        "lib"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (outputs.strip {
+      inherit python binutils;
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
+    (outputs.stripArchives {
+      inherit python binutils;
+      paths = [ "lib" ];
+    })
+    (outputs.rpaths {
+      inherit python binutils patchelf;
+      base = final.base;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
   ];
-  tvp.features = { constUserData = true; widec = true; cxx = true; pkgConfig = true; libName = "ncursesw"; shared = true; static = true; };
+  tvp.features = {
+    constUserData = true;
+    widec = true;
+    cxx = true;
+    pkgConfig = true;
+    libName = "ncursesw";
+    shared = true;
+    static = true;
+  };
   meta.platforms = [ "x86_64-linux" ];
 }

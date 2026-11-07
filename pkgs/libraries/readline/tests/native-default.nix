@@ -23,7 +23,10 @@ in
 package.testContext.mkSuite {
   inherit package;
   tools = readline.specification.environment.tools;
-  libraries = [ readline readline.tvp.deps.ncurses ];
+  libraries = [
+    readline
+    readline.tvp.deps.ncurses
+  ];
 
   tests =
     {
@@ -77,3 +80,6 @@ package.testContext.mkSuite {
 }
 
 // import ./native-contract.nix { inherit package; }
+// {
+  line-edit-history = import ./native-terminal.nix { inherit package; };
+}

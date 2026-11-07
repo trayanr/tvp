@@ -16,7 +16,9 @@ package.testContext.mkSuite {
   tests.nls = {
     script = ''
       ${deps.python}/bin/python3 -B ${../../../../lib/tests/release-catalogs.py} ${package.src} ${package} ${
-        if package.pname == "gnugrep" then "grep" else if package.pname == "gnused" then
+        if package.pname == "gnugrep" then
+          "grep"
+        else if package.pname == "gnused" then
           "sed"
         else if package.pname == "gnutar" then
           "tar"

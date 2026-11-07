@@ -66,3 +66,6 @@ package.testContext.mkSuite {
 // import ./native-tracker.nix { inherit pkgs tvpLib package; }
 
 // import ./native-nls.nix { inherit package locale; }
+// {
+  debugger-line-edit = import ./native-debugger.nix { inherit package; };
+}

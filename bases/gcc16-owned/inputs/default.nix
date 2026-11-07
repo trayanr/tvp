@@ -107,25 +107,37 @@ tvpLib.packages.mergeVariants {
           };
         };
       };
-  zlib = select (recipes.zlib.constructionRecipe // {
-    testDeps = recipes.zlib.constructionRecipe.testDeps // {
-      gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
-    };
-  }) {
-    "1.3.2" = { };
-  };
-  zstd = select (recipes.zstd.constructionRecipe // {
-    testDeps = recipes.zstd.constructionRecipe.testDeps // {
-      gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
-    };
-  }) {
-    "1.5.6" = {
-      deps = {
-        xz = inputs.xz_5_8_3;
-        zlib = inputs.zlib_1_3_2;
+  zlib =
+    select
+      (
+        recipes.zlib.constructionRecipe
+        // {
+          testDeps = recipes.zlib.constructionRecipe.testDeps // {
+            gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
+          };
+        }
+      )
+      {
+        "1.3.2" = { };
       };
-    };
-  };
+  zstd =
+    select
+      (
+        recipes.zstd.constructionRecipe
+        // {
+          testDeps = recipes.zstd.constructionRecipe.testDeps // {
+            gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
+          };
+        }
+      )
+      {
+        "1.5.6" = {
+          deps = {
+            xz = inputs.xz_5_8_3;
+            zlib = inputs.zlib_1_3_2;
+          };
+        };
+      };
   libxcrypt =
     select
       (
