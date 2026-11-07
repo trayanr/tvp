@@ -80,7 +80,11 @@ in
     '')
     (command "build" make)
     ((command "check" ''${make} check'') // { enabled = doCheck; })
-    (command "install" ''${make} install'')
+    (command "install" ''
+      ${make} install
+      # Preserve the ordinary x86_64 compatibility spelling after relocating to lib.
+      ln -s lib "$out/lib64"
+    '')
     (command "receipt" ''
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"

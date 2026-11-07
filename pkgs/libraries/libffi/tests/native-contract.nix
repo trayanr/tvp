@@ -11,6 +11,23 @@ package.testContext.mkSuite {
   ];
   libraries = [ package ];
   tests = {
+    library-alias = {
+      environment.flags.NIX_LDFLAGS = [
+        "-L${package}/lib64"
+        "-rpath"
+        "${package}/lib64"
+      ];
+      script = ''
+        test "$(readlink ${package}/lib64)" = lib
+        cc ${./fixtures/call.c} -lffi -o alias-consumer
+        test "$(./alias-consumer)" = 42
+        LD_TRACE_LOADED_OBJECTS=1 ./alias-consumer > loaded
+        grep -F '${package}/lib64/libffi.so.8' loaded >/dev/null
+        printf alias-ok
+      '';
+      expected = "alias-ok";
+    };
+
     cxx-callback = {
       script = ''
         cat > callback.cc <<'CXX'
