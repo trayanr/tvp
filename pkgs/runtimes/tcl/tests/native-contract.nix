@@ -11,6 +11,24 @@ package.testContext.mkSuite {
     deps.libgcc
   ];
   tests = {
+    installed-encoding = {
+      script = ''
+        cat > encoding.tcl <<'TCL'
+        if {[catch {
+          if {[info library] ne "${package}/lib/tcl8.6"} {error wrong-library-path}
+          if {![file exists [file join [info library] encoding cp1251.enc]]} {error missing-encoding-table}
+          set bytes [binary format H* cff0e8e2e5f2]
+          set text [encoding convertfrom cp1251 $bytes]
+          if {$text ne "\u041f\u0440\u0438\u0432\u0435\u0442"} {error encoding-decode}
+          if {[encoding convertto cp1251 $text] ne $bytes} {error encoding-roundtrip}
+        } why]} {puts stderr $why; exit 1}
+        puts encoding-ok
+        TCL
+        tclsh encoding.tcl
+      '';
+      expected = "encoding-ok";
+    };
+
     thread-cancellation = {
       script = ''
         cc ${./fixtures/native-cancel.c} -ltcl8.6 -pthread -o cancel
