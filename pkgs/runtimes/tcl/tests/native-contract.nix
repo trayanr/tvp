@@ -11,6 +11,16 @@ package.testContext.mkSuite {
     deps.libgcc
   ];
   tests = {
+    thread-cancellation = {
+      script = ''
+        cc ${./fixtures/native-cancel.c} -ltcl8.6 -pthread -o cancel
+        LD_DEBUG=libs timeout 20 ./cancel 2>loaded
+        grep -F '${deps.libgcc}/lib/libgcc_s.so.1' loaded >/dev/null
+        printf cancellation-ok
+      '';
+      expected = "cancellation-ok";
+    };
+
     external-driver-boundaries = {
       script = ''
         cat > drivers.tcl <<'TCL'

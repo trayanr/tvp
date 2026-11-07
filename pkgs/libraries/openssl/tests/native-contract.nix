@@ -32,16 +32,19 @@ package.testContext.mkSuite {
       };
       providers = {
         script = ''
-          openssl list -providers -provider default -provider legacy > providers
-          grep -F 'Legacy Provider' providers >/dev/null
-          printf tvp | openssl dgst -provider legacy -md4 > digest
-          if OPENSSL_MODULES="$PWD/missing" openssl list -providers -provider legacy >bad.out 2>bad.err; then exit 1; fi
-          test -s bad.err
-          test -d ${package}/lib/cmake/OpenSSL
-          for module in openssl libssl libcrypto; do
-            test "$(pkg-config --modversion "$module")" = ${package.version}
-          done
-          printf providers-ok
+            LD_DEBUG=files openssl list -providers -provider default -provider legacy > providers 2>loaded
+          grep -F '${package}/lib/ossl-modules/legacy.so' loaded >/dev/null
+          openssl version -m | grep -F '${package}/lib/ossl-modules' >/dev/null
+          openssl version -d | grep -F '${package}/etc/ssl' >/dev/null
+            grep -F 'Legacy Provider' providers >/dev/null
+            printf tvp | openssl dgst -provider legacy -md4 > digest
+            if OPENSSL_MODULES="$PWD/missing" openssl list -providers -provider legacy >bad.out 2>bad.err; then exit 1; fi
+            test -s bad.err
+            test -d ${package}/lib/cmake/OpenSSL
+            for module in openssl libssl libcrypto; do
+              test "$(pkg-config --modversion "$module")" = ${package.version}
+            done
+            printf providers-ok
         '';
         expected = "providers-ok";
       };
