@@ -123,7 +123,7 @@ tvpLib.packages.mergeVariants {
       (
         recipes.libxcrypt.constructionRecipe
         // {
-          testDeps = recipes.libxcrypt.testDeps // {
+          testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
             inherit (construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies)
               coreutils
               gnused

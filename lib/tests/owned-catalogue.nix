@@ -156,7 +156,76 @@ let
     variants = { };
     construction.variants = { };
   };
+  foundation = map (name: tvp.canonical.${name}) [
+    "bzip2_1_0_8"
+    "zlib_1_3_2"
+    "xz_5_8_4"
+    "attr_2_6_0"
+    "acl_2_4_0"
+    "libxcrypt_4_5_2"
+  ];
   contracts = {
+    foundationEditedSource = lib.all (
+      q:
+      let
+        source = builtins.toFile "foundation-source-edit-fixture" "source model";
+        edited = q.edit (spec: spec // { src = source; });
+        unpack = lib.findFirst (step: step.name == "source.unpack") null edited.buildSteps;
+      in
+      edited.src == source
+      && lib.hasInfix (builtins.unsafeDiscardStringContext (toString source)) unpack.run
+      && !(lib.hasInfix (builtins.unsafeDiscardStringContext (toString q.src)) unpack.run)
+      && edited.drvPath != q.drvPath
+      && edited.drvPath == (q.override { src = source; }).drvPath
+    ) foundation;
+    foundationEditedCoreutils =
+      lib.all
+        (
+          q:
+          let
+            helper = tvp.packages.coreutils;
+            edited = q.edit (spec: spec // { coreutils = helper; });
+            test = edited.tests.isolated-discovery;
+          in
+          lib.hasInfix (builtins.unsafeDiscardStringContext "${helper}/bin/env") (
+            builtins.unsafeDiscardStringContext (builtins.head test.buildSteps).run
+          )
+          && test.specification.coreutils.drvPath == helper.drvPath
+          && test.package.drvPath == edited.drvPath
+        )
+        [
+          tvp.canonical.attr_2_6_0
+          tvp.canonical.acl_2_4_0
+        ];
+    foundationCurrentContext = lib.all (
+      q:
+      let
+        edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
+      in
+      edited.tests.version.package.drvPath == edited.drvPath
+    ) (lib.take 5 foundation);
+    foundationNoPublicBuildLibraries = lib.all (q: q.development.libraries == [ ]) foundation;
+    foundationRuntimeDirectories = lib.all (
+      q:
+      let
+        edited = q.editRuntime (
+          r:
+          r
+          // {
+            libraries = [ ];
+            dlopenDirectories = [ "/foundation-runtime-probe" ];
+          }
+        );
+      in
+      edited.drvPath != q.drvPath
+      &&
+        lib.hasInfix "/foundation-runtime-probe"
+          (lib.findFirst (step: step.name == "output.rpaths") null edited.buildSteps).run
+    ) foundation;
+    foundationRejectUnknown = lib.all (
+      q: rejects (q.override { undeclaredExecutable = p; }).drvPath
+    ) foundation;
+
     referenceRebinding =
       referenceRebound.drvPath == p.drvPath
       && referenceRebound.specification.base.referencePackages == p.specification.base.referencePackages
