@@ -124,5 +124,10 @@ in
     shared = true;
     static = false;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Foreign function interface library";
+    homepage = "https://sourceware.org/libffi/";
+    license = lib.licenses.mit;
+    platforms = [ "x86_64-linux" ];
+  };
 }

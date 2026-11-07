@@ -177,5 +177,11 @@ in
     engines = false;
     rehash = false;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "A cryptographic library that implements the SSL and TLS protocols";
+    homepage = "https://www.openssl.org/";
+    license = lib.licenses.openssl;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "openssl";
+  };
 }

@@ -166,5 +166,11 @@ in
     shared = true;
     xs = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Highly capable, feature-rich programming language";
+    homepage = "https://www.perl.org/";
+    license = lib.licenses.artistic1;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "perl";
+  };
 }

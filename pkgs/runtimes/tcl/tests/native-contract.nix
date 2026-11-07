@@ -26,10 +26,14 @@ package.testContext.mkSuite {
           Counter c
           if {[c add] != 42} {error itcl-method}
           if {[package require tdbc] ne "1.1.13"} {error tdbc-version}
-          if {[tdbc::tokenize {select :answer}] ne {select { } :answer}} {error tdbc-tokenize}
-          foreach driver {mysql odbc postgres} {
-            # These packages initialize their loaders without requiring a server.
-            if {[package require tdbc::$driver] ne "1.1.13"} {error driver-version}
+          if {[tdbc::tokenize {select :answer}] ne {{select } :answer}} {error tdbc-tokenize}
+          foreach {driver client} {mysql libmysql.so odbc libiodbc.so postgres libpq.so} {
+            # No external client library is declared by the ordinary profile.
+            # Prove that each installed loader reaches that specific boundary.
+            set rc [catch {package require tdbc::$driver} message]
+            if {!$rc || ![string match "*couldn't load file*$client*" $message]} {
+              error "unexpected $driver client-library boundary: $rc $message"
+            }
           }
           if {[package require Thread] ne "2.8.13"} {error thread-version}
           set tid [thread::create -joinable {thread::wait}]

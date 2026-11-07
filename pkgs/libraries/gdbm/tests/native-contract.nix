@@ -16,7 +16,7 @@ package.testContext.mkSuite {
         printf 'store answer 42\nreorganize\nfetch answer\n' | gdbmtool -n roundtrip > cli.txt
         grep -F 42 cli.txt >/dev/null
         gdbm_dump roundtrip dump.txt
-        gdbm_load --replace dump.txt restored
+        gdbm_load dump.txt restored
         printf 'fetch answer\n' | gdbmtool restored > restored.txt
         grep -F 42 restored.txt >/dev/null
         test ! -e ${package}/lib/libgdbm.a

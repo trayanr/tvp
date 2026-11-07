@@ -61,7 +61,7 @@ in
   };
   runtime = {
     libraries = [ ];
-    tools = [ perl ];
+    perl = perl;
   };
   plan = steps.sequence [
     (steps.unpack {
@@ -124,7 +124,7 @@ in
       inherit python;
       paths = [ "bin/c_rehash" ];
       names = [ "perl" ];
-      interpreter = "${perl}/bin/perl";
+      interpreter = "${final.runtime.perl}/bin/perl";
     })
     (command "receipt" ''
       mkdir -p "$out/nix-support"
@@ -192,5 +192,11 @@ in
     engines = true;
     rehash = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "A cryptographic library that implements the SSL and TLS protocols";
+    homepage = "https://www.openssl.org/";
+    license = lib.licenses.openssl;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "openssl";
+  };
 }

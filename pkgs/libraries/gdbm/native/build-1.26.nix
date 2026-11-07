@@ -136,5 +136,11 @@ in
     shared = true;
     static = false;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "GNU dbm key/value database library";
+    homepage = "https://www.gnu.org/software/gdbm/";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "gdbmtool";
+  };
 }

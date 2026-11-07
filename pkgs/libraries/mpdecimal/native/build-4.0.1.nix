@@ -120,5 +120,10 @@ in
     static = false;
     cxx = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Correctly rounded arbitrary-precision decimal arithmetic libraries";
+    homepage = "https://www.bytereef.org/mpdecimal/";
+    license = lib.licenses.bsd2;
+    platforms = [ "x86_64-linux" ];
+  };
 }

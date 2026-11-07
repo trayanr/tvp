@@ -113,6 +113,17 @@ in
         enabled = doCheck;
       }
     )
+    (
+      (command "check-packages" ''
+        export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
+        export LD_LIBRARY_PATH="$PWD"
+        ${coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
+        if grep -E 'Failed[[:space:]]+[1-9][0-9]*' package-tests.log; then exit 1; fi
+      '')
+      // {
+        enabled = doCheck;
+      }
+    )
     (command "install" ''
       export LD_LIBRARY_PATH="$PWD"
       ${make} install TCLSH_NATIVE="$PWD/tclsh"
@@ -178,5 +189,10 @@ in
     bundledPackages = true;
     threads = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Tool Command Language interpreter";
+    homepage = "https://www.tcl-lang.org/";
+    license = lib.licenses.tcltk;
+    platforms = [ "x86_64-linux" ];
+  };
 }
