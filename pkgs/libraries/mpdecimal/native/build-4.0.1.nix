@@ -74,7 +74,7 @@ in
     })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --enable-shared --enable-cxx
+      ./configure --prefix="$out" --enable-shared --disable-static --enable-cxx
     '')
     (command "build" make)
     ((command "check" ''${make} check_local'') // { enabled = doCheck; })
@@ -85,10 +85,7 @@ in
     '')
     (outputs.shebangs {
       inherit python;
-      paths = [
-        "bin"
-        "lib"
-      ];
+      paths = [ "lib" ];
       names = [
         "sh"
         "bash"
@@ -97,10 +94,7 @@ in
     })
     (outputs.strip {
       inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
+      paths = [ "lib" ];
       elfKinds = [ "runtime" ];
     })
     (outputs.rpaths {
@@ -108,10 +102,7 @@ in
       base = final.base;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
+      paths = [ "lib" ];
       elfKinds = [ "runtime" ];
     })
     (outputs.development {
@@ -120,10 +111,7 @@ in
     })
     (outputs.checkPaths {
       inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
+      paths = [ "lib" ];
       elfKinds = [ "runtime" ];
     })
   ];
