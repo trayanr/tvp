@@ -1,8 +1,11 @@
 # Current-context release catalogs and actual translated installed command.
-{ package, command }:
+{
+  package,
+  command,
+  locale,
+}:
 let
   deps = package.tvp.declaredDependencies;
-  locale = package.tvp.declaredTestDependencies.locale;
 in
 package.testContext.mkSuite {
   inherit package;

@@ -89,10 +89,33 @@ let
       };
     };
   };
+  locale = import ../../../lib/tests/gnu-locale.nix {
+    builder = tvp.builder;
+    base = candidate.base;
+    inherit (candidate.tools)
+      bash
+      coreutils
+      tar
+      xz
+      ;
+    libc = candidate.toolchain.libc;
+  };
   publicArgs = packageArgs // {
     extraArgs.mkTests =
       package:
-      packageArgs.extraArgs.mkTests package
+      (
+        if package ? testContext then
+          import ./tests/native-default.nix {
+            inherit
+              pkgs
+              tvpLib
+              package
+              locale
+              ;
+          }
+        else
+          packageArgs.extraArgs.mkTests package
+      )
       // pkgs.lib.optionalAttrs (package ? testContext) (
         import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
       )
@@ -113,17 +136,6 @@ let
           '';
         }
       );
-    testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
-      builder = tvp.builder;
-      base = candidate.base;
-      inherit (candidate.tools)
-        bash
-        coreutils
-        tar
-        xz
-        ;
-      libc = candidate.toolchain.libc;
-    };
     versionTable = versionTable // {
       "3.12" = versionTable."3.12" // {
         def = if native then ownedDefs."3.12" else versionTable."3.12".def;

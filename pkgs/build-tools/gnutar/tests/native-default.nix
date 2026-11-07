@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   package,
+  locale,
   helpers,
 }:
 package.testContext.mkSuite {
@@ -41,6 +42,6 @@ package.testContext.mkSuite {
 }
 
 // import ../../../../lib/tests/command-nls.nix {
-  inherit package;
+  inherit package locale;
   command = "tar";
 }

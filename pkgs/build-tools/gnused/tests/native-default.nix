@@ -2,6 +2,7 @@
   pkgs,
   tvpLib,
   package,
+  locale,
 }:
 package.testContext.mkSuite {
   inherit package;
@@ -44,7 +45,7 @@ package.testContext.mkSuite {
 }
 
 // import ../../../../lib/tests/command-nls.nix {
-  inherit package;
+  inherit package locale;
   command = "sed";
 }
 

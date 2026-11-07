@@ -123,24 +123,58 @@ let
       };
     };
   };
+  locale = import ../../../lib/tests/gnu-locale.nix {
+    builder = tvp.builder;
+    base = candidate.base;
+    inherit (candidate.tools)
+      bash
+      coreutils
+      tar
+      xz
+      ;
+    libc = candidate.toolchain.libc;
+  };
   publicArgs = packageArgs // {
     extraArgs.mkTests =
       package:
-      packageArgs.extraArgs.mkTests package
+      (
+        if package ? testContext then
+          import ./tests/native-default.nix {
+            inherit
+              pkgs
+              tvpLib
+              package
+              locale
+              ;
+            helpers = [
+              {
+                bin = "gzip";
+                package = tvp.packages.gzip;
+                flag = "-z";
+              }
+              {
+                bin = "bzip2";
+                package = tvp.packages.bzip2_1;
+                flag = "-j";
+              }
+              {
+                bin = "xz";
+                package = tvp.packages.xz_5;
+                flag = "-J";
+              }
+              {
+                bin = "zstd";
+                package = tvp.packages.zstd_1;
+                flag = "--zstd";
+              }
+            ];
+          }
+        else
+          packageArgs.extraArgs.mkTests package
+      )
       // pkgs.lib.optionalAttrs (package ? testContext) (
         import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
       );
-    testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
-      builder = tvp.builder;
-      base = candidate.base;
-      inherit (candidate.tools)
-        bash
-        coreutils
-        tar
-        xz
-        ;
-      libc = candidate.toolchain.libc;
-    };
     versionTable = versionTable // {
       "1.35" = versionTable."1.35" // {
         def = if native then ownedDefs."1.35" else versionTable."1.35".def;
