@@ -43,7 +43,7 @@ in
   plan = steps.sequence [
     (steps.unpack { src = final.src; tar = gnutar; inherit gzip findutils; compression = "gzip"; })
     (steps.prepareAutotools { name = "ncurses.prepare"; bash = final.bash; inherit python; base = final.base; })
-    (steps.shebangs { name = "ncurses.source-shells"; inherit python; paths = ["misc" "progs" "mk-1st.awk" "MKncurses_def.sh"]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
+    (steps.shebangs { name = "ncurses.source-shells"; inherit python; paths = ["misc" "progs" "mk-1st.awk"]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       mkdir -p "$out/lib/pkgconfig"
