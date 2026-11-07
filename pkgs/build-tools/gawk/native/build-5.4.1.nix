@@ -20,6 +20,7 @@
   findutils,
   xz,
   perl,
+  checkLocales,
   localeProvider,
   gmp,
   mpfr,
@@ -109,7 +110,7 @@ in
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     (
       (command "check" ''
-        export LOCPATH=${localeProvider}/lib/locale GAWKLOCALE=C.UTF-8 PAGER=cat
+        export LOCPATH=${checkLocales} PAGER=cat
               ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
       // {
         enabled = doCheck;

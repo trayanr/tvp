@@ -172,6 +172,17 @@ let
         mpfr = tvp.packages.mpfr_4;
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
+        checkLocales = import ./native/check-locales.nix {
+          builder = tvp.builder;
+          base = candidate.base;
+          inherit (candidate.tools)
+            bash
+            coreutils
+            tar
+            xz
+            ;
+          libc = candidate.toolchain.libc;
+        };
         localeProvider = tvpLib.packages.withConstraint {
           category = "construction";
           reason = "Matching source-owned target libc locale tools and C.UTF-8 data for upstream Unicode tests.";

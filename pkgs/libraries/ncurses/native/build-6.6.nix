@@ -166,7 +166,7 @@ in
     })
   ];
   tvp.features = {
-    constUserData = true;
+    userData = true;
     widec = true;
     cxx = true;
     pkgConfig = true;

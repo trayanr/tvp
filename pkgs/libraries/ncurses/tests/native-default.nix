@@ -107,12 +107,12 @@ package.testContext.mkSuite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (features.constUserData or false) {
+    // pkgs.lib.optionalAttrs (features.userData or false) {
       cxx-user-pointer = {
         script = ''
           unset COLUMNS LINES TERMINFO TERMINFO_DIRS
           export TERM=xterm TERMINFO=${ncurses}/share/terminfo TERMINFO_DIRS=${ncurses}/share/terminfo
-          c++ ${cxxFlags} ${./fixtures/cxx-user-pointer.cc} -lncurses++${suffix} -lform${suffix} -lmenu${suffix} -lpanel${suffix} ${ccFlags} -o cxx-user-pointer
+          c++ ${cxxFlags} ${./fixtures/native-user-pointer.cc} -lncurses++${suffix} -lform${suffix} -lmenu${suffix} -lpanel${suffix} ${ccFlags} -o cxx-user-pointer
           TERM=xterm ./cxx-user-pointer
         '';
         expected = "user-pointer-ok";

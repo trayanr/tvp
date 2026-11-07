@@ -86,7 +86,7 @@ let
             w = toString width;
           in
           ''
-            cc -std=c99 -Wall -Wextra -Werror -UNDEBUG -I${p}/include \
+            cc -fPIC -std=c99 -Wall -Wextra -Werror -UNDEBUG -I${p}/include \
               -DPCRE2_CODE_UNIT_WIDTH=${w} ${loaded w} \
               ${./fixtures/api.c} ${library w} -Wl,-rpath,${p}/lib -o api-${w}
             ./api-${w}
@@ -97,7 +97,7 @@ let
           ''
         ) widths
         + ''
-          cc -std=c99 -Wall -Wextra -Werror -UNDEBUG -I${p}/include \
+          cc -fPIC -std=c99 -Wall -Wextra -Werror -UNDEBUG -I${p}/include \
             ${loaded "posix"} ${
               lib.optionalString (
                 !static && pkgs.stdenv.hostPlatform.isLinux
