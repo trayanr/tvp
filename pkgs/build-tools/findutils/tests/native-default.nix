@@ -1,0 +1,49 @@
+{
+  pkgs,
+  tvpLib,
+  package,
+  locale,
+}:
+package.testContext.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.tvp.declaredDependencies.binutils ];
+  tests = {
+    installed-helpers = {
+      script = ''
+        test "$(head -1 ${package}/bin/updatedb)" = '#!${package.specification.bash}/bin/bash'
+        grep -F '${package.specification.helperCoreutils}/bin/sort' ${package}/bin/updatedb >&2
+        test -x ${package}/bin/locate
+        test -x ${package}/libexec/frcode
+        echo installed-helpers
+      '';
+      expected = "installed-helpers";
+    };
+    version = {
+      script = ''
+        ${package}/bin/find --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
+      '';
+      expected = package.version;
+    };
+    operation = {
+      script = ''
+        mkdir tree; touch tree/a.keep tree/b.skip
+        ${package}/bin/find tree -type f -name '*.keep' -print0 | ${package}/bin/xargs -0 -n1 basename
+      '';
+      expected = "a.keep";
+    };
+    locate = {
+      script = ''
+        mkdir tree
+        touch tree/preserved-marker
+        ${package}/bin/updatedb --localpaths="$PWD/tree" --prunepaths="" --netpaths="" --output=locate.db
+        ${package}/bin/locate -d locate.db preserved-marker | sed "s|^$PWD/||"
+      '';
+      expected = "tree/preserved-marker";
+    };
+  };
+}
+
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package locale;
+  command = "find";
+}

@@ -24,4 +24,4 @@ let
   attr = select recipes.attr.constructionRecipe "2.6.0" { };
   acl = select recipes.acl.constructionRecipe "2.4.0" { inherit attr; };
 in
-select recipes.coreutils "9.5" { inherit gmp acl; }
+select recipes.coreutils.constructionRecipe "9.5" { inherit gmp acl; }
