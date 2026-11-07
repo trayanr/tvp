@@ -68,7 +68,8 @@ in
     })
     (steps.prepareAutotools {
       name = "findutils.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -82,10 +83,10 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "findutils.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       export SORT=${final.helperCoreutils}/bin/sort
       ./configure --prefix="$out" --enable-nls 
       grep '^#define ENABLE_NLS 1' config.h
@@ -113,7 +114,7 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (outputs.strip {
       inherit python binutils;

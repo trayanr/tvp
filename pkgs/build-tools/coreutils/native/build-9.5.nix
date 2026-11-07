@@ -74,7 +74,8 @@ in
     })
     (steps.prepareAutotools {
       name = "coreutils.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -88,10 +89,10 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "coreutils.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       ./configure --prefix="$out" --enable-nls --with-gmp --enable-acl --without-selinux
       grep '^#define ENABLE_NLS 1' lib/config.h
       grep '^#define USE_ACL 1' lib/config.h

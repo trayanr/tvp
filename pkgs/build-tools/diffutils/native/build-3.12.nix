@@ -68,7 +68,8 @@ in
     })
     (steps.prepareAutotools {
       name = "diffutils.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -82,13 +83,13 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "diffutils.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       export PR_PROGRAM=${final.helperCoreutils}/bin/pr
       ./configure --prefix="$out" --enable-nls 
-      grep '^#define ENABLE_NLS 1' config.h
+      grep '^#define ENABLE_NLS 1' lib/config.h
     '')
     (command "diffutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (
@@ -104,7 +105,7 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
       cp config.log "$out/nix-support/config.log"
-      cp config.h "$out/nix-support/config.h"
+      cp lib/config.h "$out/nix-support/config.h"
     '')
     (outputs.strip {
       inherit python binutils;

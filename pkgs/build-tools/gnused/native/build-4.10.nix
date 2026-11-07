@@ -67,7 +67,8 @@ in
     })
     (steps.prepareAutotools {
       name = "gnused.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -75,16 +76,16 @@ in
       inherit python;
       paths = [
         "build-aux"
-        "tests"
+        "testsuite"
       ];
       names = [
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "gnused.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       ./configure --prefix="$out" --enable-nls --enable-acl
       grep '^#define ENABLE_NLS 1' config.h
     '')

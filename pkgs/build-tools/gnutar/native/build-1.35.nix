@@ -71,7 +71,8 @@ in
     })
     (steps.prepareAutotools {
       name = "gnutar.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -85,10 +86,10 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "gnutar.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       ./configure --prefix="$out" --enable-nls --with-posix-acls --with-xattrs
       grep '^#define ENABLE_NLS 1' config.h
     '')
