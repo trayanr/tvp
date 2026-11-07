@@ -84,7 +84,7 @@ in
           echo "PASS $feature roundtrip" | tee -a "$out/results.log"
           ;;
         77) echo "SKIP $feature: filesystem/kernel unsupported (see errno log)" | tee -a "$out/results.log" ;;
-        *) cat "$out/$feature.log" >&2; exit "$rc" ;;
+        *) cat "$out/$feature-preflight.log" >&2; exit "$rc" ;;
       esac
     done
     ${package.tvp.declaredDependencies.binutils}/bin/readelf -d ${package}/bin/tar > "$out/dynamic.txt"
