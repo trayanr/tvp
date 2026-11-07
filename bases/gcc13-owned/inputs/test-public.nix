@@ -30,6 +30,11 @@ let
         }
       )
       [
+        "coreutils"
+        "findutils"
+        "diffutils"
+        "gnused"
+        "gnutar"
         "gnumake"
         "m4"
         "which"

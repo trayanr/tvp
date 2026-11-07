@@ -67,7 +67,6 @@ tvpLib.packages.mergeVariants {
     recipes.libxcrypt.constructionRecipe
     // {
       testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
-        gnused = (tvpLib.packages.mkVersions recipes.gnused.constructionRecipe).gnused_4_10;
         coreutils = import ./test-tools.nix { inherit tvpLib recipes; };
       };
       inherit pkgs;
