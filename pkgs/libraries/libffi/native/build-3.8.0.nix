@@ -76,7 +76,7 @@ in
     })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static
+      ./configure --prefix="$out" --libdir="$out/lib" --disable-multi-os-directory --enable-shared --disable-static
     '')
     (command "build" make)
     ((command "check" ''${make} check'') // { enabled = doCheck; })
