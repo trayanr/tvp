@@ -55,7 +55,7 @@ let
     versionTable = versionTable // {
       "7.1" = versionTable."7.1" // {
         def = versionTable."7.1".def // {
-          builder = if tvp.packages.perl_5 ? testContext then ./build-7.1-owned-perl.nix else ./build-7.1.nix;
+          builder = if tvp.packages.perl_5 ? testContext then ./compat/build-7.1.nix else ./build-7.1.nix;
         };
       };
     };
