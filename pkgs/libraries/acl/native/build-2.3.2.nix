@@ -74,7 +74,8 @@ in
     })
     (steps.prepareAutotools {
       name = "acl.prepare";
-      inherit bash python;
+      inherit python;
+      bash = final.bash;
       base = final.base;
     })
     (steps.shebangs {
@@ -98,7 +99,7 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (steps.shebangs {
       name = "acl.source-shells";
@@ -111,10 +112,10 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "acl.configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash
+      export CONFIG_SHELL=${final.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
       ./configure --prefix="$out" --enable-shared --enable-static
     '')
@@ -126,7 +127,7 @@ in
         # Retained Grep uses musl and performs no user/group lookup. Keep that
         # explicit command outside the interposer; tested ACL programs keep it.
         mkdir -p "$PWD/.tvp-check-tools"
-        printf '%s\n' '#!${bash}/bin/bash' 'unset LD_PRELOAD' \
+        printf '%s\n' '#!${final.bash}/bin/bash' 'unset LD_PRELOAD' \
           'exec ${grep}/bin/grep "$@"' > .tvp-check-tools/grep
         chmod +x .tvp-check-tools/grep
         export PATH="$PWD/.tvp-check-tools:$PATH"

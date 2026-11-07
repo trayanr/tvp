@@ -7,6 +7,16 @@ package.testContext.mkSuite {
   inherit package;
   tools = package.specification.environment.tools ++ [ package.tvp.declaredDependencies.binutils ];
   tests = {
+    installed-helpers = {
+      script = ''
+        test "$(head -1 ${package}/bin/updatedb)" = '#!${package.specification.bash}/bin/bash'
+        grep -F '${package.specification.helperCoreutils}/bin/sort' ${package}/bin/updatedb >&2
+        test -x ${package}/bin/locate
+        test -x ${package}/libexec/frcode
+        echo installed-helpers
+      '';
+      expected = "installed-helpers";
+    };
     version = {
       script = ''
         ${package}/bin/find --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'

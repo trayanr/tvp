@@ -61,7 +61,7 @@ in
       echo 'PASS ${helper.bin}: explicit owned helper executed for create/extract' | tee -a "$out/results.log"
     '') helpers}
   '';
-  native-metadata = recorded "native-metadata" [ package.tvp.cc ] [ acl attr ] ''
+  native-metadata = recorded "native-metadata" [ package.tvp.cc ] [ acl ] ''
     set -euo pipefail
     mkdir -p "$out" src dest
     "$CC" ${./features.c} -I${acl}/include -L${acl}/lib -Wl,-rpath,${acl}/lib -lacl -o probe

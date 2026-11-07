@@ -124,22 +124,20 @@ let
       };
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
-        inherit (candidate.tools)
-          bash
-          coreutils
-          gzip
-          python
-          binutils
-          patchelf
-          sed
-          grep
-          gawk
-          diffutils
-          findutils
-          perl
-          ;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
+        bash = seed "Retained source-GNU bash is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.bash;
+        coreutils = seed "Retained source-GNU coreutils is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.coreutils;
+        gzip = seed "Retained source-GNU gzip is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.gzip;
+        python = seed "Retained source-GNU python is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.python;
+        binutils = seed "Retained source-GNU binutils is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.binutils;
+        patchelf = seed "Retained source-GNU patchelf is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.patchelf;
+        sed = seed "Retained source-GNU sed is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.sed;
+        grep = seed "Retained source-GNU grep is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.grep;
+        gawk = seed "Retained source-GNU gawk is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.gawk;
+        diffutils = seed "Retained source-GNU diffutils is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.diffutils;
+        findutils = seed "Retained source-GNU findutils is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.findutils;
+        perl = seed "Retained source-GNU perl is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.perl;
+        gnumake = seed "Retained source-GNU make is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.make;
+        gnutar = seed "Retained source-GNU tar is a build-only host generation that avoids the ordinary ACL/Coreutils/Tar construction cycle." candidate.tools.tar;
         attr = tvp.packages.attr_2;
       };
     };
