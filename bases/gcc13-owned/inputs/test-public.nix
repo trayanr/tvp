@@ -46,6 +46,11 @@ let
         "attr"
         "acl"
         "libxcrypt"
+        "pcre2"
+        "ncurses"
+        "readline"
+        "gnugrep"
+        "gawk"
       ];
   public =
     universe.canonical

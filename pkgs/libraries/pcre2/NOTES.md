@@ -1,9 +1,14 @@
-PCRE2 10.44, 10.47, 10.48 and 10.49 share the unchanged 10.44 Autoconf
-recipe. The moving `pcre2` and `pcre2_10` aliases select 10.49; exact 10.44
-consumers, including GNU Grep, remain pinned. Optional readline, libedit,
-zlib and bzip2 support remains disabled. Normal outputs contain shared
-8/16/32-bit libraries and the POSIX wrapper; tests build a separate static
-companion without changing the normal outputs.
+PCRE2 10.49 selects the complete native `native/build-10.49.nix` procedure
+on x86_64 Linux. Older releases and other platform routes retain the 10.44
+Autoconf procedure. Frozen compiler construction explicitly selects the complete
+captured recipe. Ordinary Grep uses moving `pcre2_10` and its retained 3.11
+consumer keeps its historical behavior tests.
+
+The canonical native output remains shared-only: 8/16/32-bit engines, Unicode,
+JIT and the POSIX wrapper, plus pcre2grep/pcre2-config and four pkg-config modules.
+The declared `static` option builds a separate static companion for installed
+API consumers. Native checks bind upstream's four `/bin/echo` callouts to the
+explicit Coreutils provider; historical procedures and fixtures remain intact.
 
 [10.47](https://github.com/PCRE2Project/pcre2/releases/tag/pcre2-10.47) adds
 `pcre2_next_match`, `PCRE2_CONFIG_EFFECTIVE_LINKSIZE` and default Linux symbol

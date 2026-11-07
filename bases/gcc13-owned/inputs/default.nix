@@ -10,6 +10,10 @@ let
   historical = import ./test-public.nix { inherit pkgs tvp recipes; };
   testRecipes = recipes // {
     inherit (historical.recipes)
+      zlib
+      gcc
+      binutils
+      glibc
       gzip
       isl
       libxcrypt

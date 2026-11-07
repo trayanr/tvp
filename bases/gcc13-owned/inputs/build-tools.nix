@@ -27,7 +27,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   gawk = tvpLib.packages.mkVariants (
-    recipes.gawk
+    recipes.gawk.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -169,9 +169,9 @@ tvpLib.packages.mergeVariants {
     }
   );
   gnugrep = tvpLib.packages.mkVariants (
-    recipes.gnugrep
+    recipes.gnugrep.constructionRecipe
     // {
-      extraArgs = recipes.gnugrep.extraArgs // {
+      extraArgs = recipes.gnugrep.constructionRecipe.extraArgs // {
         mkTests =
           package:
           import ../../../pkgs/build-tools/gnugrep/tests {

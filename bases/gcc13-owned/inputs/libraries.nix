@@ -7,7 +7,7 @@
 }:
 tvpLib.packages.mergeVariants {
   readline = tvpLib.packages.mkVariants (
-    recipes.readline
+    recipes.readline.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -91,7 +91,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   pcre2 = tvpLib.packages.mkVariants (
-    recipes.pcre2
+    recipes.pcre2.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -115,7 +115,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   ncurses = tvpLib.packages.mkVariants (
-    recipes.ncurses
+    recipes.ncurses.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
