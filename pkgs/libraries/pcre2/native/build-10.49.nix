@@ -213,5 +213,9 @@ in
     jit = true;
     unicode = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Perl-compatible regular expressions library";
+    license = lib.licenses.bsd3;
+    platforms = [ "x86_64-linux" ];
+  };
 }

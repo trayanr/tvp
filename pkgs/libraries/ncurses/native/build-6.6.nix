@@ -174,5 +174,9 @@ in
     shared = true;
     static = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Free software emulation of curses";
+    license = lib.licenses.mit;
+    platforms = [ "x86_64-linux" ];
+  };
 }

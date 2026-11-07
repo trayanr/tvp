@@ -134,5 +134,9 @@ in
     pcre = true;
     nls = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "GNU pattern matching utilities";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }

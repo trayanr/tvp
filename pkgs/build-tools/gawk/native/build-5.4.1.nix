@@ -183,5 +183,9 @@ in
     nls = true;
   };
   tvp.readlineProgram = "gawk";
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "GNU AWK with arbitrary precision arithmetic";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }

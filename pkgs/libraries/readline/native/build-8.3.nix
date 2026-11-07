@@ -133,5 +133,9 @@ in
     history = true;
     static = false;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Library for interactive line editing";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }
