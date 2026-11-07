@@ -47,7 +47,7 @@ package.testContext.mkSuite {
       };
       local-tls = {
         script = ''
-          openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 1 -subj /CN=localhost > cert.log 2>&1
+          openssl req -config /dev/null -x509 -newkey rsa:2048 -noenc -keyout key.pem -out cert.pem -days 1 -subj /CN=localhost > cert.log 2>&1
           openssl verify -CAfile cert.pem cert.pem > verify.log
           if openssl verify -no-CAfile -no-CApath -no-CAstore cert.pem >bad.out 2>bad.err; then exit 1; fi
           cc ${./fixtures/native-tls.c} -lssl -lcrypto -o tls
@@ -66,7 +66,7 @@ package.testContext.mkSuite {
           c-rehash = {
             script = ''
               mkdir certs
-              openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out certs/ca.pem -days 1 -subj /CN=rehash > cert.log 2>&1
+              openssl req -config /dev/null -x509 -newkey rsa:2048 -noenc -keyout key.pem -out certs/ca.pem -days 1 -subj /CN=rehash > cert.log 2>&1
               PATH= ${package}/bin/c_rehash certs > rehash.log
               hash=$(openssl x509 -in certs/ca.pem -noout -subject_hash)
               test -L "certs/$hash.0"
