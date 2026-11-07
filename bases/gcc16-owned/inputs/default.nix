@@ -167,7 +167,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  ncurses = select recipes.ncurses {
+  ncurses = select recipes.ncurses.constructionRecipe {
     "6.6" = {
       deps = {
         pkg-config = inputs.pkg-config_0_29_2;
