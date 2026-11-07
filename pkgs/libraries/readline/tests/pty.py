@@ -50,7 +50,7 @@ try:
         os.write(master, b'\x10\x05Y\n')
         until(b'readline-edit-history-ok')
     elif mode == '--gawk':
-        until(b'gawk)')
+        until(b'gawk> ')
         os.write(master, b'liZZ\x7f\x7fst\n')
         until(b'BEGIN { print')
         os.write(master, b'run\n')

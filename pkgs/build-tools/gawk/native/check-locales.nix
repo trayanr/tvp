@@ -64,7 +64,6 @@ builder {
   };
   dependencyNames = [
     "libc"
-    "base"
     "bash"
     "coreutils"
     "tar"
