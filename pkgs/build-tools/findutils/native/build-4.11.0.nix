@@ -105,7 +105,6 @@ in
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      cp config.log "$out/nix-support/config.log"
       cp config.h "$out/nix-support/config.h"
     '')
     (outputs.shebangs {
