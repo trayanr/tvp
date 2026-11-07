@@ -52,7 +52,9 @@ let
           builder = tvp.builder;
           inherit package;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";

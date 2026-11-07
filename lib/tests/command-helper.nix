@@ -10,30 +10,34 @@ let
   spec = package.specification;
   original = spec.helperCoreutils;
   helper = tvp.builder {
-    recipe = { original }: final: {
-      pname = "${package.pname}-helper-control";
-      version = package.version;
-      src = null;
-      inherit (spec) base bash coreutils;
-      plan = [
-        (
-          (spec.base.environment { tools = [ original ]; })
-          // {
-            name = "helper.wrapper";
-            run = ''
-              mkdir -p "$out/bin"
-              cat > "$out/bin/${helperName}" <<'SCRIPT'
-              #!${spec.bash}/bin/bash
-              if test -n "''${TVP_HELPER_LOG:-}"; then echo ${helperName} >> "$TVP_HELPER_LOG"; fi
-              exec ${original}/bin/${helperName} "$@"
-              SCRIPT
-              chmod +x "$out/bin/${helperName}"
-            '';
-          }
-        )
-      ];
+    recipe =
+      { original }:
+      final: {
+        pname = "${package.pname}-helper-control";
+        version = package.version;
+        src = null;
+        inherit (spec) base bash coreutils;
+        plan = [
+          (
+            (spec.base.environment { tools = [ original ]; })
+            // {
+              name = "helper.wrapper";
+              run = ''
+                mkdir -p "$out/bin"
+                cat > "$out/bin/${helperName}" <<'SCRIPT'
+                #!${spec.bash}/bin/bash
+                if test -n "''${TVP_HELPER_LOG:-}"; then echo ${helperName} >> "$TVP_HELPER_LOG"; fi
+                exec ${original}/bin/${helperName} "$@"
+                SCRIPT
+                chmod +x "$out/bin/${helperName}"
+              '';
+            }
+          )
+        ];
+      };
+    args = {
+      inherit original;
     };
-    args = { inherit original; };
     dependencyNames = [ "original" ];
     metadata.kind = "owned-test-support";
     selection.kind = "owned-test-support";

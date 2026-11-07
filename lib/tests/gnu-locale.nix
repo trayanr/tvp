@@ -10,37 +10,39 @@
   libc,
 }:
 builder {
-  recipe = { src, libc }: final: {
-    pname = "tvp-command-tools-french-locale";
-    version = "2.39";
-    inherit
-      base
-      bash
-      coreutils
-      src
-      ;
-    plan = [
-      (
-        (base.environment {
-          tools = [
-            tar
-            xz
-            libc
-          ];
-        })
-        // {
-          name = "locale.generate";
-          run = ''
-            ${tar}/bin/tar -xJf ${final.src} glibc-2.39/localedata
-            mkdir -p "$out/fr_FR.UTF-8"
-            I18NPATH="$PWD/glibc-2.39/localedata" ${libc}/bin/localedef --no-archive \
-              -i fr_FR -f "$PWD/glibc-2.39/localedata/charmaps/UTF-8" "$out/fr_FR.UTF-8"
-            test "$(LOCPATH="$out" LC_ALL=fr_FR.UTF-8 ${libc}/bin/locale charmap)" = UTF-8
-          '';
-        }
-      )
-    ];
-  };
+  recipe =
+    { src, libc }:
+    final: {
+      pname = "tvp-command-tools-french-locale";
+      version = "2.39";
+      inherit
+        base
+        bash
+        coreutils
+        src
+        ;
+      plan = [
+        (
+          (base.environment {
+            tools = [
+              tar
+              xz
+              libc
+            ];
+          })
+          // {
+            name = "locale.generate";
+            run = ''
+              ${tar}/bin/tar -xJf ${final.src} glibc-2.39/localedata
+              mkdir -p "$out/fr_FR.UTF-8"
+              I18NPATH="$PWD/glibc-2.39/localedata" ${libc}/bin/localedef --no-archive \
+                -i fr_FR -f "$PWD/glibc-2.39/localedata/charmaps/UTF-8" "$out/fr_FR.UTF-8"
+              test "$(LOCPATH="$out" LC_ALL=fr_FR.UTF-8 ${libc}/bin/locale charmap)" = UTF-8
+            '';
+          }
+        )
+      ];
+    };
   args = {
     inherit libc;
     src = import <nix/fetchurl.nix> {
