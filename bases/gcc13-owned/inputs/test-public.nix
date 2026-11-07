@@ -8,6 +8,7 @@
 let
   historicalTvp = tvp // {
     packages = public;
+    canonical = capturedCanonical;
   };
   universe = import ../../../pkgs {
     inherit pkgs;
@@ -58,6 +59,17 @@ let
         "mpdecimal"
         "tcl"
       ];
+  # Exact-name historical baselines must close over the same retained providers.
+  capturedCanonical =
+    universe.canonical
+    // tvp.lib.packages.merge (
+      builtins.listToAttrs (
+        map (f: {
+          name = builtins.head (builtins.attrNames f.canonical);
+          value = f.canonical;
+        }) families
+      )
+    );
   public =
     universe.canonical
     // universe.aliases
