@@ -48,4 +48,7 @@ package.testContext.mkSuite {
     };
 }
 
-// import ./native-contract.nix { inherit package; }
+// import ./native-contract.nix {
+  inherit package;
+  lib = pkgs.lib;
+}
