@@ -81,6 +81,6 @@ in
     (outputs.development { inherit python; libraries = [ ]; })
     (outputs.checkPaths { inherit python binutils patchelf; paths = [ "bin" "lib" ]; })
   ];
-  tvp.features = { widec = true; cxx = true; pkgConfig = true; libName = "ncursesw"; shared = true; static = true; };
+  tvp.features = { constUserData = true; widec = true; cxx = true; pkgConfig = true; libName = "ncursesw"; shared = true; static = true; };
   meta.platforms = [ "x86_64-linux" ];
 }

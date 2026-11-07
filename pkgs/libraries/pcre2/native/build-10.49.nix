@@ -8,6 +8,7 @@
   version,
   bash,
   coreutils,
+  pkgConfig,
   gnumake,
   gnutar,
   python,
@@ -36,7 +37,7 @@ in
   pname = "pcre2";
   inherit base src version bash coreutils;
   environment = {
-    tools = [ gnumake sed grep gawk diffutils findutils perl ];
+    tools = [ pkgConfig gnumake sed grep gawk diffutils findutils perl ];
     libraries = [  ];
   };
   runtime.libraries = [  ];

@@ -47,3 +47,5 @@ package.testContext.mkSuite {
       };
     };
 }
+
+// import ./native-contract.nix { inherit package; }

@@ -65,4 +65,4 @@ package.testContext.mkSuite {
 
 // import ./native-tracker.nix { inherit pkgs tvpLib package; }
 
-// import ../../../../lib/tests/command-nls.nix { inherit package locale; command = "gawk"; }
+// import ./native-nls.nix { inherit package locale; }

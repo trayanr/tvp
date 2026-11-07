@@ -72,3 +72,5 @@ package.testContext.mkSuite {
 }
 
 // import ./native-nls.nix { inherit package locale; }
+
+// import ./native-contract.nix { inherit package; }

@@ -161,6 +161,7 @@ let
         mpfr = tvp.packages.mpfr_4;
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
+        localeProvider = tvpLib.packages.withConstraint { category = "construction"; reason = "Matching source-owned target libc locale tools and C.UTF-8 data for upstream Unicode tests."; } candidate.toolchain.libc;
       };
     };
   };

@@ -52,6 +52,7 @@ let
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";
+        pkgConfig = constructionTool "pkgConfig";
         gnumake = constructionTool "make";
         gnutar = constructionTool "tar";
         python = constructionTool "python";

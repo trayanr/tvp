@@ -20,6 +20,7 @@
   findutils,
   xz,
   perl,
+  localeProvider,
   gmp,
   mpfr,
   readline,
@@ -39,7 +40,7 @@ in
   pname = "gawk";
   inherit base src version bash coreutils;
   environment = {
-    tools = [ gnumake sed grep gawk diffutils findutils perl ];
+    tools = [ localeProvider gnumake sed grep gawk diffutils findutils perl ];
     libraries = [ gmp mpfr readline ncurses ];
   };
   runtime.libraries = [ gmp mpfr readline ncurses ];
@@ -55,7 +56,8 @@ in
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    ((command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'') // { enabled = doCheck; })
+    ((command "check" ''export LOCPATH=${localeProvider}/lib/locale GAWKLOCALE=C.UTF-8 PAGER=cat
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'') // { enabled = doCheck; })
     (command "install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
