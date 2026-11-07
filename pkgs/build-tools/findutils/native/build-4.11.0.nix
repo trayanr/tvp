@@ -11,6 +11,7 @@
   gnumake,
   gnutar,
   xz,
+  gzip,
   python,
   perl,
   binutils,
@@ -116,6 +117,23 @@ in
       ];
       interpreter = "${final.bash}/bin/bash";
     })
+    {
+      name = "output.manuals";
+      tools = [
+        gzip
+        findutils
+      ];
+      run = ''
+        while IFS= read -r -d "" manual; do
+          ${gzip}/bin/gzip -n -9 "$manual"
+        done < <(${findutils}/bin/find "$out/share/man" -type f ! -name '*.gz' -print0)
+        while IFS= read -r -d "" manual; do
+          target=$(readlink "$manual")
+          rm "$manual"
+          ln -s "$target.gz" "$manual.gz"
+        done < <(${findutils}/bin/find "$out/share/man" -type l ! -name '*.gz' -print0)
+      '';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = [

@@ -75,6 +75,7 @@ let
         gnumake = constructionTool "make";
         gnutar = constructionTool "tar";
         xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
         python = constructionTool "python";
         perl = constructionTool "perl";
         binutils = constructionTool "binutils";
