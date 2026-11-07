@@ -145,6 +145,7 @@ tvpLib.packages.mergeVariants {
         // {
           testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
             inherit (construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies)
+              baseline
               coreutils
               gnused
               ;
