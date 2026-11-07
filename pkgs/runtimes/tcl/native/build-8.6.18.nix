@@ -105,10 +105,11 @@ in
     '')
     (
       (command "check" ''
-        export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
-        export LD_LIBRARY_PATH="$PWD"
-        ${coreutils}/bin/timeout 900 ${make} test-tcl TESTFLAGS='-verbose bpse' < /dev/zero 2>&1 | tee core-tests.log
-        if grep -E 'Failed[[:space:]]+[1-9][0-9]*' core-tests.log; then exit 1; fi
+          export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
+          export LD_LIBRARY_PATH="$PWD"
+          ${coreutils}/bin/timeout 900 ${make} test-tcl TESTFLAGS='-verbose bpse' < /dev/zero 2>&1 | tee core-tests.log
+          grep -Eq 'Total[[:space:]]+[1-9][0-9]*[[:space:]]+Passed[[:space:]]+[1-9][0-9]*' core-tests.log
+        if grep -E 'Failed[[:space:]]+[1-9][0-9]*|Test file error:|Test files exiting with errors:' core-tests.log; then exit 1; fi
       '')
       // {
         enabled = doCheck;

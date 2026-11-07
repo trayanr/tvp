@@ -34,6 +34,14 @@ let
       cwd = "source";
       inherit run;
     };
+  pythonCommand =
+    name: run:
+    (final.base.environment (final.environment // { tools = final.environment.tools ++ [ python ]; }))
+    // {
+      name = "perl.${name}";
+      cwd = "source";
+      inherit run;
+    };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {
@@ -75,7 +83,7 @@ in
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
-    (command "test-diff" ''
+    (pythonCommand "test-diff" ''
       ${python}/bin/python3 -B - <<'PYTHON'
       from pathlib import Path
       p = Path('ext/Pod-Html/t/lib/Testing.pm')

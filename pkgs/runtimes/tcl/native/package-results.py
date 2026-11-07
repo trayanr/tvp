@@ -55,9 +55,11 @@ else:
         probe = probes.get(package)
         if errors or 'Test files exiting with errors:' in text:
             assert probe and probe['status'] == 77, (package, errors)
-            assert errors and all(re.fullmatch(
-                r'couldn\'t load file "(lib[^"/]+)": \1: cannot open shared object file: No such file or directory', error)
-                for error in errors), (package, errors)
+            assert errors, package
+            for error in errors:
+                match = re.fullmatch(
+                    r'couldn\'t load file "(lib[^"/]+)": \1: cannot open shared object file: No such file or directory', error)
+                assert match and match[1] in probe['candidates'], (package, error)
             # The raw upstream fixture errors remain in Nix logs. This is LIMITED,
             # never a passing/empty database integration fixture.
             status = 'unavailable-external-client-library'
