@@ -1,4 +1,8 @@
 { tvp }:
+let
+  registration = import ./provenance.nix { inherit tvp; };
+in
+assert builtins.all (passed: passed) (builtins.attrValues registration);
 tvp.bases.default.stdenv.mkDerivation {
   name = "tvp-audit-contracts";
   nativeBuildInputs = [ tvp.packages.python_3 ];
