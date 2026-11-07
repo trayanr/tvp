@@ -164,7 +164,63 @@ let
     "acl_2_4_0"
     "libxcrypt_4_5_2"
   ];
+  commandTools = map (name: tvp.canonical.${name}) [
+    "acl_2_3_2"
+    "coreutils_9_5"
+    "gnused_4_10"
+    "findutils_4_11_0"
+    "diffutils_3_12"
+    "gnutar_1_35"
+  ];
   contracts = {
+    commandSourceEdits = lib.all (
+      q:
+      let
+        source = builtins.toFile "command-source-contract" "changed source bytes";
+        edited = q.edit (spec: spec // { src = source; });
+        unpack = lib.findFirst (step: step.name == "source.unpack") null edited.buildSteps;
+      in
+      edited.src == source
+      && lib.hasInfix (toString source) unpack.run
+      && !(lib.hasInfix (builtins.unsafeDiscardStringContext (toString q.src)) unpack.run)
+      && edited.drvPath != q.drvPath
+      && edited.drvPath == (q.override { src = source; }).drvPath
+    ) commandTools;
+    commandCurrentShell = lib.all (
+      q:
+      let
+        edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
+        configure = lib.findFirst (step: lib.hasSuffix ".configure" step.name) null edited.buildSteps;
+      in
+      lib.hasInfix "${tvp.packages.bash}/bin/bash" configure.run
+      && edited.tests.version.specification.bash.drvPath == tvp.packages.bash.drvPath
+      && edited.tests.version.package.drvPath == edited.drvPath
+    ) commandTools;
+    commandRuntimeEdits = lib.all (
+      q:
+      let
+        edited = q.editRuntime (
+          runtime: runtime // { dlopenDirectories = [ "/command-runtime-fixture" ]; }
+        );
+      in
+      edited.drvPath != q.drvPath
+      &&
+        lib.hasInfix "/command-runtime-fixture"
+          (lib.findFirst (step: step.name == "output.rpaths") null edited.buildSteps).run
+    ) commandTools;
+    commandUnknownDependency = lib.all (
+      q: rejects (q.override { undeclaredTool = p; }).drvPath
+    ) commandTools;
+    commandLibraryOverride =
+      let
+        q = tvp.canonical.coreutils_9_5.override { acl = tvp.packages.acl_2_3; };
+      in
+      q.tvp.deps.acl.drvPath == tvp.packages.acl_2_3.drvPath
+      && q.drvPath != tvp.canonical.coreutils_9_5.drvPath
+      &&
+        lib.hasInfix (toString tvp.packages.acl_2_3)
+          (lib.findFirst (step: step.name == "output.rpaths") null q.buildSteps).run;
+
     foundationEditedSource = lib.all (
       q:
       let
