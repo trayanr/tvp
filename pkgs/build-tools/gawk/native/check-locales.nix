@@ -11,7 +11,15 @@
 }:
 builder {
   recipe =
-    { src, libc }:
+    {
+      src,
+      libc,
+      base,
+      bash,
+      coreutils,
+      tar,
+      xz,
+    }:
     final: {
       pname = "gawk-check-locales";
       version = "2.39";
