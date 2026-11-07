@@ -6,7 +6,10 @@ import ../../../../lib/tests/recorded.nix {
   inherit package;
   name = "line-edit-history";
   tools = package.specification.environment.tools ++ [ d.python ];
-  libraries = [ package ];
+  libraries = [
+    package
+    d.ncurses
+  ];
   script = ''
     mkdir "$out"
     unset COLUMNS LINES TERMINFO TERMINFO_DIRS
@@ -19,7 +22,7 @@ import ../../../../lib/tests/recorded.nix {
     fi
     test "$probe" = 0
     cc -I${package}/include ${./fixtures/line-edit.c} ${package}/lib/libreadline.so -Wl,-rpath,${package}/lib -o line-edit
-    ${d.python}/bin/python3 ${./pty.py} --readline "$PWD/line-edit" > "$out/log" 2>&1
+    ${d.python}/bin/python3 ${./pty.py} --readline "$PWD/line-edit" > "$out/log" 2>&1 || { result=$?; cat "$out/log" >&2; exit "$result"; }
     echo PASS > "$out/status"
   '';
 }

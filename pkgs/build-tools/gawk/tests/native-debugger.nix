@@ -17,7 +17,7 @@ import ../../../../lib/tests/recorded.nix {
       exit 0
     fi
     test "$probe" = 0
-    ${d.python}/bin/python3 ${../../../libraries/readline/tests/pty.py} --gawk ${package}/bin/gawk > "$out/log" 2>&1
+    ${d.python}/bin/python3 ${../../../libraries/readline/tests/pty.py} --gawk ${package}/bin/gawk > "$out/log" 2>&1 || { result=$?; cat "$out/log" >&2; exit "$result"; }
     echo PASS > "$out/status"
   '';
 }

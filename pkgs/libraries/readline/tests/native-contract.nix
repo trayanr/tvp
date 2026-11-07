@@ -15,6 +15,12 @@ package.testContext.mkSuite {
         pkg-config --libs "$module" >&2
         pkg-config --static --libs "$module" >&2
       done
+      pkg-config --libs readline > public-flags
+      if grep -- '-lncursesw' public-flags; then exit 1; fi
+      pkg-config --static --libs readline > private-flags
+      grep -- '-lncursesw' private-flags > /dev/null
+      cc ${./fixtures/version.c} $(pkg-config --cflags --libs --static readline) -Wl,-rpath,${package}/lib -Wl,-rpath,${d.ncurses}/lib -o pc-consumer
+      test "$(./pc-consumer)" = ${package.version}
       test -z "$(find ${package}/lib -name '*.a' -print)"
       readelf -d ${package}/lib/libreadline.so > dynamic
       grep -F 'Shared library: [libncursesw.so.6]' dynamic >/dev/null

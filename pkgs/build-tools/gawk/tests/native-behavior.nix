@@ -8,7 +8,7 @@ let
   atLeast = lib.versionAtLeast package.version;
   awk = "${package}/bin/gawk";
   utf8 = ''
-    export LOCPATH=${package.compiler.libc}/lib/locale LC_ALL=C.utf8
+    export LOCPATH=${package.compiler.libc}/lib/locale LC_ALL=C.UTF-8
     test "$(${awk} 'BEGIN {print length("σςΣ")}')" = 3
   '';
   # Unlike mkTest's scalar output, these results retain conditional coverage and logs.
