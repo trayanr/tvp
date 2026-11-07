@@ -89,7 +89,7 @@ in
     (command "findutils.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       export SORT=${final.helperCoreutils}/bin/sort
-      ./configure --prefix="$out" --enable-nls 
+      ./configure --prefix="$out" --enable-nls
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "findutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')

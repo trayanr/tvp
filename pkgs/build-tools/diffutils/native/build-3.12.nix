@@ -89,7 +89,7 @@ in
     (command "diffutils.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       export PR_PROGRAM=${final.helperCoreutils}/bin/pr
-      ./configure --prefix="$out" --enable-nls 
+      ./configure --prefix="$out" --enable-nls
       grep '^#define ENABLE_NLS 1' lib/config.h
     '')
     (command "diffutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
