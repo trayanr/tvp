@@ -55,6 +55,23 @@ in
       '';
     }
     (steps.prepareAutotools { name = "pcre2.prepare"; bash = final.bash; inherit python; base = final.base; })
+    {
+      name = "pcre2.callout-echo";
+      cwd = "source";
+      tools = [ python coreutils ];
+      run = ''
+        # Upstream's four pcre2grep callouts execute /bin/echo, absent in the
+        # sandbox. Bind those exact commands to the declared executable.
+        ${python}/bin/python3 -B - ${coreutils}/bin/echo <<'PYTHON'
+        from pathlib import Path
+        import os, sys
+        p = Path('RunGrepTest'); info = p.stat(); data = p.read_bytes()
+        assert data.count(b'/bin/echo|') == 4
+        p.write_bytes(data.replace(b'/bin/echo|', os.fsencode(sys.argv[1]) + b'|'))
+        os.utime(p, ns=(info.st_atime_ns, info.st_mtime_ns))
+        PYTHON
+      '';
+    }
     (steps.shebangs { name = "pcre2.source-shells"; inherit python; paths = ["RunTest" "RunGrepTest" "test-driver" "compile" "config.guess" "config.sub" "install-sh" "missing" "depcomp" "ar-lib"]; names = [ "sh" "bash" ]; interpreter = "${final.bash}/bin/bash"; })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1

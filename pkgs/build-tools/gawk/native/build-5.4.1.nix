@@ -50,7 +50,7 @@ in
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       ./configure --prefix="$out" --enable-nls --with-readline=${readline} --with-mpfr=${mpfr} --with-gmp=${gmp}
-      grep '^#define HAVE_LIBMPFR 1' config.h
+      grep '^#define HAVE_MPFR 1' config.h
       grep '^#define HAVE_LIBREADLINE 1' config.h
       grep '^#define ENABLE_NLS 1' config.h
     '')
