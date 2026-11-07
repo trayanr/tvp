@@ -91,8 +91,13 @@ in
     grep -F '${acl}/lib' "$out/dynamic.txt"
 
     grep -F 'libacl.so' "$out/dynamic.txt"
-    # On this base getxattr/setxattr are supplied by libc; libattr is
-    # a declared build input, not a runtime dependency of tar.
+    # libc supplies Tar's xattr calls, so Tar has no direct libattr
+    # DT_NEEDED. Its selected ACL2.3 DSO retains its own Attr runtime
+    # requirement, independently verified by the installed runtime audit.
+    if grep -q 'Shared library: \[libattr' "$out/dynamic.txt"; then
+      echo 'unexpected direct Tar libattr dependency' >&2
+      exit 1
+    fi
     printf '%s\n' 'acl=${acl}' 'attr=${attr}' > "$out/declared-inputs.txt"
     grep -F 'libc.so' "$out/dynamic.txt"
     cp probe "$out/probe"
