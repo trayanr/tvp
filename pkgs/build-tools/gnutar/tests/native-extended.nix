@@ -6,20 +6,23 @@
 }:
 let
   inherit (package.tvp.deps) acl attr;
-  commonTools = package.specification.environment.tools ++ [ package.tvp.declaredDependencies.binutils ];
-  recorded = name: tools: libraries: script: (import ../../../../lib/tests/recorded.nix) {
-    inherit package name script libraries;
-    tools = commonTools ++ tools;
-  };
+  commonTools = package.specification.environment.tools ++ [
+    package.tvp.declaredDependencies.binutils
+  ];
+  recorded =
+    name: tools: libraries: script:
+    (import ../../../../lib/tests/recorded.nix) {
+      inherit
+        package
+        name
+        script
+        libraries
+        ;
+      tools = commonTools ++ tools;
+    };
 in
 {
-  upstream-fixtures = package.testContext.mkTest {
-    inherit package;
-    name = "upstream-fixtures";
-    tools = commonTools;
-    script = assert builtins.all (n: (import ../upstream.nix).normalise n == null) [ "tar-1.35.tar.xz.sig" "tar-1.35-rc1.tar.xz" "prefix-tar-1.35.tar.xz" ]; "echo strict-upstream";
-    expected = "strict-upstream";
-  };
+  upstream-fixtures = import ./native-tracker.nix { inherit pkgs package; };
   archive-semantics = recorded "archive-semantics" [ ] [ ] ''
     set -euo pipefail
     mkdir -p "$out"
@@ -58,42 +61,40 @@ in
       echo 'PASS ${helper.bin}: explicit owned helper executed for create/extract' | tee -a "$out/results.log"
     '') helpers}
   '';
-  native-metadata =
-    recorded "native-metadata" [ package.tvp.cc ] [ acl attr ]
-      ''
-        set -euo pipefail
-        mkdir -p "$out" src dest
-        "$CC" ${./features.c} -I${acl}/include -L${acl}/lib -Wl,-rpath,${acl}/lib -lacl -o probe
-        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o independent-preflight
-        printf preserved > src/file
-        for feature in acl xattr; do
-          rc=0
-          capability=xattrs
-          if test "$feature" = acl; then capability=acls; fi
-          ./independent-preflight "$capability" > "$out/$feature-preflight.log" 2>&1 || rc=$?
-          case "$rc" in
-            0)
-              # Once the independent capability succeeds, fixture77 is a failure.
-              ./probe set "$feature" src/file > "$out/$feature.log" 2>&1
-              rm -f dest/file
-              ${package}/bin/tar --acls --xattrs -cf archive -C src file >> "$out/$feature.log" 2>&1
-              ${package}/bin/tar --acls --xattrs -xf archive -C dest >> "$out/$feature.log" 2>&1
-              cmp src/file dest/file
-              ./probe get "$feature" dest/file >> "$out/$feature.log" 2>&1
-              echo "PASS $feature roundtrip" | tee -a "$out/results.log"
-              ;;
-            77) echo "SKIP $feature: filesystem/kernel unsupported (see errno log)" | tee -a "$out/results.log" ;;
-            *) cat "$out/$feature.log" >&2; exit "$rc" ;;
-          esac
-        done
-        ${package.tvp.declaredDependencies.binutils}/bin/readelf -d ${package}/bin/tar > "$out/dynamic.txt"
-        grep -F '${acl}/lib' "$out/dynamic.txt"
+  native-metadata = recorded "native-metadata" [ package.tvp.cc ] [ acl attr ] ''
+    set -euo pipefail
+    mkdir -p "$out" src dest
+    "$CC" ${./features.c} -I${acl}/include -L${acl}/lib -Wl,-rpath,${acl}/lib -lacl -o probe
+    "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o independent-preflight
+    printf preserved > src/file
+    for feature in acl xattr; do
+      rc=0
+      capability=xattrs
+      if test "$feature" = acl; then capability=acls; fi
+      ./independent-preflight "$capability" > "$out/$feature-preflight.log" 2>&1 || rc=$?
+      case "$rc" in
+        0)
+          # Once the independent capability succeeds, fixture77 is a failure.
+          ./probe set "$feature" src/file > "$out/$feature.log" 2>&1
+          rm -f dest/file
+          ${package}/bin/tar --acls --xattrs -cf archive -C src file >> "$out/$feature.log" 2>&1
+          ${package}/bin/tar --acls --xattrs -xf archive -C dest >> "$out/$feature.log" 2>&1
+          cmp src/file dest/file
+          ./probe get "$feature" dest/file >> "$out/$feature.log" 2>&1
+          echo "PASS $feature roundtrip" | tee -a "$out/results.log"
+          ;;
+        77) echo "SKIP $feature: filesystem/kernel unsupported (see errno log)" | tee -a "$out/results.log" ;;
+        *) cat "$out/$feature.log" >&2; exit "$rc" ;;
+      esac
+    done
+    ${package.tvp.declaredDependencies.binutils}/bin/readelf -d ${package}/bin/tar > "$out/dynamic.txt"
+    grep -F '${acl}/lib' "$out/dynamic.txt"
 
-        grep -F 'libacl.so' "$out/dynamic.txt"
-        # On this base getxattr/setxattr are supplied by libc; libattr is
-        # a declared build input, not a runtime dependency of tar.
-        printf '%s\n' 'acl=${acl}' 'attr=${attr}' > "$out/declared-inputs.txt"
-        grep -F 'libc.so' "$out/dynamic.txt"
-        cp probe "$out/probe"
-      '';
+    grep -F 'libacl.so' "$out/dynamic.txt"
+    # On this base getxattr/setxattr are supplied by libc; libattr is
+    # a declared build input, not a runtime dependency of tar.
+    printf '%s\n' 'acl=${acl}' 'attr=${attr}' > "$out/declared-inputs.txt"
+    grep -F 'libc.so' "$out/dynamic.txt"
+    cp probe "$out/probe"
+  '';
 }

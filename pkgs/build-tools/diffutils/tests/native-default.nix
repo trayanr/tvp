@@ -89,4 +89,7 @@ package.testContext.mkSuite {
   };
 }
 
-// import ../../../../lib/tests/command-nls.nix { inherit package; command = "diff"; }
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package;
+  command = "diff";
+}

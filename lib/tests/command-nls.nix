@@ -6,7 +6,10 @@ let
 in
 package.testContext.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ deps.python locale ];
+  tools = package.specification.environment.tools ++ [
+    deps.python
+    locale
+  ];
   tests.nls = {
     script = ''
       ${deps.python}/bin/python3 -B ${./release-catalogs.py} ${package.src} ${package} >&2

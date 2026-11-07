@@ -32,4 +32,7 @@ package.testContext.mkSuite {
   };
 }
 
-// import ../../../../lib/tests/command-nls.nix { inherit package; command = "find"; }
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package;
+  command = "find";
+}

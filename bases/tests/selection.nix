@@ -22,7 +22,9 @@ let
       bases.gcc13-owned-v3.stdenv.drvPath == construction.bases.gcc13-owned-v3.stdenv.drvPath
       && tvp.packages.acl_2_3_0.tvp.base == "gcc13-owned-v3"
       && tvp.packages.acl_2_3_1.tvp.base == "gcc13-owned-v3"
-      && tvp.packages.acl_2_3_2.tvp.base == bases.default.name;
+      &&
+        tvp.packages.acl_2_3_2.specification.base.compiler.drvPath == (import ../source-gnu { })
+        .base.compiler.drvPath;
     no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
     retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
     pinned-gcc16-inputs =

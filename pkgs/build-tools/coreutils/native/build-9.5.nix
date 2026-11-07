@@ -30,25 +30,64 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  command = name: run: environment // { inherit name run; cwd = "source"; };
+  command =
+    name: run:
+    environment
+    // {
+      inherit name run;
+      cwd = "source";
+    };
 in
 {
   pname = "coreutils";
-  inherit base src version bash;
+  inherit
+    base
+    src
+    version
+    bash
+    ;
   coreutils = coreutils;
   environment = {
-    tools = [ gnumake sed grep gawk diffutils findutils perl ];
-    libraries = [ gmp acl ];
+    tools = [
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      perl
+    ];
+    libraries = [
+      gmp
+      acl
+    ];
   };
-  runtime.libraries = [ gmp acl ];
+  runtime.libraries = [
+    gmp
+    acl
+  ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; inherit xz findutils; tar = gnutar; })
-    (steps.prepareAutotools { name = "coreutils.prepare"; inherit bash python; base = final.base; })
+    (steps.unpack {
+      src = final.src;
+      inherit xz findutils;
+      tar = gnutar;
+    })
+    (steps.prepareAutotools {
+      name = "coreutils.prepare";
+      inherit bash python;
+      base = final.base;
+    })
     (steps.shebangs {
       name = "coreutils.source-shells";
       inherit python;
-      paths = [ "build-aux" "tests" ];
-      names = [ "sh" "bash" ];
+      paths = [
+        "build-aux"
+        "tests"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
       interpreter = "${bash}/bin/bash";
     })
     (command "coreutils.configure" ''
@@ -59,9 +98,14 @@ in
       grep '^#define HAVE_GMP_H 1' lib/config.h
     '')
     (command "coreutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    ((command "coreutils.check" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check
-    '') // { enabled = doCheck; })
+    (
+      (command "coreutils.check" ''
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check
+      '')
+      // {
+        enabled = doCheck;
+      }
+    )
     (command "coreutils.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
@@ -69,7 +113,11 @@ in
       cp config.log "$out/nix-support/config.log"
       cp lib/config.h "$out/nix-support/config.h"
     '')
-    (outputs.strip { inherit python binutils; paths = [ "bin" ]; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit python binutils;
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
     (outputs.rpaths {
       inherit python binutils patchelf;
       base = final.base;
@@ -78,7 +126,15 @@ in
       paths = [ "bin" ];
       elfKinds = [ "runtime" ];
     })
-    (outputs.checkPaths { inherit python binutils patchelf; paths = [ "bin" ]; elfKinds = [ "runtime" ]; })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
   ];
-  meta = { description = "GNU coreutils utilities"; license = lib.licenses.gpl3Plus; platforms = [ "x86_64-linux" ]; };
+  meta = {
+    description = "GNU coreutils utilities";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }

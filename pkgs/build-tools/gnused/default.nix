@@ -45,20 +45,29 @@ let
   constructionRecipe = packageArgs;
   candidate = import ../../../bases/source-gnu { };
   native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool = name: tvpLib.packages.withConstraint {
-    category = "construction";
-    reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
-  } candidate.tools.${name};
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
+    } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
     "4.10" = {
       constructor = tvp.builder;
       builder = ./native/build-4.10.nix;
       base = candidate.base;
-      source = { version, sha256 }: import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
-        inherit sha256;
-      };
-      testContext = package: tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       helpers = { inherit tvp; };
       deps = {
         bash = constructionTool "bash";
@@ -83,18 +92,27 @@ let
     testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
       builder = tvp.builder;
       base = candidate.base;
-      inherit (candidate.tools) bash coreutils tar xz;
+      inherit (candidate.tools)
+        bash
+        coreutils
+        tar
+        xz
+        ;
       libc = candidate.toolchain.libc;
     };
     versionTable = versionTable // {
-      "4.10" = versionTable."4.10" // { def = if native then ownedDefs."4.10" else versionTable."4.10".def; };
+      "4.10" = versionTable."4.10" // {
+        def = if native then ownedDefs."4.10" else versionTable."4.10".def;
+      };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = publicArgs // { inherit constructionRecipe; };
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

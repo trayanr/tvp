@@ -25,6 +25,16 @@ package.testContext.mkSuite {
     };
   };
 }
-// import ./native-extended.nix { inherit pkgs tvpLib package helpers; }
+// import ./native-extended.nix {
+  inherit
+    pkgs
+    tvpLib
+    package
+    helpers
+    ;
+}
 
-// import ../../../../lib/tests/command-nls.nix { inherit package; command = "tar"; }
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package;
+  command = "tar";
+}

@@ -23,4 +23,7 @@ package.testContext.mkSuite {
   };
 }
 
-// import ../../../../lib/tests/command-nls.nix { inherit package; command = "sort"; }
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package;
+  command = "sort";
+}

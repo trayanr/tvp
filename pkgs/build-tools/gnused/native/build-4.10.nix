@@ -29,25 +29,58 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  command = name: run: environment // { inherit name run; cwd = "source"; };
+  command =
+    name: run:
+    environment
+    // {
+      inherit name run;
+      cwd = "source";
+    };
 in
 {
   pname = "gnused";
-  inherit base src version bash;
+  inherit
+    base
+    src
+    version
+    bash
+    ;
   coreutils = coreutils;
   environment = {
-    tools = [ gnumake sed grep gawk diffutils findutils perl ];
+    tools = [
+      gnumake
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      perl
+    ];
     libraries = [ acl ];
   };
   runtime.libraries = [ acl ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; inherit xz findutils; tar = gnutar; })
-    (steps.prepareAutotools { name = "gnused.prepare"; inherit bash python; base = final.base; })
+    (steps.unpack {
+      src = final.src;
+      inherit xz findutils;
+      tar = gnutar;
+    })
+    (steps.prepareAutotools {
+      name = "gnused.prepare";
+      inherit bash python;
+      base = final.base;
+    })
     (steps.shebangs {
       name = "gnused.source-shells";
       inherit python;
-      paths = [ "build-aux" "tests" ];
-      names = [ "sh" "bash" ];
+      paths = [
+        "build-aux"
+        "tests"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
       interpreter = "${bash}/bin/bash";
     })
     (command "gnused.configure" ''
@@ -56,9 +89,14 @@ in
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "gnused.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    ((command "gnused.check" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check
-    '') // { enabled = doCheck; })
+    (
+      (command "gnused.check" ''
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check
+      '')
+      // {
+        enabled = doCheck;
+      }
+    )
     (command "gnused.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
@@ -66,7 +104,11 @@ in
       cp config.log "$out/nix-support/config.log"
       cp config.h "$out/nix-support/config.h"
     '')
-    (outputs.strip { inherit python binutils; paths = [ "bin" ]; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit python binutils;
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
     (outputs.rpaths {
       inherit python binutils patchelf;
       base = final.base;
@@ -75,7 +117,15 @@ in
       paths = [ "bin" ];
       elfKinds = [ "runtime" ];
     })
-    (outputs.checkPaths { inherit python binutils patchelf; paths = [ "bin" ]; elfKinds = [ "runtime" ]; })
+    (outputs.checkPaths {
+      inherit python binutils patchelf;
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
   ];
-  meta = { description = "GNU sed utilities"; license = lib.licenses.gpl3Plus; platforms = [ "x86_64-linux" ]; };
+  meta = {
+    description = "GNU sed utilities";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }

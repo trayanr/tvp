@@ -42,4 +42,7 @@ package.testContext.mkSuite {
   };
 }
 
-// import ../../../../lib/tests/command-nls.nix { inherit package; command = "sed"; }
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package;
+  command = "sed";
+}
