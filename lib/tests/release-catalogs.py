@@ -1,6 +1,7 @@
 """Assert exact shipped/installed catalog bytes, plus NLS configure evidence."""
 import hashlib
 from pathlib import Path
+import re
 import sys
 import tarfile
 
@@ -27,6 +28,6 @@ installed = {str(p.relative_to(output / 'share/locale')): hashlib.sha256(p.read_
              for p in (output / 'share/locale').rglob('*.mo')}
 assert installed == expected, (set(installed) - set(expected), set(expected) - set(installed))
 assert '#define ENABLE_NLS 1' in (output / 'nix-support/config.h').read_text()
-log = (output / 'nix-support/config.log').read_text()
-assert 'GNU gettext in libc' in log
+gettext = (output / 'nix-support/gettext-libc').read_text().splitlines()
+assert len(gettext) == 1 and re.fullmatch(r'gt_cv_func_gnugettext[0-9]+_libc=yes', gettext[0]), gettext
 print(f'PASS {len(shipped)} shipped languages; {len(installed)} installed catalogs match')
