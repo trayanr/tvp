@@ -13,6 +13,8 @@ package.testContext.mkSuite {
   tests = {
     xs-build-load = {
       script = ''
+        make="$(perl -MConfig -e 'print $Config{make}')"
+        test "$(command -v "$make")" = '${deps.gnumake}/bin/make'
         cat > Makefile.PL <<'PL'
         use ExtUtils::MakeMaker;
         WriteMakefile(NAME => 'TVP', VERSION => '0.01');
@@ -37,7 +39,7 @@ package.testContext.mkSuite {
             RETVAL
         XS
         perl Makefile.PL > configure.log
-        ${deps.gnumake}/bin/make > build.log
+        "$make" > build.log
         perl -Mblib -MTVP -e 'die unless TVP::answer() == 42; print "xs-ok"'
       '';
       expected = "xs-ok";

@@ -95,9 +95,12 @@ in
     '')
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      # Configure publishes the operational command as "make" regardless of an
+      # absolute input. Preserve that consumer contract through the declared
+      # host tool, without retaining its path only in config_args.
       ${final.bash}/bin/bash ./Configure -des -Dprefix="$out" -Duseshrplib \
         '-Dlocincpth= ' '-Dloclibpth= ' -Dcc="$CC" -Dld="$CC" \
-        -Dar="$AR" -Dnm="$NM" -Dranlib="$RANLIB" -Dmake=${gnumake}/bin/make \
+        -Dar="$AR" -Dnm="$NM" -Dranlib="$RANLIB" -Dmake=make \
         -Dsh=${final.bash}/bin/bash
     '')
     (command "build" make)
