@@ -174,11 +174,8 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz"
-            "https://prdownloads.sourceforge.net/tcl/tcl${version}.tar.gz"
-          ];
+        import <nix/fetchurl.nix> {
+          url = "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz";
           inherit sha256;
         };
       testContext =

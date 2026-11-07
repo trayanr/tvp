@@ -92,11 +92,8 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz"
-            "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz"
-          ];
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz";
           inherit sha256;
         };
       testContext =

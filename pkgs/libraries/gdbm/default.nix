@@ -134,11 +134,8 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
-            "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
-          ];
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz";
           inherit sha256;
         };
       testContext =

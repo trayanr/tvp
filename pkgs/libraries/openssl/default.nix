@@ -261,7 +261,7 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
+        import <nix/fetchurl.nix> {
           url = "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
           inherit sha256;
         };
@@ -299,7 +299,7 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
+        import <nix/fetchurl.nix> {
           url = "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
           inherit sha256;
         };

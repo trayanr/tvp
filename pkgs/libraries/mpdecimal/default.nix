@@ -72,7 +72,7 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
+        import <nix/fetchurl.nix> {
           url = "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-${version}.tar.gz";
           inherit sha256;
         };

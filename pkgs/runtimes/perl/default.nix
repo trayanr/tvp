@@ -124,11 +124,8 @@ let
       base = candidate.base;
       source =
         { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-          ];
+        import <nix/fetchurl.nix> {
+          url = "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
           inherit sha256;
         };
       testContext =
