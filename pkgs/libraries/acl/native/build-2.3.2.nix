@@ -59,8 +59,9 @@ in
       diffutils
       findutils
     ];
-    # 2.3 exposes Attr error-context headers and links -lattr; retain the
-    # actual public/static dependency independently of the 2.4 API boundary.
+    # Upstream links -lattr and the resulting DSO retains DT_NEEDED libattr.
+    # Public headers forward-declare error_context; isolated public/static
+    # consumers do not require Attr headers or libraries.
     libraries = [ attr ];
   };
   runtime.libraries = [ attr ];
@@ -188,7 +189,7 @@ in
     })
     (outputs.development {
       inherit python;
-      libraries = [ attr ];
+      libraries = [ ];
     })
     (outputs.checkSymlinks {
       inherit python;

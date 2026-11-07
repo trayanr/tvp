@@ -89,6 +89,29 @@ let
     };
   };
   publicArgs = packageArgs // {
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+      )
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-helper.nix {
+          inherit tvp package;
+          helperName = "pr";
+          invocation = q: ''
+            printf 'before\n' > before
+            printf 'after\n' > after
+            for mode in -l -ly; do
+              rc=0
+              ${q}/bin/diff "$mode" before after > paginated || rc=$?
+              test "$rc" = 1
+              grep -q before paginated
+              grep -q after paginated
+            done
+          '';
+        }
+      );
     testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
       builder = tvp.builder;
       base = candidate.base;

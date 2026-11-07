@@ -27,3 +27,11 @@ package.testContext.mkSuite {
   inherit package;
   command = "sort";
 }
+
+// import ../../../../lib/tests/command-acl.nix {
+  inherit package;
+  operation = ''
+    ${package}/bin/cp -p sample copy
+    mv copy sample
+  '';
+}

@@ -8,6 +8,7 @@ package.testContext.mkSuite {
   tools = package.specification.environment.tools ++ [ package.tvp.declaredDependencies.binutils ];
   tests = {
     acl = {
+      tools = package.specification.environment.tools ++ [ package.tvp.deps.acl ];
       script = ''
         LD_DEBUG=libs ${package}/bin/sed --version >/dev/null 2> loader
         grep -F 'calling init: ${pkgs.lib.getLib package.tvp.deps.acl}/lib/libacl.so.1' loader >/dev/null
@@ -45,4 +46,12 @@ package.testContext.mkSuite {
 // import ../../../../lib/tests/command-nls.nix {
   inherit package;
   command = "sed";
+}
+
+// import ../../../../lib/tests/command-acl.nix {
+  inherit package;
+  operation = ''
+    ${package}/bin/sed -i s/old/new/ sample
+    test "$(cat sample)" = new
+  '';
 }

@@ -70,10 +70,20 @@ let
         findutils = constructionTool "findutils";
         gmp = tvp.packages.gmp_6;
         acl = tvp.packages.acl_2;
+        timezoneData = tvpLib.packages.withConstraint {
+          category = "artifact";
+          reason = "Build-only zoneinfo data oracle for upstream gnulib Europe/Paris tests; no executable or runtime ownership claim.";
+        } pkgs.tzdata;
       };
     };
   };
   publicArgs = packageArgs // {
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+      );
     testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
       builder = tvp.builder;
       base = candidate.base;

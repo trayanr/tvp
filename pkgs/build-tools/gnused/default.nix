@@ -89,6 +89,12 @@ let
     };
   };
   publicArgs = packageArgs // {
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+      );
     testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
       builder = tvp.builder;
       base = candidate.base;

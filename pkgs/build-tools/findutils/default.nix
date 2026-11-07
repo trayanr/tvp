@@ -87,6 +87,24 @@ let
     };
   };
   publicArgs = packageArgs // {
+    extraArgs.mkTests =
+      package:
+      packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+      )
+      // pkgs.lib.optionalAttrs (package ? testContext) (
+        import ../../../lib/tests/command-helper.nix {
+          inherit tvp package;
+          helperName = "sort";
+          invocation = q: ''
+            mkdir tree
+            touch tree/marker
+            ${q}/bin/updatedb --localpaths="$PWD/tree" --prunepaths="" --netpaths="" --output=locate.db
+            ${q}/bin/locate -d locate.db marker | grep -F /tree/marker >&2
+          '';
+        }
+      );
     testDeps.locale = import ../../../lib/tests/gnu-locale.nix {
       builder = tvp.builder;
       base = candidate.base;

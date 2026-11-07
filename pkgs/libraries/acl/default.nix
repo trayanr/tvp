@@ -203,6 +203,12 @@ let
     extraArgs.mkTests =
       package:
       packageArgs.extraArgs.mkTests package
+      // pkgs.lib.optionalAttrs (package ? testContext && package.version == "2.3.2") (
+        import ../../../lib/tests/command-source-edit.nix {
+          inherit tvp package;
+          compression = "gzip";
+        }
+      )
       // pkgs.lib.optionalAttrs (package.version == "2.4.0" || package ? testContext) (
         import ./tests/owned.nix {
           inherit tvpLib package;
