@@ -191,7 +191,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   texinfo = tvpLib.packages.mkVariants (
-    recipes.texinfo
+    recipes.texinfo.constructionRecipe
     // {
       inherit pkgs;
       profiles = {
