@@ -192,7 +192,7 @@ let
         edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
         configure = lib.findFirst (step: lib.hasSuffix ".configure" step.name) null edited.buildSteps;
       in
-      lib.hasInfix "${tvp.packages.bash}/bin/bash" configure.run
+      lib.hasInfix (builtins.unsafeDiscardStringContext "${tvp.packages.bash}/bin/bash") configure.run
       && edited.tests.version.specification.bash.drvPath == tvp.packages.bash.drvPath
       && edited.tests.version.package.drvPath == edited.drvPath
     ) commandTools;
@@ -218,7 +218,7 @@ let
       q.tvp.deps.acl.drvPath == tvp.packages.acl_2_3.drvPath
       && q.drvPath != tvp.canonical.coreutils_9_5.drvPath
       &&
-        lib.hasInfix (toString tvp.packages.acl_2_3)
+        lib.hasInfix (builtins.unsafeDiscardStringContext (toString tvp.packages.acl_2_3))
           (lib.findFirst (step: step.name == "output.rpaths") null q.buildSteps).run;
 
     foundationEditedSource = lib.all (
