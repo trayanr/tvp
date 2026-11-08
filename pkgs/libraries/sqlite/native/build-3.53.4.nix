@@ -23,6 +23,7 @@
   patchelf,
   tcl,
   readline,
+  testZlib,
   doCheck ? true,
 }:
 final:

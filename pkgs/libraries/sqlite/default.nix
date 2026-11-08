@@ -429,6 +429,7 @@ let
         patchelf = constructionTool "patchelf";
         tcl = tvp.packages.tcl_8;
         readline = tvp.packages.readline_8;
+        testZlib = tvp.packages.zlib_1;
       };
     };
   };
