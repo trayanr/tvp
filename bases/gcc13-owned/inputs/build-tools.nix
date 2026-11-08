@@ -273,7 +273,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   bison = tvpLib.packages.mkVariants (
-    recipes.bison
+    recipes.bison.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

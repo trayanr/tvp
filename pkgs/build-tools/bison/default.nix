@@ -1,105 +1,90 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  constructionRecipe = previous.recipes.bison;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  host =
+    name: reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
-    "3.0.5" = {
-      builder = ./build-3.0.5.nix;
-      base = tvp.bases.default;
+    "3.8.2" = {
+      constructor = tvp.builder;
+      builder = ./native/build-3.8.2.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
-        m4 = tvp.packages.m4;
+        m4 = tvp.packages.m4_1;
         perl = tvp.packages.perl_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
       };
     };
-    "3.4.2" = {
-      builder = ./build-3.0.5.nix;
-      base = tvp.bases.default;
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5;
-      };
-      # Keep the shipped manual: its configure dependency tracks version changes,
-      # and this patch only corrects optional example detection.
-      opts.postPatch = "touch -r doc/bison.1 configure";
-      patches = [
-        {
-          file = ./reccalc-without-flex.patch;
-          reason = "Initialize LEX_IS_FLEX when no lexer is found, so the Flex-only reccalc example stays disabled instead of racing its no-op scanner generation during parallel build and install.";
-        }
-      ];
-    };
-    "3.6.4" = {
-      builder = ./build-3.0.5.nix;
-      base = tvp.bases.default;
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5;
-      };
-      # Bundled gnulib places nodiscard after inline. GNU17 uses its GNU
-      # attribute spelling; 3.8 corrects placement for the C23 spelling.
-      opts.cStandard = "gnu17";
-    };
-
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."3.0.5";
-      releases."3.0.5" = "sha256-zTmdK+4zr6cSusSx9ENOIDeem0CZvORxieCadnWi1WY=";
-      releases."3.1" = "sha256-p8s2tVMW7uxiaGXAPSpEIQYXoXx9OT7mPYVT4GSe6UY=";
-      releases."3.2.4" = "sha256-y2c+IpjTS15Gun3wZBr6c02hRXzkfeSRhjQHpYfux5o=";
-      releases."3.3.2" = "sha256-D9odA0GFOXQw63sMnhQPs34C+/xTuQJS+lV144K229E=";
-    }
-    {
-      def = defs."3.4.2";
-      releases."3.4.2" = "sha256-/zkirzd9UU7KMCpmYtRw6Fe9GlkelqIFBQDfWp1Z+s8=";
-    }
-    {
-      def = defs."3.0.5";
-      releases."3.5.4" = "sha256-wN0VTfq6Y1U6iS1B3EAMe6qIzAah4uJ4E/3VA3FeTCg=";
-      releases."3.8" = "sha256-1dGE1CGu4VYDk5lzprDzcvkI7fskxbx0BpdJcCGtlFg=";
-      releases."3.8.1" = "sha256-zjGKRxlhVft8JpErUTEC89DhR1fC5JXjRgh1e2EznFw=";
-      releases."3.8.2" = "sha256-BsnhO99+sk1M62tZIFpPZ8LH5yExGWREMP6C+9FKCrs=";
-    }
-    {
-      def = defs."3.6.4";
-      releases."3.6.4" = "sha256-gYPeZLU4PzY0lCx7FRvyV390JzsnMVdM3aio86CrE+k=";
-      releases."3.7.6" = "sha256-adwLtG6o/DB9TKHgthyMNV6yB9Cwxp9PhGIyjnTXueo=";
-    }
-  ];
-  pname = "bison";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
+  versionTable = constructionRecipe.versionTable // {
+    "3.8.2" = constructionRecipe.versionTable."3.8.2" // {
+      def = if native then defs."3.8.2" else constructionRecipe.versionTable."3.8.2".def;
     };
-    inherit pname versionTable;
+  };
+  publicArgs = constructionRecipe // {
+    inherit versionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://mirrors.kernel.org/gnu/bison/bison-${version}.tar.gz";
+        inherit sha256;
+      };
+    testDeps = {
+      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      flex = tvp.packages.flex;
+    };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      }
+      if package ? testContext then
+        import ./tests/native-default.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else
+        constructionRecipe.extraArgs.mkTests package
     ) { inherit pkgs; };
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://mirrors.kernel.org/gnu/bison/";
-      pattern = "bison-[0-9][^\"]*\\.tar\\.gz";
-      normalise =
-        file:
-        if pkgs.lib.hasPrefix "bison-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-          pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "bison-" file)
-        else
-          null;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-    };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
-
+  canonical = tvpLib.packages.mkVersions publicArgs;
+  pname = "bison";
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

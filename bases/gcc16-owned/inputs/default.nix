@@ -193,7 +193,7 @@ tvpLib.packages.mergeVariants {
   pkg-config = select recipes.pkg-config.constructionRecipe {
     "0.29.2" = { };
   };
-  bison = select recipes.bison {
+  bison = select recipes.bison.constructionRecipe {
     "3.8.2" = {
       deps = {
         m4 = inputs.m4_1_4_21;

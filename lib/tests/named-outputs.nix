@@ -127,7 +127,102 @@ let
       run = "touch forbidden";
     }
   ]);
+  attrset = validation.edit (
+    s:
+    s
+    // {
+      development = {
+        marker = "attrset";
+        libraries = [ binary ];
+      };
+    }
+  );
+  functional = validation.edit (
+    s:
+    s
+    // {
+      development = raw: {
+        marker = "function";
+        rawIsUndecorated = !(raw ? development) && !(raw ? edit) && !(raw ? tvp);
+        aclocalDirectories = [
+          "${raw}/first"
+          "${raw}/second"
+        ];
+      };
+    }
+  );
+  metadataChanged = functional.editSteps (_: [
+    {
+      name = "metadata.changed";
+      run = ":";
+    }
+  ]);
+  multi = functional.edit (
+    s:
+    s
+    // {
+      plan = [
+        {
+          name = "metadata.exports";
+          run = ":";
+          developmentLibraries = [
+            binary
+            binary
+          ];
+        }
+      ];
+      development = raw: {
+        aclocalDirectories = [ "${raw.validation}/macros" ];
+        libraries = [ validation ];
+      };
+    }
+  );
+  multiChanged = multi.validation.editSteps (_: [
+    {
+      name = "metadata.second";
+      run = ": second";
+      developmentLibraries = [ binary ];
+    }
+  ]);
+  metadataRebound = functional.override { message = "metadata-rebound"; };
   contracts = {
+    developmentDefault = validation.development.libraries == [ ];
+    attrsetDerivationUnchanged = attrset.drvPath == validation.drvPath;
+    attrsetFieldsUnchanged = attrset.development.marker == "attrset";
+    attrsetExportsPreservePrecedence = attrset.development.libraries == [ ];
+    callbackNoProcedureChange = functional.drvPath == validation.drvPath;
+    callbackRawOutputOnly = functional.development.rawIsUndecorated;
+    callbackTwoDirectories =
+      functional.development.aclocalDirectories == [
+        "${functional}/first"
+        "${functional}/second"
+      ];
+    editsRefreshMetadata =
+      metadataChanged.outPath != functional.outPath
+      &&
+        metadataChanged.development.aclocalDirectories == [
+          "${metadataChanged}/first"
+          "${metadataChanged}/second"
+        ];
+    overrideRefreshesMetadata =
+      metadataRebound.outPath != functional.outPath
+      &&
+        metadataRebound.development.aclocalDirectories == [
+          "${metadataRebound}/first"
+          "${metadataRebound}/second"
+        ];
+    namedMetadataLookup = multi.development.aclocalDirectories == [ "${multi.validation}/macros" ];
+    namedProjectionMetadata =
+      multi.validation.development.aclocalDirectories == multi.development.aclocalDirectories;
+    selectedOutputMetadataEdit =
+      multiChanged.outputName == "validation"
+      && multiChanged.outPath != multi.validation.outPath
+      && multiChanged.development.aclocalDirectories == [ "${multiChanged}/macros" ];
+    exportsMergeDeduplicate = multi.development.libraries == [ binary ];
+    callbackStringContext =
+      (builtins.getContext (builtins.head multi.development.aclocalDirectories))
+      .${builtins.unsafeDiscardStringContext multi.drvPath}.outputs == [ "validation" ];
+
     separate =
       validation.outPath != validation.validation.outPath && binary.outPath != binary.bin.outPath;
     getOutput = (lib.getOutput "validation" validation).outPath == validation.validation.outPath;
