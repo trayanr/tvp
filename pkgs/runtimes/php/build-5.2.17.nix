@@ -75,6 +75,10 @@ stdenv.mkDerivation (
       "--without-pear"
     ];
 
+    # install-programs races the CLI/CGI install targets when creating bindir.
+    # Create their shared destination before make install, retaining parallelism.
+    preInstall = ''mkdir -p "$out/bin"'';
+
     meta = {
       description = "Widely-used general-purpose scripting language";
       homepage = "https://www.php.net/";
