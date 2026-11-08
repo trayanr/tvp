@@ -1,120 +1,91 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  base = tvp.bases.default;
-  seed =
-    reason:
+  # Complete former definitions, sources, arguments and test factories. Frozen
+  # construction consumers retain their original route, including Make's 4.3 map.
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  ownedDefaultRecipe = removeAttrs previous.recipes.gnumake [ "constructionRecipe" ];
+  constructionRecipe = previous.recipes.gnumake.constructionRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  host =
+    name: reason:
     tvpLib.packages.withConstraint {
       category = "construction";
       inherit reason;
-    };
-  floorTool =
-    name:
-    seed
-      "Completed default-base ${name} is a build-only seed for the foundational tool wave; it avoids following the canonical tool graph while rebuilding its prerequisites."
-      base.components.floor.${name};
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
-    "4.3" = {
-      builder = ./build-4.3.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
     "4.4.1" = {
       constructor = tvp.builder;
-      builder = ./owned/build-4.4.1.nix;
-      inherit base;
+      builder = ./native/build-4.4.1.nix;
+      base = candidate.base;
       helpers = {
         inherit tvp;
       };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
         bash = tvp.packages.bash_5;
-        coreutils = floorTool "coreutils";
-        gnumake = floorTool "gnumake";
-        gnutar = floorTool "gnutar";
-        gzip = floorTool "gzip";
-        python = seed "Completed libc-build helper interpreter is build-only; using its existing recipe output avoids a new Python prerequisite cycle." base.components.libc.tvp.deps.python3Minimal;
-        binutils = seed "Completed base Binutils supplies build-only output inspection and stripping without following its canonical prerequisite graph." base.components.binutils;
-        patchelf = seed "Completed base Patchelf supplies build-only ELF finalization before the canonical Patchelf advance." base.fixupTools.patchelf;
-        perl = seed "Completed base Perl executes the upstream Make test harness as a build-only input." base.components.perl;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
       };
     };
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."4.3";
-      releases."4.3" = "sha256-4F/d5HxffKRctpfpc4lP9PXXnhO3UO1X17Ztje/Hjhk=";
-      releases."4.4" = "sha256-WB9NToctp0s5Qch0IViYp9NYAvA3Mr3M7h1KeXkQXRg=";
-    }
-    {
-      def = defs."4.4.1";
-      releases."4.4.1" = "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=";
-    }
-  ];
-  pname = "gnumake";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
+  versionTable = ownedDefaultRecipe.versionTable // {
+    "4.4.1" = ownedDefaultRecipe.versionTable."4.4.1" // {
+      def = if native then defs."4.4.1" else ownedDefaultRecipe.versionTable."4.4.1".def;
     };
-    inherit pname versionTable;
-    extraArgs.mkTests =
+  };
+  publicArgs = ownedDefaultRecipe // {
+    inherit versionTable;
+    testDeps = {
+      compiler = candidate.toolchain.driver;
+      pkgConfig = tvp.packages.pkg-config;
+      mpfr = tvp.packages.mpfr;
+      runtimeShell = candidate.tools.bash;
+      coreutils = candidate.tools.coreutils;
+      python = candidate.tools.python;
+      binutils = candidate.tools.binutils;
+      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      };
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://mirrors.kernel.org/gnu/make/";
-        pattern = "make-[0-9][^\"]*\\.tar\\.gz";
-
-        normalise =
-          file:
-          if pkgs.lib.hasPrefix "make-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "make-" file)
-          else
-            null;
-
-        include = version: builtins.match "[0-9].*" version != null;
-      };
-    };
-  };
-  constructionRecipe = packageArgs // {
-    versionTable = versionTable // {
-      "4.4.1" = versionTable."4.4.1" // {
-        def = defs."4.3";
-      };
-    };
-  };
-  publicArgs = packageArgs // {
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        url = "https://mirrors.kernel.org/gnu/make/make-${version}.tar.gz";
-        inherit sha256;
-      };
-    extraArgs.mkTests =
-      package:
-      packageArgs.extraArgs.mkTests package
-      // pkgs.lib.optionalAttrs (package.version == "4.4.1") (
-        import ./tests/owned.nix {
-          inherit tvp tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
+      if package ? testContext then
+        import ./tests/native-default.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
         }
-      );
+      else
+        ownedDefaultRecipe.extraArgs.mkTests package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
-
+  pname = "gnumake";
 in
 {
   recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+    inherit constructionRecipe ownedDefaultRecipe;
   };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
