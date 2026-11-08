@@ -53,6 +53,9 @@ let
   publicArgs = ownedDefaultRecipe // {
     inherit versionTable;
     testDeps = {
+      grep = tvp.packages.gnugrep_3;
+      gawk = tvp.packages.gawk_5;
+      gnumake = tvp.packages.gnumake_4;
       compiler = candidate.toolchain.driver;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;

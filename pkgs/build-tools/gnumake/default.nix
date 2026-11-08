@@ -54,6 +54,7 @@ let
   publicArgs = ownedDefaultRecipe // {
     inherit versionTable;
     testDeps = {
+      grep = host "grep" "Native Make assertions use the same independent grep provider as its procedure.";
       compiler = candidate.toolchain.driver;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
