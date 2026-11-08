@@ -75,3 +75,96 @@ The pure selection contracts can be evaluated without realizing the catalogue:
 nix eval --impure --json --expr \
   'let f = builtins.getFlake (toString ./.); in import ./lib/tests/latest.nix { inherit (f.inputs.nixpkgs) lib; }'
 ```
+
+## Reusable local workflow
+
+```sh
+nix run .#test -- latest --flake . --state-dir /absolute/new-run --json
+nix run .#test -- latest status --run /absolute/new-run
+nix run .#test -- latest wait --run /absolute/new-run
+nix run .#test -- latest --resume /absolute/new-run
+nix run .#test -- latest stop --run /absolute/new-run
+nix run .#test -- latest verify --run /absolute/new-run
+```
+
+`latest` launches and returns JSON; `wait` is a read-only observer with changed-state
+progress and a 60-second heartbeat. Closing it or interrupting it leaves the worker
+running. `--state-dir` is one run's exclusive directory, not a movable latest alias.
+A local flake must be clean and committed. The command snapshots it once, records
+its revision/tree/system, and obtains all selection/output identities from the
+existing Nix `latestTests`. Resume uses that frozen snapshot even after a branch
+moves; an explicitly different `--flake`, `--system` or `--expect-source` is refused.
+Resume reconnects to a healthy worker without creating another attempt.
+
+The default backend requires native Linux user systemd. The launcher discovers
+`/run/user/UID/bus` when session variables are absent, or respects configured
+`XDG_RUNTIME_DIR`/`DBUS_SESSION_BUS_ADDRESS`. Host Nix/systemd executables are
+resolved and recorded; no new nixpkgs runtime dependency is added. A transient
+USER unit runs with `Restart=no`, `KillMode=control-group` and a finite
+`RuntimeMaxSec` (default eight hours, configurable with `--deadline` in seconds).
+The worker also has a signal-aware deadline and bounded client shutdown. No
+permanent service, timer, Nix concurrency setting or CI configuration is installed.
+`--foreground` explicitly selects a non-durable synchronous backend if needed.
+
+Preflight performs one recursive native derivation query and batched local-store
+validity checks. It accepts native v4 and the old unversioned derivation schema;
+unknown schemas, missing nodes and unresolved demanded outputs fail with diagnostics.
+Exact `pname`, `version` and application name metadata identify GCC/LLVM/JDK/Node/
+Dart/Flutter applications and their declared seed/compatibility producers. Tests,
+wrappers, source archives and fixed-output artifacts are excluded. Unknown origin
+is not an error or an origin claim. Already-valid demanded outputs prune their
+ancestors, so missing historical dependencies of cached applications are not
+rebuilt. Needed heavy producers run one at a time, dependencies first, requesting
+only demanded named outputs. Inner builds and normal small builds retain the
+caller's normal Nix concurrency. Heavy preparation is not downstream test proof.
+
+Only after the heavy gate does one fail-fast latest aggregate request run.
+Verification checks every selected package, batch and named-test output, all
+siblings and exact aggregate/batch links. Valid outputs are rooted in batches;
+root stdout is interpreted as root *names* and their actual symlink targets are
+checked. A store text manifest retains the recipe graph without realizing its
+`.drv` files. Source, copied/sealed worker and observer modules, interpreter and
+host interfaces remain bound to the run. Roots are run-owned for future lifecycle
+adoption; this command does not delete roots or certify long-term retention.
+
+`--cached-only` refuses to launch unless every selected output **and the aggregate**
+is already valid and there are zero required heavy requests. It rechecks this
+inside the worker. This is useful for runner integration testing without allowing
+new application builds. Availability, cache reuse and fresh execution are reported
+separately; latest success neither recertifies known bounded upstream nonpasses
+nor constitutes full coverage, recipe approval, strict conformance or CI readiness.
+
+An infrastructure interruption permits one **explicit** retry:
+
+```sh
+nix run .#test -- latest --resume /absolute/new-run --retry-interrupted
+```
+
+There are at most two attempts against the unchanged frozen source/code/commands.
+The original receipt/logs remain in `attempts/001`; a new attempt rechecks validity
+and reuses partial successes. No compiler/test failure is automatically retried.
+A stopped run never resumes. A second interruption remains terminal for investigation.
+Launch and worker locks prevent duplicate work; explicit stop validates the owned
+unit invocation/cgroup or uses a validated PID/startTicks/boot identity and pidfd.
+An unavailable supervisor is an observation error, not proof that a build failed.
+If a worker is killed before it can write its finally receipt, status reports an
+honest infrastructure interruption from the inactive unit and absent worker lock;
+it does not invent a client return code or signal sender.
+
+Run evidence uses versioned `tvp.latest-*/v1` JSON: `subject.json`, `descriptor.json`,
+`preflight.json`, sealed `bindings.json`, `host.json`, live `state.json`, per-attempt
+`launch.json`, before-validity, command/client receipts and logs, roots and
+`result.json`. The top-level result is the last terminal worker receipt, while
+`state.json` and `status` describe any active retry. Terminal results carry scope
+`full=false`, source identity, actual stage, command/return codes, signals,
+verification and explicit `machineReady=false` / `mergeEligible=false`. A failed
+command may leave its failing downstream derivation unknown; the exact request
+and log are retained. `verify` performs a new read-only availability/link check
+of a successful terminal run without rerunning builds or modifying its receipt.
+For long-lived observers the copied `code/latest.py` can be invoked with the same
+rooted interpreter recorded in `attempts/NNN/launch.json`.
+
+The existing `start/status/wait/stop/verify`, full plans, representative verifier
+and all catalogue/construction policies retain their interfaces. A full historical
+run remains a separate explicit action. Hosted CI remains OFF until migration is
+complete; this workflow does not activate or satisfy a protected full-suite gate.

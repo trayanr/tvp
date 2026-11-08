@@ -405,10 +405,14 @@ def positive(value):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "latest":
+        from latest import main as latest_main
+        return latest_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "_work":
         return work(Path(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]))
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("latest", help="freeze and supervise a resumable latest-only workflow")
     launch = commands.add_parser("start", help="freeze and launch the full suite in the background")
     launch.add_argument("--flake", default=".")
     launch.add_argument("--system", default=os.environ.get("TVP_TEST_SYSTEM", "x86_64-linux"))
