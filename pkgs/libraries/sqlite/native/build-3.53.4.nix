@@ -95,7 +95,7 @@ in
         --enable-readline --with-readline-header=${readline}/include/readline/readline.h \
         --with-readline-ldflags="-L${readline}/lib -lreadline" \
         TCLLIBDIR="$out/lib/tcl"
-      grep -Fx 'HAVE_ZLIB = 0' Makefile
+      grep -E '^LDFLAGS.zlib = *$' Makefile
       grep -Fx 'HAVE_TCL = 1' Makefile
       grep -Fx 'TCL_CONFIG_SH = ${tcl}/lib/tclConfig.sh' Makefile
       grep -Fx 'TCLSH_CMD = ${tcl}/bin/tclsh' Makefile
