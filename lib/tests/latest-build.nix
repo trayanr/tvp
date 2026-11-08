@@ -77,9 +77,10 @@ let
   selected = tvp.lib.tests.selectLatest { inherit canonical packages batches; };
 in
 {
-  latest = context.mkBatch {
+  latest = tvp.lib.tests.mkLatest {
     name = "latest-fixture";
-    suite = selected.batches;
+    inherit context;
+    selection = selected;
   };
   # An intentional sentinel failure would appear in logs if stage two started.
   full = primitive "latest-fixture-full-sentinel" ''

@@ -482,15 +482,13 @@ let
     batches = packageTestBatches;
   };
   latestTests = latestSelection // {
-    all =
-      (tvpLib.tests.fromPackage {
+    all = tvpLib.tests.mkLatest {
+      context = tvpLib.tests.fromPackage {
         builder = tvp.builder;
         package = packages.coreutils;
-      }).mkBatch
-        {
-          name = "latest";
-          suite = latestSelection.batches;
-        };
+      };
+      selection = latestSelection;
+    };
   };
 
   # Deliberately not in `packages`: that attribute is the canonical package

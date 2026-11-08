@@ -22,6 +22,7 @@ let
     outputs = map (name: plain drv.${name}.outPath) drv.outputs;
   };
   suiteIdentity = suite: lib.mapAttrs (_: identity) suite;
+  allOutputs = drv: map (name: drv.${name}.outPath) drv.outputs;
   families = lib.mapAttrs (
     family: names:
     let
@@ -89,6 +90,19 @@ builtins.deepSeq families (
   else
     {
       batches = lib.genAttrs jobs (job: batches.${job});
+      # Keep output contexts here. Cached suite links retain only the selected
+      # output; the gate must also request every declared sibling explicitly.
+      requiredOutputs = lib.unique (
+        lib.concatMap (
+          entry:
+          let
+            package = canonical.${entry.job};
+          in
+          allOutputs package
+          ++ allOutputs batches.${entry.job}
+          ++ lib.concatMap allOutputs (lib.attrValues package.tests)
+        ) (lib.attrValues families)
+      );
       metadata = {
         schema = "tvp.latest-tests/v1";
         inherit families skipped;

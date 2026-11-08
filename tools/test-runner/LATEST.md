@@ -2,7 +2,9 @@
 
 `tvp.lib.tests.selectLatest { canonical; packages; batches; }` is a pure Nix
 projection. It returns `batches` (the existing batch derivations, keyed by canonical
-job name) and context-free `metadata` (`tvp.latest-tests/v1`). It uses each family's
+job name), context-free `metadata` (`tvp.latest-tests/v1`), and `requiredOutputs`
+(context-bearing paths for all selected package, batch and named-test outputs).
+It uses each family's
 public alias and verifies the semantic version maximum among non-broken ordinary
 releases. Degraded releases remain eligible. The selected batch must retain the
 package's exact own-test suite and named outputs; it keeps its builder/testContext.
@@ -23,7 +25,10 @@ nix build .#latestTests.x86_64-linux.all --no-link
 nix build .#latestTests.x86_64-linux.batches.gnumake_4_4_1 --no-link
 ```
 
-`latestTests.<system>.all` uses the existing owned batch constructor. It is separate
+`tvp.lib.tests.mkLatest { context; selection; }` uses the existing owned batch
+constructor and explicitly requires every declared output, including siblings
+that cached suite links do not retain. `latestTests.<system>.all` uses this helper.
+It is separate
 from `testBatches`, `testPlans`, and the full runner's job collection. There are no
 implicitly selected variants, retired construction/bootstrap test suites, base suites, repo
 checks or full runtime-ownership exports. Meaningful extra checks/profiles must be

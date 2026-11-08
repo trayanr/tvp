@@ -77,6 +77,15 @@ let
     semanticLatest = selected.metadata.families.probe.version == "10.0";
     aliasPolicy = selected.metadata.families.probe.selector == packages.probe.__tvpSelection;
     exactBatch = selected.batches.probe_10_0 == batch;
+    allDeclaredOutputs =
+      builtins.sort builtins.lessThan selected.requiredOutputs == [
+        "/model/own-context-batch"
+        "/model/own-context-batch-validation"
+        "/model/probe-10.0"
+        "/model/probe-10.0-test"
+        "/model/probe-10.0-test-validation"
+        "/model/probe-10.0-validation"
+      ];
     ordinaryOnly = builtins.attrNames selected.batches == [ "probe_10_0" ];
     deterministic = selected.metadata == (tests.selectLatest inputs).metadata;
     contextFree = !(builtins.hasContext (builtins.toJSON selected.metadata));
