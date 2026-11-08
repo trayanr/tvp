@@ -9,6 +9,17 @@ package.testContext.mkSuite {
   libraries = [ package ];
   tools = package.specification.environment.tools ++ [ deps.binutils ];
   tests = {
+    readline-terminal = {
+      tools = [
+        deps.python
+        deps.grep
+      ];
+      script = ''
+        LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/sqlite3 | grep -F '${deps.readline.tvp.deps.ncurses}/lib/libncursesw.so' >&2
+        ${deps.python}/bin/python3 ${./fixtures/readline.py} ${package}/bin/sqlite3
+      '';
+      expected = "readline editing works";
+    };
     shared-consumer = {
       script = ''
         export PKG_CONFIG_LIBDIR=${package}/lib/pkgconfig

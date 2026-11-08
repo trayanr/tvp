@@ -32,6 +32,7 @@ int main(void) {
   CHECK(scalar(db,"select count(*) from r where x1>1")==1);
   CHECK(scalar(db,"select geopoly_contains_point(_shape,1,1) from g")==1);
   CHECK(scalar(db,"select json_extract('{\"a\":42}', '$.a') + sqrt(4)")==44);
+  CHECK(scalar(db,"select percentile(id,50) from t")==1);
   CHECK(scalar(db,"select count(*) from sqlite_dbpage")>0);
   CHECK(scalar(db,"select count(*) from dbstat")>0);
   OK(sqlite3session_create(db,"main",&session));OK(sqlite3session_attach(session,"t"));
