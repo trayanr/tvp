@@ -80,7 +80,7 @@ package.testContext.mkSuite {
     thread-unwinder = {
       script = ''
         LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/python3 > linked
-        grep -F '${builtins.head package.compiler.runtimeDirectories}/libgcc_s.so.1' linked >&2
+        grep -F '${builtins.elemAt package.compiler.runtimeDirectories 2}/libgcc_s.so.1' linked >&2
         python3 -c 'import ctypes; ctypes.pythonapi.PyThread_exit_thread()'
         printf unwound
       '';
