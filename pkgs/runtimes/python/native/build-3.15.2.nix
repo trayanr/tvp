@@ -4,13 +4,55 @@
 # Prefix-sensitive sysconfig, bytecode and pip installation use one real stage;
 # runtime edits therefore reconstruct and recompile this procedure.
 {
-  tvp, lib, base, src, version, bash, coreutils, python, gnumake, gnutar,
-  findutils, patch, sed, grep, gawk, diffutils, pkgConfig, binutils, patchelf,
-  runtimeBash, openssl, zlib, bzip2, xz, zstd, mpdecimal, libffi, sqlite,
-  gdbm, readline, ncurses, disabledModules, patches,
-  linkUnwinder ? true, finalizeEx ? true, embedFlag ? true, textSubprocess ? true,
-  upstreamModules ? [ "test_ssl" "test_hashlib" "test_ctypes" "test_sqlite3"
-    "test_dbm_gnu" "test_dbm_ndbm" "test_bz2" "test_lzma" "test_zlib" "test_readline" ],
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  bash,
+  coreutils,
+  python,
+  gnumake,
+  gnutar,
+  findutils,
+  patch,
+  sed,
+  grep,
+  gawk,
+  diffutils,
+  pkgConfig,
+  binutils,
+  patchelf,
+  runtimeBash,
+  openssl,
+  zlib,
+  bzip2,
+  xz,
+  zstd,
+  mpdecimal,
+  libffi,
+  sqlite,
+  gdbm,
+  readline,
+  ncurses,
+  disabledModules,
+  patches,
+  linkUnwinder ? true,
+  finalizeEx ? true,
+  embedFlag ? true,
+  textSubprocess ? true,
+  upstreamModules ? [
+    "test_ssl"
+    "test_hashlib"
+    "test_ctypes"
+    "test_sqlite3"
+    "test_dbm_gnu"
+    "test_dbm_ndbm"
+    "test_bz2"
+    "test_lzma"
+    "test_zlib"
+    "test_readline"
+  ],
 }:
 final:
 let
@@ -21,35 +63,110 @@ let
   # inherited setup-hook flags participate in the target build.
   compileFlags = environment.environmentContributions.NIX_CFLAGS_COMPILE.value;
   linkFlags = environment.environmentContributions.NIX_LDFLAGS.value;
-  command = name: run: environment // {
-    name = "python.${name}";
-    cwd = "source";
-    env = environment.env // {
-      NIX_CFLAGS_COMPILE = "";
-      NIX_LDFLAGS = "";
-      CPPFLAGS = lib.concatStringsSep " " compileFlags;
-      LDFLAGS = lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags;
+  command =
+    name: run:
+    environment
+    // {
+      name = "python.${name}";
+      cwd = "source";
+      env = environment.env // {
+        NIX_CFLAGS_COMPILE = "";
+        NIX_LDFLAGS = "";
+        CPPFLAGS = lib.concatStringsSep " " compileFlags;
+        LDFLAGS = lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags;
+      };
+      inherit run;
     };
-    inherit run;
-  };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
-  mutableOutput = record: record // {
-    run = ''${python}/bin/python3 -B ${./finalize.py} "$out" ${lib.escapeShellArg record.run} ${final.bash}/bin/bash'';
-  };
-in {
+  mutableOutput =
+    record:
+    record
+    // {
+      run = ''${python}/bin/python3 -B ${./finalize.py} "$out" ${lib.escapeShellArg record.run} ${final.bash}/bin/bash'';
+    };
+in
+{
   pname = "python";
-  inherit base src version bash coreutils;
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   environment = {
-    tools = [ python gnumake findutils patch sed grep gawk diffutils pkgConfig ];
-    libraries = [ openssl zlib bzip2 xz zstd mpdecimal libffi sqlite gdbm readline ncurses ];
+    tools = [
+      python
+      gnumake
+      findutils
+      patch
+      sed
+      grep
+      gawk
+      diffutils
+      pkgConfig
+    ];
+    libraries = [
+      openssl
+      zlib
+      bzip2
+      xz
+      zstd
+      mpdecimal
+      libffi
+      sqlite
+      gdbm
+      readline
+      ncurses
+    ];
     overrides.flags = {
-      NIX_CFLAGS_COMPILE = lib.concatMap (p: [ "-isystem" "${lib.getDev p}/include" ])
-        [ openssl zlib bzip2 xz zstd mpdecimal libffi sqlite gdbm readline ncurses ]
+      NIX_CFLAGS_COMPILE =
+        lib.concatMap
+          (p: [
+            "-isystem"
+            "${lib.getDev p}/include"
+          ])
+          [
+            openssl
+            zlib
+            bzip2
+            xz
+            zstd
+            mpdecimal
+            libffi
+            sqlite
+            gdbm
+            readline
+            ncurses
+          ]
         ++ [ "-I${lib.getDev ncurses}/include/ncursesw" ];
-      NIX_LDFLAGS = lib.concatMap (p: [ "-L${lib.getLib p}/lib" "-rpath" "${lib.getLib p}/lib"
-        "-rpath-link" "${lib.getLib p}/lib" ])
-        [ openssl zlib bzip2 xz zstd mpdecimal libffi sqlite gdbm readline ncurses ]
-        ++ lib.optionals linkUnwinder [ "--no-as-needed" "-lgcc_s" "--as-needed" ];
+      NIX_LDFLAGS =
+        lib.concatMap
+          (p: [
+            "-L${lib.getLib p}/lib"
+            "-rpath"
+            "${lib.getLib p}/lib"
+            "-rpath-link"
+            "${lib.getLib p}/lib"
+          ])
+          [
+            openssl
+            zlib
+            bzip2
+            xz
+            zstd
+            mpdecimal
+            libffi
+            sqlite
+            gdbm
+            readline
+            ncurses
+          ]
+        ++ lib.optionals linkUnwinder [
+          "--no-as-needed"
+          "-lgcc_s"
+          "--as-needed"
+        ];
     };
   };
   runtime = {
@@ -57,7 +174,12 @@ in {
     shell = runtimeBash;
   };
   plan = steps.sequence [
-    (steps.unpack { src = final.src; tar = gnutar; inherit xz findutils; compression = "xz"; })
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit xz findutils;
+      compression = "xz";
+    })
     (command "prepare" ''
       ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
       ${python}/bin/python3 -B ${./prepare.py} \
@@ -84,18 +206,37 @@ in {
     (command "install" ''
       ${make} "COMPILEALL_OPTS=-j$NIX_BUILD_CORES" install
       ${python}/bin/python3 -B ${./install.py} "$out" ${final.bash}/bin/bash \
-        ${lib.escapeShellArg (lib.makeBinPath [ final.bash final.coreutils sed grep diffutils binutils ])}
+        ${
+          lib.escapeShellArg (
+            lib.makeBinPath [
+              final.bash
+              final.coreutils
+              sed
+              grep
+              diffutils
+              binutils
+            ]
+          )
+        }
       mkdir -p "$out/share/licenses/python"
       cp LICENSE "$out/share/licenses/python/"
     '')
-    (mutableOutput (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = [ "bin" "lib" ];
-      elfKinds = [ "runtime" ];
-      libraries = final.runtime.libraries;
-    }))
-    (outputs.development { inherit python; libraries = [ ]; })
+    (mutableOutput (
+      outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+        libraries = final.runtime.libraries;
+      }
+    ))
+    (outputs.development {
+      inherit python;
+      libraries = [ ];
+    })
     (command "receipt" ''
       "$out/bin/python3" -I - <<'PYTHON'
       import json, sysconfig, pathlib
@@ -116,7 +257,12 @@ in {
       tls = true;
       archiveCompression = true;
       pipInstalled = true;
-      inherit finalizeEx embedFlag textSubprocess linkUnwinder;
+      inherit
+        finalizeEx
+        embedFlag
+        textSubprocess
+        linkUnwinder
+        ;
     };
     inherit disabledModules upstreamModules;
   };

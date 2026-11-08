@@ -485,21 +485,32 @@ let
   constructionRecipe = packageArgs;
   candidate = import ../../../bases/source-gnu { };
   native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool = name: tvpLib.packages.withConstraint {
-    category = "construction";
-    reason = "Retained source-GNU ${name} host tool is independent of ordinary Python consumers.";
-  } candidate.tools.${name};
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} host tool is independent of ordinary Python consumers.";
+    } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
     "3.15.2" = {
       constructor = tvp.builder;
       builder = ./native/build-3.15.2.nix;
       base = candidate.base;
-      source = { version, sha256 }: pkgs.fetchurl {
-        url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
-        inherit sha256;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
       };
-      testContext = package: tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; };
-      helpers = { inherit tvp; };
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";
@@ -528,13 +539,18 @@ let
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
       };
-      patches = [ {
-        file = ./patches/subprocess-shell.patch;
-        reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
-      } ];
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+      ];
       opts = {
         linkUnwinder = true;
-        disabledModules = [ "_tkinter" "_uuid" ];
+        disabledModules = [
+          "_tkinter"
+          "_uuid"
+        ];
       };
     };
   };
@@ -549,14 +565,19 @@ let
       meson = tvp.packages.meson;
       ninja = tvp.packages.ninja;
     };
-    extraArgs.mkTests = package:
-      if package ? testContext then import ./tests/native-default.nix { inherit pkgs tvpLib package; }
-      else constructionRecipe.extraArgs.mkTests package;
+    extraArgs.mkTests =
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        constructionRecipe.extraArgs.mkTests package;
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
-  recipes.${pname} = publicArgs // { inherit constructionRecipe; };
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

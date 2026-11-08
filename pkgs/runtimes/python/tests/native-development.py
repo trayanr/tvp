@@ -7,6 +7,7 @@ import subprocess
 import sys
 import sysconfig
 answer, embed = sys.argv[1:]
+sys.path.insert(0, str(Path.cwd()))
 
 def output(*args):
     return subprocess.check_output(args, text=True).strip()

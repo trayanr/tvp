@@ -1,6 +1,10 @@
 # Native implementation of the ordinary suite: same named profile tests,
 # explicit support roles, plus measured installed/developer interface coverage.
-{ pkgs, tvpLib, package }:
+{
+  pkgs,
+  tvpLib,
+  package,
+}:
 let
   lib = pkgs.lib;
   deps = package.tvp.deps;
@@ -15,15 +19,28 @@ let
 in
 package.testContext.mkSuite {
   inherit package;
-  tools = [ deps.binutils deps.grep deps.gawk deps.sed deps.findutils deps.pkgConfig ];
+  tools = [
+    deps.binutils
+    deps.grep
+    deps.gawk
+    deps.sed
+    deps.findutils
+    deps.pkgConfig
+  ];
   libraries = [ package ];
   tests = {
     omissions = {
       script = ''python3 -c 'import importlib.util, sys; assert all(importlib.util.find_spec(m) is None for m in sys.argv[1:]); print("explicit")' ${lib.escapeShellArgs package.tvp.disabledModules}'';
       expected = "explicit";
     };
-    version = { script = ''python3 -c 'import platform; print(platform.python_version())' ''; expected = package.version; };
-    stdlib = { script = ''python3 ${./fixtures/stdlib.py}''; expected = "general-purpose"; };
+    version = {
+      script = ''python3 -c 'import platform; print(platform.python_version())' '';
+      expected = package.version;
+    };
+    stdlib = {
+      script = ''python3 ${./fixtures/stdlib.py}'';
+      expected = "general-purpose";
+    };
     subprocess-core = {
       script = ''python3 -c 'import subprocess; print(subprocess.Popen("printf 42", shell=True, stdout=subprocess.PIPE).communicate()[0].decode())' '';
       expected = "42";
@@ -62,12 +79,21 @@ package.testContext.mkSuite {
       '';
       expected = "passed";
     };
-    openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [ "_ssl" "_hashlib" ];
+    openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
+      "_ssl"
+      "_hashlib"
+    ];
     ffi-linkage = linkage deps.libffi "libffi\\.so" [ "_ctypes" ];
     sqlite-linkage = linkage deps.sqlite "libsqlite3\\.so" [ "_sqlite3" ];
-    gdbm-linkage = linkage deps.gdbm "libgdbm(_compat)?\\.so" [ "_gdbm" "_dbm" ];
+    gdbm-linkage = linkage deps.gdbm "libgdbm(_compat)?\\.so" [
+      "_gdbm"
+      "_dbm"
+    ];
     readline-linkage = linkage deps.readline "libreadline\\.so" [ "readline" ];
-    curses-linkage = linkage deps.ncurses "lib(ncursesw?|panelw?|tinfow?)\\.so" [ "_curses" "_curses_panel" ];
+    curses-linkage = linkage deps.ncurses "lib(ncursesw?|panelw?|tinfow?)\\.so" [
+      "_curses"
+      "_curses_panel"
+    ];
     zlib-linkage = linkage deps.zlib "libz\\.so" [ "zlib" ];
     bzip2-linkage = linkage deps.bzip2 "libbz2\\.so" [ "_bz2" ];
     xz-linkage = linkage deps.xz "liblzma\\.so" [ "_lzma" ];
@@ -95,7 +121,11 @@ package.testContext.mkSuite {
       expected = "interfaces";
     };
     cmake-python = {
-      tools = [ support.cmake deps.gnumake deps.grep ];
+      tools = [
+        support.cmake
+        deps.gnumake
+        deps.grep
+      ];
       script = ''
         cp ${./fixtures/answer.c} answer.c
         cp ${./fixtures/embed.c} embed.c
@@ -107,7 +137,11 @@ package.testContext.mkSuite {
       expected = "42";
     };
     meson-python = {
-      tools = [ support.meson support.ninja deps.pkgConfig ];
+      tools = [
+        support.meson
+        support.ninja
+        deps.pkgConfig
+      ];
       script = ''
         cp ${./fixtures/answer.c} answer.c
         cp ${./fixtures/embed.c} embed.c
