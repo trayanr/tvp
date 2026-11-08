@@ -134,6 +134,7 @@ in
     })
   ];
   meta = {
+    homepage = "https://ninja-build.org/";
     description = "Small build system focused on speed";
     license = lib.licenses.asl20;
     platforms = [ "x86_64-linux" ];

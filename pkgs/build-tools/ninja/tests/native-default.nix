@@ -50,7 +50,7 @@ package.testContext.mkSuite {
         ninja >&2
         test "$(./main)" = 42
         ninja > noop.log
-        ${deps.helperPython}/bin/python3 -c 'assert "no work to do" in open("noop.log").read()' 
+        ${deps.helperPython}/bin/python3 -c 'assert "no work to do" in open("noop.log").read()'
         ./main
       '';
       expected = "42";

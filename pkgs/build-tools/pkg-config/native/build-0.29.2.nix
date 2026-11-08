@@ -176,6 +176,7 @@ in
     })
   ];
   meta = {
+    homepage = "https://www.freedesktop.org/wiki/Software/pkg-config/";
     description = "Tool that returns compiler and linker flags for installed libraries";
     license = lib.licenses.gpl2Plus;
     platforms = [ "x86_64-linux" ];
