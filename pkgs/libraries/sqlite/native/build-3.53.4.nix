@@ -113,16 +113,20 @@ in
     (command "build" ''${make} all'')
     (
       (command "check" ''
-          export HOME="$TMPDIR" TERM=xterm TZ=UTC
-          export LD_LIBRARY_PATH=${tcl}/lib
-        ${make} testfixture
-          # Invoke the just-built fixture, never the Tcl runner's bundled SQLite.
-          ./testfixture <<'TCL'
-          if {[sqlite3 -version] ne "${version}"} {error "wrong testfixture SQLite"}
-          puts "testfixture SQLite [sqlite3 -version]"
-          TCL
-          ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
-          grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
+        export HOME="$TMPDIR" TERM=xterm TZ=UTC
+        # zipfile.c is unconditional in the upstream testfixture. These inputs
+        # apply only to the fixture, preserving the installed no-zlib profile.
+        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${testZlib}/include"
+        export NIX_LDFLAGS="$NIX_LDFLAGS -L${testZlib}/lib -rpath ${testZlib}/lib -rpath ${tcl}/lib"
+        ${make} testfixture LDFLAGS.libsqlite3="-lm -lz"
+        # A script file gives errors a nonzero exit, unlike interactive stdin.
+        cat > fixture-version.tcl <<'TCL'
+        if {[sqlite3 -version] ne "${version}"} {error "wrong testfixture SQLite"}
+        puts "testfixture SQLite [sqlite3 -version]"
+        TCL
+        ./testfixture fixture-version.tcl
+        ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
+        grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
       '')
       // {
         enabled = doCheck;
