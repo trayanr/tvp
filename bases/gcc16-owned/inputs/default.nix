@@ -145,6 +145,7 @@ tvpLib.packages.mergeVariants {
         // {
           testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
             inherit (construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies)
+              baseline
               coreutils
               gnused
               ;
@@ -158,10 +159,10 @@ tvpLib.packages.mergeVariants {
           };
         };
       };
-  perl = select recipes.perl {
+  perl = select recipes.perl.constructionRecipe {
     "5.44.0" = { };
   };
-  texinfo = select recipes.texinfo {
+  texinfo = select recipes.texinfo.constructionRecipe {
     "7.1" = {
       deps = {
         perl = inputs.perl_5_44_0;

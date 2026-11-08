@@ -33,7 +33,7 @@ let
 
   pname = "libffi";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
@@ -75,8 +75,79 @@ let
     };
   };
 
+  # Preserve the complete pre-promotion factory/table and its historical callers.
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is the explicit host generation, independent of the ordinary target being built.";
+    } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "3.8.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-3.8.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        pkgConfig = constructionTool "pkgConfig";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        gzip = constructionTool "gzip";
+        dejagnu = tvpLib.packages.withConstraint {
+          category = "construction";
+          reason = "Retained source GCC DejaGnu/Expect/Tcl harness independently exercises libffi ABI and closures.";
+        } (import ../../../bootstrap/source-gcc-test-harness.nix { }).dejagnu;
+
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "3.8.0" = versionTable."3.8.0" // {
+        def = if native then ownedDefs."3.8.0" else versionTable."3.8.0".def;
+      };
+    };
+    extraArgs.mkTests =
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        constructionRecipe.extraArgs.mkTests package;
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
+
 in
 {
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
     inherit
