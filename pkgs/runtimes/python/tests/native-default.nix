@@ -88,6 +88,15 @@ package.testContext.mkSuite {
         '';
         expected = "passed";
       };
+      upstream-profile = {
+        script = ''
+          python3 -m test -v -j"$NIX_BUILD_CORES" test_decimal test_zstd test_ensurepip test_venv test_codecs > upstream-profile.log 2>&1 || { cat upstream-profile.log >&2; exit 1; }
+          cat upstream-profile.log >&2
+          grep -E 'Total tests: run=[1-9]' upstream-profile.log >&2
+          printf passed
+        '';
+        expected = "passed";
+      };
       openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
         "_ssl"
         "_hashlib"
