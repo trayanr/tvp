@@ -96,6 +96,14 @@
           revision = self.rev or self.dirtyRev or null;
         };
 
+        testCatalogues = import ./lib/test-catalogue.nix {
+          inherit pkgs;
+          inherit (tvp) canonical packages variants;
+          batches = tvp.testBatches;
+          source = self.outPath;
+          revision = self.rev or self.dirtyRev or null;
+        };
+
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;

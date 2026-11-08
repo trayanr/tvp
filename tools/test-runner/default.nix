@@ -8,6 +8,7 @@ ownedCLI.python {
     "progress.py" = ./progress.py;
     "attempts.py" = ./attempts.py;
     "verifier.py" = ./verifier.py;
+    "representative.py" = ./representative.py;
     "graph_compare.py" = ../graph/compare.py;
   };
   entrypoint = "runner.py";
