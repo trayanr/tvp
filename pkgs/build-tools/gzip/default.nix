@@ -39,12 +39,7 @@ let
         python = host "python" "Independent source/output helper avoids catalogue dependency cycles.";
         binutils = host "linker" "Owned ELF output tools independent of catalogue consumers.";
         patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
-        # The catalogue has no pager family yet. Keep zless functional with an
-        # explicit selected provider; this borrowed runtime remains declared debt.
-        pager = tvpLib.packages.withConstraint {
-          category = "construction";
-          reason = "Gzip zless requires less's LESSOPEN protocol; no owned catalogue pager is available.";
-        } pkgs.less;
+        pager = tvp.packages.less;
       };
     };
   };

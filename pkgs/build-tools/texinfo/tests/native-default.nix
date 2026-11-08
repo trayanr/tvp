@@ -206,6 +206,29 @@ p.testContext.mkSuite {
       expected = "ok";
     };
 
+    shell-helpers = {
+      script = ''
+        for name in texi2pdf texi2dvi texindex; do
+          env -i PATH=/nonexistent ${p}/bin/$name --help > help 2> error
+          test ! -s error; grep -q 'Usage:' help
+          env -i PATH=/nonexistent ${p}/bin/$name --version > version 2> error
+          test ! -s error; grep -q '${p.version}' version
+        done
+        printf '\\entry{zeta}{2}{zeta}\n\\entry{alpha}{1}{alpha}\n' > index.cp
+        env -i PATH=/nonexistent ${p}/bin/texindex index.cp 2> error
+        test ! -s error
+        printf '\\initial {A}\n\\entry{alpha}{1}\n\\initial {Z}\n\\entry{zeta}{2}\n' > expected
+        cmp expected index.cps
+        # Keep the documented external-tool seams, including argument-bearing SED.
+        env -i PATH=/nonexistent SED='${d.sed}/bin/sed -u' ${p}/bin/texi2dvi --version > version 2> error
+        test ! -s error; grep -q '${p.version}' version
+        env -i PATH=/nonexistent TEXINDEX_AWK=${d.gawk}/bin/awk TEXINDEX_SCRIPT=${p}/share/texinfo/texindex.awk ${p}/bin/texindex index.cp 2> error
+        test ! -s error
+        printf bound
+      '';
+      expected = "bound";
+    };
+
     constructor = {
       expected =
         assert (p.override { }).drvPath == p.drvPath;

@@ -134,6 +134,23 @@ in
         name = "output.shell-shebangs";
       }
     )
+    {
+      name = "texinfo.bind-shell-helpers";
+      tools = [ python ];
+      run = ''
+        ${python}/bin/python3 -B - "$out" <<'PYTHON'
+        import sys
+        from pathlib import Path
+        root = Path(sys.argv[1])
+        profile = f"{root}/bin:${coreutils}/bin:${sed}/bin:${grep}/bin:${gawk}/bin:${findutils}/bin:${diffutils}/bin:${gzip}/bin"
+        for name in ['texi2pdf', 'texi2dvi', 'texindex']:
+            path = root / 'bin' / name
+            first, rest = path.read_text().split('\n', 1)
+            assert first == '#!${final.bash}/bin/bash', name
+            path.write_text(first + '\nPATH=' + profile + ':"$' + '{PATH-}"; export PATH\n' + rest)
+        PYTHON
+      '';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = [

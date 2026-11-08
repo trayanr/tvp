@@ -114,6 +114,27 @@ let
       ];
     }
   );
+  pagerProvider = d.pager.edit (
+    s:
+    s
+    // {
+      plan = [
+        {
+          name = "gzip.pager-provider";
+          run = ''
+            mkdir -p "$out/bin"
+            cat > "$out/bin/less" <<'SCRIPT'
+            #!${p.specification.bash}/bin/bash
+            if [[ -n "''${TVP_PAGER_LOG-}" ]]; then printf pager >> "$TVP_PAGER_LOG"; fi
+            exec ${d.pager}/bin/less "$@"
+            SCRIPT
+            chmod +x "$out/bin/less"
+          '';
+        }
+      ];
+    }
+  );
+  pagerRebound = p.override { pager = pagerProvider; };
   rebound = p.override {
     grep = provider;
     bash = shellProvider;
@@ -205,9 +226,6 @@ p.testContext.mkSuite {
         test "$(env -i ./executable)" = executable
         env -i ${p}/bin/gzexe -d executable >&2
         test "$(env -i ./executable)" = executable
-        # The borrowed Less provider prints decompressed bytes but returns 1
-        # under captured output, including natively. Keep that raw nonpass in
-        # supplemental evidence; this sandbox assertion certifies startup only.
         env -i ${p}/bin/zless --version | head -1 | grep -q 'zless (gzip)'
         for name in gunzip zcat gzexe zcmp zdiff zegrep zfgrep zforce zgrep zless zmore znew uncompress; do
           test "$(head -1 ${p}/bin/$name)" = '#!${p.specification.bash}/bin/bash'
@@ -215,6 +233,28 @@ p.testContext.mkSuite {
         printf helpers
       '';
       expected = "helpers";
+    };
+
+    zless = {
+      script = ''
+        printf 'preserved\n' > 'name with spaces'
+        ${p}/bin/gzip -nc 'name with spaces' > 'name with spaces.gz'
+        env -i PATH=/nonexistent ${p}/bin/zless 'name with spaces.gz' > actual 2> error
+        test ! -s error; cmp actual 'name with spaces'
+        env -i PATH=/nonexistent ${p}/bin/zless -F -X 'name with spaces.gz' > actual 2> error
+        test ! -s error; cmp actual 'name with spaces'
+        env -i PATH=/nonexistent ${p}/bin/zmore 'name with spaces.gz' > actual 2> error
+        test ! -s error; cmp actual 'name with spaces'
+        if env -i PATH=/nonexistent ${p}/bin/zless missing.gz > actual 2> error; then exit 1; fi
+        test -s error
+        head -c 12 'name with spaces.gz' > truncated.gz
+        if env -i PATH=/nonexistent ${p}/bin/zless truncated.gz > actual 2> error; then exit 1; fi
+        test -s error
+        env -i PATH=/nonexistent TVP_PAGER_LOG="$PWD/pager" ${pagerRebound}/bin/zless 'name with spaces.gz' > actual 2> error
+        test ! -s error; cmp actual 'name with spaces'; grep -Eq '^(pager)+$' pager
+        printf complete
+      '';
+      expected = "complete";
     };
 
     constructor = {
