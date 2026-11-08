@@ -454,7 +454,7 @@ let
   };
   versionTable = tvpLib.packages.mkTable (import ./3.nix { inherit defs; });
   pname = "python";
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
@@ -481,8 +481,82 @@ let
     ) { inherit pkgs; };
 
   };
+  # Complete original factory, including its tests, for frozen construction.
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool = name: tvpLib.packages.withConstraint {
+    category = "construction";
+    reason = "Retained source-GNU ${name} host tool is independent of ordinary Python consumers.";
+  } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "3.15.2" = {
+      constructor = tvp.builder;
+      builder = ./native/build-3.15.2.nix;
+      base = candidate.base;
+      source = { version, sha256 }: pkgs.fetchurl {
+        url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+        inherit sha256;
+      };
+      testContext = package: tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; };
+      helpers = { inherit tvp; };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        pkgConfig = constructionTool "pkgConfig";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        zstd = tvp.packages.zstd_1;
+        mpdecimal = tvp.packages.mpdecimal_4;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+      };
+      patches = [ {
+        file = ./patches/subprocess-shell.patch;
+        reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+      } ];
+      opts = {
+        linkUnwinder = true;
+        disabledModules = [ "_tkinter" "_uuid" ];
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "3.15.2" = versionTable."3.15.2" // {
+        def = if native then ownedDefs."3.15.2" else versionTable."3.15.2".def;
+      };
+    };
+    testDeps = packageArgs.testDeps // {
+      cmake = tvp.packages.cmake;
+      meson = tvp.packages.meson;
+      ninja = tvp.packages.ninja;
+    };
+    extraArgs.mkTests = package:
+      if package ? testContext then import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else constructionRecipe.extraArgs.mkTests package;
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
+  recipes.${pname} = publicArgs // { inherit constructionRecipe; };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

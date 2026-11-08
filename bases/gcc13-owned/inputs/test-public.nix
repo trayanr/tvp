@@ -60,6 +60,7 @@ let
         "mpdecimal"
         "tcl"
         "sqlite"
+        "python"
       ];
   # Exact-name historical baselines must close over the same retained providers.
   capturedCanonical =

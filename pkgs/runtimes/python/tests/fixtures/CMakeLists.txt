@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(python_interfaces C)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module Development.Embed)
+Python3_add_library(answer MODULE WITH_SOABI answer.c)
+add_executable(embed embed.c)
+target_link_libraries(embed PRIVATE Python3::Python)
