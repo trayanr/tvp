@@ -75,7 +75,7 @@ let
             ;
         }
       else
-        constructionRecipe.extraArgs.mkTests package
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

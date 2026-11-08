@@ -62,21 +62,29 @@ let
       alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
       bison = tvp.packages.bison;
     };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
-      else
-        constructionRecipe.extraArgs.mkTests package
-    ) { inherit pkgs; };
+    extraArgs.mkTests =
+      pkgs.lib.makeOverridable
+        (
+          { pkgs }:
+          package:
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvp
+                tvpLib
+                package
+                ;
+            }
+          else
+            (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+        )
+        {
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base = tvp.bases.default;
+          };
+        };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "flex";

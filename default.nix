@@ -131,6 +131,10 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
+      legacy-test-factories = import ./lib/tests/legacy-test-factories.nix {
+        inherit pkgs tvp;
+        inherit (universe) recipes;
+      };
       # Keep fixture outputs individually visible to plan/output publication.
       named-outputs-validation = tvp.checks.named-outputs.passthru.validation;
       named-outputs-bin = tvp.checks.named-outputs.passthru.binary;
