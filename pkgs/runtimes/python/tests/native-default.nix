@@ -2,6 +2,7 @@
 # explicit support roles, plus measured installed/developer interface coverage.
 {
   pkgs,
+  tvp,
   tvpLib,
   package,
 }:
@@ -9,6 +10,10 @@ let
   lib = pkgs.lib;
   deps = package.tvp.deps;
   support = package.tvp.declaredTestDependencies;
+  testLinker = import ./native-linker.nix {
+    builder = tvp.builder;
+    inherit (package.specification) base bash coreutils;
+  };
   linkage = dependency: soname: modules: {
     script = ''
       python3 ${./native-linkage.py} ${lib.escapeShellArg "${lib.getLib dependency}/lib"} \
@@ -66,7 +71,15 @@ package.testContext.mkSuite {
         expected = "isolated";
       };
       upstream = {
+        tools = [
+          testLinker
+          deps.binutils
+          deps.grep
+          deps.gawk
+          deps.sed
+        ];
         script = ''
+          export PATH=${testLinker}/bin:$PATH
           export LD_LIBRARY_PATH=${package.compiler.libc}/lib
           python3 -m test -v -j"$NIX_BUILD_CORES" ${lib.escapeShellArgs package.tvp.upstreamModules} > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
           cat upstream.log >&2

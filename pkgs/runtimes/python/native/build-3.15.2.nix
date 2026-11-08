@@ -103,6 +103,8 @@ in
     coreutils
     ;
   environment = {
+    # CMake reads sysconfig LIBS directly when embedding the static archive.
+    overrides.values.LIBS = "-lm";
     tools = [
       python
       gnumake
