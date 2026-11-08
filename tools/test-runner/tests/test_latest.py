@@ -113,6 +113,48 @@ class Fixture(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Link target'):
                 g.verify_outputs(self.d, self.nodes)
 
+    def test_fixed_output_resolution_is_demanded_and_cached_ancestors_are_pruned(self):
+        known = {o['path'] for n in self.nodes.values() for o in n['outputs'].values()}
+        source, unused = drv('source-archive'), drv('unused-deferred')
+        archive = str(self.run/'archive')
+        self.nodes[source] = {'name':'archive','heavy':False,'system':'x86_64-linux',
+            'outputs':{'out':{'hash':'sha256:fixed','method':'flat'}},'inputDrvs':{}}
+        self.nodes[unused] = {'name':'unused','heavy':False,'system':'x86_64-linux',
+            'outputs':{'out':{}},'inputDrvs':{}}
+        self.nodes[self.ids['gcc']]['inputDrvs'][source] = {'outputs':['out'],'dynamicOutputs':{}}
+        from unittest.mock import Mock
+        store=Mock()
+        store.valid.side_effect=lambda paths:set(paths)&known
+        valid,requests,resolutions=g.preflight(self.d,self.nodes,store)
+        self.assertEqual(requests,[]);self.assertEqual(resolutions,[])
+        store.fixed_output.assert_not_called()
+        known={archive}
+        store.fixed_output.return_value={'drv':source,'output':'out','path':archive,'evidence':'native query'}
+        valid,requests,resolutions=g.preflight(self.d,self.nodes,store)
+        store.fixed_output.assert_called_once_with(source,self.nodes[source])
+        self.assertEqual([r['drv'] for r in requests],[self.ids['gcc'],self.ids['llvm']])
+        self.assertEqual(resolutions[0]['path'],archive)
+        self.assertIn(archive,valid)
+        self.assertNotIn('path',self.nodes[unused]['outputs']['out'])
+
+    def test_selected_fixed_output_is_queried_and_matches_the_nix_descriptor(self):
+        package=self.ids['gcc'];expected=self.outputs['app']
+        self.nodes[package]['outputs']={'out':{'hash':'sha256:fixed','method':'flat'}}
+        self.nodes[package]['heavy']=False
+        self.d['metadata']['families']['gcc']['outputs']=[expected]
+        self.d['requiredOutputs'].remove(self.outputs['dev'])
+        for node_ in self.nodes.values():
+            if package in node_['inputDrvs']:node_['inputDrvs'][package]['outputs']=['out']
+        from unittest.mock import Mock
+        store=Mock();store.valid.side_effect=lambda paths:set(paths)
+        store.fixed_output.return_value={'drv':package,'output':'out','path':expected,'evidence':'native query'}
+        _,requests,_=g.preflight(self.d,self.nodes,store)
+        self.assertEqual(requests,[]);store.fixed_output.assert_called_once()
+        del self.nodes[package]['outputs']['out']['path']
+        store.fixed_output.return_value['path']=expected+'-incorrect'
+        with self.assertRaisesRegex(ValueError,'Selected output identity differs'):
+            g.preflight(self.d,self.nodes,store)
+
     def test_root_stdout_names_and_actual_targets_not_output_stdout(self):
         self.materialize()
         paths = set(self.d['requiredOutputs'])
@@ -507,6 +549,20 @@ class NativeProtocols(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError): latest.query(['nix'])
         with patch('latest.subprocess.check_output', return_value='{bad'):
             with self.assertRaises(ValueError): latest.query(['nix'])
+
+    def test_fixed_output_query_is_read_only_and_rejects_unsupported_or_bad_results(self):
+        node_={'outputs':{'out':{'hash':'sha256:fixed','method':'flat'}}}
+        target='/nix/store/'+'b'*32+'-archive'
+        with patch('latest_graph.subprocess.run',return_value=subprocess.CompletedProcess([],0,target+'\n','')) as call:
+            row=g.Store().fixed_output(drv('archive'),node_)
+        self.assertEqual(row['path'],target)
+        self.assertEqual(call.call_args.args[0],['nix-store','--query','--outputs',drv('archive')])
+        for status,stdout in ((1,''),(0,''),(0,target+'\n'+target+'\n'),(0,'relative'),(0,'/nix/store/not-a-store-path')):
+            with patch('latest_graph.subprocess.run',return_value=subprocess.CompletedProcess([],status,stdout,'')),self.assertRaises(ValueError):
+                g.Store().fixed_output(drv('archive'),node_)
+        with patch('latest_graph.subprocess.run') as call,self.assertRaisesRegex(ValueError,'Unsupported unresolved'):
+            g.Store().fixed_output(drv('deferred'),{'outputs':{'out':{}}})
+        call.assert_not_called()
 
     def test_pid_reuse_refuses_stop_and_user_bus_failure_is_explicit(self):
         identity=s.process(os.getpid())

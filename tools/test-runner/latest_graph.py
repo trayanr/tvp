@@ -26,6 +26,17 @@ class Store(NativeStore):
                 "Store validity query failed or malformed: " + result.stderr)
         return paths - invalid
 
+    def fixed_output(self, drv, node):
+        require(len(node["outputs"]) == 1 and all(isinstance(o.get("hash"), str) and o["hash"]
+                for o in node["outputs"].values()), "Unsupported unresolved output: " + drv)
+        command = ["nix-store", "--query", "--outputs", drv]
+        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+        rows = result.stdout.splitlines()
+        require(result.returncode == 0 and len(rows) == 1 and rows[0].startswith("/nix/store/"),
+                "Fixed-output path query failed or malformed: " + drv + ": " + result.stderr)
+        return {"drv": drv, "output": next(iter(node["outputs"])), "path": path(rows[0]),
+                "evidence": "read-only nix-store --query --outputs", "command": command}
+
 
 HEAVY = {"gcc", "gcc-cxx", "g++", "xgcc", "llvm", "clang", "jdk", "openjdk", "node", "nodejs",
          "dart", "dart-bootstrap", "flutter", "jdk-bootstrap", "gcc-bootstrap", "llvm-bootstrap",
@@ -112,7 +123,7 @@ def realization_targets(descriptor, nodes, valid):
         drv + "^" + ",".join(sorted(names)) for drv, names in sorted(missing.items()) if names]
 
 
-def preparation(descriptor, nodes, valid):
+def preparation(descriptor, nodes, valid, unresolved=None):
     """Postorder over needed recipes only; cached parents need no lost ancestors."""
     demanded = {}
     for drv, node in nodes.items():
@@ -132,12 +143,17 @@ def preparation(descriptor, nodes, valid):
         drv, outputs = todo.pop()
         node = nodes[drv]
         demanded.setdefault(drv, set()).update(outputs)
+        if any("path" not in node["outputs"][n] for n in outputs) and unresolved is not None:
+            unresolved.add(drv)
+            continue
         for n in outputs:
             require("path" in node["outputs"][n], "Unresolved demanded path: " + drv + "^" + n)
         if all(node["outputs"][n]["path"] in valid for n in outputs) or drv in needed:
             continue
         needed.add(drv)
         todo.extend((child, s["outputs"]) for child, s in node["inputDrvs"].items())
+    if unresolved:
+        return None  # Never return a partial heavy plan before resolving demand.
     # Iterative DFS: dependencies before consumers, including intervening small nodes.
     order, done, active = [], set(), set()
     for root in sorted(needed):
@@ -154,6 +170,39 @@ def preparation(descriptor, nodes, valid):
     return [{"drv": drv, "name": nodes[drv]["name"],
              "outputs": {n: nodes[drv]["outputs"][n]["path"] for n in sorted(demanded[drv])}}
             for drv in order if nodes[drv]["heavy"]]
+
+
+def preflight(descriptor, nodes, store=None):
+    """Resolve only demanded fixed outputs; cached ancestors remain pruned."""
+    store = store or Store()
+    resolutions = []
+
+    def resolve(drvs):
+        paths = set()
+        for drv in sorted(drvs):
+            row = store.fixed_output(drv, nodes[drv])
+            output = nodes[drv]["outputs"][row["output"]]
+            require("path" not in output, "Fixed-output resolution changed an existing identity")
+            output.update(path=row["path"], pathState="known", pathEvidence=row["evidence"])
+            paths.add(row["path"])
+            resolutions.append(row)
+        return paths
+
+    # Selected packages can themselves be fixed-output derivations. Their Nix
+    # descriptor paths are checked by identities after the native query.
+    resolve({item["drv"] for item in selected_items(descriptor)
+             if any("path" not in o for o in nodes[item["drv"]]["outputs"].values())})
+    identities(descriptor, nodes)
+    known = {o["path"] for n in nodes.values() for o in n["outputs"].values() if "path" in o}
+    valid = store.valid(known)
+    while True:
+        pending = set()
+        requests = preparation(descriptor, nodes, valid, pending)
+        if not pending:
+            return valid, requests, resolutions
+        # One metadata query per demanded fixed derivation, never one per
+        # ordinary output. Newly resolved path validity is batched per frontier.
+        valid.update(store.valid(resolve(pending)))
 
 
 def retain(run, paths, store=None):

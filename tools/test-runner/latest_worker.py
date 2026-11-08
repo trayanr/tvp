@@ -7,7 +7,7 @@ import signal
 import subprocess
 import time
 
-from latest_graph import Store, identities, preparation, realization_targets, retain, verify_outputs
+from latest_graph import Store, identities, preflight, preparation, realization_targets, retain, verify_outputs
 from latest_supervisor import load, process, save
 from verifier import digest, require
 
@@ -103,13 +103,12 @@ class Worker:
                 for p, sha in load(self.run / "bindings.json").items():
                     require(digest(self.run / p) == sha, "Frozen input changed: " + p)
                 d, nodes = load(self.run / "descriptor.json"), load(self.run / "graph.json")
-                expected = identities(d, nodes)
                 store = Store()
-                # One batched query covers all known selected-graph output paths.
+                valid, requests, resolutions = preflight(d, nodes, store)
+                expected = identities(d, nodes)
                 paths = {o["path"] for node in nodes.values() for o in node["outputs"].values() if "path" in o}
-                valid = store.valid(paths)
-                requests = preparation(d, nodes, valid)
                 before = {"valid": sorted(valid), "missing": sorted(paths - valid), "heavyRequests": requests,
+                          "fixedOutputResolutions": resolutions,
                           "requiredValid": sorted(expected & valid), "requiredMissing": sorted(expected - valid)}
                 save(self.attempt / "before.json", before)
                 require(not self.state["cachedOnly"] or expected <= valid and not requests,

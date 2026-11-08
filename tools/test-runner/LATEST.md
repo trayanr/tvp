@@ -109,6 +109,12 @@ permanent service, timer, Nix concurrency setting or CI configuration is install
 Preflight performs one recursive native derivation query and batched local-store
 validity checks. It accepts native v4 and the old unversioned derivation schema;
 unknown schemas, missing nodes and unresolved demanded outputs fail with diagnostics.
+When native JSON omits a fixed-output path, preflight resolves only demanded
+single-output fixed derivations using read-only `nix-store --query --outputs`.
+It records that native evidence and batches newly resolved validity checks per
+dependency frontier. Cached ancestors stay pruned. No build, fetch, `env.out`
+guess or output-path hash reconstruction is used; genuinely deferred/dynamic
+outputs remain unsupported and fail closed.
 Exact `pname`, `version` and application name metadata identify GCC/LLVM/JDK/Node/
 Dart/Flutter applications and their declared seed/compatibility producers. Tests,
 wrappers, source archives and fixed-output artifacts are excluded. Unknown origin

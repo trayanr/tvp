@@ -11,7 +11,7 @@ import subprocess
 import sys
 import time
 
-from latest_graph import Store, graph, identities, preparation, realization_targets, retain, verify_outputs
+from latest_graph import Store, graph, identities, preflight, realization_targets, retain, verify_outputs
 from latest_supervisor import (TERMINAL, environment, held, interfaces, launch, load,
                                save, snapshot, stop)
 from verifier import digest, require
@@ -58,14 +58,14 @@ def freeze(run, flake, system, foreground):
     document = query(["nix", "derivation", "show", "--offline", "--recursive", "--stdin"],
                      input=d["aggregate"]["drv"] + "\n", env=env)
     nodes = graph(document)
+    valid, requests, resolutions = preflight(d, nodes)
     expected = identities(d, nodes)
     known = {o["path"] for n in nodes.values() for o in n["outputs"].values() if "path" in o}
-    valid = Store().valid(known)
-    requests = preparation(d, nodes, valid)
     save(run / "graph.json", nodes)
     save(run / "preflight.json", {"schema": "tvp.latest-preflight/v1", "graphNodes": len(nodes),
                                   "graphOutputs": len(known), "selectedOutputs": len(expected),
                                   "valid": sorted(valid), "heavyRequests": requests,
+                                  "fixedOutputResolutions": resolutions,
                                   "requiredMissing": sorted(expected - valid)})
     subject = {"flake": flake, "source": source, "revision": revision, "tree": tree, "system": system,
                "snapshot": metadata, "descriptorSHA256": digest(run / "descriptor.json")}
