@@ -125,12 +125,13 @@ def passed_counts(counts, expected):
             and counts == dict.fromkeys(STATUSES[1:], 0) | {"passed": expected})
 
 
-def validate_state(plan, state, adapter):
+def validate_terminal_state(plan, state, adapter, expected_full):
     require(isinstance(state, dict), "State must be an object")
     require(not any(k in state for k in ("attempts", "retrySuites", "retryErrors", "retryOf")),
             "Combined/retry evidence cannot certify one original attempt")
     require(state.get("phase") == "passed" and type(state.get("returnCode")) is int
-            and state["returnCode"] == 0 and state.get("full") is True, "Expected passed/returnCode 0/full")
+            and state["returnCode"] == 0 and state.get("full") is expected_full,
+            "Expected passed/returnCode 0/full=" + str(expected_full))
     require(state.get("cancelled") is False and state.get("active") == {}, "Cancellation or active work")
     require(not any(state.get(k) for k in ("error", "monitorError", "cancelReason")), "Worker/monitor error")
     require(state.get("reportedFailedDerivations") == [], "Reported failed derivations missing/nonempty")
@@ -165,6 +166,12 @@ def validate_state(plan, state, adapter):
     for key, expected in (("source", plan["source"]), ("declaredBroken", plan["skipped"]),
                           ("counts", {"passed": len(plan["jobs"])})):
         require(key not in state or state[key] == expected, "Contradictory " + key)
+
+
+def validate_state(plan, state, adapter):
+    # The full certificate remains full-only. A representative certificate has
+    # its own exact selection/reference validation and never changes state.full.
+    return validate_terminal_state(plan, state, adapter, True)
 
 
 class Store:

@@ -701,6 +701,7 @@ let
             ;
         };
         package-runtime-ownership.python = tvp.packages.python_3;
+        package-runtime-ownership-latest.python = tvp.packages.python_3;
       };
     };
     graph = tvpLib.graph.snapshot {

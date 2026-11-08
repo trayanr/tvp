@@ -429,10 +429,14 @@ def main():
             command.add_argument("--attempt-only", action="store_true", help="show this frozen attempt without linked retries")
     from verifier import add_parser, dispatch
     add_parser(commands)
+    from representative import add_parser as add_representative, dispatch as dispatch_representative
+    add_representative(commands)
     args = parser.parse_args()
     try:
         if args.command == "verify":
             return dispatch(args)
+        if args.command == "verify-representative":
+            return dispatch_representative(args)
         if args.command == "start":
             return start(args)
         run = (args.run or args.state_dir / "latest").resolve()

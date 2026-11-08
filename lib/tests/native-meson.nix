@@ -112,8 +112,17 @@ let
     }
   );
   edits = value: ((value.editSteps insert).editSteps replace).editSteps disable;
-  selected = (edits fixture).override { inherit ninja pkg-config; };
-  alternate = edits (fixture.override { inherit ninja pkg-config; });
+  reboundMeson = tvp.packages.meson.override { inherit ninja pkg-config; };
+  selected = (edits fixture).override {
+    inherit ninja pkg-config;
+    meson = reboundMeson;
+  };
+  alternate = edits (
+    fixture.override {
+      inherit ninja pkg-config;
+      meson = reboundMeson;
+    }
+  );
   traced = selected.editSteps (
     steps.append [
       {
@@ -131,6 +140,7 @@ let
   customized =
     (p.override {
       inherit ninja pkg-config;
+      meson = reboundMeson;
       doCheck = false;
     }).editSteps
       (steps.replace "fontconfig.check" (old: old // { run = throw "disabled Fontconfig check"; }));

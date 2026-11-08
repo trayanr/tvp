@@ -9,7 +9,7 @@
 let
   lib = pkgs.lib;
   deps = package.tvp.deps;
-  support = package.tvp.testDeps;
+  support = package.tvp.declaredTestDependencies;
   testLinker = import ./native-linker.nix {
     builder = tvp.builder;
     inherit (package.specification) base bash coreutils;

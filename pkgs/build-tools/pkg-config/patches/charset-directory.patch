@@ -1,0 +1,11 @@
+--- a/glib/glib/libcharset/localcharset.c
++++ b/glib/glib/libcharset/localcharset.c
+@@ -121,7 +121,7 @@
+ 	 necessary for running the testsuite before "make install".  */
+       dir = getenv ("CHARSETALIASDIR");
+       if (dir == NULL || dir[0] == '\0')
+-	dir = relocate (LIBDIR);
++	dir = "@TVP_CHARSET_DIR@";
+ 
+       /* Concatenate dir and base into freshly allocated file_name.  */
+       {

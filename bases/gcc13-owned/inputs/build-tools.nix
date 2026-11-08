@@ -247,7 +247,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   pkg-config = tvpLib.packages.mkVariants (
-    recipes.pkg-config
+    recipes.pkg-config.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

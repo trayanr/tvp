@@ -527,9 +527,6 @@ let
         helperGrep = tvp.packages.gnugrep;
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";
-        testCmake = tvp.packages.cmake;
-        testMeson = tvp.packages.meson;
-        testNinja = tvp.packages.ninja;
         runtimeBash = tvp.packages.bash_5;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
@@ -563,6 +560,14 @@ let
     };
   };
   publicArgs = packageArgs // {
+    # These are suite support, never production recipe arguments: full Python
+    # supplies Ninja browse and Meson, so validating them as build dependencies
+    # would force a constructor cycle before either derivation exists.
+    testDeps = packageArgs.testDeps // {
+      cmake = tvp.packages.cmake;
+      meson = tvp.packages.meson;
+      ninja = tvp.packages.ninja;
+    };
     versionTable = versionTable // {
       "3.15.2" = versionTable."3.15.2" // {
         def = if native then ownedDefs."3.15.2" else versionTable."3.15.2".def;

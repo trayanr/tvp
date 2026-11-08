@@ -10,6 +10,9 @@ let
   historical = import ./test-public.nix { inherit pkgs tvp recipes; };
   testRecipes = recipes // {
     inherit (historical.recipes)
+      acl
+      ncurses
+      xz
       bison
       zlib
       gcc

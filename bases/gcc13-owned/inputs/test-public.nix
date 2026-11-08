@@ -60,6 +60,10 @@ let
         "mpdecimal"
         "tcl"
         "sqlite"
+        "pkg-config"
+        "ninja"
+        "cmake"
+        "meson"
         "python"
       ];
   # Exact-name historical baselines must close over the same retained providers.
