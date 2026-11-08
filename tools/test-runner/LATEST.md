@@ -118,7 +118,11 @@ rebuilt. Needed heavy producers run one at a time, dependencies first, requestin
 only demanded named outputs. Inner builds and normal small builds retain the
 caller's normal Nix concurrency. Heavy preparation is not downstream test proof.
 
-Only after the heavy gate does one fail-fast latest aggregate request run.
+Only after the heavy gate does one fail-fast realization request run. It includes
+the aggregate and exact output selectors for any missing selected packages, batch
+outputs or named-test siblings. A cached aggregate cannot restore dependencies
+that its runtime links do not retain, so those selectors remain explicit. The
+pre-request availability and target list are recorded and bound to verification.
 Verification checks every selected package, batch and named-test output, all
 siblings and exact aggregate/batch links. Valid outputs are rooted in batches;
 root stdout is interpreted as root *names* and their actual symlink targets are
@@ -143,6 +147,19 @@ nix run .#test -- latest --resume /absolute/new-run --retry-interrupted
 There are at most two attempts against the unchanged frozen source/code/commands.
 The original receipt/logs remain in `attempts/001`; a new attempt rechecks validity
 and reuses partial successes. No compiler/test failure is automatically retried.
+If a worker dies after recording a failed Nix command, that failure remains
+non-retryable even without a final worker receipt. A surviving owned Nix client is
+reported as `cleanup-required`; retry is refused and `latest stop` can signal the
+client using its recorded process identity. Status distinguishes `supervisorActive`
+and `clientActive`; `workerActive` covers either kind of live owned work.
+
+A launch intent without an acknowledged process, systemd invocation or worker
+receipt is ambiguous. It fails closed and requires manual resolution; absence of
+an observed PID or unit is insufficient to authorize another attempt. `stop`
+records a durable marker so a delayed worker cannot issue commands, but never
+signals an unbound unit or unknown PID. It does not claim that an ambiguous launch
+has been cleaned up. Workers bind to their own attempt under the worker lock;
+delayed or duplicate workers cannot adopt another attempt or repeat completed work.
 A stopped run never resumes. A second interruption remains terminal for investigation.
 Launch and worker locks prevent duplicate work; explicit stop validates the owned
 unit invocation/cgroup or uses a validated PID/startTicks/boot identity and pidfd.

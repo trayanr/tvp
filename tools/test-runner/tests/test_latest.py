@@ -167,9 +167,117 @@ class Fixture(unittest.TestCase):
         self.assertIsNone(result['currentChild'])
         # Same outputs are all valid: no heavy request can be repeated.
         commands.clear()
+        s.save(self.run / 'state.json', self.state | {'attempt': 2})
+        attempt2 = self.run / 'attempts/002'; attempt2.mkdir()
         with patch.object(g.Store, 'valid', side_effect=self.valid), patch('latest_worker.retain', return_value=[]), patch.object(Worker, 'command', lambda w,p,t: commands.append(p)):
-            self.assertEqual(Worker(self.run, self.attempt).execute(), 0)
+            self.assertEqual(Worker(self.run, attempt2).execute(), 0)
         self.assertEqual(commands, ['aggregate'])
+
+    def test_unacknowledged_launch_is_ambiguous_and_stale_workers_cannot_adopt_retry(self):
+        s.save(self.run / 'host.json', {'foreground': True})
+        s.save(self.attempt / 'launch.json', {'unit': None, 'backend': 'foreground'})
+        state = s.snapshot(self.run)
+        self.assertEqual(state['phase'], 'error')
+        self.assertTrue(state['launchAmbiguous'])
+        with self.assertRaises(ValueError): latest.can_retry(self.run, state)
+        # The same crash gap exists before an asynchronous systemd request is acknowledged.
+        unit = s.unit_name(self.run, self.attempt)
+        s.save(self.attempt / 'launch.json', {'unit': unit, 'backend': 'systemd-user'})
+        with patch('latest_supervisor.unit_live', return_value=(False, {'LoadState': 'not-found'})):
+            self.assertTrue(s.snapshot(self.run)['launchAmbiguous'])
+        stale = Worker(self.run, self.attempt)
+        s.save(self.run / 'state.json', self.state | {'attempt': 2})
+        with patch.object(Worker, 'command') as command:
+            with self.assertRaisesRegex(ValueError, 'Stale worker'): stale.execute()
+            command.assert_not_called()
+        self.assertEqual(s.load(self.run / 'state.json')['attempt'], 2)
+        self.assertFalse((self.attempt / 'result.json').exists())
+
+    def test_terminal_failed_client_survives_missing_worker_finally_receipt(self):
+        command_path = self.attempt / '001-heavy.json'
+        s.save(command_path, {'phase': 'heavy', 'terminal': True, 'returnCode': 17})
+        s.save(self.run / 'host.json', {'foreground': True})
+        s.save(self.attempt / 'launch.json', {'unit': None, 'backend': 'foreground'})
+        s.save(self.run / 'state.json', self.state | {'phase': 'heavy', 'commandRecord': str(command_path)})
+        state = s.snapshot(self.run)
+        self.assertEqual(state['phase'], 'failed')
+        with self.assertRaises(ValueError): latest.can_retry(self.run, state)
+        self.assertEqual(s.load(command_path)['returnCode'], 17)
+
+    def test_actual_delayed_child_survives_launch_ack_gap_without_duplicate_attempt(self):
+        self.materialize()
+        (self.run / 'code').mkdir(); (self.run / 'bin').mkdir()
+        (self.run / 'code/latest.py').write_text(r'''
+import sys,time
+from pathlib import Path
+from unittest.mock import patch
+from latest_worker import Worker
+from latest_graph import Store
+run,attempt=map(Path,sys.argv[2:4]);deadline=time.monotonic()+5
+while not (run/'go').exists():
+    if time.monotonic()>deadline:sys.exit(42)
+    time.sleep(.01)
+def command(worker,phase,targets):
+    with (run/'commands').open('a') as stream:stream.write(phase+'\\n')
+with patch.object(Store,'valid',side_effect=lambda paths:{p for p in paths if Path(p).exists()}),patch('latest_worker.retain',return_value=[]),patch.object(Worker,'command',command):
+    sys.exit(Worker(run,attempt).execute())
+''')
+        config = {'foreground': True, 'python': sys.executable, 'bin': str(self.run/'bin'), 'binaries': {},
+                  'environment': {'PATH': os.environ.get('PATH',''), 'PYTHONPATH': str(Path(latest.__file__).parent)}}
+        s.save(self.run/'host.json', config)
+        s.save(self.run/'subject.json', {k:self.state[k] for k in ('source','revision','tree','system')}|{'flake':'original'})
+        children = []
+        original_save, original_popen = s.save, subprocess.Popen
+        def launch_child(*args, **kwargs):
+            child=original_popen(*args, **kwargs);children.append(child);return child
+        def crash_after_spawn(path, record):
+            if path == self.attempt/'launch.json' and 'client' in record:
+                raise RuntimeError('launcher lost before acknowledgment')
+            original_save(path, record)
+        try:
+            with patch('latest_supervisor.subprocess.Popen',side_effect=launch_child),patch('latest_supervisor.save',side_effect=crash_after_spawn):
+                with self.assertRaisesRegex(RuntimeError,'acknowledgment'):
+                    s.launch(self.run,self.attempt,config,True,60,sys.executable)
+            self.assertEqual(len(children),1);self.assertIsNone(children[0].poll())
+            args=latest.argparse.Namespace(resume=self.run,flake=None,system=None,expect_source=None,retry_interrupted=True)
+            with patch('latest.launch') as duplicate:
+                with self.assertRaises(ValueError): latest.start(args)
+                duplicate.assert_not_called()
+            self.assertEqual(s.load(self.run/'state.json')['attempt'],1)
+            (self.run/'go').touch()
+            self.assertEqual(children[0].wait(timeout=6),0)
+            self.assertEqual(s.load(self.attempt/'result.json')['attempt'],1)
+            self.assertEqual((self.run/'commands').read_text(),'aggregate\\n')
+        finally:
+            for child in children:
+                if child.poll() is None:child.kill()
+                child.wait(timeout=5)
+
+    def test_cached_aggregate_restores_missing_selected_small_siblings(self):
+        self.materialize()
+        self.nodes[self.ids['gcc']]['heavy'] = False
+        for name in ('dev', 'test-dev'): Path(self.outputs[name]).rmdir()
+        s.save(self.run / 'graph.json', self.nodes)
+        commands = []
+        def realize(worker, phase, targets):
+            commands.append((phase, targets))
+            # Match Nix cached-target semantics: an already valid aggregate
+            # cannot recreate a lost sibling that it does not reference.
+            for target in targets:
+                drv_, names = target.split('^')
+                for name, output in self.nodes[drv_]['outputs'].items():
+                    if names == '*' or name in names.split(','):
+                        Path(output['path']).mkdir(exist_ok=True)
+        with patch.object(g.Store, 'valid', side_effect=self.valid), patch('latest_worker.retain', return_value=[]), patch.object(Worker, 'command', realize):
+            self.assertEqual(Worker(self.run, self.attempt).execute(), 0)
+        self.assertEqual([p for p, _ in commands], ['aggregate'])
+        self.assertEqual(set(commands[0][1]), {self.ids['aggregate']+'^*', self.ids['gcc']+'^dev', self.ids['test']+'^dev'})
+        plan = s.load(self.attempt / 'realization.json')
+        self.assertEqual(set(plan['missingSelectedOutputs']), {self.outputs['dev'], self.outputs['test-dev']})
+        with patch.object(Worker, 'command') as command:
+            with self.assertRaisesRegex(ValueError, 'already started or terminal'):
+                Worker(self.run, self.attempt).execute()
+            command.assert_not_called()
 
     def test_worker_genuine_failure_has_no_aggregate_or_retry(self):
         calls = []
@@ -279,7 +387,7 @@ for target in a:
         command_path=Path(result['commandRecord'])
         command=s.load(command_path)
         s.save(command_path,command|{'returnCode':17})
-        with self.assertRaisesRegex(ValueError,'aggregate/client'):latest.verify(self.run)
+        with self.assertRaisesRegex(ValueError,'Terminal successful|aggregate/client'):latest.verify(self.run)
         self.assertEqual(len(list(self.attempt.glob('[0-9]*-heavy.json'))),2)
         self.assertEqual(len(list(self.attempt.glob('[0-9]*-aggregate.json'))),1)
 
@@ -294,6 +402,46 @@ for target in a:
         self.assertIsNone(result['currentChild'])
         self.assertFalse(list(self.attempt.glob('[0-9]*-aggregate.json')))
         with self.assertRaisesRegex(ValueError,'stopped'):latest.can_retry(self.run,result|{'workerActive':False})
+
+    def test_orphan_client_blocks_retry_and_can_be_stopped_after_worker_sigkill(self):
+        # Adopt the finite fake client so this test can reap it after killing
+        # its worker. This prctl setting is local to this test process.
+        import ctypes
+        libc = ctypes.CDLL(None, use_errno=True)
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.byref(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        child, _ = self.fake_worker(delay=3)
+        client = None
+        try:
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                paths = list(self.attempt.glob('[0-9]*-heavy.json'))
+                if paths:
+                    client = s.load(paths[0]).get('client')
+                    if client: break
+                time.sleep(.01)
+            self.assertIsNotNone(client)
+            child.kill(); self.assertEqual(child.wait(timeout=5), -signal.SIGKILL)
+            state = s.snapshot(self.run)
+            self.assertEqual(state['phase'], 'cleanup-required')
+            self.assertTrue(state['clientActive']); self.assertTrue(state['workerActive'])
+            self.assertFalse(state['supervisorActive'])
+            with self.assertRaises(ValueError): latest.can_retry(self.run, state)
+            s.stop(self.run)
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                if os.waitpid(client['pid'], os.WNOHANG)[0]:
+                    client = None; break
+                time.sleep(.01)
+            self.assertIsNone(client, 'owned client did not terminate')
+            self.assertEqual(s.snapshot(self.run)['phase'], 'stopped')
+        finally:
+            if child.poll() is None: child.kill(); child.wait(timeout=5)
+            if client:
+                if s.same_process(client): os.kill(client['pid'], signal.SIGKILL)
+                os.waitpid(client['pid'], 0)
+            libc.prctl(36, previous.value, 0, 0, 0)
 
     def test_pid_reuse_stop_and_changed_bindings_refuse_actions(self):
         state=self.state|{'phase':'interrupted','workerActive':False}
@@ -327,6 +475,27 @@ class NativeProtocols(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'version 4'): g.graph(document)
         for document in ({'version':4}, {'junk':7}):
             with self.assertRaises(ValueError): g.graph(document)
+
+    def test_legacy_structured_metadata_preserves_sequential_compiler_gating(self):
+        gcc, llvm = drv('gcc-1'), drv('llvm-1')
+        out_gcc = '/nix/store/'+'b'*32+'-gcc-1'
+        out_llvm = '/nix/store/'+'c'*32+'-llvm-1'
+        document = {}
+        for key, pname, output, deps in ((gcc, 'gcc', out_gcc, {}), (llvm, 'llvm', out_llvm, {gcc: ['out']})):
+            document[key] = {'builder': '/bin/sh', 'system': 'x86_64-linux',
+                'env': {'__json': json.dumps({'name': pname+'-1', 'pname': pname, 'version': '1'})},
+                'inputSrcs': [], 'inputDrvs': deps, 'outputs': {'out': {'path': output}}}
+        nodes = g.graph(document)
+        descriptor = {'aggregate': {'drv': llvm, 'outputs': {'out': out_llvm}}, 'batches': {},
+                      'metadata': {'families': {'gcc': {'packageDRV': gcc}}}}
+        self.assertEqual([r['drv'] for r in g.preparation(descriptor, nodes, set())], [gcc, llvm])
+        self.assertEqual(g.preparation(descriptor, nodes, {out_gcc, out_llvm}), [])
+        for malformed in ('{bad', '[]', None):
+            bad = copy.deepcopy(document); bad[gcc]['env']['__json'] = malformed
+            with self.assertRaises(ValueError): g.graph(bad)
+        native = self.native(); row = native['derivations'][drv('gcc-1')]
+        row['env'].update(name='xgcc-1', pname='xgcc')
+        self.assertTrue(g.graph(native)[drv('gcc-1')]['heavy'])
 
     def test_malformed_validity_and_command_failure_fail_closed(self):
         for result in (subprocess.CompletedProcess([],0,'/unknown\n',''), subprocess.CompletedProcess([],1,'','bad'), subprocess.CompletedProcess([],2,'','bad')):

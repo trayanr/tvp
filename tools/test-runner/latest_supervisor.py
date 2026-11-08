@@ -32,9 +32,11 @@ def process(pid):
     try:
         proc = Path("/proc") / str(pid)
         stat = (proc / "stat").read_text().rsplit(")", 1)[1].split()
+        if stat[0] == "Z":
+            return None
         return {"pid": pid, "startTicks": stat[19], "cgroup": (proc / "cgroup").read_text(),
                 "bootID": Path("/proc/sys/kernel/random/boot_id").read_text().strip()}
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return None
 
 
@@ -111,6 +113,7 @@ def launch(run, attempt, config, foreground, deadline, executable):
     if foreground:
         child = subprocess.Popen(command, env=environment(config))
         record["client"] = process(child.pid)
+        record["acknowledged"] = True
         save(attempt / "launch.json", record)
         return child
     else:
@@ -128,9 +131,21 @@ def launch(run, attempt, config, foreground, deadline, executable):
         props = unit_show(config, unit)
         record.update(invocationID=props.get("InvocationID"), properties={k: props.get(k) for k in (
             "Id", "InvocationID", "MainPID", "ControlGroup", "Restart", "RuntimeMaxUSec", "ActiveState", "Result")})
+        record["acknowledged"] = True
         save(attempt / "launch.json", record)
         code = 0
     return code
+
+
+def command_receipt(run, state):
+    """Only the current attempt's owned command can establish recovery status."""
+    if not state.get("commandRecord"):
+        return None
+    path = Path(state["commandRecord"])
+    attempt = run / "attempts" / f"{state['attempt']:03}"
+    require(path.parent == attempt and path.name.endswith(("-heavy.json", "-aggregate.json")),
+            "Unowned current command receipt")
+    return load(path)
 
 
 def snapshot(run):
@@ -148,11 +163,29 @@ def snapshot(run):
             launch_record = dict(launch_record, invocationID=state["invocationID"])
         live, props = unit_live(config, launch_record)
         active = active or live
-    if state["phase"] not in TERMINAL and not active:
-        stopped = (run / "stop.json").exists()
-        state = dict(state, phase="stopped" if stopped else "interrupted",
-                     reason="User stop before receipt" if stopped else "No healthy worker or active owned unit; infrastructure interruption")
-    state.update(run=str(run), workerActive=active, unitObservation=props)
+    command = command_receipt(run, state)
+    client_active = bool(command) and same_process(command.get("client"))
+    # A launcher can die after submitting work but before recording its PID or
+    # invocation. Absence of a process observation cannot resolve that intent.
+    acknowledged = launch_record and (launch_record.get("acknowledged")
+        or launch_record.get("client") or launch_record.get("invocationID"))
+    ambiguous = bool(launch_record and not acknowledged and not (attempt / "worker.json").exists()
+                     and not state.get("worker"))
+    command_ambiguous = bool(command and not command.get("terminal") and not command.get("client"))
+    if not active:
+        if client_active:
+            state = dict(state, phase="cleanup-required", reason="Owned Nix client remains alive without its worker")
+        elif (run / "stop.json").exists():
+            state = dict(state, phase="stopped", reason="Explicit user stop")
+        elif command and command.get("terminal") and isinstance(command.get("returnCode"), int) and command["returnCode"] > 0:
+            state = dict(state, phase="failed", reason="Terminal Nix client failure retained after worker loss")
+        elif state["phase"] not in TERMINAL:
+            if ambiguous or command_ambiguous:
+                state = dict(state, phase="error", reason="Unacknowledged launch intent; manual resolution required")
+            else:
+                state = dict(state, phase="interrupted", reason="No live owned worker or client; infrastructure interruption")
+    state.update(run=str(run), workerActive=active or client_active, supervisorActive=active,
+                 clientActive=client_active, launchAmbiguous=ambiguous or command_ambiguous, unitObservation=props)
     return state
 
 
@@ -162,7 +195,8 @@ def stop(run):
     with (run / "launch.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state = snapshot(run)
-        require(state["phase"] not in TERMINAL or state["workerActive"], "Run is already terminal")
+        require(state["phase"] not in TERMINAL or state["workerActive"] or state.get("launchAmbiguous"),
+                "Run is already terminal")
         save(run / "stop.json", {"reason": "explicit user stop", "at": time.time()})
         attempt = run / "attempts" / f"{state['attempt']:03}"
         record = load(attempt / "launch.json")
@@ -170,15 +204,22 @@ def stop(run):
         if record["unit"]:
             require(record["unit"] == unit_name(run, attempt), "Unowned unit name")
             invocation = record.get("invocationID") or state.get("invocationID")
-            require(invocation, "No bound systemd invocation; refuse an ambiguous stop")
+            if not invocation:
+                # The marker prevents a delayed worker from issuing commands;
+                # an unbound unit must never be signalled by name alone.
+                return
             live, props = unit_live(config, dict(record, invocationID=invocation))
             require(props.get("ControlGroup", "").endswith("/" + record["unit"]), "Unowned cgroup")
             if live:
                 subprocess.run([config["binaries"]["systemctl"], "--user", "stop", record["unit"]],
                                env=environment(config), check=True, timeout=45)
         else:
-            identity = state.get("worker") or record.get("client")
-            require(same_process(identity), "Worker PID identity no longer matches")
+            command = command_receipt(run, state)
+            candidates = [state.get("worker"), record.get("client"), command.get("client") if command else None]
+            identity = next((p for p in candidates if same_process(p)), None)
+            if identity is None and state.get("launchAmbiguous"):
+                return  # Only a durable stop marker is safe for an unknown launch.
+            require(identity is not None, "Worker/client PID identity no longer matches")
             # pidfd prevents reuse between validation and signal delivery.
             fd = os.pidfd_open(identity["pid"])
             try:

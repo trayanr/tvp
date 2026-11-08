@@ -11,7 +11,7 @@ import subprocess
 import sys
 import time
 
-from latest_graph import Store, graph, identities, preparation, retain, verify_outputs
+from latest_graph import Store, graph, identities, preparation, realization_targets, retain, verify_outputs
 from latest_supervisor import (TERMINAL, environment, held, interfaces, launch, load,
                                save, snapshot, stop)
 from verifier import digest, require
@@ -88,6 +88,7 @@ def can_retry(run, state):
     require(not (run / "stop.json").exists() and state["phase"] != "stopped", "User-stopped work cannot resume")
     require(state["phase"] == "interrupted", "Only infrastructure interruption permits a retry; compiler/test/error outcomes do not")
     require(not state["workerActive"], "Worker is still healthy; reconnect without retry")
+    require(not state.get("launchAmbiguous"), "Unresolved launch intent cannot be retried")
     require(state["attempt"] < 2, "Maximum two unchanged attempts; no third run")
     for file, sha in load(run / "bindings.json").items():
         require(digest(run / file) == sha, "Frozen source/code/command identity differs: " + file)
@@ -178,9 +179,17 @@ def verify(run):
     command_path = Path(receipt["commandRecord"])
     require(command_path.parent == attempt, "Unowned terminal command receipt")
     command = load(command_path)
+    d, nodes = load(run / "descriptor.json"), load(run / "graph.json")
+    plan_path = attempt / "realization.json"
+    require(digest(plan_path) == receipt.get("realizationSHA256"), "Realization plan binding differs")
+    plan = load(plan_path)
+    require(set(plan["beforeValid"]) <= identities(d, nodes), "Unexpected realization validity scope")
+    targets = realization_targets(d, nodes, set(plan["beforeValid"]))
+    require(plan["targets"] == targets and set(plan["missingSelectedOutputs"]) == identities(d, nodes) - set(plan["beforeValid"]),
+            "Realization plan targets differ")
     require(command.get("phase") == "aggregate" and command.get("terminal") is True
             and command.get("returnCode") == 0
-            and command.get("targets") == [load(run / "descriptor.json")["aggregate"]["drv"] + "^*"],
+            and command.get("targets") == targets,
             "Invalid terminal aggregate/client receipt")
     return {"schema": "tvp.latest-verification/v1", "full": False,
             "subject": load(run / "subject.json"), "result": "PASS",

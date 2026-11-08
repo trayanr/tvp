@@ -27,7 +27,7 @@ class Store(NativeStore):
         return paths - invalid
 
 
-HEAVY = {"gcc", "gcc-cxx", "g++", "llvm", "clang", "jdk", "openjdk", "node", "nodejs",
+HEAVY = {"gcc", "gcc-cxx", "g++", "xgcc", "llvm", "clang", "jdk", "openjdk", "node", "nodejs",
          "dart", "dart-bootstrap", "flutter", "jdk-bootstrap", "gcc-bootstrap", "llvm-bootstrap",
          "clang-unwrapped", "llvm-unwrapped", "nodejs-minimal"}
 
@@ -48,10 +48,18 @@ def graph(document):
     raw = {path(k, drv=True): v for k, v in document["derivations"].items()}
     for drv, node in nodes.items():
         env = raw[drv].get("env", {})
-        attrs = raw[drv].get("structuredAttrs", {})
+        require(isinstance(env, dict), "Malformed derivation environment: " + drv)
+        attrs = raw[drv].get("structuredAttrs")
+        if attrs is None:
+            require("__json" not in env or isinstance(env["__json"], str),
+                    "Malformed encoded structured attributes: " + drv)
+            attrs = json.loads(env["__json"]) if "__json" in env else {}
+        require(isinstance(attrs, dict), "Malformed structured attributes: " + drv)
         name = env.get("name", raw[drv].get("name", attrs.get("name")))
         pname = env.get("pname", attrs.get("pname"))
         version = env.get("version", attrs.get("version"))
+        require(all(value is None or isinstance(value, str) for value in (name, pname, version)),
+                "Malformed application metadata: " + drv)
         # Metadata and exact application name exclude tests, archives, patches,
         # wrappers and helper artifacts. Fixed-output seeds are artifacts too.
         fixed = any("hash" in o or "hashAlgo" in o for o in node["outputs"].values())
@@ -61,7 +69,7 @@ def graph(document):
     return nodes
 
 
-def identities(descriptor, nodes):
+def selected_items(descriptor):
     require(descriptor["schema"] == "tvp.latest-descriptor/v1", "Descriptor schema differs")
     require(descriptor["metadata"]["schema"] == "tvp.latest-tests/v1", "Selection schema differs")
     items = [descriptor["aggregate"]]
@@ -72,8 +80,12 @@ def identities(descriptor, nodes):
         batch = descriptor["batches"][row["job"]]
         require(batch["drv"] == row["jobDRV"], "Batch producer differs")
         items.extend([batch, *batch["tests"].values()])
+    return items
+
+
+def identities(descriptor, nodes):
     required = set()
-    for item in items:
+    for item in selected_items(descriptor):
         drv = path(item["drv"], drv=True)
         require(drv in nodes, "Missing selected producer: " + drv)
         actual = nodes[drv]["outputs"]
@@ -87,6 +99,17 @@ def identities(descriptor, nodes):
             required.update(paths)
     require(required == set(descriptor["requiredOutputs"]), "Required output membership differs")
     return required | {descriptor["aggregate"]["out"]}
+
+
+def realization_targets(descriptor, nodes, valid):
+    """Cached aggregates do not retain every sibling or selected package output."""
+    missing = {}
+    for item in selected_items(descriptor)[1:]:
+        outputs = nodes[item["drv"]]["outputs"]
+        missing.setdefault(item["drv"], set()).update(
+            name for name, output in outputs.items() if output["path"] not in valid)
+    return [descriptor["aggregate"]["drv"] + "^*"] + [
+        drv + "^" + ",".join(sorted(names)) for drv, names in sorted(missing.items()) if names]
 
 
 def preparation(descriptor, nodes, valid):

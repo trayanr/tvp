@@ -7,7 +7,7 @@ import signal
 import subprocess
 import time
 
-from latest_graph import Store, identities, preparation, retain, verify_outputs
+from latest_graph import Store, identities, preparation, realization_targets, retain, verify_outputs
 from latest_supervisor import load, process, save
 from verifier import digest, require
 
@@ -81,6 +81,15 @@ class Worker:
     def execute(self):
         with (self.run / "worker.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # A delayed old child must not adopt shared state from a retry, and
+            # the same attempt must not execute again after its first worker.
+            self.state = load(self.run / "state.json")
+            require(self.attempt == self.run / "attempts" / f"{self.state['attempt']:03}",
+                    "Stale worker attempt")
+            require(self.state["phase"] == "launching" and not (self.attempt / "worker.json").exists(),
+                    "Attempt already started or terminal")
+            save(self.attempt / "worker.json", {"attempt": self.state["attempt"], "worker": process(os.getpid()),
+                 "invocationID": os.environ.get("INVOCATION_ID"), "startedAt": time.time()})
             previous = {}
             for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGALRM):
                 previous[sig] = signal.signal(sig, self.signal)
@@ -89,6 +98,7 @@ class Worker:
                               workerStartedAt=time.time(), full=False)
             outcome, error, coverage = "error", None, None
             try:
+                self.stopped()
                 self.checkpoint("preflight")
                 for p, sha in load(self.run / "bindings.json").items():
                     require(digest(self.run / p) == sha, "Frozen input changed: " + p)
@@ -119,9 +129,17 @@ class Worker:
                     require(store.valid(outputs) == outputs, "Heavy request missing demanded outputs: " + request["drv"])
                     retain(self.run, outputs)
                 # Recheck the heavy gate. No latest aggregate can race preparation.
-                heavy_outputs = {p for request in requests for p in request["outputs"].values()}
-                require(store.valid(heavy_outputs) == heavy_outputs, "Heavy gate lost prepared outputs")
-                self.command("aggregate", [d["aggregate"]["drv"] + "^*"])
+                gate_valid = store.valid(paths)
+                require(not preparation(d, nodes, gate_valid), "Heavy gate lost prepared outputs")
+                selected_valid = expected & gate_valid
+                require(not self.state["cachedOnly"] or expected <= selected_valid,
+                        "--cached-only lost selected outputs before realization")
+                targets = realization_targets(d, nodes, selected_valid)
+                plan = self.attempt / "realization.json"
+                save(plan, {"targets": targets, "beforeValid": sorted(selected_valid),
+                            "missingSelectedOutputs": sorted(expected - selected_valid)})
+                self.state["realizationSHA256"] = digest(plan)
+                self.command("aggregate", targets)
                 self.checkpoint("verify")
                 coverage = verify_outputs(d, nodes, store)
                 self.checkpoint("retain")
