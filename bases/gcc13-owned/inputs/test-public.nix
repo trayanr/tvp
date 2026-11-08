@@ -40,6 +40,8 @@ let
         "m4"
         "autoconf"
         "automake"
+        "file"
+        "libtool"
         "which"
         "patch"
         "patchelf"

@@ -130,3 +130,4 @@ package.testContext.mkSuite {
 }
 
 // (import ../../autotools-tests.nix { inherit pkgs tvp package; })
+// (import ./macro-composition.nix { inherit package pkgs; })

@@ -44,7 +44,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   file = tvpLib.packages.mkVariants (
-    recipes.file
+    recipes.file.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

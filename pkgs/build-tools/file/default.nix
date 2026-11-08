@@ -1,54 +1,96 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  constructionRecipe = previous.recipes.file;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  host =
+    name: reason:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      inherit reason;
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
-    "5.45" = {
-      builder = ./build-5.45.nix;
-      base = tvp.bases.default;
+    "5.48" = {
+      constructor = tvp.builder;
+      builder = ./native/build-5.48.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
         zlib = tvp.packages.zlib_1;
         xz = tvp.packages.xz_5;
         bzip2 = tvp.packages.bzip2_1;
         zstd = tvp.packages.zstd_1;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
       };
     };
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."5.45";
-      releases = {
-        "5.45" = "sha256-/Jf1ECm7DiyfTjv/79r2ePDgOe6HK53lwAKm0Jx4TYI=";
-        "5.46" = "sha256-ycx3x8VgxUMTXtxVWvYJ1WGdvvARmX6YjOQKPXXYYIg=";
-        "5.47" = "sha256-RWcv7BZctMwTWKLXa11X0ih23Ll6sWlCesOFy+HVWXo=";
-        "5.48" = "sha256-7RRlaIOyOjZLQFfAVZXZMlLam8Rz0wEGUZUZ0NoUEoM=";
+  versionTable = constructionRecipe.versionTable // {
+    "5.48" = constructionRecipe.versionTable."5.48" // {
+      def = if native then defs."5.48" else constructionRecipe.versionTable."5.48".def;
+    };
+  };
+  publicArgs = constructionRecipe // {
+    inherit versionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        urls = [
+          "https://astron.com/pub/file/file-${version}.tar.gz"
+        ];
+        inherit sha256;
       };
-    }
-  ];
+    testDeps = {
+      python = candidate.tools.python;
+      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      alternateZlib = (import ../../../bootstrap/source-full-gcc-prerequisites.nix { }).zlib;
+      pkgconfig = tvp.packages.pkg-config;
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else
+        constructionRecipe.extraArgs.mkTests package
+    ) { inherit pkgs; };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "file";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://www.astron.com/pub/file/";
-      pattern = "file-[0-9]+[.][0-9]+[.]tar[.](gz|bz2|xz|Z|lz|zst)";
-      normalise =
-        file:
-        let
-          match = builtins.match "file-([0-9]+[.][0-9]+)[.]tar[.](gz|bz2|xz|Z|lz|zst)" file;
-        in
-        if match == null then null else builtins.head match;
-      include = version: builtins.match "[0-9]+[.][0-9]+" version != null;
-    };
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
-  };
-  canonical = tvpLib.packages.mkVersions packageArgs;
-
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

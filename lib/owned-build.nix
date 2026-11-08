@@ -113,9 +113,16 @@ package
   meta = spec.meta or { };
   tvp = spec.tvp or { };
   runtime = spec.runtime or { };
-  development = (spec.development or { }) // {
-    libraries = lib.unique exports;
-  };
+  development =
+    (
+      let
+        declared = spec.development or { };
+      in
+      if builtins.isFunction declared then declared package else declared
+    )
+    // {
+      libraries = lib.unique exports;
+    };
   buildEnvironment = spec.buildEnvironment or (_: { });
   passthru = spec.passthru or { };
 }

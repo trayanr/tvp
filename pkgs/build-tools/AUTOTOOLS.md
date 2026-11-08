@@ -25,3 +25,18 @@ substitution, forced autoreconf, tracing/cache/scan/update, versioned aliases,
 tool/data overrides, independent macro providers and source/base/interpreter edits.
 Check-only package edits run upstream suites after both installed tools exist;
 upstream failures propagate and are never turned into a successful qualification.
+
+File 5.48 and Libtool 2.6.2 also have independent ordinary owned recipes. File's
+source-GCC prerequisite recipe remains separate and unchanged. The ordinary
+File installs the compiled default magic database, shared/static libmagic and
+its private compression development requirements. All four compression providers
+are required and tested through the installed API and pipeline interface.
+
+Libtool retains libltdl shared/static libraries and .la metadata, generated scripts,
+macro/data files and declared default providers. Installed runtime utility paths
+are explicit; upstream user overrides remain effective. The suite removes the
+project build tree before running installed C/C++ executables and loading an
+installed libtool plugin. Optional upstream language/host tests retain raw skips.
+The multi-directory fixture checks both provider directories and explicit
+ACLOCAL_PATH replacement with distinguishable macros. Older supported ordinary
+ranges remain required step3b; this latest pilot does not complete either family.

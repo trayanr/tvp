@@ -128,3 +128,9 @@ upstream runner. Unexpected probe errors and upstream failures still fail.
 Skipped filesystem cases need separate non-root host validation; a successful
 package build does not establish that coverage. Privileged and NFS cases keep
 their upstream limitations.
+
+An output-dependent development interface may be a pure function of the raw
+package output (`development = output: { aclocalDirectories =
+[ "${output}/share/aclocal" ]; };`). The owned constructor resolves it after
+construction; it does not affect procedure inputs or execute hooks. Libtool
+uses this for the actual installed macro directory, including customized outputs.
