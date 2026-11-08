@@ -100,9 +100,7 @@ let
           ];
         }
       );
-  runtimeChanged = p.editRuntime (
-    r: r // { dlopenDirectories = [ "${p.specification.base.compiler.libc}/lib" ]; }
-  );
+  runtimeChanged = p.editRuntime (r: r // { dlopenDirectories = [ "${d.python}/lib" ]; });
   optionsChanged = p.override { configureFlags = [ "--disable-nls" ]; };
   factoryChanged = (p.mkTests.override { inherit pkgs; }) rebound;
   outputChanged = p.editSteps (
@@ -245,6 +243,7 @@ p.testContext.mkSuite {
         test -s ${sourceProbe}/source-marker
         test "$(cat ${outputChanged}/nix-support/custom-output)" = edited
         ${runtimeChanged}/bin/flex --version >&2
+        readelf -d ${runtimeChanged}/bin/flex | grep -Fq '${d.python}/lib'
         env -u M4 TVP_PROVIDER_LOG="$PWD/provider" ${rebound}/bin/flex -o rebound.c ${./fixtures/scanner.l}
         grep -qx selected-m4 provider
         "$CC" rebound.c -o rebound; printf '20 22\n' | env -i ./rebound >&2

@@ -70,9 +70,7 @@ let
           ];
         }
       );
-  runtimeChanged = p.editRuntime (
-    r: r // { dlopenDirectories = [ "${p.specification.base.compiler.libc}/lib" ]; }
-  );
+  runtimeChanged = p.editRuntime (r: r // { dlopenDirectories = [ "${d.python}/lib" ]; });
   optionsChanged = p.override { configureFlags = [ "--disable-nls" ]; };
   factoryChanged = (p.mkTests.override { inherit pkgs; }) rebound;
   outputChanged = p.editSteps (
@@ -184,6 +182,7 @@ p.testContext.mkSuite {
         test -s ${sourceProbe}/source-marker
         test "$(cat ${outputChanged}/nix-support/custom-output)" = edited
         ${runtimeChanged}/bin/bison --version >&2
+        readelf -d ${runtimeChanged}/bin/bison | grep -Fq '${d.python}/lib'
         env -u M4 TVP_PROVIDER_LOG="$PWD/provider" ${rebound}/bin/bison ${./fixtures/calc.y} -o rebound.c
         grep -qx selected-m4 provider
         "$CC" rebound.c -o rebound; env -i ./rebound >&2

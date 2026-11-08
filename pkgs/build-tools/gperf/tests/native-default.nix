@@ -68,9 +68,7 @@ let
           ];
         }
       );
-  runtimeChanged = p.editRuntime (
-    r: r // { dlopenDirectories = [ "${p.specification.base.compiler.libc}/lib" ]; }
-  );
+  runtimeChanged = p.editRuntime (r: r // { dlopenDirectories = [ "${d.python}/lib" ]; });
   optionsChanged = (p.override { configureFlags = [ "CXXFLAGS=-O0" ]; }).editSteps (
     tvp.builder.steps.insertAfter "gperf.configure" [
       {
@@ -158,6 +156,7 @@ p.testContext.mkSuite {
         test -s ${sourceProbe}/source-marker
         test "$(cat ${outputChanged}/nix-support/custom-output)" = edited
         ${runtimeChanged}/bin/gperf --version >&2
+        readelf -d ${runtimeChanged}/bin/gperf | grep -Fq '${d.python}/lib'
         ${rebound}/bin/gperf ${./fixtures/words.gperf} > rebound.c
         "$CC" rebound.c -o rebound; env -i ./rebound
         readelf -d ${rebound}/bin/gperf | grep -Fq '${runtimeProvider}/lib'
