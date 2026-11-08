@@ -32,7 +32,11 @@ let
       job = selected.__tvpSelection.canonical;
     in
     assert selected.pname == family && selected.drvPath == eligible.${job}.drvPath;
+    assert lib.all (
+      name: builtins.compareVersions eligible.${name}.version selected.version <= 0
+    ) names;
     {
+      selector = selected.__tvpSelection;
       alias = record job eligible.${job};
       versions = map (name: record name eligible.${name}) names;
     }

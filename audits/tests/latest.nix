@@ -80,21 +80,22 @@ let
       };
     }
   );
-  catalogue = builtins.fromJSON (
-    builtins.unsafeDiscardStringContext
-      (import ../../lib/test-catalogue.nix {
-        pkgs = {
-          inherit lib;
-          writeText = name: text: { inherit name text; };
-          stdenv.hostPlatform.system = "x86_64-linux";
-        };
-        inherit canonical packages;
-        variants = { };
-        batches = lib.mapAttrs (name: _: { drvPath = "/fixture/test-${name}.drv"; }) canonical;
-        source = ./latest.nix;
-        revision = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-      }).text
-  );
+  makeCatalogue =
+    packageSet:
+    import ../../lib/test-catalogue.nix {
+      pkgs = {
+        inherit lib;
+        writeText = name: text: { inherit name text; };
+        stdenv.hostPlatform.system = "x86_64-linux";
+      };
+      inherit canonical;
+      packages = packageSet;
+      variants = { };
+      batches = lib.mapAttrs (name: _: { drvPath = "/fixture/test-${name}.drv"; }) canonical;
+      source = ./latest.nix;
+      revision = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    };
+  catalogue = builtins.fromJSON (builtins.unsafeDiscardStringContext (makeCatalogue packages).text);
 in
 {
   aliasesSelectSemanticLatest =
@@ -132,4 +133,18 @@ in
   catalogueOutputMappings =
     catalogue.families.widget.alias.outputs == [ canonical.widget_1_10.outPath ];
   catalogueDeclarationsDiscardContexts = !(builtins.hasContext (builtins.toJSON catalogue.families));
+  catalogueRejectsOlderAlias =
+    !(builtins.tryEval (
+      builtins.deepSeq (makeCatalogue (
+        packages
+        // {
+          widget = canonical.widget_1_9 // {
+            __tvpSelection = packages.widget.__tvpSelection // {
+              canonical = "widget_1_9";
+              version = "1.9";
+            };
+          };
+        }
+      )).text true
+    )).success;
 }
