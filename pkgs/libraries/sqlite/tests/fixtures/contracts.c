@@ -30,7 +30,7 @@ int main(void) {
   CHECK(scalar(db,"select count(*) from f5 where f5 match 'token'")==1);
   sql(db,"create virtual table r using rtree(id,x0,x1,y0,y1); insert into r values(1,0,2,0,2); create virtual table g using geopoly; insert into g(_shape) values('[[0,0],[2,0],[2,2],[0,2],[0,0]]');");
   CHECK(scalar(db,"select count(*) from r where x1>1")==1);
-  CHECK(scalar(db,"select geopoly_contains_point(_shape,1,1) from g")==1);
+  CHECK(scalar(db,"select geopoly_contains_point(_shape,1,1) from g")==2);
   CHECK(scalar(db,"select json_extract('{\"a\":42}', '$.a') + sqrt(4)")==44);
   CHECK(scalar(db,"select percentile(id,50) from t")==1);
   CHECK(scalar(db,"select count(*) from sqlite_dbpage")>0);
