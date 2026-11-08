@@ -211,7 +211,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   autoconf = tvpLib.packages.mkVariants (
-    recipes.autoconf
+    recipes.autoconf.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

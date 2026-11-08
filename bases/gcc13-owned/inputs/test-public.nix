@@ -38,6 +38,8 @@ let
         "gnutar"
         "gnumake"
         "m4"
+        "autoconf"
+        "automake"
         "which"
         "patch"
         "patchelf"
