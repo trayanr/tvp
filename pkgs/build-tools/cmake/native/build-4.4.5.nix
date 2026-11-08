@@ -33,6 +33,18 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   environment = final.base.environment final.environment;
+  # The selected compiler wrapper is an explicit tool interface. Keep required
+  # transitive development paths when callers replace upstream scalar flags or
+  # the structured flag defaults; no ambient NIX_* values participate.
+  requiredEnvironment = final.base.environment {
+    libraries = final.environment.libraries or [ ];
+  };
+  customCompile =
+    environment.env ? CFLAGS
+    || environment.env ? CXXFLAGS
+    || environment.env ? CPPFLAGS
+    || (final.environment.overrides.flags or { }) ? NIX_CFLAGS_COMPILE;
+  customLink = environment.env ? LDFLAGS || (final.environment.overrides.flags or { }) ? NIX_LDFLAGS;
   compileFlags = environment.environmentContributions.NIX_CFLAGS_COMPILE.value;
   linkFlags = environment.environmentContributions.NIX_LDFLAGS.value;
   command =
@@ -42,8 +54,16 @@ let
       inherit name;
       cwd = "source";
       env = environment.env // {
-        NIX_CFLAGS_COMPILE = "";
-        NIX_LDFLAGS = "";
+        NIX_CFLAGS_COMPILE =
+          if customCompile then
+            lib.concatStringsSep " " requiredEnvironment.environmentContributions.NIX_CFLAGS_COMPILE.value
+          else
+            "";
+        NIX_LDFLAGS =
+          if customLink then
+            lib.concatStringsSep " " requiredEnvironment.environmentContributions.NIX_LDFLAGS.value
+          else
+            "";
         CFLAGS = environment.env.CFLAGS or (lib.concatStringsSep " " compileFlags);
         CXXFLAGS = environment.env.CXXFLAGS or (lib.concatStringsSep " " compileFlags);
         LDFLAGS = environment.env.LDFLAGS or (lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags);
