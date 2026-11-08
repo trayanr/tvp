@@ -51,12 +51,32 @@ let
   # Preserve the complete old factory for frozen construction graphs. Ordinary
   # XS uses the compiler published by the selected owned Perl's Config.
   constructionRecipe = packageArgs;
+  compatDefs = tvpLib.packages.mkDefs {
+    "7.1" = {
+      builder = ./compat/build-7.1.nix;
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      deps = {
+        perl = tvp.packages.perl_5;
+        ncurses = tvp.packages.ncurses_6;
+        localeTools = tvp.bases.default.stdenv.cc.libc.bin;
+      };
+      patches = [
+        {
+          file = ./patches/wide-ncurses.patch;
+          reason = "Library integration: include ncursesw in Texinfo's terminal-library probes so its Info reader is built with TVP's wide-character ncurses.";
+        }
+        {
+          file = ./patches/locale-program.patch;
+          reason = "Store-layout adaptation: bind the locale program invoked by Texinfo's translation support to its declared glibc tools instead of relying on the caller's PATH.";
+        }
+      ];
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
       "7.1" = versionTable."7.1" // {
-        def = versionTable."7.1".def // {
-          builder = if tvp.packages.perl_5 ? testContext then ./compat/build-7.1.nix else ./build-7.1.nix;
-        };
+        def = if tvp.packages.perl_5 ? testContext then compatDefs."7.1" else defs."7.1";
       };
     };
   };
