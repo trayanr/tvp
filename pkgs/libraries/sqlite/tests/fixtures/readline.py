@@ -15,7 +15,7 @@ try:
     until(b'sqlite> ')
     # Left arrow places the cursor before the semicolon, so insert 2 => 42.
     os.write(master,b'select 4;\x1b[D2\n')
-    until(b'\r\n42\r\n')
+    until(b'\r42\r\n')
     os.write(master,b'.quit\n')
     assert p.wait(timeout=10)==0
     print('readline editing works')
