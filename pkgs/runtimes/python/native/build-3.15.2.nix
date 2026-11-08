@@ -21,6 +21,7 @@
   gawk,
   diffutils,
   pkgConfig,
+  helperGrep,
   binutils,
   patchelf,
   runtimeBash,
@@ -176,8 +177,7 @@ in
               final.bash
               final.coreutils
               sed
-              grep
-              diffutils
+              helperGrep
               binutils
             ]
           )

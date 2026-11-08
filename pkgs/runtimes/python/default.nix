@@ -523,7 +523,8 @@ let
         grep = constructionTool "grep";
         gawk = constructionTool "gawk";
         diffutils = constructionTool "diffutils";
-        pkgConfig = constructionTool "pkgConfig";
+        pkgConfig = tvp.packages.pkg-config;
+        helperGrep = tvp.packages.gnugrep;
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";
         testCmake = tvp.packages.cmake;

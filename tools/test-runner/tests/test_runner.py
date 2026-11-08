@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -226,6 +227,36 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('No local validation run',result.stderr)
         self.assertIn('--state-dir DIR or --run PATH',result.stderr)
         self.assertIn('Buildbot',result.stderr)
+
+    def test_pid_is_published_after_stop_handlers(self):
+        # Hold the worker immediately before handler registration. Publishing its
+        # PID earlier lets a successful stop kill it without a terminal receipt.
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.addCleanup(listener.close)
+        address = str(self.root / 'handler-gate')
+        listener.bind(address)
+        listener.listen(1)
+        listener.settimeout(10)
+        self.env['FAKE_HANDLER_GATE'] = address
+        original = self.script.read_text()
+        marker = '    signal.signal(signal.SIGTERM, stop)'
+        self.assertIn(marker, original)
+        self.script.chmod(0o700)
+        self.script.write_text(original.replace(marker, """    import socket
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as gate:
+        gate.connect(os.environ['FAKE_HANDLER_GATE'])
+        gate.sendall(b'entered')
+        gate.recv(1)
+""" + marker, 1))
+        self.start()
+        connection, _ = listener.accept()
+        with connection:
+            connection.settimeout(10)
+            try:
+                self.assertEqual(connection.recv(7), b'entered')
+                self.assertIsNone(json.loads((self.run/'state.json').read_text()).get('pid'))
+            finally:
+                connection.sendall(b'1')
 
     def test_duplicate_start_and_stop(self):
         self.env['FAKE_DELAY']='10'
