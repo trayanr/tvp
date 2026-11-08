@@ -1,0 +1,9 @@
+--- a/Misc/python-embed.pc.in
++++ b/Misc/python-embed.pc.in
+@@ -9,5 +9,5 @@
+ Requires:
+ Version: @VERSION@
+ Libs.private: @LIBS@
+-Libs: -L${libdir} -lpython@VERSION@@ABIFLAGS@
++Libs: -L${libdir} -lpython@VERSION@@ABIFLAGS@ @LIBM@ @LIBS@
+ Cflags: -I${includedir}/python@VERSION@@ABIFLAGS@

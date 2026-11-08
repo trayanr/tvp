@@ -87,7 +87,6 @@ def work(run, global_fd, lease_fd):
     plan = json.loads((run / "plan.json").read_text())
     state = json.loads((run / "state.json").read_text())
     state.update(phase="running", pid=os.getpid(), buildStartedAt=time.time(), active={})
-    write_json(run / "state.json", state)
     stopped = threading.Event()
     wake = threading.Event()
     finished = threading.Event()
@@ -128,6 +127,9 @@ def work(run, global_fd, lease_fd):
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
+    # A published PID is a promise that stop can produce a terminal receipt.
+    # Install both handlers before allowing the CLI to signal this worker.
+    write_json(run / "state.json", state)
     targets = build_targets(plan, state["full"])
     multioutput = any(len(item["outputs"]) > 1 for job in plan["jobs"]
                       for item in [job] + job.get("tests", []))
