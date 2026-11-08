@@ -544,6 +544,10 @@ let
           file = ./patches/subprocess-shell.patch;
           reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
         }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Static libpython embedding needs libm: pkg-config, CMake and Meson controls all fail with unresolved fmod/floor/pow when the upstream .pc omits LIBM. Export the existing interpreter system libraries for the ordinary static embedding interface.";
+        }
       ];
       opts = {
         linkUnwinder = true;

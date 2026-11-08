@@ -61,8 +61,16 @@ let
   # Convert structured native environment contributions to explicit compiler
   # arguments recorded by configure and published to installed consumers. No
   # inherited setup-hook flags participate in the target build.
-  compileFlags = environment.environmentContributions.NIX_CFLAGS_COMPILE.value;
-  linkFlags = environment.environmentContributions.NIX_LDFLAGS.value;
+  compileFlags = environment.environmentContributions.NIX_CFLAGS_COMPILE.value ++ [
+    "-I${lib.getDev ncurses}/include/ncursesw"
+  ];
+  linkFlags =
+    environment.environmentContributions.NIX_LDFLAGS.value
+    ++ lib.optionals linkUnwinder [
+      "--no-as-needed"
+      "-lgcc_s"
+      "--as-needed"
+    ];
   command =
     name: run:
     environment
@@ -72,8 +80,8 @@ let
       env = environment.env // {
         NIX_CFLAGS_COMPILE = "";
         NIX_LDFLAGS = "";
-        CPPFLAGS = lib.concatStringsSep " " compileFlags;
-        LDFLAGS = lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags;
+        CPPFLAGS = environment.env.CPPFLAGS or (lib.concatStringsSep " " compileFlags);
+        LDFLAGS = environment.env.LDFLAGS or (lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags);
       };
       inherit run;
     };
@@ -119,55 +127,6 @@ in
       readline
       ncurses
     ];
-    overrides.flags = {
-      NIX_CFLAGS_COMPILE =
-        lib.concatMap
-          (p: [
-            "-isystem"
-            "${lib.getDev p}/include"
-          ])
-          [
-            openssl
-            zlib
-            bzip2
-            xz
-            zstd
-            mpdecimal
-            libffi
-            sqlite
-            gdbm
-            readline
-            ncurses
-          ]
-        ++ [ "-I${lib.getDev ncurses}/include/ncursesw" ];
-      NIX_LDFLAGS =
-        lib.concatMap
-          (p: [
-            "-L${lib.getLib p}/lib"
-            "-rpath"
-            "${lib.getLib p}/lib"
-            "-rpath-link"
-            "${lib.getLib p}/lib"
-          ])
-          [
-            openssl
-            zlib
-            bzip2
-            xz
-            zstd
-            mpdecimal
-            libffi
-            sqlite
-            gdbm
-            readline
-            ncurses
-          ]
-        ++ lib.optionals linkUnwinder [
-          "--no-as-needed"
-          "-lgcc_s"
-          "--as-needed"
-        ];
-    };
   };
   runtime = {
     libraries = environment.libraries;
@@ -231,6 +190,7 @@ in
         ];
         elfKinds = [ "runtime" ];
         libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       }
     ))
     (outputs.development {
@@ -240,7 +200,7 @@ in
     (command "receipt" ''
       "$out/bin/python3" -I - <<'PYTHON'
       import json, sysconfig, pathlib
-      p = pathlib.Path('$out') if False else pathlib.Path(sysconfig.get_config_var('prefix'))
+      p = pathlib.Path(sysconfig.get_config_var('prefix'))
       receipt = {k: v for k, v in sysconfig.get_config_vars().items()
                  if (k.startswith('MODULE_') and k.endswith('_STATE')) or
                  k in ['PY_ENABLE_SHARED', 'PY_SQLITE_ENABLE_LOAD_EXTENSION',
