@@ -197,7 +197,7 @@ let
         tvp.packages.cmake
         tvp.packages.cmake.out
         (tvp.packages.cmake.override { })
-        (tvp.packages.cmake.overrideAttrs (_: { }))
+        (tvp.packages.cmake.edit (spec: spec))
       ]
       ++ tvp.packages.cmake.all
     );

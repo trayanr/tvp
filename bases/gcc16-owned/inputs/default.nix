@@ -18,6 +18,17 @@ let
         python3 = construction.variants.gcc13.isl_0_20.tvp.declaredTestDependencies.python3;
       };
     };
+  # Frozen component test factories keep the original public discovery tool,
+  # rather than following the newly promoted ordinary frontend.
+  frozenPkgConfig = construction.variants.gcc13.ncurses_6_6.tvp.declaredTestDependencies.pkg-config;
+  frozenDiscovery =
+    recipe:
+    recipe
+    // {
+      testDeps = recipe.testDeps // {
+        pkg-config = frozenPkgConfig;
+      };
+    };
   select =
     recipe: versions:
     tvpLib.packages.mkVariants (
@@ -113,6 +124,7 @@ tvpLib.packages.mergeVariants {
         recipes.zlib.constructionRecipe
         // {
           testDeps = recipes.zlib.constructionRecipe.testDeps // {
+            pkg-config = frozenPkgConfig;
             gzip = construction.variants.gcc13.zlib_1_3_2.tvp.declaredTestDependencies.gzip;
           };
         }
@@ -144,6 +156,7 @@ tvpLib.packages.mergeVariants {
         recipes.libxcrypt.constructionRecipe
         // {
           testDeps = recipes.libxcrypt.constructionRecipe.testDeps // {
+            pkg-config = frozenPkgConfig;
             inherit (construction.variants.gcc13.libxcrypt_4_4_36.tvp.declaredTestDependencies)
               baseline
               coreutils
@@ -177,7 +190,7 @@ tvpLib.packages.mergeVariants {
   m4 = select recipes.m4.constructionRecipe {
     "1.4.21" = { };
   };
-  pkg-config = select recipes.pkg-config {
+  pkg-config = select recipes.pkg-config.constructionRecipe {
     "0.29.2" = { };
   };
   bison = select recipes.bison {
@@ -188,14 +201,14 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  ncurses = select recipes.ncurses.constructionRecipe {
+  ncurses = select (frozenDiscovery recipes.ncurses.constructionRecipe) {
     "6.6" = {
       deps = {
         pkg-config = inputs.pkg-config_0_29_2;
       };
     };
   };
-  xz = select recipes.xz.constructionRecipe {
+  xz = select (frozenDiscovery recipes.xz.constructionRecipe) {
     "5.8.3" = { };
   };
 }

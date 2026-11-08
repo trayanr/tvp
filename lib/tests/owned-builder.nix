@@ -36,7 +36,7 @@ let
     runtimeProjection = runtimeEdit.out.runtime.libraries == runtimeEdit.runtime.libraries;
     toolOverrideProvider =
       (tvp.packages.pkg-config.override { }) ? buildEnvironment
-      && (tvp.packages.pkg-config.overrideAttrs (_: { })).out ? buildEnvironment;
+      && (tvp.packages.pkg-config.edit (spec: spec)).out ? buildEnvironment;
     allProjection =
       (builtins.head runtimeEdit.out.all).tests.version.drvPath == runtimeEdit.tests.version.drvPath
       && (builtins.head runtimeEdit.all).out.tvp.customization.customized;
