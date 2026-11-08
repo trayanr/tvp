@@ -24,6 +24,9 @@
   binutils,
   patchelf,
   runtimeBash,
+  testCmake,
+  testMeson,
+  testNinja,
   openssl,
   zlib,
   bzip2,
@@ -213,6 +216,11 @@ in
     '')
   ];
   tvp = {
+    testDeps = {
+      cmake = testCmake;
+      meson = testMeson;
+      ninja = testNinja;
+    };
     profile = "general-purpose";
     features = {
       externalModules = true;

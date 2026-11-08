@@ -526,6 +526,9 @@ let
         pkgConfig = constructionTool "pkgConfig";
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";
+        testCmake = tvp.packages.cmake;
+        testMeson = tvp.packages.meson;
+        testNinja = tvp.packages.ninja;
         runtimeBash = tvp.packages.bash_5;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
@@ -564,15 +567,17 @@ let
         def = if native then ownedDefs."3.15.2" else versionTable."3.15.2".def;
       };
     };
-    testDeps = packageArgs.testDeps // {
-      cmake = tvp.packages.cmake;
-      meson = tvp.packages.meson;
-      ninja = tvp.packages.ninja;
-    };
     extraArgs.mkTests =
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvp tvpLib package; }
+        import ./tests/native-default.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
       else
         constructionRecipe.extraArgs.mkTests package;
   };
