@@ -572,7 +572,7 @@ let
     extraArgs.mkTests =
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+        import ./tests/native-default.nix { inherit pkgs tvp tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
   };
