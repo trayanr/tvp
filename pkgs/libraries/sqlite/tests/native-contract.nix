@@ -74,7 +74,7 @@ package.testContext.mkSuite {
         export PKG_CONFIG_LIBDIR=${package}/lib/pkgconfig PKG_CONFIG_PATH=
         test "$(pkg-config --variable=prefix sqlite3)" = '${package}'
         test "$(pkg-config --modversion sqlite3)" = '${package.version}'
-        test "$(pkg-config --libs --static sqlite3)" = '-L${package}/lib -lsqlite3 -lm '
+        test "$(pkg-config --libs --static sqlite3)" = '-L${package}/lib -lsqlite3 -lm'
         printf discovered
       '';
       expected = "discovered";

@@ -2,7 +2,7 @@
 import os, pty, select, subprocess, sys, time
 master, slave = pty.openpty()
 env = dict(os.environ, TERM='xterm', HOME=os.environ['TMPDIR'])
-p = subprocess.Popen([sys.argv[1], '-interactive', ':memory:'], stdin=slave, stdout=slave, stderr=slave, env=env)
+p = subprocess.Popen([sys.argv[1], '-interactive', '-list', '-noheader', ':memory:'], stdin=slave, stdout=slave, stderr=slave, env=env)
 os.close(slave)
 transcript = b''
 def until(needle):
