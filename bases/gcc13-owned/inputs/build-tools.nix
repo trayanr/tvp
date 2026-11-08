@@ -7,7 +7,7 @@
 }:
 tvpLib.packages.mergeVariants {
   gzip = tvpLib.packages.mkVariants (
-    recipes.gzip
+    recipes.gzip.constructionRecipe
     // {
       extraArgs.mkTests =
         package:
@@ -71,7 +71,7 @@ tvpLib.packages.mergeVariants {
           helpers = [
             {
               bin = "gzip";
-              package = (tvpLib.packages.mkVersions recipes.gzip).gzip_1_15;
+              package = (tvpLib.packages.mkVersions recipes.gzip.constructionRecipe).gzip_1_15;
               flag = "-z";
             }
             {

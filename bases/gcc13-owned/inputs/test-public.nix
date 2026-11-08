@@ -37,6 +37,7 @@ let
         "gnused"
         "gnutar"
         "gnumake"
+        "gzip"
         "m4"
         "autoconf"
         "automake"

@@ -43,9 +43,44 @@ let
       variantBuilder = variant.tests.version.selectedTestPkgs or false;
       variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
     };
+  # Texinfo has only one release. Exercise the public fallback with its
+  # retained constructor, including the nonnative/variant factory path.
+  texinfoProbe =
+    let
+      recipe = recipes.texinfo;
+      retained = recipe.constructionRecipe;
+      package = (tvp.lib.packages.mkVersions retained).texinfo_7_1;
+      publicFactory = recipe.extraArgs.mkTests;
+      original = retained.extraArgs.mkTests;
+      publicSelected = (publicFactory.override { pkgs = selected; }) package;
+      retainedSelected = (original.override { pkgs = selected; }) package;
+      replay = retained // {
+        extraArgs.mkTests = publicFactory;
+      };
+      variant =
+        (tvp.lib.packages.mkVariants (
+          replay
+          // {
+            pkgs = pkgs // selected;
+            profiles.test-factory = {
+              base = tvp.bases.default;
+              versions."7.1" = { };
+            };
+          }
+        )).test-factory.texinfo_7_1;
+    in
+    {
+      legacy = !(package ? testContext);
+      requestedBuilder = publicSelected.version.selectedTestPkgs or false;
+      retainedControl = retainedSelected.version.selectedTestPkgs or false;
+      defaultIdentities = identities (publicFactory package) == identities (original package);
+      variantBuilder = variant.tests.version.selectedTestPkgs or false;
+      variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
+    };
   contracts = {
     bison = probe "bison" "3.8.1";
     flex = probe "flex" "2.6.3";
+    texinfo = texinfoProbe;
   };
   failed = builtins.filter (
     family: !(builtins.all (x: x) (builtins.attrValues contracts.${family}))
