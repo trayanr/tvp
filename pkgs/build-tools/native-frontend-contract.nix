@@ -22,6 +22,51 @@ let
   );
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   first = builtins.head p.buildSteps;
+  flagProbe =
+    (p.edit (
+      s:
+      s
+      // {
+        environment = s.environment // {
+          tools = s.environment.tools ++ [ tvp.packages.pkg-config ];
+          libraries = (s.environment.libraries or [ ]) ++ [ tvp.packages.mpfr ];
+          overrides = (s.environment.overrides or { }) // {
+            values = (s.environment.overrides.values or { }) // {
+              CFLAGS = "-O0 -std=gnu17 -DFRONTEND_FLAG=42";
+              CXXFLAGS = "-O0 -DFRONTEND_FLAG=42";
+              LDFLAGS = "-Wl,--as-needed";
+            };
+          };
+        };
+      }
+    )).editSteps
+      (
+        plan:
+        let
+          command = builtins.head (builtins.filter (s: s ? env && s.env ? CC) plan);
+        in
+        [
+          (
+            command
+            // {
+              name = "frontend.user-flags-public-dependencies";
+              cwd = ".";
+              run = ''
+                test "$CFLAGS" = '-O0 -std=gnu17 -DFRONTEND_FLAG=42'
+                test "$CXXFLAGS" = '-O0 -DFRONTEND_FLAG=42'
+                test "$LDFLAGS" = '-Wl,--as-needed'
+                test "$PKG_CONFIG" = '${tvp.packages.pkg-config}/bin/pkg-config'
+                printf '#if FRONTEND_FLAG != 42\n#error missing_user_flag\n#endif\n' > probe.c
+                cat ${../libraries/mpfr/tests/fixtures/arithmetic.c} >> probe.c
+                "$CC" $CFLAGS $($PKG_CONFIG --cflags mpfr) probe.c $LDFLAGS $($PKG_CONFIG --libs mpfr) -o probe
+                test "$(env -i ./probe)" = 12
+                mkdir "$out"
+                printf '%s\n' "$CFLAGS" "$CXXFLAGS" "$LDFLAGS" "$PKG_CONFIG" "$PKG_CONFIG_LIBDIR" > "$out/environment"
+              '';
+            }
+          )
+        ]
+      );
   probe =
     ((p.override { src = "${alternate}/source.tar.gz"; }).edit (
       s:
@@ -128,6 +173,7 @@ p.testContext.mkTest {
   name = "constructor";
   script = ''
     test -s ${probe}/selected-compiler
+    test -s ${flagProbe}/environment
     printf '%s\n' '${builtins.toJSON contracts}' >&2
     printf qualified
   '';
