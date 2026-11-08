@@ -34,6 +34,13 @@ let
     // {
       name = "sqlite.${name}";
       cwd = "source";
+      # Link-time resolution for dependencies of the declared shared providers.
+      # These search-only flags expose neither zlib headers nor -lz to configure.
+      env = (final.base.environment final.environment).env // {
+        NIX_LDFLAGS =
+          (final.base.environment final.environment).env.NIX_LDFLAGS
+          + " -rpath-link ${readline.tvp.deps.ncurses}/lib -rpath-link ${tcl.tvp.deps.zlib}/lib";
+      };
       inherit run;
     };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash TCLLIBDIR="$out/lib/tcl"'';
