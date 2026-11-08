@@ -48,9 +48,15 @@ package.testContext.mkSuite {
     tests = {
       compiler-discovery = {
         script = ''
-          status=0
-          env -i PATH=/absent ${package}/bin/make -pf /dev/null > database || status=$?
-          test "$status" = 2
+            status=0
+            env -i PATH=/absent ${package}/bin/make -pf /dev/null > database || status=$?
+            test "$status" = 2
+            printf 'int main(void) { return 0; }\n' > discover-c.c
+          cp discover-c.c discover-cxx.cpp
+          printf 'all: discover-c discover-cxx\n' > Makefile
+          env -u CC -u CXX ${package}/bin/make --no-print-directory >&2
+          env -i ./discover-c
+          env -i ./discover-cxx
           ${package.tvp.deps.grep}/bin/grep -E '^(CC|CXX) = ' database | sort
         '';
         expected = "CC = cc\nCXX = c++";
@@ -132,6 +138,7 @@ package.testContext.mkSuite {
         ${package}/bin/make --no-print-directory -j1 --output-sync=target > serial.log
         if grep -q -- '--jobserver-auth=' serial.log; then exit 1; fi
         test "$(grep -c -- '-j1' serial.log)" = 2
+        ${package.tvp.deps.python}/bin/python3 ${./fixtures/jobserver.py} ${package}/bin/make ${package.tvp.deps.python}/bin/python3
         printf controlled
       '';
       expected = "controlled";

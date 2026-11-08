@@ -112,12 +112,17 @@ let
     (
       (p.override {
         bash = tool.runtimeShell;
-        coreutils = tool.coreutils;
+        coreutils = tool.alternateCoreutils;
       }).edit
       (
         s:
         s
         // {
+          base = s.base.override {
+            tools = map (
+              t: if t.outPath == tool.coreutils.outPath then tool.alternateCoreutils else t
+            ) s.base.tools;
+          };
           environment = s.environment // {
             tools = [ tool.python ];
           };
@@ -138,7 +143,7 @@ let
               run = ''
                 test "$(command -v python3)" = '${tool.python}/bin/python3'
                 test "$(command -v bash)" = '${tool.runtimeShell}/bin/bash'
-                test "$(command -v cat)" = '${tool.coreutils}/bin/cat'
+                test "$(command -v cat)" = '${tool.alternateCoreutils}/bin/cat'
                 mkdir "$out"
                 printf providers > "$out/providers"
               '';
@@ -203,6 +208,16 @@ let
     }
   ];
   ordered = (p.editSteps inserted).editRuntime (r: r);
+  contextProof = replaced.testContext.mkTest {
+    package = p;
+    name = "tool-replaced-context";
+    script = ''
+      test "$(command -v cat)" = '${tool.alternateCoreutils}/bin/cat'
+      test "$(command -v bash)" = '${tool.runtimeShell}/bin/bash'
+      printf context
+    '';
+    expected = "context";
+  };
   batch = altered.testContext.mkBatch {
     name = "tool-custom-context";
     suite.version = altered.tests.version;
@@ -219,7 +234,10 @@ let
     batchRebound = batch.testSuite.version.package.outPath == altered.outPath;
     shellCoreutilsRebound =
       replaced.specification.bash.outPath == tool.runtimeShell.outPath
-      && replaced.specification.coreutils.outPath == tool.coreutils.outPath;
+      && replaced.specification.coreutils.outPath == tool.alternateCoreutils.outPath
+      && tool.alternateCoreutils.outPath != tool.coreutils.outPath
+      && replaced.tests.version.specification.coreutils.outPath == tool.alternateCoreutils.outPath
+      && replaced.tests.version.specification.base.shell.outPath == tool.runtimeShell.outPath;
     noLegacyFacade = !(p ? overrideAttrs) && !(p ? stdenv);
     sourceCurrent = (builtins.head probe.buildSteps).run != first.run;
     baseCurrent = (selectedCommand withBase).env.CC == "${sentinel}/bin/cc";
@@ -263,6 +281,7 @@ p.testContext.mkTest {
     test -s ${flagProbe}/environment
     test -s ${structured}/flags
     test -s ${replaced}/providers
+    test -s ${contextProof}
     test -s ${batch}/version
     printf '%s\n' '${builtins.toJSON contracts}' >&2
     printf qualified

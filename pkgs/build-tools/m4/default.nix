@@ -58,6 +58,7 @@ let
       mpfr = tvp.packages.mpfr;
       runtimeShell = candidate.tools.bash;
       coreutils = candidate.tools.coreutils;
+      alternateCoreutils = tvp.packages.coreutils;
       python = candidate.tools.python;
       binutils = candidate.tools.binutils;
       sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
