@@ -9,6 +9,20 @@ package.testContext.mkSuite {
   libraries = [ package ];
   tools = package.specification.environment.tools ++ [ deps.binutils ];
   tests = {
+    cli-features = {
+      script = ''
+        sqlite3 :memory: <<'SQL'
+        create virtual table f using fts5(v);
+        insert into f values('needle');
+        create virtual table r using rtree(id,x0,x1);
+        insert into r values(1,0,2);
+        select (select count(*) from f where f match 'needle'),
+               (select count(*) from r where x1>1),
+               json_extract('{"answer":42}', '$.answer'), sqrt(4);
+        SQL
+      '';
+      expected = "1|1|42|2.0";
+    };
     readline-terminal = {
       tools = [
         deps.python

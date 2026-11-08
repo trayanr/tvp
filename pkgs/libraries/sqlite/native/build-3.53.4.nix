@@ -116,7 +116,7 @@ in
         export HOME="$TMPDIR" TERM=xterm TZ=UTC
         # zipfile.c is unconditional in the upstream testfixture. These inputs
         # apply only to the fixture, preserving the installed no-zlib profile.
-        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${testZlib}/include"
+        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${testZlib}/include -DSQLITE_HAVE_ZLIB=1"
         export NIX_LDFLAGS="$NIX_LDFLAGS -L${testZlib}/lib -rpath ${testZlib}/lib -rpath ${tcl}/lib"
         ${make} testfixture LDFLAGS.libsqlite3="-lm -lz"
         # A script file gives errors a nonzero exit, unlike interactive stdin.
@@ -125,8 +125,25 @@ in
         puts "testfixture SQLite [sqlite3 -version]"
         TCL
         ./testfixture fixture-version.tcl
-        ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
-        grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
+        # The supported runner isolates each veryquick file in a fixture process.
+        # Direct veryquick.test leaks a prior file's Tcl logging callback into
+        # sessionnoact; retain every case with upstream's process isolation.
+        cat > fixture-runner.tcl <<'TCL'
+        if {[package require -exact sqlite3 ${version}] ne "${version}"} {error "wrong runner SQLite"}
+        set argv0 test/testrunner.tcl
+        set argv [list --jobs 8 veryquick]
+        source $argv0
+        sqlite3 results testrunner.db
+        set jobs [results onecolumn {select count(*) from jobs}]
+        set cases [results onecolumn {select sum(ntest) from jobs}]
+        set errors [results onecolumn {select sum(nerr) from jobs}]
+        set unfinished [results onecolumn {select count(*) from jobs where state!='done'}]
+        puts "upstream veryquick jobs=$jobs cases=$cases errors=$errors unfinished=$unfinished"
+        if {$jobs<1 || $cases<1 || $errors!=0 || $unfinished!=0} {exit 1}
+        TCL
+        ${coreutils}/bin/timeout 900 ./testfixture fixture-runner.tcl 2>&1 | tee upstream.log
+        cat testrunner.log
+        grep -E '^upstream veryquick jobs=[1-9][0-9]* cases=[1-9][0-9]* errors=0 unfinished=0$' upstream.log
       '')
       // {
         enabled = doCheck;
