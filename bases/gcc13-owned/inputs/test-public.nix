@@ -59,6 +59,7 @@ let
         "gdbm"
         "mpdecimal"
         "tcl"
+        "sqlite"
       ];
   # Exact-name historical baselines must close over the same retained providers.
   capturedCanonical =

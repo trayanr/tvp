@@ -336,7 +336,7 @@ let
 
   pname = "sqlite";
 
-  canonical = tvpLib.packages.mkVersions {
+  packageArgs = {
     testDeps.pkg-config = tvp.packages.pkg-config;
     infra = {
       inherit (pkgs) lib fetchurl;
@@ -371,8 +371,86 @@ let
     };
   };
 
+  # Retain the complete table, source, dependencies and test factory for frozen callers.
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} host tool is independent of ordinary SQLite consumers.";
+    } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "3.53.4" = {
+      constructor = tvp.builder;
+      builder = ./native/build-3.53.4.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          name = "sqlite-${version}.tar.gz";
+          urls = [
+            "https://sqlite.org/src/tarball/version-${version}/sqlite-${version}.tar.gz"
+            "https://www.sqlite.org/src/tarball/sqlite-${version}.tar.gz?r=version-${version}"
+            "https://sqlite.org/src/tarball/sqlite-${version}.tar.gz?r=version-${version}"
+          ];
+          curlOptsList = [
+            "--retry"
+            "12"
+            "--retry-delay"
+            "5"
+          ];
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        pkgConfig = constructionTool "pkgConfig";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        gzip = constructionTool "gzip";
+        findutils = constructionTool "findutils";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        tcl = tvp.packages.tcl_8;
+        readline = tvp.packages.readline_8;
+      };
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "3.53.4" = versionTable."3.53.4" // {
+        def = if native then ownedDefs."3.53.4" else versionTable."3.53.4".def;
+      };
+    };
+    extraArgs.mkTests =
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        constructionRecipe.extraArgs.mkTests package;
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases {
     inherit
