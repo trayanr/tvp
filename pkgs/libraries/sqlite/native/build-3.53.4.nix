@@ -113,7 +113,6 @@ in
         puts "testfixture SQLite [sqlite3 -version]"
         TCL
         ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
-        grep -E '[1-9][0-9]* tests? executed|[1-9][0-9]* tests? run|[1-9][0-9]* errors out of [1-9][0-9]* tests' upstream.log
         grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
       '')
       // {
