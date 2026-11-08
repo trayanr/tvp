@@ -3,6 +3,7 @@ import ctypes
 import curses
 import decimal
 import importlib
+import importlib.util
 import json
 import locale
 import os
@@ -33,6 +34,13 @@ assert (root/'include/python3.15/Python.h').is_file()
 assert (root/'lib/python3.15/test/test_ssl.py').is_file()
 assert (root/'lib/python3.15/ensurepip/_bundled').is_dir()
 assert not (root/'config.log').exists()
+bytecode = list(root.glob('lib/python3.15/**/__pycache__/*.pyc'))
+assert bytecode
+for cache in bytecode:
+    source = cache.parent.parent / (cache.name.split('.')[0] + '.py')
+    data = cache.read_bytes()
+    if source.exists() and int.from_bytes(data[4:8], 'little') & 1:
+        assert data[8:16] == importlib.util.source_hash(source.read_bytes()), source
 with sqlite3.connect(':memory:') as db:
     db.execute('create table t (n)');db.execute('insert into t values (42)')
     saved = db.serialize()

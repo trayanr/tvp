@@ -15,3 +15,21 @@ for p in root.rglob('*'):
         text = p.read_text().split('\n', 1)[1]
         p.write_text('#!' + shell + '\nexport PATH=' + helper_path + '\n' + text)
     os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+
+# Installation has already generated checked-hash bytecode. Rebind only caches
+# whose source shebang changed, using this build's installed target interpreter.
+# The 3.12 preparation helper must not generate 3.15 bytecode.
+import json
+import subprocess
+changed = []
+for p in root.rglob('*.py'):
+    if p.read_bytes().startswith(b'#!' + str(root).encode() + b'/bin/python3\n'):
+        for cache in (p.parent / '__pycache__').glob(p.stem + '.*.pyc'):
+            optimize = 2 if '.opt-2.' in cache.name else 1 if '.opt-1.' in cache.name else 0
+            changed.append((str(p), str(cache), optimize))
+subprocess.run([str(root / 'bin/python3'), '-I', '-c', '''
+import json, py_compile, sys
+for source, cache, optimize in json.loads(sys.argv[1]):
+    py_compile.compile(source, cfile=cache, doraise=True, optimize=optimize,
+                       invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)
+''', json.dumps(changed)], check=True)
