@@ -60,7 +60,6 @@ in
     ];
     libraries = [
       readline
-      tcl
     ];
   };
   # The CLI embeds SQLite and links Readline; the Tcl module embeds SQLite and
@@ -94,8 +93,9 @@ in
       ./configure --prefix="$out" --all --enable-shared --enable-static \
         --enable-tcl --with-tcl=${tcl}/lib --with-tclsh=${tcl}/bin/tclsh \
         --enable-readline --with-readline-header=${readline}/include/readline/readline.h \
-        --with-readline-ldflags="-L${readline}/lib -lreadline" --disable-zlib \
+        --with-readline-ldflags="-L${readline}/lib -lreadline" \
         TCLLIBDIR="$out/lib/tcl"
+      grep -Fx 'HAVE_ZLIB = 0' Makefile
       grep -Fx 'HAVE_TCL = 1' Makefile
       grep -Fx 'TCL_CONFIG_SH = ${tcl}/lib/tclConfig.sh' Makefile
       grep -Fx 'TCLSH_CMD = ${tcl}/bin/tclsh' Makefile
@@ -105,15 +105,16 @@ in
     (command "build" ''${make} all'')
     (
       (command "check" ''
-        export HOME="$TMPDIR" TERM=xterm TZ=UTC
+          export HOME="$TMPDIR" TERM=xterm TZ=UTC
+          export LD_LIBRARY_PATH=${tcl}/lib
         ${make} testfixture
-        # Invoke the just-built fixture, never the Tcl runner's bundled SQLite.
-        ./testfixture <<'TCL'
-        if {[sqlite3 -version] ne "${version}"} {error "wrong testfixture SQLite"}
-        puts "testfixture SQLite [sqlite3 -version]"
-        TCL
-        ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
-        grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
+          # Invoke the just-built fixture, never the Tcl runner's bundled SQLite.
+          ./testfixture <<'TCL'
+          if {[sqlite3 -version] ne "${version}"} {error "wrong testfixture SQLite"}
+          puts "testfixture SQLite [sqlite3 -version]"
+          TCL
+          ${coreutils}/bin/timeout 900 ./testfixture test/veryquick.test 2>&1 | tee upstream.log
+          grep -E '^0 errors out of [1-9][0-9]* tests' upstream.log
       '')
       // {
         enabled = doCheck;
