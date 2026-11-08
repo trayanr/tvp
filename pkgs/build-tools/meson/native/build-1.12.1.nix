@@ -96,6 +96,7 @@ in
       install -Dm755 meson.pyz "$out/libexec/meson.pyz"
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
       install -Dm644 man/meson.1 "$out/share/man/man1/meson.1"
+      ${gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
       ${helperPython}/bin/python3 -B - "$out" <<'PYTHON'
       from pathlib import Path
       import sys

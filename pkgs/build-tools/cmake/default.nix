@@ -110,6 +110,15 @@ let
         zstd = tvp.packages.zstd_1;
         pkg-config = tvp.packages.pkg-config;
       };
+      opts = {
+        docDirectory = "share/doc/cmake-4.4";
+        # System codec selection must not drop notices in the public payload.
+        bundledLicenseFiles = [
+          "Utilities/cmliblzma/COPYING"
+          "Utilities/cmzlib/Copyright.txt"
+          "Utilities/cmzstd/LICENSE"
+        ];
+      };
       patches = [
         {
           file = ./patches/store-shell.patch;

@@ -26,6 +26,8 @@
   binutils,
   patchelf,
   patches,
+  docDirectory,
+  bundledLicenseFiles,
 }:
 final:
 let
@@ -135,7 +137,7 @@ in
     (command "cmake.configure" ''
       # 4.4.5's bootstrap forces the cache options from its selectors. Keep
       # the bundled default and explicitly exempt the four selected codecs.
-      ./bootstrap --prefix="$out" --parallel="$NIX_BUILD_CORES" --no-system-libs \
+      ./bootstrap --prefix="$out" --docdir=${lib.escapeShellArg docDirectory} --parallel="$NIX_BUILD_CORES" --no-system-libs \
         --system-zlib --system-bzip2 --system-liblzma --system-zstd -- \
         -DBUILD_TESTING=OFF \
         -DCMAKE_PREFIX_PATH=${
@@ -162,6 +164,9 @@ in
     (command "cmake.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (command "cmake.install" ''
       ${gnumake}/bin/make install
+      for document in ${lib.escapeShellArgs bundledLicenseFiles}; do
+        install -Dm644 "$document" "$out/${docDirectory}/''${document#Utilities/}"
+      done
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
     '')
     (outputs.strip {

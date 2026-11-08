@@ -157,7 +157,10 @@ in
         enabled = doCheck;
       }
     )
-    (logged "install" ''${gnumake}/bin/make SHELL=${final.bash}/bin/bash install'')
+    (logged "install" ''
+      ${gnumake}/bin/make SHELL=${final.bash}/bin/bash install
+      ${gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"
+    '')
     (command "pkg-config.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
     (outputs.strip {
       inherit python binutils;
