@@ -58,8 +58,23 @@ let
             lib.concatStringsSep " " requiredEnvironment.environmentContributions.NIX_LDFLAGS.value
           else
             "";
-        CFLAGS = environment.env.CFLAGS or (lib.concatStringsSep " " compileFlags);
-        CXXFLAGS = environment.env.CXXFLAGS or (lib.concatStringsSep " " compileFlags);
+        # Preserve Autoconf defaults; caller structured flags follow and can replace them.
+        CFLAGS =
+          environment.env.CFLAGS or (lib.concatStringsSep " " (
+            [
+              "-g"
+              "-O2"
+            ]
+            ++ compileFlags
+          ));
+        CXXFLAGS =
+          environment.env.CXXFLAGS or (lib.concatStringsSep " " (
+            [
+              "-g"
+              "-O2"
+            ]
+            ++ compileFlags
+          ));
         LDFLAGS = environment.env.LDFLAGS or (lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags);
       };
     };
