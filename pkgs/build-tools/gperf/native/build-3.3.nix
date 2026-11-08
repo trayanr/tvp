@@ -107,6 +107,7 @@ in
     })
   ];
   meta = {
+    homepage = "https://www.gnu.org/software/gperf/";
     description = "GNU perfect hash function generator";
     license = lib.licenses.gpl3Plus;
     platforms = [ "x86_64-linux" ];

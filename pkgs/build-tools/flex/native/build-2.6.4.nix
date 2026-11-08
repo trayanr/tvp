@@ -125,6 +125,7 @@ in
     })
   ];
   meta = {
+    homepage = "https://github.com/westes/flex";
     description = "Lexical analyser generator for C and C++";
     license = lib.licenses.bsd2;
     platforms = [ "x86_64-linux" ];

@@ -114,6 +114,7 @@ in
     })
   ];
   meta = {
+    homepage = "https://www.gnu.org/software/bison/";
     description = "GNU parser generator";
     license = lib.licenses.gpl3Plus;
     platforms = [ "x86_64-linux" ];
