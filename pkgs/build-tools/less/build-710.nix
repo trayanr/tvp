@@ -118,12 +118,14 @@ in
       name = "less.bind-link-helper";
       tools = [ python ];
       run = ''
-        ${python}/bin/python3 -B - "$out/bin/less-osc8-open" <<'PYTHON'
+        ${python}/bin/python3 -B - "$out" <<'PYTHON'
         import sys
         from pathlib import Path
-        p = Path(sys.argv[1]); first, rest = p.read_text().split('\n', 1)
+        root = Path(sys.argv[1])
+        p = root / 'bin/less-osc8-open'
+        first, rest = p.read_text().split('\n', 1)
         assert first == '#!${final.bash}/bin/bash'
-        p.write_text(first + '\nPATH=${placeholder "out"}/bin:${coreutils}/bin:${final.bash}/bin:"$' + '{PATH-}"; export PATH\n' + rest)
+        p.write_text(first + f'\nPATH={root}/bin:${coreutils}/bin:${final.bash}/bin:"$' + '{PATH-}"; export PATH\n' + rest)
         PYTHON
       '';
     }

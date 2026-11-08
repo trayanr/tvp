@@ -41,6 +41,15 @@ p.testContext.mkSuite {
     commands = {
       script = ''
         test -x ${p}/bin/less-osc8-open; test -x ${p}/bin/lessecho
+        printf 'local file\nwith spaces\n' > 'name with spaces'
+        env -i PATH=/nonexistent ${p}/bin/less-osc8-open "file://$PWD/name with spaces" > actual 2> error
+        test ! -s error; cmp actual 'name with spaces'
+        ${d.python}/bin/python3 -B - <<'PYTHON'
+        from pathlib import Path
+        path = Path('${p}/bin/less-osc8-open').read_text().splitlines()[1]
+        assert path.startswith('PATH=${p}/bin:')
+        assert 'tvp-step-' not in path
+        PYTHON
         ${p}/bin/lessecho 'name with spaces'
       '';
       expected = "name with spaces";
