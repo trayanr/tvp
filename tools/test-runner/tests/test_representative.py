@@ -144,6 +144,11 @@ class RepresentativeTests(unittest.TestCase):
             def valid(inner, paths): return set(paths)
         coverage = r.observe_selected(plan, catalogue, self.selection, Store())
         self.assertFalse(coverage['fullAggregateObservedOrRequired'])
+        metadata[plan['jobs'][1]['drv']]['structuredAttrs'] = attrs
+        del metadata[plan['jobs'][1]['drv']]['env']['__json']
+        self.assertEqual(r.observe_selected(plan, catalogue, self.selection, Store()), coverage)
+        del metadata[plan['jobs'][1]['drv']]['structuredAttrs']
+        metadata[plan['jobs'][1]['drv']]['env']['__json'] = json.dumps(attrs)
         for field in ['unexpected', 'stale']:
             ownership_file.write_text(json.dumps(ownership | {field: {'suite': ['/foreign']}}))
             with self.assertRaisesRegex(ValueError, 'ownership audit failed'):
@@ -157,6 +162,11 @@ class RepresentativeTests(unittest.TestCase):
         metadata[shared]['outputs'].pop('1')
         with self.assertRaisesRegex(ValueError, 'binding differs'):
             r.observe_selected(plan, catalogue, self.selection, Store())
+
+    def test_unknown_structured_metadata_rejected(self):
+        for metadata in [{'env': {}}, {'structuredAttrs': []}, {'env': {'__json': '[]'}}]:
+            with self.assertRaises((ValueError, KeyError)):
+                r.structured_attributes(metadata)
 
 
 if __name__ == '__main__':

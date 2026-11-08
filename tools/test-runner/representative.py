@@ -12,6 +12,17 @@ from verifier import (Store, atomic_report, digest, execution, load, require,
 SCOPE = "representative latest release per family"
 
 
+def structured_attributes(metadata):
+    # Nix's current derivation JSON has a decoded field; older responses retain
+    # the structured JSON in env. These are observations, never recipe defaults.
+    if "structuredAttrs" in metadata:
+        attrs = metadata["structuredAttrs"]
+    else:
+        attrs = json.loads(metadata["env"]["__json"])
+    require(isinstance(attrs, dict), "Malformed structured derivation attributes")
+    return attrs
+
+
 def projection(reference, catalogue, selection):
     """The reviewed catalogue records aliases; names never determine versions."""
     require(selection["schema"] == "tvp.representative-selection/v1", "Selection schema differs")
@@ -101,7 +112,7 @@ def observe_selected(plan, catalogue, selection, store):
     jobs = {j["name"]: j for j in plan["jobs"]}
     ownership_job = jobs["check-package-runtime-ownership-latest"]
     roots = {r["alias"]["job"]: r["alias"]["out"] for r in catalogue["families"].values()}
-    attrs = json.loads(metadata[ownership_job["drv"]]["env"]["__json"])
+    attrs = structured_attributes(metadata[ownership_job["drv"]])
     require(attrs["runtimeRoots"] == roots, "Actual ownership derivation roots differ")
     ownership = load(ownership_job["outputs"][0])
     require(ownership["unexpected"] == ownership["stale"] == {}, "Selected ownership audit failed")
