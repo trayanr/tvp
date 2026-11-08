@@ -31,3 +31,7 @@ wrong aliases, cancelled/retried evidence and partial output sets fail.
 The original `verify` remains full-only. A representative certificate cannot
 satisfy a hosted status whose policy still means full catalogue validation.
 Trusted controller and required-context activation are separate reviewed work.
+
+For a reusable Nix selection and separate local latest-first build target, see
+[LATEST.md](LATEST.md). That target does not add the representative profiles or
+checks above, nor change the frozen runner or full plan.

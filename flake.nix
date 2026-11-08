@@ -107,6 +107,7 @@
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;
+        latestTests = tvp.latestTests;
       }
     );
 }

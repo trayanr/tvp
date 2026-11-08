@@ -1,5 +1,7 @@
 { lib }:
 rec {
+  selectLatest = import ./latest-tests.nix { inherit lib; };
+
   # Opt-in owned construction; catalogue factories must select this explicitly.
   forBase = import ./owned-tests.nix { inherit lib; };
 

@@ -409,27 +409,30 @@ let
         '';
     };
 
+  # Keep this mapping lazy: latest selection must not enumerate historical suites
+  # just to find the selected batch. Full coverage retains its existing filter.
+  packageTestBatches = builtins.mapAttrs (
+    name: pkg:
+    (
+      if pkg ? testContext then
+        pkg.testContext.mkBatch
+      else
+        args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
+    )
+      {
+        inherit name;
+        suite = pkg.tests;
+      }
+  ) canonical;
+
   testBatchEntries = tvpLib.packages.merge {
-    packages =
-      builtins.mapAttrs
-        (
-          name: pkg:
-          (
-            if pkg ? testContext then
-              pkg.testContext.mkBatch
-            else
-              args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
-          )
-            {
-              inherit name;
-              suite = pkg.tests;
-            }
-        )
-        (
-          pkgs.lib.filterAttrs (
-            _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
-          ) canonical
-        );
+    packages = pkgs.lib.filterAttrs (
+      name: _:
+      let
+        pkg = canonical.${name};
+      in
+      pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
+    ) packageTestBatches;
     bases = pkgs.lib.mapAttrs' (
       name: base:
       pkgs.lib.nameValuePair "base-${name}" (
@@ -470,6 +473,24 @@ let
       inherit pkgs checks;
       batches = testBatchEntries;
     };
+  };
+
+  # Separate from testBatches: the full plan enumerates every entry but `all`.
+  # Reuse each package's existing testContext batch without reconstructing it.
+  latestSelection = tvpLib.tests.selectLatest {
+    inherit canonical packages;
+    batches = packageTestBatches;
+  };
+  latestTests = latestSelection // {
+    all =
+      (tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        package = packages.coreutils;
+      }).mkBatch
+        {
+          name = "latest";
+          suite = latestSelection.batches;
+        };
   };
 
   # Deliberately not in `packages`: that attribute is the canonical package
@@ -721,6 +742,7 @@ let
       variants
       checks
       testBatches
+      latestTests
       tools
       ;
     builder = import ./lib/builder.nix { inherit (pkgs) lib; };
