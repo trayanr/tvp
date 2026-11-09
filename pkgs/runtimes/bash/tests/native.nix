@@ -37,9 +37,14 @@ package.testContext.mkSuite {
     };
     readline-curses = {
       script = ''
-        ${package}/bin/bash --noprofile --norc -c 'bind -l' | grep -q '^complete$'
-        ${package.specification.binutils}/bin/readelf -d ${package}/bin/bash | grep -q libncursesw
-        ${package}/bin/bash --noprofile --norc -c 'set -o emacs; bind "set editing-mode vi"; test "$(bind -v | sed -n 1p)" != ""; printf ok'
+        # Consume complete outputs before quiet searches so producers cannot hit SIGPIPE.
+        ${package}/bin/bash --noprofile --norc -c 'bind -l' > functions
+        grep -q '^complete$' functions
+        ${package.specification.binutils}/bin/readelf -d ${package}/bin/bash > dynamic
+        grep -q libncursesw dynamic
+        ${package}/bin/bash --noprofile --norc -c 'set -o emacs; bind "set editing-mode vi"; bind -v' > bindings
+        grep -q '^set editing-mode vi$' bindings
+        printf ok
       '';
       expected = "ok";
     };
