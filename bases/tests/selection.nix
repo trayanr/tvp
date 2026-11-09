@@ -51,10 +51,22 @@ let
     source-owned-patchelf =
       tvp.packages.patchelf_0_19_2.specification.base.compiler.drvPath == (import ../source-gnu { })
       .base.compiler.drvPath;
+    source-owned-tools =
+      lib.all
+        (
+          p:
+          p.specification.base.compiler.drvPath == (import ../source-gnu { }).base.compiler.drvPath
+          && p.tvp.base == "source-gnu-candidate"
+        )
+        [
+          tvp.packages.bash
+          tvp.packages.binutils
+          tvp.packages.which
+          tvp.packages.patch
+        ];
     canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
       tvp.packages.gcc_16_2_0
       tvp.packages.gcc_13_3_0
-      tvp.packages.binutils_2_42
       tvp.packages.glibc_2_39
     ];
   };

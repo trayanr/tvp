@@ -46,6 +46,8 @@ let
         "bison"
         "flex"
         "gperf"
+        "bash"
+        "binutils"
         "which"
         "patch"
         "patchelf"

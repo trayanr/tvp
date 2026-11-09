@@ -61,7 +61,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  binutils = select recipes.binutils {
+  binutils = select recipes.binutils.constructionRecipe {
     "2.42" = {
       deps = {
         bison = inputs.bison_3_8_2;

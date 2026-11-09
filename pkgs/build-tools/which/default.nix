@@ -1,95 +1,73 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  defs = tvpLib.packages.mkDefs {
-    "2.21" = {
-      builder = ./build-2.21.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-  };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."2.21";
-      releases."2.21" = "sha256-9KJFuUEks3fYtJZGv0IfkVXTaqdhS26/g3BdP/x26q0=";
-    }
-  ];
-  pname = "which";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      }
-    ) { inherit pkgs; };
-  };
-  completed = tvp.bases.default;
-  seed =
-    reason:
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  formerRecipe = builtins.removeAttrs previous.recipes.which [ "constructionRecipe" ];
+  constructionRecipe = previous.recipes.which.constructionRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
     tvpLib.packages.withConstraint {
       category = "construction";
-      inherit reason;
-    };
-  ownedDefs = tvpLib.packages.mkDefs {
+      reason = "Retained source-GNU ${name} is an independent build-only construction generation; ordinary self-building tools must not construct themselves or their compiler.";
+    } candidate.tools.${name};
+  defs = tvpLib.packages.mkDefs {
     "2.21" = {
       constructor = tvp.builder;
-      builder = ./owned/build-2.21.nix;
-      base = completed;
+      builder = ./native/build-2.21.nix;
+      base = candidate.base;
       helpers = {
         inherit tvp;
       };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/which/which-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+
       deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        python = seed "Build-only completed libc construction interpreter for explicit source and output operations; avoids rebuilding the unported Python helper through this tool wave." completed.components.libc.tvp.deps.python3Minimal;
-        binutils = tvp.packages.binutils_2;
-        patchelf = tvp.packages.patchelf_0;
+        python = constructionTool "python";
+        bash = tvp.packages.bash;
+        coreutils = tvp.packages.coreutils;
+        gnumake = tvp.packages.gnumake;
+        gnutar = tvp.packages.gnutar;
+        gzip = tvp.packages.gzip;
+        gawk = tvp.packages.gawk;
+        diffutils = tvp.packages.diffutils;
+        findutils = tvp.packages.findutils;
+        binutils = tvp.packages.binutils;
+        patchelf = tvp.packages.patchelf;
+        sed = tvp.packages.gnused;
+        grep = tvp.packages.gnugrep;
       };
     };
   };
-  publicVersionTable = versionTable // {
-    "2.21" = versionTable."2.21" // {
-      def = ownedDefs."2.21";
+  versionTable = formerRecipe.versionTable // {
+    "2.21" = formerRecipe.versionTable."2.21" // {
+      def = if native then defs."2.21" else formerRecipe.versionTable."2.21".def;
     };
   };
-  source =
-    { version, sha256 }:
-    pkgs.fetchurl {
-      url = "https://mirrors.kernel.org/gnu/which/which-${version}.tar.gz";
-      inherit sha256;
-    };
-  publicArgs = packageArgs // {
-    versionTable = publicVersionTable;
-    inherit source;
+  publicArgs = formerRecipe // {
+    inherit versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
-      // import ./tests/owned.nix {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      }
+      if package ? testContext then
+        import ./tests/native.nix { inherit pkgs tvpLib package; }
+      else
+        formerRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
   };
-  # Preserve the exact prior definition and test constructor for frozen bases.
-  constructionRecipe = packageArgs;
   canonical = tvpLib.packages.mkVersions publicArgs;
-
+  pname = "which";
 in
 {
   recipes.${pname} = publicArgs // {

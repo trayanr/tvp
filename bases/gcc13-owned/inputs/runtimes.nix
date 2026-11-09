@@ -33,7 +33,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   bash = tvpLib.packages.mkVariants (
-    recipes.bash
+    recipes.bash.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

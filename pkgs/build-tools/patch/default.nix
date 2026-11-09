@@ -1,117 +1,81 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  base = tvp.bases.default;
-  seed =
-    reason:
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  formerRecipe = builtins.removeAttrs previous.recipes.patch [ "constructionRecipe" ];
+  constructionRecipe = previous.recipes.patch.constructionRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
     tvpLib.packages.withConstraint {
       category = "construction";
-      inherit reason;
-    };
-  floorTool =
-    name:
-    seed
-      "Completed default-base ${name} is a build-only seed for the foundational tool wave; it avoids following the canonical tool graph while rebuilding its prerequisites."
-      base.components.floor.${name};
+      reason = "Retained source-GNU ${name} is an independent build-only construction generation; ordinary self-building tools must not construct themselves or their compiler.";
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
-    "2.7.6" = {
-      builder = ./build-2.7.6.nix;
-      base = tvp.bases.default;
-      deps = {
-
-      };
-    };
     "2.8.1" = {
       constructor = tvp.builder;
-      builder = ./owned/build-2.8.1.nix;
-      inherit base;
+      builder = ./native/build-2.8.1.nix;
+      base = candidate.base;
       helpers = {
         inherit tvp;
       };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/patch/patch-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+
       patches = [
         {
           file = ./patches/bad-filenames-input.patch;
-          reason = "Precompute invalid-filename test input so early rejection cannot race cat and pollute the diagnostic with EPIPE; retain all assertions.";
+          reason = "Precompute invalid-filename input without changing rejection assertions or hiding the EPIPE race.";
         }
       ];
       deps = {
-        patch = floorTool "patch";
-        gzip = tvp.packages.gzip_1;
-        bash = tvp.packages.bash_5;
-        coreutils = floorTool "coreutils";
+        python = constructionTool "python";
+        patch = constructionTool "patch";
+        bash = tvp.packages.bash;
+        coreutils = tvp.packages.coreutils;
         gnumake = tvp.packages.gnumake;
-        gnutar = floorTool "gnutar";
-        xz = floorTool "xz";
-        python = seed "Completed libc-build helper interpreter is build-only; using its existing recipe output avoids a new Python prerequisite cycle." base.components.libc.tvp.deps.python3Minimal;
-        binutils = seed "Completed base Binutils supplies build-only output inspection and stripping without following its canonical prerequisite graph." base.components.binutils;
-        patchelf = seed "Completed base Patchelf supplies build-only ELF finalization before the canonical Patchelf advance." base.fixupTools.patchelf;
-
+        gnutar = tvp.packages.gnutar;
+        gzip = tvp.packages.gzip;
+        xz = tvp.packages.xz;
+        gawk = tvp.packages.gawk;
+        diffutils = tvp.packages.diffutils;
+        findutils = tvp.packages.findutils;
+        binutils = tvp.packages.binutils;
+        patchelf = tvp.packages.patchelf;
+        sed = tvp.packages.gnused;
+        grep = tvp.packages.gnugrep;
       };
     };
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."2.7.6";
-      releases = {
-        "2.7.6" = "sha256-rGEL2per4Nn2t8ljJVoR3LGWwl4zfGH5Tkd41jLx2P0=";
-        "2.8" = "sha256-+Hzuae7CtPy/YKOWsDCtaqNBXxkqpffuhMrV4R9/WuM=";
-      };
-    }
-    {
-      def = defs."2.8.1";
-      releases."2.8.1" = "sha256-MkDHlZxTR8jtNH48QgHAM3v0JA1c8J1oiJ5Y7qujDhc=";
-    }
-  ];
-  pname = "patch";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://mirrors.kernel.org/gnu/patch/";
-      # Older releases use gzip; discover each stable version across formats.
-      # The adapter deduplicates archive/signature matches after normalisation.
-      pattern = "patch-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|bz2|xz|lz|zst|Z)";
-      normalise =
-        file:
-        let
-          match = builtins.match "patch-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|bz2|xz|lz|zst|Z)" file;
-        in
-        if match == null then null else builtins.head match;
+  versionTable = formerRecipe.versionTable // {
+    "2.8.1" = formerRecipe.versionTable."2.8.1" // {
+      def = if native then defs."2.8.1" else formerRecipe.versionTable."2.8.1".def;
     };
   };
-  constructionRecipe = packageArgs // {
-    versionTable = versionTable // {
-      "2.8.1" = versionTable."2.8.1" // {
-        def = defs."2.7.6";
-      };
-    };
-  };
-  publicArgs = packageArgs // {
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        url = "https://mirrors.kernel.org/gnu/patch/patch-${version}.tar.xz";
-        inherit sha256;
-      };
-    extraArgs.mkTests =
+  publicArgs = formerRecipe // {
+    inherit versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests package
-      // pkgs.lib.optionalAttrs (package.version == "2.8.1") (
-        import ./tests/owned.nix {
-          inherit tvp tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
-        }
-      );
+      if package ? testContext then
+        import ./tests/native.nix { inherit pkgs tvpLib package; }
+      else
+        formerRecipe.extraArgs.mkTests package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
-
+  pname = "patch";
 in
 {
   recipes.${pname} = publicArgs // {

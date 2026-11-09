@@ -126,7 +126,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   patch = tvpLib.packages.mkVariants (
-    recipes.patch
+    recipes.patch.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -150,7 +150,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   binutils = tvpLib.packages.mkVariants (
-    recipes.binutils
+    recipes.binutils.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
