@@ -95,3 +95,16 @@ Use `steps.sequence [ record [ record record ] ]` to compose a visible plan.
 Only one level of groups is accepted; existing name and duplicate validation
 still applies. Disabled payloads stay lazy. To use a helper twice, give its
 returned record a distinct name with `// { name = "output.other-scripts"; }`.
+
+`rpaths` additionally accepts `workspaceRoot ? null` for a shrink-only operation
+before installation. Null retains the existing record and command exactly. A
+non-null selector resolves beneath the runner's immutable `TVP_SOURCE_ROOT`
+(the workspace directory, independent of step `cwd`); `paths` then selects files
+beneath that directory. Both scopes reject empty, absolute, missing, dot/traversal
+and symlinked components. Discovered symlinks are skipped as with output scopes.
+This mode cannot be combined with authoritative `base`/`libraries`/`forceRpath`.
+It reuses the existing ELF classification and shrink/dlopen/timestamp operations.
+For example, the JDK selects `source/build/tvp-release` with `paths = [ "jdk" ]`
+between `exploded-image` and `images`, before native resources are embedded.
+`checks.owned-jdk-source-stage` uses miniature source and native ELF fixtures;
+it does not build OpenJDK or execute installed JDK controls.

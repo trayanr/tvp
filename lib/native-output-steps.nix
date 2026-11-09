@@ -125,9 +125,11 @@ in
       elfKinds ? null,
       dlopenDirectories ? [ ],
       forceRpath ? false,
+      workspaceRoot ? null,
       base ? null,
       libraries ? null,
     }:
+    assert workspaceRoot == null || (base == null && libraries == null && !forceRpath);
     assert !forceRpath || (base != null && libraries != null && dlopenDirectories != [ ]);
     {
       name = "output.rpaths";
@@ -137,7 +139,22 @@ in
         patchelf
       ];
       run =
-        if libraries != null then
+        if workspaceRoot != null then
+          ''${python}/bin/python3 -B ${./staged-output/rpaths.py} "$TVP_SOURCE_ROOT" ${
+            lib.escapeShellArg (
+              builtins.toJSON {
+                inherit
+                  workspaceRoot
+                  paths
+                  dlopenDirectories
+                  elfKinds
+                  ;
+                readelf = "${binutils}/bin/readelf";
+                patchelf = "${patchelf}/bin/patchelf";
+              }
+            )
+          } ${./native-output} ${./elf-output.py}''
+        else if libraries != null then
           assert base != null;
           ''${python}/bin/python3 -B ${
             if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py
