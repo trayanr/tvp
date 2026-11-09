@@ -1,22 +1,34 @@
 {
   pkgs,
+  tvp,
   tvpLib,
   package,
-  python,
-  jdk,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  spec = package.specification;
+  python = spec.tools.python;
+  jdk = spec.runtime.jdk;
+  locale = import ../../../../lib/tests/gnu-locale.nix {
+    builder = tvp.builder;
+    inherit (spec) base bash coreutils;
+    tar = spec.tools.gnutar;
+    xz = spec.tools.xz;
+    libc = spec.base.compiler.libc;
+  };
+in
+package.testContext.mkSuite {
+  inherit package;
   tests = {
     version = {
+      tools = [ package.specification.tools.gawk ];
       script = ''${package}/bin/msgfmt --version | head -1 | awk '{print $NF}' '';
       expected = package.version;
     };
     catalog = {
-      extraInputs = [
+      tools = [
         python
-        package.tvp.cc
-        package.stdenv.cc.libc.bin
+        package.specification.base.compiler
+        locale
       ];
       script = ''
         mkdir -p catalogs/fr_FR/LC_MESSAGES
@@ -31,16 +43,13 @@ tvpLib.tests.mkSuite {
         assert g.ngettext('apple','apples',2) == 'pommes'
         PY
         test $? = 0 || exit 1
-        tar -xf ${package.stdenv.cc.libc.src} glibc-${package.stdenv.cc.libc.version}/localedata || exit 1
-        mkdir locale
-        I18NPATH="$PWD/glibc-${package.stdenv.cc.libc.version}/localedata" \
-          localedef --no-archive -i fr_FR -f UTF-8 "$PWD/locale/fr_FR.UTF-8" || exit 1
         cc ${./catalog.c} -o catalog || exit 1
-        LOCPATH="$PWD/locale" ./catalog "$PWD/catalogs" || exit 1
+        LOCPATH=${locale} ./catalog "$PWD/catalogs" || exit 1
       '';
       expected = "ok";
     };
     format-rejection = {
+      tools = [ package.specification.tools.grep ];
       script = ''
         printf '#, c-format\nmsgid "value %%s"\nmsgstr "valeur %%d"\n' > bad.po
         if msgfmt --check-format bad.po -o bad.mo 2>error; then exit 1; fi
@@ -50,6 +59,7 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
     extraction-merge = {
+      tools = [ package.specification.tools.grep ];
       script = ''
         printf 'void f(void) { gettext("Hello"); gettext("New"); }\n' > source.c
         xgettext --from-code=UTF-8 -L C -o extracted.pot source.c || exit 1
@@ -61,15 +71,16 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
     native-spit = {
-      extraInputs = [
+      tools = [
         python
-        package.tvp.cc
+        package.specification.tools.binutils
+        package.specification.tools.grep
       ];
       script = ''
         readelf -h ${package}/bin/spit | grep -F ELF >&2 || exit 1
         LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/spit > loader || exit 1
-        grep -F '${package.tvp.deps.json-c}/lib/libjson-c.so' loader >&2 || exit 1
-        grep -F '${package.tvp.deps.curl}/lib/libcurl.so' loader >&2 || exit 1
+        grep -F '${package.specification.providers.json-c}/lib/libjson-c.so' loader >&2 || exit 1
+        grep -F '${package.specification.providers.curl}/lib/libcurl.so' loader >&2 || exit 1
         LC_ALL=C python3 ${./spit.py} ${package}/bin/spit || exit 1
       '';
       expected = "ok";
@@ -90,7 +101,7 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
     xml = {
-      extraInputs = [ python ];
+      tools = [ python ];
       script = ''
         printf '<component type="desktop"><id>fixture</id><name>Hello</name></component>\n' > fixture.appdata.xml
         msgfmt --xml --template=fixture.appdata.xml -l fr ${./messages.po} -o translated.xml || exit 1
@@ -105,7 +116,7 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
     java = {
-      extraInputs = [ jdk ];
+      tools = [ jdk ];
       script = ''
         mkdir classes
         msgfmt --java -r fixture -l fr -d classes ${./messages.po} || exit 1
@@ -116,12 +127,13 @@ tvpLib.tests.mkSuite {
       expected = "ok";
     };
     libraries = {
-      extraInputs = [
-        package.tvp.cc
+      libraries = [ package ];
+      tools = [
+        package.specification.tools.grep
       ];
       script = ''
         cc ${./style.c} -ltextstyle -o style || exit 1
-        ./style ${package.tvp.deps.ncurses}/share/terminfo || exit 1
+        ./style ${package.specification.providers.ncurses}/share/terminfo || exit 1
         cc ${./po.c} -lgettextpo -o po || exit 1
         ./po || exit 1
         msgfmt --help | grep -F -- '--xml' >&2 || exit 1

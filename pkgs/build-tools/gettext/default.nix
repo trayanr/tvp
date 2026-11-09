@@ -1,13 +1,39 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  pname = "gettext";
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  constructionRecipe = previous.recipes.gettext;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   defs = tvpLib.packages.mkDefs {
     "1.0" = {
-      builder = ./build-1.0.nix;
-      base = tvp.bases.default;
+      constructor = tvp.builder;
+      builder = ./native/build-1.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
-        bash = tvp.packages.bash;
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnumake
+          gnutar
+          xz
+          findutils
+          diffutils
+          gawk
+          binutils
+          patchelf
+          ;
+        sed = tvp.packages.gnused;
+        grep = tvp.packages.gnugrep;
         pkg-config = tvp.packages.pkg-config;
         json-c = tvp.packages.json-c_0;
         curl = tvp.packages.curl;
@@ -21,47 +47,51 @@ let
       };
     };
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."1.0";
-      releases."1.0" = "sha256-cRMqP7ceaCRbjyrE6elxN9PlwC9BVjbrUIrmB7wBrdc=";
-    }
-  ];
-  packageArgs = {
-    inherit pname versionTable;
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    testDeps = {
-      jdk = tvp.packages.jdk_21;
-      python = tvp.packages.python_3;
-    };
-    extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        inherit (package.tvp.declaredTestDependencies) python jdk;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      };
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://ftp.gnu.org/gnu/gettext/";
-      pattern = "gettext-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|xz|lz)";
-      normalise =
-        file:
-        let
-          m = builtins.match "gettext-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|lz)" file;
-        in
-        if m == null then null else builtins.head m;
+  versionTable = constructionRecipe.versionTable // {
+    "1.0" = constructionRecipe.versionTable."1.0" // {
+      def = if native then defs."1.0" else constructionRecipe.versionTable."1.0".def;
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  publicArgs = constructionRecipe // {
+    inherit versionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        urls = [
+          "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz"
+          "https://ftp.gnu.org/gnu/gettext/gettext-${version}.tar.xz"
+        ];
+        inherit sha256;
+      };
+    testDeps = constructionRecipe.testDeps // {
+      autoconf = tvp.packages.autoconf;
+      automake = tvp.packages.automake;
+      libtool = tvp.packages.libtool;
+      pkg-config = tvp.packages.pkg-config;
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else
+        constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
+    ) { inherit pkgs; };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
+  pname = "gettext";
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }
