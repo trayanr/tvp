@@ -135,13 +135,12 @@ def preparation(descriptor, nodes, valid, unresolved=None):
         node = nodes[drv]
         if family == "jdk" and not node.get("fixed", False):
             version = row.get("version")
-            if version is not None:
-                require(isinstance(version, str) and version, "Malformed selected application version")
-                require(node["name"] == family + "-" + version,
-                        "Selected application name differs: " + drv)
-                require(node.get("pname") in (None, family) and node.get("version") in (None, version),
-                        "Selected application metadata differs: " + drv)
-                selected_heavy.add(drv)
+            require(isinstance(version, str) and version, "Malformed selected application version")
+            require(node["name"] == family + "-" + version,
+                    "Selected application name differs: " + drv)
+            require(node.get("pname") in (None, family) and node.get("version") in (None, version),
+                    "Selected application metadata differs: " + drv)
+            selected_heavy.add(drv)
     demanded = {}
     for drv, node in nodes.items():
         for child, selectors in node["inputDrvs"].items():

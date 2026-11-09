@@ -115,6 +115,17 @@ class Fixture(unittest.TestCase):
         self.nodes[a]['fixed'] = True
         self.assertEqual(g.preparation(self.d,self.nodes,set()), [])
         self.nodes[a]['fixed'] = False
+        for value in (None, '', 21):
+            with self.subTest(descriptor_version=value):
+                row['version'] = value
+                g.identities(self.d, self.nodes)
+                with self.assertRaisesRegex(ValueError, 'Malformed selected application version'):
+                    g.preparation(self.d, self.nodes, set())
+        del row['version']
+        g.identities(self.d, self.nodes)
+        with self.assertRaisesRegex(ValueError, 'Malformed selected application version'):
+            g.preparation(self.d, self.nodes, set())
+        row['version'] = '21.0.13'
         for field,value in (('name','jdk-21.0.13-audit'),('pname','helper'),('version','other')):
             original = self.nodes[a].get(field)
             self.nodes[a][field] = value
@@ -123,6 +134,20 @@ class Fixture(unittest.TestCase):
             self.nodes[a][field] = original
         self.d['metadata']['families'] = {'other':row}
         self.assertEqual(g.preparation(self.d,self.nodes,set()), [])
+
+    def test_missing_selected_jdk_version_stops_worker_before_any_build(self):
+        a = self.ids['gcc']
+        self.nodes[a].update(name='jdk-21.0.13', pname=None, version=None, heavy=False)
+        row = self.d['metadata']['families'].pop('gcc')
+        row['family'] = 'jdk'
+        row.pop('version', None)
+        self.d['metadata']['families']['jdk'] = row
+        s.save(self.run/'descriptor.json', self.d)
+        s.save(self.run/'graph.json', self.nodes)
+        with patch.object(g.Store, 'valid', side_effect=self.valid), patch('latest_worker.retain', return_value=[]), patch.object(Worker, 'command') as command:
+            self.assertEqual(Worker(self.run, self.attempt).execute(), 1)
+            command.assert_not_called()
+        self.assertIn('Malformed selected application version', s.load(self.run/'result.json')['error'])
 
     def test_dynamic_unknown_nodes_and_output_paths_are_honest_errors(self):
         child = self.nodes[self.ids['test']]['inputDrvs'][self.ids['llvm']]

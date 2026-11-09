@@ -185,7 +185,45 @@ let
     }
   ]);
   metadataRebound = functional.override { message = "metadata-rebound"; };
+  passthruFunctional = validation.edit (
+    s:
+    s
+    // {
+      passthru = raw: {
+        marker = "${raw.validation}/marker";
+        rawIsUndecorated = !(raw ? passthru) && !(raw ? edit) && !(raw ? tvp);
+      };
+    }
+  );
+  passthruChanged = passthruFunctional.validation.editSteps (_: [
+    {
+      name = "passthru.changed";
+      run = ":";
+    }
+  ]);
+  passthruRebound = passthruFunctional.override { message = "passthru-rebound"; };
   contracts = {
+    passthruCallbackNoProcedureChange = passthruFunctional.drvPath == validation.drvPath;
+    passthruCallbackRawOutputOnly = passthruFunctional.rawIsUndecorated;
+    passthruCallbackNamedOutput =
+      passthruFunctional.marker == "${passthruFunctional.validation}/marker";
+    passthruCallbackProjection = passthruFunctional.validation.marker == passthruFunctional.marker;
+    passthruCallbackEditedProjection =
+      passthruChanged.outputName == "validation"
+      && passthruChanged.outPath != passthruFunctional.validation.outPath
+      && passthruChanged.marker == "${passthruChanged}/marker";
+    passthruCallbackOverride =
+      passthruRebound.drvPath != passthruFunctional.drvPath
+      && passthruRebound.marker == "${passthruRebound.validation}/marker";
+    passthruCallbackStringContext =
+      (builtins.getContext passthruFunctional.marker)
+      .${builtins.unsafeDiscardStringContext passthruFunctional.drvPath}.outputs == [ "validation" ];
+    passthruCallbackSecondaryCollision =
+      rejects
+        (validation.edit (s: s // { passthru = raw: { validation = "${raw.validation}"; }; })).drvPath;
+    passthruCallbackPrimaryCollision =
+      rejects
+        (validation.edit (s: s // { passthru = _: { out = "collision"; }; })).drvPath;
     developmentDefault = validation.development.libraries == [ ];
     attrsetDerivationUnchanged = attrset.drvPath == validation.drvPath;
     attrsetFieldsUnchanged = attrset.development.marker == "attrset";

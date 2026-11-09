@@ -10,15 +10,22 @@ let
     coreutils
     plan
     ;
+  declaredPassthru = spec.passthru or { };
+  validatePassthru =
+    names: metadata:
+    if names != [ "out" ] && lib.intersectLists names (builtins.attrNames metadata) != [ ] then
+      throw "TVP named outputs: output name collides with passthru metadata"
+    else
+      metadata;
   outputNames =
     let
       names = import ./named-outputs.nix { inherit lib; } (spec.outputs or [ "out" ]);
-      collisions = lib.intersectLists names (builtins.attrNames (spec.passthru or { }));
     in
-    if names != [ "out" ] && collisions != [ ] then
-      throw "TVP named outputs: output name collides with passthru metadata"
+    # A callback needs the raw outputs; output construction must not depend on it.
+    if builtins.isFunction declaredPassthru then
+      names
     else
-      names;
+      builtins.seq (validatePassthru names declaredPassthru) names;
   compiler = if base ? compiler then base.compiler else base.stdenv.cc;
   # Opt-in consumers must not silently discard an unknown recipe exception.
   # The legacy branch is exactly the earlier rendering and compiler protocol.
@@ -136,11 +143,9 @@ package
     };
   buildEnvironment = spec.buildEnvironment or (_: { });
   # Like development, output-relative public data may depend on the raw output.
-  passthru =
-    let
-      declared = spec.passthru or { };
-    in
-    if builtins.isFunction declared then declared package else declared;
+  passthru = validatePassthru outputNames (
+    if builtins.isFunction declaredPassthru then declaredPassthru package else declaredPassthru
+  );
 }
 // (if base ? compiler then { inherit compiler; } else { stdenv = base.stdenv; })
 // lib.optionalAttrs parts.split { artifact = artifact; }
