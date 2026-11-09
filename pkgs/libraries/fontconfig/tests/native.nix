@@ -3,18 +3,22 @@
 let
   d = package.specification;
   discovery = d.base.environment {
-    tools = [ d.pkgConfig ];
+    tools = [ d.pkg-config ];
     libraries = [ package ];
   };
 in
 package.testContext.mkSuite {
   inherit package;
   tools = [
-    d.pkgConfig
+    d.pkg-config
     d.findutils
     d.grep
   ];
   libraries = [ package ];
+  tests.consumer = {
+    script = ''cc ${./fixtures/consumer.c} -lfontconfig -o consumer; ./consumer ${./fixtures/font.bdf}'';
+    expected = package.version;
+  };
   tests.installed = {
     script = ''
       # Isolate explicit-config behavior as well as the clean default lookup

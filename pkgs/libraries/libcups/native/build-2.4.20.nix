@@ -20,7 +20,7 @@
   diffutils,
   findutils,
   gzip,
-  pkgConfig,
+  pkg-config,
   openssl,
   zlib,
   dnssd,
@@ -67,7 +67,7 @@ in
     diffutils
     findutils
     gzip
-    pkgConfig
+    pkg-config
     openssl
     zlib
     dnssd
@@ -86,7 +86,7 @@ in
       final.diffutils
       final.findutils
       final.gzip
-      final.pkgConfig
+      final.pkg-config
     ];
     libraries = [
       final.dnssd

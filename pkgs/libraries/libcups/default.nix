@@ -98,7 +98,7 @@ let
         diffutils = constructionTool "diffutils";
         findutils = constructionTool "findutils";
         gzip = constructionTool "gzip";
-        pkgConfig = tvp.packages.pkg-config;
+        pkg-config = tvp.packages.pkg-config;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
         dnssd = tvp.packages.libdns_sd;

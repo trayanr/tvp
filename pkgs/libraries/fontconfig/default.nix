@@ -121,7 +121,7 @@ let
         meson = tvp.packages.meson;
         ninja = tvp.packages.ninja;
         gperf = tvp.packages.gperf;
-        pkgConfig = tvp.packages.pkg-config;
+        pkg-config = tvp.packages.pkg-config;
         freetype = tvp.packages.freetype_2;
         expat = tvp.packages.expat_2;
       };

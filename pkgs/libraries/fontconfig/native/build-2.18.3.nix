@@ -21,9 +21,10 @@
   meson,
   ninja,
   gperf,
-  pkgConfig,
+  pkg-config,
   freetype,
   expat,
+  doCheck ? true,
 }:
 final:
 let
@@ -52,6 +53,7 @@ in
     base
     src
     version
+    doCheck
     bash
     coreutils
     gnumake
@@ -68,7 +70,7 @@ in
     meson
     ninja
     gperf
-    pkgConfig
+    pkg-config
     freetype
     expat
     ;
@@ -89,7 +91,7 @@ in
       final.meson
       final.ninja
       final.gperf
-      final.pkgConfig
+      final.pkg-config
     ];
     libraries = [
       final.freetype
@@ -131,13 +133,18 @@ in
         -Dxml-backend=expat -Dfontations=disabled
     '')
     (command "build" ''${final.meson}/bin/meson compile -C build -j "$NIX_BUILD_CORES"'')
-    (command "check" ''
-      status=0
-      export TVP_SOURCE_ROOT
-      ${final.meson}/bin/meson test -C build --print-errorlogs || status=$?
-      cp -r build/meson-logs "$evidence/meson-logs"
-      exit "$status"
-    '')
+    (
+      (command "check" ''
+        status=0
+        export TVP_SOURCE_ROOT
+        ${final.meson}/bin/meson test -C build --print-errorlogs || status=$?
+        cp -r build/meson-logs "$evidence/meson-logs"
+        exit "$status"
+      '')
+      // {
+        enabled = final.doCheck;
+      }
+    )
     (command "install" "${final.meson}/bin/meson install -C build --no-rebuild")
     {
       name = "fontconfig.self-rpaths";
@@ -194,6 +201,7 @@ in
     })
   ];
   tvp.features = {
+    doCheck = final.doCheck;
     tests = true;
     tools = true;
     doc = false;

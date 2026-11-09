@@ -6,7 +6,7 @@ in
 p.testContext.mkSuite {
   inherit package;
   tools = [
-    d.pkgConfig
+    d.pkg-config
     d.binutils
     d.bzip2
     package.tvp.declaredTestDependencies.gzip
@@ -42,7 +42,7 @@ p.testContext.mkSuite {
         printf '%s\n' compressed-font-profile
       '';
       tools = [
-        d.pkgConfig
+        d.pkg-config
         d.binutils
         d.grep
       ];

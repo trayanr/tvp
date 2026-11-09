@@ -6,7 +6,7 @@ in
 p.testContext.mkSuite {
   inherit package;
   tools = [
-    d.pkgConfig
+    d.pkg-config
     d.binutils
     d.grep
   ];

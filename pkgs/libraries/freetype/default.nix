@@ -80,7 +80,7 @@ let
         diffutils = constructionTool "diffutils";
         findutils = constructionTool "findutils";
         xz = constructionTool "xz";
-        pkgConfig = tvp.packages.pkg-config;
+        pkg-config = tvp.packages.pkg-config;
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
       };

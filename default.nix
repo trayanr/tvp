@@ -671,12 +671,13 @@ let
           compiler = tvp.canonical.zstd_1_5_7.tvp.cc;
         };
         owned-fontconfig = {
-          inherit (tvp.packages) bash coreutils;
-          pkgConfig = tvp.packages.pkg-config;
+          inherit (tvp.canonical.fontconfig_2_18_3.specification) bash coreutils grep;
+          pkgConfig = tvp.canonical.fontconfig_2_18_3.specification.pkg-config;
           fontconfig = tvp.packages.fontconfig_2;
           compatibleExpat = pkgs.expat;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          compiler = tvp.canonical.fontconfig_2_18_3.compiler;
+          binutils = tvp.canonical.fontconfig_2_18_3.compiler.bintools;
+          libc = tvp.canonical.fontconfig_2_18_3.compiler.libc;
         };
         native-meson = {
           fontconfig = tvp.packages.fontconfig_2;

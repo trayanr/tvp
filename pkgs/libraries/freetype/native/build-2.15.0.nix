@@ -18,7 +18,7 @@
   diffutils,
   findutils,
   xz,
-  pkgConfig,
+  pkg-config,
   zlib,
   bzip2,
 }:
@@ -62,7 +62,7 @@ in
     diffutils
     findutils
     xz
-    pkgConfig
+    pkg-config
     zlib
     bzip2
     ;
@@ -80,7 +80,7 @@ in
       final.diffutils
       final.findutils
       final.xz
-      final.pkgConfig
+      final.pkg-config
     ];
     libraries = [
       final.zlib
