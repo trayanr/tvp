@@ -18,7 +18,9 @@ let
       constructor = tvp.builder;
       builder = ./native/build-1.70.0.nix;
       base = candidate.base;
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {

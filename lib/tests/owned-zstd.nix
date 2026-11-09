@@ -175,8 +175,12 @@ let
                 ${zstd.tvp.deps.xz}/bin/xz -dc xz.data > xz-external
                 cmp sample gzip-external
                 cmp sample xz-external
-                grep -F 'calling init: ${lib.getLib (builtins.elemAt zstd.runtime.libraries 0)}/lib/libz.so.1' gzip.loader
-                grep -F 'calling init: ${lib.getLib (builtins.elemAt zstd.runtime.libraries 1)}/lib/liblzma.so.5' xz.loader
+                grep -F 'calling init: ${
+                  lib.getLib (builtins.elemAt zstd.runtime.libraries 0)
+                }/lib/libz.so.1' gzip.loader
+                grep -F 'calling init: ${
+                  lib.getLib (builtins.elemAt zstd.runtime.libraries 1)
+                }/lib/liblzma.so.5' xz.loader
                 ${lib.optionalString (zstd.drvPath != p.drvPath) ''
                   if grep -F 'calling init: ${p.tvp.deps.zlib}/lib/' gzip.loader; then exit 1; fi
                   if grep -F 'calling init: ${p.tvp.deps.xz}/lib/' xz.loader; then exit 1; fi

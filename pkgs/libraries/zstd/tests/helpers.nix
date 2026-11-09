@@ -67,5 +67,7 @@ else
     dontUnpack = true;
     dontFixup = true;
     buildCommand = script;
-    passthru = { inherit package; };
+    passthru = {
+      inherit package;
+    };
   }

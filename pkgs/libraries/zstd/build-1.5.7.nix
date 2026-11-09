@@ -55,10 +55,11 @@ let
     environment
     // {
       inherit name cwd;
-      run = ''
-        export PREFIX="$out"
-      ''
-      + run;
+      run =
+        ''
+          export PREFIX="$out"
+        ''
+        + run;
     };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash HAVE_ZLIB=1 HAVE_LZMA=1 HAVE_LZ4=0'';
 in
