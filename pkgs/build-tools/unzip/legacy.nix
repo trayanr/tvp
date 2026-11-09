@@ -22,26 +22,34 @@ let
       releases."6.0" = "sha256-A22WmRZG0ESe0KqVLk++IbR2zplKvCduSdMOaGcIvTc=";
     }
   ];
+  testDeps.zip = (import ../zip/legacy.nix { inherit pkgs tvp; }).aliases.zip;
   publicArgs = {
     infra = {
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
     extraArgs.mkTests =
-      package:
-      import ./tests/legacy.nix {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
+      pkgs.lib.makeOverridable
+        (
+          { pkgs, zip }:
+          package:
+          import ./tests/legacy.nix {
+            inherit tvpLib package zip;
+            pkgs = tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = package.stdenv;
+            };
+          }
+        )
+        {
           inherit pkgs;
-          base.stdenv = package.stdenv;
+          inherit (testDeps) zip;
         };
-        zip = tvp.packages.zip;
-      };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
   recipes.unzip = publicArgs;
-  inherit publicArgs canonical;
+  inherit publicArgs canonical testDeps;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

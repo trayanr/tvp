@@ -63,10 +63,14 @@ let
     extraArgs.mkTests =
       testLib.makeOverridable
         (
-          { pkgs, zip }:
+          args@{
+            pkgs,
+            zip ? tvp.packages.zip,
+          }:
           package:
           (if package ? testContext then import ./tests else import ./tests/legacy.nix) {
-            inherit tvpLib package zip;
+            inherit tvpLib package;
+            zip = if package ? testContext || args ? zip then zip else previous.testDeps.zip;
             pkgs =
               if package ? testContext then
                 { lib = testLib; }
@@ -79,7 +83,6 @@ let
         )
         {
           inherit pkgs;
-          zip = tvp.packages.zip;
         };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

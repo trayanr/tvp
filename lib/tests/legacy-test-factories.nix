@@ -77,10 +77,41 @@ let
       variantBuilder = variant.tests.version.selectedTestPkgs or false;
       variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
     };
+  archiveProbe =
+    family: counterpart:
+    let
+      retained = import (../../pkgs/build-tools + "/${family}/legacy.nix") { inherit pkgs tvp; };
+      other = import (../../pkgs/build-tools + "/${counterpart}/legacy.nix") { inherit pkgs tvp; };
+      package = retained.aliases.${family};
+      original = retained.publicArgs.extraArgs.mkTests;
+      publicFactory = recipes.${family}.extraArgs.mkTests;
+      fallback = publicFactory package;
+      requested = {
+        ${counterpart} = tvp.packages.${counterpart};
+      };
+      hasCounterpart =
+        test: dependency: builtins.any (input: input.outPath == dependency.outPath) test.nativeBuildInputs;
+    in
+    {
+      legacy = !(package ? testContext);
+      retainedCounterpart = hasCounterpart package.tests.roundtrip other.aliases.${counterpart};
+      fallbackCounterpart = hasCounterpart fallback.roundtrip other.aliases.${counterpart};
+      defaultIdentities = identities fallback == identities (original package);
+      requestedBuilder =
+        ((publicFactory.override { pkgs = selected; }) package).version.selectedTestPkgs or false;
+      retainedControl =
+        ((original.override { pkgs = selected; }) package).version.selectedTestPkgs or false;
+      requestedCounterpart = hasCounterpart ((publicFactory.override requested) package)
+        .roundtrip tvp.packages.${counterpart};
+      retainedRequestedCounterpart = hasCounterpart ((original.override requested) package)
+        .roundtrip tvp.packages.${counterpart};
+    };
   contracts = {
     bison = probe "bison" "3.8.1";
     flex = probe "flex" "2.6.3";
     texinfo = texinfoProbe;
+    zip = archiveProbe "zip" "unzip";
+    unzip = archiveProbe "unzip" "zip";
   };
   failed = builtins.filter (
     family: !(builtins.all (x: x) (builtins.attrValues contracts.${family}))
