@@ -90,9 +90,10 @@ in
     })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      # AM_PATH_PYTHON assigns both directories from these cache variables.
       ./configure --prefix="$out" --libdir="$out/lib" \
-        pythondir="$out"/${lib.escapeShellArg final.pythonLayout} \
-        pyexecdir="$out"/${lib.escapeShellArg final.pythonLayout}
+        am_cv_python_pythondir="$out"/${lib.escapeShellArg final.pythonLayout} \
+        am_cv_python_pyexecdir="$out"/${lib.escapeShellArg final.pythonLayout}
     '')
     (command "build" make)
     ((command "check" "${make} check") // { enabled = final.doCheck; })

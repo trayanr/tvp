@@ -111,9 +111,9 @@ let
         name != "xcb-proto"
         || (
           layoutEdit.drvPath != p.drvPath
-          && has "pythondir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
+          && has "am_cv_python_pythondir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
           .run
-          && has "pyexecdir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
+          && has "am_cv_python_pyexecdir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
           .run
           && layoutEdit.development.pythonModuleDirectory == "${layoutEdit}/lib/tvp-xcbgen-control"
         );
