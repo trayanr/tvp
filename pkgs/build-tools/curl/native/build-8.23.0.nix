@@ -41,7 +41,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'';
+  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   elfPaths = [
     "bin/curl"
     "lib/libcurl.so.4.8.0"
@@ -90,7 +90,8 @@ in
       compression = "gzip";
     })
     (steps.prepareAutotools {
-      inherit python bash;
+      inherit python;
+      bash = final.bash;
       base = final.base;
       name = "curl.prepare";
     })
@@ -105,7 +106,7 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${bash}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (steps.shebangs {
       name = "curl.perl-scripts";
@@ -131,7 +132,7 @@ in
       interpreter = "${python}/bin/python3";
     })
     (command "configure" ''
-      export CONFIG_SHELL=${bash}/bin/bash SHELL=${bash}/bin/bash
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
       export PERL=${perl}/bin/perl PYTHON=${python}/bin/python3
       ./configure --prefix="$out" --enable-shared --disable-static --disable-dependency-tracking \
         --with-openssl=${openssl} --with-zlib=${zlib} --with-zstd=${zstd} --with-nghttp2=${nghttp2} \

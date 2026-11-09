@@ -92,6 +92,7 @@ mkSuite {
         test "$(pkg-config --modversion libcurl)" = ${package.version}
         test "$(curl-config --version)" = 'libcurl ${package.version}'
         test "$(head -n1 ${package}/bin/curl-config)" = '#!${package.specification.bash}/bin/bash'
+        test "$(head -n1 ${package}/bin/wcurl)" = '#!${package.specification.bash}/bin/bash'
         test "$(curl-config --prefix)" = ${package}
         test -s ${package}/include/curl/curl.h
         test -s ${package}/lib/libcurl.la
