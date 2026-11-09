@@ -97,6 +97,33 @@ def words(env, key):
     return [w for w in value.split(' ') if w]
 
 
+def compiler_query(option, operand):
+    # Output-naming switches use the -dump prefix too; they still compile.
+    if operand is not None or option.startswith(('-dumpbase=', '-dumpbase-ext=', '-dumpdir=')):
+        return False
+    return option.startswith(('-print', '-dump', '--print-', '--dump', '--help')) or option in ('--version', '--target-help')
+
+
+def linker_arguments(opts):
+    """Preserve the order of linker words embedded in GCC options."""
+    for option, operand in opts:
+        if option.startswith('-Wl,'):
+            yield from option[4:].split(',')
+        elif option == '-Xlinker':
+            yield operand
+
+
+def static_search(opts):
+    # Library search may return to dynamic mode after a scoped static library.
+    static = False
+    for option, _ in opts:
+        if option in ('-static', '-Bstatic', '--static', '-dn', '-non_shared'):
+            static = True
+        elif option in ('-Bdynamic', '-dy', '-call_shared'):
+            static = False
+    return static
+
+
 def prepare(program, argv, environment, defaults):
     env = environment.copy()
     selected = env.pop('NIX_HARDENING_ENABLE', ' '.join(defaults)).split()
@@ -112,7 +139,8 @@ def prepare(program, argv, environment, defaults):
     if direct:
         args = expand(ld_flags + argv)
         opts = list(options(args, linker=True))
-        query = any(a in ('--version', '-v', '-V', '--help') for a, _ in opts)
+        # GNU ld -v/-V print information AND link when inputs are present.
+        query = any(a in ('--version', '--help') for a, _ in opts) or expand(argv) in (['-v'], ['-V'])
         excluded = any(a in ('-r', '--relocatable', '-static', '-Bstatic', '--static') for a, _ in opts)
         flags = []
         if not query and not excluded:
@@ -125,14 +153,14 @@ def prepare(program, argv, environment, defaults):
     # Effective order is the unchanged driver's compile, link, argv order.
     args = expand(compile_flags + argv)
     opts = list(options(args))
-    query = any(a.startswith(('-print', '-dump', '--print-', '--dump', '--help')) or a in ('--version', '--target-help') for a, _ in opts)
+    query = any(compiler_query(a, operand) for a, operand in opts)
     query = query or expand(argv) == ['-v']
     if query:
         return argv, env
     compile_only = program == 'cpp' or any(a in ('-c', '--compile', '-S', '--assemble', '-E', '--preprocess', '-M', '-MM', '-fsyntax-only') for a, _ in opts)
     if not compile_only:
         link_opts = list(options(expand(link_flags)))
-        if any(a in ('-c', '--compile', '-S', '--assemble', '-E', '--preprocess', '-M', '-MM', '-fsyntax-only') or a.startswith(('-print', '-dump', '--print-', '--dump')) for a, _ in link_opts):
+        if any(a in ('-c', '--compile', '-S', '--assemble', '-E', '--preprocess', '-M', '-MM', '-fsyntax-only') or compiler_query(a, operand) for a, operand in link_opts):
             fail('mode-changing NIX_CFLAGS_LINK words are unsupported')
         args = expand(compile_flags + link_flags + argv)
         opts = list(options(args))
@@ -147,23 +175,28 @@ def prepare(program, argv, environment, defaults):
     explicit_fortify = False
     language = None
     assembler = False
+    inputs = False
     for a, operand in opts:
         if a == '-x':
             language = operand
+        elif a.startswith('-x'):
+            language = a[2:]
         if a.startswith('-O'):
             optimization = a[2:] or '1'
         macro = operand if a in ('-D', '-U') else a[2:] if a.startswith(('-D', '-U')) else ''
         if macro.split('=', 1)[0] == '_FORTIFY_SOURCE':
             explicit_fortify = True
-        if operand is None and not a.startswith('-') and (language or '').startswith('assembler'):
-            assembler = True
-        if operand is None and a.endswith(('.s', '.S')):
-            assembler = True
+        if operand is None and (not a.startswith('-') or a == '-'):
+            inputs = True
+            if language in (None, 'none'):
+                assembler = assembler or a.endswith(('.s', '.S'))
+            else:
+                assembler = assembler or language.startswith('assembler')
     # Unknown optimization modes must not be guessed for fortification.
     if optimization not in ('0', '1', '2', '3', 'g', 's', 'z', 'fast'):
         fail('unsupported optimization mode for policy analysis')
     flags = []
-    if not assembler and not (language or '').startswith('assembler'):
+    if not assembler and (inputs or not (language or '').startswith('assembler')):
         if 'pic' in selected:
             flags += ['-fPIC']
         if 'stackprotector' in selected:
@@ -174,8 +207,9 @@ def prepare(program, argv, environment, defaults):
             flags += ['-Wformat', '-Wformat-security', '-Werror=format-security']
         if 'fortify' in selected and optimization != '0' and not explicit_fortify:
             flags += ['-D_FORTIFY_SOURCE=2']
-    raw_link_options = [w for a, _ in opts if a.startswith('-Wl,') for w in a[4:].split(',')] + ld_flags + [b for a, b in opts if a == '-Xlinker']
-    excluded = any(a in ('-static', '-r', '--relocatable') for a, _ in opts) or any(a in ('-static', '-Bstatic', '--static', '-r', '--relocatable') for a in raw_link_options)
+    link_opts = list(options(list(linker_arguments(opts)) + ld_flags, linker=True))
+    excluded = any(a in ('-static', '-r', '--relocatable') for a, _ in opts)
+    excluded = excluded or any(a in ('-r', '--relocatable') for a, _ in link_opts) or static_search(link_opts)
     if not compile_only and not excluded:
         if 'relro' in selected:
             flags += ['-Wl,-z,relro']

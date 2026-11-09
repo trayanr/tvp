@@ -80,9 +80,16 @@ macro. Later caller options can override the other defaults as well.
 Queries (including effective specs) retain old output and receive no protections;
 `-###` remains a dry-run compilation, showing the actual flags. Compile,
 preprocess, syntax-only and assembler-output modes receive no linker flags.
-Assembler inputs/language modes receive no compile protections. Shared/PIC
+Output-naming options (`-dumpbase`, `-dumpdir`, `-dumpbase-ext`) still compile and
+retain the flag protocol. Direct `ld -v` and `ld -V` retain link defaults and
+environment flags when linking inputs; version-only invocations remain queries.
+Assembler inputs receive no compile protections. Input language follows `-x`
+(separate or joined, with `none` resetting suffix inference); option values such
+as include directories are not source inputs. Shared/PIC
 consumers are supported. Static and relocatable links receive no dynamic linker
 protections, including recognized raw `-Wl`/`-Xlinker`/environment spellings.
+Compiler-driven library search respects argument order: temporary `-Bstatic`
+followed by `-Bdynamic` retains dynamic-link defaults.
 No dynamic-property claim applies to those artifacts. Existing ABI and static
 PIE rejection remains. Direct ld's static/relocatable handling is conservative:
 any explicit static selection suppresses these defaults even if followed by a

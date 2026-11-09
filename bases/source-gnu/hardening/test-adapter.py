@@ -59,6 +59,57 @@ with tempfile.TemporaryDirectory() as work:
     for opaque in [['-Wp,-D_FORTIFY_SOURCE=0'], ['-Xpreprocessor', '-U_FORTIFY_SOURCE'], ['-specs=hidden']]:
         reject(lambda: prep(opaque + ['a.c']))
     assert '-Wl,-z,now' not in prep(['-Wl,-r', 'a.o'])[0]
+    # R1: output names are compiler options, in argv, responses and both flag lists.
+    for option in ['-dumpbase', '-dumpdir', '-dumpbase-ext']:
+        for source in ['argv', 'response', 'compile-env', 'link-env']:
+            invocation = ['-O2', 'a.c']
+            environment = {'NIX_CFLAGS_COMPILE': '-DREVIEW_ENV=1', 'NIX_LDFLAGS': '-z now'}
+            if source == 'argv':
+                invocation = [option, 'named'] + invocation
+            elif source == 'response':
+                Path('naming').write_text(option + ' named -O2 a.c')
+                invocation = ['@naming']
+            else:
+                key = 'NIX_CFLAGS_COMPILE' if source == 'compile-env' else 'NIX_CFLAGS_LINK'
+                environment[key] = environment.get(key, '') + ' ' + option + ' named'
+            actual, remaining = prep(invocation, environment)
+            assert '-fPIC' in actual and '-D_FORTIFY_SOURCE=2' in actual
+            assert '-DREVIEW_ENV=1' in actual and actual.count(option) == 1
+            assert actual[-4:] == ['-Xlinker', '-z', '-Xlinker', 'now']
+            assert not any(key.startswith('NIX_') for key in remaining)
+    # R2: ld version information may accompany a real link.
+    for version in ['-v', '-V']:
+        assert prep([version], {'NIX_LDFLAGS': '-z now'}, program='ld')[0] == [version]
+        assert prep([version, '-shared', 'a.o'], {'NIX_LDFLAGS': '-soname review'}, program='ld')[0] == [
+            '-z', 'relro', '-z', 'now', '-soname', 'review', version, '-shared', 'a.o']
+    # R3: linker-word ordering survives mixed Wl/Xlinker/environment contributions.
+    for invocation, environment in [
+        (['-Wl,-Bstatic,-Bdynamic', 'a.o'], {}),
+        (['-Xlinker', '-Bstatic', '-Xlinker', '-Bdynamic', 'a.o'], {}),
+        (['-Wl,-Bstatic', '-Xlinker', '-Bdynamic', 'a.o'], {}),
+        (['-Xlinker', '-Bstatic', '-Wl,-Bdynamic', 'a.o'], {}),
+        (['a.o'], {'NIX_LDFLAGS': '-Bstatic -Bdynamic'}),
+        (['-Wl,-Bstatic', 'a.o'], {'NIX_LDFLAGS': '-Bdynamic'}),
+    ]:
+        assert '-Wl,-z,now' in prep(invocation, environment)[0]
+    assert '-Wl,-z,now' not in prep(['-Wl,-Bdynamic,-Bstatic', 'a.o'])[0]
+    assert '-Wl,-z,now' not in prep(['-static', '-Wl,-Bdynamic', 'a.o'])[0]
+    assert '-Wl,-z,now' in prep(['-Wl,-o,-r', 'a.o'])[0]
+    # R4: only real inputs, under their effective -x language, identify assembly.
+    for invocation in [
+        ['-Iheaders.S', 'a.c'], ['-I', 'headers.S', 'a.c'],
+        ['-include', 'header.S', 'a.c'], ['-o', 'output.S', 'a.c'],
+        ['-x', 'c', 'a.S'], ['-xc', 'a.S'],
+        ['-xassembler', '-xnone', 'a.c'],
+        ['-x', 'c', 'a.S', '-x', 'assembler'],
+    ]:
+        assert '-fPIC' in prep(['-O2', '-c'] + invocation)[0]
+    for invocation in [
+        ['a.S'], ['-x', 'assembler', 'a'], ['-xassembler', 'a'],
+        ['-xassembler-with-cpp', 'a'], ['-x', 'assembler-with-cpp', 'a'],
+        ['-xassembler', 'a', '-xc', 'b.c'],
+    ]:
+        assert '-fPIC' not in prep(['-O2', '-c'] + invocation)[0]
     reject(lambda: prep(['@missing']))
     reject(lambda: prep(['a.c'], {'NIX_HARDENING_ENABLE': 'pie'}))
     reject(lambda: prep(['a.c'], {'NIX_CFLAGS_LINK': '-c'}))
@@ -92,8 +143,8 @@ with tempfile.TemporaryDirectory() as work:
     evidence = Path(sys.argv[5]) if len(sys.argv) > 5 else None
     if evidence:
         evidence.mkdir(parents=True, exist_ok=True)
-    def run(args, **kwargs):
-        result = subprocess.check_output(args, env=clean, stderr=subprocess.STDOUT, text=True, **kwargs)
+    def run(args, env=None, **kwargs):
+        result = subprocess.check_output(args, env={**clean, **(env or {})}, stderr=subprocess.STDOUT, text=True, **kwargs)
         if evidence:
             with (evidence / 'invocations.jsonl').open('a') as f:
                 f.write(json.dumps({'argv': args, 'stdout': result}) + '\n')
@@ -134,6 +185,13 @@ with tempfile.TemporaryDirectory() as work:
     Path('macro.c').write_text('int pic = __PIC__;\n')
     macros = run([hardened + '/bin/cc', '-O2', '-dM', '-E', 'macro.c'])
     assert '#define __PIC__ 2' in macros and '#define _FORTIFY_SOURCE 2' in macros
+    for naming in [[], ['-dumpbase', 'review'], ['-dumpdir', 'review-'], ['-dumpbase-ext', '.c'], ['-Iheaders.S']]:
+        macros = run([hardened + '/bin/cc', '-O2', '-dM', '-E'] + naming + ['macro.c'], env={'NIX_CFLAGS_COMPILE': '-DREVIEW_ENV=1'})
+        for macro in ['REVIEW_ENV 1', '__PIC__ 2', '__SSP_STRONG__ 3', '_FORTIFY_SOURCE 2']:
+            assert '#define ' + macro in macros
+    Path('forced.S').write_text('int value;\n')
+    macros = run([hardened + '/bin/cc', '-O2', '-dM', '-E', '-xc', 'forced.S'])
+    assert '#define __PIC__ 2' in macros and '#define _FORTIFY_SOURCE 2' in macros
     Path('format.c').write_text('#include <stdio.h>\nvoid f(char *p) { printf(p); }\n')
     bad = subprocess.run([hardened + '/bin/cc', '-c', 'format.c'], env=clean, capture_output=True, text=True)
     assert bad.returncode != 0 and 'format-security' in bad.stderr
@@ -147,6 +205,19 @@ with tempfile.TemporaryDirectory() as work:
     build(hardened + '/bin/cc', ['-O2', '-c', 'tiny.c'], 'tiny.o')
     run([linker + '/bin/ld', '-shared', 'tiny.o', '-o', 'direct.so'])
     assert 'BIND_NOW' in elf('direct.so', '-dW') and 'GNU_RELRO' in elf('direct.so', '-lW')
+    for version in ['-v', '-V']:
+        out = 'direct' + version + '.so'
+        run([linker + '/bin/ld', version, '-shared', 'tiny.o', '-o', out], env={'NIX_LDFLAGS': '-soname review.so'})
+        assert 'BIND_NOW' in elf(out, '-dW') and 'review.so' in elf(out, '-dW')
+    for label, switches, environment in [
+        ('wl', ['-Wl,-Bstatic,-Bdynamic'], {}),
+        ('xlinker', ['-Xlinker', '-Bstatic', '-Xlinker', '-Bdynamic'], {}),
+        ('mixed', ['-Wl,-Bstatic', '-Xlinker', '-Bdynamic'], {}),
+        ('environment', ['-Wl,-Bstatic'], {'NIX_LDFLAGS': '-Bdynamic'}),
+    ]:
+        out = 'scoped-' + label + '.so'
+        run([hardened + '/bin/cc', '-shared', 'tiny.o'] + switches + ['-o', out], env=environment)
+        assert 'BIND_NOW' in elf(out, '-dW') and 'GNU_RELRO' in elf(out, '-lW')
     run([linker + '/bin/ld', '-r', 'tiny.o', '-o', 'reloc.o'])
     assert 'REL ' in elf('reloc.o', '-hW') and 'BIND_NOW' not in elf('reloc.o', '-dW')
     # GCC static linking is exercised and kept explicitly outside dynamic checks.
