@@ -13,13 +13,27 @@ let
   deps = libxml2.passthru.tvp.deps or { };
   features = libxml2.passthru.tvp.features or { };
 
+  mkSuite =
+    if libxml2 ? testContext then
+      args:
+      libxml2.testContext.mkSuite {
+        package = libxml2;
+        libraries = [ libxml2 ];
+        tests = builtins.mapAttrs (_: spec: {
+          inherit (spec) script expected;
+          tools = (spec.extraInputs or [ ]) ++ [ libxml2.tvp.deps.gnugrep ];
+        }) args.tests;
+      }
+    else
+      tvpLib.tests.mkSuite;
+
   doc = ''
     cp ${./fixtures/doc.xml} doc.xml
     cp ${./fixtures/doc.dtd} doc.dtd
     chmod +w doc.xml doc.dtd
   '';
 in
-tvpLib.tests.mkSuite {
+mkSuite {
   inherit pkgs;
   package = libxml2;
 
@@ -92,7 +106,7 @@ tvpLib.tests.mkSuite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (deps ? xz) {
+    // pkgs.lib.optionalAttrs (features.lzma or (deps ? xz)) {
       # libxml2 reads xz-compressed XML only when it was built --with-lzma.
       # 2.15 removed that support, so the guard drops the test with the
       # dependency rather than needing a version comparison.
