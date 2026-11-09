@@ -221,7 +221,26 @@ let
         ];
     };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
+  sourceEditFollows =
+    package:
+    let
+      alternate = "/tvp-source-edit-contract.tar";
+      edited = package.edit (s: s // { src = alternate; });
+      overridden = package.override { src = alternate; };
+      unpack = lib.findFirst (s: s.name == "source.unpack") null edited.buildSteps;
+    in
+    edited.src == alternate
+    && lib.hasInfix alternate unpack.run
+    && edited.artifact.drvPath != package.artifact.drvPath
+    && edited.artifact.drvPath == overridden.artifact.drvPath
+    && edited.drvPath != package.drvPath
+    && edited.drvPath == overridden.drvPath;
   contracts = {
+    packageSourceEdits = builtins.all sourceEditFollows [
+      p
+      tvp.canonical.json-c_0_19
+      tvp.canonical.nghttp2_1_70_0
+    ];
     gzipRequiresTool = rejects (
       helpers.unpack {
         src = "archive.gz";
