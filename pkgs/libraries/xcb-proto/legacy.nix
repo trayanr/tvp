@@ -1,0 +1,43 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+  defs = tvpLib.packages.mkDefs {
+    "1.17.0" = {
+      builder = ./build-1.17.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        pkg-config = tvp.packages.pkg-config;
+        python = tvp.packages.python-build_3;
+      };
+    };
+  };
+  pname = "xcb-proto";
+  versionTable = tvpLib.packages.mkTable [
+    {
+      def = defs."1.17.0";
+      releases."1.17.0" = "sha256-LBus0hEPR5n3TebrtxS5TPb4D7ESMWsSGUgP0iViFIw=";
+    }
+  ];
+  packageArgs = {
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
+    inherit pname versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
+    ) { inherit pkgs; };
+  };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+in
+{
+  inherit canonical packageArgs;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+}
