@@ -179,6 +179,9 @@ let
           map toString overridden.tests.api.buildStepRunner.inputs
         );
         checksRetained = p.specification.doCheck && (step p "check").enabled;
+        archiveGrepDeclared = builtins.elem p.specification.grep.outPath (
+          map toString p.tests.archive.buildStepRunner.inputs
+        );
       };
       installed = overridden.testContext.mkTest {
         package = overridden;
@@ -229,7 +232,51 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
 (first.testContext.mkTest {
   package = first;
   name = "extension-contracts";
-  script = "printf '%s' '${builtins.toJSON contracts}'";
+  tools = [
+    spec.bash
+    spec.grep
+  ];
+  script = ''
+    cat > reader <<'EOF'
+    #!${spec.bash}/bin/bash
+    case $READER_MODE in
+      absent) printf '%s\n' 'Shared library: [libOther.so.1]';;
+      present) printf '%s\n' 'Shared library: [libXext.so.6]';;
+      error) printf '%s\n' 'controlled readelf error' >&2; exit 2;;
+    esac
+    EOF
+    cat > matcher-error <<'EOF'
+    #!${spec.bash}/bin/bash
+    printf '%s\n' 'controlled Grep error' >&2
+    exit "$MATCHER_STATUS"
+    EOF
+    chmod +x reader matcher-error
+    expect_guard() {
+      expected=$1
+      export READER_MODE=$2
+      matcher=$3
+      if ${spec.bash}/bin/bash ${../check-archive-dependency.sh} \
+        ./reader "$matcher" consumer libXext.so > guard.log 2>&1; then
+        actual=0
+      else
+        actual=$?
+      fi
+      if [[ $actual != "$expected" ]]; then
+        cat guard.log >&2
+        printf 'Archive guard: expected %s, got %s\n' "$expected" "$actual" >&2
+        exit 1
+      fi
+    }
+    expect_guard 0 absent ${spec.grep}/bin/grep
+    expect_guard 1 present ${spec.grep}/bin/grep
+    expect_guard 2 error ${spec.grep}/bin/grep
+    export MATCHER_STATUS=2
+    expect_guard 2 absent ./matcher-error
+    export MATCHER_STATUS=127
+    expect_guard 127 absent ./matcher-error
+    expect_guard 127 absent ./missing-matcher
+    printf '%s' '${builtins.toJSON contracts}'
+  '';
   expected = builtins.toJSON contracts;
 })
 // {

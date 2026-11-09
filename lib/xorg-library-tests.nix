@@ -20,7 +20,6 @@ package.testContext.mkSuite {
     spec.binutils
     spec.patchelf
   ];
-  environment.DISPLAY = "";
   tests = {
     api = {
       script = ''
@@ -37,6 +36,7 @@ package.testContext.mkSuite {
       expected = "api-ok";
     };
     archive = {
+      tools = [ spec.grep ];
       script = ''
         read -r -a discovered <<< "$(pkg-config --static --libs ${apiPc})"
         dependencies=()
@@ -45,7 +45,8 @@ package.testContext.mkSuite {
         done
         "$CC" $(pkg-config --cflags ${apiPc}) ${api} ${directory}/${archive}.a "''${dependencies[@]}" -o consumer
         # Reject an accidentally shared selection of the target library.
-        if readelf -d consumer | ${spec.grep}/bin/grep -F 'Shared library: [${archive}.so'; then exit 1; fi
+        ${spec.bash}/bin/bash ${./check-archive-dependency.sh} \
+          ${spec.binutils}/bin/readelf ${spec.grep}/bin/grep consumer ${archive}.so
         timeout 15 ./consumer
       '';
       expected = "api-ok";
