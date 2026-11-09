@@ -1,0 +1,44 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+  defs = tvpLib.packages.mkDefs {
+    "1.0.12" = {
+      builder = ./build-1.0.12.nix;
+      base = tvp.bases.default;
+      deps = {
+        pkg-config = tvp.packages.pkg-config;
+        patchelf = tvp.packages.patchelf;
+        xorgproto = tvp.packages.xorgproto;
+      };
+    };
+  };
+  pname = "libxau";
+  versionTable = tvpLib.packages.mkTable [
+    {
+      def = defs."1.0.12";
+      releases."1.0.12" = "sha256-dNDk36PTmtiTnpm9o39ZZ6ulKCEQdoKEZNJ3fUd/wPs=";
+    }
+  ];
+  packageArgs = {
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
+    inherit pname versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      }
+    ) { inherit pkgs; };
+  };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+in
+{
+  inherit canonical packageArgs;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+}
