@@ -11,15 +11,16 @@
 let
   spec = package.specification;
   directory = "${package}/${spec.libraryDirectory}";
-in
-package.testContext.mkSuite {
-  inherit package;
-  libraries = [ package ];
   tools = [
     spec.pkgConfig
     spec.binutils
     spec.patchelf
   ];
+in
+package.testContext.mkSuite {
+  inherit package;
+  libraries = [ package ];
+  inherit tools;
   tests = {
     api = {
       script = ''
@@ -36,7 +37,7 @@ package.testContext.mkSuite {
       expected = "api-ok";
     };
     archive = {
-      tools = [ spec.grep ];
+      tools = tools ++ [ spec.grep ];
       script = ''
         read -r -a discovered <<< "$(pkg-config --static --libs ${apiPc})"
         dependencies=()

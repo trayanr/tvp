@@ -182,6 +182,14 @@ let
         archiveGrepDeclared = builtins.elem p.specification.grep.outPath (
           map toString p.tests.archive.buildStepRunner.inputs
         );
+        archiveToolsRetained =
+          builtins.all
+            (tool: builtins.elem tool.outPath (map toString p.tests.archive.buildStepRunner.inputs))
+            [
+              p.specification.pkgConfig
+              p.specification.binutils
+              p.specification.patchelf
+            ];
       };
       installed = overridden.testContext.mkTest {
         package = overridden;
