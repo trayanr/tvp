@@ -159,6 +159,7 @@ let
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
       owned-fontconfig = import ./lib/tests/owned-fontconfig.nix { inherit pkgs tvp; };
       owned-x11 = import ./lib/tests/owned-x11.nix { inherit pkgs tvp; };
+      owned-x11-extensions = import ./lib/tests/owned-x11-extensions.nix { inherit pkgs tvp; };
       owned-catalogue = import ./lib/tests/owned-catalogue.nix { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
       native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
@@ -582,6 +583,11 @@ let
         ;
       compositions = tvp.android.profiles;
       buildTestSupport = {
+        owned-x11-extensions = tvp.checks.owned-x11-extensions.support // {
+          package = tvp.packages.libxext;
+          bash = tvp.packages.libxext.specification.bash;
+          coreutils = tvp.packages.libxext.specification.coreutils;
+        };
         owned-x11 = {
           package = tvp.packages.xorgproto;
           bash = tvp.packages.xorgproto.specification.bash;

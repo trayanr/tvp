@@ -1,13 +1,52 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  defs = tvpLib.packages.mkDefs {
+  retained = import ./legacy.nix { inherit pkgs tvp; };
+  constructionRecipe = retained.packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} host tool is independent of the ordinary X11 extension target.";
+    } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
     "1.2.6" = {
-      builder = ./build-1.2.6.nix;
-      base = tvp.bases.default;
+      constructor = tvp.builder;
+      builder = ./native/build-1.2.6.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.x.org/releases/individual/lib/libXtst-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
-        pkg-config = tvp.packages.pkg-config;
-        patchelf = tvp.packages.patchelf;
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        findutils = constructionTool "findutils";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        pkgConfig = tvp.packages.pkg-config;
         libx11 = tvp.packages.libx11_1;
         libxext = tvp.packages.libxext_1;
         libxi = tvp.packages.libxi_1;
@@ -20,30 +59,31 @@ let
       };
     };
   };
-  pname = "libxtst";
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."1.2.6";
-      releases."1.2.6" = "sha256-+U8LN8B9gNh38+2iwkBcx+YqqYQvYxA1SqNJ49ZqT+U=";
-    }
-  ];
-  canonical = tvpLib.packages.mkVersions {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
+  publicArgs = constructionRecipe // {
+    versionTable = constructionRecipe.versionTable // {
+      "1.2.6" = constructionRecipe.versionTable."1.2.6" // {
+        def = if native then ownedDefs."1.2.6" else constructionRecipe.versionTable."1.2.6".def;
       };
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+      else
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
+  recipes.libxtst = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  aliases = tvpLib.packages.mkAliases {
+    pname = "libxtst";
+    versionTable = publicArgs.versionTable;
+    inherit canonical;
+  };
 }
