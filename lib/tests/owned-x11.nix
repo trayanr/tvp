@@ -47,6 +47,7 @@ let
       libraryOverride = p.override { xorgproto = tvp.packages.zlib; };
       pythonOverride = p.override { generatorPython = p.specification.python; };
       pythonEdit = p.edit (s: s // { generatorPython = s.python; });
+      layoutEdit = p.edit (s: s // { pythonLayout = "lib/tvp-xcbgen-control"; });
       protocolOverride = p.override {
         xcb-proto = p.specification.xcb-proto // {
           development.pythonModuleDirectory = "/explicit-xcbgen-control";
@@ -106,6 +107,16 @@ let
         );
       selectedGeneratorImportPath =
         name != "libxcb" || (configure protocolOverride).env.PYTHONPATH == "/explicit-xcbgen-control";
+      explicitPythonLayout =
+        name != "xcb-proto"
+        || (
+          layoutEdit.drvPath != p.drvPath
+          && has "pythondir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
+          .run
+          && has "pyexecdir=\"$out\"/${pkgs.lib.escapeShellArg "lib/tvp-xcbgen-control"}" (configure layoutEdit)
+          .run
+          && layoutEdit.development.pythonModuleDirectory == "${layoutEdit}/lib/tvp-xcbgen-control"
+        );
       testShell = builtins.elem bash.outPath (map toString changed.tests.consumer.buildStepRunner.inputs);
       ownedRegularTests = builtins.all (t: (t.tvp.kind or "") == "owned-test") (
         builtins.attrValues p.tests

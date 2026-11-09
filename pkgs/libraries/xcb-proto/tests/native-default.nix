@@ -27,9 +27,10 @@ package.testContext.mkSuite {
       script = ''
         export PYTHONPATH=${package.development.pythonModuleDirectory}
         ${spec.generatorPython}/bin/python3 -B - <<'EOF'
-        import sysconfig, xcbgen
+        import xcbgen
         from pathlib import Path
-        expected = Path(sysconfig.get_path('purelib', vars={'base': '${package}', 'platbase': '${package}'}))
+        expected = Path('${package}') / '${spec.pythonLayout}'
+        assert expected == Path('${package.development.pythonModuleDirectory}')
         assert Path(xcbgen.__file__).parent.parent == expected, (xcbgen.__file__, expected)
         EOF
         test "$(pkg-config --variable=pythondir xcb-proto)" = ${package.development.pythonModuleDirectory}

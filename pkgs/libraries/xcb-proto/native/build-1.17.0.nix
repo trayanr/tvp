@@ -90,7 +90,9 @@ in
     })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --libdir="$out/lib"
+      ./configure --prefix="$out" --libdir="$out/lib" \
+        pythondir="$out"/${lib.escapeShellArg final.pythonLayout} \
+        pyexecdir="$out"/${lib.escapeShellArg final.pythonLayout}
     '')
     (command "build" make)
     ((command "check" "${make} check") // { enabled = final.doCheck; })
