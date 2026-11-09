@@ -154,8 +154,8 @@ package.testContext.mkSuite {
         spec.tools.grep
       ];
       script = ''
-        test -f ${package}/lib/libtextstyle.a || exit 1
-        test -f ${package}/lib/libgettextpo.a || exit 1
+        test ! -e ${package}/lib/libtextstyle.a || exit 1
+        test ! -e ${package}/lib/libgettextpo.a || exit 1
         test -s ${package}/share/aclocal/gettext.m4 || exit 1
         cc ${./style.c} -ltextstyle -o style || exit 1
         ./style ${package.specification.providers.ncurses}/share/terminfo || exit 1

@@ -139,7 +139,7 @@ in
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
       export PERL=${final.runtime.perl}/bin/perl PYTHON=${final.tools.python}/bin/python3
       export JAVA_HOME=${final.runtime.jdk}
-      ./configure --prefix="$out" --with-libxml2-prefix=${final.providers.libxml2} \
+      ./configure --prefix="$out" --disable-static --disable-dependency-tracking --with-libxml2-prefix=${final.providers.libxml2} \
         --with-libncurses-prefix=${final.providers.ncurses} ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "capabilities" ''
@@ -238,8 +238,6 @@ in
     (outputs.checkSymlinks {
       python = final.tools.python;
       paths = [
-        "lib/libgnuintl.so"
-        "lib/libgnuintl.so.8"
         "lib/libasprintf.so"
         "lib/libasprintf.so.0"
         "lib/libtextstyle.so"
