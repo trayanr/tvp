@@ -141,6 +141,21 @@ let
     yjit = false;
     rustc = throw "disabled YJIT forced binary Rust";
   };
+  checkFeature =
+    enabled: q:
+    q.edit (
+      s:
+      s
+      // {
+        tvp = s.tvp // {
+          features = s.tvp.features // {
+            doCheck = enabled;
+          };
+        };
+      }
+    );
+  yamlChecksDisabled = checkFeature false yaml;
+  yamlChecksReenabled = checkFeature true (yaml.override { doCheck = false; });
   runtime = ruby.editRuntime (r: r // { libyaml = p.libyaml_0_2_4; });
   legacyFactory =
     directory: family: attr:
@@ -156,6 +171,18 @@ let
     public.version.selectedPkgs && retained.version.selectedPkgs;
   contracts = {
     libyaml = identities yaml;
+    libyamlBoundary = {
+      defaultCheckEnabled = (step "libyaml.check" yaml).enabled;
+      editedCheckDisabled =
+        !yamlChecksDisabled.specification.tvp.features.doCheck
+        && !(step "libyaml.check" yamlChecksDisabled).enabled;
+      editedCheckReenabled =
+        yamlChecksReenabled.specification.tvp.features.doCheck
+        && (step "libyaml.check" yamlChecksReenabled).enabled;
+      overrideEditEquivalent = yamlChecksDisabled.drvPath == (yaml.override { doCheck = false; }).drvPath;
+      disabledCheckChangesProducer = yamlChecksDisabled.drvPath != yaml.drvPath;
+      reenabledCheckRestoresProducer = yamlChecksReenabled.drvPath == yaml.drvPath;
+    };
     ruby = identities ruby;
     bundler = (identities bundler) // {
       selectedInterpreter = contains "${shim}/bin/ruby" (step "bundler.install" replaced).run;

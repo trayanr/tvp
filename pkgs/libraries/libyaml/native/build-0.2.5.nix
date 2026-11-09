@@ -91,7 +91,7 @@ in
     (
       (command "libyaml.check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
       // {
-        enabled = doCheck;
+        enabled = final.tvp.features.doCheck;
       }
     )
     (command "libyaml.install" ''${final.tools.gnumake}/bin/make install'')
