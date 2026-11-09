@@ -1,44 +1,81 @@
-# GNU config has dated Git snapshots rather than numbered releases.
+# Dated Git snapshot: copy the source tree, run both shipped harnesses, then
+# install the two scripts with the selected runtime Bash. No compiler output.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchgit,
-  bash,
-  revision,
+  base,
+  src,
   version,
-  sha256,
-  mkTests,
+  revision,
+  bash,
+  coreutils,
+  sed,
+  gawk,
+  grep,
 }:
-stdenv.mkDerivation (finalAttrs: {
+final:
+let
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "gnu-config.${name}";
+      inherit run;
+      cwd = "source";
+    };
+in
+{
   pname = "gnu-config";
-  inherit version;
-  src = fetchgit {
-    url = "https://https.git.savannah.gnu.org/git/config.git";
-    rev = revision;
-    inherit sha256;
-    fetchSubmodules = false;
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
+  environment = {
+    tools = [
+      bash
+      coreutils
+      sed
+      gawk
+      grep
+    ];
+    libraries = [ ];
   };
-  dontConfigure = true;
-  dontBuild = true;
-  doCheck = true;
-  checkPhase = ''
-    runHook preCheck
-    ( cd testsuite
-      ${bash}/bin/bash config-sub.sh
-      ${bash}/bin/bash config-guess.sh
-    )
-    runHook postCheck
-  '';
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 config.guess "$out/config.guess"
-    install -Dm755 config.sub "$out/config.sub"
-    substituteInPlace "$out/config.guess" "$out/config.sub" \
-      --replace-fail '#! /bin/sh' '#!${bash}/bin/bash'
-    install -Dm644 ChangeLog-old "$out/share/doc/gnu-config/ChangeLog-old"
-    printf '%s\n' '${revision}' > "$out/share/doc/gnu-config/revision"
-    runHook postInstall
-  '';
+  runtime = {
+    inherit bash;
+  };
+  plan = tvp.builder.steps.sequence [
+    {
+      name = "source.copy";
+      run = ''
+        cp -R ${final.src} source
+        chmod -R u+w source
+      '';
+    }
+    (command "upstream" ''
+      cd testsuite
+      sub=0; guess=0
+      ${final.bash}/bin/bash config-sub.sh > config-sub.log 2>&1 || sub=$?
+      ${final.bash}/bin/bash config-guess.sh > config-guess.log 2>&1 || guess=$?
+      cat config-sub.log config-guess.log
+      printf '%s\n' "$sub" > config-sub.exit
+      printf '%s\n' "$guess" > config-guess.exit
+      printf 'config-sub.sh exit=%s; config-guess.sh exit=%s\n' "$sub" "$guess"
+      if (( sub )); then exit "$sub"; fi
+      if (( guess )); then exit "$guess"; fi
+    '')
+    (command "install" ''
+      install -Dm755 config.guess "$out/config.guess"
+      install -Dm755 config.sub "$out/config.sub"
+      ${sed}/bin/sed -i '1s|^#! /bin/sh$|#!${final.runtime.bash}/bin/bash|' "$out/config.guess" "$out/config.sub"
+      install -Dm644 ChangeLog-old "$out/share/doc/gnu-config/ChangeLog-old"
+      printf '%s\n' '${revision}' > "$out/share/doc/gnu-config/revision"
+      mkdir -p "$out/nix-support/upstream"
+      cp testsuite/config-{sub,guess}.{log,exit} "$out/nix-support/upstream/"
+    '')
+  ];
   meta = {
     description = "GNU system type detection and canonicalisation scripts";
     homepage = "https://savannah.gnu.org/projects/config/";
@@ -50,12 +87,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
     platforms = lib.platforms.unix;
   };
-  passthru = {
-    tvp.deps = {
-      inherit bash;
-    };
-    tvp.cc = stdenv.cc;
-    tvp.revision = revision;
-    tests = mkTests finalAttrs.finalPackage;
+  tvp = {
+    inherit revision;
   };
-})
+}
