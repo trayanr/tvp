@@ -247,8 +247,15 @@ package.testContext.mkSuite {
       expected = "ok";
     };
     helper-boundaries = {
-      tools = [ package.specification.python ];
-      script = ''${package.specification.python}/bin/python3 -B ${./helper-safety.py} ${../native} ${../../../../lib/native-output}'';
+      tools = [
+        package.specification.python
+        package.specification.binutils
+        package.specification.patchelf
+      ];
+      script = ''
+        ${package.specification.python}/bin/python3 -B ${./helper-safety.py} ${../native} ${../../../../lib/native-output} \
+          ${package}/bin/addr2line ${package.specification.binutils}/bin/readelf ${package.specification.patchelf}/bin/patchelf
+      '';
       expected = "boundaries-ok";
     };
     development-consumer = {

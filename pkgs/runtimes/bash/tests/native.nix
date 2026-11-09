@@ -91,8 +91,15 @@ package.testContext.mkSuite {
       expected = "PASS:arith\nPASS:array\nPASS:assoc";
     };
     helper-boundaries = {
-      tools = [ package.specification.python ];
-      script = ''${package.specification.python}/bin/python3 -B ${./helper-safety.py} ${../native} ${../../../../lib/native-output}'';
+      tools = [
+        package.specification.python
+        package.specification.binutils
+        package.specification.patchelf
+      ];
+      script = ''
+        ${package.specification.python}/bin/python3 -B ${./helper-safety.py} ${../native} ${../../../../lib/native-output} \
+          ${package}/bin/bash ${package.specification.binutils}/bin/readelf ${package.specification.patchelf}/bin/patchelf
+      '';
       expected = "boundaries-ok";
     };
   };
