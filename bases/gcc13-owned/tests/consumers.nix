@@ -11,7 +11,7 @@ let
   historical = import ./construction-tools.nix { inherit pkgs tvp; };
   p = tvp.packages // {
     php_8_5_12 =
-      (import ../../../pkgs/runtimes/php {
+      (import ../../../pkgs/runtimes/php/legacy.nix {
         inherit pkgs;
         tvp = tvp // {
           packages = tvp.packages // {
