@@ -1,0 +1,10 @@
+--- a/src/java.base/unix/native/libjava/childproc.c
++++ b/src/java.base/unix/native/libjava/childproc.c
+@@ -1 +1 @@
+-shell=original
++shell=@TVP_SHELL@
+--- a/src/java.desktop/unix/native/common/awt/fontpath.c
++++ b/src/java.desktop/unix/native/common/awt/fontpath.c
+@@ -1 +1 @@
+-font=original
++font=@TVP_FONTCONFIG@
