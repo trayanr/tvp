@@ -23,6 +23,19 @@ let
   };
 in
 {
+  withHardening =
+    policy:
+    import ./hardening {
+      candidate = {
+        inherit
+          base
+          builder
+          tools
+          lib
+          ;
+      };
+      inherit policy;
+    };
   inherit
     lib
     builder

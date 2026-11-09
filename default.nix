@@ -150,6 +150,7 @@ let
           }
         )
       );
+      source-gnu-hardening = import ./bases/source-gnu/hardening/check.nix { inherit tvp; };
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       owned-tests = (import ./lib/tests/owned-tests-native.nix { }).check;
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
