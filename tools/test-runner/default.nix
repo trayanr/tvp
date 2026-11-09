@@ -15,6 +15,7 @@ ownedCLI.python {
     "attempts.py" = ./attempts.py;
     "verifier.py" = ./verifier.py;
     "representative.py" = ./representative.py;
+    "batch_report.py" = ./batch_report.py;
     "graph_compare.py" = ../graph/compare.py;
   };
   entrypoint = "runner.py";

@@ -18,6 +18,7 @@ import progress
 import attempts
 import verifier
 import representative
+import batch_report
 import graph_compare
 
 
@@ -95,6 +96,7 @@ class RunnerTests(unittest.TestCase):
         shutil.copy(attempts.__file__, self.script.with_name('attempts.py'))
         shutil.copy(verifier.__file__, self.script.with_name('verifier.py'))
         shutil.copy(representative.__file__, self.script.with_name('representative.py'))
+        shutil.copy(batch_report.__file__, self.script.with_name('batch_report.py'))
         shutil.copy(graph_compare.__file__, self.script.with_name('graph_compare.py'))
         binaries=self.root/'bin'
         binaries.mkdir()

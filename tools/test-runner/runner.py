@@ -435,8 +435,12 @@ def main():
     add_parser(commands)
     from representative import add_parser as add_representative, dispatch as dispatch_representative
     add_representative(commands)
+    from batch_report import add_parser as add_report, dispatch as dispatch_report
+    add_report(commands)
     args = parser.parse_args()
     try:
+        if args.command == "report":
+            return dispatch_report(args)
         if args.command == "verify":
             return dispatch(args)
         if args.command == "verify-representative":
