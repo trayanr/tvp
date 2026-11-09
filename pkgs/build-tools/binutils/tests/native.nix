@@ -235,10 +235,10 @@ package.testContext.mkSuite {
     };
     development-interfaces = {
       script = ''
-        for archive in bfd opcodes ctf ctf-nobfd sframe gprofng; do
+        for archive in bfd opcodes ctf ctf-nobfd sframe gprofng iberty; do
           test -s ${package}/lib/lib$archive.a
         done
-        for header in bfd.h bfdlink.h ctf-api.h sframe-api.h; do
+        for header in bfd.h bfdlink.h ctf-api.h sframe-api.h libiberty/libiberty.h; do
           test -s ${package}/include/$header
         done
         test -d ${package}/lib/bfd-plugins
@@ -269,7 +269,7 @@ package.testContext.mkSuite {
           puts("interfaces-ok"); return 0;
         }
         EOF
-        "$CC" interfaces.c -lctf -lbfd -lsframe -lz -lzstd -o interfaces
+        "$CC" interfaces.c -lctf -lbfd -lsframe ${package}/lib/libiberty.a -lz -lzstd -o interfaces
         ./interfaces
       '';
       expected = "interfaces-ok";

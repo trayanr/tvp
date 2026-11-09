@@ -141,6 +141,7 @@ in
       cd ../build
       ${final.bash}/bin/bash ../source/configure --prefix="$out" --with-system-zlib --with-zstd \
         --enable-plugins --enable-deterministic-archives --with-lib-path=: \
+        --enable-install-libiberty \
         ${
           lib.optionalString (!final.gprofng) "--disable-gprofng"
         } ${lib.escapeShellArgs final.configureFlags}
@@ -216,6 +217,7 @@ in
     gprofng = final.gprofng;
     plugins = true;
     deterministicArchives = true;
+    libiberty = true;
   };
   meta = {
     description = "GNU assembler, linker and binary inspection tools (unwrapped)";
