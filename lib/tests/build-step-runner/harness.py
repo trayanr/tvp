@@ -1,5 +1,8 @@
 """Test harness only. Runner runtime is owned Bash/base/tools."""
 import base64
+import errno
+import pty
+import select
 import json
 import os
 import re
@@ -190,6 +193,53 @@ def broken_logging():
             print(json.dumps(dict(case="terminal-log-write-failure", returnCode=7)), flush=True)
 
 
+def materializer_log_lifetime():
+    command = json.loads(Path(runtime, "materializer.json").read_text())
+    for expected in [0, 23]:
+        with tempfile.TemporaryDirectory(prefix="materializer ") as directory:
+            source = Path(directory, "input")
+            output = Path(directory, "output")
+            source.write_bytes(b"exact text bytes\n" * 100)
+            master, slave = pty.openpty()
+            child = subprocess.Popen([command["builder"], *command["args"]],
+                                     env=dict(os.environ, textPath=str(source), out=str(output),
+                                              TVP_COPY_STATUS=str(expected)),
+                                     stdin=subprocess.DEVNULL, stdout=slave, stderr=slave,
+                                     start_new_session=True)
+            os.close(slave)
+            try:
+                deadline = time.monotonic() + 10
+                while True:
+                    remaining = deadline - time.monotonic()
+                    assert remaining > 0 and select.select([master], [], [], remaining)[0], \
+                        "materializer did not close its log"
+                    try:
+                        data = os.read(master, 4096)
+                    except OSError as error:
+                        if error.errno == errno.EIO:
+                            break
+                        raise
+                    if not data:
+                        break
+                # Match Nix's EOF-then-kill/wait completion protocol. A copy
+                # process that still owns the builder PID is killed too early.
+                try:
+                    child.kill()
+                except ProcessLookupError:
+                    pass
+                code = child.wait(timeout=5)
+                assert code == expected, (expected, code)
+                assert output.read_bytes() == source.read_bytes()
+                print(json.dumps(dict(case="materializer-log-lifetime", expected=expected,
+                                      returnCode=code, exactBytes=True)), flush=True)
+            finally:
+                os.close(master)
+                if child.poll() is None:
+                    child.kill()
+                child.wait(timeout=5)
+
+
+materializer_log_lifetime()
 run("success")
 for fd in ["absent", "valid", "999999", "invalid"]:
     run("streams", fd=fd)

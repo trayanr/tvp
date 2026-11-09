@@ -42,3 +42,9 @@ No supervisor or Python is part of runner runtime. Python is the test harness.
 Fixtures compile a small C consumer through the selected existing owned wrapper.
 They do not reimplement or freshly validate every response-file, hardening,
 RPATH or fixup contract, and do not rebuild GCC.
+
+The text materializer keeps Bash alive while its copy command finishes. Coreutils
+can close stdout/stderr before exiting, while Nix uses log EOF as a completion
+signal. A terminal-based fixture closes those streams deliberately, then applies
+Nix's EOF/kill/wait sequence. It checks exact copied bytes and both successful and
+nonzero copy status; the final Bash builtin prevents a premature tail-exec.

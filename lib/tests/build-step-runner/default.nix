@@ -30,6 +30,33 @@ let
       preferLocalBuild = false;
       allowSubstitutes = true;
     };
+  # Deterministic lifetime fixture: close the builder's log streams before the
+  # copy process exits, as coreutils does. Bash must retain its own descriptors.
+  closingCopy = base.stdenv.mkDerivation {
+    name = "step-copy-closing-logs";
+    dontUnpack = true;
+    installPhase = ''
+      mkdir -p "$out/bin"
+      cat > "$out/bin/cp" <<'BASH'
+      #!${bash}/bin/bash
+      set -eu
+      ${coreutils}/bin/cp "$@"
+      exec 1>&- 2>&-
+      for ((i=0; i<100000; i++)); do :; done
+      exit "''${TVP_COPY_STATUS:-0}"
+      BASH
+      chmod +x "$out/bin/cp"
+    '';
+  };
+  materializerProbe =
+    (import ../../build-step-runner.nix {
+      inherit lib base bash;
+      coreutils = closingCopy;
+    })
+      { plan = [ ]; };
+  materializerCommand = {
+    inherit (materializerProbe.script) builder args;
+  };
   first = fixtureTool "first";
   second = fixtureTool "second";
   disabled = builtins.derivation {
@@ -333,6 +360,9 @@ let
       "-euc"
       ''
         ${coreutils}/bin/mkdir -p "$out"
+        ${coreutils}/bin/cat > "$out/materializer.json" <<'JSON'
+        ${builtins.toJSON materializerCommand}
+        JSON
         ${lib.concatStringsSep "\n" (
           lib.mapAttrsToList (name: value: "${coreutils}/bin/cp ${value.script} \"$out/${name}\"") plans
         )}

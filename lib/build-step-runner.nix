@@ -55,7 +55,13 @@ let
       builder = "${bash}/bin/bash";
       args = [
         "-euc"
-        ''${coreutils}/bin/cp "$textPath" "$out"''
+        # Keep Bash holding the log descriptors until cp has terminated. GNU
+        # coreutils closes them before exiting; a tail-exec races Nix's EOF kill.
+        # -e retains copy failures, while the builtin prevents that tail-exec.
+        ''
+          ${coreutils}/bin/cp "$textPath" "$out"
+          exit 0
+        ''
       ];
       passAsFile = [ "text" ];
       preferLocalBuild = false;
