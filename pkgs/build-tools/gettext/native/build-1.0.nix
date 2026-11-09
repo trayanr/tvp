@@ -27,6 +27,7 @@
   curl,
   ncurses,
   libxml2,
+  zlib,
   acl,
   attr,
   configureFlags ? [ ],
@@ -87,6 +88,7 @@ in
       curl
       ncurses
       libxml2
+      zlib
       acl
       attr
       ;

@@ -39,6 +39,8 @@ let
         curl = tvp.packages.curl;
         ncurses = tvp.packages.ncurses;
         libxml2 = tvp.packages.libxml2_2;
+        # xml2-config --libs adds -lz to Gettext executables directly.
+        zlib = tvp.packages.zlib_1;
         acl = tvp.packages.acl;
         attr = tvp.packages.attr;
         perl = tvp.packages.perl_5;

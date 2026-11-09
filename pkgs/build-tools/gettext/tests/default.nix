@@ -156,7 +156,8 @@ package.testContext.mkSuite {
       script = ''
         test ! -e ${package}/lib/libtextstyle.a || exit 1
         test ! -e ${package}/lib/libgettextpo.a || exit 1
-        test -s ${package}/share/aclocal/gettext.m4 || exit 1
+        test -s ${package}/share/aclocal/nls.m4 || exit 1
+        test -s ${package}/share/gettext/m4/gettext.m4 || exit 1
         cc ${./style.c} -ltextstyle -o style || exit 1
         ./style ${package.specification.providers.ncurses}/share/terminfo || exit 1
         cc ${./po.c} -lgettextpo -o po || exit 1
