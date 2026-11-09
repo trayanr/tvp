@@ -109,6 +109,11 @@ package.testContext.mkSuite {
       '';
       expected = "upstream-ssl";
     };
+    tls-eof = {
+      tools = [ package.runtime.openssl ];
+      script = ''python3 -I ${./tls-eof.py} ${package.runtime.openssl}'';
+      expected = "TLS EOF: strict/suppressed for TLS1.2/TLS1.3";
+    };
     tls = {
       tools = [ package.runtime.openssl ];
       script = ''python3 -I ${./tls.py} ${package.runtime.openssl}'';

@@ -57,7 +57,12 @@ let
           bzip2 = tvp.packages.bzip2_1;
           pkg-config = tvp.packages.pkg-config;
         };
-        patches = retained.versionTable."3.12.5".def.patches;
+        patches = retained.versionTable."3.12.5".def.patches ++ [
+          {
+            file = ./patches/ssl-unexpected-eof.patch;
+            reason = "OpenSSL can append a failed fatal-alert write after unexpected EOF; preserve CPython's strict/suppressed EOF handling instead of reporting the secondary system error.";
+          }
+        ];
         opts = retained.versionTable."3.12.5".def.opts;
       };
     })."3.12.5";
