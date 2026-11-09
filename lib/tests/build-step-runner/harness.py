@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from unittest import mock
 
 runtime, bash = sys.argv[1:]
 
@@ -193,6 +194,54 @@ def broken_logging():
             print(json.dumps(dict(case="terminal-log-write-failure", returnCode=7)), flush=True)
 
 
+def materializer_run(command, environment, timeout=10):
+    master, slave = pty.openpty()
+    child = None
+    try:
+        child = subprocess.Popen([command["builder"], *command["args"]],
+                                 env=environment, stdin=subprocess.DEVNULL,
+                                 stdout=slave, stderr=slave, start_new_session=True)
+        os.close(slave)
+        slave = None
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select([master], [], [], remaining)[0]:
+                raise TimeoutError("materializer did not close its log")
+            try:
+                data = os.read(master, 4096)
+            except OSError as error:
+                if error.errno == errno.EIO:
+                    break
+                raise
+            if not data:
+                break
+        # Match Nix's EOF-then-kill/wait completion protocol. A copy
+        # process that still owns the builder PID is killed too early.
+        try:
+            child.kill()
+        except ProcessLookupError:
+            pass
+        return child.wait(timeout=5)
+    finally:
+        os.close(master)
+        if slave is not None:
+            os.close(slave)
+        if child is not None:
+            if child.returncode is None:
+                # Keep the leader unreaped until its owned session is signalled;
+                # polling first could release its numeric PID for reuse.
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            child.wait(timeout=5)
+            deadline = time.monotonic() + 5
+            while any(live_group(child.pid)):
+                assert time.monotonic() < deadline, "materializer descendants survived cleanup"
+                time.sleep(0.01)
+
+
 def materializer_log_lifetime():
     command = json.loads(Path(runtime, "materializer.json").read_text())
     for expected in [0, 23]:
@@ -200,43 +249,46 @@ def materializer_log_lifetime():
             source = Path(directory, "input")
             output = Path(directory, "output")
             source.write_bytes(b"exact text bytes\n" * 100)
-            master, slave = pty.openpty()
-            child = subprocess.Popen([command["builder"], *command["args"]],
-                                     env=dict(os.environ, textPath=str(source), out=str(output),
-                                              TVP_COPY_STATUS=str(expected)),
-                                     stdin=subprocess.DEVNULL, stdout=slave, stderr=slave,
-                                     start_new_session=True)
-            os.close(slave)
-            try:
-                deadline = time.monotonic() + 10
-                while True:
-                    remaining = deadline - time.monotonic()
-                    assert remaining > 0 and select.select([master], [], [], remaining)[0], \
-                        "materializer did not close its log"
-                    try:
-                        data = os.read(master, 4096)
-                    except OSError as error:
-                        if error.errno == errno.EIO:
-                            break
-                        raise
-                    if not data:
-                        break
-                # Match Nix's EOF-then-kill/wait completion protocol. A copy
-                # process that still owns the builder PID is killed too early.
-                try:
-                    child.kill()
-                except ProcessLookupError:
-                    pass
-                code = child.wait(timeout=5)
-                assert code == expected, (expected, code)
-                assert output.read_bytes() == source.read_bytes()
-                print(json.dumps(dict(case="materializer-log-lifetime", expected=expected,
-                                      returnCode=code, exactBytes=True)), flush=True)
-            finally:
-                os.close(master)
-                if child.poll() is None:
-                    child.kill()
-                child.wait(timeout=5)
+            code = materializer_run(command, dict(os.environ, textPath=str(source),
+                                                 out=str(output), TVP_COPY_STATUS=str(expected)))
+            assert code == expected, (expected, code)
+            assert output.read_bytes() == source.read_bytes()
+            print(json.dumps(dict(case="materializer-log-lifetime", expected=expected,
+                                  returnCode=code, exactBytes=True)), flush=True)
+    with tempfile.TemporaryDirectory(prefix="materializer timeout ") as directory:
+        source, output, pidfile = (Path(directory, name) for name in ["input", "output", "child"])
+        source.write_text("timeout input")
+        try:
+            materializer_run(command, dict(os.environ, textPath=str(source), out=str(output),
+                                          TVP_COPY_STALL_PID=str(pidfile)), timeout=1)
+            raise AssertionError("materializer timeout was not enforced")
+        except TimeoutError:
+            descendant = int(pidfile.read_text())
+            assert not Path("/proc", str(descendant)).exists(), "copy descendant not reaped"
+            print(json.dumps(dict(case="materializer-timeout-cleanup", descendant=descendant,
+                                  reaped=True)), flush=True)
+    descriptors = []
+    openpty = pty.openpty
+
+    def tracked_openpty():
+        pair = openpty()
+        descriptors.extend(pair)
+        return pair
+
+    with mock.patch.object(pty, "openpty", side_effect=tracked_openpty), \
+            mock.patch.object(subprocess, "Popen", side_effect=OSError("injected launch failure")):
+        try:
+            materializer_run(command, os.environ)
+            raise AssertionError("materializer launch failure was swallowed")
+        except OSError as error:
+            assert str(error) == "injected launch failure"
+    for descriptor in descriptors:
+        try:
+            os.fstat(descriptor)
+            raise AssertionError("PTY descriptor leaked after launch failure")
+        except OSError as error:
+            assert error.errno == errno.EBADF
+    print(json.dumps(dict(case="materializer-launch-failure-cleanup", closed=len(descriptors))), flush=True)
 
 
 materializer_log_lifetime()

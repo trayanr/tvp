@@ -42,6 +42,11 @@ let
       set -eu
       ${coreutils}/bin/cp "$@"
       exec 1>&- 2>&-
+      if [[ -n "''${TVP_COPY_STALL_PID-}" ]]; then
+        ${coreutils}/bin/sleep 30 &
+        printf '%s\n' "$!" > "$TVP_COPY_STALL_PID"
+        wait
+      fi
       for ((i=0; i<100000; i++)); do :; done
       exit "''${TVP_COPY_STATUS:-0}"
       BASH

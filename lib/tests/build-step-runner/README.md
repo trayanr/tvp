@@ -48,3 +48,8 @@ can close stdout/stderr before exiting, while Nix uses log EOF as a completion
 signal. A terminal-based fixture closes those streams deliberately, then applies
 Nix's EOF/kill/wait sequence. It checks exact copied bytes and both successful and
 nonzero copy status; the final Bash builtin prevents a premature tail-exec.
+
+The materializer fixture also injects a launch failure and a timeout with a live
+copy descendant. Both PTY descriptors are closed on launch failure. Timeout
+cleanup kills the owned session before reaping its leader, then waits for the
+process group to disappear before removing its temporary files.
