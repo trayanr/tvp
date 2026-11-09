@@ -3,8 +3,17 @@ let
   inherit (pkgs) lib;
   helpers = import ../native-steps.nix { inherit lib; };
   steps = import ../build-steps.nix;
-  p = tvp.variants.build-steps.zstd_1_5_7;
-  make = tvp.bases.default.stdenv.mkDerivation {
+  p = tvp.canonical.zstd_1_5_7;
+  base = p.specification.base;
+  ownedFixture = import ./prerequisite-fixture.nix {
+    inherit tvp;
+    package = p;
+    tools = [
+      tvp.packages.gnugrep
+      tvp.packages.diffutils
+    ];
+  };
+  make = ownedFixture {
     name = "native-make-trace";
     buildCommand = ''
       mkdir -p "$out/bin"
@@ -16,7 +25,7 @@ let
       chmod +x "$out/bin/make"
     '';
   };
-  fixture = import ../native-recipe.nix { inherit lib; } {
+  fixture = tvp.builder {
     recipe =
       {
         base,
@@ -30,35 +39,35 @@ let
         version = "1";
         src = null;
         inherit base bash coreutils;
-        plan =
-          [
-            {
-              name = "fixture.prepare";
-              run = ''
-                mkdir source
-                cat > source/Makefile <<'MAKE'
-                .RECIPEPREFIX := >
-                default:
-                >$(MAKE) child
-                child:
-                >printf 'built\n' > built
-                check:
-                >test -e built
-                install:
-                >mkdir -p $(out)
-                >cp built $(out)/built
-                MAKE
-              '';
-            }
-          ]
-          ++ helpers.make {
-            name = "fixture";
-            inherit make doCheck;
-            env.PROBE = "selected";
-          };
+        plan = [
+          {
+            name = "fixture.prepare";
+            run = ''
+              mkdir source
+              cat > source/Makefile <<'MAKE'
+              SHELL := ${bash}/bin/bash
+              .RECIPEPREFIX := >
+              default:
+              >$(MAKE) child
+              child:
+              >printf 'built\n' > built
+              check:
+              >test -e built
+              install:
+              >mkdir -p $(out)
+              >cp built $(out)/built
+              MAKE
+            '';
+          }
+        ]
+        ++ helpers.make {
+          name = "fixture";
+          inherit make doCheck;
+          env.PROBE = "selected";
+        };
       };
     args = {
-      base = tvp.bases.default;
+      inherit base;
       inherit (tvp.packages) bash coreutils;
       make = tvp.packages.gnumake;
     };
@@ -70,7 +79,7 @@ let
     metadata.status.level = "ok";
     selection.kind = "fixture";
     mkTests = package: {
-      run = package.stdenv.mkDerivation {
+      run = ownedFixture {
         name = "native-make-customized-consumer";
         buildCommand = ''test "$(cat ${package}/replacement)" = once; test "$(cat ${package}/built)" = built; touch "$out"'';
       };
@@ -105,6 +114,7 @@ let
     steps.append [
       {
         name = "fixture.verify";
+        tools = [ tvp.packages.gnugrep ];
         run = ''
           grep -F child "$NIX_BUILD_TOP/make-invocations"
           grep -F install "$NIX_BUILD_TOP/make-invocations"
@@ -120,6 +130,7 @@ let
         steps.insertAfter "zstd.install" [
           {
             name = "local.marker";
+            tools = [ tvp.packages.gnugrep ];
             run = ''printf 'inserted\n' > "$out/marker"'';
           }
         ]
@@ -228,9 +239,8 @@ let
     replay = selected.drvPath == (edits (fixture.override { inherit make; })).drvPath;
     noOp = (fixture.override { }).drvPath == fixture.drvPath;
     disabledLazy = !(builtins.any (s: s.name == "fixture.check") (steps.active selected.buildSteps));
-    absoluteMake =
-      lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make")
-        (builtins.elemAt selected.buildSteps 1).run;
+    absoluteMake = lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make") (builtins.elemAt selected.buildSteps 1)
+    .run;
     packageReplay =
       customized.drvPath == (zstdEdits (
         p.override {
@@ -246,13 +256,13 @@ let
       customized.tests.version.drvPath != p.tests.version.drvPath
       && builtins.any (
         input: input.outPath == customized.outPath
-      ) customized.tests.version.nativeBuildInputs;
+      ) customized.tests.version.tvp.deps.libraries;
     lazyTests = builtins.all (t: builtins.isString t.drvPath) (builtins.attrValues customized.tests);
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Native Make contracts: ${lib.concatStringsSep ", " failed}";
-(tvp.bases.default.stdenv.mkDerivation {
+(ownedFixture {
   name = "tvp-native-make-contracts";
   buildCommand = ''
     test -e ${fixture}/built

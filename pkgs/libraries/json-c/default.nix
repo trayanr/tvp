@@ -1,14 +1,30 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  testLib = pkgs.lib;
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  formerRecipe = previous.recipes.json-c;
+  constructionRecipe = formerRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is an independent build-only host generation; ordinary Python/Binutils consume Zstd and cannot construct it.";
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
     "0.19" = {
       constructor = tvp.builder;
-      builder = ./build-0.19.nix;
-      helpers = {
-        inherit tvp;
-      };
-      base = tvp.bases.default;
+      builder = ./native/build-0.19.nix;
+      base = candidate.base;
+      helpers = { inherit tvp; };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
         inherit (tvp.packages)
           cmake
@@ -18,10 +34,13 @@ let
           gnutar
           gzip
           patch
+          findutils
           ;
-        python = tvp.packages.python-build_3;
-        binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
-        patchelf = tvp.packages.patchelf_0;
+        sed = tvp.packages.gnused;
+        diffutils = tvp.packages.diffutils;
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
       };
       patches = [
         {
@@ -31,35 +50,29 @@ let
       ];
     };
   };
-  pname = "json-c";
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."0.19";
-      releases."0.19" = "sha256-N60CSZAuMBvZBSv3EuUR/Mas/07KrUtZAKrZzlZOJt4=";
-    }
-  ];
-  source =
-    { version, sha256 }:
-    pkgs.fetchurl {
-      url = "https://github.com/json-c/json-c/releases/download/json-c-${version}-20260627/json-c-${version}.tar.gz";
-      inherit sha256;
+  versionTable = formerRecipe.versionTable // {
+    "0.19" = formerRecipe.versionTable."0.19" // {
+      def = if native then defs."0.19" else formerRecipe.versionTable."0.19".def;
     };
-  packageArgs = {
-    inherit pname versionTable source;
-    testDeps = {
-      inherit (tvp.packages) pkg-config cmake;
-    };
-    infra = {
-      inherit (pkgs) lib fetchurl;
+  };
+  publicArgs = formerRecipe // {
+    inherit versionTable;
+    testDeps = formerRecipe.testDeps // {
+      grep = tvp.packages.gnugrep;
+      diffutils = tvp.packages.diffutils;
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
       let
-        testPkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
+        testPkgs =
+          if package ? testContext then
+            { lib = testLib; }
+          else
+            tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = package.stdenv;
+            };
       in
       import ./tests {
         inherit tvpLib package;
@@ -71,34 +84,16 @@ let
         pkgs = testPkgs;
       }
     ) { inherit pkgs; };
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/json-c/json-c.git";
-      normalise =
-        tag:
-        let
-          m = builtins.match "json-c-([0-9]+[.][0-9]+([.][0-9]+)?)-[0-9]{8}" tag;
-        in
-        if m == null then null else builtins.head m;
-    };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  canonical = tvpLib.packages.mkVersions publicArgs;
+  pname = "json-c";
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
-  variants = tvpLib.packages.mkVariants (
-    packageArgs
-    // {
-      inherit pkgs;
-      profiles.build-steps = {
-        base = tvp.bases.default;
-        versions = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-          "0.19" = { };
-        };
-      };
-    }
-  );
+  inherit (previous) variants;
   aliases = tvpLib.packages.mkAliases {
     inherit pname versionTable canonical;
     lines = [ "0" ];

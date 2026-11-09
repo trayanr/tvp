@@ -1,5 +1,8 @@
-Canonical JSON-C 0.19 and `variants.build-steps.json-c_0_19` use the same
-`tvp.builder` recipe. Customize arguments with `.override`, specification data
+Canonical JSON-C 0.19 uses the source-GNU candidate base and an explicit
+package-owned test context. `variants.build-steps.json-c_0_19` retains the former
+default-base pilot generation; `legacy.nix` captures its complete factory.
+Both use `tvp.builder`. The native procedure adds explicit Findutils for source
+epoch discovery and otherwise preserves the existing CMake procedure. Customize arguments with `.override`, specification data
 with `.edit`, or the ordered plan with `.editSteps`:
 
 ```nix
@@ -24,7 +27,7 @@ json_parse app but does not install it. The output has headers, both libraries,
 pkg-config and relative CMake exports, with no installed CLI.
 
 Compilation installs an internal artifact. One explicit split starts a fresh
-final workspace: copy independently, relocate only `.pc` text, strip ELF and
+final workspace: copy independently, relocate `.pc` text, strip ELF and
 archives, restore the archive index, configure RPATHs, publish the public
 development interface, and check symlinks and runtime paths. The source epoch
 is exported in `nix-support/source-date-epoch`. Nix rejects references from the

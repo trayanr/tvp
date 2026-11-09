@@ -645,9 +645,9 @@ let
             gnumake
             pkg-config
             ;
-          patchelf = tvp.packages.patchelf_0;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          patchelf = tvp.canonical.json-c_0_19.tvp.deps.patchelf;
+          environment = tvp.canonical.json-c_0_19.compiler;
+          compiler = tvp.canonical.json-c_0_19.tvp.cc;
         };
         owned-ruby = {
           ruby = tvp.canonical.ruby_4_0_6;
@@ -666,8 +666,8 @@ let
           zstd = tvp.packages.zstd_1;
           compatibleZlib = tvp.packages.zlib_1_3_1;
           compatibleXz = tvp.packages.xz_5_6_4;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          environment = tvp.canonical.zstd_1_5_7.compiler;
+          compiler = tvp.canonical.zstd_1_5_7.tvp.cc;
         };
         owned-fontconfig = {
           inherit (tvp.packages) bash coreutils;
