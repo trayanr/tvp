@@ -14,6 +14,8 @@ command does not refresh it. Historical receipts stay unchanged.
 ## Manifest and envelopes
 
 JSON objects reject duplicate keys, extra envelope fields, and nonfinite numbers.
+Every required SHA256 pin is a lowercase 64-character hexadecimal string;
+an explicit null never requests observation-only hashing.
 All references hash the exact bytes parsed with the verifier's strict object
 loader. Hashes use lowercase hexadecimal SHA256. The manifest's source identity
 has exactly `path`, `revision`, `tree`, `narHash`: a normalized store source path,
@@ -85,6 +87,10 @@ and scoped availability successes alongside their nonpass limitations.
 Latest observations must be saved `tvp.latest-verification/v1` JSON with matching
 `result`, subject source/revision/tree, snapshot path/revision/locked revision and
 NAR, and explicit `full=false`, `machineReady=false`, `mergeEligible=false`.
+PASS observations also require complete availability coverage: all declared siblings
+included, availability-only true, fresh-execution certification false, a positive
+integer selected-output count and a nonnegative integer link count. Booleans are
+not counts. Missing or contradictory coverage is rejected.
 The complete observation is retained. Failed/partial/active claims or a
 nonterminal/active worker remain unresolved, even with an availability PASS.
 These flags remain evidence claims, not independently observed worker state.

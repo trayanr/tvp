@@ -52,7 +52,8 @@ class BatchReportTests(unittest.TestCase):
     def latest(self, status='PASS', terminal=True, active=False):
         s = self.source
         observation = dict(schema='tvp.latest-verification/v1', full=False, machineReady=False, mergeEligible=False,
-                           result=status, coverage={'availabilityOnly': True}, subject=dict(
+                            result=status, coverage=dict(allDeclaredSiblings=True, availabilityOnly=True,
+                                                        freshExecutionCertified=False, validSelectedOutputs=3, links=2), subject=dict(
                                source=s['path'], revision=s['revision'], tree=s['tree'], snapshot=dict(
                                    path=s['path'], revision=s['revision'], locked=dict(rev=s['revision'], narHash=s['narHash']))))
         self.add('latest', 'latest', dict(status=status, terminal=terminal, workerActive=active,
@@ -129,6 +130,54 @@ class BatchReportTests(unittest.TestCase):
         self.refresh('repair')
         with self.assertRaisesRegex(ValueError, 'Repair requires'):
             self.run_report()
+
+    def test_required_hashes_reject_null(self):
+        manifest, docs = copy.deepcopy(self.manifest), copy.deepcopy(self.docs)
+        for kind in ('reference', 'artifact', 'observation', 'protection'):
+            with self.subTest(kind=kind):
+                self.manifest, self.docs = copy.deepcopy(manifest), copy.deepcopy(docs)
+                if kind == 'reference':
+                    self.manifest['references'][0]['sha256'] = None
+                elif kind == 'artifact':
+                    artifact = self.save('payload.json', {'fixture': True})
+                    artifact['sha256'] = None
+                    self.docs['focused']['artifacts'] = [artifact]
+                    self.refresh('focused')
+                elif kind == 'observation':
+                    self.latest()
+                    self.docs['latest']['claims']['observation']['sha256'] = None
+                    self.refresh('latest')
+                else:
+                    path = self.root / 'protected'; path.write_text('unchanged')
+                    self.add('protection', 'protection', dict(domain='fixture', files=[dict(path=str(path), sha256=None)]))
+                with self.assertRaisesRegex(ValueError, 'Invalid SHA256'):
+                    self.run_report()
+
+    def test_latest_pass_requires_consistent_complete_coverage(self):
+        self.latest()
+        valid = json.loads((self.root/'observation.json').read_text())
+        coverage = valid['coverage']
+        mutations = [None, [], {}, {k: v for k, v in coverage.items() if k != 'links'}]
+        for key, value in [('allDeclaredSiblings', False), ('allDeclaredSiblings', 1),
+                           ('availabilityOnly', False), ('freshExecutionCertified', True),
+                           ('validSelectedOutputs', 0), ('validSelectedOutputs', True),
+                           ('validSelectedOutputs', -1), ('validSelectedOutputs', 1.5),
+                           ('links', -1), ('links', False), ('links', '2')]:
+            mutations.append(coverage | {key: value})
+        for index, value in enumerate(['missing', *mutations]):
+            with self.subTest(index=index):
+                observation = copy.deepcopy(valid)
+                if value == 'missing':
+                    observation.pop('coverage')
+                else:
+                    observation['coverage'] = value
+                self.docs['latest']['claims']['observation'] = self.save('observation.json', observation)
+                self.refresh('latest')
+                with self.assertRaisesRegex(ValueError, 'coverage'):
+                    self.run_report()
+        self.docs['latest']['claims']['observation'] = self.save('observation.json', valid)
+        self.refresh('latest')
+        self.assertEqual(self.run_report()['latestObservations'][0]['observation']['coverage'], coverage)
 
     def test_two_step_proof_reuse_and_broken_chain(self):
         middle = self.source | dict(revision='e'*40)

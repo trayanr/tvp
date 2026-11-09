@@ -19,6 +19,7 @@ LIMITS = [
     'Selected receipt scope only; no full conformance, security parity, or admission certification.',
     'HARDENING-GATE-1 remains open and unwaived; coverage claims cannot close it.',
 ]
+_UNPINNED = object()
 
 
 def fields(value, expected, label):
@@ -63,12 +64,13 @@ class Inputs:
     def __init__(self):
         self.hashes = {}
 
-    def read(self, path, expected=None, parse=True):
+    def read(self, path, expected=_UNPINNED, parse=True):
+        if expected is not _UNPINNED:
+            require(isinstance(expected, str) and re.fullmatch('[0-9a-f]{64}', expected), 'Invalid SHA256')
         path = Path(path).resolve(strict=True)
         data = path.read_bytes()
         sha = hashlib.sha256(data).hexdigest()
-        if expected is not None:
-            require(isinstance(expected, str) and re.fullmatch('[0-9a-f]{64}', expected), 'Invalid SHA256')
+        if expected is not _UNPINNED:
             require(sha == expected, 'Input hash mismatch: ' + str(path))
         require(str(path) not in self.hashes or self.hashes[str(path)] == sha, 'Input changed while collecting')
         self.hashes[str(path)] = sha
@@ -210,6 +212,14 @@ def collect(manifest_path):
             require(observation.get('result') == c['status'] and observation.get('full') is False
                     and observation.get('machineReady') is False and observation.get('mergeEligible') is False,
                     'Latest observation result/limits mismatch')
+            if c['status'] == 'PASS':
+                coverage = observation.get('coverage')
+                fields(coverage, 'validSelectedOutputs links allDeclaredSiblings availabilityOnly freshExecutionCertified',
+                       'latest coverage')
+                require(coverage['allDeclaredSiblings'] is True and coverage['availabilityOnly'] is True
+                        and coverage['freshExecutionCertified'] is False, 'Invalid latest coverage limits')
+                require(type(coverage['validSelectedOutputs']) is int and coverage['validSelectedOutputs'] > 0
+                        and type(coverage['links']) is int and coverage['links'] >= 0, 'Invalid latest coverage counts')
             if c['status'] != 'PASS' or not c['terminal'] or c['workerActive']:
                 unresolved.append(identifier + ': latest failed/active/partial')
             latest.append({'reference': identifier, 'observation': observation})
