@@ -23,9 +23,16 @@ let
         pkg-config = tvp.packages.pkg-config;
         gperf = tvp.packages.gperf;
         freetype =
-          (tvpLib.packages.mkVersions
-            (import ../freetype { inherit pkgs tvp; }).recipes.freetype.constructionRecipe
-          ).freetype_2_15_0;
+          tvpLib.packages.withConstraint
+            {
+              category = "construction";
+              reason = "Retained freetype counterpart preserves the complete pre-migration fontconfig profile and public variant identities.";
+            }
+            (
+              (tvpLib.packages.mkVersions
+                (import ../freetype { inherit pkgs tvp; }).recipes.freetype.constructionRecipe
+              ).freetype_2_15_0
+            );
         expat = tvp.packages.expat_2;
         patchelf = tvp.packages.patchelf;
       };
@@ -88,7 +95,9 @@ let
           url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
           inherit sha256;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {
@@ -177,8 +186,7 @@ in
           gnutar
           xz
           ;
-      }
-      // defs."2.18.3".deps;
+      } // defs."2.18.3".deps;
       dependencyNames = [
         "binutils"
         "bash"

@@ -7,9 +7,16 @@ let
       base = tvp.bases.default;
       deps = {
         dnssd =
-          (tvpLib.packages.mkVersions
-            (import ../libdns_sd { inherit pkgs tvp; }).recipes.libdns_sd.constructionRecipe
-          ).libdns_sd_2881_120_11;
+          tvpLib.packages.withConstraint
+            {
+              category = "construction";
+              reason = "Retained libdns_sd counterpart preserves the complete pre-migration libcups profile and public variant identities.";
+            }
+            (
+              (tvpLib.packages.mkVersions
+                (import ../libdns_sd { inherit pkgs tvp; }).recipes.libdns_sd.constructionRecipe
+              ).libdns_sd_2881_120_11
+            );
         pkg-config = tvp.packages.pkg-config;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;
@@ -67,7 +74,9 @@ let
           url = "https://github.com/OpenPrinting/cups/releases/download/v${version}/cups-${version}-source.tar.gz";
           inherit sha256;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {

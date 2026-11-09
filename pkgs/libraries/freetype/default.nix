@@ -57,7 +57,9 @@ let
           url = "https://download.savannah.gnu.org/releases/freetype/freetype-${version}.tar.xz";
           inherit sha256;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {

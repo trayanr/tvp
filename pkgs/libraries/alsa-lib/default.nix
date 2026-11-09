@@ -54,7 +54,9 @@ let
           url = "https://www.alsa-project.org/files/pub/lib/alsa-lib-${version}.tar.bz2";
           inherit sha256;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {

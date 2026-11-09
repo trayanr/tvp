@@ -51,7 +51,9 @@ let
           url = "https://github.com/apple-oss-distributions/mDNSResponder/archive/refs/tags/mDNSResponder-${version}.tar.gz";
           inherit sha256;
         };
-      helpers = { inherit tvp; };
+      helpers = {
+        inherit tvp;
+      };
       testContext =
         package:
         tvpLib.tests.fromPackage {
