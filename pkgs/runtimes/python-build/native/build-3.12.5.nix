@@ -222,7 +222,7 @@ in
     "--with-openssl-rpath=auto"
   ];
   tvp = {
-    inherit disabledModules;
+    disabledModules = final.disabledModules;
     profile = "build-tools";
     features = {
       externalModules = true;

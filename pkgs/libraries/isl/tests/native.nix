@@ -5,7 +5,7 @@
   package,
 }:
 let
-  gmp = package.tvp.deps.gmp;
+  gmp = package.specification.libraries.gmp;
   patchelf = package.specification.tools.patchelf;
   candidate = import ../../../../bases/source-gnu { };
 in

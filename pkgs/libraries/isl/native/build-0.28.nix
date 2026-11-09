@@ -150,5 +150,9 @@ in
     static = true;
     cxx = true;
   };
-  meta.platforms = [ "x86_64-linux" ];
+  meta = {
+    description = "Integer sets and relations library for polyhedral compilation";
+    license = lib.licenses.mit;
+    platforms = [ "x86_64-linux" ];
+  };
 }

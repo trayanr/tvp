@@ -191,7 +191,7 @@ in
     "--with-platlibdir=lib"
   ];
   tvp = {
-    inherit disabledModules;
+    disabledModules = final.disabledModules;
     profile = "build";
     features = {
       externalModules = false;

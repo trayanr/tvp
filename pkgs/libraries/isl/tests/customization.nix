@@ -6,7 +6,40 @@ let
   equal = q: q.drvPath == p.drvPath;
   source = p.override { src = builtins.toFile "customization-source" "explicit source control"; };
   step = name: q: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
+  has =
+    needle: value:
+    let
+      text = builtins.unsafeDiscardStringContext value;
+    in
+    builtins.replaceStrings [ (builtins.unsafeDiscardStringContext needle) ] [ "" ] text != text;
+  replacementGmp = p.specification.libraries.gmp.editSteps (
+    xs:
+    xs
+    ++ [
+      {
+        name = "contract.gmp-provider";
+        run = "true";
+      }
+    ]
+  );
+  editedGmp = p.edit (
+    s:
+    s
+    // {
+      libraries = s.libraries // {
+        gmp = replacementGmp;
+      };
+    }
+  );
+  loadedLibrary = (step "test.compare" editedGmp.tests.loaded-library).run;
   results = [
+    (replacementGmp.version == p.specification.libraries.gmp.version)
+    (replacementGmp.outPath != p.specification.libraries.gmp.outPath)
+    (has (toString replacementGmp + "/lib/libgmp.so") loadedLibrary)
+    (!(has (toString p.specification.libraries.gmp + "/lib/libgmp.so") loadedLibrary))
+    (editedGmp.tests.loaded-library.drvPath != p.tests.loaded-library.drvPath)
+    (p.meta.description == "Integer sets and relations library for polyhedral compilation")
+    (p.meta.license.spdxId == "MIT")
     (equal (p.override { }))
     (equal (p.override (_: { })))
     (equal (p.edit (s: s)))
