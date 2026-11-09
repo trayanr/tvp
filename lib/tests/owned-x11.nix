@@ -44,6 +44,14 @@ let
         }
       );
       toolProvider = p.override { pkgConfig = tool; };
+      libraryOverride = p.override { xorgproto = tvp.packages.zlib; };
+      pythonOverride = p.override { generatorPython = p.specification.python; };
+      pythonEdit = p.edit (s: s // { generatorPython = s.python; });
+      protocolOverride = p.override {
+        xcb-proto = p.specification.xcb-proto // {
+          development.pythonModuleDirectory = "/explicit-xcbgen-control";
+        };
+      };
       changedSrc = p.override { src = builtins.toFile "x11-source-override" "control"; };
       unpack = q: builtins.head q.buildSteps;
       configure = q: builtins.head (builtins.filter (s: s.name == "${name}.configure") q.buildSteps);
@@ -83,6 +91,21 @@ let
       libraryEdit =
         builtins.any (l: l.outPath == tvp.packages.zlib.outPath)
           (configure libChanged).libraries;
+      libraryArgumentOverride =
+        !(p.specification ? xorgproto)
+        || (
+          builtins.any (l: l.outPath == tvp.packages.zlib.outPath) (configure libraryOverride).libraries
+          && builtins.elem tvp.packages.zlib.outPath (map toString libraryOverride.development.libraries)
+        );
+      selectedPythonLayout =
+        name != "xcb-proto"
+        || (
+          pythonOverride.specification.pythonLayout
+          == "lib/python${pkgs.lib.versions.majorMinor p.specification.python.version}/site-packages"
+          && pythonEdit.specification.pythonLayout == pythonOverride.specification.pythonLayout
+        );
+      selectedGeneratorImportPath =
+        name != "libxcb" || (configure protocolOverride).env.PYTHONPATH == "/explicit-xcbgen-control";
       testShell = builtins.elem bash.outPath (map toString changed.tests.consumer.buildStepRunner.inputs);
       ownedRegularTests = builtins.all (t: (t.tvp.kind or "") == "owned-test") (
         builtins.attrValues p.tests
