@@ -6,18 +6,31 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 
 config = json.loads(sys.argv[1])
 root = Path.cwd()
 
 
-def change(path, transform):
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f'expected owned regular source: {path}')
-    info = path.stat()
+def source_file(path):
+    parts = path.relative_to(root).parts
+    if not parts or '..' in parts:
+        raise ValueError(f'expected a path beneath the source root: {path}')
+    current = root
+    for index, part in enumerate(parts):
+        current = current / part
+        info = current.lstat()
+        expected = stat.S_ISREG if index == len(parts) - 1 else stat.S_ISDIR
+        if not expected(info.st_mode):
+            raise ValueError(f'expected owned regular source and directories: {path}')
     if info.st_nlink != 1:
         raise ValueError(f'expected unlinked source: {path}')
+    return info
+
+
+def change(path, transform):
+    info = source_file(path)
     data = path.read_bytes()
     result = transform(data)
     if result != data:
@@ -33,6 +46,15 @@ def replace(path, old, new):
     change(root / path, operation)
 
 
+# Check every fixed target before modifying any of them.
+for relative in [
+    'gettext-runtime/src/gettext.sh.in',
+    'gettext-tools/config.h.in',
+    'libtextstyle/configure',
+    'gettext-tools/src/project-id',
+]:
+    source_file(root / relative)
+
 prefix = os.environ['out'].encode()
 replace('gettext-runtime/src/gettext.sh.in', b'  gettext ', b'  ' + prefix + b'/bin/gettext ')
 replace('gettext-runtime/src/gettext.sh.in', b'  ngettext ', b'  ' + prefix + b'/bin/ngettext ')
@@ -40,6 +62,8 @@ replace('gettext-runtime/src/gettext.sh.in', b'envsubst ', b'"' + prefix + b'/bi
 replace('gettext-tools/config.h.in', b'define BOURNE_SHELL "/bin/sh"',
         b'define BOURNE_SHELL "' + config['bash'].encode() + b'/bin/bash"')
 replace('libtextstyle/configure', b"names_next_round='ncurses '", b"names_next_round='ncursesw '")
+# Use the selected Bash's physical-directory builtin, without a host /bin/pwd.
+replace('gettext-tools/src/project-id', b'/bin/pwd', b'pwd -P')
 counts = {'shell': 0, 'perl': 0, 'python': 0, 'libtool': 0}
 for directory, dirs, names in os.walk(root, followlinks=False):
     dirs[:] = [d for d in dirs if not (Path(directory) / d).is_symlink()]

@@ -87,13 +87,17 @@ package.testContext.mkSuite {
     };
     shell-helpers = {
       tools =
-        [ spec.tools.grep ]
+        [
+          spec.tools.grep
+          python
+        ]
         ++ (with package.tvp.declaredTestDependencies; [
           autoconf
           automake
           libtool
         ]);
       script = ''
+        ${python}/bin/python3 -B ${./prepare.py} ${../native/prepare.py}
         actual=$(
           PATH=/nonexistent
           . ${package}/bin/gettext.sh || exit 1
@@ -114,7 +118,14 @@ package.testContext.mkSuite {
         # gettextize retains its upstream acknowledgement (no TTY in sandbox).
         ${package}/bin/gettextize --force --no-changelog > gettextize.log 2>&1 || { cat gettextize.log >&2; exit 1; }
         test -s m4/gettext.m4 || exit 1
-        PATH=/nonexistent ${package}/libexec/gettext/project-id > identity || exit 1
+        mkdir -p identity-project/child
+        printf "PACKAGE_NAME='GettextFixture'\nPACKAGE_VERSION='7.8'\n" > identity-project/configure
+        (
+          cd identity-project/child
+          PATH=/nonexistent ${package}/libexec/gettext/project-id yes > ../identity 2> ../identity.errors
+        ) || exit 1
+        test "$(cat identity-project/identity)" = 'GettextFixture 7.8' || exit 1
+        test ! -s identity-project/identity.errors || exit 1
         cp ${./messages.po} messages.pot
         PATH=/nonexistent ${package}/bin/msginit --no-translator -l fr_FR -i messages.pot -o initialized.po > msginit.log 2>&1 || { cat msginit.log >&2; exit 1; }
         grep -F 'Language: fr' initialized.po >&2 || exit 1
