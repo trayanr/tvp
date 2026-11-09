@@ -58,6 +58,10 @@ let
       && pilots.base.compiler.underlyingBintools == base.compiler.bintools;
     runtimeExact = pilots.base.runtimeDirectories == base.runtimeDirectories;
     optedOutExact = off.drvPath == (pilots.zip.override { inherit base; }).drvPath;
+    unknownRecipeException = rejects (pilots.zip.override { hardeningDisable = [ "pie" ]; }).drvPath;
+    editedUnknownRecipeException =
+      rejects
+        (pilots.unzip.edit (s: s // { hardeningDisable = [ "unknown" ]; })).drvPath;
     formatException = builtins.elem "format" pilots.zip.specification.hardeningDisable;
     adapterOverride =
       (pilots.base.compiler.override { driver = base.compiler; }).drvPath == pilots.base.compiler.drvPath;

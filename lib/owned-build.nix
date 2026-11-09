@@ -20,6 +20,16 @@ let
     else
       names;
   compiler = if base ? compiler then base.compiler else base.stdenv.cc;
+  # Opt-in consumers must not silently discard an unknown recipe exception.
+  # The legacy branch is exactly the earlier rendering and compiler protocol.
+  hardeningValidation =
+    if compiler ? hardeningPolicy then
+      builtins.deepSeq (import ./hardening-policy.nix {
+        defaults = compiler.defaultHardeningFlags;
+        disable = spec.hardeningDisable or [ ];
+      }) true
+    else
+      true;
   baselineTools = if base ? compiler then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
   multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
@@ -94,11 +104,12 @@ let
     in
     drv // { buildStepRunner = runner; };
   artifact = stage "${pname}-${version}-artifacts" parts.first null;
-  package =
+  package = builtins.seq hardeningValidation (
     if parts.split then
       stage "${pname}-${version}" parts.second artifact
     else
-      stage "${pname}-${version}" parts.first null;
+      stage "${pname}-${version}" parts.first null
+  );
   exports = lib.concatMap (s: s.developmentLibraries or [ ]) (
     steps.active (parts.first ++ parts.second)
   );

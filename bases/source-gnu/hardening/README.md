@@ -41,7 +41,9 @@ supported selection in its command after the preamble. Outside a prepared step,
 an absent selection uses the configured defaults; an empty value disables all
 protections. This is a defaults policy, not a mandatory enforcement boundary:
 recipes can explicitly request any supported name, including a previously
-disabled one. Unknown runtime names fail. The adapter consumes this selection
+disabled one. Unknown runtime names fail. The owned lowering also validates recipe
+`hardeningDisable` names when this adapter is selected; its legacy branch is
+unchanged. The adapter consumes this selection
 before entering the unchanged driver, which still rejects nonempty requests.
 With an empty runtime selection it passes the old argv and flag protocol through
 unchanged (and removes only the empty selection).
