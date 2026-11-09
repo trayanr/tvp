@@ -1,4 +1,8 @@
-.PHONY: exploded-image images
+.PHONY: exploded-image images check-control
+exploded-image images: check-control
+check-control:
+	$(if $(findstring --jobserver,$(MAKEFLAGS)),$(error use make JOBS=N instead of -jN))
+	test "$(JOBS)" = "$$NIX_BUILD_CORES"
 exploded-image:
 	mkdir -p build/$(CONF)/jdk/{bin,lib,include,jmods,modules/jdk.jpackage}
 	mkdir -p build/$(CONF)/support/{modules_libs,modules_cmds}/java.base

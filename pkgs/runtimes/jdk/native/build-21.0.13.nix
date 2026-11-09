@@ -59,7 +59,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" CONF=${lib.escapeShellArg final.configurationName} SHELL=${final.bash}/bin/bash'';
+  make = ''${final.gnumake}/bin/make JOBS="$NIX_BUILD_CORES" CONF=${lib.escapeShellArg final.configurationName} SHELL=${final.bash}/bin/bash'';
   outputPaths = [
     "bin"
     "lib"

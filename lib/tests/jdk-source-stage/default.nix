@@ -227,11 +227,19 @@ let
     name = "jdk-source-stage";
     tools = [
       spec.python
+      spec.gnumake
       spec.binutils
       spec.patchelf
       spec.base.compiler
     ];
     script = ''
+      NIX_BUILD_CORES=2 ${spec.gnumake}/bin/make -f ${./source/Makefile} check-control JOBS=2 SHELL=${spec.bash}/bin/bash >&2
+      for options in '-j2 JOBS=2' 'JOBS=1'; do
+        if NIX_BUILD_CORES=2 ${spec.gnumake}/bin/make -f ${./source/Makefile} check-control $options SHELL=${spec.bash}/bin/bash > invalid-make.log 2>&1; then
+          echo "invalid JDK job control accepted: $options" >&2
+          exit 1
+        fi
+      done
       ${spec.python}/bin/python3 -B ${./source-paths.py} ${../../../pkgs/runtimes/jdk/native/source-paths.py}
       ${spec.python}/bin/python3 -B ${./staged-rpaths.py} \
         ${../../staged-output/rpaths.py} ${../../native-output} ${../../elf-output.py} \
