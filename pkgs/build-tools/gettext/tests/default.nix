@@ -86,6 +86,13 @@ package.testContext.mkSuite {
       expected = "ok";
     };
     shell-helpers = {
+      tools =
+        [ spec.tools.grep ]
+        ++ (with package.tvp.declaredTestDependencies; [
+          autoconf
+          automake
+          libtool
+        ]);
       script = ''
         actual=$(
           PATH=/nonexistent
@@ -96,6 +103,21 @@ package.testContext.mkSuite {
           eval_ngettext '$name apple' '$name apples' 2 || exit 1
         ) || exit 1
         test "$actual" = 'Hello TVPOpen TVPTVP apples' || exit 1
+        # Caller supplies the Autotools ecosystem; helper core tools are internal.
+        mkdir helper-project
+        cd helper-project
+        printf 'AC_INIT([fixture], [1])\nAC_CONFIG_SRCDIR([hello.c])\nAM_GNU_GETTEXT([external])\nAM_GNU_GETTEXT_VERSION([1.0])\nAC_OUTPUT\n' > configure.ac
+        touch hello.c
+        ${package}/bin/autopoint --force > autopoint.log 2>&1 || { cat autopoint.log >&2; exit 1; }
+        test -s m4/gettext.m4 || exit 1
+        test -s po/Makefile.in.in || exit 1
+        # gettextize is interactive unless --no-changelog is selected.
+        ${package}/bin/gettextize --force --copy --no-changelog > gettextize.log 2>&1 || { cat gettextize.log >&2; exit 1; }
+        test -s m4/gettext.m4 || exit 1
+        PATH=/nonexistent ${package}/libexec/gettext/project-id > identity || exit 1
+        cp ${./messages.po} messages.pot
+        PATH=/nonexistent ${package}/bin/msginit --no-translator -l fr_FR -i messages.pot -o initialized.po > msginit.log 2>&1 || { cat msginit.log >&2; exit 1; }
+        grep -F 'Language: fr' initialized.po >&2 || exit 1
         echo ok
       '';
       expected = "ok";
@@ -129,9 +151,12 @@ package.testContext.mkSuite {
     libraries = {
       libraries = [ package ];
       tools = [
-        package.specification.tools.grep
+        spec.tools.grep
       ];
       script = ''
+        test -f ${package}/lib/libtextstyle.a || exit 1
+        test -f ${package}/lib/libgettextpo.a || exit 1
+        test -s ${package}/share/aclocal/gettext.m4 || exit 1
         cc ${./style.c} -ltextstyle -o style || exit 1
         ./style ${package.specification.providers.ncurses}/share/terminfo || exit 1
         cc ${./po.c} -lgettextpo -o po || exit 1

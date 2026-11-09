@@ -48,10 +48,11 @@ let
   elfPaths = [
     "bin"
     "lib"
+    "libexec"
   ];
   helperPaths = [
     "bin"
-    "lib/gettext"
+    "libexec/gettext"
     "share/gettext"
   ];
 in
@@ -90,9 +91,11 @@ in
       attr
       ;
   };
-  inherit configureFlags;
+  inherit configureFlags doCheck;
   environment = {
     tools = (builtins.attrValues final.tools) ++ [
+      final.bash
+      final.coreutils
       final.runtime.perl
       final.runtime.jdk
     ];
@@ -102,17 +105,17 @@ in
     inherit perl jdk;
     libraries = builtins.attrValues final.providers;
     tools = [
-      coreutils
-      sed
-      grep
-      gawk
-      findutils
-      gnutar
-      xz
+      final.coreutils
+      final.tools.sed
+      final.tools.grep
+      final.tools.gawk
+      final.tools.findutils
+      final.tools.gnutar
+      final.tools.xz
     ];
   };
-  # Installed headers use no external headers. libtextstyle.pc has no external
-  # Requires; Ncurses is an implementation library, checked by isolated consumers.
+  # Installed headers use no external headers. Ncurses is an implementation
+  # library; isolated shared consumers need only this package.
   developmentLibraries = [ ];
   plan = steps.sequence [
     (steps.unpack {
@@ -158,14 +161,14 @@ in
         exit "$status"
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
     )
     (command "install" ''
       ${make} -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      ${lib.optionalString doCheck ''
+      ${lib.optionalString final.doCheck ''
         cp upstream-check.status "$out/nix-support/"
         grep -E '^# (TOTAL|PASS|SKIP|XFAIL|FAIL|XPASS|ERROR):|^Testsuite summary|^SKIP:|^FAIL:|^XFAIL:|^XPASS:' \
           upstream-check.log > "$out/nix-support/upstream-summary"
@@ -202,9 +205,8 @@ in
             scripts = [
               "bin/gettextize"
               "bin/autopoint"
-              "lib/gettext/project-id"
-              "lib/gettext/user-email"
-              "lib/gettext/hostname"
+              "libexec/gettext/project-id"
+              "libexec/gettext/user-email"
             ];
           }
         )
@@ -242,7 +244,7 @@ in
     })
   ];
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
     nls = true;
     nativeSpit = true;
     xml = true;
