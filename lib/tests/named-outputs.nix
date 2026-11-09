@@ -203,6 +203,21 @@ let
   ]);
   passthruRebound = passthruFunctional.override { message = "passthru-rebound"; };
   contracts = {
+    singleOutputUnusedMetadataStaysLazy =
+      builtins.isString
+        ((import ../owned-build.nix { inherit lib; }) (
+          validation.specification
+          // {
+            outputs = [ "out" ];
+            passthru = throw "unused metadata must stay lazy";
+            plan = [
+              {
+                name = "metadata.lazy";
+                run = ":";
+              }
+            ];
+          }
+        )).drvPath;
     passthruCallbackNoProcedureChange = passthruFunctional.drvPath == validation.drvPath;
     passthruCallbackRawOutputOnly = passthruFunctional.rawIsUndecorated;
     passthruCallbackNamedOutput =

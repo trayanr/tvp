@@ -22,7 +22,7 @@ let
       names = import ./named-outputs.nix { inherit lib; } (spec.outputs or [ "out" ]);
     in
     # A callback needs the raw outputs; output construction must not depend on it.
-    if builtins.isFunction declaredPassthru then
+    if names == [ "out" ] || builtins.isFunction declaredPassthru then
       names
     else
       builtins.seq (validatePassthru names declaredPassthru) names;
