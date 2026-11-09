@@ -111,8 +111,8 @@ package.testContext.mkSuite {
         ${package}/bin/autopoint --force > autopoint.log 2>&1 || { cat autopoint.log >&2; exit 1; }
         test -s m4/gettext.m4 || exit 1
         test -s po/Makefile.in.in || exit 1
-        # gettextize is interactive unless --no-changelog is selected.
-        ${package}/bin/gettextize --force --copy --no-changelog > gettextize.log 2>&1 || { cat gettextize.log >&2; exit 1; }
+        # gettextize retains its upstream acknowledgement (no TTY in sandbox).
+        ${package}/bin/gettextize --force --no-changelog > gettextize.log 2>&1 || { cat gettextize.log >&2; exit 1; }
         test -s m4/gettext.m4 || exit 1
         PATH=/nonexistent ${package}/libexec/gettext/project-id > identity || exit 1
         cp ${./messages.po} messages.pot

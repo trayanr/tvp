@@ -67,7 +67,6 @@ let
       autoconf = tvp.packages.autoconf;
       automake = tvp.packages.automake;
       libtool = tvp.packages.libtool;
-      pkg-config = tvp.packages.pkg-config;
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:

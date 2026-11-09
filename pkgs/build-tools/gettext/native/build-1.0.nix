@@ -109,6 +109,7 @@ in
       final.tools.sed
       final.tools.grep
       final.tools.gawk
+      final.tools.diffutils
       final.tools.findutils
       final.tools.gnutar
       final.tools.xz
@@ -236,7 +237,18 @@ in
     })
     (outputs.checkSymlinks {
       python = final.tools.python;
-      paths = [ "lib" ];
+      paths = [
+        "lib/libgnuintl.so"
+        "lib/libgnuintl.so.8"
+        "lib/libasprintf.so"
+        "lib/libasprintf.so.0"
+        "lib/libtextstyle.so"
+        "lib/libtextstyle.so.0"
+        "lib/libgettextlib.so"
+        "lib/libgettextsrc.so"
+        "lib/libgettextpo.so"
+        "lib/libgettextpo.so.0"
+      ];
     })
     (outputs.checkPaths {
       inherit (final.tools) python binutils patchelf;
