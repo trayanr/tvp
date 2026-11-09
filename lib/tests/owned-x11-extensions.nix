@@ -234,4 +234,8 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
 })
 // {
   inherit contracts controls;
+  support = {
+    controlTools = wrappers;
+    controlX11 = library;
+  } // lib.mapAttrs' (name: c: lib.nameValuePair "${name}-control-source" c.overridden.src) controls;
 }

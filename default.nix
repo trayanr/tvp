@@ -583,7 +583,7 @@ let
         ;
       compositions = tvp.android.profiles;
       buildTestSupport = {
-        owned-x11-extensions = {
+        owned-x11-extensions = tvp.checks.owned-x11-extensions.support // {
           package = tvp.packages.libxext;
           bash = tvp.packages.libxext.specification.bash;
           coreutils = tvp.packages.libxext.specification.coreutils;
