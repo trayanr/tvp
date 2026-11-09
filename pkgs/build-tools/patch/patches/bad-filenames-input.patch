@@ -1,0 +1,17 @@
+The invalid output-name check exits before reading stdin. Precompute its input
+so the test does not race the producer or include cat's EPIPE diagnostic when
+SIGPIPE is inherited as ignored. Keep all filename, diagnostic and status checks.
+No change to the installed Patch program.
+
+--- a/tests/bad-filenames
++++ b/tests/bad-filenames
+@@ -134,7 +134,8 @@
+   unset arg1; eval ${2+"arg1=\\''$2'\\'"}
+   unset arg2; eval ${3+"arg2=\\''$3'\\'"}
+   check '
+-    emit_patch '"$pat"' | patch '"$arg1"' '"$arg2"' >patch.out 2>&1
++    emit_patch '"$pat"' > input.patch
++    patch '"$arg1"' '"$arg2"' < input.patch >patch.out 2>&1
+     status=$?
+     sed "$fixup" patch.out
+     echo status: $status

@@ -13,6 +13,8 @@
   python,
   binutils,
   patchelf,
+  patch,
+  patches ? [ ],
   doCheck ? true,
   configureFlags ? [ ],
   stripFlags ? [
@@ -54,6 +56,11 @@ in
       inherit src xz;
       tar = gnutar;
     })
+    (command "patch.sources" ''
+      for file in ${lib.escapeShellArgs (map (p: "${p}") patches)}; do
+        ${patch}/bin/patch -p1 < "$file"
+      done
+    '')
     (command "patch.configure" ''
       export CONFIG_SHELL=${bash}/bin/bash
       ${bash}/bin/bash ./configure --prefix="$out" --disable-dependency-tracking \
@@ -62,7 +69,10 @@ in
     (command "patch.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'')
     (
       (command "patch.check" ''
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash check
+        status=0
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash check || status=$?
+        if (( status )); then cat tests/test-suite.log >&2 || :; fi
+        exit "$status"
       '')
       // {
         enabled = doCheck;

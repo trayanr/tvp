@@ -28,7 +28,14 @@ let
       helpers = {
         inherit tvp;
       };
+      patches = [
+        {
+          file = ./patches/bad-filenames-input.patch;
+          reason = "Precompute invalid-filename test input so early rejection cannot race cat and pollute the diagnostic with EPIPE; retain all assertions.";
+        }
+      ];
       deps = {
+        patch = floorTool "patch";
         gzip = tvp.packages.gzip_1;
         bash = tvp.packages.bash_5;
         coreutils = floorTool "coreutils";
