@@ -1,0 +1,7 @@
+--- a/cups/testfile.c
++++ b/cups/testfile.c
+@@ -176,2 +176,2 @@
+-    if (cupsFileFind("cat", "/bin", 1, filename, sizeof(filename)) &&
+-	cupsFileFind("cat", "/bin:/usr/bin", 1, filename, sizeof(filename)))
++    if (cupsFileFind("cat", getenv("CUPS_TEST_BINDIR"), 1, filename, sizeof(filename)) &&
++	cupsFileFind("cat", getenv("CUPS_TEST_SEARCH_PATH"), 1, filename, sizeof(filename)))
