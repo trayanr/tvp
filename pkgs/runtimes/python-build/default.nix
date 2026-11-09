@@ -86,7 +86,7 @@ let
             ;
         }
       else
-        retained.extraArgs.mkTests package
+        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

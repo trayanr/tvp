@@ -18,6 +18,10 @@ package.testContext.mkSuite {
   ];
   libraries = [ package ];
   tests = {
+    legacy-callers = {
+      script = "echo legacy-callers";
+      expected = (import ./legacy-callers.nix { inherit pkgs tvp; }).expected;
+    };
     customization = {
       script = "echo customization";
       expected = import ./customization.nix { inherit package; };

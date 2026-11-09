@@ -72,7 +72,7 @@ let
             ;
         }
       else
-        retained.extraArgs.mkTests package
+        (import ./legacy.nix { inherit pkgs tvp; }).recipes.expat.extraArgs.mkTests package
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
