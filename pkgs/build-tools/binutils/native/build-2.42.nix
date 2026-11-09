@@ -141,7 +141,6 @@ in
       cd ../build
       ${final.bash}/bin/bash ../source/configure --prefix="$out" --with-system-zlib --with-zstd \
         --enable-plugins --enable-deterministic-archives --with-lib-path=: \
-        --enable-install-libiberty \
         ${
           lib.optionalString (!final.gprofng) "--disable-gprofng"
         } ${lib.escapeShellArgs final.configureFlags}
@@ -157,8 +156,16 @@ in
         }
       )
     )
-    # This native profile uses one library directory, independent of GCC's multilib layout.
-    ((command "install" "${make} install MULTIOSDIR=.") // { cwd = "build"; })
+    (
+      (command "install" ''
+        ${make} install
+        # Install the support archive beside BFD/CTF, independent of GCC's multilib layout.
+        ${make} -C libiberty install target_header_dir=libiberty MULTIOSDIR=.
+      '')
+      // {
+        cwd = "build";
+      }
+    )
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin" ];
