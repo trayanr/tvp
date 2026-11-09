@@ -157,7 +157,8 @@ in
         }
       )
     )
-    ((command "install" "${make} install") // { cwd = "build"; })
+    # This native profile uses one library directory, independent of GCC's multilib layout.
+    ((command "install" "${make} install MULTIOSDIR=.") // { cwd = "build"; })
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin" ];
