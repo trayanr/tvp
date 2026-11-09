@@ -136,6 +136,7 @@ class BatchReportTests(unittest.TestCase):
         for kind in ('reference', 'artifact', 'observation', 'protection'):
             with self.subTest(kind=kind):
                 self.manifest, self.docs = copy.deepcopy(manifest), copy.deepcopy(docs)
+                self.refresh('focused')
                 if kind == 'reference':
                     self.manifest['references'][0]['sha256'] = None
                 elif kind == 'artifact':
