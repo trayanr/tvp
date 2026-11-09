@@ -20,6 +20,8 @@ let
       glibc
       gzip
       isl
+      python-minimal
+      linux-headers
       libxcrypt
       zstd
       ;

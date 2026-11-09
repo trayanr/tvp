@@ -103,9 +103,9 @@ tvpLib.packages.mergeVariants {
   isl =
     select
       (frozenTests (
-        recipes.isl
+        recipes.isl.constructionRecipe
         // {
-          testDeps = recipes.isl.testDeps // {
+          testDeps = recipes.isl.constructionRecipe.testDeps // {
             # This is the identical old public helper computation, not a gcc13-profile tool.
             patchelf = construction.variants.gcc13.isl_0_20.tvp.declaredTestDependencies.patchelf;
           };

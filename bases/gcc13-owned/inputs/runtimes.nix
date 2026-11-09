@@ -17,7 +17,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   python-minimal = tvpLib.packages.mkVariants (
-    recipes.python-minimal
+    recipes.python-minimal.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

@@ -21,7 +21,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   linux-headers = tvpLib.packages.mkVariants (
-    recipes.linux-headers
+    recipes.linux-headers.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -178,11 +178,11 @@ tvpLib.packages.mergeVariants {
     }
   );
   isl = tvpLib.packages.mkVariants (
-    recipes.isl
+    recipes.isl.constructionRecipe
     // {
       # The coverage parser is a frozen test input, including its codec graph.
-      testDeps = recipes.isl.testDeps // {
-        python3 = recipes.isl.testDeps.python3.override {
+      testDeps = recipes.isl.constructionRecipe.testDeps // {
+        python3 = recipes.isl.constructionRecipe.testDeps.python3.override {
           zstd = (tvpLib.packages.mkVersions recipes.zstd.constructionRecipe).zstd_1_5_7;
         };
       };

@@ -74,6 +74,11 @@ let
         "ninja"
         "cmake"
         "meson"
+        "python-minimal"
+        "python-build"
+        "expat"
+        "isl"
+        "linux-headers"
         "python"
       ];
   # Exact-name historical baselines must close over the same retained providers.

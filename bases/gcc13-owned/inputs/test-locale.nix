@@ -23,7 +23,7 @@ let
   which = select recipes.which.constructionRecipe "2.21" { };
   bison = select recipes.bison.constructionRecipe "3.8.2" { inherit m4; };
   gmp = select recipes.gmp.constructionRecipe "6.3.0" { inherit m4; };
-  isl = select recipes.isl "0.28" { inherit gmp; };
+  isl = select recipes.isl.constructionRecipe "0.28" { inherit gmp; };
   mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { inherit gmp; };
   mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit gmp mpfr; };
   zlib = select recipes.zlib.constructionRecipe "1.3.2" { };
@@ -45,4 +45,8 @@ let
       ;
   };
 in
-select recipes.glibc "2.39" { inherit gcc binutils bison; }
+select recipes.glibc "2.39" {
+  inherit gcc binutils bison;
+  python3Minimal = select recipes.python-minimal.constructionRecipe "3.12.5" { };
+  linuxHeaders = select recipes.linux-headers.constructionRecipe "6.9" { };
+}
