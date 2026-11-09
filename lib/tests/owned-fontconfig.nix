@@ -32,7 +32,8 @@ let
   edited = (p.editSteps insert).editRuntime (r: r);
   env = p.specification.base.environment p.specification.environment;
   contracts = {
-    sameRecipe = p.drvPath == variant.drvPath;
+    distinctOrdinaryRecipe = p.drvPath != variant.drvPath && p.tvp.base == "source-gnu-candidate";
+    retainedVariant = variant.tvp.base == tvp.bases.default.name;
     zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
     runtimeRebuilds = p.drvPath != substituted.drvPath && !(substituted ? artifact);
     compileInputsPreserved =
@@ -42,7 +43,8 @@ let
         map (s: s.run) (builtins.filter (s: s.name == "output.rpaths") substituted.buildSteps)
       )
     );
-    sourcePreserved = p.src.drvPath == variant.src.drvPath;
+    archiveHashPreserved = p.src.outputHash == variant.src.outputHash;
+    distinctSourceProducer = p.src.drvPath != variant.src.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
     disabledLazy = !(builtins.any (s: s.name == "fontconfig.check") (steps.active disabled.buildSteps));
     checkFeature = !disabled.tvp.features.doCheck && disabled.tvp.features.tests;
@@ -81,10 +83,11 @@ let
         coreutils,
         fontconfig,
         pkgConfig,
+        grep,
         version,
         src,
       }:
-      {
+      final: {
         pname = "owned-fontconfig-consumer";
         inherit
           base
@@ -92,17 +95,23 @@ let
           coreutils
           version
           src
+          fontconfig
+          pkgConfig
+          grep
           ;
         plan = [
           (
-            (base.environment {
-              tools = [ pkgConfig ];
-              libraries = [ fontconfig ];
+            (final.base.environment {
+              tools = [
+                final.pkgConfig
+                final.grep
+              ];
+              libraries = [ final.fontconfig ];
             })
             // {
               name = "consumer.public";
               run = ''
-                test "$($PKG_CONFIG --modversion fontconfig)" = ${p.version}
+                test "$($PKG_CONFIG --modversion fontconfig)" = ${final.fontconfig.version}
                 $PKG_CONFIG --print-requires-private fontconfig > requirements
                 grep -F freetype2 requirements
                 grep -F expat requirements
@@ -117,13 +126,13 @@ let
                 mkdir -p "$TMPDIR/home" "$TMPDIR/cache" "$TMPDIR/config" "$TMPDIR/data" "$TMPDIR/runtime"
                 env -i ./headers
                 env -i ./consumer ${../../pkgs/libraries/fontconfig/tests/fixtures/font.bdf}
-                env -i HOME="$TMPDIR/home" XDG_CACHE_HOME="$TMPDIR/cache" XDG_CONFIG_HOME="$TMPDIR/config" XDG_DATA_HOME="$TMPDIR/data" XDG_RUNTIME_DIR="$TMPDIR/runtime" ./defaults ${fontconfig}
-                env -i HOME="$TMPDIR/home" XDG_CACHE_HOME="$TMPDIR/cache" ${fontconfig}/bin/fc-conflist > configurations
-                grep -F '${fontconfig}/share/fontconfig/conf.avail/' configurations
+                env -i HOME="$TMPDIR/home" XDG_CACHE_HOME="$TMPDIR/cache" XDG_CONFIG_HOME="$TMPDIR/config" XDG_DATA_HOME="$TMPDIR/data" XDG_RUNTIME_DIR="$TMPDIR/runtime" ./defaults ${final.fontconfig}
+                env -i HOME="$TMPDIR/home" XDG_CACHE_HOME="$TMPDIR/cache" ${final.fontconfig}/bin/fc-conflist > configurations
+                grep -F '${final.fontconfig}/share/fontconfig/conf.avail/' configurations
                 # Verify the actual loaded Expat provider through the loader's diagnostics.
                 env -i LD_DEBUG=libs ./consumer ${../../pkgs/libraries/fontconfig/tests/fixtures/font.bdf} 2> loader
                 grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt fontconfig.runtime.libraries 1)
+                  lib.getLib (builtins.elemAt final.fontconfig.runtime.libraries 1)
                 }/lib/libexpat.so.1' loader
                 mkdir "$out"
                 cp consumer headers defaults requirements private-libs configurations loader "$out/"
@@ -133,16 +142,17 @@ let
         ];
       };
     args = {
-      base = tvp.bases.default;
-      inherit (tvp.packages) bash coreutils;
+      inherit (p.specification) base bash coreutils;
+      grep = p.specification.grep;
       fontconfig = p;
-      pkgConfig = tvp.packages.pkg-config;
+      pkgConfig = p.specification.pkg-config;
       version = "1";
       src = null;
     };
     dependencyNames = [
       "fontconfig"
       "pkgConfig"
+      "grep"
     ];
     metadata = { };
     selection.kind = "fixture";
@@ -152,14 +162,20 @@ let
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned Fontconfig contracts: ${lib.concatStringsSep ", " failed}";
-(tvp.bases.default.stdenv.mkDerivation {
-  name = "tvp-owned-fontconfig-contracts";
-  buildCommand = ''
+(p.testContext.mkTest {
+  package = p;
+  name = "owned-fontconfig-contracts";
+  tools = [
+    consumer
+    runtimeConsumer
+  ];
+  script = ''
     test -x ${consumer}/consumer
     test -x ${runtimeConsumer}/consumer
     test -e ${substituted.tests.installed}
-    printf '%s\n' '${builtins.toJSON contracts}' > "$out"
+    printf '%s\n' ${lib.escapeShellArg (builtins.toJSON contracts)}
   '';
+  expected = builtins.toJSON contracts;
 })
 // {
   passthru = {
