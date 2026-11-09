@@ -117,9 +117,10 @@ in
       final.tools.xz
     ];
   };
-  # Installed headers use no external headers. Ncurses is an implementation
-  # library; isolated shared consumers need only this package.
-  developmentLibraries = [ ];
+  # The headers expose no external includes, but an isolated libtextstyle
+  # consumer needs Ncurses in the GNU linker's indirect DSO search path.
+  # libgettextpo consumers need no additional public provider.
+  developmentLibraries = [ final.providers.ncurses ];
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
