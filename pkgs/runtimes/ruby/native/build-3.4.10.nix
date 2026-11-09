@@ -272,7 +272,9 @@ in
       final.runtime.libffi
     ];
   };
-  development = {
+  development = output: {
+    libraryDirectories = [ "${output}/lib" ];
+    pkgconfig = [ "${output}/lib/pkgconfig" ];
     includeDirectories = [
       "include/ruby-${final.libDir}"
       "include/ruby-${final.libDir}/x86_64-linux"

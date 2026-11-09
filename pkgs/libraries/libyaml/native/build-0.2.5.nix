@@ -68,6 +68,11 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
+  development = output: {
+    includeDirectories = [ "include" ];
+    libraryDirectories = [ "${output}/lib" ];
+    pkgconfig = [ "${output}/lib/pkgconfig" ];
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
