@@ -16,6 +16,7 @@
   gawk,
   diffutils,
   python,
+  perl,
   binutils,
   patchelf,
   pkgConfig,
@@ -57,6 +58,7 @@ in
     gawk
     diffutils
     python
+    perl
     binutils
     patchelf
     pkgConfig
@@ -68,6 +70,7 @@ in
     ;
   environment = {
     tools = [
+      final.perl
       final.pkgConfig
       final.gnumake
       final.sed

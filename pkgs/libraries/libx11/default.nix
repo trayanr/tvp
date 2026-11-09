@@ -43,6 +43,7 @@ let
         gawk = constructionTool "gawk";
         diffutils = constructionTool "diffutils";
         python = constructionTool "python";
+        perl = constructionTool "perl";
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";
         pkgConfig = tvp.packages.pkg-config;
