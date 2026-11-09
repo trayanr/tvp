@@ -135,7 +135,12 @@ package
       libraries = lib.unique exports;
     };
   buildEnvironment = spec.buildEnvironment or (_: { });
-  passthru = spec.passthru or { };
+  # Like development, output-relative public data may depend on the raw output.
+  passthru =
+    let
+      declared = spec.passthru or { };
+    in
+    if builtins.isFunction declared then declared package else declared;
 }
 // (if base ? compiler then { inherit compiler; } else { stdenv = base.stdenv; })
 // lib.optionalAttrs parts.split { artifact = artifact; }

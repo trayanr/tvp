@@ -90,6 +90,40 @@ class Fixture(unittest.TestCase):
         cached.remove(self.outputs['aggregate'])
         self.assertEqual(g.preparation(self.d, self.nodes, cached), [])
 
+    def test_selected_jdk_without_native_metadata_prepares_before_aggregate(self):
+        a = self.ids['gcc']
+        self.nodes[a].update(name='jdk-21.0.13', pname=None, version=None, heavy=False)
+        self.nodes[self.ids['llvm']]['heavy'] = False
+        row = self.d['metadata']['families'].pop('gcc')
+        row.update(family='jdk', version='21.0.13')
+        self.d['metadata']['families']['jdk'] = row
+        s.save(self.run/'descriptor.json', self.d)
+        s.save(self.run/'graph.json', self.nodes)
+        self.assertEqual([r['drv'] for r in g.preparation(self.d,self.nodes,set())], [a])
+        commands = []
+        def realize(worker, phase, targets):
+            commands.append((phase, targets))
+            if phase == 'heavy':
+                self.assertEqual(targets, [a+'^dev,out'])
+                for key in ('app','dev'): Path(self.outputs[key]).mkdir(exist_ok=True)
+            else:
+                self.materialize()
+        with patch.object(g.Store,'valid',side_effect=self.valid), patch('latest_worker.retain',return_value=[]), patch.object(Worker,'command',realize):
+            self.assertEqual(Worker(self.run,self.attempt).execute(),0)
+        self.assertEqual([p for p,_ in commands], ['heavy','aggregate'])
+        # Exact selection cannot classify an artifact/helper, even with JDK text.
+        self.nodes[a]['fixed'] = True
+        self.assertEqual(g.preparation(self.d,self.nodes,set()), [])
+        self.nodes[a]['fixed'] = False
+        for field,value in (('name','jdk-21.0.13-audit'),('pname','helper'),('version','other')):
+            original = self.nodes[a].get(field)
+            self.nodes[a][field] = value
+            with self.assertRaisesRegex(ValueError,'Selected application'):
+                g.preparation(self.d,self.nodes,set())
+            self.nodes[a][field] = original
+        self.d['metadata']['families'] = {'other':row}
+        self.assertEqual(g.preparation(self.d,self.nodes,set()), [])
+
     def test_dynamic_unknown_nodes_and_output_paths_are_honest_errors(self):
         child = self.nodes[self.ids['test']]['inputDrvs'][self.ids['llvm']]
         child['dynamicOutputs'] = {'out': {}}
@@ -517,6 +551,16 @@ class NativeProtocols(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'version 4'): g.graph(document)
         for document in ({'version':4}, {'junk':7}):
             with self.assertRaises(ValueError): g.graph(document)
+
+    def test_owned_jdk_name_only_and_malformed_metadata(self):
+        document = self.native()
+        row = document['derivations'][drv('gcc-1')]
+        row['env'] = {'__json':json.dumps({'name':'jdk-21.0.13'})}
+        parsed = g.graph(document)[drv('gcc-1')]
+        self.assertIsNone(parsed['pname']); self.assertIsNone(parsed['version'])
+        self.assertFalse(parsed['heavy']); self.assertFalse(parsed['fixed'])
+        row['env']['__json'] = json.dumps({'name':'jdk-21.0.13','pname':23})
+        with self.assertRaisesRegex(ValueError,'Malformed application'): g.graph(document)
 
     def test_legacy_structured_metadata_preserves_sequential_compiler_gating(self):
         gcc, llvm = drv('gcc-1'), drv('llvm-1')

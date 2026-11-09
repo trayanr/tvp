@@ -134,3 +134,16 @@ package output (`development = output: { aclocalDirectories =
 [ "${output}/share/aclocal" ]; };`). The owned constructor resolves it after
 construction; it does not affect procedure inputs or execute hooks. Libtool
 uses this for the actual installed macro directory, including customized outputs.
+
+Git 2.56.0, GN 20260707 and the Gradle 9.3.1 distribution wrapper use the
+source-GNU base for ordinary construction and regular tests. Their complete
+legacy recipes remain independent. Git compiles source with the declared binary
+Rust/Cargo tools and offline vendored dependencies. GN's build-only Python is
+selected from the retained source-owned construction tools. Its local fixed-output
+procedure preserves the flat Gitiles tree hash and rejects archive links/special
+entries; reuse of the same cached output does not certify a fresh download.
+Gradle retains upstream binary bytecode/native payloads and all.zip unchanged;
+its explicit environment provider supplies GRADLE_HOME without running hooks.
+For an output-relative public interface such as distributionArchive, `passthru`
+may be a pure function of the raw output, like `development`. This does not add
+commands or dependencies to existing specifications.

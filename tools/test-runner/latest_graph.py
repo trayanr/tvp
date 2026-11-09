@@ -74,7 +74,7 @@ def graph(document):
         # Metadata and exact application name exclude tests, archives, patches,
         # wrappers and helper artifacts. Fixed-output seeds are artifacts too.
         fixed = any("hash" in o or "hashAlgo" in o for o in node["outputs"].values())
-        node.update(name=name, pname=pname, version=version,
+        node.update(name=name, pname=pname, version=version, fixed=fixed,
                     heavy=pname in HEAVY and isinstance(version, str)
                     and name == pname + "-" + version and not fixed)
     return nodes
@@ -125,6 +125,23 @@ def realization_targets(descriptor, nodes, valid):
 
 def preparation(descriptor, nodes, valid, unresolved=None):
     """Postorder over needed recipes only; cached parents need no lost ancestors."""
+    # The descriptor has already validated family/alias, exact producer and
+    # sibling outputs. Owned producers may omit pname/version in native JSON.
+    # Bind only the selected JDK, never a guessed name suffix. Source compiler
+    # producer naming remains governed by the existing metadata boundary.
+    selected_heavy = set()
+    for family, row in descriptor["metadata"]["families"].items():
+        drv = row["packageDRV"]
+        node = nodes[drv]
+        if family == "jdk" and not node.get("fixed", False):
+            version = row.get("version")
+            if version is not None:
+                require(isinstance(version, str) and version, "Malformed selected application version")
+                require(node["name"] == family + "-" + version,
+                        "Selected application name differs: " + drv)
+                require(node.get("pname") in (None, family) and node.get("version") in (None, version),
+                        "Selected application metadata differs: " + drv)
+                selected_heavy.add(drv)
     demanded = {}
     for drv, node in nodes.items():
         for child, selectors in node["inputDrvs"].items():
@@ -169,7 +186,7 @@ def preparation(descriptor, nodes, valid, unresolved=None):
                 stack.extend((c, False) for c in sorted(nodes[drv]["inputDrvs"], reverse=True) if c in needed)
     return [{"drv": drv, "name": nodes[drv]["name"],
              "outputs": {n: nodes[drv]["outputs"][n]["path"] for n in sorted(demanded[drv])}}
-            for drv in order if nodes[drv]["heavy"]]
+            for drv in order if nodes[drv]["heavy"] or drv in selected_heavy]
 
 
 def preflight(descriptor, nodes, store=None):
