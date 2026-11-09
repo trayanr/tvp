@@ -147,3 +147,19 @@ its explicit environment provider supplies GRADLE_HOME without running hooks.
 For an output-relative public interface such as distributionArchive, `passthru`
 may be a pure function of the raw output, like `development`. This does not add
 commands or dependencies to existing specifications.
+
+LibYAML 0.2.5, Ruby 3.4.10 and Bundler 2.5.20 also select the source-GNU
+base and owned regular test contexts. Their independent native procedures leave
+historical release procedures complete. LibYAML preserves shared/static archives,
+headers and pkg-config metadata and runs upstream checks. Ruby 3 retains a single
+stage, shared libruby, UTF-8 gem installation and default YJIT, using the declared
+binary Rust compiler only at build time. Turning YJIT off does not demand Rust;
+this port does not introduce a source Rust bootstrap or Ruby 4's ZJIT interface.
+Ruby's extension ELF scopes use its measured 3.4 layout and named runtime providers.
+Bundler installs the pinned source gem locally with Ruby 3 and activates its exact
+version, independently of Ruby's default Bundler. Its explicit environment provider
+publishes GEM_PATH and RUBYLIB without executing installed setup hooks. Focused
+controls cover offline install/lock/check/exec, an alternative interpreter wrapper,
+Ruby native-gem compilation with the source compiler, and the retained independent
+GCC 13 extension control. Other Ruby and Bundler reverse builds require separate
+qualification.
