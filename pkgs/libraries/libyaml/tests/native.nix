@@ -1,9 +1,4 @@
-# One suite, shared by every libyaml version. Never fork it per builder: a test
-# that exists only for newer versions cannot detect drift in an older one.
-# Guards select whole tests; they never edit a test body.
-#
-# libyaml installs no executable, so every test compiles against the header and
-# links the library — which is also how every consumer uses it.
+# LibYAML owned regular consumers. The complete legacy shared suite remains in default.nix.
 {
   pkgs,
   tvpLib,

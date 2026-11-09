@@ -1,6 +1,4 @@
-# One suite, shared by every Ruby version. Never fork it per builder: a test
-# that exists only for newer versions cannot detect drift in an older one.
-# Guards select whole tests; they never edit a test body.
+# Ruby3 owned regular consumers. The complete legacy shared suite remains in default.nix.
 {
   pkgs,
   tvpLib,
