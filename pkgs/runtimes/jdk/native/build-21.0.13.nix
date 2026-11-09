@@ -193,7 +193,12 @@ in
     (
       (outputs.rpaths {
         workspaceRoot = "source/build/${final.configurationName}";
-        paths = [ "jdk" ];
+        # Images also package the separate support originals into JMOD payloads.
+        paths = [
+          "jdk"
+          "support/modules_libs"
+          "support/modules_cmds"
+        ];
         elfKinds = [ "runtime" ];
         inherit (final) python binutils patchelf;
         dlopenDirectories = [ "${final.libcups}/lib" ];

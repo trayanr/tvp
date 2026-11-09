@@ -232,6 +232,7 @@ let
       spec.base.compiler
     ];
     script = ''
+      ${spec.python}/bin/python3 -B ${./source-paths.py} ${../../../pkgs/runtimes/jdk/native/source-paths.py}
       ${spec.python}/bin/python3 -B ${./staged-rpaths.py} \
         ${../../staged-output/rpaths.py} ${../../native-output} ${../../elf-output.py} \
         ${spec.binutils}/bin/readelf ${spec.patchelf}/bin/patchelf ${spec.coreutils}/bin/false ${../../../pkgs/runtimes/jdk/native/interpreters.py} ${spec.base.compiler.libc}/lib/ld-linux-x86-64.so.2
@@ -240,8 +241,10 @@ let
         test "$(cat "$image/boot-selected")" = selected-boot
         test "$(cat "$image/conf-selected")" = selected-configuration
         test "$(cat "$image/compiler-selected")" = ${selected}/bin/cc
-        ${spec.patchelf}/bin/patchelf --print-rpath "$image/jmods/embedded-resource" > embedded-paths
-        ${spec.python}/bin/python3 -c 'from pathlib import Path; paths = Path("embedded-paths").read_text().strip().split(":"); assert "${cups}/lib" in paths; assert all("unused" not in p for p in paths)'
+        for payload in embedded-resource embedded-library embedded-command; do
+          ${spec.patchelf}/bin/patchelf --print-rpath "$image/jmods/$payload" > embedded-paths
+          ${spec.python}/bin/python3 -c 'from pathlib import Path; paths = Path("embedded-paths").read_text().strip().split(":"); assert "${cups}/lib" in paths; assert all("unused" not in p for p in paths)'
+        done
         test "$(${spec.patchelf}/bin/patchelf --print-interpreter "$image/bin/java")" = ${spec.base.compiler.libc}/lib/ld-linux-x86-64.so.2
         ${spec.patchelf}/bin/patchelf --print-rpath "$image/bin/java" > paths
         ${spec.python}/bin/python3 -c 'from pathlib import Path; assert "${cups}/lib" in Path("paths").read_text().strip().split(":")'
