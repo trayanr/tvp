@@ -72,6 +72,10 @@ let
       registry = runtimeRegistry;
     })
     // {
+      recipe-splits = pkgs.writeText "tvp-recipe-splits.json" (
+        builtins.toJSON (tvpLib.recipeSplits.enforce tvp.recipeSplitReport)
+      );
+      recipe-split-contracts = import ./lib/tests/recipe-splits.nix { inherit pkgs tvp; };
       upstream-tracking = import ./tools/upstream/tests {
         inherit pkgs tvp ownedCLI;
         testDeps = {
@@ -555,6 +559,38 @@ let
   };
 
   tvp = {
+    recipeSplitInventory = tvpLib.recipeSplits.inventory { inherit canonical variants; };
+    recipeSplitReport =
+      (tvpLib.recipeSplits.validate {
+        inventory = tvp.recipeSplitInventory;
+        baseline = tvpLib.recipeSplits.baselineFromJSON (builtins.readFile ./audits/split-baseline.json);
+      })
+      // {
+        outsideOrdinaryScope = {
+          producers =
+            pkgs.lib.mapAttrs
+              (id: producer: {
+                inherit producer;
+                validation = "OUTSIDE_ORDINARY_POLICY_REQUIRES_ADAPTER_AUDIT";
+                role = builtins.head (pkgs.lib.splitString "." id);
+                disposition = "Separate historical/base/bootstrap/composition adapter audit required.";
+              })
+              (
+                pkgs.lib.filterAttrs (
+                  id: _: !(pkgs.lib.hasPrefix "packages." id || pkgs.lib.hasPrefix "variants." id)
+                ) tvp.graph.entries
+              );
+          repositoryChecks = builtins.attrNames checks;
+          testBatches = builtins.attrNames testBatchEntries;
+          testDisposition = "Test/check harnesses and base suites are validation roles, not ordinary production recipes; constructor adapters require separate audit.";
+        };
+      };
+    recipeSplitStrict = tvpLib.recipeSplits.enforce (
+      tvpLib.recipeSplits.validate {
+        inventory = tvp.recipeSplitInventory;
+        strict = true;
+      }
+    );
     dependencyRoots = import ./lib/dependency-roots.nix {
       inherit (pkgs) lib;
       inherit tools checks;

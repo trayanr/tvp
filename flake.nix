@@ -53,6 +53,9 @@
             graph
             dependencyRoots
             dependencyInventory
+            recipeSplitInventory
+            recipeSplitReport
+            recipeSplitStrict
             ;
         };
 

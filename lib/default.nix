@@ -6,6 +6,7 @@ let
 in
 {
   inherit versions tests platforms;
+  recipeSplits = import ./recipe-splits.nix { inherit lib; };
   android = import ./android.nix { inherit lib; };
   provenance = import ./provenance.nix { inherit lib; };
   graph = import ./graph.nix { inherit lib; };

@@ -856,6 +856,46 @@ Retained stdenv files keep their original constructor; new owned recipes use the
 public builder API. Internal implementation imports stay in the shared library,
 rather than becoming the dependency interface of every package file.
 
+### Evaluated split policy and migration list
+
+`tvp.lib.recipeSplits.inventory` inspects canonical releases (including broken
+releases with their declared reasons) and public named variants. Exact
+`canonical/NAME` and `variants.PROFILE/NAME` IDs keep alias selectors from hiding
+or double-counting releases. The context-free `recipeSplitReport` lists every
+row, partition counts, producer identities and remaining gaps. It also enumerates
+historical bootstrap/base/composition producer IDs and validation roles outside
+ordinary admission; their adapters still require the later whole-repository audit.
+
+`checks.recipe-splits` enforces the evaluated plan, active commands on both sides,
+and real, distinct artifact/final producers matching a fresh owned-constructor
+lowering. `audits/split-baseline.json` is an exact migration list, not a claim that
+all recipes are split. Every entry binds an ID to its constructor, failure class
+and actionable reason. Keep one compact, sorted-key JSON record per line, inside
+the outer array; the loader enforces this encoding because Nix's JSON parser would
+otherwise silently accept duplicate object members. New failures, classification drift, duplicate/wildcard IDs,
+malformed reasons and stale exceptions fail. Remove an entry when that row becomes
+compliant. Never regenerate the list to accept a new unsplit port. Named-output
+capability gaps remain explicit debt until the backend and recipes are qualified.
+
+```sh
+nix eval .#recipeSplitReport --json
+nix build .#checks.x86_64-linux.recipe-splits --no-link
+nix build .#checks.x86_64-linux.recipe-split-contracts --no-link
+# Final admission: expected to fail while any ordinary debt remains.
+nix eval .#recipeSplitStrict --json
+```
+
+The normal report says `PASS_WITH_EXISTING_DEBT` while the exact list remains;
+`ALL_SPLIT` requires zero debt. The pure validator also accepts `strict = true`
+and/or an omitted baseline for final admission. The tiny constructor regression
+proves final-only artifact reuse and build-edit invalidation, and builds the final
+fixtures. Its separate negative control intentionally writes an artifact reference:
+
+```sh
+# Expected failure from Nix outputChecks: forbidden artifact reference.
+nix build .#checks.x86_64-linux.recipe-split-contracts.passthru.leaking --no-link
+```
+
 ## `checks` vs `testBatches`
 
 | Output | Holds |
