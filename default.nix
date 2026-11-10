@@ -174,6 +174,7 @@ let
       native-make = import ./lib/tests/native-make.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
+      owned-android = import ./lib/tests/android { inherit pkgs tvp; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
         inherit pkgs;

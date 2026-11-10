@@ -1,10 +1,17 @@
 { lib }:
+let
+  legacy = import ./android-legacy.nix { inherit lib; };
+in
 {
-  # Components keep their own canonical graphs. A profile only joins paths;
-  # choosing another API/NDK never rebuilds Java, Dart or the other components.
+  # Complete retained adapter for explicit non-native callers only.
+  mkLegacySdk = legacy.mkSdk;
   mkSdk =
     {
-      stdenv,
+      tvp,
+      base,
+      bash,
+      coreutils,
+      sed,
       components,
       name ? "android-sdk",
     }:
@@ -20,62 +27,26 @@
     else if lib.length cli > 1 then
       throw "TVP Android: select one command-line tools version per SDK profile."
     else
-      (stdenv.mkDerivation {
-        inherit name;
-        dontUnpack = true;
-        dontConfigure = true;
-        dontBuild = true;
-        installPhase = ''
-          sdk="$out/libexec/android-sdk"
-          mkdir -p "$sdk" "$out/bin" "$out/nix-support"
-          cp ${./writable-sdk.sh} "$out/libexec/writable-sdk.sh"
-          ${lib.concatMapStringsSep "\n" (p: ''
-            mkdir -p "$sdk/$(dirname ${lib.escapeShellArg p.tvp.android.sdkPath})"
-            ln -s '${p}/${p.tvp.android.componentPath}' "$sdk/${p.tvp.android.sdkPath}"
-          '') components}
-          ${lib.optionalString (cli != [ ]) (
-            let
-              p = lib.head cli;
-            in
-            ''
-                ln -s '${lib.removePrefix "cmdline-tools/" p.tvp.android.sdkPath}' "$sdk/cmdline-tools/latest"
-                cat > "$out/bin/android" <<EOF
-              #!${stdenv.shell}
-              sdk=\$("$out/bin/tvp-android-sdk")
-              exec ${p}/${p.tvp.android.componentPath}/bin/android --sdk="\$sdk" "\$@"
-              EOF
-                cat > "$out/bin/sdkmanager" <<EOF
-              #!${stdenv.shell}
-              sdk=\$("$out/bin/tvp-android-sdk")
-              exec ${p}/${p.tvp.android.componentPath}/bin/sdkmanager --sdk_root="\$sdk" "\$@"
-              EOF
-                chmod +x "$out/bin/android" "$out/bin/sdkmanager"
-            ''
-          )}
-          substitute ${./android-sdk.sh} "$out/bin/tvp-android-sdk" \
-            --subst-var-by bash '${stdenv.shell}' \
-            --subst-var-by runtimePath '${lib.makeBinPath stdenv.initialPath}' \
-            --subst-var-by helper "$out/libexec/writable-sdk.sh" \
-            --subst-var-by sdk "$sdk" \
-            --subst-var-by identity "$(basename "$out")"
-          chmod +x "$out/bin/tvp-android-sdk"
-          ${lib.optionalString (builtins.elem "platform-tools" paths) ''
-            ln -s "$sdk/platform-tools/adb" "$out/bin/adb"
-            ln -s "$sdk/platform-tools/fastboot" "$out/bin/fastboot"
-          ''}
-          cat > "$out/nix-support/setup-hook" <<EOF
-          export ANDROID_HOME=\$("$out/bin/tvp-android-sdk")
-          export ANDROID_SDK_ROOT=\$ANDROID_HOME
-          EOF
-        '';
-        passthru = {
-          inherit components;
-          sdkPath = "libexec/android-sdk";
+      (tvp.builder {
+        recipe = import ./android-profile.nix { inherit lib; };
+        args = {
+          inherit
+            tvp
+            base
+            bash
+            coreutils
+            sed
+            components
+            name
+            ;
         };
-      })
-      // {
-        __tvpComposition = true;
-        __tvpSelection = {
+        dependencyNames = spec: [
+          "bash"
+          "coreutils"
+          "sed"
+        ];
+        metadata.kind = "android-sdk-composition";
+        selection = {
           namespace = "compositions";
           selector = name;
           kind = "override";
@@ -83,5 +54,13 @@
           operation = "custom-sdk";
           reason = "Explicit SDK composition of released binary artifacts.";
         };
-      };
+        testContext =
+          package:
+          tvp.lib.tests.fromPackage {
+            builder = tvp.builder;
+            inherit package;
+          };
+        mkTests = _: { };
+        passthru.__tvpComposition = true;
+      });
 }

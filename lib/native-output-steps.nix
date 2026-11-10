@@ -19,6 +19,35 @@ let
       } ${./native-output} ${name}'';
 in
 {
+  # Shallow host ELF selection; target payloads never enter this operation.
+  hostELF =
+    {
+      python,
+      binutils,
+      patchelf,
+      paths,
+      patterns ? [ ],
+      loader,
+      libraries,
+    }:
+    {
+      name = "output.host-elf";
+      tools = [
+        python
+        binutils
+        patchelf
+      ];
+      run = ''${python}/bin/python3 -B ${./host-elf.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths patterns loader;
+            libraries = map (p: "${lib.getLib p}/lib") libraries;
+            readelf = "${binutils}/bin/readelf";
+            patchelf = "${patchelf}/bin/patchelf";
+          }
+        )
+      } ${./native-output}'';
+    };
   copyArtifacts =
     { coreutils }:
     {

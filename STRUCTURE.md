@@ -1094,7 +1094,10 @@ profile selects API 37.2 r2, Build Tools 37.0.0 and NDK 30.0.16248370. Each prof
 contain multiple platform, Build Tools and NDK versions; duplicate component paths and
 multiple command-line tools versions are rejected. Component selection adds links and
 keeps each component's canonical build graph intact. The lower-level constructor is
-`tvp.lib.android.mkSdk { stdenv = ...; components = ...; }`.
+`tvp.lib.android.mkSdk { tvp = ...; base = ...; bash = ...;
+coreutils = ...; sed = ...; components = ...; }`. It uses the owned constructor,
+with component links installed before the split and wrappers/cache setup afterward.
+`mkLegacySdk` is the explicitly selected retained non-native adapter.
 
 Profiles provide `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `android`, `sdkmanager`, `adb`,
 `fastboot` and `tvp-android-sdk`. The latter prints the writable SDK directory. SDK locks

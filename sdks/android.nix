@@ -3,7 +3,21 @@ let
   # These are released composition artifacts, not ordinary tool dependencies.
   # Use the exact namespace so a future prefix alias cannot move an SDK profile.
   p = tvp.canonical;
-  mkSdk = args: tvp.lib.android.mkSdk ({ inherit (tvp.bases.default) stdenv; } // args);
+  candidate = import ../bases/source-gnu { };
+  native = candidate.base.platform.system == tvp.bases.default.stdenv.hostPlatform.system;
+  mkSdk =
+    if native then
+      args:
+      tvp.lib.android.mkSdk (
+        {
+          inherit tvp;
+          base = candidate.base;
+          inherit (candidate.tools) bash coreutils sed;
+        }
+        // args
+      )
+    else
+      args: tvp.lib.android.mkLegacySdk ({ inherit (tvp.bases.default) stdenv; } // args);
   mkProfile =
     selector: args:
     tvp.lib.packages.tagSelection {
