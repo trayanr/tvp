@@ -1,6 +1,5 @@
 """Audit symlinks below explicit output directories without traversing them."""
 import os
-from pathlib import Path
 import stat
 import sys
 
@@ -36,17 +35,21 @@ def check_link(path):
         current = current / part
         info = current.lstat()  # Dangling targets fail rather than disappearing.
         if stat.S_ISLNK(info.st_mode):
-            target = Path(os.readlink(current))
-            if target.is_absolute():
+            target = os.readlink(current)
+            if os.path.isabs(target):
                 raise ValueError(f"expected relative output symlink: {current}")
             followed += 1
             # Match the Linux path-resolution limit and bound cyclic chains.
             if followed > 40:
                 raise ValueError(f"cyclic or excessive output symlink chain: {path}")
-            pending = list(target.parts) + pending
+            # Preserve empty and dot components: file/ and file/. require a
+            # directory in Linux, including when hidden in a link chain.
+            pending = target.split("/") + pending
             current = current.parent
         elif pending and not stat.S_ISDIR(info.st_mode):
             raise ValueError(f"non-directory output symlink component: {current}")
+    # Verify the original spelling with the kernel after checking confinement.
+    path.stat()
 
 
 def walk(directory):

@@ -17,13 +17,21 @@ def case(name, setup, succeeds, selectors=None):
         (root / "lib").mkdir()
         (root / "lib/target").write_text("unchanged")
         setup(root)
+        reference = None
+        if succeeds is None:
+            try:
+                os.stat(root / "bin/tool")
+                reference = {"resolves": True, "errno": None}
+            except OSError as error:
+                reference = {"resolves": False, "errno": error.errno}
+            succeeds = reference["resolves"]
         args = [sys.executable, "-B", str(helper), str(root),
                 json.dumps({"paths": selectors if selectors is not None else ["bin"]}), str(common)]
         result = subprocess.run(args, capture_output=True, text=True, timeout=5)
         assert (result.returncode == 0) == succeeds, (name, result.returncode, result.stderr)
         assert (root / "lib/target").read_text() == "unchanged"
         cases.append({"name": name, "expected": "PASS" if succeeds else "REJECT",
-                      "exit": result.returncode})
+                      "exit": result.returncode, "linuxReference": reference})
 
 
 def links(*entries):
@@ -52,4 +60,29 @@ case("symlink-selector-parent", links(("alias", "lib")), False, ["alias/target"]
 case("symlink-directory-selector", links(("alias", "bin")), False, ["alias"])
 case("empty-selectors", lambda _: None, False, [])
 case("unsupported-file", lambda r: os.mkfifo(r / "bin/pipe"), False)
+# Compare raw in-output path spelling with the kernel instead of normalizing
+# it in the test. Absolute/escaping policy cases above are intentionally stricter.
+def raw_target(target):
+    def setup(root):
+        (root / "lib/directory").mkdir()
+        (root / "lib/directory/file").write_text("directory child")
+        for name, value in [
+            ("file-link", "target"), ("dir-link", "directory"),
+            ("chained-file", "file-link"), ("chained-dir", "dir-link"),
+            ("file-slash", "target/"), ("file-dot", "target/."),
+            ("dir-slash", "directory/"), ("dir-dot", "directory/."),
+        ]:
+            (root / "lib" / name).symlink_to(value)
+        (root / "bin/tool").symlink_to(target)
+    return setup
+
+
+for target in [
+    "target", "directory", "file-link", "dir-link", "chained-file",
+    "chained-dir", "file-slash", "file-dot", "dir-slash", "dir-dot",
+]:
+    for suffix in ["", "/", "/.", "/./", "//", "//.", "/..", "/../target"]:
+        case(f"linux-resolution:{target}{suffix}",
+             raw_target(f"../lib/{target}{suffix}"), None)
+
 print(json.dumps({"passed": len(cases), "cases": cases}, indent=2))
