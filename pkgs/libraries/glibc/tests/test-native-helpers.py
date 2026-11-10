@@ -41,6 +41,13 @@ class PrivateTree(unittest.TestCase):
             private_files(self.tree)
         self.assertEqual(self.outside.read_bytes(), b'untouched')
 
+    def test_source_preparation_still_rejects_linked_elf(self):
+        self.outside.write_bytes(b'\x7fELFunchanged')
+        os.link(self.outside, self.tree / 'linked-elf')
+        with self.assertRaisesRegex(ValueError, 'non-private'):
+            private_files(self.tree)
+        self.assertEqual(self.outside.read_bytes(), b'\x7fELFunchanged')
+
     def run_rebind(self, *args):
         return subprocess.run([sys.executable, '-B', str(NATIVE / 'rebind-tools.py'),
                                str(self.tree), sys.executable, sys.executable,
@@ -91,6 +98,29 @@ class PrivateTree(unittest.TestCase):
         self.assertIn(b'non-private', result.stderr)
         self.assertEqual(first.read_bytes(), b'#!/bin/sh\necho ok\n')
         self.assertEqual(self.outside.read_bytes(), b'untouched')
+
+    def test_rebind_preserves_elf_links_across_output_roots(self):
+        self.outside.write_bytes(b'\x7fELFunchanged-getconf')
+        self.outside.chmod(0o755)
+        paths = [self.outside, self.tree / 'getconf', self.tree / 'getconf-alias',
+                 self.root / 'other-output-alias']
+        for path in paths[1:]:
+            os.link(self.outside, path)
+        script = self.tree / 'ldd'
+        script.write_bytes(b'#!/bin/sh\necho original\n')
+        script.chmod(0o755)
+
+        def snapshot():
+            return [(p.read_bytes(), p.stat().st_dev, p.stat().st_ino,
+                     p.stat().st_nlink, p.stat().st_mode, p.stat().st_mtime_ns)
+                    for p in paths]
+
+        before = snapshot()
+        result = self.run_rebind()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(snapshot(), before)
+        self.assertEqual(self.outside.stat().st_nlink, 4)
+        self.assertNotEqual(script.read_bytes(), b'#!/bin/sh\necho original\n')
 
     def test_unsupported_directive_has_no_partial_write(self):
         first = self.tree / 'a-script'

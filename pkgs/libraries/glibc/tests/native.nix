@@ -99,6 +99,8 @@ glibc.testContext.mkSuite {
         ${glibc}/${glibc.platform.dynamicLinker} --list-diagnostics > diagnostics
         grep -F 'path.prefix="${glibc}"' diagnostics >&2
         grep -F 'path.sysconfdir="${glibc}/etc"' diagnostics >&2
+        ${glibc.bin}/bin/ld.so --list-diagnostics > alias.diagnostics
+        grep -F 'path.prefix="${glibc}"' alias.diagnostics >&2
         ${spec.python3Minimal}/bin/python3 -B - <<'PY'
         from pathlib import Path
         loader = Path('${glibc}/${glibc.platform.dynamicLinker}').read_bytes()
@@ -121,7 +123,11 @@ glibc.testContext.mkSuite {
           test -s ${glibc}/$file
         done
         test -d ${glibc}/lib/locale/C.utf8
-        for file in bin/ldd bin/mtrace bin/getconf bin/localedef bin/locale bin/iconv \
+        test "$(readlink ${glibc.bin}/bin/ld.so)" = '${glibc}/${glibc.platform.dynamicLinker}'
+        for name in POSIX_V6_LP64_OFF64 XBS5_LP64_OFF64 POSIX_V7_LP64_OFF64; do
+          test ${glibc.bin}/bin/getconf -ef ${glibc}/libexec/getconf/$name
+        done
+        for file in bin/ld.so bin/ldd bin/mtrace bin/getconf bin/localedef bin/locale bin/iconv \
           bin/sprof bin/pldd bin/tzselect bin/zdump sbin/ldconfig sbin/iconvconfig sbin/nscd sbin/zic; do
           test -x ${glibc.bin}/$file
         done

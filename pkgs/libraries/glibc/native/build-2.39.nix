@@ -230,6 +230,9 @@ in
       mkdir -p "$bin" "$out/share/licenses/glibc"
       mv "$out/bin" "$bin/bin"
       mv "$out/sbin" "$bin/sbin"
+      # This upstream alias crosses the split; retain its loader in out.
+      test -L "$bin/bin/ld.so"
+      ln -sfn "$out/${final.platform.dynamicLinker}" "$bin/bin/ld.so"
       cp ../source/COPYING* ../source/LICENSES "$out/share/licenses/glibc/"
     '')
     # Bind installed shell scripts without touching ELF, loader or libc search

@@ -5,7 +5,7 @@ import stat
 import sys
 
 
-def private_files(root):
+def private_files(root, *, preserve_linked_elf=False):
     root = Path(root)
     if not root.is_absolute():
         raise ValueError('expected absolute private root')
@@ -26,7 +26,13 @@ def private_files(root):
                 continue  # Never follow, read or mutate a discovered link.
             if stat.S_ISDIR(info.st_mode):
                 walk(path)
-            elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
+            elif stat.S_ISREG(info.st_mode):
+                if info.st_nlink != 1:
+                    if preserve_linked_elf:
+                        with path.open('rb') as stream:
+                            if stream.read(4) == b'\x7fELF':
+                                continue  # Unchanged ELF aliases are never mutation candidates.
+                    raise ValueError('non-private regular file: ' + str(path))
                 result.append(path)
             else:
                 raise ValueError('non-private regular file: ' + str(path))

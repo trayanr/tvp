@@ -1,6 +1,7 @@
 """Rebind copied glibc scripts; ELF/symlinks stay byte-identical.
 
-Private-tree preflight rejects hardlinks and symlinked parents before writes.
+Preflight rejects linked scripts and symlinked parents before writes. Shared
+ELF aliases, including upstream getconf links across outputs, remain untouched.
 The configured Perl fallback is replaced together with the shebang. Shell tools
 receive an explicit auxiliary PATH, so ldd/xtrace/sotruss do not depend on callers.
 """
@@ -19,7 +20,7 @@ def main():
             raise ValueError('expected explicit executable interpreter')
     if any(c in tool_path for c in "'\n\0") or not all(os.path.isabs(p) for p in tool_path.split(':')):
         raise ValueError('expected explicit auxiliary tool PATH')
-    files = private_files(root)
+    files = private_files(root, preserve_linked_elf=True)
     pending = []
     for path in files:
         if not path.stat().st_mode & 0o111:
