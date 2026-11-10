@@ -274,6 +274,16 @@ in
       tools = [ python ];
       run = run python "check-symlinks" { inherit paths; };
     };
+  # Audit a directory tree; unlike checkSymlinks, selectors are directories.
+  checkSymlinkTree =
+    { python, paths }:
+    {
+      name = "output.check-symlink-tree";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${./symlink-tree.py} "$out" ${
+        lib.escapeShellArg (builtins.toJSON { inherit paths; })
+      } ${./native-output}'';
+    };
   checkPaths =
     {
       python,

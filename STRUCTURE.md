@@ -1229,7 +1229,12 @@ after GN/Ninja, upstream checks and raw SDK installation. GN receives an explici
 LLVM environment with no compiler-library contributions from the GNU base;
 its loader and final libraries come from LLVM's selected target. Finalization
 uses `outputs.interpreters` and `outputs.rpaths` with explicit libraries and no
-base. Omitting `base` in this libraries mode retains no implicit base directories;
+base. Directory symlink audits use `outputs.checkSymlinkTree`; selectors name
+real directories, and every discovered symlink must be relative, non-dangling and
+resolve inside the output without escaping through an intermediate link. The
+walker never descends through symlinks. `outputs.checkSymlinks` retains its
+individual-link selector contract.
+Omitting `base` in this libraries mode retains no implicit base directories;
 existing callers that supply a base keep their previous commands. The source
 DevTools and mutable CIPD stamp profiles are unsupported and fail explicitly.
 Configuration, test and pub caches use workspace directories across steps.

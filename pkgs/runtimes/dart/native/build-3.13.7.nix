@@ -297,7 +297,7 @@ in
           test -s pub-help
         '';
       }
-      (outputs.checkSymlinks {
+      (outputs.checkSymlinkTree {
         python = final.helperPython;
         paths = [ "bin" ];
       })
