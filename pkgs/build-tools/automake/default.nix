@@ -157,10 +157,13 @@ let
     source =
       { version, sha256 }:
       pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/automake/automake-${version}.tar.xz"
-          "https://ftp.gnu.org/gnu/automake/automake-${version}.tar.xz"
-        ];
+        urls =
+          [
+            "https://mirrors.kernel.org/gnu/automake/automake-${version}.tar.xz"
+          ]
+          ++ pkgs.lib.optional (
+            version == "1.19"
+          ) "https://ftp.gnu.org/gnu/automake/automake-${version}.tar.xz";
         inherit sha256;
       };
     testDeps = {
