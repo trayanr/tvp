@@ -22,6 +22,11 @@ public compiler is not substituted into that driver or base. Raw `bintools`,
 `libc`, `runtimeDirectories` and `rawCompiler` metadata describe the public
 compiler; they do not declare it to implement the selected-driver protocol.
 
+Customize raw target providers through `.override` arguments or `.edit`
+specification fields such as `glibc` and `binutils`. This procedure has no
+`runtime` schema for `.editRuntime`; adding arbitrary runtime data does not
+change raw GCC's search paths.
+
 `out` holds the raw compiler, plugin headers, LTO tools and matching target
 runtimes. `validation` deliberately maps the reference `evidence` output to the
 existing public API: `bootstrap-compare.log`, `stage_final`, `config.log`,

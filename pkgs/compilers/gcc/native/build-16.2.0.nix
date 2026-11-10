@@ -193,6 +193,7 @@ in
   ];
   environment = {
     tools = [
+      coreutils
       binutils
       gnumake
       texinfo
@@ -274,6 +275,7 @@ in
     {
       name = "gcc.prepare";
       tools = [
+        coreutils
         gnutar
         xz
         patch

@@ -53,6 +53,7 @@ let
       a.tvp.declaredDependencies.gmp.outPath == gmp.outPath && a.tvp.deps.gmp.outPath == gmp.outPath;
     selection = a.__tvpSelection.kind == "override" && a.out.__tvpSelection.kind == "override";
     metadataProjection = a.out.tvp.declaredDependencies.gmp.outPath == gmp.outPath;
+    argumentOnlyDependencyFallback = composed.tvp.deps.gmp.outPath == gmp.outPath;
     testsRebound =
       a.tests.version.drvPath != p.tests.version.drvPath
       && builtins.any (input: input.outPath == a.outPath) a.tests.version.nativeBuildInputs;

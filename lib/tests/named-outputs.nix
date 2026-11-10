@@ -82,7 +82,7 @@ let
         inherit base bash coreutils;
         message = "first";
       };
-      dependencyNames = [ ];
+      dependencyNames = [ "coreutils" ];
       metadata.definition = "named-output-fixture";
       selection.kind = "fixture";
       mkTests = package: {
@@ -99,6 +99,7 @@ let
   binary = fixture "bin";
   edit = package: package.editRuntime (r: r // { message = r.message + "-edited"; });
   changed = (edit validation.validation).override { message = "second"; };
+  dependencyEdit = validation.validation.edit (s: s // { coreutils = binary; });
   binChanged = (edit binary.bin).override (args: {
     message = args.message + "-second";
   });
@@ -203,6 +204,13 @@ let
   ]);
   passthruRebound = passthruFunctional.override { message = "passthru-rebound"; };
   contracts = {
+    dependencyEditUsesEffectiveProvider =
+      dependencyEdit.tvp.deps.coreutils.outPath == binary.outPath
+      && dependencyEdit.tvp.declaredDependencies.coreutils.outPath == binary.outPath;
+    dependencyEditNamedOutputProjection =
+      dependencyEdit.outputName == "validation"
+      && dependencyEdit.out.tvp.deps.coreutils.outPath == binary.outPath
+      && dependencyEdit.passthru.tvp.deps.coreutils.outPath == binary.outPath;
     singleOutputUnusedMetadataStaysLazy =
       builtins.isString
         ((import ../owned-build.nix { inherit lib; }) (

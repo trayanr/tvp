@@ -32,9 +32,13 @@ let
       );
       plan = specification.plan;
       package = build specification;
-      dependencies = builtins.intersectAttrs (lib.genAttrs (
-        if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
-      ) (_: null)) current;
+      # Edits change the effective providers as well as their build steps.
+      # Older recipes may keep a dependency only in their arguments.
+      dependencies = lib.mapAttrs (name: original: specification.${name} or original) (
+        builtins.intersectAttrs (lib.genAttrs (
+          if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
+        ) (_: null)) current
+      );
       provenance = metadata // {
         base = specification.base.name;
         cc =
