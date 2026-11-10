@@ -41,6 +41,7 @@ let
   multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
+  splitNamed = multiOutput && parts.split;
   stage =
     name: commands: artifact:
     let
@@ -72,6 +73,15 @@ let
                       ''readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT''
                     }
                   ''
+                  + lib.optionalString (splitNamed && artifact != null) (
+                    # Explicit contextual bindings in every fresh suffix step.
+                    # No output discovery and no final paths in the prefix.
+                    "readonly -A TVP_ARTIFACT_OUTPUTS=(\n"
+                    + lib.concatMapStringsSep "\n" (
+                      output: "[${output}]=${lib.escapeShellArg (toString artifact.${output})}"
+                    ) outputNames
+                    + "\n)\n"
+                  )
                   + step.run;
               }
             ) selected;
@@ -98,12 +108,33 @@ let
               }
               export NIX_BUILD_TOP="$PWD"
               ${coreutils}/bin/mkdir workspace
-              ${bash}/bin/bash ${runner.script} "$PWD/workspace"
+              ${bash}/bin/bash ${runner.script} "$PWD/workspace"${
+                lib.optionalString splitNamed (
+                  "\n" + lib.concatMapStringsSep "\n" (output: ''test -d "''${outputs[${output}]}"'') outputNames
+                )
+              }
             ''
           ];
           outputs = outputNames;
         }
-        // lib.optionalAttrs (artifact != null) {
+        // lib.optionalAttrs (splitNamed && artifact != null) {
+          # Retain unrelated caller checks, including those for other outputs.
+          outputChecks =
+            (spec.outputChecks or { })
+            // lib.genAttrs outputNames (
+              output:
+              let
+                declared = (spec.outputChecks or { }).${output} or { };
+              in
+              declared
+              // {
+                disallowedReferences =
+                  (declared.disallowedReferences or [ ])
+                  ++ map (name: artifact.${name}) outputNames;
+              }
+            );
+        }
+        // lib.optionalAttrs (artifact != null && !splitNamed) {
           # Native Nix output checks; never introduce a reference merely to test it.
           outputChecks.out.disallowedReferences = [ artifact ];
         }
@@ -121,9 +152,6 @@ let
     steps.active (parts.first ++ parts.second)
   );
 in
-assert
-  !(multiOutput && parts.split)
-  || throw "TVP named outputs: split with multiple outputs is not supported";
 package
 // {
   inherit pname version;

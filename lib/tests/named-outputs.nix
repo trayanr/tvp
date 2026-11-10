@@ -393,10 +393,9 @@ let
             }
           ]
         )).drvPath;
-    splitRejected =
-      rejects
-        (validation.editSteps (steps.insertAfter "fixture.write" [ (steps.split "fixture.split") ]))
-        .drvPath;
+    splitSupported =
+      (validation.editSteps (steps.insertAfter "fixture.write" [ (steps.split "fixture.split") ]))
+      .artifact.outputs == validation.outputs;
     invalidBeforePayload =
       !(builtins.tryEval (
         builtins.seq (validation.edit (

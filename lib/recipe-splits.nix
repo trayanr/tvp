@@ -15,9 +15,44 @@ let
   sameProducer =
     a: b:
     lib.isDerivation a
+    && a ? drvPath
+    && a ? outPath
+    && (a.outputName or null) == (b.outputName or null)
     && identity a == identity b
     && builtins.getContext a.drvPath == builtins.getContext b.drvPath
     && builtins.getContext a.outPath == builtins.getContext b.outPath;
+  # Check every selected output, not only the default string coercion. Both
+  # output paths and their Nix contexts must name the fresh stage producer.
+  sameOutputs =
+    a: b:
+    a ? outputs
+    && a.outputs == b.outputs
+    && a ? all
+    && builtins.isList a.all
+    && builtins.all (
+      name:
+      builtins.hasAttr name a
+      && a.${name} ? outputName
+      && a.${name} ? outputs
+      && a.${name}.outputName == name
+      && a.${name}.outputs == b.outputs
+      && sameProducer a.${name} b.${name}
+    ) b.outputs
+    && builtins.length a.all == builtins.length b.outputs
+    && builtins.all (
+      i:
+      let
+        name = builtins.elemAt b.outputs i;
+        value = builtins.elemAt a.all i;
+      in
+      value ? outputName && value.outputName == name && sameProducer value b.${name}
+    ) (lib.range 0 (builtins.length b.outputs - 1));
+  sameProjectedArtifacts =
+    package: artifact:
+    builtins.all (
+      value:
+      value ? artifact && sameProducer value.artifact artifact && sameOutputs value.artifact artifact
+    ) (map (name: package.${name}) package.outputs ++ package.all);
   inspectEvaluated =
     namespace: name: p:
     let
@@ -56,6 +91,16 @@ let
         && sameProducer p exposed
         && sameProducer p.artifact expected.artifact
         && sameProducer p.artifact exposed.artifact
+        && (
+          expected.outputs == [ "out" ]
+          || (
+            sameOutputs p expected
+            && sameOutputs p exposed
+            && sameOutputs p.artifact expected.artifact
+            && sameOutputs p.artifact exposed.artifact
+            && sameProjectedArtifacts p expected.artifact
+          )
+        )
         && p.artifact.drvPath != p.drvPath
         && p.artifact.outPath != p.outPath
       );
@@ -66,8 +111,6 @@ let
           "invalid-plan"
         else if constructor != "owned" then
           "native-plan-constructor"
-        else if (p.specification.outputs or [ "out" ]) != [ "out" ] then
-          "unsupported-named-outputs"
         else if !planResult.value.split then
           "owned-unsplit"
         else if !(p ? artifact) then
@@ -91,11 +134,7 @@ let
       partition = if hasPlan && planResult.success then planResult.value else null;
       producer = identity p;
       artifact = if failure == null then identity p.artifact else null;
-      capabilityGap =
-        if owned && (p.specification.outputs or [ "out" ]) != [ "out" ] then
-          "Owned split with multiple named outputs is unsupported; resolve backend capability before admission."
-        else
-          null;
+      capabilityGap = null;
     };
   inspect =
     namespace: name: p:
@@ -179,7 +218,6 @@ in
           "owned-unsplit"
           "missing-owned-plan"
           "invalid-plan"
-          "unsupported-named-outputs"
           "missing-artifact"
           "invalid-artifact-producer"
         ];
