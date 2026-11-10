@@ -18,6 +18,7 @@ with tempfile.TemporaryDirectory(prefix='sdk-source-safety-') as tmp:
     root = Path(tmp)
     for entries, accepted in [
         ([('alpha', 'file', ''), ('nested/beta', 'file', '')], True),
+        ([('top/link', 'symlink', '../alpha'), ('alpha', 'file', '')], True),
         ([('top/a', 'file', ''), ('other/b', 'file', '')], True),
         ([('link', 'symlink', 'nested/beta'), ('nested/beta', 'file', '')], True),
         ([('../escape', 'file', '')], False),

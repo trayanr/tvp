@@ -26,10 +26,36 @@ def validate(archive):
                 raise ValueError(f'unsupported archive member: {name}')
             if member.issym():
                 target = member.linkname
-                resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
-                if '..' in target.split('/') or target.startswith('/') or resolved == '..' or resolved.startswith('../') or '\0' in target:
+                if target.startswith('/') or '\0' in target:
                     raise ValueError(f'escaping archive link: {name}')
             entries[name] = member
+    # Resolve the complete symlink namespace component by component. Lexical
+    # normalization alone misses a -> '.', b -> 'a/../outside'. Safe internal
+    # ../ links (present in the pinned Dart tools source) remain supported.
+    for name, member in entries.items():
+        if not member.issym():
+            continue
+        pending = name.split('/')
+        resolved = []
+        followed = set()
+        while pending:
+            component, *pending = pending
+            if component in ('', '.'):
+                continue
+            if component == '..':
+                if not resolved:
+                    raise ValueError(f'escaping archive link chain: {name}')
+                resolved.pop()
+                continue
+            candidate = '/'.join([*resolved, component])
+            target = entries.get(candidate)
+            if target is not None and target.issym():
+                if candidate in followed:
+                    raise ValueError(f'cyclic archive link chain: {name}')
+                followed.add(candidate)
+                pending = target.linkname.split('/') + pending
+            else:
+                resolved.append(component)
     if not entries:
         raise ValueError('empty archive')
     for name in entries:
