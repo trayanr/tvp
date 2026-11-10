@@ -51,7 +51,18 @@ takes_operand() {
 }
 mode=link static=false
 classify() {
-    local arg operand=0
+    local arg operand=0 driver=gcc
+    case "${0##*/}" in clang-cpp*) driver=cpp;; esac
+    # A command-line driver override can switch a preprocessing alias back to
+    # compilation. Inspect operands without changing the forwarded argv.
+    for arg in "${expanded[@]}"; do
+        if (( operand )); then operand=0; continue; fi
+        if takes_operand "$arg"; then operand=1; continue; fi
+        case $arg in --driver-mode=*) driver=${arg#--driver-mode=};; esac
+    done
+    [[ $driver != cl ]] || fail 'use clang-cl for the upstream CL/SDK driver protocol'
+    if [[ $driver == cpp ]]; then mode=compile; fi
+    operand=0
     for arg in "${expanded[@]}"; do
         if (( operand )); then operand=0; continue; fi
         if takes_operand "$arg"; then operand=1; continue; fi
@@ -82,7 +93,10 @@ for key in NIX_CFLAGS_COMPILE NIX_CFLAGS_LINK NIX_LDFLAGS; do
 done
 
 flags=(--gcc-install-dir=@gccInstallDir@ --sysroot=@emptyRoot@ -idirafter @libc@/include -B@libc@/lib/ -B@gccInstallDir@/ -B@gccRuntime@/lib/ -B@bintools@/bin/)
-case "${0##*/}" in clang++*) flags+=(--driver-mode=g++);; esac
+case "${0##*/}" in
+    clang++*) flags+=(--driver-mode=g++);;
+    clang-cpp*) flags+=(--driver-mode=cpp);;
+esac
 
 # Queries do not consume build-environment flags. Compile flags may themselves
 # select compile-only operation; link-only channels may not change the mode.
@@ -102,7 +116,7 @@ if [[ $mode != query ]]; then
             case $arg in
                 --rsp-quoting|--rsp-quoting=*) fail 'explicit response quoting overrides are unsupported (native GNU only)';;
                 -c|--compile|-S|--assemble|-E|--preprocess|-M|-MM|-fsyntax-only|\
-                --version|--help*|-dumpmachine|-dumpversion|-print-*|--print-*)
+                --version|--help*|-dumpmachine|-dumpversion|-print-*|--print-*|--driver-mode=*)
                     fail 'mode-changing NIX_CFLAGS_LINK words';;
                 -static|--static|-static-pie) static=true;;
             esac

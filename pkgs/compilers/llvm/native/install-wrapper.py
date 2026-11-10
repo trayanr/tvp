@@ -195,7 +195,9 @@ def main():
             os.close(fd)
             link = Path(name)
             link.unlink()
-            link.symlink_to("clang")
+            # clang-cl has upstream CL/SDK semantics, not the native GNU wrapper
+            # flag/sysroot protocol. A direct alias preserves its argv[0] mode.
+            link.symlink_to(".clang-unwrapped" if alias.name.startswith("clang-cl") else "clang")
             staged.append(link)
             links.append((link, alias))
         layout.replace(view)

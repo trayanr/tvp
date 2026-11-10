@@ -51,6 +51,13 @@ package.testContext.mkSuite {
       tools = [ s.helperPython ];
       expected = "aarch64";
     };
+    preprocessor = {
+      script = ''
+        clang-cpp -P ${./fixtures/preprocessor.c} > preprocessed.c
+        ${s.helperPython}/bin/python3 -B -c 'from pathlib import Path; assert Path("preprocessed.c").read_text().split() == ["42"]; print("42")'
+      '';
+      expected = "42";
+    };
     loader = {
       script = ''clang ${./fixtures/hello.c} -o hello; ${s.patchelf}/bin/patchelf --print-interpreter hello'';
       expected = s.runtime.loader;

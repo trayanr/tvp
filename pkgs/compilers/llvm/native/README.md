@@ -15,15 +15,18 @@ shared files, so library search order cannot silently select another provider.
 The wrapper classifies option operands and GNU response files, and consumes
 NIX_CFLAGS_COMPILE, NIX_CFLAGS_LINK and raw NIX_LDFLAGS in their relevant modes.
 Explicit response-quoting overrides and mode-changing link flags are rejected.
+The native GNU wrapper preserves C++, preprocessing and ordinary compiler aliases.
+The clang-cl alias retains the upstream CL frontend directly; it uses the caller's
+explicit target/SDK inputs, not the GNU wrapper's NIX flag/sysroot protocol. Its
+frontend presence does not certify a Windows SDK, linker or runtime.
 
 All upstream target backends, Clang/LLD, shared libraries, RTTI and mandatory
 zlib/zstd/libxml2/FFI support remain enabled. Assembler and Bitcode llvm-lit checks
 are mandatory build steps. Sed, Grep and Diffutils are explicit build tools for
-upstream configure and test commands. The seven regular package tests use the owned test
+upstream configure and test commands. The regular package tests use the owned test
 context and bind their loader expectation to the effective specification.
 
-This is SOURCE STAGE ONLY. Pure provider/customization contracts, mock wrapper
-argument tests and tiny cached-GCC/Clang SDK fixtures do not qualify installed LLVM.
-LLVM configure/build/install, its seven installed controls and actual upstream
-checks require parent independent review and separate authorization to run.
+Installed qualification includes all package controls, the upstream
+Assembler/Bitcode suites, actual driver aliases and runtime/provider audits.
+Pure contracts and retained-tool fixtures do not replace those installed checks.
 HARDENING-GATE-1 remains OPEN_UNWAIVED; no security-equivalence claim is made.
