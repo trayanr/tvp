@@ -189,6 +189,7 @@ in
       ${cmake}/bin/cmake -S source/llvm -B build -G Ninja \
         -DCMAKE_MAKE_PROGRAM=${ninja}/bin/ninja -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_INSTALL_RPATH="$out/lib" \
         -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" \
         -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
         -DCMAKE_PREFIX_PATH=${
