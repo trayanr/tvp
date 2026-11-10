@@ -45,7 +45,7 @@ let
       ;
   };
 in
-select recipes.glibc "2.39" {
+select recipes.glibc.constructionRecipe "2.39" {
   inherit gcc binutils bison;
   python3Minimal = select recipes.python-minimal.constructionRecipe "3.12.5" { };
   linuxHeaders = select recipes.linux-headers.constructionRecipe "6.9" { };

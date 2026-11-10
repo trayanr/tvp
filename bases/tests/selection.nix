@@ -70,9 +70,14 @@ let
         tvp.packages.gcc_16_2_0.specification.base.compiler.drvPath == (import ../source-gnu { })
         .base.compiler.drvPath
       && tvp.packages.gcc_16_2_0.rawCompiler;
+    source-owned-glibc =
+      tvp.packages.glibc_2_39.tvp.base == "source-gnu-candidate"
+      && tvp.packages.glibc_2_39.specification.gcc.drvPath == tvp.packages.gcc_16_2_0.drvPath
+      &&
+        tvp.packages.glibc_2_39.specification.base.compiler.drvPath == (import ../source-gnu { })
+        .base.compiler.drvPath;
     canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
       tvp.packages.gcc_13_3_0
-      tvp.packages.glibc_2_39
     ];
   };
   failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) contracts);

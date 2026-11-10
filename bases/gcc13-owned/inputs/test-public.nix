@@ -32,6 +32,7 @@ let
       )
       [
         "gcc"
+        "glibc"
         "coreutils"
         "findutils"
         "diffutils"

@@ -198,7 +198,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   glibc = tvpLib.packages.mkVariants (
-    recipes.glibc
+    recipes.glibc.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
