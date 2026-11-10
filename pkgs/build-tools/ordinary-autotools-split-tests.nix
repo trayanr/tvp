@@ -38,6 +38,14 @@ p.testContext.mkSuite {
   tools = [ p.specification.grep ];
   tests =
     {
+      helper-confinement-and-frontends = {
+        script = ''
+          ${p.specification.python}/bin/python3 -B ${./ordinary-autotools-safety-tests.py} \
+            ${./ordinary-autotools-source.py} ${./automake/ordinary/prepare-api.py} \
+            ${./ordinary-autotools-output.py}
+        '';
+        expected = "helper-contracts";
+      };
       artifact-finalization = {
         expected =
           assert lib.all (x: x) (builtins.attrValues contracts);

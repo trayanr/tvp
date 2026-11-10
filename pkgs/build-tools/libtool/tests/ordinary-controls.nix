@@ -6,6 +6,29 @@
 let
   p = package;
   d = p.tvp.deps;
+  shellProvider = p.edit (
+    s:
+    s
+    // {
+      plan = [
+        {
+          name = "runtime-shell.fixture";
+          run = ''
+            mkdir -p "$out/bin"
+            cat > "$out/bin/bash" <<'SCRIPT'
+            #!${p.specification.bash}/bin/bash
+            if [[ -n "''${TVP_RUNTIME_SHELL_LOG-}" ]]; then
+              printf '%s\n' "$*" >> "$TVP_RUNTIME_SHELL_LOG"
+            fi
+            exec ${p.specification.bash}/bin/bash "$@"
+            SCRIPT
+            chmod +x "$out/bin/bash"
+          '';
+        }
+      ];
+    }
+  );
+  runtimeShell = p.editRuntime (r: r // { shell = shellProvider; });
   upstream = p.editSteps (
     plan:
     tvp.builder.steps.insertAfter "libtool.build" [
@@ -132,6 +155,33 @@ p.testContext.mkSuite {
   ];
   libraries = [ p ];
   tests = {
+    runtime-shell-wrappers-relink = {
+      expected =
+        assert runtimeShell.artifact.drvPath == p.artifact.drvPath;
+        assert runtimeShell.drvPath != p.drvPath;
+        "runtime-shell";
+      script = ''
+        LT=${runtimeShell}/bin/libtool
+        mkdir -p installed/lib
+        printf 'int dep(void) { return 41; }\n' > dep.c
+        printf 'int dep(void); int answer(void) { return dep()+1; }\n' > answer.c
+        printf '#include <stdio.h>\nint answer(void); int main(void) { printf("%%d\\n", answer()); }\n' > main.c
+        "$LT" --tag=CC --mode=compile "$CC" -fPIC -c dep.c -o dep.lo >&2
+        "$LT" --tag=CC --mode=link "$CC" dep.lo -o libdep.la -rpath "$PWD/installed/lib" >&2
+        "$LT" --tag=CC --mode=compile "$CC" -fPIC -c answer.c -o answer.lo >&2
+        "$LT" --tag=CC --mode=link "$CC" answer.lo libdep.la -o libanswer.la -rpath "$PWD/installed/lib" >&2
+        "$LT" --tag=CC --mode=link "$CC" main.c libanswer.la -o consumer >&2
+        head -1 consumer | sed 's/^#![[:space:]]*//' | grep -Fx '${shellProvider}/bin/bash' >&2
+        env -i PATH="$PATH" TVP_RUNTIME_SHELL_LOG="$PWD/wrapper.log" ./consumer > answer
+        test "$(cat answer)" = 42
+        grep -F consumer wrapper.log >&2
+        "$LT" --mode=install ${p.specification.coreutils}/bin/install -c libdep.la "$PWD/installed/lib" >&2
+        export TVP_RUNTIME_SHELL_LOG="$PWD/relink.log"
+        "$LT" --mode=install ${p.specification.coreutils}/bin/install -c libanswer.la "$PWD/installed/lib" >&2
+        grep -F -- '--mode=relink' relink.log >&2
+        printf runtime-shell
+      '';
+    };
     upstream = {
       script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
       expected = "upstream";

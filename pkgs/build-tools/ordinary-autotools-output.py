@@ -27,6 +27,28 @@ commands = {
     'automake': ['automake', 'aclocal'],
     'libtool': ['libtool', 'libtoolize'],
 }[family]
+frontends = config['frontends']
+if set(frontends) != set(commands) or any(kind not in ('shell', 'perl') for kind in frontends.values()):
+    raise ValueError('expected complete frontend interpreter classifications')
+
+def interpreter(first):
+    if not first.startswith(b'#!'):
+        raise ValueError('expected frontend shebang')
+    parts = first[2:].strip().split(None, 1)
+    if not parts or not os.path.isabs(parts[0]):
+        raise ValueError('expected absolute frontend interpreter')
+    name = os.path.basename(parts[0])
+    arguments = parts[1] if len(parts) == 2 else b''
+    if name == b'env':
+        # The shipped tap-driver.pl uses this exact, argument-free env form.
+        if arguments not in (b'perl', b'sh', b'bash'):
+            raise ValueError('unsupported env frontend interpreter')
+        name, arguments = arguments, b''
+    kind = {b'perl': 'perl', b'sh': 'shell', b'bash': 'shell'}.get(name)
+    if kind is None:
+        raise ValueError(('unsupported frontend interpreter', name))
+    return kind, arguments
+
 counts = Counter()
 links = {}
 changes = []
@@ -47,23 +69,29 @@ for directory, dirs, files in os.walk(root, followlinks=False):
         counts[inode] += 1
         links[inode] = info.st_nlink
         data = path.read_bytes()
+        frontend = path.parent == root / 'bin' and path.name in commands
         if b'\0' in data or data.startswith(b'\x7fELF'):
+            if frontend:
+                raise ValueError(('unsupported binary frontend', path))
             if old in data:
                 raise ValueError(('unexpected binary prefix slot', path))
         else:
             for before, after in replacements:
                 data = data.replace(before, after)
-            shell_helper = (path.is_relative_to(root / 'share') and data.startswith(b'#!')
-                            and b'sh' in data.split(b'\n', 1)[0])
-            if (path.parent == root / 'bin' and path.name in commands) or shell_helper:
+            script_helper = path.is_relative_to(root / 'share') and data.startswith(b'#!')
+            if frontend or script_helper:
                 first, body = data.split(b'\n', 1)
-                if b'perl' in first:
+                kind, arguments = interpreter(first)
+                if frontend and kind != frontends[path.name]:
+                    raise ValueError(('unexpected frontend interpreter class', path, kind))
+                selected = config.get('perl') if kind == 'perl' else config['shell']
+                if not selected:
+                    raise ValueError(('missing selected interpreter', path, kind))
+                first = b'#!' + os.fsencode(selected) + (b' ' + arguments if arguments else b'')
+                if kind == 'perl':
                     preamble = ('BEGIN { $ENV{PATH} = ' + repr(':'.join(config['paths']) + ':')
                                 + ' . ($ENV{PATH} // ""); }\n').encode()
                 else:
-                    if not first.startswith(b'#!'):
-                        raise ValueError(('expected shell frontend', path))
-                    first = ('#!' + config['shell']).encode()
                     preamble = ('PATH=' + shlex.quote(':'.join(config['paths'])) + ':"${PATH-}"\nexport PATH\n').encode()
                 data = first + b'\n' + preamble + body
             if old in data:

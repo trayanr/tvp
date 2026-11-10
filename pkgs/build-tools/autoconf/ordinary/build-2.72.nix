@@ -104,6 +104,12 @@ in
       findutils = final.findutils;
       compression = "gzip";
     })
+    {
+      name = "autoconf.source-confinement";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-source.py}'';
+    }
     (steps.prepareAutotools {
       name = "autoconf.prepare";
       bash = final.bash;
@@ -130,6 +136,16 @@ in
         lib.escapeShellArg (
           builtins.toJSON {
             family = final.pname;
+            perl = "${final.runtime.perl}/bin/perl";
+            frontends = {
+              autoconf = final.autoconfFrontend;
+              autoheader = "perl";
+              autom4te = "perl";
+              autoreconf = "perl";
+              autoscan = "perl";
+              autoupdate = "perl";
+              ifnames = "perl";
+            };
             shell = "${final.runtime.shell}/bin/bash";
             paths = map (p: "${p}/bin") final.runtime.tools;
             replacements = [

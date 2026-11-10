@@ -103,6 +103,12 @@ in
       findutils = final.findutils;
       compression = "xz";
     })
+    {
+      name = "automake.source-confinement";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-source.py}'';
+    }
     (steps.prepareAutotools {
       name = "automake.prepare";
       bash = final.bash;
@@ -140,6 +146,11 @@ in
         lib.escapeShellArg (
           builtins.toJSON {
             family = final.pname;
+            perl = "${final.runtime.perl}/bin/perl";
+            frontends = {
+              automake = "perl";
+              aclocal = "perl";
+            };
             shell = "${final.runtime.shell}/bin/bash";
             paths = map (p: "${p}/bin") final.runtime.tools;
             replacements = [

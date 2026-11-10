@@ -142,6 +142,12 @@ in
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
+    {
+      name = "libtool.source-confinement";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-source.py}'';
+    }
     (steps.prepareAutotools {
       name = "libtool.prepare";
       bash = final.bash;
@@ -167,9 +173,18 @@ in
         lib.escapeShellArg (
           builtins.toJSON {
             family = final.pname;
+            frontends = {
+              libtool = "shell";
+              libtoolize = "shell";
+            };
             shell = "${final.runtime.shell}/bin/bash";
             paths = map (p: "${p}/bin") final.runtime.tools;
-            replacements = [ ];
+            replacements = [
+              {
+                old = "${final.bash}/bin/bash";
+                new = "${final.runtime.shell}/bin/bash";
+              }
+            ];
           }
         )
       }'';
