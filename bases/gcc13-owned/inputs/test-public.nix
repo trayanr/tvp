@@ -31,6 +31,8 @@ let
         }
       )
       [
+        "llvm"
+        "go"
         "gcc"
         "glibc"
         "coreutils"
