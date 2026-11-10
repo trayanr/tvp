@@ -336,7 +336,13 @@ let
       p.src.outputHash == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.outputHash;
     distinctSourceProducer =
       p.src.drvPath != (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
-    legacyPreserved = !(tvp.canonical.mpfr_4_2_1 ? edit) && tvp.canonical.mpfr_4_2_1 ? overrideAttrs;
+    # Older ordinary MPFR is now owned; frozen callers retain the complete legacy call.
+    legacyPreserved =
+      let
+        retained = (api.mkVersions family.constructionRecipe).mpfr_4_2_1;
+      in
+      !(retained ? edit) && retained ? overrideAttrs;
+    olderOrdinaryOwned = tvp.canonical.mpfr_4_2_1 ? artifact && tvp.canonical.mpfr_4_2_1 ? edit;
     exactEdits = tagged "mpfr_4_2_2" p;
     publicExactEdits = tagged "mpfr_4_2_2" tvp.packages.mpfr_4_2_2;
     majorEdits = tagged "mpfr_4" tvp.packages.mpfr_4;

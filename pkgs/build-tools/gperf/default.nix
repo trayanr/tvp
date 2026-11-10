@@ -46,7 +46,59 @@ let
       };
     };
   };
-  versionTable = constructionRecipe.versionTable // {
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "3.1" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-3.1.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://ftpmirror.gnu.org/gperf/gperf-${version}.tar.gz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gzip = candidate.tools.gzip;
+        libstdcxx = tvpLib.packages.withConstraint {
+          category = "construction";
+          reason = "Runtime library from the selected source compiler profile.";
+        } candidate.toolchain.runtime;
+      };
+    };
+  };
+  ordinaryTable = constructionRecipe.versionTable // {
+    "3.1" = constructionRecipe.versionTable."3.1" // {
+      def = if native then ordinaryDefs."3.1" else constructionRecipe.versionTable."3.1".def;
+    };
+    "3.2" = constructionRecipe.versionTable."3.2" // {
+      def = if native then ordinaryDefs."3.1" else constructionRecipe.versionTable."3.2".def;
+    };
+    "3.2.1" = constructionRecipe.versionTable."3.2.1" // {
+      def = if native then ordinaryDefs."3.1" else constructionRecipe.versionTable."3.2.1".def;
+    };
+  };
+  versionTable = ordinaryTable // {
     "3.3" = constructionRecipe.versionTable."3.3" // {
       def = if native then defs."3.3" else constructionRecipe.versionTable."3.3".def;
     };

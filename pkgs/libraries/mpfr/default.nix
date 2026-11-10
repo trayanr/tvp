@@ -193,7 +193,99 @@ let
       include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "4.0.2" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.0.2.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gmp = tvp.packages.gmp_6;
+      };
+    };
+    "4.2.1" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.2.1.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gmp = tvp.packages.gmp_6;
+      };
+    };
+  };
+  ordinaryTable = versionTable // {
+    "4.0.2" = versionTable."4.0.2" // {
+      def = if native then ordinaryDefs."4.0.2" else versionTable."4.0.2".def;
+    };
+    "4.1.0" = versionTable."4.1.0" // {
+      def = if native then ordinaryDefs."4.0.2" else versionTable."4.1.0".def;
+    };
+    "4.1.1" = versionTable."4.1.1" // {
+      def = if native then ordinaryDefs."4.0.2" else versionTable."4.1.1".def;
+    };
+    "4.2.0" = versionTable."4.2.0" // {
+      def = if native then ordinaryDefs."4.0.2" else versionTable."4.2.0".def;
+    };
+    "4.2.1" = versionTable."4.2.1" // {
+      def = if native then ordinaryDefs."4.2.1" else versionTable."4.2.1".def;
+    };
+  };
   publicArgs = packageArgs // {
+    versionTable = ordinaryTable;
     inherit source;
   };
   # Capture the entire legacy call, including its definition, dependencies,

@@ -49,7 +49,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   mpc = tvpLib.packages.mkVariants (
-    recipes.mpc
+    recipes.mpc.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
