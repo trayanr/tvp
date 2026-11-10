@@ -52,7 +52,10 @@ package.testContext.mkSuite {
       expected = "aarch64";
     };
     preprocessor = {
-      script = ''clang-cpp -P ${./fixtures/preprocessor.c}'';
+      script = ''
+        clang-cpp -P ${./fixtures/preprocessor.c} > preprocessed.c
+        ${s.helperPython}/bin/python3 -B -c 'from pathlib import Path; assert Path("preprocessed.c").read_text().split() == ["42"]; print("42")'
+      '';
       expected = "42";
     };
     loader = {
