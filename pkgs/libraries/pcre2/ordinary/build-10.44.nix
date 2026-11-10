@@ -107,7 +107,7 @@ in
       cwd = "source";
       tools = [
         final.tools.python
-        coreutils
+        final.coreutils
       ];
       run = ''
         # Upstream's four pcre2grep callouts execute /bin/echo, absent in the

@@ -46,10 +46,51 @@ let
     else
       upstreamUnrelocated.editSteps (
         tvp.builder.steps.insertAfter "output.copy-artifacts" [
-          (tvp.builder.outputs.relocateText {
-            python = p.specification.tools.python;
-            paths = [ "nix-support/upstream" ];
-          })
+          {
+            name = "gperf.normalize-upstream-evidence";
+            tools = [ p.specification.tools.python ];
+            run = ''
+              ${p.specification.tools.python}/bin/python3 -B - "$out/nix-support/upstream" <<'PYTHON'
+              import hashlib, json, os, stat, sys
+              from pathlib import Path
+
+              root = Path(sys.argv[1])
+              prefix = os.fsencode(os.environ['TVP_ARTIFACT_ROOT'])
+              marker = b'@TVP_ARTIFACT_PREFIX@'
+              records = []
+              for directory, directories, files in os.walk(root, followlinks=False):
+                  for name in directories:
+                      if (Path(directory) / name).is_symlink():
+                          raise RuntimeError('symlink in upstream evidence')
+                  for name in sorted(files):
+                      path = Path(directory) / name
+                      info = path.lstat()
+                      if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                          raise RuntimeError('upstream evidence must be independent regular files')
+                      raw = path.read_bytes()
+                      normalized = raw.replace(prefix, marker)
+                      path.write_bytes(normalized)
+                      records.append({
+                          'path': str(path.relative_to(root)),
+                          'rawSha256': hashlib.sha256(raw).hexdigest(),
+                          'normalizedSha256': hashlib.sha256(normalized).hexdigest(),
+                      })
+              (root / 'normalization.json').write_text(json.dumps({
+                  'schema': 'tvp.normalized-artifact-evidence/v1',
+                  'stage': 'artifact configure/check',
+                  'prefixPlaceholder': marker.decode(),
+                  'rawEvidence': 'Unmodified originals remain in the upstream-check artifact; its binding is retained externally.',
+                  'files': sorted(records, key=lambda record: record['path']),
+              }, indent=2) + '\n')
+              (root / 'README').write_text(
+                  'NORMALIZED ARTIFACT-STAGE EVIDENCE\n'
+                  'Configure/check ran during artifact construction, before finalization.\n'
+                  'The artifact installation prefix is represented by @TVP_ARTIFACT_PREFIX@.\n'
+                  'These logs do not describe commands rerun at the final output prefix.\n'
+                  'normalization.json binds the raw and normalized file hashes.\n')
+              PYTHON
+            '';
+          }
         ]
       );
   sourceProbe =
@@ -129,7 +170,34 @@ p.testContext.mkSuite {
       expected = p.version;
     };
     upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
+      script =
+        if !(p ? artifact) then
+          ''test -d ${upstream}/nix-support/upstream; printf upstream''
+        else
+          ''
+            ${p.specification.tools.python}/bin/python3 -B - ${upstream} ${upstream.artifact} <<'PYTHON'
+            import hashlib, json, os, sys
+            from pathlib import Path
+            final, artifact = map(Path, sys.argv[1:])
+            saved = final / 'nix-support/upstream'
+            raw = artifact / 'nix-support/upstream'
+            manifest = json.loads((saved / 'normalization.json').read_text())
+            assert manifest['stage'] == 'artifact configure/check'
+            marker = manifest['prefixPlaceholder'].encode()
+            assert marker == b'@TVP_ARTIFACT_PREFIX@'
+            assert 'NORMALIZED ARTIFACT-STAGE EVIDENCE' in (saved / 'README').read_text()
+            records = {record['path']: record for record in manifest['files']}
+            files = {str(path.relative_to(raw)) for path in raw.rglob('*') if path.is_file()}
+            assert files and files == set(records)
+            for name, record in records.items():
+                original, normalized = (raw / name).read_bytes(), (saved / name).read_bytes()
+                assert normalized == original.replace(os.fsencode(artifact), marker)
+                assert hashlib.sha256(original).hexdigest() == record['rawSha256']
+                assert hashlib.sha256(normalized).hexdigest() == record['normalizedSha256']
+                assert os.fsencode(artifact) not in normalized
+            print('upstream', end="")
+            PYTHON
+          '';
       expected = "upstream";
     };
     generated = {
