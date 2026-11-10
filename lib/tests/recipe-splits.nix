@@ -203,9 +203,9 @@ let
     finalEqualsArtifact = failure (fixture // { artifact = fixture; }) == "invalid-artifact-producer";
     exposedPlanMismatch =
       failure (fixture // { buildSteps = buildEdit.buildSteps; }) == "invalid-artifact-producer";
-    unsupportedNamedOutputs =
+    mismatchedNamedSpecification =
       failure (
-        withPlan fixture.buildSteps
+        fixture
         // {
           specification = fixture.specification // {
             outputs = [
@@ -214,19 +214,7 @@ let
             ];
           };
         }
-      ) == "unsupported-named-outputs";
-    backendStillRejectsSplitNamedOutputs =
-      rejects
-        (fixture.edit (
-          s:
-          s
-          // {
-            outputs = [
-              "out"
-              "dev"
-            ];
-          }
-        )).drvPath;
+      ) == "invalid-artifact-producer";
     existingDebtVisible =
       (validate legacy [ exception ]).status == "PASS_WITH_EXISTING_DEBT"
       && !(validate legacy [ exception ]).allSplit

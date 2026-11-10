@@ -135,6 +135,7 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
+      split-named-outputs = import ./lib/tests/split-named-outputs.nix { inherit pkgs tvp; };
       legacy-test-factories = import ./lib/tests/legacy-test-factories.nix {
         inherit pkgs tvp;
         inherit (universe) recipes;

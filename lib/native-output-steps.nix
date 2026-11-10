@@ -88,18 +88,44 @@ in
       } ${./native-output}'';
     };
   copyArtifacts =
-    { coreutils }:
+    {
+      coreutils,
+      outputs ? null,
+    }:
+    let
+      names = if outputs == null then null else import ./named-outputs.nix { inherit lib; } outputs;
+    in
     {
       name = "output.copy-artifacts";
       tools = [ coreutils ];
-      run = ''
-        test -n "$TVP_ARTIFACT_ROOT"
-        ${coreutils}/bin/cp -a --no-preserve=ownership "$TVP_ARTIFACT_ROOT" "$out"
-        ${coreutils}/bin/chmod -R u+w "$out"
-        if [[ -f "$out/nix-support/source-date-epoch" ]]; then
-          ${coreutils}/bin/cp "$out/nix-support/source-date-epoch" source-date-epoch
-        fi
-      '';
+      run =
+        if names != null then
+          # An explicit complete set; the constructor supplies a readonly map.
+          ''
+            test "''${#TVP_ARTIFACT_OUTPUTS[@]}" -eq ${toString (builtins.length names)}
+          ''
+          + lib.concatMapStringsSep "\n" (name: ''
+            test -n "''${TVP_ARTIFACT_OUTPUTS[${name}]:?missing artifact output ${name}}"
+            test -d "''${TVP_ARTIFACT_OUTPUTS[${name}]}"
+            test -n "''${${name}:?missing final output ${name}}"
+            test ! -e "${"$" + name}"
+            ${coreutils}/bin/cp -a --no-preserve=ownership "''${TVP_ARTIFACT_OUTPUTS[${name}]}" "${"$" + name}"
+            ${coreutils}/bin/chmod -R u+w "${"$" + name}"
+          '') names
+          + ''
+            if [[ -f "$out/nix-support/source-date-epoch" ]]; then
+              ${coreutils}/bin/cp "$out/nix-support/source-date-epoch" source-date-epoch
+            fi
+          ''
+        else
+          ''
+            test -n "$TVP_ARTIFACT_ROOT"
+            ${coreutils}/bin/cp -a --no-preserve=ownership "$TVP_ARTIFACT_ROOT" "$out"
+            ${coreutils}/bin/chmod -R u+w "$out"
+            if [[ -f "$out/nix-support/source-date-epoch" ]]; then
+              ${coreutils}/bin/cp "$out/nix-support/source-date-epoch" source-date-epoch
+            fi
+          '';
     };
   relocateText =
     { python, paths }:
