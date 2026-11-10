@@ -72,7 +72,7 @@ package.testContext.mkSuite {
       expected = "compiled";
     };
     ffi = {
-      script = ''${setup}; ${package.tvp.cc}/bin/clang -shared -fPIC ${./fixtures/answer.c} -o libanswer.so; dart ${./fixtures/ffi.dart} "$PWD/libanswer.so"'';
+      script = ''${setup}; ${package.specification.llvm}/bin/clang -shared -fPIC ${./fixtures/answer.c} -o libanswer.so; dart ${./fixtures/ffi.dart} "$PWD/libanswer.so"'';
       expected = "42";
       tools =
         (with package.specification; [
@@ -83,7 +83,7 @@ package.testContext.mkSuite {
           diffutils
           binutils
         ])
-        ++ [ package.tvp.cc ];
+        ++ [ package.specification.llvm ];
     };
     pub = {
       script = ''

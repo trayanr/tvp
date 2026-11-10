@@ -189,6 +189,28 @@ let
       (flutter.editRuntime (r: r // { androidSdk = tvp.android.profiles.latest; }))
       (flutter.editRuntime (r: r // { libraries = r.libraries ++ [ stable ]; }))
     ];
+    ffiUsesEffectiveLLVM =
+      let
+        rebound = dart.override {
+          llvm = dart.specification.llvm.editSteps (
+            steps.append [
+              {
+                name = "stage.ffi-llvm";
+                run = ": selected-ffi-llvm";
+              }
+            ]
+          );
+        };
+        follows =
+          package:
+          builtins.any (
+            step: contains "${package.specification.llvm}/bin/clang" (step.run or "")
+          ) package.tests.ffi.buildSteps
+          && builtins.any (
+            tool: tool.drvPath == package.specification.llvm.drvPath
+          ) package.tests.ffi.tvp.deps.tools;
+      in
+      follows dart && follows rebound && dart.tests.ffi.drvPath != rebound.tests.ffi.drvPath;
     runtimeTestsFollow =
       (dart.editRuntime (r: r // { loader = "${dart.runtime.loader}.edited"; })).tests.runtime.drvPath
       != dart.tests.runtime.drvPath;
