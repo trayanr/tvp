@@ -129,6 +129,7 @@ in
       compression = "gzip";
     })
     (command "libtool.patches" ''
+      :
       ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
     '')
     (command "libtool.template" ''chmod +x libtoolize.in'')
