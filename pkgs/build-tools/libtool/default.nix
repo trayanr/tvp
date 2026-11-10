@@ -165,28 +165,36 @@ let
       alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
 
     };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import
-          (
-            if (package.tvp.ordinaryAutotools or false) then
-              ./tests/ordinary-default.nix
-            else
-              ./tests/native-default.nix
-          )
-          {
-            inherit
-              pkgs
-              tvp
-              tvpLib
-              package
-              ;
-          }
-      else
-        constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
-    ) { inherit pkgs; };
+    extraArgs.mkTests =
+      pkgs.lib.makeOverridable
+        (
+          { pkgs }:
+          package:
+          if package ? testContext then
+            import
+              (
+                if (package.tvp.ordinaryAutotools or false) then
+                  ./tests/ordinary-default.nix
+                else
+                  ./tests/native-default.nix
+              )
+              {
+                inherit
+                  pkgs
+                  tvp
+                  tvpLib
+                  package
+                  ;
+              }
+          else
+            constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
+        )
+        {
+          pkgs = tvpLib.tests.withBase {
+            inherit pkgs;
+            base = tvp.bases.default;
+          };
+        };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "libtool";
