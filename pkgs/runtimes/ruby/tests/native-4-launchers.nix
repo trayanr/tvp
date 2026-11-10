@@ -9,11 +9,11 @@ package.testContext.mkSuite {
   tests = {
     launchers = {
       script = ''
-        ${ruby.tvp.deps.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/bin/bundle --version >&2
-        ${ruby.tvp.deps.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/bundler-4.0.16/exe/bundle --version >&2
-        ${ruby.tvp.deps.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/rake-13.3.1/exe/rake --version >&2
+        ${ruby.specification.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/bin/bundle --version >&2
+        ${ruby.specification.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/bundler-4.0.16/exe/bundle --version >&2
+        ${ruby.specification.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/rake-13.3.1/exe/rake --version >&2
         # This upstream CLI prints help then exits 1; require both observations.
-        if ${ruby.tvp.deps.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/minitest-6.0.0/bin/minitest --help > minitest-help 2>&1; then
+        if ${ruby.specification.coreutils}/bin/env -i HOME="$TMPDIR" ${ruby}/${ruby.gemPath}/gems/minitest-6.0.0/bin/minitest --help > minitest-help 2>&1; then
           exit 1
         else
           test "$?" = 1

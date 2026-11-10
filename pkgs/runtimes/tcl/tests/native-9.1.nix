@@ -17,7 +17,7 @@ let
 in
 package.testContext.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ package.tvp.deps.binutils ];
+  tools = package.specification.environment.tools ++ [ package.specification.tools.binutils ];
   libraries = [ package ];
 
   tests =

@@ -6,7 +6,7 @@ let
 in
 package.testContext.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ deps.binutils ];
+  tools = package.specification.environment.tools ++ [ package.specification.tools.binutils ];
   libraries = [
     package
     deps.zlib
@@ -27,12 +27,36 @@ package.testContext.mkSuite {
           }
         );
         off = package.override { doCheck = false; };
+        inspector = (import ../../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+        editedInspector = package.edit (
+          s:
+          s
+          // {
+            tools = s.tools // {
+              binutils = inspector;
+            };
+          }
+        );
+        # The compiler's independent bintools may remain later in the path.
+        firstInspector =
+          name:
+          builtins.head (
+            builtins.filter (
+              tool:
+              builtins.elem (toString tool) [
+                (toString inspector)
+                (toString package.specification.tools.binutils)
+              ]
+            ) (builtins.head editedInspector.tests.${name}.buildSteps).tools
+          );
       in
       {
         script =
           assert !(builtins.tryEval (package.editRuntime (r: r // { libraries = [ ]; })).drvPath).success;
           assert source.drvPath != package.drvPath;
           assert source.tests.version.package.outPath == source.outPath;
+          assert toString (firstInspector "version") == toString inspector;
+          assert toString (firstInspector "stub-extension") == toString inspector;
           assert base.tvp.base == "tcl-base-probe";
           assert base.tests.version.specification.base.name == "tcl-base-probe";
           assert builtins.any (s: (s.env.TCL_SOURCE_PROBE or "") == "effective") environment.buildSteps;

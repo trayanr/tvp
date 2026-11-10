@@ -322,6 +322,15 @@ let
         q = p.override { bash = tvp.packages.bash; };
       in
       q.tests.version.specification.bash.outPath == tvp.packages.bash.outPath;
+    nativeCoreutilsEdit =
+      let
+        q = p.edit (s: s // { coreutils = tvp.packages.coreutils; });
+        script = lib.concatStringsSep "\n" (map (s: s.run) q.tests.launchers.buildSteps);
+      in
+      q.specification.coreutils.outPath != p.specification.coreutils.outPath
+      && q.tests.launchers.specification.coreutils.outPath == q.specification.coreutils.outPath
+      && lib.hasInfix (builtins.unsafeDiscardStringContext "${q.specification.coreutils}/bin/env") script
+      && !(lib.hasInfix (builtins.unsafeDiscardStringContext "${p.specification.coreutils}/bin/env") script);
     distinctRecipes =
       p.drvPath != pilot.drvPath && p.tvp.base == "source-gnu-candidate" && pilot.tvp.base != p.tvp.base;
     zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
