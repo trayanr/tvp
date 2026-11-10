@@ -11,7 +11,9 @@ let
           tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
-          } tvp.canonical."go-bootstrap_20171003"
+            # Retain the complete C-source seed generation. Promoting the public
+            # seed must not rebuild the historical ladder or latest Go's 1.24 seed.
+          } (import ../go-bootstrap/legacy.nix { inherit pkgs tvp; }).canonical.go-bootstrap_20171003
         );
         bash = tvp.packages.bash_5;
       };
