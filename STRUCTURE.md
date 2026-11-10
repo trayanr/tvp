@@ -353,6 +353,31 @@ A compiler package may use one compiler to build its tools and expose a differen
 compiler/libc/runtime target to its consumers. Keep those roles explicit. A build
 closure never grants permission for all of its paths to appear at runtime.
 
+### Bootstrap inputs and retained generations
+
+A bootstrap provider has an explicit origin and its own complete procedure. Selecting
+the owned constructor does not change that origin: Rustc, Cargo bootstrap and Temurin
+JDK bootstrap remain pinned upstream binary distributions. Their native procedures
+install a pristine artifact, then adapt declared host executables and libraries after
+the split. Rust target archives, metadata, shared standard library and compiler
+resources retain their upstream bytes. JDK module data is preserved. Host loaders,
+runtime providers and output-relative library directories are selected explicitly;
+output directories cannot contain the ELF search-path separator.
+
+The C-source Go bootstrap needs no earlier Go compiler. It builds against a stable
+non-store GOROOT and binds the installed root in both public and nested launchers
+after the split. Those launchers replace an outer next-stage GOROOT. Separately
+launched Go 1.4 programs querying `runtime.GOROOT` need the GOROOT reported by
+`go env GOROOT`; the compiled fallback is not automatically relocated.
+
+Public provider promotion and bootstrap-ladder migration are separate changes.
+Indexes bind retained construction and historical callers to their prior complete
+provider generations; current ordinary consumers follow the promoted provider.
+For example, the retained Go 1.17 → 1.20 → 1.22 → 1.24 ladder still starts from its
+original C-built seed. Preserve these producer and test identities explicitly when
+promoting a public provider. Constructor ownership alone establishes neither a
+source-built Rust/Java bootstrap nor migration of every historical recipe.
+
 ### Package customization
 
 | Interface | Changes |
