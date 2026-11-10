@@ -1,4 +1,4 @@
-# Bison 3.0.5–3.2.4 install skeletons directly under share/bison; preserve contiguous charset paths.
+# Bison 3.0.5 install skeletons directly under share/bison; preserve contiguous charset paths.
 # Complete ordinary procedure; latest and frozen construction remain independently selected.
 {
   testAutoconf,
@@ -147,14 +147,14 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "bison.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin/yacc" ];
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
-    (steps.split "bison.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
       name = "bison.relocate";
       tools = [ final.python ];

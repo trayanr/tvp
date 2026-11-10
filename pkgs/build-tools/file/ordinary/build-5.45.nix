@@ -127,7 +127,7 @@ in
     })
     (command "file.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --enable-final.zlib --enable-bzlib --enable-xzlib --enable-zstdlib --enable-static --enable-shared ${lib.escapeShellArgs final.configureFlags}
+      ./configure --prefix="$out" --enable-zlib --enable-bzlib --enable-xzlib --enable-zstdlib --enable-static --enable-shared ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "file.build" make)
     (command "file.install" ''

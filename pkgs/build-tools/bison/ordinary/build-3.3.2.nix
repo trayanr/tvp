@@ -144,14 +144,14 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "bison.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin/yacc" ];
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
-    (steps.split "bison.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
       name = "bison.relocate";
       tools = [ final.python ];

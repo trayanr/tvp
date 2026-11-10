@@ -68,7 +68,15 @@ assert build.artifact.drvPath != p.artifact.drvPath;
 p.testContext.mkTest {
   package = p;
   name = "split";
+  tools = [
+    p.specification.python
+    p.specification.patchelf
+    p.specification.coreutils
+  ];
   script = ''
+    ${p.specification.python}/bin/python3 -B ${../../../../lib/tests/ordinary-rpaths.py} \
+      ${../ordinary/relocate.py} ${p.specification.patchelf}/bin/patchelf \
+      ${p.specification.coreutils}/bin/true >&2
     test -s ${sourceProbe}/source-marker
     test "$(cat ${suffix}/nix-support/final-control)" = selected
     ${runtime}/bin/m4 --version >&2

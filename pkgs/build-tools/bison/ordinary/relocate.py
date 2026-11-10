@@ -19,6 +19,7 @@ marker = b'TVP_ORDINARY_SHELL_' + b'X' * 238
 assert len(marker) == 257
 assert len(new) <= len(old)
 changes = []
+rpaths = []
 inodes = Counter()
 links = {}
 patchelf = sys.argv[-1]
@@ -36,6 +37,13 @@ for directory, dirs, files in os.walk(root, followlinks=False):
             inodes[inode] += 1
             links[inode] = st.st_nlink
             data = p.read_bytes()
+            if data.startswith(b'\x7fELF') and old in data:
+                r = subprocess.run([patchelf, '--print-rpath', str(p)], capture_output=True)
+                if r.returncode == 0:
+                    raw = r.stdout.removesuffix(b'\n')
+                    relocated = raw.replace(old, new)
+                    if relocated != raw:
+                        rpaths.append((p, relocated))
             if data.startswith(b'\x7fELF') or b'\0' in data:
                 replaced = data.replace(old, new + b'/' * (len(old) - len(new)))
                 if shell is not None and marker in replaced:
@@ -62,17 +70,8 @@ for p, data, mode in changes:
     tmp.write_bytes(data)
     tmp.chmod(mode)
     tmp.replace(p)
-# RPATH is structured ELF metadata. Canonicalize its directory spelling after
-# same-width string-slot relocation, before the normal RPATH policy runs.
-for directory, dirs, files in os.walk(root, followlinks=False):
-    for name in files:
-        p = Path(directory) / name
-        if p.is_symlink() or p.read_bytes()[:4] != b'\x7fELF':
-            continue
-        r = subprocess.run([patchelf, '--print-rpath', str(p)], capture_output=True)
-        if r.returncode == 0 and r.stdout.strip():
-            raw = r.stdout.decode().strip()
-            normalized = ':'.join(os.path.normpath(x) for x in raw.split(':'))
-            if raw != normalized:
-                subprocess.run([patchelf, '--set-rpath', normalized, str(p)],check=True)
+# Repair only artifact-prefix substitutions recorded before the fixed-width copy.
+# Preserve loader tokens, symlink-sensitive '..', empty entries and user spelling.
+for p, rpath in rpaths:
+    subprocess.run([patchelf, '--set-rpath', rpath, str(p)], check=True)
 print('relocated', len(changes), 'installed files')

@@ -76,6 +76,39 @@ let
         patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
       };
     };
+    "3.1" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-3.1.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        patch = candidate.tools.patch;
+        testAutoconf = tvp.packages.autoconf;
+        m4 = tvp.packages.m4_1;
+        perl = tvp.packages.perl_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
+      };
+    };
     "3.3.2" = {
       constructor = tvp.builder;
       builder = ./ordinary/build-3.3.2.nix;
@@ -231,10 +264,10 @@ let
       def = if native then defs."3.0.5" else constructionRecipe.versionTable."3.0.5".def;
     };
     "3.1" = constructionRecipe.versionTable."3.1" // {
-      def = if native then defs."3.0.5" else constructionRecipe.versionTable."3.1".def;
+      def = if native then defs."3.1" else constructionRecipe.versionTable."3.1".def;
     };
     "3.2.4" = constructionRecipe.versionTable."3.2.4" // {
-      def = if native then defs."3.0.5" else constructionRecipe.versionTable."3.2.4".def;
+      def = if native then defs."3.1" else constructionRecipe.versionTable."3.2.4".def;
     };
     "3.3.2" = constructionRecipe.versionTable."3.3.2" // {
       def = if native then defs."3.3.2" else constructionRecipe.versionTable."3.3.2".def;

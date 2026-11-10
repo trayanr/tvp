@@ -55,6 +55,15 @@ let
     }
   );
   unchanged = (p.override { }).drvPath == p.drvPath && (p.edit ((s: s))).drvPath == p.drvPath;
+  yaccShell = p.editSteps (
+    map (
+      step:
+      if step.name == "output.shebangs" then
+        step // { run = step.run + "\n# finalizer-specific cache control"; }
+      else
+        step
+    )
+  );
 in
 assert unchanged;
 assert ((p.mkTests p).version.drvPath == p.tests.version.drvPath);
@@ -65,10 +74,19 @@ assert runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.dr
 assert suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
 assert source.artifact.drvPath != p.artifact.drvPath;
 assert build.artifact.drvPath != p.artifact.drvPath;
+assert yaccShell.artifact.drvPath == p.artifact.drvPath && yaccShell.drvPath != p.drvPath;
 p.testContext.mkTest {
   package = p;
   name = "split";
+  tools = [
+    p.specification.python
+    p.specification.patchelf
+    p.specification.coreutils
+  ];
   script = ''
+    ${p.specification.python}/bin/python3 -B ${../../../../lib/tests/ordinary-rpaths.py} \
+      ${../ordinary/relocate.py} ${p.specification.patchelf}/bin/patchelf \
+      ${p.specification.coreutils}/bin/true >&2
     test -s ${sourceProbe}/source-marker
     test "$(cat ${suffix}/nix-support/final-control)" = selected
     ${runtime}/bin/bison --version >&2
