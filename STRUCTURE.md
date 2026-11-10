@@ -306,9 +306,26 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
-**The final output must contain no reference to the artifact store path.** This
+Named-output recipes declare the complete output list and pass it to the copy step:
+
+```nix
+outputs = [ "out" "evidence" ];
+# ...install both outputs before the boundary...
+(steps.split "package.finalize")
+(tvp.builder.outputs.copyArtifacts {
+  coreutils = final.coreutils;
+  outputs = final.outputs;
+})
+```
+
+Each finalization command receives readonly `TVP_ARTIFACT_OUTPUTS`, mapping every
+declared name to its artifact output. `TVP_ARTIFACT_ROOT` remains the primary `out`
+artifact. Copy and relocate each output explicitly.
+
+**Every final output must contain no reference to any artifact output path.** This
 includes text metadata, receipts, symlinks, ELF paths and embedded self locations;
-the owned constructor enforces the exclusion. `package.artifact` remains available
+the owned constructor enforces the exclusion, including sibling artifacts.
+`package.artifact` remains available
 as an evaluation/build handle, not as a path to embed in the final package.
 
 Runtime is specification data, not a phase or a split marker. Final-only runtime
@@ -322,9 +339,11 @@ and update the final producer when its commands change. A real build-input edit
 must affect the artifact as appropriate. Installed tests must exercise the final
 output, including self-library loading and relocated public metadata.
 
-Currently the runner supports one split, requires active commands in both stages,
-and rejects a split with multiple named outputs. These are explicit implementation
-limits to resolve for affected recipes, not reasons to silently omit the boundary.
+The runner supports one split and requires active commands in both stages.
+Single-output and named-output recipes use the same boundary. All named artifact
+outputs share one artifact derivation, and all named final outputs share one final
+derivation; named outputs do not create independent finalization derivations.
+Caller output checks run on the final stage.
 Existing unsplit recipes remain migration work. After the remaining ports, audit
 the whole package set, repair applicable boundaries and run the full applicable
 catalogue before default-switch admission. The repository split check must inspect
@@ -653,6 +672,12 @@ identities during migration. Historical helper-based definitions can declare
 Older procedures continue to call their original constructor until explicitly
 ported and validated.
 
+During migration, indexes may route ordinary releases to complete procedures under
+`ordinary/` while retaining the original complete construction recipe for pinned
+bootstrap/base variants. Selection belongs in the index; ordinary procedures never
+inherit another versioned procedure. Preserve compatibility boundaries and validate
+representative releases on both sides.
+
 Promote a new default through a full-catalogue PR. Report graph changes, run the full
 validation and pin packages needing older environments before merging. Most packages
 follow the default, so a promotion rebuilds most of the catalogue. We do not build
@@ -893,14 +918,17 @@ ordinary admission; their adapters still require the later whole-repository audi
 
 `checks.recipe-splits` enforces the evaluated plan, active commands on both sides,
 and real, distinct artifact/final producers matching a fresh owned-constructor
-lowering. `audits/split-baseline.json` is an exact migration list, not a claim that
+lowering. Complete output sets and producer bindings are checked on every named
+projection and `.all` entry. `audits/split-baseline.json` is an exact migration list, not a claim that
 all recipes are split. Every entry binds an ID to its constructor, failure class
 and actionable reason. Keep one compact, sorted-key JSON record per line, inside
 the outer array; the loader enforces this encoding because Nix's JSON parser would
 otherwise silently accept duplicate object members. New failures, classification drift, duplicate/wildcard IDs,
 malformed reasons and stale exceptions fail. Remove an entry when that row becomes
 compliant. Never regenerate the list to accept a new unsplit port. Named-output
-capability gaps remain explicit debt until the backend and recipes are qualified.
+support does not make an unsplit recipe compliant. Existing named-output recipes
+remain explicit `owned-unsplit` debt until their installation boundary, per-output
+relocation and exclusion checks are qualified.
 
 ```sh
 nix eval .#recipeSplitReport --json
