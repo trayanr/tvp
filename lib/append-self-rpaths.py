@@ -11,6 +11,8 @@ root, config = invocation()
 directories = []
 for relative in config['directories']:
     directory = selected(root, relative)
+    if ':' in str(directory):
+        raise ValueError('self library directory contains the ELF path separator')
     if not directory.is_dir():
         raise ValueError('missing self library directory')
     directories.append(str(directory))
