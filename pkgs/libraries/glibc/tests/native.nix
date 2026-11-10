@@ -1,10 +1,11 @@
-# Full installed controls, staged only until the independently reviewed build.
+# Installed controls for the full public glibc profile.
 { package }:
 let
   glibc = package;
   spec = package.specification;
   inherit (spec) gcc binutils;
-  flags = "-B${binutils}/bin/ -B${glibc}/lib/ -isystem ${glibc}/include -L${glibc}/lib -Wl,-rpath-link,${glibc}/lib -Wl,-rpath-link,${gcc}/lib -Wl,-dynamic-linker,${glibc}/${glibc.platform.dynamicLinker} -Wl,-rpath,${glibc}/lib -Wl,-rpath,${gcc}/lib";
+  toolchainFlags = "-B${binutils}/bin/ -B${glibc}/lib/ -isystem ${glibc}/include -L${glibc}/lib -Wl,-rpath-link,${glibc}/lib -Wl,-rpath-link,${gcc}/lib";
+  flags = "${toolchainFlags} -Wl,-dynamic-linker,${glibc}/${glibc.platform.dynamicLinker} -Wl,-rpath,${glibc}/lib -Wl,-rpath,${gcc}/lib";
   clean = ''
     unset NIX_CFLAGS_COMPILE NIX_CFLAGS_LINK NIX_LDFLAGS
     unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH
@@ -68,7 +69,7 @@ glibc.testContext.mkSuite {
       script =
         clean
         + ''
-          ${gcc}/bin/gcc ${flags} -static-pie ${./fixtures/static.c} -o static-pie
+          ${gcc}/bin/gcc ${toolchainFlags} -fPIE -static-pie ${./fixtures/static.c} -o static-pie
           ${binutils}/bin/readelf -h static-pie | grep -E 'Type:.*DYN' >&2
           test -z "$(${binutils}/bin/readelf -l static-pie | grep INTERP)"
           test -z "$(${binutils}/bin/readelf -d static-pie | grep NEEDED)"
