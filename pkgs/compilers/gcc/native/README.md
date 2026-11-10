@@ -13,6 +13,9 @@ these interfaces, including stack protector, bind-now and static PIE. It still
 reads `tvp.deps.glibc`, `platform` and the public raw paths. No selected consumer
 wrapper is installed over these programs. Raw GCC does not interpret Nix wrapper
 environment flags or imply a default hardening policy.
+Raw-link tests explicitly supply `-rpath-link` for the selected compiler and
+libc directories so the linker can resolve indirect ELF dependencies. These
+link-time search paths are separate from the executable's runtime RPATH.
 
 The existing candidate base separately selects the pinned private full consumer
 driver, including its specs, aliases, runtime directories, operand/environment

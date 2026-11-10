@@ -5,7 +5,8 @@ let
   gcc = package;
   spec = package.specification;
   libc = spec.glibc;
-  flags = "-B${libc}/lib/ -idirafter ${libc}/include -L${libc}/lib -Wl,-dynamic-linker,${libc}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${gcc}/lib -Wl,-rpath,${libc}/lib";
+  # Raw linkers need explicit search paths for indirect ELF dependencies too.
+  flags = "-B${libc}/lib/ -idirafter ${libc}/include -L${libc}/lib -Wl,-rpath-link,${gcc}/lib -Wl,-rpath-link,${libc}/lib -Wl,-dynamic-linker,${libc}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${gcc}/lib -Wl,-rpath,${libc}/lib";
   normalise = package.tvp.upstream.normalise;
 in
 assert
