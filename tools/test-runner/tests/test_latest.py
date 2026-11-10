@@ -56,7 +56,7 @@ class Fixture(unittest.TestCase):
         self.d = dict(schema='tvp.latest-descriptor/v1', system='x86_64-linux', source=o['source'],
                       aggregate=ident(all_), batches={'gcc_1': ident(batch) | {'tests': {'compile': ident(t)}}},
                       metadata={'schema': 'tvp.latest-tests/v1', 'families': {
-                          'gcc': dict(job='gcc_1', packageDRV=a, jobDRV=batch, outputs=[o['app'], o['dev']])}})
+                          'gcc': dict(family='gcc', version='1', job='gcc_1', packageDRV=a, jobDRV=batch, outputs=[o['app'], o['dev']])}})
         self.d['requiredOutputs'] = [o[n] for n in ('app', 'dev', 'batch', 'test', 'test-dev')]
         Path(o['source']).mkdir()
         self.state = dict(schema='tvp.latest-state/v1', phase='launching', attempt=1, full=False,
@@ -89,6 +89,22 @@ class Fixture(unittest.TestCase):
         # LLVM is an ancestor, not selected; cached tests don't need to restore it.
         cached.remove(self.outputs['aggregate'])
         self.assertEqual(g.preparation(self.d, self.nodes, cached), [])
+
+    def test_selected_heavy_families_without_native_metadata_are_prepared(self):
+        for family, version in [('nodejs', '26.13.0'), ('dart', '3.13.7'),
+                                ('flutter', '3.47.8'), ('gcc', '16.2.0'),
+                                ('llvm', '23.1.4'), ('jdk-bootstrap', '21.0.13')]:
+            with self.subTest(family=family):
+                nodes, descriptor = copy.deepcopy(self.nodes), copy.deepcopy(self.d)
+                a = self.ids['gcc']
+                nodes[a].update(name=family+'-'+version, pname=None, version=None, heavy=False)
+                nodes[self.ids['llvm']]['heavy'] = False
+                row = descriptor['metadata']['families'].pop('gcc')
+                row.update(family=family, version=version)
+                descriptor['metadata']['families'][family] = row
+                self.assertEqual([r['drv'] for r in g.preparation(descriptor, nodes, set())], [a])
+                nodes[a]['fixed'] = True
+                self.assertEqual(g.preparation(descriptor, nodes, set()), [])
 
     def test_selected_jdk_without_native_metadata_prepares_before_aggregate(self):
         a = self.ids['gcc']
@@ -355,9 +371,14 @@ with patch.object(Store,'valid',side_effect=lambda paths:{p for p in paths if Pa
                 child.wait(timeout=5)
 
     def test_cached_aggregate_restores_missing_selected_small_siblings(self):
+        row = self.d['metadata']['families'].pop('gcc')
+        row.update(family='small', job='small_1')
+        self.d['metadata']['families']['small'] = row
+        self.d['batches']['small_1'] = self.d['batches'].pop('gcc_1')
+        self.nodes[self.ids['gcc']].update(name='small-1', heavy=False)
         self.materialize()
-        self.nodes[self.ids['gcc']]['heavy'] = False
         for name in ('dev', 'test-dev'): Path(self.outputs[name]).rmdir()
+        s.save(self.run / 'descriptor.json', self.d)
         s.save(self.run / 'graph.json', self.nodes)
         commands = []
         def realize(worker, phase, targets):
@@ -598,7 +619,7 @@ class NativeProtocols(unittest.TestCase):
                 'inputSrcs': [], 'inputDrvs': deps, 'outputs': {'out': {'path': output}}}
         nodes = g.graph(document)
         descriptor = {'aggregate': {'drv': llvm, 'outputs': {'out': out_llvm}}, 'batches': {},
-                      'metadata': {'families': {'gcc': {'packageDRV': gcc}}}}
+                      'metadata': {'families': {'gcc': {'packageDRV': gcc, 'version': '1'}}}}
         self.assertEqual([r['drv'] for r in g.preparation(descriptor, nodes, set())], [gcc, llvm])
         self.assertEqual(g.preparation(descriptor, nodes, {out_gcc, out_llvm}), [])
         for malformed in ('{bad', '[]', None):

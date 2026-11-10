@@ -124,6 +124,12 @@ rebuilt. Needed heavy producers run one at a time, dependencies first, requestin
 only demanded named outputs. Inner builds and normal small builds retain the
 caller's normal Nix concurrency. Heavy preparation is not downstream test proof.
 
+For selected heavy families, the frozen descriptor supplies the exact application
+producer and version when native derivation labels are absent. Present labels must
+agree; missing labels cannot remove a selected application from preparation. A
+sequential final-output request also realizes its demanded split artifact; the
+runner does not guess an artifact producer from its name.
+
 Only after the heavy gate does one fail-fast realization request run. It includes
 the aggregate and exact output selectors for any missing selected packages, batch
 outputs or named-test siblings. A cached aggregate cannot restore dependencies

@@ -127,13 +127,13 @@ def preparation(descriptor, nodes, valid, unresolved=None):
     """Postorder over needed recipes only; cached parents need no lost ancestors."""
     # The descriptor has already validated family/alias, exact producer and
     # sibling outputs. Owned producers may omit pname/version in native JSON.
-    # Bind only the selected JDK, never a guessed name suffix. Source compiler
-    # producer naming remains governed by the existing metadata boundary.
+    # Bind each selected heavy application through that exact descriptor,
+    # never by guessing a producer from a name suffix.
     selected_heavy = set()
     for family, row in descriptor["metadata"]["families"].items():
         drv = row["packageDRV"]
         node = nodes[drv]
-        if family == "jdk" and not node.get("fixed", False):
+        if family in HEAVY and not node.get("fixed", False):
             version = row.get("version")
             require(isinstance(version, str) and version, "Malformed selected application version")
             require(node["name"] == family + "-" + version,
