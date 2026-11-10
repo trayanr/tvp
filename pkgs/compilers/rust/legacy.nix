@@ -1,0 +1,73 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+
+  defs = tvpLib.packages.mkDefs {
+    "1.97.1" = {
+      builder = ./build-1.97.nix;
+      base = tvp.bases.default;
+      deps = { };
+      blob = {
+        reason = "Upstream's binary distribution. rustc is self-hosting and TVP has no Rust chain, so there is nothing in the catalogue that could compile it.";
+        needs = "A from-source chain: mrustc (C++, reaches ~1.54) and then a walk forward, or a period rustc able to build this one. Until then this package exists only for the platforms upstream publishes a binary for, which is what bounds the architectures TVP can serve.";
+        blocked = {
+          package = "rustc-from-source";
+        };
+      };
+    };
+  };
+
+  versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
+
+  pname = "rustc";
+
+  packageArgs = {
+    infra = {
+      inherit (pkgs)
+        lib
+        fetchurl
+        autoPatchelfHook
+        patchelf
+        zlib
+        ;
+    };
+    inherit pname;
+    inherit versionTable;
+
+    extraArgs = {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        rustc:
+        import ./tests {
+          inherit pkgs tvpLib rustc;
+        }
+      ) { inherit pkgs; };
+    };
+
+    packageMeta = {
+      upstream = {
+        # static.rust-lang.org/dist/ is an S3 bucket with no listing (416), so
+        # releases are read from the repository's tags instead.
+        type = "git-tags";
+        url = "https://github.com/rust-lang/rust";
+
+        normalise = tag: tag;
+
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
+      };
+    };
+  };
+
+  canonical = tvpLib.packages.mkVersions packageArgs;
+
+in
+{
+  inherit canonical packageArgs;
+  aliases = tvpLib.packages.mkAliases {
+    inherit
+      pname
+      versionTable
+      canonical
+      ;
+  };
+}

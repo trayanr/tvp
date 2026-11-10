@@ -18,7 +18,7 @@ let
           tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Explicit upstream bootstrap stage; preserve the released compiler seed and acyclic construction chain.";
-          } tvp.canonical."jdk-bootstrap_21_0_13"
+          } (import ../jdk-bootstrap/legacy.nix { inherit pkgs tvp; }).canonical.jdk-bootstrap_21_0_13
         );
         bash = tvp.packages.bash_5;
         autoconf = tvp.packages.autoconf_2;

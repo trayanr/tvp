@@ -66,6 +66,8 @@ let
         inherit sha256;
       };
     testDeps = constructionRecipe.testDeps // {
+      # Ordinary latest tests follow the same public JDK as the owned procedure.
+      jdk = tvp.packages.jdk_21;
       autoconf = tvp.packages.autoconf;
       automake = tvp.packages.automake;
       libtool = tvp.packages.libtool;

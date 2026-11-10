@@ -10,7 +10,14 @@ let
         unzip = tvp.packages.unzip;
         patchelf = tvp.packages.patchelf;
         bash = tvp.packages.bash_5;
-        jdk = tvp.packages.jdk_21;
+        # Retained SDK calls keep the prior source JDK's binary seed generation.
+        jdk = (
+          tvp.packages.jdk_21.override {
+            bootJdk =
+              (import ../../runtimes/jdk-bootstrap/legacy.nix { inherit pkgs tvp; })
+              .canonical.jdk-bootstrap_21_0_13;
+          }
+        );
       };
       opts = {
         url = "https://dl.google.com/android/repository/build-tools_r36_linux.zip";
@@ -31,7 +38,14 @@ let
         unzip = tvp.packages.unzip;
         patchelf = tvp.packages.patchelf;
         bash = tvp.packages.bash_5;
-        jdk = tvp.packages.jdk_21;
+        # Retained SDK calls keep the prior source JDK's binary seed generation.
+        jdk = (
+          tvp.packages.jdk_21.override {
+            bootJdk =
+              (import ../../runtimes/jdk-bootstrap/legacy.nix { inherit pkgs tvp; })
+              .canonical.jdk-bootstrap_21_0_13;
+          }
+        );
       };
       opts = {
         url = "https://dl.google.com/android/repository/build-tools_r37_linux.zip";
