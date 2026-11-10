@@ -134,6 +134,7 @@ in
       "ir"
       "linker"
       "loader"
+      "preprocessor"
       "version"
     ];
   rebound =
