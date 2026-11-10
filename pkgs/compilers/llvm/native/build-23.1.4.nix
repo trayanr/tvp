@@ -19,6 +19,9 @@
   cmake,
   ninja,
   pkg-config,
+  sed,
+  grep,
+  diffutils,
   zlib,
   zstd,
   libffi,
@@ -49,6 +52,9 @@ let
     cmake
     ninja
     pkg-config
+    sed
+    grep
+    diffutils
     zlib
     zstd
     libffi
@@ -93,6 +99,9 @@ in
     cmake
     ninja
     pkg-config
+    sed
+    grep
+    diffutils
     zlib
     zstd
     libffi
@@ -113,6 +122,9 @@ in
       cmake
       ninja
       pkg-config
+      sed
+      grep
+      diffutils
     ];
     libraries = [
       zlib

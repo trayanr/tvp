@@ -34,6 +34,9 @@ let
       libxml2 = alternate;
       bash = alternate;
       coreutils = alternate;
+      sed = alternate;
+      grep = alternate;
+      diffutils = alternate;
     }
   );
   source = p.override { src = builtins.toFile "llvm-custom-source" "source fixture"; };
@@ -83,6 +86,9 @@ in
     "libxml2"
     "bash"
     "coreutils"
+    "sed"
+    "grep"
+    "diffutils"
   ];
   discovery =
     has "${alternate}/bin/cmake" (run changed "llvm.configure")
@@ -100,6 +106,25 @@ in
     has "${alternate}/bin/python3" (run changed "llvm.python-scripts")
     && has "${alternate}/bin/perl" (run changed "llvm.perl-scripts");
   upstream = has "test/Assembler" (run p "llvm.check") && has "test/Bitcode" (run p "llvm.check");
+  upstreamTools =
+    lib.all
+      (
+        name:
+        let
+          tool = lib.overrideDerivation s.${name} (old: {
+            name = "${old.name}-llvm-upstream-tool-contract";
+          });
+          selected = p.edit (s: s // { ${name} = tool; });
+          check = builtins.head (builtins.filter (x: x.name == "llvm.check") selected.buildSteps);
+        in
+        selected.tvp.deps.${name}.drvPath == tool.drvPath
+        && builtins.elem tool.drvPath (map (t: t.drvPath) check.tools)
+      )
+      [
+        "sed"
+        "grep"
+        "diffutils"
+      ];
   source = has "llvm-custom-source" (run source "source.unpack");
   tests =
     builtins.attrNames p.tests == [

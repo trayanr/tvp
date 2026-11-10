@@ -18,7 +18,8 @@ Explicit response-quoting overrides and mode-changing link flags are rejected.
 
 All upstream target backends, Clang/LLD, shared libraries, RTTI and mandatory
 zlib/zstd/libxml2/FFI support remain enabled. Assembler and Bitcode llvm-lit checks
-are mandatory build steps. The seven regular package tests use the owned test
+are mandatory build steps. Sed, Grep and Diffutils are explicit build tools for
+upstream configure and test commands. The seven regular package tests use the owned test
 context and bind their loader expectation to the effective specification.
 
 This is SOURCE STAGE ONLY. Pure provider/customization contracts, mock wrapper

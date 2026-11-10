@@ -44,6 +44,9 @@ let
         cmake = tvp.packages.cmake;
         ninja = tvp.packages.ninja;
         pkg-config = tvp.packages.pkg-config;
+        sed = tvp.packages.gnused;
+        grep = tvp.packages.gnugrep;
+        diffutils = tvp.packages.diffutils;
         zlib = tvp.packages.zlib_1;
         zstd = tvp.packages.zstd_1;
         libffi = tvp.packages.libffi_3;
