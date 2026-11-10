@@ -6,6 +6,9 @@ let
   run =
     python: name: config:
     ''${python}/bin/python3 -B ${script name} "$out" ${lib.escapeShellArg (builtins.toJSON config)}'';
+  sdkOutputRun =
+    python: name: config:
+    ''${python}/bin/python3 -B ${./sdk-output}/${name}.py "$out" ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output} ${./output-tools}'';
   outputRun =
     python: name: config:
     ''${python}/bin/python3 -B ${./output-tools}/${name}.py "$out" ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}'';
@@ -19,6 +22,39 @@ let
       } ${./native-output} ${name}'';
 in
 {
+  interpreters =
+    {
+      python,
+      binutils,
+      patchelf,
+      paths,
+      loader,
+    }:
+    {
+      name = "output.interpreters";
+      tools = [
+        python
+        binutils
+        patchelf
+      ];
+      run = sdkOutputRun python "interpreters" {
+        inherit paths loader;
+        readelf = "${binutils}/bin/readelf";
+        patchelf = "${patchelf}/bin/patchelf";
+      };
+    };
+  template =
+    {
+      python,
+      path,
+      template,
+      values,
+    }:
+    {
+      name = "output.template";
+      tools = [ python ];
+      run = sdkOutputRun python "template" { inherit path template values; };
+    };
   # Shallow host ELF selection; target payloads never enter this operation.
   hostELF =
     {
@@ -29,6 +65,7 @@ in
       patterns ? [ ],
       loader,
       libraries,
+      executablesOnly ? false,
     }:
     {
       name = "output.host-elf";
@@ -37,7 +74,9 @@ in
         binutils
         patchelf
       ];
-      run = ''${python}/bin/python3 -B ${./host-elf.py} "$out" ${
+      run = ''${python}/bin/python3 -B ${
+        if executablesOnly then ./sdk-output/host-executables.py else ./host-elf.py
+      } "$out" ${
         lib.escapeShellArg (
           builtins.toJSON {
             inherit paths patterns loader;
@@ -184,7 +223,6 @@ in
             )
           } ${./native-output} ${./elf-output.py}''
         else if libraries != null then
-          assert base != null;
           ''${python}/bin/python3 -B ${
             if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py
           } "$out" ${
@@ -195,7 +233,9 @@ in
                   p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
                 ) libraries;
                 baseDirectories =
-                  if base ? runtimeDirectories then
+                  if base == null then
+                    [ ]
+                  else if base ? runtimeDirectories then
                     assert builtins.isList base.runtimeDirectories;
                     assert builtins.all (
                       p: builtins.isString p && builtins.hasContext p && lib.hasPrefix "/nix/store/" p

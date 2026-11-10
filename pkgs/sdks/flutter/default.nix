@@ -1,72 +1,99 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  platform = tvpLib.platforms.forStdenv tvp.bases.default.stdenv;
-  defs = tvpLib.packages.mkDefs {
-    "3.47.8" = {
-      builder = ./build-3.47.8.nix;
-      base = tvp.bases.default;
-      deps = {
-        dart = (
-          tvp.lib.packages.withConstraint {
+  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.flutter;
+  candidate = import ../../../bases/source-gnu { };
+  tool =
+    role:
+    tvpLib.packages.tagSelection {
+      namespace = "source-gnu.inputs";
+      selector = role;
+      kind = "source-base-build-tool";
+      reason = "Explicit retained owned tool for SDK source preparation or finalization.";
+    } candidate.tools.${role};
+  definition =
+    (tvpLib.packages.mkDefs {
+      "3.47.8" = {
+        constructor = tvp.builder;
+        builder = ./native/build-3.47.8.nix;
+        base = candidate.base;
+        helpers = {
+          inherit tvp;
+        };
+        testContext =
+          package:
+          tvpLib.tests.fromPackage {
+            builder = tvp.builder;
+            inherit package;
+          };
+        source =
+          { version, sha256 }:
+          import <nix/fetchurl.nix> {
+            url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${version}-stable.tar.xz";
+            inherit sha256;
+          };
+        deps = {
+
+          bash = tool "bash";
+          coreutils = tool "coreutils";
+          helperPython = tool "python";
+          binutils = tool "binutils";
+          patchelf = tool "patchelf";
+          findutils = tool "findutils";
+          sed = tool "sed";
+          grep = tool "grep";
+          diffutils = tool "diffutils";
+          dart = tvpLib.packages.withConstraint {
             category = "artifact";
             reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-          } tvp.canonical.dart_3_13_7
-        );
-        git = tvp.packages.git_2;
-        curl = tvp.packages.curl_8;
-        gradle = tvp.packages.gradle_9;
-        androidSdk = tvp.android.profiles.flutter;
-        jdk = tvp.packages.jdk_21;
-        ca-certificates = tvp.packages.ca-certificates;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils;
-        findutils = tvp.packages.findutils;
-        gnugrep = tvp.packages.gnugrep;
-        gnused = tvp.packages.gnused;
-        gawk = tvp.packages.gawk;
-        gnutar = tvp.packages.gnutar;
-        gzip = tvp.packages.gzip;
-        xz = tvp.packages.xz_5;
-        unzip = tvp.packages.unzip;
-        python = tvp.packages.python_3;
-        patchelf = tvp.packages.patchelf;
-        which = tvp.packages.which;
+          } tvp.canonical.dart_3_13_7;
+          git = tvp.packages.git_2;
+          curl = tvp.packages.curl_8;
+          gradle = tvp.packages.gradle_9;
+          androidSdk = tvp.android.profiles.flutter;
+          jdk = tvp.packages.jdk_21;
+          ca-certificates = tvp.packages.ca-certificates;
+          gawk = tvp.packages.gawk;
+          tar = tool "tar";
+          gzip = tool "gzip";
+          xz = tool "xz";
+          unzip = tvp.packages.unzip;
+          python = tvp.packages.python_3;
+          which = tvp.packages.which;
+          runtimeLibc = tvp.packages.glibc_2;
+          runtimeCompiler = tvp.packages.gcc_16;
+        };
+        opts = { };
+        blob = retained.versionTable."3.47.8".def.blob;
       };
-      opts = {
-        inherit (platform) dynamicLinker;
-      };
-      blob = {
-        reason = "Flutter framework and command snapshot are built from the pinned SDK's Dart sources using source-built Dart. The matching upstream engine, frontend snapshots and web artifacts remain precompiled.";
-        needs = "Source Flutter engine and engine artifact builds, plus their dependency graphs.";
-        blocked.package = "flutter-engine-from-source";
-      };
+    })."3.47.8";
+  versionTable = retained.versionTable // {
+    "3.47.8" = retained.versionTable."3.47.8" // {
+      def =
+        if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
+          definition
+        else
+          retained.versionTable."3.47.8".def;
     };
+  };
+  publicArgs = retained // {
+    inherit versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native.nix { inherit package; }
+      else
+        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   pname = "flutter";
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."3.47.8";
-      releases."3.47.8" = "sha256-uvfcxaPbumD+hjv0k6bPIDGVYh93huqlobugLNDYfdI=";
-    }
-  ];
-  canonical = tvpLib.packages.mkVersions {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      };
-  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
+  recipes.${pname} = publicArgs // {
+    constructionRecipe = retained;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

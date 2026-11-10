@@ -1215,3 +1215,49 @@ Retired bootstrap generations retain full validation under
 `testBatches.x86_64-linux.base-gcc16-owned`. All are included in the full plan.
 Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
 `bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.
+
+### Staged stable Dart/Flutter owned procedures
+
+Native stable Dart bootstrap 3.13.7, source Dart 3.13.7 and Flutter 3.47.8
+select the source-GNU candidate and independent owned procedures. Their legacy
+construction recipes retain the original stable DevTools SDK and source Dart
+providers. The beta 3.13.0-103.1.beta compiler seed remains unchanged. Non-native
+selection retains the earlier constructor.
+
+The stable binary SDK splits after pristine installation. Source Dart splits
+after GN/Ninja, upstream checks and raw SDK installation. GN receives an explicit
+LLVM environment with no compiler-library contributions from the GNU base;
+its loader and final libraries come from LLVM's selected target. Finalization
+uses `outputs.interpreters` and `outputs.rpaths` with explicit libraries and no
+base. Omitting `base` in this libraries mode retains no implicit base directories;
+existing callers that supply a base keep their previous commands. The source
+DevTools and mutable CIPD stamp profiles are unsupported and fail explicitly.
+Configuration, test and pub caches use workspace directories across steps.
+Source fetching selects `fetchCertificates` independently of the installed Dart
+wrapper's runtime CA bundle, so a runtime CA edit does not change the source prefix.
+
+Flutter splits after installing pristine framework sources and pinned assets,
+removing the bundled Dart SDK and tool snapshot. Binding the selected Dart SDK,
+offline pub cache preload/lock resolution, package configuration and tool snapshot
+generation happen at the final prefix. This is output-specific tool generation:
+the previous 45.8 MB snapshot contains its prefix 4678 times and its package
+configuration contains it 103 times. The binary snapshot is never relocated by
+byte replacement. Host ELF repair selects only the Linux host tool directories;
+Android target and Web payloads remain pinned assets. Nix's final artifact
+reference exclusion applies to all three recipes without exceptions.
+
+`tvp.lib.sources.fetchArchive` is a root-preserving recursive fixed-output source
+primitive, using explicit shell, downloader, CA, tar/gzip, Coreutils and validation
+Python. It preserves the `source` name and unpacked hashes of the retained DEPS
+fetches. It accepts HTTPS or contextual store-file fixtures, rejects unsupported
+tar members and escaping namespaces before extraction, and never strips a top
+root. It is immutable input fetching, separate from package construction.
+
+Focused staging controls live in `lib/tests/sdk-source-stage.nix` and
+`lib/tests/sdk-source-safety.py`. Their pure contracts inspect effective plans and
+edits; their buildable fixtures exercise a tiny LLVM ELF, final loader/library
+changes, artifact reuse/exclusion and local archive hashes. They do not realize
+canonical source Dart or Flutter. Those packages' nine and four installed controls
+remain deferred until independent source review authorizes compilation. The
+stable bootstrap's two installed controls can run during staging. Full validation,
+source DevTools/engine/bootstrap work and default promotion remain separate gates.
