@@ -137,9 +137,11 @@ let
           ]
         )).drvPath;
     noArchive = !(builtins.elem "output.strip-archives" (map (s: s.name) p.buildSteps));
-    sixteenSharedTests =
-      builtins.all (n: builtins.hasAttr n p.tests) (builtins.attrNames tvp.canonical.ruby_4_0_6.tests)
-      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 19;
+    retainedPilotTests = builtins.length (builtins.attrNames p.tests) == 19;
+    canonicalPreservesPilotBehaviors =
+      builtins.all (n: builtins.hasAttr n tvp.canonical.ruby_4_0_6.tests) (builtins.attrNames p.tests)
+      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 23;
+    distinctConstructions = p.drvPath != tvp.canonical.ruby_4_0_6.drvPath;
     independentConsumer = p.tvp.declaredTestDependencies.consumerCompiler.drvPath != p.tvp.cc.drvPath;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

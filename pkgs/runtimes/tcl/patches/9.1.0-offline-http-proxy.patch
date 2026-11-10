@@ -1,0 +1,71 @@
+--- a/tests/httpProxy.test
++++ b/tests/httpProxy.test
+@@ -59,6 +59,12 @@
+     testConstraint ThreadLevelSummary 1
+ }
+ if {![info exists ThreadLevel]} {
++    # Use the upstream loopback HTTP server for no-proxy assertions in a
++    # network-isolated build. Proxy/TLS constraints and assertions stay intact.
++    source [file join [file dirname [info script]] httpd]
++    set tvpListen [httpd_init 0]
++    set tvpUrl http://127.0.0.1:$port/
++
+     if {[catch {package require Thread}] == 0} {
+ 	set ValueRange {0 1 2}
+     } else {
+@@ -70,6 +76,8 @@
+     foreach ThreadLevel $ValueRange {
+ 	source [info script]
+     }
++    close $tvpListen
++    unset tvpListen tvpUrl
+     catch {unset ThreadLevel}
+     catch {unset ValueRange}
+     if {![testConstraint ThreadLevelSummary]} {
+@@ -253,7 +261,7 @@
+ } -body {
+     after $fetchPause
+ 
+-    set token [http::geturl http://www.google.com/]
++    set token [http::geturl $tvpUrl]
+     set ri [http::responseInfo $token]
+     set res "[dict get $ri stage] [dict get $ri status] [dict get $ri responseCode] --\
+ 	     [dict get $ri proxyUsed] --\
+@@ -347,7 +355,7 @@
+ } -body {
+     after $fetchPause
+ 
+-    set token [http::geturl http://www.google.com/]
++    set token [http::geturl $tvpUrl]
+     set ri [http::responseInfo $token]
+     set pos1 [lsearch -exact [string tolower [set ${token}(requestHeaders)]] proxy-authorization]
+     set pos2 [lsearch -exact [set ${token}(requestHeaders)] $aliceCreds]
+@@ -776,7 +784,7 @@
+ } -body {
+     after $fetchPause
+ 
+-    set token [http::geturl http://www.google.com/]
++    set token [http::geturl $tvpUrl]
+     set ri [http::responseInfo $token]
+     set pos1 [lsearch -exact [string tolower [set ${token}(requestHeaders)]] proxy-authorization]
+     set pos2 [lsearch -exact [set ${token}(requestHeaders)] $aliceCreds]
+@@ -1076,7 +1084,7 @@
+ } -body {
+     after $fetchPause
+ 
+-    set token [http::geturl http://www.google.com/]
++    set token [http::geturl $tvpUrl]
+     set ri [http::responseInfo $token]
+     set pos1 [lsearch -exact [string tolower [set ${token}(requestHeaders)]] proxy-authorization]
+     set pos2 [lsearch -exact [set ${token}(requestHeaders)] $badCreds]
+--- a/tests/fCmd.test
++++ b/tests/fCmd.test
+@@ -105,7 +105,7 @@
+ proc gethomedirglob {user} {
+     if {[testConstraint unix]} {
+ 	if {![catch {
+-	    exec {*}[auto_execok sh] -c "echo ~$user"
++	    exec $::env(TVP_TEST_ENV) LC_ALL=C $::env(TVP_TEST_SHELL) -c "echo ~$user"
+ 	} home]} {
+ 	    set home [string trim $home]
+ 	    if {$home ne ""} {

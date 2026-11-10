@@ -206,19 +206,71 @@ let
         libgcc = candidate.toolchain.runtime;
       };
     };
+    "9.1.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-9.1.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      patches = [
+        {
+          file = ./patches/9.1.0-offline-http-proxy.patch;
+          reason = "Tcl 9.1 httpProxy no-proxy tests contact Google without a network constraint. Use the unchanged upstream loopback httpd fixture and retain every response/header/thread assertion in the sandbox. Bind the independent home-directory shell oracle to the declared Bash rather than an absent ambient sh.";
+        }
+      ];
+      deps = {
+        patch = constructionTool "patch";
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        pkgConfig = constructionTool "pkgConfig";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        gzip = constructionTool "gzip";
+        zlib = tvp.packages.zlib_1;
+        libgcc = candidate.toolchain.runtime;
+      };
+    };
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "9.1.0" = versionTable."9.1.0" // {
+        def = if native then ownedDefs."9.1.0" else versionTable."9.1.0".def;
+      };
       "8.6.18" = versionTable."8.6.18" // {
         def = if native then ownedDefs."8.6.18" else versionTable."8.6.18".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+        import (if package.version == "9.1.0" then ./tests/native-9.1.nix else ./tests/native-default.nix) {
+          inherit pkgs tvpLib package;
+        }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

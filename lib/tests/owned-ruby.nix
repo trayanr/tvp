@@ -243,14 +243,16 @@ let
           }
         ]
       );
+  # These retained check fixtures use their original public support tools; the
+  # native recipe independently declares its source construction tools.
   supportInputs = {
     ruby = p;
     inherit compatibleZlib;
     inherit (tvp.packages) bash coreutils;
     make = tvp.packages.gnumake;
     pkgConfig = tvp.packages.pkg-config;
-    python = p.tvp.deps.python;
-    sed = p.tvp.deps.gnused;
+    python = tvp.packages.python-build_3;
+    sed = tvp.packages.gnused;
     environment = tvp.bases.default.stdenv;
     compiler = tvp.bases.default.stdenv.cc;
   };
@@ -273,7 +275,55 @@ let
         r.resolved.drv == supportInputs.${r.dependency}.drvPath
         && r.resolved.out == supportInputs.${r.dependency}.outPath
       ) supportRows;
-    sameRecipe = p.drvPath == pilot.drvPath;
+    nativeSourceEdit =
+      let
+        q = p.edit (s: s // { src = builtins.toFile "ruby-source-probe" "probe"; });
+      in
+      q.drvPath != p.drvPath
+      && lib.hasInfix "ruby-source-probe" (builtins.head q.buildSteps).run
+      && q.tests.version.package.outPath == q.outPath;
+    nativeBaseEdit =
+      let
+        q = p.edit (s: s // { base = s.base.override { name = "ruby-base-probe"; }; });
+      in
+      q.tvp.base == "ruby-base-probe" && q.tests.version.specification.base.name == "ruby-base-probe";
+    nativeToolsEdit =
+      let
+        q = p.edit (
+          s:
+          s
+          // {
+            tools = s.tools // {
+              gnumake = tvp.packages.gnumake;
+            };
+          }
+        );
+      in
+      lib.hasInfix (builtins.unsafeDiscardStringContext "${tvp.packages.gnumake}/bin/make")
+        (builtins.head (lib.filter (s: s.name == "ruby.build") q.buildSteps)).run;
+    nativeLibraryEdit =
+      let
+        q = p.edit (
+          s:
+          s
+          // {
+            libraries = s.libraries // {
+              zlib = compatibleZlib;
+            };
+          }
+        );
+      in
+      q.runtime.zlib.outPath == compatibleZlib.outPath
+      &&
+        lib.hasInfix (builtins.unsafeDiscardStringContext (toString compatibleZlib))
+          (builtins.head (lib.filter (s: s.name == "ruby.configure") q.buildSteps)).run;
+    nativeShellRebinding =
+      let
+        q = p.override { bash = tvp.packages.bash; };
+      in
+      q.tests.version.specification.bash.outPath == tvp.packages.bash.outPath;
+    distinctRecipes =
+      p.drvPath != pilot.drvPath && p.tvp.base == "source-gnu-candidate" && pilot.tvp.base != p.tvp.base;
     zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
     runtimeRebuilds = p.drvPath != runtime.drvPath && !(runtime ? artifact);
     runtimeSummaryGuard =
@@ -310,11 +360,11 @@ let
       (disabled.override (a: {
         doCheck = a.doCheck;
       })).drvPath == disabled.drvPath;
-    source = p.src.drvPath == pilot.src.drvPath;
+    source = p.src.outputHash == pilot.src.outputHash;
     noOp = (p.override { }).drvPath == p.drvPath && (p.editSteps (s: s)).drvPath == p.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
     noSetup =
-      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${p.stdenv}/setup") (
+      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${pilot.stdenv}/setup") (
         lib.concatStrings p.buildStepRunner.childScripts
       );
     unknownRejected = !(builtins.tryEval (p.override { unknown = true; }).drvPath).success;
