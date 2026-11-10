@@ -43,7 +43,18 @@ let
     dynamicLinker
     ;
   inherit (tvp.builder) steps outputs;
-  environment = base.environment final.environment;
+  runtimeCompiler =
+    if final.runtime.compiler ? libc && final.runtime.compiler ? bintools then
+      final.runtime.compiler
+    else
+      throw "Go runtime.compiler requires a compiler driver with libc and bintools; adapt raw compilers before selecting them";
+  environment =
+    if final.runtime.libc.outPath != runtimeCompiler.libc.outPath then
+      throw "Go runtime.libc must match runtime.compiler.libc; select a coherent compiler driver"
+    else if !(lib.hasPrefix "${final.runtime.libc}/" final.runtime.loader) then
+      throw "Go runtime.loader must belong to the selected runtime.libc"
+    else
+      (base.override { compiler = runtimeCompiler; }).environment final.environment;
   command =
     name: run:
     environment
@@ -94,7 +105,7 @@ in
   };
   runtime = {
     compiler = base.compiler;
-    libc = base.compiler.libc;
+    libc = runtimeCompiler.libc;
     loader = "${final.runtime.libc}/${dynamicLinker}";
     cc = environment.env.CC;
     cxx = environment.env.CXX;

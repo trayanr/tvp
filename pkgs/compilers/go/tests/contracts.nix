@@ -2,6 +2,7 @@
   lib,
   package,
   alternate,
+  alternateCompiler,
 }:
 let
   p = package;
@@ -38,6 +39,8 @@ let
   );
   base = p.edit (s: s // { base = s.base.override { name = "go-base-contract"; }; });
   runtime = p.editRuntime (r: r // { libc = alternate; });
+  compiler = p.editRuntime (r: r // { compiler = alternateCompiler; });
+  unsupportedCompiler = p.editRuntime (r: r // { compiler = alternate; });
 in
 {
   owned = !(p ? stdenv) && s.base.name == "source-gnu-candidate";
@@ -55,9 +58,24 @@ in
     has "${alternate}/custom-cc" (run custom "go.build")
     && has "${alternate}/custom-cxx" (run custom "go.build")
     && has "${alternate}/custom-cc" (builtins.head custom.tests.compiler-default.buildSteps).run;
-  loader =
-    has "${alternate}/lib/ld-linux-x86-64.so.2" (run runtime "go.build")
-    && has "${alternate}/lib/ld-linux-x86-64.so.2" (builtins.head runtime.tests.cgo.buildSteps).run;
+  rejectIncoherentLibc = !(builtins.tryEval runtime.drvPath).success;
+  rejectUnsupportedCompiler = !(builtins.tryEval unsupportedCompiler.drvPath).success;
+  runtimeCompiler =
+    compiler.drvPath != p.drvPath
+    && compiler.specification.runtime.cc == "${alternateCompiler}/bin/cc"
+    && compiler.specification.runtime.cxx == "${alternateCompiler}/bin/c++"
+    && has "${alternateCompiler}/bin/cc" (run compiler "go.build")
+    && has "${alternateCompiler}/bin/c++" (run compiler "go.build");
+  compilerLibc =
+    compiler.specification.runtime.libc.drvPath == alternateCompiler.libc.drvPath
+    && has "${alternateCompiler.libc}/${s.dynamicLinker}" (run compiler "go.build")
+    && has "${alternateCompiler.libc}/${s.dynamicLinker}" (builtins.head compiler.tests.cgo.buildSteps)
+    .run;
+  compilerTests =
+    has "${alternateCompiler}/bin/cc" (builtins.head compiler.tests.compiler-default.buildSteps).run
+    && builtins.elem alternateCompiler.drvPath (
+      map (t: t.drvPath) compiler.tests.compiler-default.tvp.deps.tools
+    );
   metadata =
     changed.tvp.deps.bootstrap.outPath == alternate.outPath
     && changed.tvp.deps.coreutils.outPath == alternate.outPath;
