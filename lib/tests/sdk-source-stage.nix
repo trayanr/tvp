@@ -35,6 +35,7 @@ let
         }
       ]
     );
+  contains = needle: haystack: lib.hasInfix (builtins.unsafeDiscardStringContext needle) haystack;
   stableArtifact = a: b: a.artifact.drvPath == b.artifact.drvPath && a.drvPath != b.drvPath;
   changedArtifact = a: b: a.artifact.drvPath != b.artifact.drvPath;
   environment = (builtins.head (builtins.filter (s: s.name == "dart.configure") dart.buildSteps)).env;
@@ -70,6 +71,84 @@ let
     );
     flutterProviderMetadata =
       (flutter.editRuntime (r: r // { dart = stable; })).tvp.deps.dart.drvPath == stable.drvPath;
+    directFlutterProviders =
+      builtins.all
+        (
+          name:
+          let
+            replacement = flutter.specification.${name}.editSteps (
+              steps.append [
+                {
+                  name = "stage.provider-edit";
+                  run = ": effective-provider";
+                }
+              ]
+            );
+            edited = flutter.edit (s: s // { ${name} = replacement; });
+            viaOverride = flutter.override { ${name} = replacement; };
+            run = lib.concatMapStringsSep "\n" (s: s.run or "") edited.buildSteps;
+          in
+          flutter.artifact.drvPath == edited.artifact.drvPath
+          && edited.runtime.${name}.drvPath == replacement.drvPath
+          && edited.tvp.deps.${name}.drvPath == replacement.drvPath
+          && edited.drvPath == viaOverride.drvPath
+          && (
+            if name == "python" then
+              # Python is the installed version-test tool, not a shipped runtime command.
+              edited.drvPath == flutter.drvPath && edited.tests.version.drvPath != flutter.tests.version.drvPath
+            else
+              edited.drvPath != flutter.drvPath && contains (toString replacement) run
+          )
+        )
+        [
+          "dart"
+          "git"
+          "curl"
+          "gradle"
+          "androidSdk"
+          "jdk"
+          "python"
+          "which"
+        ];
+    directCertificates =
+      builtins.all
+        (
+          package:
+          let
+            edited = package.edit (s: s // { ca-certificates = stable; });
+            viaRuntime = package.editRuntime (r: r // { certificates = stable; });
+            commands = lib.concatMapStringsSep "\n" (s: s.run or "") edited.buildSteps;
+          in
+          stableArtifact package edited
+          && edited.runtime.certificates.drvPath == stable.drvPath
+          && edited.tvp.deps.ca-certificates.drvPath == stable.drvPath
+          && viaRuntime.tvp.deps.ca-certificates.drvPath == stable.drvPath
+          && contains "${stable}/etc/ssl/certs/ca-bundle.crt" commands
+          && edited.drvPath == viaRuntime.drvPath
+        )
+        [
+          dart
+          flutter
+        ];
+    directShells =
+      let
+        dartEdit = dart.edit (s: s // { bash = stable; });
+        flutterEdit = flutter.edit (s: s // { bash = stable; });
+      in
+      dartEdit.runtime.shell == "${stable}/bin/bash"
+      && flutterEdit.runtime.shell.drvPath == stable.drvPath
+      && dartEdit.tvp.runtimeProviders.shell == dartEdit.runtime.shell
+      && flutterEdit.tvp.runtimeProviders.shell.drvPath == stable.drvPath;
+    runtimeProviderPrecedence =
+      let
+        edited = (flutter.editRuntime (r: r // { dart = stable; })).edit (s: s // { dart = dart; });
+      in
+      edited.runtime.dart.drvPath == stable.drvPath
+      && edited.tvp.deps.dart.drvPath == stable.drvPath
+      && edited.drvPath == (flutter.editRuntime (r: r // { dart = stable; })).drvPath;
+    rejectsUndeclaredProvider =
+      rejects
+        (probe.edit (s: s // { dependencyProviders.notDeclared = stable; })).drvPath;
     llvmEnvironment =
       environment.CC == "${dart.specification.llvm}/bin/clang"
       && environment.LD == "${dart.specification.llvm}/bin/ld.lld"

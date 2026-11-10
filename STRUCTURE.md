@@ -1261,3 +1261,15 @@ canonical source Dart or Flutter. Those packages' nine and four installed contro
 remain deferred until independent source review authorizes compilation. The
 stable bootstrap's two installed controls can run during staging. Full validation,
 source DevTools/engine/bootstrap work and default promotion remain separate gates.
+
+
+Runtime provider defaults read exposed specification inputs through the effective
+fixed point. A direct dependency `.edit` therefore changes the commands that use
+that default; `.editRuntime` can still replace it explicitly. When that effective
+runtime provider differs from its construction default, an optional specification
+`dependencyProviders` map projects it into `tvp.deps` and `declaredDependencies`.
+The map may contain only already-declared dependency names. It neither adds
+undeclared dependencies nor changes construction inputs. Recipes without the map
+retain the existing metadata behavior. Inputs used during construction, such as
+Dart's Bash, remain construction providers; `tvp.runtimeProviders` records an
+independently edited runtime shell.

@@ -34,11 +34,17 @@ let
       package = build specification;
       # Edits change the effective providers as well as their build steps.
       # Older recipes may keep a dependency only in their arguments.
-      dependencies = lib.mapAttrs (name: original: specification.${name} or original) (
-        builtins.intersectAttrs (lib.genAttrs (
-          if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
-        ) (_: null)) current
-      );
+      # A runtime override may replace a default input without changing the
+      # construction provider. Only explicitly declared dependency names can be
+      # projected here; recipes without a projection retain the old behavior.
+      dependencyProviders = specification.dependencyProviders or { };
+      dependencies =
+        lib.mapAttrs (name: original: dependencyProviders.${name} or specification.${name} or original)
+          (
+            builtins.intersectAttrs (lib.genAttrs (
+              if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
+            ) (_: null)) current
+          );
       provenance = metadata // {
         base = specification.base.name;
         cc =
@@ -134,6 +140,10 @@ let
     in
     if unknown != [ ] then
       throw "TVP native recipe: unknown arguments: ${lib.concatStringsSep ", " unknown}"
+    else if
+      lib.subtractLists (builtins.attrNames dependencies) (builtins.attrNames dependencyProviders) != [ ]
+    then
+      throw "TVP native recipe: dependency provider projection contains undeclared names"
     else if
       owned
       && builtins.length package.outputs > 1

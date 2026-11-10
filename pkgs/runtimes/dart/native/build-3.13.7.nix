@@ -105,7 +105,8 @@ in
     patch
     dynamicLinker
     ;
-  ca-certificates = final.runtime.certificates;
+  inherit ca-certificates;
+  dependencyProviders.ca-certificates = final.runtime.certificates;
   runtime = {
     loader = if final.dynamicLinker == null then final.llvm.tvp.dynamicLinker else final.dynamicLinker;
     libraries = [
@@ -113,8 +114,8 @@ in
       target.gccRuntime
       target.cxxRuntime
     ];
-    shell = "${bash}/bin/bash";
-    certificates = ca-certificates;
+    shell = "${final.bash}/bin/bash";
+    certificates = final.ca-certificates;
   };
   environment = {
     tools = [

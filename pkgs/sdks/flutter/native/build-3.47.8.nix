@@ -84,8 +84,8 @@ in
     runtimeLibc
     runtimeCompiler
     ;
-  # Effective final providers also drive declared dependency metadata and tests.
-  inherit (final.runtime)
+  # Exposed inputs supply defaults; explicit runtime edits take precedence.
+  inherit
     dart
     git
     curl
@@ -94,10 +94,10 @@ in
     jdk
     python
     which
+    ca-certificates
     ;
-  ca-certificates = final.runtime.certificates;
-  runtime = {
-    inherit
+  dependencyProviders = {
+    inherit (final.runtime)
       dart
       git
       curl
@@ -107,8 +107,21 @@ in
       python
       which
       ;
-    certificates = ca-certificates;
-    shell = bash;
+    ca-certificates = final.runtime.certificates;
+  };
+  runtime = {
+    inherit (final)
+      dart
+      git
+      curl
+      gradle
+      androidSdk
+      jdk
+      python
+      which
+      ;
+    certificates = final.ca-certificates;
+    shell = final.bash;
     loader = "${final.runtimeLibc}/lib/ld-linux-x86-64.so.2";
     libraries = [
       final.runtimeLibc
