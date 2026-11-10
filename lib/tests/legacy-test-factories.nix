@@ -7,6 +7,7 @@
 }:
 let
   selected = {
+    inherit (pkgs) lib;
     runCommand = name: args: script: { selectedTestPkgs = true; };
     runCommandWith = args: script: {
       selectedTestPkgs = true;
