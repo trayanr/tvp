@@ -112,6 +112,9 @@ let
         .roundtrip tvp.packages.${counterpart};
     };
   contracts = {
+    autoconf = probe "autoconf" "2.69";
+    automake = probe "automake" "1.12";
+    libtool = probe "libtool" "2.4.7";
     bison = probe "bison" "3.8.1";
     flex = probe "flex" "2.6.3";
     texinfo = texinfoProbe;

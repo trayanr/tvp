@@ -12,6 +12,64 @@ let
       inherit reason;
     } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
+    "2.65" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-2.65.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        m4 = tvp.packages.m4_1;
+        perl = tvp.packages.perl_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+      };
+    };
+    "2.72" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-2.72.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        m4 = tvp.packages.m4_1;
+        perl = tvp.packages.perl_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+      };
+    };
     "2.73" = {
       constructor = tvp.builder;
       builder = ./native/build-2.73.nix;
@@ -43,6 +101,31 @@ let
     };
   };
   versionTable = constructionRecipe.versionTable // {
+    "2.65" = constructionRecipe.versionTable."2.65" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.65".def;
+    };
+    "2.66" = constructionRecipe.versionTable."2.66" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.66".def;
+    };
+    "2.67" = constructionRecipe.versionTable."2.67" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.67".def;
+    };
+    "2.68" = constructionRecipe.versionTable."2.68" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.68".def;
+    };
+    "2.69" = constructionRecipe.versionTable."2.69" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.69".def;
+    };
+    "2.70" = constructionRecipe.versionTable."2.70" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.70".def;
+    };
+    "2.71" = constructionRecipe.versionTable."2.71" // {
+      def = if native then defs."2.65" else constructionRecipe.versionTable."2.71".def;
+    };
+    "2.72" = constructionRecipe.versionTable."2.72" // {
+      def = if native then defs."2.72" else constructionRecipe.versionTable."2.72".def;
+    };
+
     "2.73" = constructionRecipe.versionTable."2.73" // {
       def = if native then defs."2.73" else constructionRecipe.versionTable."2.73".def;
     };
@@ -72,14 +155,21 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
+        import
+          (
+            if (package.tvp.ordinaryAutotools or false) then
+              ./tests/ordinary-default.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
       else
         constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
