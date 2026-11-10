@@ -26,7 +26,10 @@ if not isinstance(paths, list) or not paths or not isinstance(patterns, list):
 for pattern in patterns:
     if not isinstance(pattern, str) or any(p in ('', '.', '..') for p in pattern.split('/')) or pattern.startswith('/'):
         raise ValueError('unsafe host pattern')
-    paths += [str(Path(p).relative_to(root)) for p in sorted(glob.glob(str(root / pattern)))]
+    matches = sorted(glob.glob(str(root / pattern)))
+    if not matches:
+        raise ValueError(f'required host pattern matched no directories: {pattern}')
+    paths += [str(Path(p).relative_to(root)) for p in matches]
 # Resolve all selectors before inspecting or modifying any file.
 directories = [selected(root, p) for p in paths]
 files = []
