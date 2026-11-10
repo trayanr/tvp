@@ -38,9 +38,10 @@ def main():
             target = perl
             if path.name == 'mtrace':
                 old = ('eval "exec ' + old_perl + ' -S $0 $@"').encode()
-                if body.count(old) != 1:
+                selected = ('eval "exec ' + perl + ' -S $0 $@"').encode()
+                if sum(body.count(value) for value in {old, selected}) != 1:
                     raise ValueError('expected configured mtrace Perl fallback')
-                body = body.replace(old, ('eval "exec ' + perl + ' -S $0 $@"').encode())
+                body = body.replace(old, selected)
         elif name in ('sh', 'bash'):
             target = bash
             marker = b'# TVP glibc auxiliary PATH\n'
@@ -55,7 +56,9 @@ def main():
         directive = b'#!' + target.encode()
         if len(directive) > 255:
             raise ValueError('interpreter exceeds native shebang limit')
-        pending.append((path, directive + b'\n' + body))
+        rebound = directive + b'\n' + body
+        if rebound != data:
+            pending.append((path, rebound))
     for path, data in pending:
         replace(path, data)
 

@@ -9,11 +9,8 @@ let
     unset NIX_CFLAGS_COMPILE NIX_CFLAGS_LINK NIX_LDFLAGS
     unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH
   '';
-  tools = glibc.mkTools { inherit (spec) base bash perl; };
-in
-glibc.testContext.mkSuite {
-  inherit package;
-  tools = [
+  reboundTools = glibc.mkTools { inherit (spec) base bash perl; };
+  testTools = [
     spec.coreutils
     gcc
     binutils
@@ -21,6 +18,10 @@ glibc.testContext.mkSuite {
     spec.gawk
     spec.sed
   ];
+in
+glibc.testContext.mkSuite {
+  inherit package;
+  tools = testTools;
   tests = {
     version = {
       script = ''${glibc.bin}/bin/getconf GNU_LIBC_VERSION'';
@@ -54,11 +55,12 @@ glibc.testContext.mkSuite {
       expected = "hello";
     };
     ldd = {
+      tools = testTools ++ [ reboundTools ];
       script =
         clean
         + ''
           ${gcc}/bin/gcc ${flags} ${./fixtures/static.c} -o dynamic
-          PATH=/no-tools ${tools}/bin/ldd ./dynamic | awk '/libc.so.6 =>/ { print $3 }'
+          PATH=/no-tools ${reboundTools}/bin/ldd ./dynamic | awk '/libc.so.6 =>/ { print $3 }'
         '';
       expected = "${glibc}/lib/libc.so.6";
     };
@@ -85,6 +87,7 @@ glibc.testContext.mkSuite {
       expected = "ok\nUTF-8";
     };
     loader-hardening = {
+      tools = testTools ++ [ spec.python3Minimal ];
       script = ''
         ${binutils}/bin/readelf -d ${glibc}/lib/libc.so.6 > libc.dynamic
         ${binutils}/bin/readelf -l ${glibc}/lib/libc.so.6 > libc.programs
@@ -127,12 +130,13 @@ glibc.testContext.mkSuite {
       expected = "ok";
     };
     rebound-tools = {
+      tools = testTools ++ [ reboundTools ];
       script = ''
-        PATH=/no-tools ${tools}/bin/ldd --version | head -1
-        PATH=/no-tools ${tools}/bin/mtrace --version | head -1
-        grep -F 'eval "exec ${spec.perl}/bin/perl -S $0 $@"' ${tools}/bin/mtrace >&2
+        PATH=/no-tools ${reboundTools}/bin/ldd --version | head -1
+        PATH=/no-tools ${reboundTools}/bin/mtrace --version | head -1
+        grep -F 'eval "exec ${spec.perl}/bin/perl -S $0 $@"' ${reboundTools}/bin/mtrace >&2
       '';
-      expected = "ldd ${glibc.version}\nmtrace ${glibc.version}";
+      expected = "ldd (GNU libc) ${glibc.version}\nmtrace (GNU libc) ${glibc.version}";
     };
   };
 }

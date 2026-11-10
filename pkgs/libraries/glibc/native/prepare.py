@@ -50,14 +50,19 @@ def main():
     old = b'"/etc/ld.so.preload"'
     if data.count(old) != 1:
         raise ValueError('expected one upstream preload constant')
-    replace(rtld, data.replace(old, ('"' + output + '/etc/ld.so.preload"').encode()))
+    pending = [(rtld, data.replace(old, ('"' + output + '/etc/ld.so.preload"').encode()))]
     for path in files:
         with path.open('rb') as stream:
             line = stream.readline(256)
         for prefix in (b'#!/bin/sh', b'#! /bin/sh', b'#!/bin/bash', b'#! /bin/bash'):
             if line.rstrip(b'\n') == prefix:
-                replace(path, b'#!' + shell.encode() + b'\n' + path.read_bytes().split(b'\n', 1)[1])
+                _, newline, body = path.read_bytes().partition(b'\n')
+                if not newline:
+                    raise ValueError('unterminated script directive: ' + str(path))
+                pending.append((path, b'#!' + shell.encode() + b'\n' + body))
                 break
+    for path, data in pending:
+        replace(path, data)
 
 
 if __name__ == '__main__':
