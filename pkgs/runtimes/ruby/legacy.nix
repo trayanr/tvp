@@ -241,7 +241,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -255,7 +260,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -270,7 +280,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
       # Configure and native extensions must share a pre-C23 bool/ANYARGS dialect.
       opts = {
@@ -287,7 +302,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -302,7 +322,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -315,7 +340,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -328,7 +358,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 
@@ -361,7 +396,12 @@ let
         zlib = tvp.packages.zlib_1;
         libyaml = tvp.packages.libyaml;
         libffi = tvp.packages.libffi_3;
-        rustc = tvp.packages.rustc_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
       };
     };
 

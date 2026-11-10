@@ -9,8 +9,21 @@ let
         bash = tvp.packages.bash_5;
         python = tvp.packages.python_3;
         ninja = tvp.packages.ninja;
-        rustc = tvp.packages.rustc_1;
-        cargo = tvp.packages.cargo-bootstrap_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
+        cargo = (
+          tvpLib.packages.withConstraint
+            {
+              category = "construction";
+              reason = "Retained complete Cargo seed generation for historical construction.";
+            }
+            (import ../../build-tools/cargo-bootstrap/legacy.nix { inherit pkgs tvp; })
+            .canonical.cargo-bootstrap_1_97_1
+        );
         patchelf = tvp.packages.patchelf;
         openssl = tvp.packages.openssl;
         zlib = tvp.packages.zlib_1;

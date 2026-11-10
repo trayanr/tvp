@@ -16,7 +16,15 @@ let
       builder = ./build-1.17.3.nix;
       base = tvp.bases.default;
       deps = {
-        ruby = tvp.packages.ruby_3;
+        # Preserve the prior owned Ruby generation for retained Bundler calls.
+        ruby = tvp.packages.ruby_3.override {
+          rustc = (
+            tvpLib.packages.withConstraint {
+              category = "construction";
+              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+          );
+        };
       };
     };
   };

@@ -10,7 +10,16 @@ let
       # original dialect on modern compilers; older construction is unchanged.
       opts.cStandard = "gnu17";
       deps = {
-        gettext = tvp.packages.gettext;
+        # Historical 0.27 keeps the prior effective Gettext/JDK seed closure.
+        gettext = tvp.packages.gettext.override {
+          jdk = (
+            tvp.packages.jdk_21.override {
+              bootJdk =
+                (import ../../runtimes/jdk-bootstrap/legacy.nix { inherit pkgs tvp; })
+                .canonical.jdk-bootstrap_21_0_13;
+            }
+          );
+        };
       };
     };
 

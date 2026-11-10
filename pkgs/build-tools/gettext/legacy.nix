@@ -17,7 +17,13 @@ let
         attr = tvp.packages.attr;
         perl = tvp.packages.perl_5;
         python = tvp.packages.python_3;
-        jdk = tvp.packages.jdk_21;
+        jdk = (
+          tvp.packages.jdk_21.override {
+            bootJdk =
+              (import ../../runtimes/jdk-bootstrap/legacy.nix { inherit pkgs tvp; })
+              .canonical.jdk-bootstrap_21_0_13;
+          }
+        );
       };
     };
   };
@@ -33,7 +39,13 @@ let
       inherit (pkgs) lib fetchurl;
     };
     testDeps = {
-      jdk = tvp.packages.jdk_21;
+      jdk = (
+        tvp.packages.jdk_21.override {
+          bootJdk =
+            (import ../../runtimes/jdk-bootstrap/legacy.nix { inherit pkgs tvp; })
+            .canonical.jdk-bootstrap_21_0_13;
+        }
+      );
       python = tvp.packages.python_3;
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (

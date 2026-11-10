@@ -6,8 +6,21 @@ let
       builder = ./build-2.56.0.nix;
       base = tvp.bases.default;
       deps = {
-        rustc = tvp.packages.rustc_1;
-        cargo = tvp.packages.cargo-bootstrap_1;
+        rustc = (
+          tvpLib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
+          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+        );
+        cargo = (
+          tvpLib.packages.withConstraint
+            {
+              category = "construction";
+              reason = "Retained complete Cargo seed generation for historical construction.";
+            }
+            (import ../../build-tools/cargo-bootstrap/legacy.nix { inherit pkgs tvp; })
+            .canonical.cargo-bootstrap_1_97_1
+        );
         pkg-config = tvp.packages.pkg-config;
         patchelf = tvp.packages.patchelf;
         bash = tvp.packages.bash_5;
