@@ -42,12 +42,49 @@ let
         pager = tvp.packages.less;
       };
     };
+    "1.13" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.13.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        xz = tvp.packages.xz_5;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids catalogue dependency cycles.";
+        binutils = host "linker" "Owned ELF output tools independent of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
+        pager = tvp.packages.less;
+      };
+    };
   };
   versionTable = previous.recipes.gzip.versionTable // {
     "1.15" = previous.recipes.gzip.versionTable."1.15" // {
       def = if native then defs."1.15" else previous.recipes.gzip.versionTable."1.15".def;
     };
+    "1.13" = previous.recipes.gzip.versionTable."1.13" // {
+      def = if native then defs."1.13" else previous.recipes.gzip.versionTable."1.13".def;
+    };
+    "1.14" = previous.recipes.gzip.versionTable."1.14" // {
+      def = if native then defs."1.13" else previous.recipes.gzip.versionTable."1.14".def;
+    };
   };
+
   publicArgs = previous.recipes.gzip // {
     inherit versionTable;
     source =
@@ -65,14 +102,26 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
+        import
+          (
+            if
+              builtins.elem package.version [
+                "1.13"
+                "1.14"
+              ]
+            then
+              ./tests/ordinary.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
       else
         import ./tests {
           inherit pkgs tvpLib package;

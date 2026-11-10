@@ -44,12 +44,78 @@ let
         diffutils = tvp.packages.diffutils_3;
       };
     };
+    "1.4.19" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.4.19.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      opts.cStandard = "gnu17";
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+      };
+    };
+    "1.4.20" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.4.20.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+      };
+    };
   };
   versionTable = ownedDefaultRecipe.versionTable // {
     "1.4.21" = ownedDefaultRecipe.versionTable."1.4.21" // {
       def = if native then defs."1.4.21" else ownedDefaultRecipe.versionTable."1.4.21".def;
     };
+    "1.4.19" = ownedDefaultRecipe.versionTable."1.4.19" // {
+      def = if native then defs."1.4.19" else ownedDefaultRecipe.versionTable."1.4.19".def;
+    };
+    "1.4.20" = ownedDefaultRecipe.versionTable."1.4.20" // {
+      def = if native then defs."1.4.20" else ownedDefaultRecipe.versionTable."1.4.20".def;
+    };
   };
+
   publicArgs = ownedDefaultRecipe // {
     inherit versionTable;
     testDeps = {
@@ -71,14 +137,26 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
+        import
+          (
+            if
+              builtins.elem package.version [
+                "1.4.19"
+                "1.4.20"
+              ]
+            then
+              ./tests/ordinary.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
       else
         ownedDefaultRecipe.extraArgs.mkTests package
     ) { inherit pkgs; };

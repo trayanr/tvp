@@ -1,0 +1,13 @@
+--- a/src/flex.skl
++++ b/src/flex.skl
+@@ -1898,3 +1898,9 @@
+ {
+-	yyrestart( *input_file );
++	if ( input_file )
++		yyrestart( *input_file );
++	else {
++		/* Preserve the null stream buffer without forming a null reference. */
++		std::istream empty_stream( 0 );
++		yyrestart( empty_stream );
++	}
+ }

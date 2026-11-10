@@ -43,12 +43,144 @@ let
         patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
       };
     };
+    "2.6.1" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-2.6.1.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      patches = [
+        {
+          file = ./patches/2.6.2-null-restart.patch;
+          reason = "Avoid a null C++ istream reference in yyrestart(NULL), also present before the upstream restart test was added.";
+        }
+      ];
+      deps = {
+        patch = candidate.tools.patch;
+        m4 = tvp.packages.m4_1;
+        bison = tvp.packages.bison;
+        file = tvp.packages.file_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
+      };
+    };
+    "2.6.2" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-2.6.2.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      patches = [
+        {
+          file = ./patches/2.6.2-null-restart.patch;
+          reason = "Avoid forming a null C++ istream reference in yyrestart(NULL); preserve its null stream-buffer semantics and run the original cxx_restart assertion.";
+        }
+
+        {
+          file = ./patches/2.6.2-manpage-prerequisites.patch;
+          reason = "Backport shipped man-page prerequisite rule from 2.6.3.";
+        }
+      ];
+      deps = {
+        patch = candidate.tools.patch;
+        m4 = tvp.packages.m4_1;
+        bison = tvp.packages.bison;
+        file = tvp.packages.file_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
+      };
+    };
+    "2.6.3" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-2.6.2.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      patches = [
+        {
+          file = ./patches/2.6.2-null-restart.patch;
+          reason = "Avoid forming a null C++ istream reference in yyrestart(NULL); preserve its null stream-buffer semantics and run the original cxx_restart assertion.";
+        }
+      ];
+      deps = {
+        patch = candidate.tools.patch;
+        m4 = tvp.packages.m4_1;
+        bison = tvp.packages.bison;
+        file = tvp.packages.file_5;
+        bash = tvp.packages.bash_5;
+        coreutils = tvp.packages.coreutils_9;
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = tvp.packages.findutils_4;
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
+        patchelf = host "patchelf" "Owned RPATH tool independent of catalogue consumers.";
+      };
+    };
   };
   versionTable = constructionRecipe.versionTable // {
     "2.6.4" = constructionRecipe.versionTable."2.6.4" // {
       def = if native then defs."2.6.4" else constructionRecipe.versionTable."2.6.4".def;
     };
+    "2.6.1" = constructionRecipe.versionTable."2.6.1" // {
+      def = if native then defs."2.6.1" else constructionRecipe.versionTable."2.6.1".def;
+    };
+    "2.6.2" = constructionRecipe.versionTable."2.6.2" // {
+      def = if native then defs."2.6.2" else constructionRecipe.versionTable."2.6.2".def;
+    };
+    "2.6.3" = constructionRecipe.versionTable."2.6.3" // {
+      def = if native then defs."2.6.3" else constructionRecipe.versionTable."2.6.3".def;
+    };
   };
+
   publicArgs = constructionRecipe // {
     inherit versionTable;
     source =
@@ -68,14 +200,27 @@ let
           { pkgs }:
           package:
           if package ? testContext then
-            import ./tests/native-default.nix {
-              inherit
-                pkgs
-                tvp
-                tvpLib
-                package
-                ;
-            }
+            import
+              (
+                if
+                  builtins.elem package.version [
+                    "2.6.1"
+                    "2.6.2"
+                    "2.6.3"
+                  ]
+                then
+                  ./tests/ordinary.nix
+                else
+                  ./tests/native-default.nix
+              )
+              {
+                inherit
+                  pkgs
+                  tvp
+                  tvpLib
+                  package
+                  ;
+              }
           else
             (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
         )

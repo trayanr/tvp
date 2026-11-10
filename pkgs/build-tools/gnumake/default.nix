@@ -45,12 +45,79 @@ let
         perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
       };
     };
+    "4.3" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.3.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
+        gnutar = host "tar" "Independent candidate tar is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        gzip = host "gzip" "Independent candidate gzip is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = host "sed" "Independent candidate sed is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        grep = host "grep" "Independent candidate grep is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        gawk = host "gawk" "Independent candidate gawk is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        diffutils = host "diffutils" "Independent candidate diffutils is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
+      };
+    };
+    "4.4" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.4.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
+        gnutar = host "tar" "Independent candidate tar is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        gzip = host "gzip" "Independent candidate gzip is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = host "sed" "Independent candidate sed is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        grep = host "grep" "Independent candidate grep is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        gawk = host "gawk" "Independent candidate gawk is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        diffutils = host "diffutils" "Independent candidate diffutils is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
+        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
+      };
+    };
   };
   versionTable = ownedDefaultRecipe.versionTable // {
     "4.4.1" = ownedDefaultRecipe.versionTable."4.4.1" // {
       def = if native then defs."4.4.1" else ownedDefaultRecipe.versionTable."4.4.1".def;
     };
+    "4.3" = ownedDefaultRecipe.versionTable."4.3" // {
+      def = if native then defs."4.3" else ownedDefaultRecipe.versionTable."4.3".def;
+    };
+    "4.4" = ownedDefaultRecipe.versionTable."4.4" // {
+      def = if native then defs."4.4" else ownedDefaultRecipe.versionTable."4.4".def;
+    };
   };
+
   publicArgs = ownedDefaultRecipe // {
     inherit versionTable;
     testDeps = {
@@ -70,14 +137,26 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
+        import
+          (
+            if
+              builtins.elem package.version [
+                "4.3"
+                "4.4"
+              ]
+            then
+              ./tests/ordinary.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
       else
         ownedDefaultRecipe.extraArgs.mkTests package
     ) { inherit pkgs; };
