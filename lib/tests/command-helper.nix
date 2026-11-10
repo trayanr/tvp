@@ -43,11 +43,19 @@ let
     selection.kind = "owned-test-support";
     mkTests = _: { };
   };
-  overridden = package.override {
+  argumentOverride = package.override {
     coreutils = helper;
     doCheck = false;
   };
-  edited = (package.override { doCheck = false; }).edit (s: s // { helperCoreutils = helper; });
+  selectHelper = s: s // { helperCoreutils = helper; };
+  # Retained specification edits run after recipe arguments. Select the probe
+  # helper after those edits when testing an already edited package.
+  overridden =
+    if (package.tvp.customization.edits or 0) > 0 then
+      argumentOverride.edit selectHelper
+    else
+      argumentOverride;
+  edited = (package.override { doCheck = false; }).edit selectHelper;
 in
 assert overridden.drvPath == edited.drvPath;
 package.testContext.mkSuite {

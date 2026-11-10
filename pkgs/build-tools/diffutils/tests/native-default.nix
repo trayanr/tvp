@@ -42,7 +42,7 @@ package.testContext.mkSuite {
         chmod +x helpers/pr
         export PATH="$PWD/helpers:$PATH"
         # configure must retain the declared pr even when PATH offers another.
-        grep -aFq '${package.tvp.deps.coreutils}/bin/pr' ${package}/bin/diff
+        grep -aFq '${package.specification.helperCoreutils}/bin/pr' ${package}/bin/diff
         printf 'before\n' > before
         printf 'after\n' > after
         for mode in -l -ly; do
