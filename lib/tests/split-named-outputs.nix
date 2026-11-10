@@ -141,6 +141,97 @@ let
     );
   same =
     a: b: a.outPath == b.outPath && builtins.getContext a.outPath == builtins.getContext b.outPath;
+  malformedPaths = [
+    null
+    42
+    true
+    [ ]
+    { }
+    (x: x)
+  ];
+  finalPathCases = field: value: [
+    (p // { ${field} = value; })
+    (
+      p
+      // {
+        out = p.out // {
+          ${field} = value;
+        };
+      }
+    )
+    (
+      p
+      // {
+        evidence = p.evidence // {
+          ${field} = value;
+        };
+      }
+    )
+    (
+      p
+      // {
+        all = [
+          (p.out // { ${field} = value; })
+          p.evidence
+        ];
+      }
+    )
+    (
+      p
+      // {
+        all = [
+          p.out
+          (p.evidence // { ${field} = value; })
+        ];
+      }
+    )
+  ];
+  artifactPathCases =
+    field: value:
+    map (artifact: p // { inherit artifact; }) [
+      (p.artifact // { ${field} = value; })
+      (
+        p.artifact
+        // {
+          out = p.artifact.out // {
+            ${field} = value;
+          };
+        }
+      )
+      (
+        p.artifact
+        // {
+          evidence = p.artifact.evidence // {
+            ${field} = value;
+          };
+        }
+      )
+      (
+        p.artifact
+        // {
+          all = [
+            (p.artifact.out // { ${field} = value; })
+            p.artifact.evidence
+          ];
+        }
+      )
+      (
+        p.artifact
+        // {
+          all = [
+            p.artifact.out
+            (p.artifact.evidence // { ${field} = value; })
+          ];
+        }
+      )
+    ];
+  invalidPaths =
+    cases:
+    builtins.all (field: builtins.all (value: builtins.all invalid (cases field value)) malformedPaths)
+      [
+        "drvPath"
+        "outPath"
+      ];
   contracts = {
     admitted = builtins.all (x: (row x).compliant) (builtins.attrValues fixtures);
     exactlyTwoProducers = builtins.all (
@@ -226,6 +317,48 @@ let
         ];
       }
     );
+    missingAllOutputSet = invalid (
+      p
+      // {
+        all = [
+          p.out
+          (removeAttrs p.evidence [ "outputs" ])
+        ];
+      }
+    );
+    wrongAllOutputSet = invalid (
+      p
+      // {
+        all = [
+          p.out
+          (p.evidence // { outputs = [ "out" ]; })
+        ];
+      }
+    );
+    missingArtifactAllOutputSet = invalid (
+      p
+      // {
+        artifact = p.artifact // {
+          all = [
+            p.artifact.out
+            (removeAttrs p.artifact.evidence [ "outputs" ])
+          ];
+        };
+      }
+    );
+    wrongArtifactAllOutputSet = invalid (
+      p
+      // {
+        artifact = p.artifact // {
+          all = [
+            p.artifact.out
+            (p.artifact.evidence // { outputs = [ "out" ]; })
+          ];
+        };
+      }
+    );
+    malformedFinalPathsFailAsRows = invalidPaths finalPathCases;
+    malformedArtifactPathsFailAsRows = invalidPaths artifactPathCases;
     wrongSecondaryContext = invalid (
       p
       // {
