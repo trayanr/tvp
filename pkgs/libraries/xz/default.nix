@@ -135,8 +135,135 @@ let
       };
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "5.2.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-5.2.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://tukaani.org/xz/xz-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "5.2.0" = versionTable."5.2.0" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.1" = versionTable."5.2.1" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.2" = versionTable."5.2.2" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.3" = versionTable."5.2.3" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.4" = versionTable."5.2.4" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.5" = versionTable."5.2.5" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.6" = versionTable."5.2.6" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.7" = versionTable."5.2.7" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.8" = versionTable."5.2.8" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.9" = versionTable."5.2.9" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.10" = versionTable."5.2.10" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.11" = versionTable."5.2.11" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.12" = versionTable."5.2.12" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.2.13" = versionTable."5.2.13" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.0" = versionTable."5.4.0" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.1" = versionTable."5.4.1" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.2" = versionTable."5.4.2" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.3" = versionTable."5.4.3" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.4" = versionTable."5.4.4" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.5" = versionTable."5.4.5" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.6" = versionTable."5.4.6" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.4.7" = versionTable."5.4.7" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.6.2" = versionTable."5.6.2" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.6.3" = versionTable."5.6.3" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.6.4" = versionTable."5.6.4" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.8.0" = versionTable."5.8.0" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.8.1" = versionTable."5.8.1" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.8.2" = versionTable."5.8.2" // {
+        def = ordinaryDefs."5.2.0";
+      };
+      "5.8.3" = versionTable."5.8.3" // {
+        def = ordinaryDefs."5.2.0";
+      };
       "5.8.4" = versionTable."5.8.4" // {
         def = if native then ownedDefs."5.8.4" else legacyDefs."5.8.4";
       };
@@ -149,7 +276,49 @@ let
       };
     extraArgs.mkTests =
       package:
-      packageArgs.extraArgs.mkTests package
+      (
+        if
+          package ? artifact
+          && builtins.elem package.version [
+            "5.2.0"
+            "5.2.1"
+            "5.2.2"
+            "5.2.3"
+            "5.2.4"
+            "5.2.5"
+            "5.2.6"
+            "5.2.7"
+            "5.2.8"
+            "5.2.9"
+            "5.2.10"
+            "5.2.11"
+            "5.2.12"
+            "5.2.13"
+            "5.4.0"
+            "5.4.1"
+            "5.4.2"
+            "5.4.3"
+            "5.4.4"
+            "5.4.5"
+            "5.4.6"
+            "5.4.7"
+            "5.6.2"
+            "5.6.3"
+            "5.6.4"
+            "5.8.0"
+            "5.8.1"
+            "5.8.2"
+            "5.8.3"
+          ]
+        then
+          import ./tests/ordinary-default.nix {
+            inherit pkgs tvpLib;
+            xz = package;
+            inherit (package.tvp.declaredTestDependencies) pkg-config referenceOlder referenceNewer;
+          }
+        else
+          packageArgs.extraArgs.mkTests package
+      )
       // pkgs.lib.optionalAttrs (package.version == "5.8.4") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;

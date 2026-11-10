@@ -117,8 +117,54 @@ let
       };
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "1.0.6" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.0.6.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://sourceware.org/pub/bzip2/bzip2-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "1.0.6" = versionTable."1.0.6" // {
+        def = ordinaryDefs."1.0.6";
+      };
+      "1.0.7" = versionTable."1.0.7" // {
+        def = ordinaryDefs."1.0.6";
+      };
       "1.0.8" = versionTable."1.0.8" // {
         def = if native then ownedDefs."1.0.8" else legacyDefs."1.0.8";
       };
@@ -131,7 +177,18 @@ let
       };
     extraArgs.mkTests =
       package:
-      packageArgs.extraArgs.mkTests package
+      (
+        if
+          package ? artifact
+          && builtins.elem package.version [
+            "1.0.6"
+            "1.0.7"
+          ]
+        then
+          import ./tests/ordinary-default.nix { inherit pkgs tvpLib package; }
+        else
+          packageArgs.extraArgs.mkTests package
+      )
       // pkgs.lib.optionalAttrs (package.version == "1.0.8") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;

@@ -227,8 +227,66 @@ let
       };
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "1.2.10" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.10.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "1.2.10" = versionTable."1.2.10" // {
+        def = ordinaryDefs."1.2.10";
+      };
+      "1.2.11" = versionTable."1.2.11" // {
+        def = ordinaryDefs."1.2.10";
+      };
+      "1.2.12" = versionTable."1.2.12" // {
+        def = ordinaryDefs."1.2.10";
+      };
+      "1.2.13" = versionTable."1.2.13" // {
+        def = ordinaryDefs."1.2.10";
+      };
+      "1.3" = versionTable."1.3" // {
+        def = ordinaryDefs."1.2.10";
+      };
+      "1.3.1" = versionTable."1.3.1" // {
+        def = ordinaryDefs."1.2.10";
+      };
       "1.3.2" = versionTable."1.3.2" // {
         def = if native then ownedDefs."1.3.2" else legacyDefs."1.3.2";
       };
@@ -242,7 +300,26 @@ let
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
+      (
+        if
+          package ? artifact
+          && builtins.elem package.version [
+            "1.2.10"
+            "1.2.11"
+            "1.2.12"
+            "1.2.13"
+            "1.3"
+            "1.3.1"
+          ]
+        then
+          import ./tests/ordinary-default.nix {
+            inherit pkgs tvpLib;
+            zlib = package;
+            inherit (package.tvp.declaredTestDependencies) pkg-config gzip;
+          }
+        else
+          packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
+      )
       // pkgs.lib.optionalAttrs (package.version == "1.3.2") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;

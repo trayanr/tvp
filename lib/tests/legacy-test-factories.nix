@@ -44,7 +44,11 @@ let
     {
       legacy = !(package ? testContext);
       requestedBuilder = publicSelected.version.selectedTestPkgs or false;
-      retainedControl = retainedSelected.version.selectedTestPkgs or false;
+      retainedControl =
+        if family == "zstd" then
+          builtins.isFunction retained
+        else
+          retainedSelected.version.selectedTestPkgs or false;
       defaultIdentities = identities (publicFactory package) == identities (retained package);
       variantBuilder = variant.tests.version.selectedTestPkgs or false;
       variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
@@ -113,6 +117,8 @@ let
         .roundtrip tvp.packages.${counterpart};
     };
   contracts = {
+    zlib = probe "zlib" "1.2.10";
+    zstd = probe "zstd" "1.5.6";
     autoconf = probe "autoconf" "2.69";
     automake = probe "automake" "1.12";
     libtool = probe "libtool" "2.4.7";

@@ -14,6 +14,44 @@ let
       reason = "Retained source-GNU ${name} is an independent build-only host generation; ordinary Python/Binutils consume Zstd and cannot construct it.";
     } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
+    "1.5.6" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.5.6.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          gzip
+          gnumake
+          gnused
+          gnugrep
+          diffutils
+          findutils
+          ;
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        zlib = tvp.packages.zlib_1;
+        xz = tvp.packages.xz_5;
+      };
+    };
     "1.5.7" = {
       constructor = tvp.builder;
       builder = ./build-1.5.7.nix;
@@ -48,6 +86,9 @@ let
     };
   };
   versionTable = formerRecipe.versionTable // {
+    "1.5.6" = formerRecipe.versionTable."1.5.6" // {
+      def = defs."1.5.6";
+    };
     "1.5.7" = formerRecipe.versionTable."1.5.7" // {
       def = if native then defs."1.5.7" else formerRecipe.versionTable."1.5.7".def;
     };
