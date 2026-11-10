@@ -9,6 +9,70 @@
 let
   php = package;
   deps = php.passthru.tvp.deps or { };
+  runtimeProvider =
+    dependency:
+    let
+      matches = builtins.filter (
+        provider: (provider.pname or null) == dependency.pname
+      ) package.specification.runtime.libraries;
+    in
+    if builtins.length matches == 1 then
+      builtins.head matches
+    else
+      throw "TVP: expected exactly one runtime provider for ${dependency.pname}";
+  step = name: q: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
+  has =
+    needle: value:
+    let
+      text = builtins.unsafeDiscardStringContext value;
+    in
+    builtins.replaceStrings [ (builtins.unsafeDiscardStringContext needle) ] [ "" ] text != text;
+  runtimeContract =
+    dependency: testName:
+    let
+      original = runtimeProvider dependency;
+      replacement = original.editSteps (
+        xs:
+        xs
+        ++ [
+          {
+            name = "contract.runtime-provider";
+            run = "true";
+          }
+        ]
+      );
+      edited = package.editRuntime (
+        r:
+        r
+        // {
+          libraries = map (
+            provider: if provider.outPath == original.outPath then replacement else provider
+          ) r.libraries;
+        }
+      );
+      rpaths = (step "output.rpaths" edited).run;
+      test = edited.tests.${testName};
+      expectation = (step "test.compare" test).run;
+    in
+    has replacement.outPath rpaths
+    && !(has original.outPath rpaths)
+    && has replacement.outPath expectation
+    && !(has original.outPath expectation)
+    && test.package.outPath == edited.outPath;
+  missingRuntime = package.editRuntime (
+    r:
+    r
+    // {
+      libraries = builtins.filter (provider: (provider.pname or null) != deps.openssl.pname) r.libraries;
+    }
+  );
+  duplicateRuntime = package.editRuntime (
+    r:
+    r
+    // {
+      libraries = r.libraries ++ [ (runtimeProvider deps.openssl) ];
+    }
+  );
 
   consumerStandard = php.tvp.features.consumerCStandard or null;
   configureEnv = pkgs.lib.optionalString (
@@ -79,6 +143,14 @@ let
     unknown = rejects (package.override { unknownDependency = package; }).drvPath;
     feature = !((package.override { testFeatures.passwordApi = false; }).tvp.features.passwordApi);
     provider = (package.override { openssl = deps.zlib; }).drvPath != package.drvPath;
+    opensslRuntime = runtimeContract deps.openssl "openssl-linkage";
+    zlibRuntime = runtimeContract deps.zlib "zlib-linkage";
+    sqliteRuntime = runtimeContract deps.sqlite "sqlite-linkage";
+    readlineRuntime = runtimeContract deps.readline "readline-linkage";
+    xmlRuntime = runtimeContract deps.libxml2 "xml-linkage";
+    ncursesRuntime = runtimeContract deps.ncurses "ncurses-linkage";
+    missingRuntime = rejects (step "test.compare" missingRuntime.tests.openssl-linkage).run;
+    duplicateRuntime = rejects (step "test.compare" duplicateRuntime.tests.openssl-linkage).run;
   };
   tvpDigest = "f6f6ead0bd85c312";
   linkage = dependency: soname: {
@@ -87,7 +159,7 @@ let
       test -n "$paths"
       while IFS= read -r path; do
         case "$path" in
-          ${pkgs.lib.escapeShellArg "${pkgs.lib.getLib dependency}/"}*) ;;
+          ${pkgs.lib.escapeShellArg "${pkgs.lib.getLib (runtimeProvider dependency)}/"}*) ;;
           *) echo "Unexpected library path: $path" >&2; exit 1 ;;
         esac
       done <<< "$paths"
@@ -264,7 +336,7 @@ package.testContext.mkSuite {
 
       openssl-linkage = {
         script = ''
-          LD_TRACE_LOADED_OBJECTS=1 "${package}/bin/php" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
+          LD_TRACE_LOADED_OBJECTS=1 "${package}/bin/php" | awk '/libssl\.so/ { print $3 }' | grep -q "^${(runtimeProvider deps.openssl).out}/" && printf linked
         '';
         expected = "linked";
 
@@ -311,7 +383,7 @@ package.testContext.mkSuite {
 
       sqlite-linkage = {
         script = ''
-          LD_TRACE_LOADED_OBJECTS=1 "${package}/bin/php" | awk '/libsqlite3\.so/ { print $3 }' | grep -q "^${deps.sqlite.out}/" && printf linked
+          LD_TRACE_LOADED_OBJECTS=1 "${package}/bin/php" | awk '/libsqlite3\.so/ { print $3 }' | grep -q "^${(runtimeProvider deps.sqlite).out}/" && printf linked
         '';
         expected = "linked";
 

@@ -5,6 +5,71 @@
 }:
 let
   deps = package.tvp.deps;
+  runtimeProvider =
+    dependency:
+    let
+      matches = builtins.filter (
+        provider: (provider.pname or null) == dependency.pname
+      ) package.specification.runtime.libraries;
+    in
+    if builtins.length matches == 1 then
+      builtins.head matches
+    else
+      throw "TVP: expected exactly one runtime provider for ${dependency.pname}";
+  step = name: q: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
+  has =
+    needle: value:
+    let
+      text = builtins.unsafeDiscardStringContext value;
+    in
+    builtins.replaceStrings [ (builtins.unsafeDiscardStringContext needle) ] [ "" ] text != text;
+  runtimeContract =
+    dependency: testName:
+    let
+      original = runtimeProvider dependency;
+      replacement = original.editSteps (
+        xs:
+        xs
+        ++ [
+          {
+            name = "contract.runtime-provider";
+            run = "true";
+          }
+        ]
+      );
+      edited = package.editRuntime (
+        r:
+        r
+        // {
+          libraries = map (
+            provider: if provider.outPath == original.outPath then replacement else provider
+          ) r.libraries;
+        }
+      );
+      rpaths = (step "output.rpaths" edited).run;
+      test = edited.tests.${testName};
+      expectation = (step "test.compare" test).run;
+    in
+    has replacement.outPath rpaths
+    && !(has original.outPath rpaths)
+    && has replacement.outPath expectation
+    && !(has original.outPath expectation)
+    && test.package.outPath == edited.outPath;
+  missingRuntime = package.editRuntime (
+    r:
+    r
+    // {
+      libraries = builtins.filter (provider: (provider.pname or null) != deps.openssl.pname) r.libraries;
+    }
+  );
+  duplicateRuntime = package.editRuntime (
+    r:
+    r
+    // {
+      libraries = r.libraries ++ [ (runtimeProvider deps.openssl) ];
+    }
+  );
+  rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   marker = package.editSteps (_: [
     {
       name = "nodejs.marker";
@@ -34,6 +99,10 @@ let
   compilerControl = package.edit (s: s // { base = s.base.override { compiler = sentinel; }; });
   contracts = {
     noop = (package.override { }).drvPath == package.drvPath;
+    opensslRuntime = runtimeContract deps.openssl "libraries";
+    zlibRuntime = runtimeContract deps.zlib "libraries";
+    missingRuntime = rejects (step "test.compare" missingRuntime.tests.libraries).run;
+    duplicateRuntime = rejects (step "test.compare" duplicateRuntime.tests.libraries).run;
     tests = marker.tests.version.package.outPath == marker.outPath;
     factory =
       ((package.mkTests.override { inherit pkgs; }) marker).version.package.outPath == marker.outPath;
@@ -120,8 +189,8 @@ package.testContext.mkSuite {
     libraries = {
       script = ''
         LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/node > linked
-        grep -F '${package.tvp.deps.openssl}/lib/libssl' linked >/dev/null
-        grep -F '${package.tvp.deps.zlib}/lib/libz' linked >/dev/null
+        grep -F '${runtimeProvider deps.openssl}/lib/libssl' linked >/dev/null
+        grep -F '${runtimeProvider deps.zlib}/lib/libz' linked >/dev/null
         printf owned
       '';
       expected = "owned";
