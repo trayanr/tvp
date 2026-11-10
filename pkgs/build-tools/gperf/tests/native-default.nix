@@ -7,37 +7,51 @@
 let
   p = package;
   d = p.tvp.deps;
-  upstream = p.editSteps (
-    tvp.builder.steps.insertAfter "gperf.build" [
-      (
-        (p.specification.base.environment (
-          p.specification.environment
+  upstreamUnrelocated = (
+    p.editSteps (
+      tvp.builder.steps.insertAfter "gperf.build" [
+        (
+          (p.specification.base.environment (
+            p.specification.environment
+            // {
+              tools = p.specification.environment.tools ++ [
+                d.gnutar
+                d.gzip
+              ];
+            }
+          ))
           // {
-            tools = p.specification.environment.tools ++ [
-              d.gnutar
-              d.gzip
-            ];
+            name = "gperf.upstream";
+            cwd = "source";
+            run = ''
+              export CONFIG_SHELL=${p.specification.bash}/bin/bash SHELL=${p.specification.bash}/bin/bash
+              status=0
+              ${d.gnumake}/bin/make -j"$NIX_BUILD_CORES" TESTSUITEFLAGS="-j$NIX_BUILD_CORES" check || status=$?
+              find . \( -name '*suite.log' -o -name 'test-suite.log' \) -exec cat {} \; >&2
+              if (( status )); then exit "$status"; fi
+              mkdir -p "$out/nix-support/upstream"
+              find . \( -name '*.log' -o -name '*.trs' \) | while read -r file; do
+                mkdir -p "$out/nix-support/upstream/$(dirname "$file")"
+                cp "$file" "$out/nix-support/upstream/$file"
+              done
+            '';
           }
-        ))
-        // {
-          name = "gperf.upstream";
-          cwd = "source";
-          run = ''
-            export CONFIG_SHELL=${p.specification.bash}/bin/bash SHELL=${p.specification.bash}/bin/bash
-            status=0
-            ${d.gnumake}/bin/make -j"$NIX_BUILD_CORES" TESTSUITEFLAGS="-j$NIX_BUILD_CORES" check || status=$?
-            find . \( -name '*suite.log' -o -name 'test-suite.log' \) -exec cat {} \; >&2
-            if (( status )); then exit "$status"; fi
-            mkdir -p "$out/nix-support/upstream"
-            find . \( -name '*.log' -o -name '*.trs' \) | while read -r file; do
-              mkdir -p "$out/nix-support/upstream/$(dirname "$file")"
-              cp "$file" "$out/nix-support/upstream/$file"
-            done
-          '';
-        }
-      )
-    ]
+        )
+      ]
+    )
   );
+  upstream =
+    if !(p ? artifact) then
+      upstreamUnrelocated
+    else
+      upstreamUnrelocated.editSteps (
+        tvp.builder.steps.insertAfter "output.copy-artifacts" [
+          (tvp.builder.outputs.relocateText {
+            python = p.specification.tools.python;
+            paths = [ "nix-support/upstream" ];
+          })
+        ]
+      );
   sourceProbe =
     (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
       (
@@ -150,6 +164,9 @@ p.testContext.mkSuite {
         assert factoryChanged.version.package.outPath == rebound.outPath;
         assert factoryChanged.version.drvPath == rebound.tests.version.drvPath;
         assert runtimeChanged.drvPath != p.drvPath;
+        assert !(p ? artifact) || runtimeChanged.artifact.drvPath == p.artifact.drvPath;
+        assert !(p ? artifact) || outputChanged.artifact.drvPath == p.artifact.drvPath;
+        assert !(p ? artifact) || optionsChanged.artifact.drvPath != p.artifact.drvPath;
         "qualified";
       script = ''
         ${optionsChanged}/bin/gperf --version >&2

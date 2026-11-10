@@ -55,7 +55,94 @@ let
 
       };
     })."0.28";
-  versionTable = retained.versionTable // {
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "0.20" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-0.20.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://libisl.sourceforge.io/isl-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gzip = candidate.tools.gzip;
+        gmp = tvp.packages.gmp_6;
+      };
+    };
+    "0.26" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-0.26.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://libisl.sourceforge.io/isl-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gzip = candidate.tools.gzip;
+        gmp = tvp.packages.gmp_6;
+      };
+    };
+  };
+  ordinaryTable = retained.versionTable // {
+    "0.20" = retained.versionTable."0.20" // {
+      def = if native then ordinaryDefs."0.20" else retained.versionTable."0.20".def;
+    };
+    "0.26" = retained.versionTable."0.26" // {
+      def = if native then ordinaryDefs."0.26" else retained.versionTable."0.26".def;
+    };
+    "0.27" = retained.versionTable."0.27" // {
+      def = if native then ordinaryDefs."0.26" else retained.versionTable."0.27".def;
+    };
+  };
+  versionTable = ordinaryTable // {
     "0.28" = retained.versionTable."0.28" // {
       def = if native then definition else retained.versionTable."0.28".def;
     };

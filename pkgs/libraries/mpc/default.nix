@@ -165,7 +165,141 @@ let
       include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "1.1.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.1.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.gz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gzip = candidate.tools.gzip;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+      };
+    };
+    "1.2.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.gz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gzip = candidate.tools.gzip;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+      };
+    };
+    "1.4.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.4.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpc/mpc-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+      };
+    };
+  };
+  ordinaryTable = versionTable // {
+    "1.1.0" = versionTable."1.1.0" // {
+      def = if native then ordinaryDefs."1.1.0" else versionTable."1.1.0".def;
+    };
+    "1.2.0" = versionTable."1.2.0" // {
+      def = if native then ordinaryDefs."1.2.0" else versionTable."1.2.0".def;
+    };
+    "1.2.1" = versionTable."1.2.1" // {
+      def = if native then ordinaryDefs."1.2.0" else versionTable."1.2.1".def;
+    };
+    "1.3.0" = versionTable."1.3.0" // {
+      def = if native then ordinaryDefs."1.2.0" else versionTable."1.3.0".def;
+    };
+    "1.3.1" = versionTable."1.3.1" // {
+      def = if native then ordinaryDefs."1.2.0" else versionTable."1.3.1".def;
+    };
+    "1.4.0" = versionTable."1.4.0" // {
+      def = if native then ordinaryDefs."1.4.0" else versionTable."1.4.0".def;
+    };
+  };
   publicArgs = packageArgs // {
+    versionTable = ordinaryTable;
     inherit source;
   };
   # Retain the complete historical construction, including its original test factory.
