@@ -18,15 +18,20 @@ let
     family: version:
     let
       attr = tvp.lib.versions.attrName family version;
-      package = tvp.canonical.${attr};
       recipe = recipes.${family};
-      retained = recipe.constructionRecipe.extraArgs.mkTests;
-      publicSelected = (package.mkTests.override { pkgs = selected; }) package;
+      construction = recipe.constructionRecipe;
+      # Ordinary canonical releases may already be owned. Exercise the retained
+      # procedure through the public fallback rather than assume it is canonical.
+      package = (tvp.lib.packages.mkVersions construction).${attr};
+      retained = construction.extraArgs.mkTests;
+      publicFactory = recipe.extraArgs.mkTests;
+      publicSelected = (publicFactory.override { pkgs = selected; }) package;
       retainedSelected = (retained.override { pkgs = selected; }) package;
       variant =
         (tvp.lib.packages.mkVariants (
-          recipe
+          construction
           // {
+            extraArgs.mkTests = publicFactory;
             pkgs = pkgs // selected;
             profiles.test-factory = {
               base = tvp.bases.default;
@@ -39,7 +44,7 @@ let
       legacy = !(package ? testContext);
       requestedBuilder = publicSelected.version.selectedTestPkgs or false;
       retainedControl = retainedSelected.version.selectedTestPkgs or false;
-      defaultIdentities = identities (package.mkTests package) == identities (retained package);
+      defaultIdentities = identities (publicFactory package) == identities (retained package);
       variantBuilder = variant.tests.version.selectedTestPkgs or false;
       variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
     };
