@@ -31,6 +31,7 @@ let
         }
       )
       [
+        "gcc"
         "coreutils"
         "findutils"
         "diffutils"

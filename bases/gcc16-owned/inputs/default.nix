@@ -43,7 +43,7 @@ let
     );
 in
 tvpLib.packages.mergeVariants {
-  gcc = select (frozenTests recipes.gcc) {
+  gcc = select (frozenTests recipes.gcc.constructionRecipe) {
     "16.2.0" = {
       deps = {
         binutils = inputs.binutils_2_42;

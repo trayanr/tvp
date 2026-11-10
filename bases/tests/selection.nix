@@ -64,8 +64,13 @@ let
           tvp.packages.which
           tvp.packages.patch
         ];
+    source-owned-gcc16 =
+      tvp.packages.gcc_16_2_0.tvp.base == "source-gnu-candidate"
+      &&
+        tvp.packages.gcc_16_2_0.specification.base.compiler.drvPath == (import ../source-gnu { })
+        .base.compiler.drvPath
+      && tvp.packages.gcc_16_2_0.rawCompiler;
     canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
-      tvp.packages.gcc_16_2_0
       tvp.packages.gcc_13_3_0
       tvp.packages.glibc_2_39
     ];

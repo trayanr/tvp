@@ -7,7 +7,7 @@
 }:
 tvpLib.packages.mergeVariants {
   gcc = tvpLib.packages.mkVariants (
-    recipes.gcc
+    recipes.gcc.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

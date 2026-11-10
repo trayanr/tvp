@@ -31,7 +31,7 @@ let
   libxcrypt = select recipes.libxcrypt.constructionRecipe "4.5.2" { };
   zstd = select recipes.zstd.constructionRecipe "1.5.7" { inherit xz zlib; };
   binutils = select recipes.binutils.constructionRecipe "2.42" { inherit bison zstd zlib; };
-  gcc = select recipes.gcc "16.2.0" {
+  gcc = select recipes.gcc.constructionRecipe "16.2.0" {
     inherit
       gmp
       isl
