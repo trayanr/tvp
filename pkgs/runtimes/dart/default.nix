@@ -1,7 +1,6 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  platform = tvpLib.platforms.forStdenv tvp.bases.default.stdenv;
   defs = tvpLib.packages.mkDefs {
     "3.13.7" = {
       builder = ./build-3.13.7.nix;
@@ -29,7 +28,6 @@ let
         ca-certificates = tvp.packages.ca-certificates;
       };
       opts = {
-        inherit (platform) dynamicLinker;
         # These are source data, not executable package dependencies.
         sourceLocks = import ./sources-3.13.7.nix;
         buildDevtoolsFromSources = false;

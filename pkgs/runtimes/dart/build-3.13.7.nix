@@ -16,7 +16,7 @@
   sourceLocks,
   buildDevtoolsFromSources,
   useCipdToolchainStamps,
-  dynamicLinker,
+  dynamicLinker ? llvm.tvp.dynamicLinker,
   version,
   sha256,
   patches,
@@ -113,7 +113,7 @@ stdenv.mkDerivation (finalAttrs: {
       if isELF "$binary"; then
         chmod u+w "$binary"
         if patchelf --print-interpreter "$binary" >/dev/null 2>&1; then
-          patchelf --set-interpreter '${stdenv.cc.libc}/${dynamicLinker}' "$binary"
+          patchelf --set-interpreter '${dynamicLinker}' "$binary"
         fi
         patchelf --shrink-rpath "$binary"
       fi
@@ -125,6 +125,12 @@ stdenv.mkDerivation (finalAttrs: {
       --subst-var-by dart "$out/bin/.dart-unwrapped"
     chmod +x "$out/bin/dart"
     runHook postInstall
+  '';
+  postFixup = ''
+    export XDG_CONFIG_HOME="$TMPDIR/installed-config" PUB_CACHE="$TMPDIR/installed-pub-cache"
+    "$out/bin/dart" --version
+    "$out/bin/dart" pub --help > "$TMPDIR/dart-pub-help"
+    test -s "$TMPDIR/dart-pub-help"
   '';
   meta = {
     description = "Source-built Dart VM and language toolchain with pinned DevTools assets";
@@ -154,6 +160,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
     tvp.sourceLocks = sourceLocks;
     tvp.cc = stdenv.cc;
+    tvp.dynamicLinker = dynamicLinker;
     tvp.features = {
       jit = true;
       aot = true;

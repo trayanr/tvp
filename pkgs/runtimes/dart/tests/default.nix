@@ -23,6 +23,18 @@ tvpLib.tests.mkSuite {
       script = ''dart --version 2>&1 | awk '{print $4}' '';
       expected = package.version;
     };
+    runtime = {
+      script = ''
+        for binary in .dart-unwrapped dartvm dartaotruntime; do
+          test "$(patchelf --print-interpreter ${package}/bin/"$binary")" = '${package.tvp.dynamicLinker}'
+        done
+        dart pub --help > pub-help
+        test -s pub-help
+        printf matched
+      '';
+      expected = "matched";
+      extraInputs = [ package.tvp.deps.patchelf ];
+    };
     jit = {
       script = ''${setup}; dart ${./fixtures/main.dart}'';
       expected = "42";
