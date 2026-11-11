@@ -79,6 +79,12 @@ def dynamic_elf(path, data):
 
 # Validate every selected parent and leaf before staging any replacement.
 library64 = config.get('library64', False)
+
+def public_frontend(path):
+    # lib64 entries will become public lib entries after this preflight.
+    area = path.relative_to(root).parts[0]
+    return area in ('bin', 'lib', 'libexec') or (library64 and area == 'lib64')
+
 library_moves = []
 if library64:
     for directory in ('lib', 'lib64'):
@@ -138,7 +144,7 @@ for directory, dirs, files in os.walk(root, followlinks=False):
                 assert not os.path.isabs(raw), ('absolute symlink', p)
             # Public executable aliases cannot hide a script outside the
             # frontend selection. Library aliases to native ELF stay valid.
-            if any(p.is_relative_to(root / area) for area in ('bin', 'lib', 'libexec')):
+            if public_frontend(p):
                 target = target.resolve(strict=True)
                 target_info = target.stat()
                 if not stat.S_ISREG(target_info.st_mode):
@@ -151,7 +157,7 @@ for directory, dirs, files in os.walk(root, followlinks=False):
             inodes[inode] += 1
             links[inode] = st.st_nlink
             data = p.read_bytes()
-            executable_area = any(p.is_relative_to(root / name) for name in ('bin', 'lib', 'libexec'))
+            executable_area = public_frontend(p)
             if executable_area and data.startswith(b'#!') and b'\0' in data:
                 raise ValueError(('NUL in installed script', p))
             libtool_data = str(p.relative_to(root)).replace('lib64/', 'lib/', 1) in config.get('libtoolData', [])
@@ -173,7 +179,7 @@ for directory, dirs, files in os.walk(root, followlinks=False):
                 replaced = data.replace(old, new + b'/' * (len(old) - len(new)))
             else:
                 replaced = data.replace(old, new)
-                if replaced.startswith(b'#!') and any(p.is_relative_to(root / name) for name in ('bin', 'lib', 'libexec')):
+                if replaced.startswith(b'#!') and executable_area:
                     first, body = replaced.split(b'\n', 1)
                     shell = re.fullmatch(rb'#![ \t]*/(?:[^ \t\n]+/)*(?:sh|bash)(?: (-e|-))?', first)
                     awk = re.fullmatch(rb'#![ \t]*/(?:[^ \t\n]+/)*(?:awk|gawk)([ \t]+-[Mf]+)?', first)

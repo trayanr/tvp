@@ -1,4 +1,4 @@
-"""Adversarial all-before-write source/output contracts for ordinary GDBM/LibYAML."""
+"""Adversarial all-before-write source/output contracts for ordinary Libffi/Mpdecimal."""
 import hashlib
 import json
 import os
@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import signal
+import shutil
 
 source_helper, output_helper, shell, perl, readelf, patchelf = sys.argv[1:7]
 copy_script, suffix_script, artifact = sys.argv[7:]
@@ -42,6 +43,8 @@ cases = ['output-library64-collision', 'output-library64-alias', 'source-alias',
          'output-manual-collision', 'output-malformed-elf', 'output-directory-as-file', 'output-nul-frontend']
 cases += ['output-alias-' + area + '-' + kind for area in ('bin', 'lib', 'libexec')
           for kind in ('shell', 'unknown', 'nul', 'chain')]
+cases += ['output-library64-alias-' + kind for kind in ('shell', 'unknown', 'nul', 'chain', 'fifo')]
+cases += ['output-library64-regular-' + kind for kind in ('unknown', 'nul', 'no-shebang')]
 for case in cases:
     root = base / case
     root.mkdir()
@@ -99,11 +102,29 @@ for case in cases:
             (root/'lib64').mkdir()
             (root/'lib64/libffi.a').write_text('archive-data')
             config['library64'] = True
-            if case.endswith('collision'):
+            if case == 'output-library64-collision':
                 (root/'lib/libffi.a').write_text('existing-library')
-            else:
+            elif case == 'output-library64-alias':
                 (root/'lib64').rename(root/'libraries')
                 (root/'lib64').symlink_to('libraries')
+            elif case.startswith('output-library64-alias-'):
+                kind = case.rsplit('-', 1)[1]
+                hidden = root/'share/hidden'
+                if kind == 'fifo':
+                    os.mkfifo(hidden)
+                else:
+                    hidden.write_bytes(b'#!/usr/bin/python3\npass\n' if kind == 'unknown' else
+                                       b'#!/bin/sh\necho\0 original\n' if kind == 'nul' else
+                                       b'#!/bin/sh\n: ${SHELL:=/bin/sh}\n')
+                    hidden.chmod(0o755)
+                if kind == 'chain': (root/'share/indirect').symlink_to('hidden')
+                (root/'lib64/libffi.so').symlink_to('../share/indirect' if kind == 'chain' else '../share/hidden')
+            else:
+                kind = case[len('output-library64-regular-'):]
+                frontend = root/'lib64/libffi.so'
+                frontend.write_bytes(b'#!/usr/bin/python3\npass\n' if kind == 'unknown' else
+                                     b'#!/bin/sh\necho\0 original\n' if kind == 'nul' else b'unknown executable\n')
+                frontend.chmod(0o755)
         if case.startswith(('output-readelf-', 'output-patchelf-')):
             target.write_bytes(next(Path(artifact).rglob('lib*.so')).read_bytes())
             tool = base / (case + '-tool')
@@ -119,6 +140,44 @@ for case in cases:
     p=bounded(args,cwd=root,capture_output=True,timeout=10)
     assert p.returncode and before==digest(root) and external.read_bytes()==outside, (case,p.stdout,p.stderr)
     print('PASS',case, file=sys.stderr)
+
+# Prospective lib frontends must also adapt correctly, while real ELF aliases
+# remain supported through the same lib64 merge.
+for kind in ('shell', 'elf'):
+    root = base / ('output-library64-valid-' + kind)
+    (root/'lib').mkdir(parents=True); (root/'lib64').mkdir(); (root/'share').mkdir()
+    (root/'lib64/libffi.a').write_text('archive-data')
+    config={'library64':True,'readelf':readelf,'shell':shell,'buildShell':'/bin/sh','paths':[],
+            'requiredDirectories':['lib','lib64'],'requiredFiles':['lib/libffi.a'],
+            'requiredRegular':['lib/libffi.a'],'libtoolData':[]}
+    if kind == 'shell':
+        tools = base/'library64-tools'; tools.mkdir()
+        selected = tools/'selected-shell'
+        selected.write_text('#!' + shell + '\n'
+                            'printf "selected\\n" >> "$TVP_PROVIDER_LOG"\n'
+                            'exec ' + shell + ' "$@"\n')
+        selected.chmod(0o755)
+        probe = tools/'probe-provider'
+        probe.write_text('#!' + shell + '\necho selected-tool\n'); probe.chmod(0o755)
+        (root/'lib64/libffi.so').write_text('#!/bin/sh\n/bin/sh -c "probe-provider"\n')
+        (root/'lib64/libffi.so').chmod(0o755)
+        config.update(shell=str(selected),paths=[str(tools)])
+    else:
+        shutil.copyfile(next(Path(artifact).rglob('lib*.so')), root/'lib64/libffi.so.1')
+        (root/'lib64/libffi.so').symlink_to('libffi.so.1')
+    p=bounded([sys.executable,'-B',output_helper,str(root),'/nix/store/'+'x'*32+'-a-long-artifact-output',
+               patchelf,json.dumps(config)],capture_output=True,timeout=10)
+    assert p.returncode == 0, (kind,p.stdout,p.stderr)
+    assert (root/'lib64').is_symlink() and os.readlink(root/'lib64') == 'lib'
+    if kind == 'shell':
+        log=base/'library64-selected.log'
+        p=bounded([str(root/'lib/libffi.so')],env={'TVP_PROVIDER_LOG':str(log)},capture_output=True,timeout=10)
+        assert p.returncode == 0 and p.stdout == b'selected-tool\n', (p.stdout,p.stderr)
+        assert log.read_text().splitlines() == ['selected','selected']
+    else:
+        assert os.readlink(root/'lib/libffi.so') == 'libffi.so.1'
+        assert (root/'lib/libffi.so').read_bytes() == (root/'lib/libffi.so.1').read_bytes()
+    print('PASS output-library64-valid-' + kind, file=sys.stderr)
 
 # Run the actual copy record, then all remaining finalization records against a
 # public alias fixture. Copying legitimately writes; relocation must reject the
@@ -136,5 +195,19 @@ before = digest(root)
 p = bounded([shell, '-euo', 'pipefail', suffix_script], env=env, capture_output=True, timeout=10)
 assert p.returncode and b'selected executable alias' in p.stderr and before == digest(root), (p.stdout, p.stderr)
 print('PASS complete-suffix-alias', file=sys.stderr)
+
+if (Path(artifact)/'lib64').is_dir() and not (Path(artifact)/'lib64').is_symlink():
+    root = base/'complete-suffix-library64-alias'
+    env = {**env, 'out':str(root)}
+    subprocess.run([shell, '-euo', 'pipefail', copy_script], env=env, check=True)
+    (root/'share').mkdir(exist_ok=True)
+    (root/'share/hidden').write_text('#!/usr/bin/python3\n# never executed\n')
+    (root/'share/hidden').chmod(0o755)
+    (root/'lib64/libffi.so').unlink()
+    (root/'lib64/libffi.so').symlink_to('../share/hidden')
+    before = digest(root)
+    p = bounded([shell, '-euo', 'pipefail', suffix_script], env=env, capture_output=True, timeout=10)
+    assert p.returncode and b'selected executable alias' in p.stderr and before == digest(root), (p.stdout, p.stderr)
+    print('PASS complete-suffix-library64-alias', file=sys.stderr)
 
 print('ok')
