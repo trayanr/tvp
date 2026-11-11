@@ -433,16 +433,72 @@ let
       };
     };
   };
-  publicArgs = packageArgs // {
-    versionTable = versionTable // {
-      "3.53.4" = versionTable."3.53.4" // {
-        def = if native then ownedDefs."3.53.4" else versionTable."3.53.4".def;
+  # Preserve the retained definitions verbatim; only ordinary supported native
+  # releases select these complete source procedures. Options and patch records
+  # remain the original per-definition data, including historical exceptions.
+  remainingDefs = pkgs.lib.mapAttrs (_: definition: {
+    name = definition.name;
+    constructor = tvp.builder;
+    builder =
+      if definition.builder == ./build-3.48.0.nix then
+        ./ordinary/build-3.48.0.nix
+      else
+        ./ordinary/build-3.0.0.nix;
+    base = candidate.base;
+    source = import ./ordinary/source.nix { inherit (pkgs) fetchurl; };
+    testContext =
+      package:
+      tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        inherit package;
       };
+    helpers = {
+      inherit tvp;
     };
+    opts = definition.opts or { };
+    patches = definition.patches or [ ];
+    deps = {
+      bash = constructionTool "bash";
+      coreutils = constructionTool "coreutils";
+      pkgConfig = constructionTool "pkgConfig";
+      gnumake = constructionTool "make";
+      gnutar = constructionTool "tar";
+      gzip = constructionTool "gzip";
+      findutils = constructionTool "findutils";
+      sed = constructionTool "sed";
+      grep = constructionTool "grep";
+      gawk = constructionTool "gawk";
+      diffutils = constructionTool "diffutils";
+      patch = constructionTool "patch";
+      python = constructionTool "python";
+      binutils = constructionTool "binutils";
+      patchelf = constructionTool "patchelf";
+      tcl = tvp.packages.tcl_8;
+      readline = tvp.packages.readline_8;
+      testZlib = tvp.packages.zlib_1;
+    };
+  }) defs;
+  remainingTable = tvpLib.packages.mkTable (import ./3.nix { defs = remainingDefs; });
+  publicArgs = packageArgs // {
+    versionTable = pkgs.lib.mapAttrs (
+      version: entry:
+      entry
+      // {
+        def =
+          if !native || (entry.status.level or "ok") == "broken" then
+            entry.def
+          else if version == "3.53.4" then
+            ownedDefs."3.53.4"
+          else
+            remainingTable.${version}.def;
+      }
+    ) versionTable;
     extraArgs.mkTests =
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+        import (
+          if package.version == "3.53.4" then ./tests/native-default.nix else ./tests/ordinary-default.nix
+        ) { inherit pkgs tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
   };
