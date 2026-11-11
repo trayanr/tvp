@@ -455,35 +455,60 @@ let
         def = if native then ownedDefs."5.4.1" else versionTable."5.4.1".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      if package ? testContext then
-        import
-          (
-            if
-              builtins.hasAttr package.version {
-                "4.0.2" = true;
-                "4.1.4" = true;
-                "4.2.1" = true;
-                "5.0.1" = true;
-                "5.1.1" = true;
-                "5.2.2" = true;
-                "5.3.0" = true;
-                "5.3.1" = true;
-                "5.3.2" = true;
-                "5.4.0" = true;
-              }
-            then
-              ./tests/ordinary.nix
-            else
-              ./tests/native-default.nix
-          )
-          {
-            inherit pkgs tvpLib package;
-            inherit locale;
+      (
+        if package ? testContext then
+          import
+            (
+              if
+                builtins.hasAttr package.version {
+                  "4.0.2" = true;
+                  "4.1.4" = true;
+                  "4.2.1" = true;
+                  "5.0.1" = true;
+                  "5.1.1" = true;
+                  "5.2.2" = true;
+                  "5.3.0" = true;
+                  "5.3.1" = true;
+                  "5.3.2" = true;
+                  "5.4.0" = true;
+                }
+              then
+                ./tests/ordinary.nix
+              else
+                ./tests/native-default.nix
+            )
+            {
+              inherit pkgs tvpLib package;
+              inherit locale;
+            }
+        else
+          import ./tests {
+            inherit tvpLib package;
+            pkgs = tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = package.stdenv;
+            };
           }
-      else
-        constructionRecipe.extraArgs.mkTests package;
+      )
+      // pkgs.lib.optionalAttrs (
+        package ? testContext
+        && builtins.elem package.version [
+          "4.0.2"
+          "4.1.4"
+          "4.2.1"
+          "5.0.1"
+          "5.1.1"
+          "5.2.2"
+          "5.3.0"
+          "5.3.1"
+          "5.3.2"
+          "5.4.0"
+        ]
+      ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

@@ -141,24 +141,31 @@ let
     libc = candidate.toolchain.libc;
   };
   publicArgs = packageArgs // {
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       (
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvpLib
-              package
-              locale
-              ;
-          }
-        else
-          packageArgs.extraArgs.mkTests package
+        (
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                locale
+                ;
+            }
+          else
+            import ./tests { inherit pkgs tvpLib package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+        )
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-      );
+      // pkgs.lib.optionalAttrs (package ? testContext && builtins.elem package.version [ "4.9" ]) (
+        import ../ordinary-text-contracts.nix { inherit tvp package; }
+      )
+    ) { inherit pkgs; };
     versionTable = versionTable // {
       "4.9" = versionTable."4.9" // {
         def = if native then ownedDefs."4.9" else versionTable."4.9".def;

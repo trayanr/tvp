@@ -139,36 +139,43 @@ let
     libc = candidate.toolchain.libc;
   };
   publicArgs = packageArgs // {
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       (
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvpLib
-              package
-              locale
-              ;
+        (
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                locale
+                ;
+            }
+          else
+            import ./tests { inherit pkgs tvpLib package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-helper.nix {
+            inherit tvp package;
+            helperName = "sort";
+            invocation = q: ''
+              mkdir tree
+              touch tree/marker
+              ${q}/bin/updatedb --localpaths="$PWD/tree" --prunepaths="" --netpaths="" --output=locate.db
+              ${q}/bin/locate -d locate.db marker | grep -F /tree/marker >&2
+            '';
           }
-        else
-          packageArgs.extraArgs.mkTests package
+        )
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+      // pkgs.lib.optionalAttrs (package ? testContext && builtins.elem package.version [ "4.10.0" ]) (
+        import ../ordinary-text-contracts.nix { inherit tvp package; }
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-helper.nix {
-          inherit tvp package;
-          helperName = "sort";
-          invocation = q: ''
-            mkdir tree
-            touch tree/marker
-            ${q}/bin/updatedb --localpaths="$PWD/tree" --prunepaths="" --netpaths="" --output=locate.db
-            ${q}/bin/locate -d locate.db marker | grep -F /tree/marker >&2
-          '';
-        }
-      );
+    ) { inherit pkgs; };
     versionTable = versionTable // {
       "4.10.0" = versionTable."4.10.0" // {
         def = if native then ownedDefs."4.10.0" else versionTable."4.10.0".def;

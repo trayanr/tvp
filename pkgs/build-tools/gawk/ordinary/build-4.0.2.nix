@@ -170,7 +170,6 @@ in
         builtins.toJSON [
           "test"
           "awklib"
-          "support"
         ]
       }'
     '')

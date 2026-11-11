@@ -141,41 +141,52 @@ let
     libc = candidate.toolchain.libc;
   };
   publicArgs = packageArgs // {
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       (
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvpLib
-              package
-              locale
-              ;
+        (
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                locale
+                ;
+            }
+          else
+            import ./tests { inherit pkgs tvpLib package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-helper.nix {
+            inherit tvp package;
+            helperName = "pr";
+            invocation = q: ''
+              printf 'before\n' > before
+              printf 'after\n' > after
+              for mode in -l -ly; do
+                rc=0
+                ${q}/bin/diff "$mode" before after > paginated || rc=$?
+                test "$rc" = 1
+                grep -q before paginated
+                grep -q after paginated
+              done
+            '';
           }
-        else
-          packageArgs.extraArgs.mkTests package
+        )
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-      )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-helper.nix {
-          inherit tvp package;
-          helperName = "pr";
-          invocation = q: ''
-            printf 'before\n' > before
-            printf 'after\n' > after
-            for mode in -l -ly; do
-              rc=0
-              ${q}/bin/diff "$mode" before after > paginated || rc=$?
-              test "$rc" = 1
-              grep -q before paginated
-              grep -q after paginated
-            done
-          '';
-        }
-      );
+      // pkgs.lib.optionalAttrs (
+        package ? testContext
+        && builtins.elem package.version [
+          "3.10"
+          "3.11"
+        ]
+      ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
+    ) { inherit pkgs; };
     versionTable = versionTable // {
       "3.10" = versionTable."3.10" // {
         def = if native then ownedDefs."3.10" else versionTable."3.10".def;

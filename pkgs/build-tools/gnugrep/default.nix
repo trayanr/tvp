@@ -149,15 +149,25 @@ let
         def = if native then ownedDefs."3.12" else versionTable."3.12".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit pkgs tvpLib package;
-          inherit locale;
-        }
-      else
-        constructionRecipe.extraArgs.mkTests package;
+      (
+        if package ? testContext then
+          import ./tests/native-default.nix {
+            inherit pkgs tvpLib package;
+            inherit locale;
+          }
+        else
+          import ./tests {
+            inherit pkgs tvpLib package;
+            locale = tvp.packages.glibc_2;
+          }
+      )
+      // pkgs.lib.optionalAttrs (package ? testContext && builtins.elem package.version [ "3.11" ]) (
+        import ../ordinary-text-contracts.nix { inherit tvp package; }
+      )
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
