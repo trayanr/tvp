@@ -26,6 +26,43 @@ package.testContext.mkSuite {
   inherit package;
 
   tests = {
+    compiled-discovery = {
+      tools = [ package.tvp.deps.binutils ];
+      script = ''
+        mkdir include lib pc
+        printf 'int private_answer(void) { return 42; }\n' > private.c
+        printf 'int private_answer(void); int answer(void) { return private_answer(); }\n' > public.c
+        printf '#ifdef __cplusplus\nextern "C" {\n#endif\nint answer(void);\n#ifdef __cplusplus\n}\n#endif\n' > include/answer.h
+        printf '#include <answer.h>\nint main(void) { return answer() != 42; }\n' > main.c
+        "$CC" -fPIC -c private.c -o private.o
+        "$CC" -fPIC -c public.c -o public.o
+        ar crs lib/libprivate.a private.o
+        ar crs lib/libpublic.a public.o
+        "$CC" -shared private.o -o lib/libprivate.so
+        "$CC" -shared public.o -L"$PWD/lib" -lprivate -Wl,-rpath,"$PWD/lib" -o lib/libpublic.so
+        cat > pc/public.pc <<EOF
+        Name: public
+        Description: real C and C++ fixture
+        Version: 1
+        Cflags: -I$PWD/include
+        Libs: -L$PWD/lib -lpublic
+        Requires.private: private
+        EOF
+        cat > pc/private.pc <<EOF
+        Name: private
+        Description: private link closure
+        Version: 1
+        Libs: -lprivate
+        EOF
+        export PKG_CONFIG_LIBDIR="$PWD/pc" PKG_CONFIG_PATH=
+        "$CC" $(pkg-config --cflags public) main.c $(pkg-config --libs public) -Wl,-rpath,"$PWD/lib" -o shared
+        "$CXX" -x c++ $(pkg-config --cflags public) main.c -Wl,-Bstatic $(pkg-config --static --libs public) -Wl,-Bdynamic -o static
+        env -i ./shared
+        env -i ./static
+        printf linked
+      '';
+      expected = "linked";
+    };
     static = {
       script = ''
         mkdir pc

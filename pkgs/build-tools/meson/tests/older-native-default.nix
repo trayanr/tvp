@@ -23,7 +23,7 @@ package.testContext.mkSuite {
   tests = {
     profile = {
       script = ''test -s ${
-        (import ./native-profile.nix {
+        (import ./older-native-profile.nix {
           inherit
             pkgs
             tvp
