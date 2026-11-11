@@ -38,8 +38,13 @@ with tempfile.TemporaryDirectory() as temp:
     (source/'ltmain.sh').unlink(); (source/'ltmain.sh').symlink_to(source/'configure')
     rejects(lambda:prepare(source,shell,[]))
     raw=tmp/'raw'
-    capture(raw,[sys.executable,'-c','print("Total 12 tests, no errors")'])
+    capture(raw,[sys.executable,str(ordinary/'capture-command.py'),sys.executable,
+                 '-c','print("Total 12 tests, no errors")'])
     assert classify(raw,'2.7.4')['summaryPresent']
+    units=list((raw/'commands').iterdir()); assert len(units)==1
+    record=units[0]/'exit.json'; original_record=record.read_bytes()
+    changed=json.loads(original_record);changed['exit']=7;record.write_text(json.dumps(changed))
+    rejects(lambda:classify(raw,'2.7.4'));record.write_bytes(original_record)
     original=(raw/'stdout').read_bytes()
     (raw/'stdout').write_bytes(original+b'unknown additional record\n')
     rejects(lambda:classify(raw,'2.7.4'))

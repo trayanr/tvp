@@ -1,4 +1,4 @@
-# 2.13 serves 2.13.0–2.14.6. false now defaults off; true still supported.
+# 2.13.0–2.14.6: HTTP defaults off; LZMA remains supported.
 # Complete independent source procedure; retained stdenv recipes are unchanged.
 {
   tvp,
@@ -81,6 +81,7 @@ in
   dependencyProviders = final.tools // final.libraries;
   preparationHelper = ./prepare.py;
   captureHelper = ./capture.py;
+  commandCaptureHelper = ./capture-command.py;
   classifier = ./classify.py;
   finalizationHelper = ./finalize.py;
   elfHelper = ./elf.py;
@@ -133,7 +134,7 @@ in
     (command "build" make)
     (
       (command "capture-upstream" ''
-        ${final.tools.python}/bin/python3 -B ${final.captureHelper} upstream-raw ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check
+        ${final.tools.python}/bin/python3 -B ${final.captureHelper} upstream-raw ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash ${lib.escapeShellArg "CHECKER=${final.tools.python}/bin/python3 -B ${final.commandCaptureHelper}"} check
       '')
       // {
         tools = [ final.tools.python ];

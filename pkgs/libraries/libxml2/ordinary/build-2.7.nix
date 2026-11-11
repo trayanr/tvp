@@ -1,4 +1,4 @@
-# 2.7 serves 2.7.4–2.7.8. No false option; GNU89 weak pthread declarations.
+# 2.7.4–2.7.8: no LZMA option; GNU89 weak pthread declarations.
 # Complete independent source procedure; retained stdenv recipes are unchanged.
 {
   tvp,
@@ -80,6 +80,7 @@ in
   dependencyProviders = final.tools // final.libraries;
   preparationHelper = ./prepare.py;
   captureHelper = ./capture.py;
+  commandCaptureHelper = ./capture-command.py;
   classifier = ./classify.py;
   finalizationHelper = ./finalize.py;
   elfHelper = ./elf.py;
@@ -131,7 +132,7 @@ in
     (command "build" make)
     (
       (command "capture-upstream" ''
-        ${final.tools.python}/bin/python3 -B ${final.captureHelper} upstream-raw ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check
+        ${final.tools.python}/bin/python3 -B ${final.captureHelper} upstream-raw ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash ${lib.escapeShellArg "CHECKER=${final.tools.python}/bin/python3 -B ${final.commandCaptureHelper}"} check
       '')
       // {
         tools = [ final.tools.python ];

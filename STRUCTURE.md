@@ -306,6 +306,14 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
+A raw upstream test capture may be stored in an unqualified artifact. Keep test
+execution and result classification in independent input files: execute before
+the split, then classify the immutable capture before accepting the final output.
+Preserve the original output and exit status even when a test fails. Remove
+operational reports from the final package, retaining originals in the artifact
+and evidence. A classifier edit must replay those reports and reuse compilation;
+an intermediate containing a nonpass never qualifies a canonical package by itself.
+
 An installed program can embed both its prefix and its length, as shared Perl does.
 Its specification may set `artifactName = "${final.pname}-${final.version}";` to
 give the artifact and final output equally long store prefixes. They remain separate

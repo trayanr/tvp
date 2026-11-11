@@ -40,6 +40,15 @@ until reviewed, even when upstream exits zero. This is a source-stage gap and
 must be resolved before representative qualification; it does not reduce the
 implemented release scope.
 
+Upstream's `CHECKER` prefix also runs `capture-command.py` around individual test
+executables, recording their original arguments, working directory, bytes and
+exit status. It propagates failures back to Make. This separates silent programs
+and intentionally diagnostic tests from Make's compiler and command echoes.
+The capture includes `runxmlconf.log`, whose expected W3C failures must be checked
+by identity, alongside the RNG/instance diagnostics in `runsuite.log`.
+Per-command result handlers and expected inventories remain pending real boundary
+captures. The summary-only classifier is a staging guard, not runtime acceptance.
+
 Finalization copies the installed artifact, classifies and removes operational
 reports, then relocates text, compiled catalog paths and ELF RPATHs before strip,
 interpreter/development metadata and final checks. Original raw logs remain in
