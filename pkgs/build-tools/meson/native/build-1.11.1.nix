@@ -105,13 +105,16 @@ in
       compression = "gzip";
     })
     (command "meson.prepare" ''
+      # Validate before patching, then recheck before the token rewrite.
+      ${final.helperPython}/bin/python3 -B ${../../source-targets.py} mesonbuild/scripts/depfixer.py
       ${lib.concatMapStringsSep "\n" (
         p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
-      ${final.helperPython}/bin/python3 -B - <<'PYTHON'
-      from pathlib import Path
-      p = Path('mesonbuild/scripts/depfixer.py')
-      text = p.read_text(); assert '@TVP_STORE_DIR@' in text
+      ${final.helperPython}/bin/python3 -B - ${../../source-targets.py} <<'PYTHON'
+      import runpy, sys
+      text_file = runpy.run_path(sys.argv[1])['text_file']
+      p, text = text_file('mesonbuild/scripts/depfixer.py')
+      assert '@TVP_STORE_DIR@' in text
       p.write_text(text.replace('@TVP_STORE_DIR@', '${builtins.storeDir}'))
       PYTHON
     '')

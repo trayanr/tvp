@@ -160,10 +160,10 @@ in
       interpreter = "${final.bash}/bin/bash";
     })
     (command "pkg-config.date-diagnostic" ''
-      ${final.python}/bin/python3 -B - <<'PYCODE'
-      from pathlib import Path
-      import re
-      p = Path('glib/glib/gdate.c'); text = p.read_text()
+      ${final.python}/bin/python3 -B - ${../../source-targets.py} <<'PYCODE'
+      import re, runpy, sys
+      text_file = runpy.run_path(sys.argv[1])['text_file']
+      p, text = text_file('glib/glib/gdate.c')
       pattern = r'\ngsize[ \t]*\ng_date_strftime '
       text, count = re.subn(pattern, lambda m: '\n#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Wformat-nonliteral"\n' + m[0], text)
       assert count == 1
@@ -171,16 +171,17 @@ in
       PYCODE
     '')
     (command "pkg-config.charset-source" ''
+      # Check the target before patch can follow one of its parent directories.
+      ${final.python}/bin/python3 -B ${../../source-targets.py} glib/glib/libcharset/localcharset.c
       ${lib.concatMapStringsSep "\n" (
         p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
-      ${final.python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
-      import json, sys
-      from pathlib import Path
-      path = Path('glib/glib/libcharset/localcharset.c')
-      text = path.read_text()
+      ${final.python}/bin/python3 -B - ${../../source-targets.py} ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
+      import json, runpy, sys
+      text_file = runpy.run_path(sys.argv[1])['text_file']
+      path, text = text_file('glib/glib/libcharset/localcharset.c')
       assert text.count('@TVP_CHARSET_DIR@') == 1
-      path.write_text(text.replace('"@TVP_CHARSET_DIR@"', json.dumps(sys.argv[1])))
+      path.write_text(text.replace('"@TVP_CHARSET_DIR@"', json.dumps(sys.argv[2])))
       PYCODE
     '')
     (logged "configure" ''
