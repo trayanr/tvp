@@ -21,6 +21,8 @@
   pkgConfig,
   perl,
   doCheck ? true,
+  cStandard ? "gnu17",
+  cxxStandard ? "gnu++14",
 }:
 final:
 let
@@ -56,6 +58,8 @@ in
     pkgConfig
     perl
     doCheck
+    cStandard
+    cxxStandard
     ;
   features = {
     cStandard = final.cStandard;
@@ -86,8 +90,6 @@ in
     ];
     libraries = [ ];
   };
-  cStandard = "gnu17";
-  cxxStandard = "gnu++14";
   runtime.shell = final.bash;
   runtime.tools = [
     final.coreutils

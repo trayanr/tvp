@@ -22,6 +22,7 @@
   ncurses,
   perl,
   doCheck ? true,
+  cStandard ? "gnu89",
   pkgConfigModules ? [ ],
 }:
 final:
@@ -58,6 +59,7 @@ in
     pkgConfig
     perl
     doCheck
+    cStandard
     pkgConfigModules
     ncurses
     ;
@@ -83,7 +85,6 @@ in
     ];
     libraries = [ final.ncurses ];
   };
-  cStandard = "gnu89";
   runtime.shell = final.bash;
   runtime.tools = [
     final.coreutils
