@@ -22,10 +22,10 @@ def text_file(relative, root=None):
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
         raise ValueError("source target must be a regular singly linked file")
-    data = path.read_bytes()
-    if b"\0" in data:
+    text = path.read_text(encoding="utf-8")
+    if "\0" in text:
         raise ValueError("source text contains NUL")
-    return path, data.decode("utf-8")
+    return path, text
 
 
 if __name__ == "__main__":

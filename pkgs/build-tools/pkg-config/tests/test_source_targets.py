@@ -44,6 +44,15 @@ class SourceTargetsTests(unittest.TestCase):
         (self.root / "sub").symlink_to(self.outside, target_is_directory=True)
         self.reject()
 
+    def test_text_newlines_match_original_read_text(self):
+        (self.root / "sub").mkdir()
+        leaf = self.root / "sub/target.c"
+        data = b"first\r\nsecond\rthird\n"
+        leaf.write_bytes(data)
+        _, text = targets.text_file("sub/target.c", self.root)
+        self.assertEqual(text, "first\nsecond\nthird\n")
+        self.assertEqual(leaf.read_bytes(), data)
+
     def test_linked_leaf(self):
         (self.root / "sub").mkdir()
         (self.root / "sub/target.c").symlink_to(self.marker)
