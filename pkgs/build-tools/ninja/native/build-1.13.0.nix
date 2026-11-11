@@ -72,18 +72,16 @@ in
     bash
     coreutils
     ;
-  tools = {
-    inherit
-      helperPython
-      gnutar
-      gzip
-      findutils
-      patch
-      sed
-      binutils
-      patchelf
-      ;
-  };
+  inherit
+    helperPython
+    gnutar
+    gzip
+    findutils
+    patch
+    sed
+    binutils
+    patchelf
+    ;
   inherit
     python
     patches
@@ -95,9 +93,9 @@ in
     python = final.runtime.python;
   };
   environment.tools = [
-    final.tools.helperPython
-    final.tools.patch
-    final.tools.sed
+    final.helperPython
+    final.patch
+    final.sed
   ];
   runtime = {
     libraries = environment.libraries;
@@ -107,19 +105,19 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = final.tools.gnutar;
-      gzip = final.tools.gzip;
-      findutils = final.tools.findutils;
+      tar = final.gnutar;
+      gzip = final.gzip;
+      findutils = final.findutils;
       compression = "gzip";
     })
     (command "ninja.prepare" ''
       ${lib.concatMapStringsSep "\n" (
-        p: ''${final.tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
+        p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
     '')
     (steps.shebangs {
       name = "ninja.source-shells";
-      python = final.tools.helperPython;
+      python = final.helperPython;
       paths = [ "src/inline.sh" ];
       names = [ "sh" ];
       interpreter = "${final.buildShell}/bin/bash";
@@ -128,16 +126,16 @@ in
       mkdir -p "$out/.tvp-evidence"
       trap 'status=$?; if (( status != 0 )); then cat "$out/.tvp-evidence/build.log"; fi' EXIT
       export TVP_NINJA_SHELL=${final.buildShell}/bin/bash
-      export TVP_NINJA_PYTHON=${final.tools.helperPython}/bin/python3
+      export TVP_NINJA_PYTHON=${final.helperPython}/bin/python3
       # Only the prepared compiler environment contributes flags.
-      ${final.tools.helperPython}/bin/python3 -B configure.py --bootstrap --verbose --with-python=${final.tools.helperPython}/bin/python3 > "$out/.tvp-evidence/build.log" 2>&1
+      ${final.helperPython}/bin/python3 -B configure.py --bootstrap --verbose --with-python=${final.helperPython}/bin/python3 > "$out/.tvp-evidence/build.log" 2>&1
       cat "$out/.tvp-evidence/build.log" >&2
       cp build.ninja "$out/.tvp-evidence/"
     '')
     (
       (command "ninja.check" ''
         status=0
-        ${final.tools.helperPython}/bin/python3 -B misc/ninja_syntax_test.py -v > "$out/.tvp-evidence/check.log" 2>&1 || status=$?
+        ${final.helperPython}/bin/python3 -B misc/ninja_syntax_test.py -v > "$out/.tvp-evidence/check.log" 2>&1 || status=$?
         printf '%s\n' "$status" > "$out/.tvp-evidence/check.status"
         cat "$out/.tvp-evidence/check.log"
         test "$status" = 0
@@ -163,7 +161,7 @@ in
       mv "$out/bin/ninja" "$out/libexec/ninja"
     '')
     (outputs.template {
-      python = final.tools.helperPython;
+      python = final.helperPython;
       path = "bin/ninja";
       template = ../owned/ninja.sh;
       values = {
@@ -174,23 +172,23 @@ in
     })
     (finalCommand "ninja.launcher-mode" ''chmod 755 "$out/bin/ninja"'')
     (outputs.strip {
-      python = final.tools.helperPython;
-      binutils = final.tools.binutils;
+      python = final.helperPython;
+      binutils = final.binutils;
       paths = [ "libexec" ];
     })
     (outputs.rpaths {
-      python = final.tools.helperPython;
-      binutils = final.tools.binutils;
-      patchelf = final.tools.patchelf;
+      python = final.helperPython;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       base = final.base;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       paths = [ "libexec" ];
     })
     (outputs.checkPaths {
-      python = final.tools.helperPython;
-      binutils = final.tools.binutils;
-      patchelf = final.tools.patchelf;
+      python = final.helperPython;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       paths = [ "libexec" ];
     })
   ];

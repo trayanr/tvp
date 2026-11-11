@@ -40,15 +40,13 @@ in
     bash
     coreutils
     ;
-  tools = {
-    inherit
-      helperPython
-      gnutar
-      gzip
-      findutils
-      patch
-      ;
-  };
+  inherit
+    helperPython
+    gnutar
+    gzip
+    findutils
+    patch
+    ;
   inherit
     python
     ninja
@@ -67,9 +65,9 @@ in
   };
   environment = {
     tools = [
-      final.tools.helperPython
-      final.tools.patch
-      final.tools.findutils
+      final.helperPython
+      final.patch
+      final.findutils
     ];
     libraries = [ ];
   };
@@ -101,16 +99,16 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = final.tools.gnutar;
-      gzip = final.tools.gzip;
-      findutils = final.tools.findutils;
+      tar = final.gnutar;
+      gzip = final.gzip;
+      findutils = final.findutils;
       compression = "gzip";
     })
     (command "meson.prepare" ''
       ${lib.concatMapStringsSep "\n" (
-        p: ''${final.tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
+        p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
-      ${final.tools.helperPython}/bin/python3 -B - <<'PYTHON'
+      ${final.helperPython}/bin/python3 -B - <<'PYTHON'
       from pathlib import Path
       p = Path('mesonbuild/scripts/depfixer.py')
       text = p.read_text(); assert '@TVP_STORE_DIR@' in text
@@ -118,11 +116,11 @@ in
       PYTHON
     '')
     (command "meson.build" ''
-      ${final.tools.helperPython}/bin/python3 packaging/create_zipapp.py . --outfile meson.pyz \
+      ${final.helperPython}/bin/python3 packaging/create_zipapp.py . --outfile meson.pyz \
         --interpreter "" --compress
     '')
     (command "meson.install" ''
-      ${final.tools.helperPython}/bin/python3 meson.pyz --version
+      ${final.helperPython}/bin/python3 meson.pyz --version
       install -Dm644 meson.pyz "$out/libexec/meson.pyz"
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
       install -Dm644 man/meson.1 "$out/share/man/man1/meson.1"
@@ -131,11 +129,11 @@ in
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     (finalCommand "meson.zipapp-interpreter" ''
       mkdir "$out/bin"
-      ${final.tools.gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
-      ${final.tools.helperPython}/bin/python3 -B ${../owned/bind-zipapp.py} "$out" ${lib.escapeShellArg "${final.runtime.python}/bin/python3"}
+      ${final.gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
+      ${final.helperPython}/bin/python3 -B ${../owned/bind-zipapp.py} "$out" ${lib.escapeShellArg "${final.runtime.python}/bin/python3"}
     '')
     (outputs.template {
-      python = final.tools.helperPython;
+      python = final.helperPython;
       path = "bin/meson";
       template = ../meson.sh;
       values = {

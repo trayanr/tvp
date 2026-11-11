@@ -87,34 +87,32 @@ in
     bash
     coreutils
     ;
-  tools = {
-    inherit
-      python
-      gnumake
-      gnutar
-      gzip
-      findutils
-      sed
-      grep
-      diffutils
-      gawk
-      binutils
-      patchelf
-      patch
-      ;
-  };
+  inherit
+    python
+    gnumake
+    gnutar
+    gzip
+    findutils
+    sed
+    grep
+    diffutils
+    gawk
+    binutils
+    patchelf
+    patch
+    ;
   inherit cStandard patches doCheck;
   buildEnvironment = import ../../../../lib/pkg-config-environment.nix;
   environment = {
     tools = [
-      final.tools.patch
-      final.tools.gnumake
-      final.tools.python
-      final.tools.sed
-      final.tools.grep
-      final.tools.diffutils
-      final.tools.gawk
-      final.tools.findutils
+      final.patch
+      final.gnumake
+      final.python
+      final.sed
+      final.grep
+      final.diffutils
+      final.gawk
+      final.findutils
     ];
     # Bundled GLib has a bool field, reserved in C23. Keep the measured dialect.
     overrides.flags.NIX_CFLAGS_COMPILE = [ "-std=${final.cStandard}" ];
@@ -123,20 +121,20 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = final.tools.gnutar;
-      gzip = final.tools.gzip;
-      findutils = final.tools.findutils;
+      tar = final.gnutar;
+      gzip = final.gzip;
+      findutils = final.findutils;
       compression = "gzip";
     })
     (steps.prepareAutotools {
       name = "pkg-config.prepare";
       bash = final.bash;
-      python = final.tools.python;
+      python = final.python;
       base = final.base;
     })
     (steps.shebangs {
       name = "pkg-config.source-shells";
-      python = final.tools.python;
+      python = final.python;
       paths = [
         "configure"
         "glib/configure"
@@ -155,7 +153,7 @@ in
       interpreter = "${final.bash}/bin/bash";
     })
     (command "pkg-config.date-diagnostic" ''
-      ${final.tools.python}/bin/python3 -B - <<'PYCODE'
+      ${final.python}/bin/python3 -B - <<'PYCODE'
       from pathlib import Path
       import re
       p = Path('glib/glib/gdate.c'); text = p.read_text()
@@ -167,9 +165,9 @@ in
     '')
     (command "pkg-config.charset-source" ''
       ${lib.concatMapStringsSep "\n" (
-        p: ''${final.tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
+        p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
-      ${final.tools.python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
+      ${final.python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
       import json, sys
       from pathlib import Path
       path = Path('glib/glib/libcharset/localcharset.c')
@@ -183,14 +181,14 @@ in
       ./configure --prefix=/ --with-internal-glib --with-pc-path= --disable-dependency-tracking
       cp config.log "$out/.tvp-evidence/"
     '')
-    (logged "build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
+    (logged "build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     (
       (logged "check" ''
         # The complete pkg-config discovery suite; not bundled GLib's own suite.
-        ${final.tools.gnumake}/bin/make -C check -j1 SHELL=${final.bash}/bin/bash TESTS_SHELL=${final.bash}/bin/bash check
+        ${final.gnumake}/bin/make -C check -j1 SHELL=${final.bash}/bin/bash TESTS_SHELL=${final.bash}/bin/bash check
         # Exercise the actual vendored object, including the path passed to
         # fopen. CLI output alone need not call GLib's charset alias helper.
-        mapfile -t charsetArchives < <(${final.tools.findutils}/bin/find glib/glib -type f -name libcharset.a)
+        mapfile -t charsetArchives < <(${final.findutils}/bin/find glib/glib -type f -name libcharset.a)
         test "''${#charsetArchives[@]}" = 1
         "$CC" ${../owned/charset-check.c} "''${charsetArchives[0]}" \
           -Wl,--wrap=fopen,--wrap=fopen64 -o "$out/.tvp-evidence/charset-probe"
@@ -212,32 +210,32 @@ in
       }
     )
     (logged "install" ''
-      ${final.tools.gnumake}/bin/make SHELL=${final.bash}/bin/bash DESTDIR="$out" install
+      ${final.gnumake}/bin/make SHELL=${final.bash}/bin/bash DESTDIR="$out" install
     '')
     (command "pkg-config.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
     (steps.split "pkg-config.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     (finalCommand "pkg-config.compress-man" ''
-      ${final.tools.gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"
+      ${final.gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"
     '')
     (outputs.strip {
-      python = final.tools.python;
-      binutils = final.tools.binutils;
+      python = final.python;
+      binutils = final.binutils;
       paths = [ "bin" ];
     })
     (outputs.rpaths {
-      python = final.tools.python;
-      binutils = final.tools.binutils;
-      patchelf = final.tools.patchelf;
+      python = final.python;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       base = final.base;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       paths = [ "bin" ];
     })
     (outputs.checkPaths {
-      python = final.tools.python;
-      binutils = final.tools.binutils;
-      patchelf = final.tools.patchelf;
+      python = final.python;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       paths = [ "bin" ];
     })
   ];
