@@ -55,7 +55,7 @@ package.testContext.mkSuite {
         Libs: -lprivate
         EOF
         export PKG_CONFIG_LIBDIR="$PWD/pc" PKG_CONFIG_PATH=
-        "$CC" $(pkg-config --cflags public) main.c $(pkg-config --libs public) -Wl,-rpath,"$PWD/lib" -o shared
+        "$CC" $(pkg-config --cflags public) main.c $(pkg-config --libs public) -Wl,-rpath,"$PWD/lib" -Wl,-rpath-link,"$PWD/lib" -o shared
         "$CXX" -x c++ $(pkg-config --cflags public) main.c -Wl,-Bstatic $(pkg-config --static --libs public) -Wl,-Bdynamic -o static
         env -i ./shared
         env -i ./static
