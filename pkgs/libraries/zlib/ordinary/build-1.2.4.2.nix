@@ -202,7 +202,9 @@ in
     (
       (command "zlib.check" ''
         check_status=0
-        ${make} check > upstream-check.log 2>&1 || check_status=$?
+        # The static/shared/64-bit examples can share foo.gz.
+        # Order upstream tests while leaving compilation parallel.
+        ${final.tools.gnumake}/bin/make -j1 SHELL=${final.bash}/bin/bash check > upstream-check.log 2>&1 || check_status=$?
         cat upstream-check.log
         test "$check_status" -eq 0
         if grep -E 'FAILED|FAIL|XPASS' upstream-check.log; then exit 1; fi
