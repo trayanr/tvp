@@ -75,7 +75,7 @@ for directory, dirs, files in os.walk(root, followlinks=False):
             inodes[inode] += 1
             links[inode] = st.st_nlink
             data = p.read_bytes()
-            if data.startswith(b'\x7fELF') and old in data:
+            if data.startswith(b'\x7fELF'):
                 if dynamic_elf(p, data):
                     raw = inspect(patchelf, '--print-rpath', p).removesuffix(b'\n')
                     relocated = raw.replace(old, new)
