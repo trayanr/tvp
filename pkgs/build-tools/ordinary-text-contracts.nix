@@ -108,17 +108,18 @@ p.testContext.mkSuite {
                 }
                 p.buildSteps
               ).steps;
-            commands = builtins.toFile "ordinary-text-final-suffix.sh" (
-              builtins.concatStringsSep "\n" (map (step: step.run or "") suffix)
-            );
+            commands = builtins.concatStringsSep "\n" (map (step: step.run or "") suffix);
           in
           ''
+            cat > suffix.sh <<'TVP_FINAL_SUFFIX'
+            ${commands}
+            TVP_FINAL_SUFFIX
             printf 'int main(void) { return 0; }\n' > probe.c
             "$CC" probe.c -o dynamic
             ${s.python}/bin/python3 -B ${./ordinary-text-regressions.py} \
               ${./ordinary-text-source.py} ${./ordinary-text-output.py} ${./ordinary-text-check-paths.py} \
               ${../../lib/native-output} ${s.binutils}/bin/readelf ${s.patchelf}/bin/patchelf \
-              ${s.bash}/bin/bash ${s.perl}/bin/perl ${commands} "$PWD/dynamic"
+              ${s.bash}/bin/bash ${s.perl}/bin/perl "$PWD/suffix.sh" "$PWD/dynamic"
           '';
         expected = "frontend-and-complete-suffix-contracts";
       };
