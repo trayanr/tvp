@@ -1,6 +1,10 @@
 {
   system ? "x86_64-linux", # currently unused?
   config ? { },
+  source ? {
+    path = toString ./.;
+    revision = null;
+  },
   pkgs, # TODO: nixpkgs check and abort if not or auto import channel
 }:
 let
@@ -552,6 +556,8 @@ let
     };
     status = pkgs.callPackage ./tools/status.nix {
       inherit ownedCLI;
+      python3 = tvp.packages.python_3;
+      migrationFacts = tvp.migrationStatusManifest;
       coreutils = tvp.packages.coreutils;
       gnugrep = tvp.packages.gnugrep;
       gnused = tvp.packages.gnused;
@@ -561,6 +567,17 @@ let
   };
 
   tvp = {
+    migrationStatusManifest = import ./tools/status/manifest.nix {
+      inherit (pkgs) lib;
+      inherit
+        canonical
+        variants
+        source
+        system
+        ;
+      splitReport = tvp.recipeSplitReport;
+      latest = latestSelection.metadata;
+    };
     recipeSplitInventory = tvpLib.recipeSplits.inventory { inherit canonical variants; };
     recipeSplitReport =
       (tvpLib.recipeSplits.validate {
