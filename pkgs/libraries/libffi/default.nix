@@ -128,18 +128,114 @@ let
       };
     };
   };
+  defaultTestPkgs = pkgs;
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    inherit (pkgs) fetchurl;
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "3.0.9" = versionTable."3.0.9" // {
+        def = if native then ordinaryDefs."3.0.9" else versionTable."3.0.9".def;
+      };
+      "3.0.10" = versionTable."3.0.10" // {
+        def = if native then ordinaryDefs."3.0.10" else versionTable."3.0.10".def;
+      };
+      "3.0.11" = versionTable."3.0.11" // {
+        def = if native then ordinaryDefs."3.0.11" else versionTable."3.0.11".def;
+      };
+      "3.0.12" = versionTable."3.0.12" // {
+        def = if native then ordinaryDefs."3.0.12" else versionTable."3.0.12".def;
+      };
+      "3.0.13" = versionTable."3.0.13" // {
+        def = if native then ordinaryDefs."3.0.12" else versionTable."3.0.13".def;
+      };
+      "3.1" = versionTable."3.1" // {
+        def = if native then ordinaryDefs."3.1" else versionTable."3.1".def;
+      };
+      "3.2" = versionTable."3.2" // {
+        def = if native then ordinaryDefs."3.1" else versionTable."3.2".def;
+      };
+      "3.2.1" = versionTable."3.2.1" // {
+        def = if native then ordinaryDefs."3.1" else versionTable."3.2.1".def;
+      };
+      "3.3" = versionTable."3.3" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.3".def;
+      };
+      "3.4.2" = versionTable."3.4.2" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.4.2".def;
+      };
+      "3.4.3" = versionTable."3.4.3" // {
+        def = if native then ordinaryDefs."3.4.3" else versionTable."3.4.3".def;
+      };
+      "3.4.4" = versionTable."3.4.4" // {
+        def = if native then ordinaryDefs."3.4.3" else versionTable."3.4.4".def;
+      };
+      "3.4.5" = versionTable."3.4.5" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.4.5".def;
+      };
+      "3.4.6" = versionTable."3.4.6" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.4.6".def;
+      };
+      "3.4.7" = versionTable."3.4.7" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.4.7".def;
+      };
+      "3.4.8" = versionTable."3.4.8" // {
+        def = if native then ordinaryDefs."3.3" else versionTable."3.4.8".def;
+      };
+      "3.5.0" = versionTable."3.5.0" // {
+        def = if native then ordinaryDefs."3.5.0" else versionTable."3.5.0".def;
+      };
+      "3.5.1" = versionTable."3.5.1" // {
+        def = if native then ordinaryDefs."3.5.0" else versionTable."3.5.1".def;
+      };
+      "3.5.2" = versionTable."3.5.2" // {
+        def = if native then ordinaryDefs."3.5.0" else versionTable."3.5.2".def;
+      };
+      "3.6.0" = versionTable."3.6.0" // {
+        def = if native then ordinaryDefs."3.6.0" else versionTable."3.6.0".def;
+      };
+      "3.7.0" = versionTable."3.7.0" // {
+        def = if native then ordinaryDefs."3.5.0" else versionTable."3.7.0".def;
+      };
+      "3.7.1" = versionTable."3.7.1" // {
+        def = if native then ordinaryDefs."3.5.0" else versionTable."3.7.1".def;
+      };
+
       "3.8.0" = versionTable."3.8.0" // {
         def = if native then ownedDefs."3.8.0" else versionTable."3.8.0".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      args@{
+        pkgs ? defaultTestPkgs,
+      }:
       package:
-      if package ? testContext then
+      if args ? pkgs then
+        import ./tests {
+          inherit pkgs tvpLib;
+          libffi = package;
+          pkg-config = package.tvp.declaredTestDependencies.pkg-config;
+        }
+      else if package ? testContext && package ? artifact then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        constructionRecipe.extraArgs.mkTests package
+    ) { };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
