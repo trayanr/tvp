@@ -110,6 +110,9 @@ let
           inherit (package.tvp.deps) bash coreutils gnugrep;
         };
       }
+      // testLib.optionalAttrs (package ? artifact && package.version == "1.5.6") (
+        import ./tests/ordinary-contracts.nix { inherit pkgs package; }
+      )
     ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

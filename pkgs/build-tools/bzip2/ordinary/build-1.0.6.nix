@@ -168,11 +168,13 @@ in
       tools = [
         final.tools.python
         final.tools.patchelf
+        final.tools.binutils
       ];
       run = ''${final.tools.python}/bin/python3 -B ${../../../libraries/ordinary-compression-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.tools.patchelf}/bin/patchelf ${
         lib.escapeShellArg (
           builtins.toJSON {
             family = "bzip2";
+            readelf = "${final.tools.binutils}/bin/readelf";
             buildShell = "${final.bash}/bin/bash";
             shell = "${final.runtime.shell}/bin/bash";
             pager = "${final.runtime.pager}/bin/cat";

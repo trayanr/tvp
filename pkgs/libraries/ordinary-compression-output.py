@@ -9,6 +9,7 @@ import shlex
 import os
 from pathlib import Path
 import stat
+import struct
 import sys
 import subprocess
 from collections import Counter
@@ -30,6 +31,34 @@ rpaths = []
 inodes = Counter()
 links = {}
 patchelf = sys.argv[3]
+
+def inspect(binary, *arguments):
+    if not os.path.isabs(binary):
+        raise ValueError(('expected absolute selected inspection tool', binary))
+    result = subprocess.run([binary, *map(str, arguments)], capture_output=True,
+                            env={**os.environ, 'LC_ALL': 'C'})
+    if result.returncode or result.stderr:
+        raise ValueError(('ELF inspection failed', binary, result.returncode,
+                          result.stderr.decode(errors='replace')))
+    return result.stdout
+
+def dynamic_elf(path, data):
+    if len(data) < 64 or data[4:7] != b'\x02\x01\x01':
+        raise ValueError(('expected native ELF64 little-endian', path))
+    kind, machine, version = struct.unpack_from('<HHI', data, 16)
+    if kind not in (1, 2, 3) or machine != 62 or version != 1:
+        raise ValueError(('unsupported native ELF', path))
+    headers = inspect(config['readelf'], '--wide', '--file-header',
+                      '--program-headers', '--section-headers', path)
+    # Only program-header rows start with these tags; section rows start with [N].
+    dynamic = re.search(rb'(?m)^\s*DYNAMIC\s', headers) is not None
+    interpreter = re.search(rb'(?m)^\s*INTERP\s', headers) is not None
+    if interpreter and not dynamic:
+        raise ValueError(('ELF interpreter without dynamic segment', path))
+    if kind == 1 and (dynamic or interpreter):
+        raise ValueError(('relocatable ELF has runtime segments', path))
+    return dynamic
+
 for directory, dirs, files in os.walk(root, followlinks=False):
     for name in dirs + files:
         p = Path(directory) / name
@@ -52,9 +81,8 @@ for directory, dirs, files in os.walk(root, followlinks=False):
             links[inode] = st.st_nlink
             data = p.read_bytes()
             if data.startswith(b'\x7fELF') and old in data:
-                r = subprocess.run([patchelf, '--print-rpath', str(p)], capture_output=True)
-                if r.returncode == 0:
-                    raw = r.stdout.removesuffix(b'\n')
+                if dynamic_elf(p, data):
+                    raw = inspect(patchelf, '--print-rpath', p).removesuffix(b'\n')
                     relocated = raw.replace(old, new)
                     if relocated != raw:
                         rpaths.append((p, relocated))

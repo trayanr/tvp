@@ -187,17 +187,19 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "zstd.finalize")
-    (outputs.copyArtifacts { inherit coreutils; })
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
       name = "zstd.relocate-runtime";
       tools = [
         final.tools.python
         final.tools.patchelf
+        final.tools.binutils
       ];
       run = ''${final.tools.python}/bin/python3 -B ${../../ordinary-compression-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.tools.patchelf}/bin/patchelf ${
         lib.escapeShellArg (
           builtins.toJSON {
             family = "zstd";
+            readelf = "${final.tools.binutils}/bin/readelf";
             buildShell = "${final.bash}/bin/bash";
             shell = "${final.runtime.shell}/bin/bash";
             pager = "${final.runtime.pager}/bin/cat";
@@ -255,7 +257,7 @@ in
     })
     {
       name = "output.manuals";
-      tools = [ gzip ];
+      tools = [ final.tools.gzip ];
       run = ''
         for name in zstd zstdgrep zstdless; do
           ${final.tools.gzip}/bin/gzip -cn "$out/share/man/man1/$name.1" > "$out/share/man/man1/$name.1.gz"
