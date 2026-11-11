@@ -136,11 +136,75 @@ let
       ;
     libc = candidate.toolchain.libc;
   };
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    inherit (defs."1.32".deps) acl attr;
+  };
+  ordinaryTests =
+    pkgs.lib.makeOverridable
+      (
+        {
+          pkgs,
+          locale,
+          helpers,
+        }:
+        package:
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvpLib
+            package
+            locale
+            helpers
+            tvp
+            ;
+        }
+      )
+      {
+        inherit pkgs locale;
+        helpers = [
+          {
+            bin = "gzip";
+            package = tvp.packages.gzip;
+            flag = "-z";
+          }
+          {
+            bin = "bzip2";
+            package = tvp.packages.bzip2_1;
+            flag = "-j";
+          }
+          {
+            bin = "xz";
+            package = tvp.packages.xz_5;
+            flag = "-J";
+          }
+          {
+            bin = "zstd";
+            package = tvp.packages.zstd_1;
+            flag = "--zstd";
+          }
+        ];
+      };
   publicArgs = packageArgs // {
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      {
+        pkgs,
+        locale,
+        helpers ? null,
+      }:
       package:
       (
-        if package ? testContext then
+        if package ? specification && package.specification ? features then
+          (ordinaryTests.override (
+            { inherit pkgs locale; } // pkgs.lib.optionalAttrs (helpers != null) { inherit helpers; }
+          ))
+            package
+        else if package ? testContext then
           import ./tests/native-default.nix {
             inherit
               pkgs
@@ -172,12 +236,50 @@ let
             ];
           }
         else
-          packageArgs.extraArgs.mkTests package
+          import ./tests {
+            inherit pkgs tvpLib package;
+            helpers =
+              if helpers != null then
+                helpers
+              else
+                [
+                  {
+                    bin = "gzip";
+                    package = tvp.packages.gzip;
+                    flag = "-z";
+                  }
+                  {
+                    bin = "bzip2";
+                    package = tvp.packages.bzip2_1;
+                    flag = "-j";
+                  }
+                  {
+                    bin = "xz";
+                    package = tvp.packages.xz_5;
+                    flag = "-J";
+                  }
+                  {
+                    bin = "zstd";
+                    package = tvp.packages.zstd_1;
+                    flag = "--zstd";
+                  }
+                ];
+          }
       )
       // pkgs.lib.optionalAttrs (package ? testContext) (
         import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-      );
+      )
+    ) { inherit pkgs locale; };
     versionTable = versionTable // {
+      "1.32" = versionTable."1.32" // {
+        def = if native then ordinaryDefs."1.32" else versionTable."1.32".def;
+      };
+      "1.33" = versionTable."1.33" // {
+        def = if native then ordinaryDefs."1.32" else versionTable."1.33".def;
+      };
+      "1.34" = versionTable."1.34" // {
+        def = if native then ordinaryDefs."1.32" else versionTable."1.34".def;
+      };
       "1.35" = versionTable."1.35" // {
         def = if native then ownedDefs."1.35" else versionTable."1.35".def;
       };

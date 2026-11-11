@@ -116,6 +116,34 @@ let
       retainedRequestedCounterpart = hasCounterpart ((original.override requested) package)
         .roundtrip tvp.packages.${counterpart};
     };
+  tarProbe =
+    let
+      recipe = recipes.gnutar;
+      construction = recipe.constructionRecipe;
+      package = (tvp.lib.packages.mkVersions construction).gnutar_1_32;
+      factory = recipe.extraArgs.mkTests;
+      publicSelected = (factory.override { pkgs = selected; }) package;
+      variant =
+        (tvp.lib.packages.mkVariants (
+          construction
+          // {
+            extraArgs.mkTests = factory;
+            pkgs = pkgs // selected;
+            profiles.test-factory = {
+              base = tvp.bases.default;
+              versions."1.32" = { };
+            };
+          }
+        )).test-factory.gnutar_1_32;
+    in
+    {
+      legacy = !(package ? testContext);
+      defaultIdentities =
+        identities (factory package) == identities (construction.extraArgs.mkTests package);
+      requestedBuilder = publicSelected.version.selectedTestPkgs or false;
+      variantBuilder = variant.tests.version.selectedTestPkgs or false;
+      variantBase = variant.tests.version.selectedBase.drvPath == tvp.bases.default.stdenv.drvPath;
+    };
   contracts = {
     zlib = probe "zlib" "1.2.10";
     zstd = probe "zstd" "1.5.6";
@@ -125,6 +153,7 @@ let
     bison = probe "bison" "3.8.1";
     flex = probe "flex" "2.6.3";
     texinfo = texinfoProbe;
+    gnutar = tarProbe;
     zip = archiveProbe "zip" "unzip";
     unzip = archiveProbe "unzip" "zip";
   };
