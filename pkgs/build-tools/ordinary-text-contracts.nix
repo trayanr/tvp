@@ -10,7 +10,14 @@ let
     old:
     old
     // {
-      base = old.base // {
+      base = tvp.builder.base {
+        inherit (old.base)
+          name
+          platform
+          shell
+          tools
+          referencePackages
+          ;
         compiler = old.base.compiler.edit (c: c // { version = c.version + "-contract"; });
       };
     }
