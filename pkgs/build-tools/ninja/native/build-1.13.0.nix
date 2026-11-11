@@ -111,6 +111,8 @@ in
       compression = "gzip";
     })
     (command "ninja.prepare" ''
+      ${final.helperPython}/bin/python3 -B ${../../source-targets.py} \
+        src/subprocess-posix.cc src/browse.cc
       ${lib.concatMapStringsSep "\n" (
         p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
       ) final.patches}
