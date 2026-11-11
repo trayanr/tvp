@@ -7,7 +7,7 @@ import sys
 
 
 def selected(path, data=b''):
-    return (path.name in ('Configure', 'Makefile', 'Makefile.org', 'Makefile.in')
+    return (path.name in ('Configure', 'Makefile', 'Makefile.org', 'Makefile.in', 'Makefile.ssl')
             or path.name.endswith(('.sh', '.pl', '.pm', '.tmpl', '.pod'))
             or data.startswith(b'#!'))
 
@@ -42,6 +42,13 @@ def prepare(root, shell, perl, encoding="utf-8"):
         q = p.resolve(strict=False)
         if os.path.isabs(os.readlink(p)) or not q.is_relative_to(root) or (q.exists() and q not in regular):
             raise ValueError(('escaping/directory source link', p))
+        if selected(p, regular.get(q, b'')):
+            # Old source trees expose Makefile.ssl through a direct sibling
+            # Makefile link. Validate and edit that regular target only once.
+            if not (p.name == 'Makefile' and os.readlink(p) == 'Makefile.ssl'
+                    and p.with_name('Makefile.ssl') in regular):
+                raise ValueError(('selected source symlink', p))
+    diagnostic_makefile = (root/'crypto/Makefile').resolve(strict=False)
     for p, data in regular.items():
         relative = p.relative_to(root)
         # Text input selection is a semantic role, not a NUL/binary fallback.
@@ -69,7 +76,7 @@ def prepare(root, shell, perl, encoding="utf-8"):
                          lambda _: shell.encode(), updated)
         # Diagnostic metadata must not retain the build-only compiler store
         # closure. Preserve every reported compiler option and its order.
-        if relative == Path('crypto/Makefile') and not (root/'util/mkbuildinf.pl').exists():
+        if p == diagnostic_makefile and not (root/'util/mkbuildinf.pl').exists():
             anchor = b'#define CFLAGS "$(CC) $(CFLAG)"'
             if updated.count(anchor) != 1:
                 raise ValueError('historical compiler diagnostic anchor')
@@ -81,9 +88,6 @@ def prepare(root, shell, perl, encoding="utf-8"):
             updated = updated.replace(anchor, b"$cflags =~ s{^(?:/[^ /]+)+/([^ /]+)(?= |$)}{$1};\n" + anchor)
         if updated != data:
             changes[p] = updated
-    # A selected alias is never an alternate path through which to write.
-    if any(selected(p, regular.get(p.resolve(strict=False), b'')) for p in aliases):
-        raise ValueError('selected source symlink')
     for p, data in changes.items():
         p.write_bytes(data)
     return {'changed': [str(p.relative_to(root)) for p in changes], 'files': len(regular)}

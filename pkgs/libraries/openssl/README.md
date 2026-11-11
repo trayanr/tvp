@@ -57,6 +57,12 @@ existing latest profiles. The additional compile-free guard fixture exercises
 unsafe namespaces, hardlink roles, encodings, inspector failure and archive
 rejection. Metadata evaluation is not test execution or package compilation.
 
+The early 0.9.7 sources expose regular `Makefile.ssl` files through direct sibling
+`Makefile` links. Preparation validates and edits each regular target once while
+preserving its link. Other selected aliases, chains, directories and escaping or
+hardlinked targets remain rejected. Compiler diagnostic rewriting follows the
+actual `crypto/Makefile` target and preserves every compiler option.
+
 Definition capabilities distinguish the ENGINE API from installed dynamic modules
 and the universal `openssl.pc` from split `libssl.pc`/`libcrypto.pc` metadata.
 The 0.9.7 range exposes the API and universal module; dynamic modules and split

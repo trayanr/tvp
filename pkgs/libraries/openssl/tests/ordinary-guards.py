@@ -92,7 +92,7 @@ class Guards(unittest.TestCase):
         self.rejects()
 
     def test_source_roles_reject_aliases_and_corrupt_text_before_writes(self):
-        for case in ['Configure', 'Makefile', 'Makefile.org', 'Makefile.in', 'doc.pod']:
+        for case in ['Configure', 'Makefile', 'Makefile.org', 'Makefile.in', 'Makefile.ssl', 'doc.pod']:
             with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
                 root = Path(d)
                 original = b':\n/bin/sh\n'
@@ -107,6 +107,50 @@ class Guards(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     source.prepare(root, config['shell'], config['perl'])
                 self.assertEqual((root/'safe.sh').read_bytes(), before)
+
+    def test_source_makefile_ssl_target_preserves_alias(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); (root/'crypto').mkdir()
+            target=root/'crypto/Makefile.ssl'
+            target.write_bytes(b'SHELL=/bin/sh\n#define CFLAGS "$(CC) $(CFLAG)"\n')
+            target.chmod(0o640)
+            alias=root/'crypto/Makefile'; alias.symlink_to('Makefile.ssl')
+            before=alias.lstat()
+            result=source.prepare(root,config['shell'],config['perl'])
+            self.assertEqual(result['changed'],['crypto/Makefile.ssl'])
+            self.assertEqual(target.read_bytes(),b'SHELL='+config['shell'].encode()+b'\n#define CFLAGS "$(notdir $(CC)) $(CFLAG)"\n')
+            self.assertEqual(target.stat().st_mode & 0o777,0o640)
+            self.assertEqual(os.readlink(alias),'Makefile.ssl')
+            after=alias.lstat()
+            self.assertEqual((after.st_ino,after.st_mode,after.st_mtime_ns,after.st_nlink),
+                             (before.st_ino,before.st_mode,before.st_mtime_ns,before.st_nlink))
+
+    def test_source_makefile_ssl_invalid_targets_reject_before_writes(self):
+        for case in ['outside','chain','directory','dangling','hardlink','NUL','encoding','different-name','trailing-slash']:
+            with self.subTest(case=case),tempfile.TemporaryDirectory() as d:
+                root=Path(d)/'source';root.mkdir()
+                safe=root/'safe.sh';safe.write_bytes(b'#!/bin/sh\ntrue\n')
+                original=safe.read_bytes();metadata=safe.stat()
+                target=root/'Makefile.ssl';target.write_bytes(b'SHELL=/bin/sh\n')
+                alias=root/'Makefile';alias.symlink_to('Makefile.ssl')
+                if case=='outside':
+                    outside=Path(d)/'outside';outside.write_bytes(b'SHELL=/bin/sh\n')
+                    target.unlink();target.symlink_to('../outside')
+                elif case=='chain':
+                    (root/'payload').write_bytes(target.read_bytes())
+                    target.unlink();target.symlink_to('payload')
+                elif case=='directory':target.unlink();target.mkdir()
+                elif case=='dangling':target.unlink()
+                elif case=='hardlink':os.link(target,Path(d)/'outside')
+                elif case=='NUL':target.write_bytes(b'SHELL=/bin/sh\n\0')
+                elif case=='encoding':target.write_bytes(b'SHELL=/bin/sh\n\xff')
+                elif case=='different-name':
+                    target.rename(root/'payload');alias.unlink();alias.symlink_to('payload')
+                elif case=='trailing-slash':alias.unlink();alias.symlink_to('Makefile.ssl/')
+                with self.assertRaises((ValueError,OSError)):
+                    source.prepare(root,config['shell'],config['perl'])
+                self.assertEqual(safe.read_bytes(),original)
+                self.assertEqual(safe.stat().st_mtime_ns,metadata.st_mtime_ns)
 
 
 unittest.main()
