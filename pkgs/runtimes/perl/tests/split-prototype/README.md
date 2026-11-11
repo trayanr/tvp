@@ -1,8 +1,9 @@
 # Older Perl split design experiments
 
 These are standalone experiments, not production recipes or a finalization API.
-The nine older ordinary Perl releases remain on their original procedures. No
-split-baseline rows have been removed, and Perl 5.44.0 is unchanged.
+These experiments preceded the production procedures in `../../ordinary`. They
+remain standalone historical evidence; production imports none of these helpers.
+Perl 5.44.0 is unchanged.
 
 The owned builder normally names its installed prefix `perl-VERSION-artifacts`
 and its final output `perl-VERSION`. Their store prefixes differ by ten bytes. All nine

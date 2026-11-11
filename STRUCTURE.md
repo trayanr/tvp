@@ -315,6 +315,14 @@ This chooses only the artifact name, without passing the final output path into
 compilation. The recipe must still prove relocation, installed behavior and artifact
 reference exclusion.
 
+Ordinary shared Perl 5.24.4–5.42.3 uses that equal-width capability with
+three independent version-start procedures. Its source mutator and installed
+finalizer are separate inputs. The finalizer validates the complete namespace,
+text metadata and ELF string locations before writes, preserves compiled widths
+and internal hardlinks, and checks every final byte/link for artifact references.
+Installed tests build fresh XS and shared embedding consumers. See
+[the ordinary Perl contract](pkgs/runtimes/perl/ordinary/README.md).
+
 Named-output recipes declare the complete output list and pass it to the copy step:
 
 ```nix
