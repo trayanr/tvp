@@ -13,7 +13,10 @@ import sys
 import subprocess
 from collections import Counter
 
-root = Path(sys.argv[1]).resolve(strict=True)
+root = Path(sys.argv[1])
+if root.is_symlink():
+    raise ValueError('output root must not be a symlink')
+root = root.resolve(strict=True)
 old = os.fsencode(sys.argv[2])
 new = os.fsencode(str(root))
 config = json.loads(sys.argv[4])
@@ -81,7 +84,7 @@ man_move = config['family'] == 'bzip2' and (root/'man').exists()
 if man_move:
     assert (root/'man').is_dir() and not (root/'man').is_symlink()
     assert not os.path.lexists(root/'share/man'), 'manual layout collision'
-    assert not (root/'share').is_symlink(), 'manual parent alias'
+    assert not os.path.lexists(root/'share') or ((root/'share').is_dir() and not (root/'share').is_symlink()), 'manual parent is not a directory'
 for p, target in link_changes:
     assert not os.path.lexists(str(p) + '.tvp-relocating'), ('alias collision', p)
 for p, data, mode in changes:
@@ -90,7 +93,8 @@ for p, data, mode in changes:
 for p, data, mode in changes:
     tmp = p.with_name(p.name + '.tvp-relocating')
     assert not tmp.exists() and not tmp.is_symlink(), tmp
-    tmp.write_bytes(data)
+    with tmp.open('xb') as stream:
+        stream.write(data)
     tmp.chmod(mode)
     tmp.replace(p)
 for p, target in link_changes:
