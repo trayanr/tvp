@@ -25,6 +25,7 @@
   libraryVersion ? version,
   configureFlags ? [ "--shared" ],
   sharedLibDir ? false,
+  versionScript ? false,
   patches ? [ ],
   preparation ? {
     selections = [
@@ -125,6 +126,7 @@ in
     libraryVersion
     configureFlags
     sharedLibDir
+    versionScript
     patches
     preparation
     features
@@ -185,7 +187,7 @@ in
     }
     (command "zlib.configure" ''
       export CFLAGS="''${CFLAGS--O3} -std=${final.cStandard} -fPIC ${lib.escapeShellArgs final.cFlags}"
-      export LDSHARED="$CC -shared -Wl,-soname,libz.so.1"
+      export LDSHARED="$CC -shared -Wl,-soname,libz.so.1${lib.optionalString final.versionScript ",--version-script,zlib.map"}"
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags} ${lib.optionalString final.sharedLibDir ''--sharedlibdir="$out/lib"''}
     '')
     (command "zlib.build" make)

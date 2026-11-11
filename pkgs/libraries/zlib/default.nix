@@ -292,6 +292,8 @@ let
         pkgConfig = true;
         static = false;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -343,6 +345,8 @@ let
         pkgConfig = true;
         static = false;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -381,6 +385,8 @@ let
       helpers = {
         inherit tvp;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -425,6 +431,8 @@ let
           reason = "configure drops LIBS=\"$LIBS $SHAREDLIBV\", present in 1.2.3.3 and restored in 1.2.3.5, so libz.so.1.2.3.4 is built and never installed and the libz.so.1 soname link is absent.";
         }
       ];
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -463,6 +471,8 @@ let
       helpers = {
         inherit tvp;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -502,6 +512,8 @@ let
         inherit tvp;
       };
       opts.sharedLibDir = true;
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -540,6 +552,8 @@ let
       helpers = {
         inherit tvp;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -578,6 +592,8 @@ let
       helpers = {
         inherit tvp;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -616,6 +632,14 @@ let
       helpers = {
         inherit tvp;
       };
+      patches = [
+        {
+          file = ./patches/1.2.5.1-version-map-parent.patch;
+          reason = "The new ZLIB_1.2.5.1 node inherits nonexistent ZLIB_1.2.5; upstream 1.2.5.2 corrects the parent to ZLIB_1.2.3.5.";
+        }
+      ];
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -658,6 +682,8 @@ let
         reportedVersion = "1.2.7.2-motley";
         libraryVersion = "1.2.7.2-motley";
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)
@@ -696,6 +722,8 @@ let
       helpers = {
         inherit tvp;
       };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
       # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
       deps = {
         inherit (candidate.tools)

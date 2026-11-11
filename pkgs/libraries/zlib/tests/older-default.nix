@@ -47,6 +47,15 @@ zlib.testContext.mkSuite {
         script = "${zlib.specification.tools.binutils}/bin/readelf -d ${zlib}/lib/libz.so.${zlib.specification.libraryVersion} | grep -F '(SONAME)' | grep -F '[libz.so.1]' >/dev/null; echo ok";
         expected = "ok";
       };
+      symbol-versions = {
+        script = ''
+          ${zlib.specification.tools.python}/bin/python3 -B ${./symbol-versions.py} \
+            ${zlib.specification.src} ${zlib}/lib/libz.so.${zlib.specification.libraryVersion} \
+            ${zlib.specification.tools.binutils}/bin/readelf
+        '';
+        expected = "ok";
+        tools = commonTools ++ [ zlib.specification.tools.python ];
+      };
       header-version = {
         script = ''
           "$CC" ${./fixtures/header-version.c} ${l} -o header-version
