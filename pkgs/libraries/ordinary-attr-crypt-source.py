@@ -27,6 +27,9 @@ for directory, dirs, names in os.walk(root, followlinks=False):
         elif stat.S_ISREG(info.st_mode):
             if info.st_nlink != 1:
                 raise ValueError(('source hardlink', path))
+            data = path.read_bytes()
+            if data.startswith(b'#!') and b'\0' in data:
+                raise ValueError(('NUL in source script', path))
             files.append(path)
         elif not stat.S_ISDIR(info.st_mode):
             raise ValueError(('special source file', path))

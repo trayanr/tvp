@@ -3,6 +3,22 @@
 { tvp, package }:
 let
   s = package.specification;
+  copy =
+    (builtins.head (builtins.filter (step: step.name == "output.copy-artifacts") package.buildSteps))
+    .run;
+  suffix =
+    (builtins.foldl'
+      (acc: step: {
+        copied = acc.copied || step.name == "output.copy-artifacts";
+        steps = acc.steps ++ (if acc.copied then [ step ] else [ ]);
+      })
+      {
+        copied = false;
+        steps = [ ];
+      }
+      package.buildSteps
+    ).steps;
+  commands = builtins.concatStringsSep "\n" (map (step: step.run or "") suffix);
   tools = with package.tvp.declaredDependencies; [
     python
     sed
@@ -84,9 +100,16 @@ package.testContext.mkSuite {
   tests = {
     confinement = {
       script = ''
+        cat > copy.sh <<'TVP_COPY'
+        ${copy}
+        TVP_COPY
+        cat > suffix.sh <<'TVP_SUFFIX'
+        ${commands}
+        TVP_SUFFIX
         ${s.python}/bin/python3 -B ${./ordinary-attr-crypt-tests.py} \
           ${./ordinary-attr-crypt-source.py} ${./ordinary-attr-crypt-output.py} \
-          ${s.bash}/bin/bash ${s.perl}/bin/perl ${s.binutils}/bin/readelf ${s.patchelf}/bin/patchelf
+          ${s.bash}/bin/bash ${s.perl}/bin/perl ${s.binutils}/bin/readelf ${s.patchelf}/bin/patchelf \
+          "$PWD/copy.sh" "$PWD/suffix.sh" ${package.artifact}
       '';
       expected = "ok";
     };

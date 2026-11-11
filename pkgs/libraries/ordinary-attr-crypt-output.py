@@ -92,6 +92,13 @@ for directory, dirs, files in os.walk(root, followlinks=False):
                 target = p.resolve(strict=True)
                 assert target.is_relative_to(root), ('escaping symlink', p)
                 assert not os.path.isabs(raw), ('absolute symlink', p)
+            # Public executable aliases cannot hide a script outside the
+            # frontend selection. Library aliases to native ELF stay valid.
+            if any(p.is_relative_to(root / area) for area in ('bin', 'lib', 'libexec')):
+                target = target.resolve(strict=True)
+                data = target.read_bytes()
+                if not data.startswith(b'\x7fELF') and (data.startswith(b'#!') or target.stat().st_mode & 0o111):
+                    raise ValueError(('selected executable alias', p, target))
         elif stat.S_ISREG(st.st_mode):
             inode = (st.st_dev, st.st_ino)
             inodes[inode] += 1
