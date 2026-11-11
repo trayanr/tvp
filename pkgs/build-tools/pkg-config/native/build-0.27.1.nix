@@ -156,10 +156,12 @@ in
     (command "pkg-config.date-diagnostic" ''
       ${final.tools.python}/bin/python3 -B - <<'PYCODE'
       from pathlib import Path
+      import re
       p = Path('glib/glib/gdate.c'); text = p.read_text()
-      marker = '\ngsize\ng_date_strftime '
-      assert text.count(marker) == 1
-      p.write_text(text.replace(marker, '\n#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Wformat-nonliteral"\n' + marker) + '\n#pragma GCC diagnostic pop\n')
+      pattern = r'\ngsize[ \t]*\ng_date_strftime '
+      text, count = re.subn(pattern, lambda m: '\n#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Wformat-nonliteral"\n' + m[0], text)
+      assert count == 1
+      p.write_text(text + '\n#pragma GCC diagnostic pop\n')
       PYCODE
     '')
     (command "pkg-config.charset-source" ''
