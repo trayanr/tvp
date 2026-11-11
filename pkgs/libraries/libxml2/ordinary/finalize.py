@@ -16,7 +16,22 @@ import tempfile
 from elf import inspect, replace_paths, text, tree
 
 
+def catalog_slot(data, old, new):
+    """Recognize complete catalog constants and xmllint's source-defined help."""
+    paths = {old + b'/etc/xml/catalog', old + b'/etc/sgml/catalog'}
+    uris = {b'file://' + path for path in paths}
+    help_line = (b'\t         file://' + old
+                 + b'/etc/xml/catalog are activated by default\n')
+    if data not in paths | uris | {help_line}:
+        raise ValueError('unexpected compiled catalog string')
+    # The whole string has an exact source-owned shape, including URI boundary.
+    # Equal-width substitution preserves suffix pointers and compiled lengths.
+    return data.replace(old, new)
+
+
 def readonly_paths(path, data, old, new, readelf, *, relocatable=False):
+    if len(old) != len(new) or old == new:
+        raise ValueError('distinct equal-width catalog prefixes required')
     changes = []
     for hit in inspect(path, old, readelf):
         if hit['section'] == '.dynstr':
@@ -24,12 +39,11 @@ def readonly_paths(path, data, old, new, readelf, *, relocatable=False):
                 raise ValueError('unsupported dynamic prefix')
             changes.append(('rpath', hit['exclusiveRpath']))
         elif (not hit['section'].startswith('.rodata') or not hit['readonlyAllocated']
-              or not hit['prefixAtStringStart'] or hit['stringEnd'] < 0
-              or not hit['string'].encode().startswith(old+b'/etc/')):
+              or hit['stringEnd'] < 0):
             raise ValueError(('unexpected compiled path slot', str(path), hit))
         else:
             a,b = hit['stringStart'], hit['stringEnd']
-            data = data[:a]+replace_paths(data[a:b],old,new)+data[b:]
+            data = data[:a]+catalog_slot(data[a:b],old,new)+data[b:]
     return data, changes
 
 

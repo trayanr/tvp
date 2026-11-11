@@ -26,15 +26,18 @@ shell,cc,readelf,ar,patchelf = sys.argv[1:]
 with tempfile.TemporaryDirectory() as temp:
     tmp=Path(temp)
     source=tmp/'source'; source.mkdir()
-    (source/'configure').write_bytes(b'#!/bin/sh\n/usr/bin/file\n')
+    finish = rb"""finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'"""
+    (source/'configure').write_bytes(b'#!/bin/sh\n/usr/bin/file\n'+finish+b'\n')
     (source/'ltmain.sh').write_bytes(b"#!/bin/sh\neval sys_lib_search_path=host\neval sys_lib_dlsearch_path=host\n")
     prepare(source,shell,[])
     assert (source/'configure').read_bytes().startswith(b'#!'+shell.encode())
+    assert finish not in (source/'configure').read_bytes()
+    assert b"finish_cmds=''" in (source/'configure').read_bytes()
     assert b'host' not in (source/'ltmain.sh').read_bytes()
-    (source/'configure').write_bytes(b'#!/bin/sh\nunchanged\n')
+    (source/'configure').write_bytes(b'#!/bin/sh\nunchanged\n'+finish+b'\n')
     (source/'ltmain.sh').write_bytes(b'#!/bin/sh\nbad\0body')
     rejects(lambda:prepare(source,shell,[]))
-    assert (source/'configure').read_bytes()==b'#!/bin/sh\nunchanged\n'
+    assert (source/'configure').read_bytes()==b'#!/bin/sh\nunchanged\n'+finish+b'\n'
     (source/'ltmain.sh').unlink(); (source/'ltmain.sh').symlink_to(source/'configure')
     rejects(lambda:prepare(source,shell,[]))
     raw=tmp/'raw'

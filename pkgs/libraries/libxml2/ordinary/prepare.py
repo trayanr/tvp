@@ -49,6 +49,12 @@ def prepare(root, shell, search):
             raise ValueError('expected historic sourced libtool body')
         if p.name == 'configure':
             data = data.replace(b'/usr/bin/file', b'file')
+            # Store outputs use their declared runtime paths. Installing a
+            # library never refreshes a host loader cache or searches /sbin.
+            finish = rb"""finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'"""
+            if data.count(finish) != 1:
+                raise ValueError('expected Linux libtool finish command')
+            data = data.replace(finish, b"finish_cmds=''")
         else:
             data, count = re.subn(rb'eval (sys_lib_search_path=).*',
                                  lambda m: m[1]+b"'"+b' '.join(s.encode() for s in search)+b"'", data)

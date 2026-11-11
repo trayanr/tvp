@@ -121,7 +121,7 @@ in
         ${final.tools.python}/bin/python3 -B ${final.preparationHelper} ${final.bash}/bin/bash
       '')
       // {
-        tools = [ final.tools.python ];
+        tools = (environment.tools or [ ]) ++ [ final.tools.python ];
       }
     )
     (command "configure" ''
@@ -135,7 +135,7 @@ in
         ${final.tools.python}/bin/python3 -B ${final.captureHelper} upstream-raw ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash ${lib.escapeShellArg "CHECKER=${final.tools.python}/bin/python3 -B ${final.commandCaptureHelper}"} check
       '')
       // {
-        tools = [ final.tools.python ];
+        tools = (environment.tools or [ ]) ++ [ final.tools.python ];
         enabled = final.doCheck;
       }
     )

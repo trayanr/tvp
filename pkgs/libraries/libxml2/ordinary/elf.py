@@ -1,7 +1,8 @@
 """Guarded equal-width libxml2 finalization (ELF inspector adapted from ordinary Perl), x86_64 ELF64 only.
 
-Plan the whole tree before writes. Compiled library path strings must begin at
-NUL boundaries in allocated readonly .rodata. Equal widths preserve all string
+Plan the whole tree before writes. Compiled library path slots are inspected as
+complete NUL-delimited strings in allocated readonly .rodata. The family caller
+validates their source-defined path, URI or help-message shape. Equal widths preserve all string
 positions, suffixes, compiled lengths and terminators (including pooled suffix
 addresses). Dynamic paths are changed only through the selected ELF tool.
 Text and symlinks use exact pathname boundaries. No receipts in the output.
