@@ -37,7 +37,13 @@
               "android-ndk"
             ];
         };
-        tvp = import ./. { inherit pkgs system; };
+        tvp = import ./. {
+          inherit pkgs system;
+          source = {
+            path = self.outPath;
+            revision = self.rev or self.dirtyRev or null;
+          };
+        };
       in
       {
         inherit (tvp) packages checks;
@@ -53,6 +59,7 @@
             graph
             dependencyRoots
             dependencyInventory
+            migrationStatusManifest
             recipeSplitInventory
             recipeSplitReport
             recipeSplitStrict
