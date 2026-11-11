@@ -57,6 +57,12 @@ existing latest profiles. The additional compile-free guard fixture exercises
 unsafe namespaces, hardlink roles, encodings, inspector failure and archive
 rejection. Metadata evaluation is not test execution or package compilation.
 
+Definition capabilities distinguish the ENGINE API from installed dynamic modules
+and the universal `openssl.pc` from split `libssl.pc`/`libcrypto.pc` metadata.
+The 0.9.7 range exposes the API and universal module; dynamic modules and split
+pkg-config interfaces begin at 0.9.8. Certificate fixtures provide an explicit
+request/DN configuration instead of relying on an installed default.
+
 Proposed parent STRUCTURE paragraph: OpenSSL keeps complete version-start
 procedures and an installed-artifact split. Build and runtime Perl bindings are
 separate. Equal-width self-path relocation covers runtime versioned ELF and

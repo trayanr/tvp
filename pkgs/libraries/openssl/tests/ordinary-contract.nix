@@ -65,7 +65,7 @@ package.testContext.mkSuite {
         script = ''
           openssl version -d > directory
           grep -F '${package}/etc/ssl' directory >/dev/null
-          for module in openssl libssl libcrypto; do
+          for module in openssl; do
             test "$(pkg-config --variable=prefix "$module")" = ${package}
             test "$(pkg-config --modversion "$module")" = ${package.version}
           done
@@ -98,7 +98,7 @@ package.testContext.mkSuite {
           c-rehash = {
             script = ''
               mkdir certs
-              openssl req -config /dev/null -new -x509 -newkey rsa:2048 -nodes -sha1 \
+              openssl req -config ${./fixtures/req.cnf} -new -x509 -newkey rsa:2048 -nodes -sha1 \
                 -keyout key.pem -out certs/ca.pem -days 1 -subj /CN=rehash >cert.log 2>&1
               test "$(head -n1 ${package}/bin/c_rehash)" = '#!${package.runtime.perl}/bin/perl'
               unset OPENSSL
@@ -116,6 +116,21 @@ package.testContext.mkSuite {
     )
     // (
       if features.engines then
+        {
+          engine-interface = {
+            script = ''
+              cc ${./fixtures/engine-api.c} -lcrypto -o engine-api
+              ./engine-api
+              printf engine-api-ok
+            '';
+            expected = "engine-api-ok";
+          };
+        }
+      else
+        { }
+    )
+    // (
+      if features.engines && features.engineModules then
         {
           engine-module = {
             script = ''
@@ -149,19 +164,36 @@ package.testContext.mkSuite {
         { }
     )
     // (
+      if features.splitPkgConfig then
+        {
+          split-pkg-config = {
+            script = ''
+              for module in libssl libcrypto; do
+                test "$(pkg-config --variable=prefix "$module")" = ${package}
+                test "$(pkg-config --modversion "$module")" = ${package.version}
+              done
+              printf split-pkg-config-ok
+            '';
+            expected = "split-pkg-config-ok";
+          };
+        }
+      else
+        { }
+    )
+    // (
       if features.cmake then
         {
           cmake-metadata = {
             script = ''
-                    test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfig.cmake
-                    test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfigVersion.cmake
-                    ${deps.python}/bin/python3 -B - <<'PY'
-                    from pathlib import Path
-                    for path in Path('${package}/lib/cmake/OpenSSL').glob('*.cmake'):
-                        body = path.read_bytes()
-                        assert b'\0' not in body and b'${package.artifact}' not in body
-                        body.decode('utf-8')
-                    PY
+              test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfig.cmake
+              test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfigVersion.cmake
+              ${deps.python}/bin/python3 -B - <<'PY'
+              from pathlib import Path
+              for path in Path('${package}/lib/cmake/OpenSSL').glob('*.cmake'):
+                  body = path.read_bytes()
+                  assert b'\0' not in body and b'${package.artifact}' not in body
+                  body.decode('utf-8')
+              PY
               cmake -S ${./fixtures/cmake} -B cmake-build \
                 -DOpenSSL_DIR=${package}/lib/cmake/OpenSSL \
                 -DCMAKE_C_COMPILER="$CC" -DTEST_SOURCE=${./fixtures/ordinary-abi.c} >cmake.log
@@ -170,7 +202,7 @@ package.testContext.mkSuite {
               LD_TRACE_LOADED_OBJECTS=1 ./cmake-build/consumer >loaded
               grep -F '${package}/lib/libssl.so' loaded >/dev/null
               grep -F '${package}/lib/libcrypto.so' loaded >/dev/null
-                    printf cmake-ok
+              printf cmake-ok
             '';
             expected = "cmake-ok";
           };

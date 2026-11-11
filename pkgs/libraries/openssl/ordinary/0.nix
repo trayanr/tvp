@@ -68,6 +68,8 @@ tvpLib.packages.mkDefs {
         pbkdf2 = false;
         providers = false;
         engines = true;
+        engineModules = true;
+        splitPkgConfig = true;
         rehash = true;
         tlsMethod = false;
         modernCli = false;
@@ -136,6 +138,8 @@ tvpLib.packages.mkDefs {
         pbkdf2 = false;
         providers = false;
         engines = true;
+        engineModules = false;
+        splitPkgConfig = false;
         rehash = true;
         tlsMethod = false;
         modernCli = false;
@@ -204,6 +208,8 @@ tvpLib.packages.mkDefs {
         pbkdf2 = false;
         providers = false;
         engines = true;
+        engineModules = true;
+        splitPkgConfig = true;
         rehash = true;
         tlsMethod = false;
         modernCli = false;
@@ -272,6 +278,8 @@ tvpLib.packages.mkDefs {
         pbkdf2 = false;
         providers = false;
         engines = true;
+        engineModules = true;
+        splitPkgConfig = true;
         rehash = true;
         tlsMethod = false;
         modernCli = false;

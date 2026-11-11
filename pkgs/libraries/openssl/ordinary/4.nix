@@ -65,6 +65,8 @@ tvpLib.packages.mkDefs {
         pbkdf2 = true;
         providers = true;
         engines = false;
+        engineModules = false;
+        splitPkgConfig = true;
         rehash = false;
         tlsMethod = true;
         modernCli = true;
