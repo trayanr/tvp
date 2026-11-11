@@ -12,6 +12,24 @@ package.testContext.mkSuite {
     remote-protocol = {
       script = ''
         ${s.python}/bin/python3 -B ${./rmt-protocol.py} ${package}/libexec/rmt
+        mkdir remote-src remote-dest
+        printf preserved > remote-src/file
+        export RSH_LOG="$PWD/rsh.log"
+        cat > local-rsh <<'EOF'
+        #!${s.bash}/bin/bash
+        set -euo pipefail
+        test "$1" = localhost
+        test "$(realpath "$2")" = '${package}/libexec/rmt'
+        printf '%s\n' selected-local-rsh >> "$RSH_LOG"
+        exec "$2"
+        EOF
+        chmod +x local-rsh
+        # localhost resolves through the local hosts file. The selected shell
+        # frontend directly execs installed rmt; it opens no network connection.
+        ${package}/bin/tar --rsh-command="$PWD/local-rsh" -cf "localhost:$PWD/remote.tar" -C remote-src file
+        ${package}/bin/tar --rsh-command="$PWD/local-rsh" -xf "localhost:$PWD/remote.tar" -C remote-dest
+        cmp remote-src/file remote-dest/file
+        test "$(grep -cx selected-local-rsh rsh.log)" = 2
       '';
       expected = "rmt-protocol-ok";
     };
