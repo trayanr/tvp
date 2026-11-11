@@ -217,15 +217,52 @@ let
       };
     };
   };
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    inherit (pkgs) fetchurl;
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "6.0" = versionTable."6.0" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.0".def;
+      };
+      "6.1" = versionTable."6.1" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.1".def;
+      };
+      "6.2" = versionTable."6.2" // {
+        def = if native then ordinaryDefs."6.2" else versionTable."6.2".def;
+      };
+      "6.3" = versionTable."6.3" // {
+        def = if native then ordinaryDefs."6.2" else versionTable."6.3".def;
+      };
+      "6.4" = versionTable."6.4" // {
+        def = if native then ordinaryDefs."6.4" else versionTable."6.4".def;
+      };
+      "6.5" = versionTable."6.5" // {
+        def = if native then ordinaryDefs."6.4" else versionTable."6.5".def;
+      };
+
       "6.6" = versionTable."6.6" // {
         def = if native then ownedDefs."6.6" else versionTable."6.6".def;
       };
     };
     extraArgs.mkTests =
       package:
-      if package ? testContext then
+      if package ? specification && package.specification ? cStandard then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvpLib
+            package
+            tvp
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
