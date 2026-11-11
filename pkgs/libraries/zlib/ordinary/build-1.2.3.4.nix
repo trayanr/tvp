@@ -191,8 +191,10 @@ in
     (command "zlib.build" make)
     (
       (command "zlib.check" ''
-        ${make} check > upstream-check.log 2>&1
+        check_status=0
+        ${make} check > upstream-check.log 2>&1 || check_status=$?
         cat upstream-check.log
+        test "$check_status" -eq 0
         if grep -E 'FAILED|FAIL|XPASS' upstream-check.log; then exit 1; fi
         grep -F 'test OK' upstream-check.log
       '')
