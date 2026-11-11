@@ -27,16 +27,19 @@ def capture(argv):
             break
         except FileExistsError:
             counter += 1
-    with (directory/'stdout').open('xb') as output:
+    with (directory/'stdout').open('xb') as output, (directory/'stderr').open('xb') as errors:
         try:
-            status = subprocess.run(argv, stdout=output, stderr=subprocess.STDOUT).returncode
+            status = subprocess.run(argv, stdout=output, stderr=errors).returncode
         except OSError as error:
-            output.write((repr(error) + '\n').encode())
+            errors.write((repr(error) + '\n').encode())
             status = 127
     (directory/'exit.json').write_text(json.dumps({'argv': argv, 'cwd': cwd, 'exit': status}) + '\n')
     with (directory/'stdout').open('rb') as output:
         shutil.copyfileobj(output, sys.stdout.buffer)
+    with (directory/'stderr').open('rb') as errors:
+        shutil.copyfileobj(errors, sys.stderr.buffer)
     sys.stdout.buffer.flush()
+    sys.stderr.buffer.flush()
     return status if status >= 0 else 128 - status
 
 

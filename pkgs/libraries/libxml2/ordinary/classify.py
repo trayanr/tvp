@@ -51,9 +51,10 @@ def classify(root, version):
                 or not result['argv'] or not all(isinstance(a, str) and a for a in result['argv'])
                 or not isinstance(result['cwd'], str) or not result['cwd'].startswith('/')):
             raise ValueError(('unqualified upstream command', unit.name))
-        output = unit/'stdout'
-        if output.is_symlink() or not output.is_file() or output.stat().st_nlink != 1:
-            raise ValueError('missing/aliased upstream command output')
+        for name in ('stdout', 'stderr'):
+            output = unit/name
+            if output.is_symlink() or not output.is_file() or output.stat().st_nlink != 1:
+                raise ValueError('missing/aliased upstream command output')
     text = (root/'stdout').read_text(encoding='utf-8', errors='strict')
     if not re.search(r'^Total [1-9][0-9]* tests, no errors$', text, re.M):
         raise ValueError('missing positive upstream test summary')

@@ -28,6 +28,7 @@ def main(make, ordinary):
             for name, recipe, outer_exit, exits in [
                 ('parallel-identical', f'check: a b\na b:\n\t$(CHECKER) {python} -c \'print("same")\'\n', 0, [0, 0]),
                 ('silent', f'check:\n\t$(CHECKER) {python} -c \'pass\'\n', 0, [0]),
+                ('channels', f'check:\n\t$(CHECKER) {python} -c \'import sys;sys.stdout.write("out");sys.stderr.write("err")\' 2> redirected-errors\n', 0, [0]),
                 ('failure', f'check:\n\t$(CHECKER) {python} -c \'import sys;print("before failure");sys.exit(7)\'\n', 2, [7]),
                 ('ignored-by-make', f'check:\n\t-$(CHECKER) {python} -c \'import sys;sys.exit(7)\'\n', 0, [7]),
             ]:
@@ -44,6 +45,10 @@ def main(make, ordinary):
                 assert sorted(json.loads((p/'exit.json').read_text())['exit'] for p in units) == exits, name
                 assert (raw/'runxmlconf.log').read_bytes() == marker
                 if name == 'silent':assert (units[0]/'stdout').read_bytes() == b''
+                if name == 'channels':
+                    assert (units[0]/'stdout').read_bytes() == b'out'
+                    assert (units[0]/'stderr').read_bytes() == b'err'
+                    assert (work/'redirected-errors').read_bytes() == b'err'
                 if name == 'parallel-identical':
                     assert len({p.name for p in units}) == 2
                     assert all((p/'stdout').read_bytes() == b'same\n' for p in units)
