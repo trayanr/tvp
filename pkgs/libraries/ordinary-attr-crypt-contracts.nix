@@ -61,7 +61,7 @@ let
             mkdir -p "$out/bin"
             cat > "$out/bin/runtime-probe" <<'EOF'
             #!/bin/sh
-            /bin/sh -c 'probe-provider'
+            /bin/bash -c 'probe-provider'
             EOF
             chmod +x "$out/bin/runtime-probe"
           '';

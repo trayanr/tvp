@@ -23,7 +23,7 @@ cases = ['source-alias', 'source-directory', 'source-hardlink', 'source-fifo',
          'source-collision', 'source-unknown', 'source-renamed-unknown', 'source-anchor',
          'output-alias', 'output-directory', 'output-hardlink', 'output-fifo',
          'output-collision', 'output-unknown', 'output-renamed-unknown',
-         'output-manual-collision', 'output-malformed-elf', 'output-directory-as-file']
+         'output-manual-collision', 'output-malformed-elf', 'output-directory-as-file', 'output-nul-frontend']
 for case in cases:
     root = base / case
     root.mkdir()
@@ -57,6 +57,7 @@ for case in cases:
         if case == 'output-renamed-unknown': target.rename(root/'bin/unexpected.dat')
         if case == 'output-manual-collision': (root/'share/man/man1/a.1').write_text('one'); (root/'share/man/man1/a.1.gz').write_text('two')
         if case == 'output-directory-as-file': target.unlink(); (root/'bin').rmdir(); (root/'bin').symlink_to('../'+external.name)
+        if case == 'output-nul-frontend': target.write_bytes(b'#!/usr/bin/python3\n\0pass\n')
         if case == 'output-malformed-elf': target.write_bytes(b'\x7fELF'+b'\0'*60)
         config={'readelf':readelf,'shell':shell,'buildShell':'/bin/sh','paths':[], 'requiredDirectories':['bin','lib','share/man'],'requiredFiles':[], 'requiredRegular':['lib/libcrypt.a'],'libtoolData':[]}
         args=[sys.executable,'-B',output_helper,str(root),'/nix/store/'+'x'*32+'-a-long-artifact-output',patchelf,json.dumps(config)]
