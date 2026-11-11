@@ -36,6 +36,9 @@ def main(cli):
         workflow.write_text(json.dumps({'schema':1,'status':'paused','pausedByUser':True}))
         w=json.loads(run(['--migration','--workflow',str(workflow),'--json']).stdout)['workflow']
         assert w['status']=='paused' and w['binding']['state']=='unbound'
+        workflow.write_text(json.dumps({'schema':1,'currentWave':'next','waves':{
+            'next':{'selectedReleases':4,'implementedReleases':9}}}))
+        assert 'exceeds selected releases' in run(['--migration','--workflow',str(workflow)],2).stderr
         assert not marker.exists(),marker.read_text() if marker.exists() else ''
         # Legacy compatibility at an explicit mock boundary, never the catalogue scan:
         # replace host nix-store with an empty closure fixture, record exactly its calls.

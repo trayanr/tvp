@@ -237,6 +237,17 @@ def workflow(data, source):
             if len(uncompiled) != len(set(uncompiled)):
                 raise Invalid("duplicate uncompiled release")
         item["withoutCompilation"] = None if uncompiled is None else len(uncompiled)
+        selected = item["selectedReleases"]
+        for key in ("implementedReleases", "representativesBuilt", "withoutCompilation"):
+            if selected is not None and item[key] is not None and item[key] > selected:
+                raise Invalid(f"batch.{key} exceeds selected releases")
+        representatives = item["representativesBuilt"]
+        implemented = item["implementedReleases"]
+        if representatives is not None and implemented is not None and representatives > implemented:
+            raise Invalid("batch representatives exceed implemented releases")
+        if (selected is not None and representatives is not None and item["withoutCompilation"] is not None
+                and representatives + item["withoutCompilation"] > selected):
+            raise Invalid("batch qualification counters exceed selected releases")
         task = obj(batch.get("implementationTask", {}), "batch.implementationTask")
         subject = obj(batch.get("source", {}), "batch.source")
         item["PR"] = text(subject.get("PR", task.get("PR")), "batch.PR")

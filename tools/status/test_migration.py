@@ -147,6 +147,30 @@ class WorkflowTests(unittest.TestCase):
                   {'schema':1,'pendingDownstreamQualification':{'x':{'count':True}}}]:
             with self.subTest(p=p),self.assertRaises(m.Invalid):m.report(facts(),external=p)
 
+    def test_contradictory_current_batch_counts(self):
+        changes = [
+            {'implementedReleases': 9},
+            {'representativesBuilt': 8},
+            {'preflightEvaluationOnly': ['a','b','c','d','e']},
+            {'implementedReleases': 0},
+            {'representativesBuilt': 2},
+        ]
+        for values in changes:
+            p=progress(); p['waves']['next'].update(values)
+            with self.subTest(values=values),self.assertRaises(m.Invalid):m.report(facts(),external=p)
+
+    def test_partial_current_batch_counts_preserve_unknowns(self):
+        for field in ('selectedReleases', 'implementedReleases', 'representativesBuilt', 'preflightEvaluationOnly'):
+            p=progress(); del p['waves']['next'][field]
+            key='withoutCompilation' if field=='preflightEvaluationOnly' else field
+            with self.subTest(field=field):
+                self.assertIsNone(m.report(facts(),external=p)['workflow']['currentBatch'][key])
+        p=progress(); p['waves']['next'].update(selectedReleases=0,implementedReleases=0,
+                                               representativesBuilt=0,preflightEvaluationOnly=[])
+        batch=m.report(facts(),external=p)['workflow']['currentBatch']
+        self.assertEqual([batch[k] for k in ('selectedReleases','implementedReleases',
+                                            'representativesBuilt','withoutCompilation')],[0,0,0,0])
+
     def test_current_batch_does_not_repeat_stale_waves(self):
         p=progress();p['waves']['stale']={'sourceAccepted':False, 'selectedReleases':99}
         w=m.report(facts(),external=p)['workflow']
