@@ -484,7 +484,7 @@ let
     };
     "1.2.4.4" = {
       constructor = tvp.builder;
-      builder = ./ordinary/build-1.2.3.4.nix;
+      builder = ./ordinary/build-1.2.4.2.nix;
       base = candidate.base;
       source =
         { version, sha256 }:
@@ -521,7 +521,83 @@ let
         gnutar = candidate.tools.tar;
       };
     };
+    "1.2.4.2" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.4.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
     "1.2.4.5" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.4.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.2.5.1" = {
       constructor = tvp.builder;
       builder = ./ordinary/build-1.2.3.4.nix;
       base = candidate.base;
@@ -793,10 +869,10 @@ let
         def = ordinaryDefs."1.2.3.5";
       };
       "1.2.4.2" = versionTable."1.2.4.2" // {
-        def = ordinaryDefs."1.2.3.5";
+        def = ordinaryDefs."1.2.4.2";
       };
       "1.2.4.3" = versionTable."1.2.4.3" // {
-        def = ordinaryDefs."1.2.3.5";
+        def = ordinaryDefs."1.2.4.2";
       };
       "1.2.4.4" = versionTable."1.2.4.4" // {
         def = ordinaryDefs."1.2.4.4";
@@ -808,25 +884,25 @@ let
         def = ordinaryDefs."1.2.4.5";
       };
       "1.2.5.1" = versionTable."1.2.5.1" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.5.2" = versionTable."1.2.5.2" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.5.3" = versionTable."1.2.5.3" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.6" = versionTable."1.2.6" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.6.1" = versionTable."1.2.6.1" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.7" = versionTable."1.2.7" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.7.1" = versionTable."1.2.7.1" // {
-        def = ordinaryDefs."1.2.4.5";
+        def = ordinaryDefs."1.2.5.1";
       };
       "1.2.7.2" = versionTable."1.2.7.2" // {
         def = ordinaryDefs."1.2.7.2";
