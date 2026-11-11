@@ -1,4 +1,4 @@
-# Zlib 1.2.3.4–1.2.9: static/shared targets and install-libs; patch/options remain explicit definition data.
+# Zlib 1.2.3.4–1.2.4.1: static/shared targets and install-libs; patch/options remain explicit definition data.
 {
   tvp,
   lib,

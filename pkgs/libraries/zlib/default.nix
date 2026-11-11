@@ -599,7 +599,7 @@ let
     };
     "1.2.5.1" = {
       constructor = tvp.builder;
-      builder = ./ordinary/build-1.2.3.4.nix;
+      builder = ./ordinary/build-1.2.5.1.nix;
       base = candidate.base;
       source =
         { version, sha256 }:
@@ -637,7 +637,7 @@ let
     };
     "1.2.7.2" = {
       constructor = tvp.builder;
-      builder = ./ordinary/build-1.2.3.4.nix;
+      builder = ./ordinary/build-1.2.5.1.nix;
       base = candidate.base;
       source =
         { version, sha256 }:
@@ -679,7 +679,7 @@ let
     };
     "1.2.7.3" = {
       constructor = tvp.builder;
-      builder = ./ordinary/build-1.2.3.4.nix;
+      builder = ./ordinary/build-1.2.5.1.nix;
       base = candidate.base;
       source =
         { version, sha256 }:
