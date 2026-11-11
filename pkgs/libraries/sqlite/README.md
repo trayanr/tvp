@@ -47,6 +47,11 @@ intermediate is unqualified: the final derivation rejects nonzero, absent,
 duplicate, zero-case or nonpassing summaries and additional failure records.
 Operational reports are removed from the final package only after acceptance;
 immutable originals remain in the installed artifact. No log is rewritten to PASS.
+For the process-isolated runner, final replay opens the retained database read
+only through the copied target's installed SQLite CLI. The minimal construction
+Python does not need a SQLite extension or another compiler generation. Every completed job and its
+output must match the runner log; database totals must match the native aggregate
+and wrapper summary. Missing, unfinished or contradictory evidence is rejected.
 
 The text mutator validates canonical roots, internal symlinks, the complete file
 namespace, hardlink counts and every alias's role, regular UTF-8/no-NUL metadata,
@@ -65,12 +70,14 @@ controls. Python helper fixtures execute separately. All package producers remai
 uncompiled in this stage; evaluated splits are not runtime qualification.
 
 The parent's minimum compilation proposal is 3.0.0 (oldest multi-file generator
-and API), 3.1.1 (Tcl install and beta/pkg-config distinction), 3.3.14 (first generated
-amalgamation), 3.6.11 (install/relink patch and newer pkg-config), 3.47.2 (last
+and API), 3.1.1 (Tcl install and beta/pkg-config distinction),
+3.6.11 (default amalgamation, install/relink patch and newer pkg-config), 3.47.2 (last
 autoconf), 3.48.0 (first autosetup), and 3.53.3 (most recent legacy/runner).
 Patch/permission-only edge releases need not all be compiled: their source fixtures
 and evaluated options are retained for review. Parent review may reduce or expand
 this set from measured compatibility evidence before authorizing builds.
+The presence of amalgamation tooling in 3.3.14 does not mean the default build
+uses it; upstream's default changed later. Source fixtures cover that distinction.
 
 HARDENING-GATE-1 stays OPEN_UNWAIVED. Source-GNU's empty default hardening list is
 not equivalent to the retained stdenv policy. All consumer, upstream, full/latest,

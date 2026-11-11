@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import shutil
 import subprocess
+import sys
 import unittest
 
 HERE = Path(__file__).resolve().parents[1] / 'ordinary'
@@ -20,9 +21,66 @@ def module(name):
 finalize = module('finalize').finalize
 namespace = module('prepare').namespace
 classify = module('classify').classify
+SQLITE_INSPECTOR = sys.argv.pop(1) if len(sys.argv) > 1 and sys.argv[1].startswith('/') else None
 
 
 class Guards(unittest.TestCase):
+    @unittest.skipUnless(SQLITE_INSPECTOR, 'Modern replay needs an explicit cached SQLite CLI')
+    def test_complete_modern_runner_replay(self):
+        cases = ['complete', 'missing-log', 'missing-db', 'invalid-db', 'native-error',
+                 'duplicate-native', 'wrong-total', 'unfinished', 'NULL-count',
+                 'job-output-mismatch', 'truncated-log', 'extra-log-job', 'missing-summary']
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                (root/'exit').write_text('0\n')
+                native = '0 errors out of 42 tests in 0.02 seconds Linux\n'
+                wrapper = 'upstream veryquick jobs=2 cases=42 errors=0 unfinished=0\n'
+                (root/'output').write_text(native + wrapper)
+                rows = [(1, 'a.test', 'done', 20, 0, '0 errors out of 20 tests\n'),
+                        (2, 'b.test', 'done', 22, 0, '0 errors out of 22 tests\n')]
+                def sql(value):
+                    return str(value) if isinstance(value, int) else "'" + value.replace("'", "''") + "'"
+                statements = ['CREATE TABLE jobs(jobid INTEGER PRIMARY KEY, displayname TEXT, state TEXT, ntest INT, nerr INT, output TEXT);']
+                statements += ['INSERT INTO jobs VALUES('+','.join(sql(value) for value in row)+');' for row in rows]
+                log = ''.join(f'### {name} 1ms ({state})\n{body.strip()}\n'
+                              for _, name, state, _, _, body in rows)
+                (root/'runner.log').write_text(log)
+                if case == 'native-error': (root/'output').write_text('1 errors out of 42 tests in 0.02 seconds Linux\n'+wrapper)
+                elif case == 'duplicate-native': (root/'output').write_text(native+native+wrapper)
+                elif case == 'wrong-total': (root/'output').write_text(native+wrapper.replace('cases=42', 'cases=40'))
+                elif case == 'missing-summary': (root/'output').write_text(wrapper)
+                elif case == 'unfinished': statements.append("UPDATE jobs SET state='running' WHERE jobid=1;")
+                elif case == 'NULL-count': statements.append('UPDATE jobs SET ntest=NULL WHERE jobid=1;')
+                elif case == 'job-output-mismatch': statements.append("UPDATE jobs SET output='0 errors out of 99 tests' WHERE jobid=1;")
+                elif case == 'truncated-log': (root/'runner.log').write_text(log[:10])
+                elif case == 'extra-log-job': (root/'runner.log').write_text(log+log)
+                subprocess.run([SQLITE_INSPECTOR, '-batch', '-bail', '-init', '/dev/null',
+                                str(root/'runner.db'), '\n'.join(statements)], check=True)
+                if case == 'missing-log': (root/'runner.log').unlink()
+                elif case == 'missing-db': (root/'runner.db').unlink()
+                elif case == 'invalid-db': (root/'runner.db').write_bytes(b'invalid database')
+                before = {p.name:p.read_bytes() for p in root.iterdir()}
+                if case == 'complete': classify(root, SQLITE_INSPECTOR)
+                else:
+                    with self.assertRaises(ValueError): classify(root, SQLITE_INSPECTOR)
+                self.assertEqual(before, {p.name:p.read_bytes() for p in root.iterdir()})
+
+    def test_raw_cleanup_layout_rejects_before_mutation(self):
+        for case in ['nested-directory', 'raw-symlink', 'surviving-alias']:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
+                root, artifact = Path(d)/'out', Path(d)/'artifact'
+                root.mkdir(); artifact.mkdir()
+                pc = root/'sqlite3.pc'; original = f'prefix={artifact}\n'; pc.write_text(original)
+                raw = root/'nix-support/sqlite-upstream';raw.mkdir(parents=True)
+                (raw/'output').write_text('raw result')
+                if case == 'nested-directory': (raw/'extra').mkdir()
+                elif case == 'raw-symlink': (raw/'alias').symlink_to('output')
+                else: (root/'alias').symlink_to('nix-support/sqlite-upstream/output')
+                with self.assertRaises(ValueError): finalize(root, artifact)
+                self.assertEqual(pc.read_text(), original)
+                self.assertEqual((raw/'output').read_text(), 'raw result')
+
     def test_relocate_text_preserve_aliases_and_remove_raw(self):
         with tempfile.TemporaryDirectory() as d:
             root, artifact = Path(d) / 'out', Path(d) / 'artifact'
@@ -78,7 +136,7 @@ class Guards(unittest.TestCase):
     def test_raw_acceptance_and_fail_closed(self):
         cases = [
             ('0 errors out of 42 tests\n', '0\n', True),
-            ('upstream veryquick jobs=5 cases=42 errors=0 unfinished=0\n', '0\n', True),
+            ('upstream veryquick jobs=5 cases=42 errors=0 unfinished=0\n', '0\n', False),
             ('1 errors out of 42 tests\n', '0\n', False),
             ('0 errors out of 42 tests\n', '1\n', False),
             ('0 errors out of 42 tests\nSegmentation fault\n', '0\n', False),

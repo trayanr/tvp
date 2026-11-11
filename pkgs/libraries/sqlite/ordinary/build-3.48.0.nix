@@ -209,7 +209,7 @@ in
     (steps.split "sqlite.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     (finalCommand "accept-upstream" ''
-      ${final.python}/bin/python3 -B ${final.classifyScript} "$out/nix-support/sqlite-upstream"
+      ${final.python}/bin/python3 -B ${final.classifyScript} "$out/nix-support/sqlite-upstream" "$out/bin/sqlite3"
     '')
     (finalCommand "relocate-installed-text" ''
       ${final.python}/bin/python3 -B ${final.finalizeScript} "$out"

@@ -19,21 +19,29 @@ def finalize(root, artifact):
         raise ValueError('overlapping roots')
     aliases = {}
     links = []
+    evidence = root / 'nix-support/sqlite-upstream'
     for parent, dirs, names in os.walk(root, followlinks=False):
         for name in dirs + names:
             path = Path(parent) / name
             info = path.lstat()
             if stat.S_ISLNK(info.st_mode):
+                if path == evidence or path.is_relative_to(evidence):
+                    raise ValueError(f'raw evidence alias: {path}')
                 value = os.readlink(path)
                 target = path.resolve(strict=True)
                 if not target.is_relative_to(root):
                     raise ValueError(f'outside link: {path}')
                 if str(artifact) in value:
                     raise ValueError(f'unplanned artifact symlink: {path}')
+                if target == evidence or target.is_relative_to(evidence):
+                    raise ValueError(f'surviving alias to removed evidence: {path}')
                 links.append(path)
             elif stat.S_ISREG(info.st_mode):
                 aliases.setdefault((info.st_dev, info.st_ino), []).append(path)
-            elif not stat.S_ISDIR(info.st_mode):
+            elif stat.S_ISDIR(info.st_mode):
+                if path != evidence and path.is_relative_to(evidence):
+                    raise ValueError(f'nested raw evidence directory: {path}')
+            else:
                 raise ValueError(f'special file: {path}')
     def role(path):
         rel = path.relative_to(root).as_posix()
@@ -65,7 +73,6 @@ def finalize(root, artifact):
         os.utime(path, ns=(info.st_atime_ns, info.st_mtime_ns))
     for path in removals:
         path.unlink()
-    evidence = root / 'nix-support/sqlite-upstream'
     if evidence.exists():
         evidence.rmdir()
 
