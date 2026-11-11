@@ -30,7 +30,9 @@ let
     inherit versionTable;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;
-      referenceOlder = tvp.packages.xz_5_0;
+      # Frozen construction keeps the exact retained format oracle. The public
+      # ordinary factory below deliberately follows the moving xz_5_0 selector.
+      referenceOlder = (tvpLib.packages.mkVersions packageArgs).xz_5_0_8;
       referenceNewer = tvp.packages.xz_5_8;
     };
 
@@ -136,6 +138,47 @@ let
     };
   };
   ordinaryDefs = tvpLib.packages.mkDefs {
+    "5.0.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-5.0.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://tukaani.org/xz/xz-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # These source-owned construction tools avoid Coreutils/GMP, Tar/ACL and
+      # archive-tool cycles. Python/Binutils/Patchelf inspect and finalize only;
+      # Bash plus the small text tools also provide installed helper runtimes.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        less = tvp.packages.less;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
     "5.2.0" = {
       constructor = tvp.builder;
       builder = ./ordinary/build-5.2.0.nix;
@@ -176,7 +219,37 @@ let
     };
   };
   publicArgs = packageArgs // {
+    testDeps = packageArgs.testDeps // {
+      referenceOlder = tvp.packages.xz_5_0;
+    };
     versionTable = versionTable // {
+      "5.0.0" = versionTable."5.0.0" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.1" = versionTable."5.0.1" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.2" = versionTable."5.0.2" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.3" = versionTable."5.0.3" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.4" = versionTable."5.0.4" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.5" = versionTable."5.0.5" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.6" = versionTable."5.0.6" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.7" = versionTable."5.0.7" // {
+        def = ordinaryDefs."5.0.0";
+      };
+      "5.0.8" = versionTable."5.0.8" // {
+        def = ordinaryDefs."5.0.0";
+      };
       "5.2.0" = versionTable."5.2.0" // {
         def = ordinaryDefs."5.2.0";
       };
@@ -274,10 +347,42 @@ let
         url = "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz";
         inherit sha256;
       };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      {
+        pkgs,
+        pkg-config ? null,
+        referenceOlder ? null,
+        referenceNewer ? null,
+      }:
       package:
+      let
+        dependencies =
+          package.tvp.declaredTestDependencies
+          // pkgs.lib.filterAttrs (_: value: value != null) {
+            inherit pkg-config referenceOlder referenceNewer;
+          };
+      in
       (
         if
+          package ? artifact
+          && builtins.elem package.version [
+            "5.0.0"
+            "5.0.1"
+            "5.0.2"
+            "5.0.3"
+            "5.0.4"
+            "5.0.5"
+            "5.0.6"
+            "5.0.7"
+            "5.0.8"
+          ]
+        then
+          import ./tests/older-default.nix {
+            inherit pkgs tvpLib;
+            xz = package;
+            inherit (dependencies) pkg-config referenceOlder referenceNewer;
+          }
+        else if
           package ? artifact
           && builtins.elem package.version [
             "5.2.0"
@@ -314,10 +419,14 @@ let
           import ./tests/ordinary-default.nix {
             inherit pkgs tvpLib;
             xz = package;
-            inherit (package.tvp.declaredTestDependencies) pkg-config referenceOlder referenceNewer;
+            inherit (dependencies) pkg-config referenceOlder referenceNewer;
           }
         else
-          packageArgs.extraArgs.mkTests package
+          import ./tests {
+            inherit pkgs tvpLib;
+            xz = package;
+            inherit (dependencies) pkg-config referenceOlder referenceNewer;
+          }
       )
       // pkgs.lib.optionalAttrs (package.version == "5.8.4") (
         import ./tests/owned.nix {
@@ -330,9 +439,10 @@ let
                 inherit pkgs;
                 base.stdenv = package.stdenv;
               };
-          inherit (package.tvp.declaredTestDependencies) pkg-config;
+          inherit (dependencies) pkg-config;
         }
-      );
+      )
+    ) { inherit pkgs; };
   };
   # Frozen construction selects the complete retained call and test factory.
   constructionRecipe = packageArgs;
