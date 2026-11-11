@@ -43,6 +43,50 @@ let
   finalEdit = fixture.editRuntime (_: {
     message = "second";
   });
+  equalName = fixture.edit (spec: spec // { artifactName = "${spec.pname}-${spec.version}"; });
+  equalNameFinalEdit = equalName.editRuntime (_: {
+    message = "equal-name";
+  });
+  explicitDefaultName = fixture.edit (
+    spec: spec // { artifactName = "${spec.pname}-${spec.version}-artifacts"; }
+  );
+  namedEqualName = equalName.edit (
+    spec:
+    spec
+    // {
+      outputs = [
+        "out"
+        "dev"
+      ];
+      plan = [
+        {
+          name = "fixture.install";
+          run = ''
+            mkdir -p "$out" "$dev"
+            printf build > "$out/build"
+            printf development > "$dev/kind"
+          '';
+        }
+        (steps.split "fixture.finalize")
+        (outputs.copyArtifacts {
+          inherit coreutils;
+          outputs = [
+            "out"
+            "dev"
+          ];
+        })
+        {
+          name = "fixture.message";
+          run = ''
+            test "''${#TVP_ARTIFACT_ROOT}" = "''${#out}"
+            artifactDev="''${TVP_ARTIFACT_OUTPUTS[dev]}"
+            test "''${#artifactDev}" = "''${#dev}"
+            printf named > "$out/message"
+          '';
+        }
+      ];
+    }
+  );
   buildEdit = fixture.editSteps (
     steps.replace "fixture.install" (
       s:
@@ -101,6 +145,8 @@ let
     };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   malformed = baseline: !(validate legacy baseline).success;
+  rejectsArtifactName =
+    value: rejects (fixture.edit (spec: spec // { artifactName = value; })).drvPath;
   releases = {
     "1.0" = { };
     "1.0.1" = { };
@@ -132,6 +178,33 @@ let
       (row fixture).partition.activeBefore == 1 && (row fixture).partition.activeAfter == 2;
     finalOnlyStableArtifact =
       finalEdit.artifact.drvPath == fixture.artifact.drvPath && finalEdit.drvPath != fixture.drvPath;
+    defaultArtifactName = fixture.artifact.name == "recipe-split-fixture-1-artifacts";
+    explicitDefaultNamePreservesIdentities =
+      explicitDefaultName.artifact.drvPath == fixture.artifact.drvPath
+      && explicitDefaultName.drvPath == fixture.drvPath;
+    equalNameKeepsFinalName =
+      equalName.name == fixture.name && equalName.artifact.name == equalName.name;
+    equalNameKeepsDistinctProducers =
+      equalName.artifact.drvPath != equalName.drvPath && equalName.artifact.outPath != equalName.outPath;
+    equalNamePrefixLengths =
+      builtins.stringLength equalName.artifact.outPath == builtins.stringLength equalName.outPath;
+    artifactNameChangesPrefix =
+      equalName.artifact.drvPath != fixture.artifact.drvPath && equalName.drvPath != fixture.drvPath;
+    equalNameRuntimeKeepsArtifact =
+      equalNameFinalEdit.artifact.drvPath == equalName.artifact.drvPath
+      && equalNameFinalEdit.drvPath != equalName.drvPath;
+    namedEqualNamePrefixes = builtins.all (
+      name:
+      builtins.stringLength namedEqualName.artifact.${name}.outPath
+      == builtins.stringLength namedEqualName.${name}.outPath
+    ) namedEqualName.outputs;
+    namedEqualNameCompliant = (row namedEqualName).compliant;
+    nullArtifactNameFails = rejectsArtifactName null;
+    numericArtifactNameFails = rejectsArtifactName 42;
+    emptyArtifactNameFails = rejectsArtifactName "";
+    pathArtifactNameFails = rejectsArtifactName "../artifact";
+    contextualArtifactNameFails = rejectsArtifactName (toString fixture);
+    unsplitArtifactNameFails = rejects (equalName.editSteps (steps.delete "fixture.finalize")).drvPath;
     buildEditChangesArtifact =
       buildEdit.artifact.drvPath != fixture.artifact.drvPath && buildEdit.drvPath != fixture.drvPath;
     noSplit = failure unsplit == "owned-unsplit";
@@ -293,6 +366,15 @@ let
         test "$(cat ${fixture}/message)" = first
         test "$(cat ${finalEdit}/message)" = second
         test "$(cat ${buildEdit}/build)" = changed
+        test "$(cat ${equalName}/build)" = build
+        test "$(cat ${equalName.artifact}/build)" = build
+        test "$(cat ${equalNameFinalEdit}/message)" = equal-name
+        test "$(cat ${namedEqualName}/message)" = named
+        test "$(cat ${namedEqualName.dev}/kind)" = development
+        artifact=${equalName.artifact}
+        final=${equalName}
+        test "''${#artifact}" = "''${#final}"
+        test "$artifact" != "$final"
         printf '%s\n' '${builtins.toJSON contracts}' > "$out"
       ''
     ];
@@ -311,6 +393,9 @@ check
       finalEdit
       buildEdit
       leaking
+      equalName
+      equalNameFinalEdit
+      namedEqualName
       ;
   };
 }

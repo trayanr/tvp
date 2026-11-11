@@ -1,11 +1,11 @@
-# Older Perl split design gate: blocked
+# Older Perl split design experiments
 
 These are standalone experiments, not production recipes or a finalization API.
 The nine older ordinary Perl releases remain on their original procedures. No
 split-baseline rows have been removed, and Perl 5.44.0 is unchanged.
 
-The owned builder names its installed prefix `perl-VERSION-artifacts` and its
-final output `perl-VERSION`. Their store prefixes differ by ten bytes. All nine
+The owned builder normally names its installed prefix `perl-VERSION-artifacts`
+and its final output `perl-VERSION`. Their store prefixes differ by ten bytes. All nine
 upstream Configure scripts reject combining `userelocatableinc` with `useshrplib`.
 Retaining shared libperl, XS and embedding therefore requires another design.
 
@@ -45,13 +45,18 @@ leaving binary relocation tooling to the distributor. The cached interpreter
 does not prove that hook, shortened-string pooling semantics, or its effect on
 shared embedding and fresh XS in any newly built representative.
 
-The production design gate remains open. A next implementation must either
-prove a shared-compatible shorter-string finalizer using that hook (including
-all pointer/length/metadata semantics), or provide and verify a stable equal-size
-prefix design that does not capture the final output identity in the artifact.
-Neither is supplied here. Do not run the five producers, adopt an unsplit recipe,
-drop shared mode, mask lookup through the environment, or count this experiment
-as a completed release migration.
+The specification can now opt into equal-length prefixes with
+`artifactName = "${final.pname}-${final.version}";`. Artifact and final derivations
+keep different hashes and do not capture the final path during compilation.
+The constructor fixtures in `lib/tests/recipe-splits.nix` exercise the real
+single-output and named-output shape, artifact reuse, and default identity
+preservation. The cached equal-length experiment supplies limited shared-Perl
+behavior evidence for that shape; it does not prove every new release.
+
+A guarded production finalizer for Config/CORE/packlist metadata and the compiled
+library strings is still required, followed by the five source-built
+representatives. Do not adopt an unsplit recipe, drop shared mode, mask lookup
+through the environment, or count these experiments as a completed migration.
 
 To reproduce, supply a JSON configuration with `cache` and absolute selected
 `tools.cc`, `tools.make`, `tools.readelf`, `tools.patchelf`, `tools.cp`, and

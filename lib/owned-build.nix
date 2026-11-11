@@ -42,6 +42,19 @@ let
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
   splitNamed = multiOutput && parts.split;
+  artifactName =
+    if !(spec ? artifactName) then
+      "${pname}-${version}-artifacts"
+    else if !parts.split then
+      throw "TVP artifact name: an explicit name requires a split"
+    else if
+      builtins.isString spec.artifactName
+      && !(builtins.hasContext spec.artifactName)
+      && builtins.match "[a-zA-Z0-9][a-zA-Z0-9+._?=-]*" spec.artifactName != null
+    then
+      spec.artifactName
+    else
+      throw "TVP artifact name: expected a nonempty context-free store basename";
   stage =
     name: commands: artifact:
     let
@@ -141,12 +154,14 @@ let
       );
     in
     drv // { buildStepRunner = runner; };
-  artifact = stage "${pname}-${version}-artifacts" parts.first null;
+  artifact = stage artifactName parts.first null;
   package = builtins.seq hardeningValidation (
-    if parts.split then
-      stage "${pname}-${version}" parts.second artifact
-    else
-      stage "${pname}-${version}" parts.first null
+    builtins.seq artifactName (
+      if parts.split then
+        stage "${pname}-${version}" parts.second artifact
+      else
+        stage "${pname}-${version}" parts.first null
+    )
   );
   exports = lib.concatMap (s: s.developmentLibraries or [ ]) (
     steps.active (parts.first ++ parts.second)

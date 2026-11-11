@@ -306,6 +306,15 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
+An installed program can embed both its prefix and its length, as shared Perl does.
+Its specification may set `artifactName = "${final.pname}-${final.version}";` to
+give the artifact and final output equally long store prefixes. They remain separate
+derivations with different hashes. The optional value must be a context-free store
+basename and requires a split; the default remains `pname-version-artifacts`.
+This chooses only the artifact name, without passing the final output path into
+compilation. The recipe must still prove relocation, installed behavior and artifact
+reference exclusion.
+
 Named-output recipes declare the complete output list and pass it to the copy step:
 
 ```nix
