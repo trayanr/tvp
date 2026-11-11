@@ -173,7 +173,7 @@ in
         final.tools.binutils
       ];
       run = ''
-        ${final.tools.python}/bin/python3 -B ${./validate.py} output "$out"
+        ${final.tools.python}/bin/python3 -B ${./validate-output.py} ${./validate.py} "$out"
         ${final.tools.python}/bin/python3 -B ${../../ordinary-compression-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.tools.patchelf}/bin/patchelf ${
           lib.escapeShellArg (
             builtins.toJSON {

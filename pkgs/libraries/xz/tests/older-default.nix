@@ -29,9 +29,9 @@
     guards = {
       tools = [ xz.tvp.deps.python ];
       script = ''
-        ${xz.tvp.deps.python}/bin/python3 -B ${./older-guards.py} ${../ordinary/validate.py}
+        ${xz.tvp.deps.python}/bin/python3 -B ${./older-guards.py} ${../ordinary/validate.py} ${../ordinary/validate-output.py}
       '';
-      expected = "guards 10";
+      expected = "guards 38";
     };
     pager = {
       script = ''
