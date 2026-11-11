@@ -9,6 +9,27 @@ import sys
 
 
 SUMMARY = re.compile(r'(?m)^([0-9]+) errors out of ([0-9]+) tests(?: (?:on|in) [^\n]+)?$')
+JOB_SUMMARY = re.compile(r'\b([0-9]+) errors out of ([0-9]+) tests(?: on [^\n]+\n)?', re.ASCII)
+
+
+def job_counts(body):
+    """Replay mark_job_as_finished, with complete, unambiguous result evidence.
+
+    Upstream uses the first unanchored summary for every job type (tcl, bld,
+    make and fuzz). A job without a summary contributes one case and no errors;
+    this permits auxiliary commands without inventing a Tcl-suite result.
+    """
+    matches = list(JOB_SUMMARY.finditer(body))
+    mentions = len(re.findall(r'\berrors out of\b', body, re.ASCII))
+    if len(matches) > 1 or mentions != len(matches):
+        raise ValueError('duplicate or incomplete runner job summary')
+    if not matches:
+        return (1, 0)
+    hit = matches[0]
+    line = body[hit.start():].split('\n', 1)[0]
+    if not re.fullmatch(r'[0-9]+ errors out of [0-9]+ tests(?: on [^\n]+)?', line, re.ASCII):
+        raise ValueError('incomplete runner job summary line')
+    return (int(hit[2]), int(hit[1]))
 
 
 def raw_text(path):
@@ -76,8 +97,8 @@ def modern_results(root, wrapper, aggregate, inspector):
     expected = Counter((name, state, body.strip()) for _, name, state, _, _, body in rows)
     if records != expected:
         raise ValueError('runner log/database job records disagree')
-    for _, _, _, count, _, body in rows:
-        if any(int(err) != 0 or int(total) != count for err, total in SUMMARY.findall(body)):
+    for _, _, _, count, errors, body in rows:
+        if job_counts(body) != (count, errors):
             raise ValueError('runner job output contradicts database counts')
     return log
 

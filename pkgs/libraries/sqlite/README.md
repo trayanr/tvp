@@ -51,7 +51,10 @@ For the process-isolated runner, final replay opens the retained database read
 only through the copied target's installed SQLite CLI. The minimal construction
 Python does not need a SQLite extension or another compiler generation. Every completed job and its
 output must match the runner log; database totals must match the native aggregate
-and wrapper summary. Missing, unfinished or contradictory evidence is rejected.
+and wrapper summary. Per-job counters replay the runner's unanchored summary
+extraction and its one-case default for summaryless auxiliary commands. Truncated,
+duplicate or nonzero job results are rejected even when all stored totals agree.
+Missing, unfinished or contradictory evidence is rejected.
 
 The text mutator validates canonical roots, internal symlinks, the complete file
 namespace, hardlink counts and every alias's role, regular UTF-8/no-NUL metadata,

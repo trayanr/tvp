@@ -29,7 +29,11 @@ class Guards(unittest.TestCase):
     def test_complete_modern_runner_replay(self):
         cases = ['complete', 'missing-log', 'missing-db', 'invalid-db', 'native-error',
                  'duplicate-native', 'wrong-total', 'unfinished', 'NULL-count',
-                 'job-output-mismatch', 'truncated-log', 'extra-log-job', 'missing-summary']
+                 'job-output-mismatch', 'truncated-log', 'extra-log-job', 'missing-summary',
+                 'summaryless-inflated-count', 'empty-output-inflated-count',
+                 'truncated-body-both-copies', 'duplicate-body-summary', 'prefixed-body-nonpass',
+                 'auxiliary-command', 'silent-auxiliary', 'truncated-single-case',
+                 'trailing-summary-text', 'prefixed-body-pass']
         for case in cases:
             with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
                 root = Path(d)
@@ -39,6 +43,25 @@ class Guards(unittest.TestCase):
                 (root/'output').write_text(native + wrapper)
                 rows = [(1, 'a.test', 'done', 20, 0, '0 errors out of 20 tests\n'),
                         (2, 'b.test', 'done', 22, 0, '0 errors out of 22 tests\n')]
+                bodies = {
+                    'summaryless-inflated-count': 'auxiliary command complete\n',
+                    'empty-output-inflated-count': '',
+                    'truncated-body-both-copies': '0 errors out of 20 test\n',
+                    'duplicate-body-summary': '0 errors out of 20 tests\n' * 2,
+                    'prefixed-body-nonpass': 'prefix 1 errors out of 20 tests on Linux\n',
+                    'auxiliary-command': 'auxiliary command complete\n',
+                    'silent-auxiliary': '',
+                    'truncated-single-case': '0 errors out of 1 test\n',
+                    'trailing-summary-text': '0 errors out of 20 tests garbage\n',
+                    'prefixed-body-pass': 'prefix 0 errors out of 20 tests on Linux\n',
+                }
+                if case in bodies:
+                    count = 1 if case in ('auxiliary-command', 'silent-auxiliary', 'truncated-single-case') else 20
+                    rows[0] = (1, 'a.test', 'done', count, 0, bodies[case])
+                    total = count + 22
+                    native = native.replace('42', str(total))
+                    wrapper = wrapper.replace('cases=42', f'cases={total}')
+                    (root/'output').write_text(native + wrapper)
                 def sql(value):
                     return str(value) if isinstance(value, int) else "'" + value.replace("'", "''") + "'"
                 statements = ['CREATE TABLE jobs(jobid INTEGER PRIMARY KEY, displayname TEXT, state TEXT, ntest INT, nerr INT, output TEXT);']
@@ -61,13 +84,14 @@ class Guards(unittest.TestCase):
                 elif case == 'missing-db': (root/'runner.db').unlink()
                 elif case == 'invalid-db': (root/'runner.db').write_bytes(b'invalid database')
                 before = {p.name:p.read_bytes() for p in root.iterdir()}
-                if case == 'complete': classify(root, SQLITE_INSPECTOR)
+                if case in ('complete', 'auxiliary-command', 'silent-auxiliary', 'prefixed-body-pass'):
+                    classify(root, SQLITE_INSPECTOR)
                 else:
                     with self.assertRaises(ValueError): classify(root, SQLITE_INSPECTOR)
                 self.assertEqual(before, {p.name:p.read_bytes() for p in root.iterdir()})
 
     def test_raw_cleanup_layout_rejects_before_mutation(self):
-        for case in ['nested-directory', 'raw-symlink', 'surviving-alias']:
+        for case in ['nested-directory', 'raw-symlink', 'surviving-alias', 'regular-raw-root']:
             with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
                 root, artifact = Path(d)/'out', Path(d)/'artifact'
                 root.mkdir(); artifact.mkdir()
@@ -76,10 +100,12 @@ class Guards(unittest.TestCase):
                 (raw/'output').write_text('raw result')
                 if case == 'nested-directory': (raw/'extra').mkdir()
                 elif case == 'raw-symlink': (raw/'alias').symlink_to('output')
-                else: (root/'alias').symlink_to('nix-support/sqlite-upstream/output')
+                elif case == 'surviving-alias': (root/'alias').symlink_to('nix-support/sqlite-upstream/output')
+                else:
+                    (raw/'output').unlink();raw.rmdir();raw.write_text('raw result')
                 with self.assertRaises(ValueError): finalize(root, artifact)
                 self.assertEqual(pc.read_text(), original)
-                self.assertEqual((raw/'output').read_text(), 'raw result')
+                self.assertEqual((raw if case == 'regular-raw-root' else raw/'output').read_text(), 'raw result')
 
     def test_relocate_text_preserve_aliases_and_remove_raw(self):
         with tempfile.TemporaryDirectory() as d:

@@ -20,6 +20,8 @@ def finalize(root, artifact):
     aliases = {}
     links = []
     evidence = root / 'nix-support/sqlite-upstream'
+    if evidence.exists() and not evidence.is_dir():
+        raise ValueError('raw evidence root is not a directory')
     for parent, dirs, names in os.walk(root, followlinks=False):
         for name in dirs + names:
             path = Path(parent) / name
