@@ -52,6 +52,44 @@ let
       reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
+    "4.9" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.9.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        acl = tvp.packages.acl_2;
+      };
+    };
     "4.10" = {
       constructor = tvp.builder;
       builder = ./native/build-4.10.nix;
@@ -122,6 +160,9 @@ let
         import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
       );
     versionTable = versionTable // {
+      "4.9" = versionTable."4.9" // {
+        def = if native then ownedDefs."4.9" else versionTable."4.9".def;
+      };
       "4.10" = versionTable."4.10" // {
         def = if native then ownedDefs."4.10" else versionTable."4.10".def;
       };

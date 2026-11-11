@@ -50,6 +50,44 @@ let
       reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
+    "4.10.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.10.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/findutils/findutils-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        buildCoreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        coreutils = tvp.packages.coreutils;
+      };
+    };
     "4.11.0" = {
       constructor = tvp.builder;
       builder = ./native/build-4.11.0.nix;
@@ -132,6 +170,9 @@ let
         }
       );
     versionTable = versionTable // {
+      "4.10.0" = versionTable."4.10.0" // {
+        def = if native then ownedDefs."4.10.0" else versionTable."4.10.0".def;
+      };
       "4.11.0" = versionTable."4.11.0" // {
         def = if native then ownedDefs."4.11.0" else versionTable."4.11.0".def;
       };
