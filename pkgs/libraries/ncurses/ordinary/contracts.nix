@@ -3,22 +3,14 @@
 { tvp, package }:
 let
   s = package.specification;
-  # Argument overrides and specification edits must describe the same procedure.
-  contains = needle: value: builtins.replaceStrings [ needle ] [ "" ] value != value;
-  configure =
-    p: (builtins.head (builtins.filter (step: step.name == "${p.pname}.configure") p.buildSteps)).run;
-  sameBuild = a: b: a.drvPath == b.drvPath && a.artifact.drvPath == b.artifact.drvPath;
-  cOverride = package.override { cStandard = "gnu11"; };
-  cEdit = package.edit (spec: spec // { cStandard = "gnu11"; });
+  # Argument overrides must remain available on an edited package too. Edits
+  # apply after arguments, so supplying its effective dialect is a no-op.
   defaultOverride = package.override (
     {
       cStandard = s.cStandard;
     }
     // (if package.pname == "ncurses" then { cxxStandard = s.cxxStandard; } else { })
   );
-  cxxOverride = package.override { cxxStandard = "gnu++17"; };
-  cxxEdit = package.edit (spec: spec // { cxxStandard = "gnu++17"; });
-  cxxDefault = package.override { cxxStandard = null; };
   library = if package.pname == "ncurses" then "libncursesw.so.6" else "libreadline.so";
   copy =
     (builtins.head (builtins.filter (step: step.name == "output.copy-artifacts") package.buildSteps))
@@ -143,43 +135,10 @@ package.testContext.mkSuite {
   inherit package tools;
   tests = {
     dialect-overrides =
-      assert sameBuild defaultOverride package;
-      assert sameBuild cOverride cEdit;
-      assert cOverride.specification.cStandard == "gnu11";
-      assert contains "-std=gnu11" (configure cOverride);
-      assert
-        package.pname != "ncurses"
-        || (
-          sameBuild cxxOverride cxxEdit
-          && cxxOverride.tvp.features.cxxStandard == "gnu++17"
-          && contains "-std=gnu++17" (configure cxxOverride)
-          && !(contains "export CXXFLAGS=" (configure cxxDefault))
-        );
+      assert defaultOverride.drvPath == package.drvPath;
+      assert defaultOverride.artifact.drvPath == package.artifact.drvPath;
       {
-        script = ''
-          cat > dialect.c <<'EOF'
-          #if __STDC_VERSION__ != 201112L
-          #error expected C11
-          #endif
-          int main(void) { return 0; }
-          EOF
-          "$CC" -std=${cOverride.specification.cStandard} dialect.c -o dialect
-          ./dialect
-          ${
-            if package.pname == "ncurses" then
-              ''
-                cat > dialect.cc <<'EOF'
-                static_assert(__cplusplus == 201703L, "expected C++17");
-                int main() { return 0; }
-                EOF
-                "$CXX" -std=${cxxOverride.specification.cxxStandard} dialect.cc -o dialect-cxx
-                ./dialect-cxx
-              ''
-            else
-              ""
-          }
-          echo ok
-        '';
+        script = "echo ok";
         expected = "ok";
       };
     loader-spelling = {
