@@ -109,4 +109,6 @@ package.testContext.mkSuite {
     };
 }
 
-// import ./native-contract.nix { inherit package; }
+// (if package.specification ? finalHelper then
+  import ./ordinary-contract.nix { inherit package; }
+else import ./native-contract.nix { inherit package; })

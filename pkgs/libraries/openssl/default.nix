@@ -331,6 +331,13 @@ let
       };
     };
   };
+  ordinaryDefs = import ./ordinary { inherit tvp tvpLib candidate constructionTool; };
+  ordinaryTable = merge {
+    "0" = mkTable (import ./0.nix { defs = ordinaryDefs; });
+    "1" = mkTable (import ./1.nix { defs = ordinaryDefs; });
+    "3" = mkTable (import ./3.nix { defs = ordinaryDefs; });
+    "4" = mkTable [ { def = ordinaryDefs."4.0.0"; releases."4.0.0" = versionTable."4.0.0".sha256; } ];
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
       "3.6.3" = versionTable."3.6.3" // {
@@ -339,13 +346,17 @@ let
       "4.0.1" = versionTable."4.0.1" // {
         def = if native then ownedDefs."4.0.1" else versionTable."4.0.1".def;
       };
-    };
-    extraArgs.mkTests =
+    } // builtins.mapAttrs (version: entry: entry // {
+      def = if native then ordinaryTable.${version}.def else entry.def;
+    }) (builtins.removeAttrs versionTable [ "0.9.6" "0.9.6i" "0.9.6j" "0.9.6k" "0.9.6l" "0.9.6m" "3.6.3" "4.0.1" ]);
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
