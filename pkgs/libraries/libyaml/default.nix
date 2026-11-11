@@ -47,17 +47,69 @@ let
         };
       };
     })."0.2.5";
-  versionTable = retained.versionTable // {
-    "0.2.5" = retained.versionTable."0.2.5" // {
-      def = if native then definition else retained.versionTable."0.2.5".def;
-    };
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is the explicit host generation, independent of the ordinary target being built.";
+    } candidate.tools.${name};
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    fetchurl = pkgs.fetchurl;
   };
+  ordinaryRoutes = {
+    "0.0.1" = "0.0.1";
+    "0.1.1" = "0.1.1";
+    "0.1.2" = "0.1.1";
+    "0.1.3" = "0.1.1";
+    "0.1.4" = "0.1.4";
+    "0.1.5" = "0.1.4";
+    "0.1.6" = "0.1.4";
+    "0.1.7" = "0.1.4";
+    "0.2.1" = "0.1.4";
+    "0.2.2" = "0.1.4";
+    "0.2.3" = "0.1.4";
+    "0.2.4" = "0.1.4";
+  };
+  versionTable =
+    retained.versionTable
+    // (builtins.mapAttrs (
+      version: start:
+      retained.versionTable.${version}
+      // {
+        def = if native then ordinaryDefs.${start} else retained.versionTable.${version}.def;
+      }
+    ) ordinaryRoutes)
+    // {
+      "0.2.5" = retained.versionTable."0.2.5" // {
+        def = if native then definition else retained.versionTable."0.2.5".def;
+      };
+    };
+  defaultTestPkgs = pkgs;
   publicArgs = retained // {
     inherit versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
+      args@{
+        pkgs ? defaultTestPkgs,
+      }:
       package:
-      if package ? testContext then
+      if args ? pkgs then
+        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
+      else if package ? testContext && builtins.hasAttr package.version ordinaryRoutes then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native.nix {
           inherit
             pkgs
@@ -68,7 +120,7 @@ let
         }
       else
         (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
+    ) { };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "libyaml";

@@ -165,15 +165,67 @@ let
       };
     };
   };
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    fetchurl = pkgs.fetchurl;
+  };
+  ordinaryRoutes = {
+    "1.8.0" = "1.8.0";
+    "1.8.2" = "1.8.2";
+    "1.8.3" = "1.8.2";
+    "1.9" = "1.9";
+    "1.9.1" = "1.9";
+    "1.10" = "1.10";
+    "1.11" = "1.11";
+    "1.12" = "1.11";
+    "1.13" = "1.11";
+    "1.14" = "1.11";
+    "1.14.1" = "1.11";
+    "1.15" = "1.11";
+    "1.16" = "1.11";
+    "1.17" = "1.11";
+    "1.18" = "1.11";
+    "1.18.1" = "1.11";
+    "1.19" = "1.19";
+    "1.20" = "1.19";
+    "1.21" = "1.19";
+    "1.22" = "1.19";
+    "1.23" = "1.19";
+    "1.24" = "1.19";
+    "1.25" = "1.25";
+  };
   publicArgs = packageArgs // {
-    versionTable = versionTable // {
-      "1.26" = versionTable."1.26" // {
-        def = if native then ownedDefs."1.26" else versionTable."1.26".def;
+    versionTable =
+      versionTable
+      // (builtins.mapAttrs (
+        version: start:
+        versionTable.${version}
+        // {
+          def = if native then ordinaryDefs.${start} else versionTable.${version}.def;
+        }
+      ) ordinaryRoutes)
+      // {
+        "1.26" = versionTable."1.26" // {
+          def = if native then ownedDefs."1.26" else versionTable."1.26".def;
+        };
       };
-    };
     extraArgs.mkTests =
       package:
-      if package ? testContext then
+      if package ? testContext && builtins.hasAttr package.version ordinaryRoutes then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
