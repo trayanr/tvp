@@ -7,7 +7,7 @@ import zipfile
 
 
 def bind(root, interpreter):
-    if (not root.is_absolute() or root.is_symlink() or not root.is_dir()
+    if (not root.is_absolute() or root.is_symlink() or not root.is_dir() or root != root.resolve(strict=True)
             or not interpreter.startswith('/') or any(c in interpreter for c in '\0\r\n \t')):
         raise ValueError('expected owned root and absolute direct interpreter')
     # The complete target plan is checked before writing. Never follow parents,

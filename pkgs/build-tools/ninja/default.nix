@@ -71,6 +71,7 @@ let
       source =
         { version, sha256 }:
         pkgs.fetchurl {
+          name = "ninja-${version}.tar.gz";
           url = "https://github.com/ninja-build/ninja/archive/refs/tags/v${version}.tar.gz";
           inherit sha256;
         };
