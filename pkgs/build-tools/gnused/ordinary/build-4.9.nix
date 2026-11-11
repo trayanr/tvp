@@ -1,4 +1,5 @@
-# Complete ordinary gnused procedure beginning at 4.9.
+# Sed 4.9 uses the shipped ACL, regex, locale and testsuite interfaces.
+# Independent ordinary procedure for 4.9 only.
 {
   tvp,
   lib,

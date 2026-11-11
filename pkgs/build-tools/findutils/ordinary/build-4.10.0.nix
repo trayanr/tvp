@@ -1,4 +1,5 @@
-# Complete ordinary findutils procedure beginning at 4.10.0.
+# Findutils 4.10.0 configures SORT and installs the updatedb shell provider contract.
+# Independent ordinary procedure for 4.10.0 only.
 {
   tvp,
   lib,

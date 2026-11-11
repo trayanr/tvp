@@ -1,4 +1,5 @@
-# Complete ordinary gnugrep procedure beginning at 3.11.
+# Grep 3.11 retains historical -m overread and obsolete byte-offset options.
+# Independent ordinary procedure for 3.11 only.
 {
   tvp,
   lib,

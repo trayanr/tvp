@@ -1,4 +1,5 @@
-# Complete ordinary gawk procedure beginning at 4.1.4.
+# Gawk 4.1.4–5.0.1 introduce bignum and extension-local libtool helpers.
+# GNU17 and configure-only implicit declaration demotion preserve the real Readline probe.
 {
   tvp,
   lib,

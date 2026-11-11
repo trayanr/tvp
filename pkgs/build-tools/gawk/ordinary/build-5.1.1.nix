@@ -1,4 +1,5 @@
-# Complete ordinary gawk procedure beginning at 5.1.1.
+# Gawk 5.1.1–5.3.0 move libtool helpers to build-aux and need GNU17 callbacks.
+# Their corrected Readline probe needs no diagnostic demotion.
 {
   tvp,
   lib,

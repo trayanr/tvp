@@ -1,4 +1,5 @@
-# Complete ordinary diffutils procedure beginning at 3.10.
+# Diffutils 3.10–3.11 share lib/config.h and configured PR_PROGRAM pagination.
+# Independent ordinary procedure; latest and retained construction stay separate.
 {
   tvp,
   lib,

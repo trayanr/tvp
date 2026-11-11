@@ -1,4 +1,5 @@
-# Complete ordinary gawk procedure beginning at 5.3.1.
+# Gawk 5.3.1–5.4.0 support the modern default C language and extension API 4.
+# Independent ordinary procedure; earlier language boundaries stay separate.
 {
   tvp,
   lib,

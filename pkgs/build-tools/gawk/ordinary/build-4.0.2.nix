@@ -1,4 +1,5 @@
-# Complete ordinary gawk procedure beginning at 4.0.2.
+# Gawk 4.0.2 has Readline in dgawk, no bignum/extension API, and GNU17 callbacks.
+# Independent ordinary procedure for 4.0.2 only.
 {
   tvp,
   lib,
