@@ -54,6 +54,8 @@ output must match the runner log; database totals must match the native aggregat
 and wrapper summary. Per-job counters replay the runner's unanchored summary
 extraction and its one-case default for summaryless auxiliary commands. Truncated,
 duplicate or nonzero job results are rejected even when all stored totals agree.
+Unknown Unicode decorations before a counter reject instead of approximating
+the native Tcl character tables; Unicode platform text after it remains allowed.
 Missing, unfinished or contradictory evidence is rejected.
 
 The text mutator validates canonical roots, internal symlinks, the complete file

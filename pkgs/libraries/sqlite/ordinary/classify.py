@@ -9,7 +9,7 @@ import sys
 
 
 SUMMARY = re.compile(r'(?m)^([0-9]+) errors out of ([0-9]+) tests(?: (?:on|in) [^\n]+)?$')
-JOB_SUMMARY = re.compile(r'\b([0-9]+) errors out of ([0-9]+) tests(?: on [^\n]+\n)?', re.ASCII)
+JOB_SUMMARY = re.compile(r'\b([0-9]+) errors out of ([0-9]+) tests(?: on [^\n]+\n)?')
 
 
 def job_counts(body):
@@ -26,6 +26,11 @@ def job_counts(body):
     if not matches:
         return (1, 0)
     hit = matches[0]
+    # Native summaries start with ASCII counters. Do not approximate Tcl's
+    # Unicode character tables for a decorated prefix; unknown forms reject.
+    prefix = body[body.rfind('\n', 0, hit.start()) + 1:hit.start()]
+    if not prefix.isascii():
+        raise ValueError('unsupported Unicode runner summary prefix')
     line = body[hit.start():].split('\n', 1)[0]
     if not re.fullmatch(r'[0-9]+ errors out of [0-9]+ tests(?: on [^\n]+)?', line, re.ASCII):
         raise ValueError('incomplete runner job summary line')

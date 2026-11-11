@@ -33,7 +33,9 @@ class Guards(unittest.TestCase):
                  'summaryless-inflated-count', 'empty-output-inflated-count',
                  'truncated-body-both-copies', 'duplicate-body-summary', 'prefixed-body-nonpass',
                  'auxiliary-command', 'silent-auxiliary', 'truncated-single-case',
-                 'trailing-summary-text', 'prefixed-body-pass']
+                 'trailing-summary-text', 'prefixed-body-pass', 'unicode-latin-inflated',
+                 'unicode-greek-inflated', 'unicode-cjk-inflated', 'unicode-mark-inflated',
+                 'unicode-punctuation-inflated', 'unicode-platform-pass']
         for case in cases:
             with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
                 root = Path(d)
@@ -54,6 +56,12 @@ class Guards(unittest.TestCase):
                     'truncated-single-case': '0 errors out of 1 test\n',
                     'trailing-summary-text': '0 errors out of 20 tests garbage\n',
                     'prefixed-body-pass': 'prefix 0 errors out of 20 tests on Linux\n',
+                    'unicode-latin-inflated': 'é0 errors out of 20 tests on Linux\n',
+                    'unicode-greek-inflated': 'α0 errors out of 20 tests on Linux\n',
+                    'unicode-cjk-inflated': '中0 errors out of 20 tests on Linux\n',
+                    'unicode-mark-inflated': '\u03010 errors out of 20 tests on Linux\n',
+                    'unicode-punctuation-inflated': '—0 errors out of 20 tests on Linux\n',
+                    'unicode-platform-pass': '0 errors out of 20 tests on Línux\n',
                 }
                 if case in bodies:
                     count = 1 if case in ('auxiliary-command', 'silent-auxiliary', 'truncated-single-case') else 20
@@ -84,7 +92,7 @@ class Guards(unittest.TestCase):
                 elif case == 'missing-db': (root/'runner.db').unlink()
                 elif case == 'invalid-db': (root/'runner.db').write_bytes(b'invalid database')
                 before = {p.name:p.read_bytes() for p in root.iterdir()}
-                if case in ('complete', 'auxiliary-command', 'silent-auxiliary', 'prefixed-body-pass'):
+                if case in ('complete', 'auxiliary-command', 'silent-auxiliary', 'prefixed-body-pass', 'unicode-platform-pass'):
                     classify(root, SQLITE_INSPECTOR)
                 else:
                     with self.assertRaises(ValueError): classify(root, SQLITE_INSPECTOR)
