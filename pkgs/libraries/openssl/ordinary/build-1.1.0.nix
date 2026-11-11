@@ -97,7 +97,7 @@ assert !final.forceGccName || throw "OpenSSL unified builds do not use a gcc-nam
   archiveHelper = ./archive.py;
   elfHelper = ./elf.py;
   # Shared pure tree/text inspection owns no family mutations or recipe.
-  inspectionHelper = ../../../../lib/output-tools/installed-tree.py;
+  inspectionHelper = ../../../../lib/installed-tree.py;
   configureFlags =
     [
       "shared"

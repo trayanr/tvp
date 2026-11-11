@@ -65,7 +65,7 @@ artifact. Runtime-only and final-helper edits preserve the artifact; source,
 compiler and configure edits invalidate it. Source-only staging does not close
 consumer, hardening or upstream-test holds.
 
-Shared tree/text/path/audit primitives live in `lib/output-tools/installed-tree.py`.
+Shared tree/text/path/audit primitives live in `lib/installed-tree.py`.
 They preserve the reviewed primitive function bodies and contain no Perl or other
 family mutation procedure. Retained Perl compatibility is unchanged. OpenSSL ELF
 version-definition and static ET_REL policies remain visible in the local

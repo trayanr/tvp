@@ -29,7 +29,7 @@ package.testContext.mkSuite {
               perl = "${package.runtime.perl}/bin/perl";
               shell = "${package.runtime.shell}/bin/bash";
             }
-          }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/output-tools/installed-tree.py} ${../ordinary/source.py}
+          }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/source.py}
           printf guards-ok
         '';
         expected = "guards-ok";
