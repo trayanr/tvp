@@ -22,6 +22,7 @@ commands = {'bzip2': ['bzgrep', 'bzmore', 'bzdiff'], 'zlib': [],
             'zstd': ['zstdgrep', 'zstdless']}[config['family']]
 assert len(new) <= len(old)
 changes = []
+link_changes = []
 rpaths = []
 inodes = Counter()
 links = {}
@@ -31,10 +32,17 @@ for directory, dirs, files in os.walk(root, followlinks=False):
         p = Path(directory) / name
         st = p.lstat()
         if stat.S_ISLNK(st.st_mode):
-            target = p.resolve(strict=True)
-            assert target.is_relative_to(root), ('escaping symlink', p)
             raw = os.readlink(p)
-            assert not os.path.isabs(raw), ('absolute symlink', p)
+            aliases = {'bzegrep': 'bzgrep', 'bzfgrep': 'bzgrep', 'bzless': 'bzmore', 'bzcmp': 'bzdiff'}
+            alias = aliases.get(p.name) if config['family'] == 'bzip2' and p.parent == root/'bin' else None
+            if alias and raw == os.fsdecode(old) + '/bin/' + alias:
+                target = root/'bin'/alias
+                assert target.is_file() and not target.is_symlink(), ('invalid alias target', p)
+                link_changes.append((p, alias))
+            else:
+                target = p.resolve(strict=True)
+                assert target.is_relative_to(root), ('escaping symlink', p)
+                assert not os.path.isabs(raw), ('absolute symlink', p)
         elif stat.S_ISREG(st.st_mode):
             inode = (st.st_dev, st.st_ino)
             inodes[inode] += 1
@@ -69,6 +77,13 @@ for directory, dirs, files in os.walk(root, followlinks=False):
         elif not stat.S_ISDIR(st.st_mode):
             raise ValueError(('special file', p))
 assert all(inodes[k] == n for k, n in links.items()), 'hardlink escapes output'
+man_move = config['family'] == 'bzip2' and (root/'man').exists()
+if man_move:
+    assert (root/'man').is_dir() and not (root/'man').is_symlink()
+    assert not os.path.lexists(root/'share/man'), 'manual layout collision'
+    assert not (root/'share').is_symlink(), 'manual parent alias'
+for p, target in link_changes:
+    assert not os.path.lexists(str(p) + '.tvp-relocating'), ('alias collision', p)
 for p, data, mode in changes:
     tmp = p.with_name(p.name + '.tvp-relocating')
     assert not tmp.exists() and not tmp.is_symlink(), tmp
@@ -78,6 +93,13 @@ for p, data, mode in changes:
     tmp.write_bytes(data)
     tmp.chmod(mode)
     tmp.replace(p)
+for p, target in link_changes:
+    temp = p.with_name(p.name + '.tvp-relocating')
+    temp.symlink_to(target)
+    temp.replace(p)
+if man_move:
+    (root/'share').mkdir(exist_ok=True)
+    (root/'man').rename(root/'share/man')
 # Repair only artifact-prefix substitutions recorded before the fixed-width copy.
 # Preserve loader tokens, symlink-sensitive '..', empty entries and user spelling.
 for p, rpath in rpaths:

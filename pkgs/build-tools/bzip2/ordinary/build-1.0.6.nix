@@ -154,16 +154,11 @@ in
     ((command "bzip2.check" "${make} check") // { enabled = final.doCheck; })
     (command "bzip2.install" ''
       ${make} install PREFIX="$out"
-      for pair in 'bzegrep bzgrep' 'bzfgrep bzgrep' 'bzless bzmore' 'bzcmp bzdiff'; do
-        set -- $pair
-        ln -sfn "$2" "$out/bin/$1"
-      done
       cp libbz2.so.${final.version} "$out/lib/"
       ln -s libbz2.so.${final.version} "$out/lib/libbz2.so.1.0"
       ln -s libbz2.so.1.0 "$out/lib/libbz2.so.1"
       ln -s libbz2.so.1.0 "$out/lib/libbz2.so"
-      mkdir -p "$out/nix-support" "$out/share"
-      mv "$out/man" "$out/share/man"
+      mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "bzip2.finalize")
