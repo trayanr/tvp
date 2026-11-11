@@ -24,6 +24,70 @@ def load(path):
     return module
 
 
+def role(name):
+    if name in ('nix-support/upstream.raw', 'nix-support/upstream.exit'):
+        return 'evidence'
+    if name == 'bin/c_rehash':
+        return 'rehash'
+    if (name.endswith(('.la', '.pc', '.cmake', '.h'))
+            or name in ('include', 'lib/pkgconfig', 'lib/cmake', 'etc')
+            or name.startswith(('include/', 'lib/pkgconfig/', 'lib/cmake/', 'etc/'))):
+        return 'text'
+    return 'ordinary'
+
+
+def link_plan(root, files, links, old, new, replace_paths):
+    """Resolve raw target components against the complete planned namespace."""
+    directories = {''}
+    for parent, names, _ in os.walk(root, followlinks=False):
+        for name in names:
+            path = Path(parent) / name
+            if stat.S_ISDIR(path.lstat().st_mode):
+                directories.add(path.relative_to(root).as_posix())
+    planned = {name: replace_paths(value.encode(), old, new).decode()
+               for name, value in links.items()}
+    for name in planned:
+        if role(name) != 'ordinary':
+            raise ValueError(('unsupported installed semantic alias', name))
+        pending, current, followed = name.split('/'), [], 0
+        while pending:
+            part = pending.pop(0)
+            if part in ('', '.'):
+                continue
+            if part == '..':
+                if not current:
+                    raise ValueError(('escaping installed link', name))
+                current.pop()
+                continue
+            candidate = '/'.join(current + [part])
+            if candidate in planned:
+                followed += 1
+                if followed > 40:
+                    raise ValueError(('cyclic or excessive installed link chain', name))
+                target = planned[candidate]
+                if target.startswith('/'):
+                    if not target.startswith(str(root) + '/'):
+                        raise ValueError(('outside installed link', name))
+                    target, current = target[len(str(root)) + 1:], []
+                # Keep empty and dot components: file/ and file/.. both
+                # require an actual directory, just as kernel resolution does.
+                pending = target.split('/') + pending
+                continue
+            if candidate not in files and candidate not in directories:
+                raise ValueError(('missing installed link component', name, candidate))
+            if pending and candidate not in directories:
+                raise ValueError(('non-directory installed link component', name, candidate))
+            current.append(part)
+        final = '/'.join(current)
+        if role(final) == 'evidence':
+            raise ValueError(('alias to removed evidence', name))
+        if name.startswith(('bin/', 'libexec/')):
+            if (final not in files or not files[final].stat().st_mode & 0o111
+                    or not files[final].read_bytes().startswith((b'\x7fELF', b'#!'))):
+                raise ValueError(('unsupported public frontend alias', name))
+    return planned
+
+
 def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
     root, files, groups, links = helper.tree(root)
     old, new = artifact.encode(), str(root).encode()
@@ -34,26 +98,18 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
         p = config[name]
         if not p.startswith('/nix/store/') or not os.path.isfile(p) or not os.access(p, os.X_OK):
             raise ValueError(('missing explicit final provider', name))
-    changes, rpaths, removals, planned = {}, {}, set(), {}
+    planned = link_plan(root, files, links, old, new, helper.replace_paths)
+    changes, rpaths, removals = {}, {}, set()
     for group in groups:
-        roles = set()
-        for name in group:
-            if name in ('nix-support/upstream.raw', 'nix-support/upstream.exit'):
-                roles.add('evidence')
-            elif name == 'bin/c_rehash':
-                roles.add('rehash')
-            elif name.startswith(('include/', 'lib/pkgconfig/', 'lib/cmake/', 'etc/')):
-                roles.add('text')
-            else:
-                roles.add('ordinary')
+        roles = {role(name) for name in group}
         if len(roles) != 1:
             raise ValueError(('conflicting installed hardlink roles', group))
         name = group[0]; p = files[name]; data = p.read_bytes()
-        role = next(iter(roles))
-        if role == 'evidence':
+        selected_role = next(iter(roles))
+        if selected_role == 'evidence':
             removals.update(group)
             continue
-        if role in ('text', 'rehash'):
+        if selected_role in ('text', 'rehash'):
             helper.text(data, group)
         if data.startswith(b'\x7fELF'):
             hits = inspect_elf(p, old, config['readelf'])
@@ -85,7 +141,7 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
             data = relocate_archive(data, old, new, config['readelf'], helper.replace_paths)
         elif old in data:
             data = helper.replace_paths(helper.text(data, group), old, new)
-        if role == 'rehash':
+        if selected_role == 'rehash':
             if not config['rehash']:
                 raise ValueError('unexpected installed c_rehash')
             helper.text(data, name)
@@ -109,35 +165,6 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
             changes[name] = data
     if config['rehash'] and 'bin/c_rehash' not in files:
         raise ValueError('missing c_rehash')
-    for name, target in links.items():
-        planned[name] = helper.replace_paths(target.encode(), old, new).decode()
-    def resolve(name, active):
-        if name in active:
-            raise ValueError(('symlink cycle', name))
-        target = planned[name]
-        if target.startswith('/'):
-            if not target.startswith(str(root)+'/'):
-                raise ValueError(('outside installed link', name))
-            parts = list(Path(target).relative_to(root).parts)
-        else:
-            parts = list(Path(name).parent.parts)+list(Path(target).parts)
-        result = []
-        for part in parts:
-            if part == '..':
-                if not result:
-                    raise ValueError(('escaping link', name))
-                result.pop()
-            elif part != '.':
-                result.append(part)
-                nested = '/'.join(result)
-                if nested in planned:
-                    result = resolve(nested, active | {name})
-        final = '/'.join(result)
-        if final in removals or not (root/final).exists():
-            raise ValueError(('dangling planned link', name))
-        return result
-    for name in planned:
-        resolve(name, set())
     for group in groups:
         name = group[0]; p = files[name]
         if name in removals:

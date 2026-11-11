@@ -8,10 +8,13 @@ Existing owned 3.6.3 and 4.0.1 profiles are unchanged, including their unsplit d
 
 The procedure starts are 0.9.7 (make depend, historical installation), 1.0.0
 (make depend and domd's gcc name), 1.1.0 (unified build), 3.0.0 (providers), and
-4.0.0 (no c_rehash). Definition data retains the C dialect, pointer/implicit-call
+4.0.0 (no c_rehash). The 3.3.0 definition adds installed CMake metadata and
+its owned CMake test tool; its visible compilation procedure stays the same.
+Definition data retains the C dialect, pointer/implicit-call
 warning exceptions, the 0.9.8 format-hardening exception, and the 1.1.0–g Perl
 5.28 File::Glob constraint. Latest compatible ordinary Perl is used elsewhere.
-Build Perl and runtime Perl are independent effective inputs. Compiler protection
+Build Perl and runtime Perl are independent effective inputs. Changing
+`hardeningDisable` rebinds both selected compiler and linker policy adapters. Compiler protection
 flags are explicitly selected through the existing source-GNU hardening adapter;
 this is source ownership, **not** hardening equivalence or qualification.
 HARDENING-GATE-1 remains OPEN_UNWAIVED.
@@ -40,9 +43,16 @@ is rejected. Static archives use a separate ET_REL operation: member lengths,
 indices, addresses and symbol/relocation records do not move. Unknown self-string
 locations fail closed. Constructor output checks exclude artifact references.
 
+Installed text roles include headers, configuration, `.pc`, `.la` and CMake
+metadata. Semantic metadata aliases are rejected; ordinary library aliases resolve
+one raw component at a time, including directory requirements before `..`.
+Every validation plan completes before writes.
+
 `tests/native-default.nix` remains the universal family interface. Ordinary ports
 add installed shared/static SSL/SHA1 consumers and provider checks guarded at the
-whole-test level. The shared latest-specific contract stays unchanged for the
+whole-test level. The same suite checks selected Perl rehashing, engine/module
+loading, relocated paths and CMake config consumers where the source installs
+those interfaces. These tests are declared, not yet runtime-qualified. The shared latest-specific contract stays unchanged for the
 existing latest profiles. The additional compile-free guard fixture exercises
 unsafe namespaces, hardlink roles, encodings, inspector failure and archive
 rejection. Metadata evaluation is not test execution or package compilation.
@@ -55,14 +65,11 @@ artifact. Runtime-only and final-helper edits preserve the artifact; source,
 compiler and configure edits invalidate it. Source-only staging does not close
 consumer, hardening or upstream-test holds.
 
-Proposed shared API integration: extract the retained Perl namespace/text/audit
-operations into a shared pure inspection module, and review the OpenSSL
-`elf.py` extension for GNU version definitions plus `archive.py` for ET_REL
-self-string ownership. This child reuses Perl's narrow tree/text/audit primitives
-as an explicit final-only input; it never invokes a Perl recipe or finalizer.
-No shared file is modified here. Source review must decide the shared location
-before adoption. The repository-wide RPATH finalizer's loader-token preservation
-policy is also parent-owned; this stage does not change it.
+Shared tree/text/path/audit primitives live in `lib/output-tools/installed-tree.py`.
+They preserve the reviewed primitive function bodies and contain no Perl or other
+family mutation procedure. Retained Perl compatibility is unchanged. OpenSSL ELF
+version-definition and static ET_REL policies remain visible in the local
+`elf.py` and `archive.py`; further ELF sharing needs another reviewed caller.
 
 This is a source-stage candidate: zero new compiled package producers. Independent
 source review, representative compilation, named consumer executions and one

@@ -6,6 +6,12 @@ import stat
 import sys
 
 
+def selected(path, data=b''):
+    return (path.name in ('Configure', 'Makefile', 'Makefile.org', 'Makefile.in')
+            or path.name.endswith(('.sh', '.pl', '.pm', '.tmpl', '.pod'))
+            or data.startswith(b'#!'))
+
+
 def prepare(root, shell, perl, encoding="utf-8"):
     if encoding not in ("utf-8", "latin-1"):
         raise ValueError("unsupported declared source encoding")
@@ -39,10 +45,7 @@ def prepare(root, shell, perl, encoding="utf-8"):
     for p, data in regular.items():
         relative = p.relative_to(root)
         # Text input selection is a semantic role, not a NUL/binary fallback.
-        selected = (p.name in ('Configure', 'Makefile', 'Makefile.org')
-                    or p.name.endswith(('.sh', '.pl', '.pm', '.tmpl'))
-                    or data.startswith(b'#!'))
-        if not selected:
+        if not selected(p, data):
             continue
         if b'\0' in data:
             raise ValueError(('NUL in source script/template', relative))
@@ -79,7 +82,7 @@ def prepare(root, shell, perl, encoding="utf-8"):
         if updated != data:
             changes[p] = updated
     # A selected alias is never an alternate path through which to write.
-    if any(p.name.endswith(('.sh', '.pl', '.pm', '.tmpl')) for p in aliases):
+    if any(selected(p, regular.get(p.resolve(strict=False), b'')) for p in aliases):
         raise ValueError('selected source symlink')
     for p, data in changes.items():
         p.write_bytes(data)

@@ -15,6 +15,7 @@ def load(path):
 
 config = json.loads(sys.argv.pop(1))
 output, archive, elf, helper = [load(sys.argv.pop(1)) for _ in range(4)]
+source = load(sys.argv.pop(1))
 config.update(buildPerl=config['perl'], rehash=False, tools=[])
 
 
@@ -73,6 +74,39 @@ class Guards(unittest.TestCase):
         data=b'!<arch>\n'+header+member+(b'\n' if len(member)%2 else b'')
         with self.assertRaises(ValueError):
             archive.relocate(data,self.old.encode(),str(self.root).encode(),config['readelf'],helper.replace_paths)
+
+    def test_raw_link_components_fail_before_mutation(self):
+        (self.root/'lib/plain').write_text('regular')
+        for target in ['lib/plain/../pkgconfig/openssl.pc',
+                       'lib/missing/../pkgconfig/openssl.pc',
+                       'lib/plain/', 'lib/plain/.']:
+            with self.subTest(target=target):
+                alias = self.root/'bad'; alias.symlink_to(target)
+                self.rejects(); alias.unlink()
+
+    def test_semantic_metadata_alias_and_la_validation(self):
+        la = self.root/'lib/libssl.la'; la.write_bytes(b'malformed\0metadata')
+        self.rejects(); la.unlink()
+        payload = self.root/'lib/payload'; payload.write_bytes(b'malformed\0metadata')
+        (self.root/'lib/pkgconfig/libssl.pc').symlink_to('../payload')
+        self.rejects()
+
+    def test_source_roles_reject_aliases_and_corrupt_text_before_writes(self):
+        for case in ['Configure', 'Makefile', 'Makefile.org', 'Makefile.in', 'doc.pod']:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                original = b':\n/bin/sh\n'
+                (root/'safe.sh').write_bytes(b'#!/bin/sh\ntrue\n')
+                before = (root/'safe.sh').read_bytes()
+                (root/'payload').write_bytes(original + b'\0')
+                (root/case).symlink_to('payload')
+                with self.assertRaises(ValueError):
+                    source.prepare(root, config['shell'], config['perl'])
+                self.assertEqual((root/'safe.sh').read_bytes(), before)
+                (root/case).unlink(); (root/case).write_bytes(original+b'\0')
+                with self.assertRaises(ValueError):
+                    source.prepare(root, config['shell'], config['perl'])
+                self.assertEqual((root/'safe.sh').read_bytes(), before)
 
 
 unittest.main()

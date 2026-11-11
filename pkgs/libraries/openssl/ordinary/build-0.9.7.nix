@@ -1,8 +1,26 @@
 # 0.9.7: make depend; install versus install_sw before 0.9.7e: COMPLETE independent native procedure; source distinctions are definition data.
 {
-  tvp, lib, base, src, version, bash, coreutils, pkgConfig,
-  gnumake, gnutar, gzip, findutils, sed, grep, gawk, diffutils,
-  python, binutils, patchelf, buildPerl, perl,
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  bash,
+  coreutils,
+  pkgConfig,
+  gnumake,
+  gnutar,
+  gzip,
+  findutils,
+  sed,
+  grep,
+  gawk,
+  diffutils,
+  python,
+  binutils,
+  patchelf,
+  buildPerl,
+  perl,
   doCheck ? true,
   cStandard ? null,
   compileFlags ? [ ],
@@ -15,34 +33,86 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
-  command = name: run: (final.base.environment final.environment) // {
-    name = "openssl.${name}";
-    cwd = "source";
-    inherit run;
-  };
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "openssl.${name}";
+      cwd = "source";
+      inherit run;
+    };
   make = ''${final.gnumake}/bin/make -j1 SHELL=${final.bash}/bin/bash'';
 in
 {
   pname = "openssl";
   # Keep compiled self strings, suffix pooling and stored lengths unchanged.
   artifactName = "${final.pname}-${final.version}";
-  inherit base src version bash coreutils pkgConfig gnumake gnutar gzip
-    findutils sed grep gawk diffutils python binutils patchelf buildPerl perl
-    doCheck cStandard compileFlags hardeningDisable forceGccName installTarget features sourceEncoding;
+  # Rebind both consumer adapters from the effective recipe option. The base
+  # carries the selected underlying toolchain; it is never replaced by a global
+  # compiler or a peer package procedure.
+  base =
+    if base.compiler ? hardeningPolicy then
+      let
+        policy = base.compiler.specification.policy // {
+          disable = final.hardeningDisable;
+        };
+        bintools = base.compiler.bintools.override { inherit policy; };
+        compiler = base.compiler.override { inherit policy bintools; };
+      in
+      base.override { inherit compiler; }
+    else
+      base;
+
+  inherit
+    src
+    version
+    bash
+    coreutils
+    pkgConfig
+    gnumake
+    gnutar
+    gzip
+    findutils
+    sed
+    grep
+    gawk
+    diffutils
+    python
+    binutils
+    patchelf
+    buildPerl
+    perl
+    doCheck
+    cStandard
+    compileFlags
+    hardeningDisable
+    forceGccName
+    installTarget
+    features
+    sourceEncoding
+    ;
   sourceHelper = ./source.py;
   finalHelper = ./output.py;
   archiveHelper = ./archive.py;
   elfHelper = ./elf.py;
-  # Reuse the reviewed narrow namespace/ELF inspection primitives. The family
-  # finalizer below owns all OpenSSL policy and mutations; no Perl recipe runs.
-  inspectionHelper = ../../../runtimes/perl/ordinary/elf-finalize.py;
-  configureFlags = [ "shared" "--openssldir=etc/ssl" ]
-    ++ [ ]
-    ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
-    ++ final.compileFlags;
+  # Shared pure tree/text inspection owns no family mutations or recipe.
+  inspectionHelper = ../../../../lib/output-tools/installed-tree.py;
+  configureFlags = [
+    "shared"
+    "--openssldir=etc/ssl"
+  ] ++ [ ] ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}" ++ final.compileFlags;
   environment = {
-    tools = [ final.buildPerl final.pkgConfig final.gnumake final.sed final.grep
-      final.gawk final.diffutils final.findutils final.python ];
+    tools = [
+      final.buildPerl
+      final.pkgConfig
+      final.gnumake
+      final.sed
+      final.grep
+      final.gawk
+      final.diffutils
+      final.findutils
+      final.python
+    ];
     libraries = [ ];
   };
   dependencyProviders = {
@@ -52,11 +122,18 @@ in
     libraries = [ ];
     perl = final.perl;
     shell = final.bash;
-    tools = [ final.coreutils final.sed final.grep final.gawk final.findutils ];
+    tools = [
+      final.coreutils
+      final.sed
+      final.grep
+      final.gawk
+      final.findutils
+    ];
   };
   plan = steps.sequence [
     (steps.unpack {
-      src = final.src; tar = final.gnutar;
+      src = final.src;
+      tar = final.gnutar;
       inherit (final) gzip findutils;
       compression = "gzip";
     })
@@ -71,15 +148,20 @@ in
     '')
     (command "depend" ''${make} depend'')
     (command "build" make)
-    ((command "check" ''
-      status=0
-      ${make} test > "$TVP_SOURCE_ROOT/upstream.raw" 2>&1 || status=$?
-      printf '%s\n' "$status" > "$TVP_SOURCE_ROOT/upstream.exit"
-      cat "$TVP_SOURCE_ROOT/upstream.raw"
-      # Raw execution is before installation/split. No failure classifier or
-      # allowlist: nonzero upstream status makes this artifact unqualified.
-      test "$status" -eq 0
-    '') // { enabled = final.doCheck; })
+    (
+      (command "check" ''
+        status=0
+        ${make} test > "$TVP_SOURCE_ROOT/upstream.raw" 2>&1 || status=$?
+        printf '%s\n' "$status" > "$TVP_SOURCE_ROOT/upstream.exit"
+        cat "$TVP_SOURCE_ROOT/upstream.raw"
+        # Raw execution is before installation/split. No failure classifier or
+        # allowlist: nonzero upstream status makes this artifact unqualified.
+        test "$status" -eq 0
+      '')
+      // {
+        enabled = final.doCheck;
+      }
+    )
     (command "install" ''
       ${make} ${lib.escapeShellArg final.installTarget}
       # 0.9.7c chmods the directory rather than its .pc files.
@@ -95,32 +177,63 @@ in
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
       name = "openssl.relocate";
-      tools = [ final.python final.binutils final.patchelf ];
-      run = ''${final.python}/bin/python3 -B ${final.finalHelper} ${final.archiveHelper} ${final.inspectionHelper} "$out" "$TVP_ARTIFACT_ROOT" ${lib.escapeShellArg (builtins.toJSON {
-        readelf = "${final.binutils}/bin/readelf";
-        patchelf = "${final.patchelf}/bin/patchelf";
-        perl = "${final.runtime.perl}/bin/perl";
-        buildPerl = "${final.buildPerl}/bin/perl";
-        shell = "${final.runtime.shell}/bin/bash";
-        tools = map (p: "${p}/bin") final.runtime.tools;
-        rehash = final.features.rehash;
-      })} ${final.elfHelper}'';
+      tools = [
+        final.python
+        final.binutils
+        final.patchelf
+      ];
+      run = ''${final.python}/bin/python3 -B ${final.finalHelper} ${final.archiveHelper} ${final.inspectionHelper} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            readelf = "${final.binutils}/bin/readelf";
+            patchelf = "${final.patchelf}/bin/patchelf";
+            perl = "${final.runtime.perl}/bin/perl";
+            buildPerl = "${final.buildPerl}/bin/perl";
+            shell = "${final.runtime.shell}/bin/bash";
+            tools = map (p: "${p}/bin") final.runtime.tools;
+            rehash = final.features.rehash;
+          }
+        )
+      } ${final.elfHelper}'';
     }
     (outputs.strip {
       inherit (final) python binutils;
-      paths = [ "bin" "lib" ]; elfKinds = [ "runtime" ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
     })
-    (outputs.stripArchives { inherit (final) python binutils; paths = [ "lib" ]; })
+    (outputs.stripArchives {
+      inherit (final) python binutils;
+      paths = [ "lib" ];
+    })
     (outputs.rpaths {
-      inherit (final) python binutils patchelf base;
+      inherit (final)
+        python
+        binutils
+        patchelf
+        base
+        ;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [ "bin" "lib" ]; elfKinds = [ "runtime" ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
     })
-    (outputs.development { python = final.python; libraries = [ ]; })
+    (outputs.development {
+      python = final.python;
+      libraries = [ ];
+    })
     (outputs.checkPaths {
       inherit (final) python binutils patchelf;
-      paths = [ "bin" "lib" ]; elfKinds = [ "runtime" ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
     })
   ];
   tvp.features = final.features;
