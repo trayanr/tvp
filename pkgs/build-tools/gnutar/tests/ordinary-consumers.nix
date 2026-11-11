@@ -7,11 +7,20 @@ package.testContext.mkSuite {
   tools = s.environment.tools ++ [
     s.python
     s.gzip
+    s.binutils
   ];
   tests = {
     remote-protocol = {
       script = ''
         ${s.python}/bin/python3 -B ${./rmt-protocol.py} ${package}/libexec/rmt
+        ${s.binutils}/bin/readelf --wide --dyn-syms ${package}/bin/tar > dynamic-symbols
+        "$CC" ${./initgroups.c} -o independent-initgroups
+        rc=0
+        if grep -q 'initgroups@' dynamic-symbols; then
+          ./independent-initgroups >&2 || rc=$?
+        fi
+        case "$rc" in
+          0)
         mkdir remote-src remote-dest
         printf preserved > remote-src/file
         export RSH_LOG="$PWD/rsh.log"
@@ -30,6 +39,11 @@ package.testContext.mkSuite {
         ${package}/bin/tar --rsh-command="$PWD/local-rsh" -xf "localhost:$PWD/remote.tar" -C remote-dest
         cmp remote-src/file remote-dest/file
         test "$(grep -cx selected-local-rsh rsh.log)" = 2
+
+            ;;
+          77) echo 'SKIP remote archive transport: independent initgroups denied; direct rmt protocol PASS' >&2 ;;
+          *) exit "$rc" ;;
+        esac
       '';
       expected = "rmt-protocol-ok";
     };
