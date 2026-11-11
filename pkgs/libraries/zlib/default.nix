@@ -266,6 +266,82 @@ let
         gnutar = candidate.tools.tar;
       };
     };
+    "1.2.12" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.12.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.2.13" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.13.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
@@ -276,16 +352,16 @@ let
         def = ordinaryDefs."1.2.10";
       };
       "1.2.12" = versionTable."1.2.12" // {
-        def = ordinaryDefs."1.2.10";
+        def = ordinaryDefs."1.2.12";
       };
       "1.2.13" = versionTable."1.2.13" // {
-        def = ordinaryDefs."1.2.10";
+        def = ordinaryDefs."1.2.13";
       };
       "1.3" = versionTable."1.3" // {
-        def = ordinaryDefs."1.2.10";
+        def = ordinaryDefs."1.2.13";
       };
       "1.3.1" = versionTable."1.3.1" // {
-        def = ordinaryDefs."1.2.10";
+        def = ordinaryDefs."1.2.13";
       };
       "1.3.2" = versionTable."1.3.2" // {
         def = if native then ownedDefs."1.3.2" else legacyDefs."1.3.2";

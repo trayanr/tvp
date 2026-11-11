@@ -1,4 +1,4 @@
-# Zlib 1.2.10–1.3.1: all six handwritten configure contracts accept --shared.
+# Zlib 1.2.10–1.2.11: handwritten configure honors the explicit selected CC.
 # These archives need neither earlier installed-header nor shared-install patches.
 {
   tvp,
