@@ -659,6 +659,46 @@ let
         gnutar = candidate.tools.tar;
       };
     };
+    "1.2.5.2" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.5.1.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      # Upstream Linux links this release with its shipped ELF version map.
+      opts.versionScript = true;
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
     "1.2.7.2" = {
       constructor = tvp.builder;
       builder = ./ordinary/build-1.2.5.1.nix;
@@ -915,22 +955,22 @@ let
         def = ordinaryDefs."1.2.5.1";
       };
       "1.2.5.2" = versionTable."1.2.5.2" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.5.3" = versionTable."1.2.5.3" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.6" = versionTable."1.2.6" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.6.1" = versionTable."1.2.6.1" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.7" = versionTable."1.2.7" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.7.1" = versionTable."1.2.7.1" // {
-        def = ordinaryDefs."1.2.5.1";
+        def = ordinaryDefs."1.2.5.2";
       };
       "1.2.7.2" = versionTable."1.2.7.2" // {
         def = ordinaryDefs."1.2.7.2";
