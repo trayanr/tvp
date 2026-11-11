@@ -88,3 +88,41 @@ p.testContext.mkSuite {
     expected = "ordinary-installed-contract";
   };
 }
+// (
+  if p.pname == "gnugrep" then
+    p.testContext.mkSuite {
+      package = p;
+      tools = s.environment.tools;
+      tests.ordinary-finalization-regressions = {
+        script =
+          let
+            suffix =
+              (builtins.foldl'
+                (acc: step: {
+                  reached = acc.reached || step.name == "gnugrep.finalize";
+                  steps = acc.steps ++ (if acc.reached then [ step ] else [ ]);
+                })
+                {
+                  reached = false;
+                  steps = [ ];
+                }
+                p.buildSteps
+              ).steps;
+            commands = builtins.toFile "ordinary-text-final-suffix.sh" (
+              builtins.concatStringsSep "\n" (map (step: step.run or "") suffix)
+            );
+          in
+          ''
+            printf 'int main(void) { return 0; }\n' > probe.c
+            "$CC" probe.c -o dynamic
+            ${s.python}/bin/python3 -B ${./ordinary-text-regressions.py} \
+              ${./ordinary-text-source.py} ${./ordinary-text-output.py} ${./ordinary-text-check-paths.py} \
+              ${../../lib/native-output} ${s.binutils}/bin/readelf ${s.patchelf}/bin/patchelf \
+              ${s.bash}/bin/bash ${s.perl}/bin/perl ${commands} "$PWD/dynamic"
+          '';
+        expected = "frontend-and-complete-suffix-contracts";
+      };
+    }
+  else
+    { }
+)

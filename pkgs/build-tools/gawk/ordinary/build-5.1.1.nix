@@ -281,7 +281,7 @@ in
       python = final.python;
       libraries = [ ];
     })
-    (outputs.checkPaths {
+    ((import ../../ordinary-text-check-paths.nix { inherit lib; }) {
       python = final.python;
       binutils = final.binutils;
       patchelf = final.patchelf;

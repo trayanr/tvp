@@ -85,7 +85,7 @@ for directory, dirs, files in os.walk(root, followlinks=False):
                 replaced = data.replace(old, new + b'/' * (len(old) - len(new)))
             else:
                 replaced = data.replace(old, new)
-                if replaced.startswith(b'#!') and (p.is_relative_to(root/'bin') or p.is_relative_to(root/'lib')):
+                if replaced.startswith(b'#!') and any(p.is_relative_to(root / name) for name in ('bin', 'lib', 'libexec')):
                     first, body = replaced.split(b'\n', 1)
                     shell = re.fullmatch(rb'#![ \t]*/(?:[^ \t\n]+/)*(?:sh|bash)(?: (-e|-))?', first)
                     awk = re.fullmatch(rb'#![ \t]*/(?:[^ \t\n]+/)*(?:awk|gawk)([ \t]+-[Mf]+)?', first)
