@@ -66,7 +66,8 @@ for path in files(root, config['paths']):
         for directory in before.split(':') if before else []:
             # Preserve loader expressions, empty slots and symlink-sensitive paths
             # verbatim. Only other absolute store providers are superseded.
-            if (not directory.startswith('/nix/store/') or directory in base
+            spelled = '$' in directory or any(part in ('', '.', '..') for part in directory.split('/')[1:])
+            if (spelled or not directory.startswith('/nix/store/') or directory in base
                     or directory == str(root) or directory.startswith(str(root) + '/')):
                 retained.append(directory)
         for directory in preserve:

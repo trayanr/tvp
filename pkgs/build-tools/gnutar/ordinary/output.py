@@ -117,8 +117,11 @@ for directory, dirs, files in os.walk(root, followlinks=False):
             # frontend selection. Library aliases to native ELF stay valid.
             if any(p.is_relative_to(root / area) for area in ('bin', 'lib', 'libexec')):
                 target = target.resolve(strict=True)
+                target_info = target.stat()
+                if not stat.S_ISREG(target_info.st_mode):
+                    raise ValueError(('special executable alias target', p, target))
                 data = target.read_bytes()
-                if not data.startswith(b'\x7fELF') and (data.startswith(b'#!') or target.stat().st_mode & 0o111):
+                if not data.startswith(b'\x7fELF') and (data.startswith(b'#!') or target_info.st_mode & 0o111):
                     raise ValueError(('selected executable alias', p, target))
         elif stat.S_ISREG(st.st_mode):
             inode = (st.st_dev, st.st_ino)

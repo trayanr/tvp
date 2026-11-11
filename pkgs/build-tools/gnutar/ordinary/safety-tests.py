@@ -24,7 +24,7 @@ cases = ['source-alias', 'source-directory', 'source-hardlink', 'source-fifo',
          'source-collision', 'source-unknown', 'source-renamed-unknown', 'source-anchor',
          'source-nul-header', 'source-nul-body', 'source-configure-nul',
          'output-readelf-exit', 'output-readelf-stderr', 'output-readelf-malformed', 'output-patchelf-exit', 'output-patchelf-stderr', 'output-patchelf-malformed', 'output-alias', 'output-directory', 'output-hardlink', 'output-fifo',
-         'output-collision', 'output-unknown', 'output-renamed-unknown',
+         'output-collision', 'output-unknown', 'output-renamed-unknown', 'output-nested-fifo-alias',
          'output-manual-collision', 'output-malformed-elf', 'output-directory-as-file', 'output-nul-frontend']
 cases += ['output-alias-' + area + '-' + kind for area in ('bin', 'lib', 'libexec')
           for kind in ('shell', 'unknown', 'nul', 'chain')]
@@ -59,6 +59,10 @@ for case in cases:
         if case == 'output-directory': (root/'bin').rename(root/'commands'); (root/'bin').symlink_to('commands')
         if case == 'output-hardlink': os.link(external,root/'lib/escape')
         if case == 'output-fifo': os.mkfifo(root/'lib/pipe')
+        if case == 'output-nested-fifo-alias':
+            (root/'lib/nested').mkdir()
+            os.mkfifo(root/'lib/nested/pipe')
+            (root/'bin/alias').symlink_to('../lib/nested/pipe')
         if case == 'output-collision': (root/'bin/helper.tvp-relocating').symlink_to(external)
         if case in ('output-unknown','output-renamed-unknown'): target.write_text('#!/usr/bin/python3\npass\n')
         if case == 'output-renamed-unknown': target.rename(root/'bin/unexpected.dat')
@@ -89,7 +93,7 @@ for case in cases:
         if case.startswith('output-readelf-'): selected_patchelf = patchelf
         args=[sys.executable,'-B',output_helper,str(root),'/nix/store/'+'x'*32+'-a-long-artifact-output',selected_patchelf,json.dumps(config)]
     before=digest(root); outside=external.read_bytes()
-    p=subprocess.run(args,cwd=root,capture_output=True)
+    p=subprocess.run(args,cwd=root,capture_output=True,timeout=10)
     assert p.returncode and before==digest(root) and external.read_bytes()==outside, (case,p.stdout,p.stderr)
     print('PASS',case, file=sys.stderr)
 

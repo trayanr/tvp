@@ -92,7 +92,10 @@ let
           tools = [ provider ] ++ r.tools;
         }
       );
-  spelling = "$ORIGIN/../share:$LIB/../$PLATFORM::\${ORIGIN}/../share:\${LIB}/../\${PLATFORM}:";
+  baseLibrary = builtins.head s.base.runtimeDirectories;
+  spelling =
+    "$ORIGIN/../share:$LIB/../$PLATFORM::\${ORIGIN}/../share:\${LIB}/../\${PLATFORM}:"
+    + "${baseLibrary}/\${LIB}/\${PLATFORM}:${baseLibrary}/../lib:";
   spelled = package.editSteps (
     tvp.builder.steps.insertAfter "output.copy-artifacts" [
       (
