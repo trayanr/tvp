@@ -29,6 +29,7 @@ let
       inherit name run;
       cwd = "source";
     };
+  finalCommand = name: run: (command name run) // { cwd = "."; };
 in
 {
   pname = "meson";
@@ -128,7 +129,7 @@ in
     '')
     (steps.split "meson.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (command "meson.zipapp-interpreter" ''
+    (finalCommand "meson.zipapp-interpreter" ''
       mkdir "$out/bin"
       ${final.tools.gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
       ${final.tools.helperPython}/bin/python3 -B ${../owned/bind-zipapp.py} "$out" ${lib.escapeShellArg "${final.runtime.python}/bin/python3"}
@@ -146,7 +147,7 @@ in
         out = "@OUTPUT@";
       };
     })
-    (command "meson.launcher-mode" ''chmod 755 "$out/bin/meson"'')
+    (finalCommand "meson.launcher-mode" ''chmod 755 "$out/bin/meson"'')
   ];
   meta = {
     homepage = "https://mesonbuild.com/";

@@ -61,6 +61,7 @@ let
         LDFLAGS = environment.env.LDFLAGS or (lib.concatMapStringsSep " " (f: "-Wl,${f}") linkFlags);
       };
     };
+  finalCommand = name: run: (command name run) // { cwd = "."; };
 in
 {
   pname = "ninja";
@@ -157,7 +158,7 @@ in
     (command "ninja.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
     (steps.split "ninja.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (command "ninja.place-core" ''
+    (finalCommand "ninja.place-core" ''
       mkdir "$out/libexec"
       mv "$out/bin/ninja" "$out/libexec/ninja"
     '')
@@ -171,7 +172,7 @@ in
         out = "@OUTPUT@";
       };
     })
-    (command "ninja.launcher-mode" ''chmod 755 "$out/bin/ninja"'')
+    (finalCommand "ninja.launcher-mode" ''chmod 755 "$out/bin/ninja"'')
     (outputs.strip {
       python = final.tools.helperPython;
       binutils = final.tools.binutils;

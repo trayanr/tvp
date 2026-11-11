@@ -77,6 +77,7 @@ let
       cat "$out/.tvp-evidence/${name}.log" >&2
       if (( status != 0 )); then exit "$status"; fi
     '';
+  finalCommand = name: run: (command name run) // { cwd = "."; };
 in
 {
   pname = "pkg-config";
@@ -192,6 +193,9 @@ in
     (logged "build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     (
       (logged "check" ''
+        # These old scripts otherwise reset PATH through host getconf/sh.
+        # The declared Bash is the supported POSIX shell; keep all 12 tests.
+        export PKG_CONFIG_SHELL_IS_POSIX=1
         # The complete pkg-config discovery suite; not bundled GLib's own suite.
         ${final.tools.gnumake}/bin/make -C check -j1 SHELL=${final.bash}/bin/bash TESTS_SHELL=${final.bash}/bin/bash check
         # Exercise the actual vendored object, including the path passed to
@@ -223,7 +227,7 @@ in
     (command "pkg-config.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
     (steps.split "pkg-config.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (command "pkg-config.compress-man" ''
+    (finalCommand "pkg-config.compress-man" ''
       ${final.tools.gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"
     '')
     (outputs.strip {
