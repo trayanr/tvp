@@ -17,6 +17,9 @@ whole installed namespace, UTF-8 metadata, contained links and hardlinks, ELF
 inspection, allowed readonly library strings, and dynamic path ownership before
 writing. It changes only equal-width compiled paths and uses Patchelf for RPATHs.
 It deliberately preserves internal hardlinks and rejects external aliases.
+Every hardlink alias contributes its metadata and runtime role. Dynamic-string
+ownership includes loader tags, exported symbol names and version requirements;
+sharing any RPATH bytes or using an unsupported consumer rejects the whole plan.
 
 The finalizer rebinds old Cwd's build pwd to `runtime.pwd`. Final steps run bare
 include/core/Config checks and an all-file artifact-reference audit. Installed
@@ -30,8 +33,12 @@ returns 2070 and two assertions expect 1970. The unmodified upstream harness run
 in full; raw FAIL, exit 2, SKIP and XPASS diagnostics remain in the build log.
 `check.py` permits installation only for that exact sole summary (Local.t,
 assertions 6 and 12, got 170 versus expected 70). Every other failure is fatal.
+The complete summary and terminal Make status must match; a no-TAP crash,
+extra record or parse error cannot disappear from classification.
 This classification is an unwaived upstream nonpass, not an upstream PASS.
 
 Pure effective-field controls live in `tests/ordinary-contracts.nix`; production
-mutation guards in `tests/ordinary-guards.py`. The standalone older experiments
+mutation guards in `tests/ordinary-guards.py`. The classifier and retained-artifact
+dynamic-string regressions live in `tests/ordinary-check-guards.py` and
+`tests/ordinary-dynamic-guards.py`. They need no Perl compilation. The older experiments
 remain historical evidence and are not imported by these procedures.

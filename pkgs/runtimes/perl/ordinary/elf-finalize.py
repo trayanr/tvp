@@ -11,6 +11,132 @@ import struct
 import subprocess
 
 
+def exclusive_rpath(data, records, index):
+    """Inventory every supported consumer of the dynamic string table.
+
+    Patchelf can preserve a string used by another tag, symbol or version name.
+    Refuse sharing, including suffix pointers, before the mutation phase.
+    """
+    table = records[index]
+    if table[1] != 3 or table[2] & 7 != 2:
+        raise ValueError('expected allocated readonly dynamic string table')
+    strings = data[table[4]:table[4] + table[5]]
+    consumers = []
+
+    def consume(offset, role):
+        if not 0 <= offset < len(strings):
+            raise ValueError(('invalid dynamic string index', role, offset))
+        end = strings.find(b'\0', offset)
+        if end < 0:
+            raise ValueError(('unterminated dynamic string', role))
+        consumers.append((offset, end + 1, role))
+
+    dynamics = [s for s in records if s[1] == 6]
+    if len(dynamics) != 1 or dynamics[0][6] != index:
+        raise ValueError('ambiguous dynamic/string table binding')
+    dynamic = dynamics[0]
+    if dynamic[9] != 16 or dynamic[5] % 16:
+        raise ValueError('invalid dynamic entry layout')
+    tags, terminated = {}, False
+    string_tags = {1, 14, 15, 29, 0x6ffffefa, 0x6ffffefb, 0x6ffffefc,
+                   0x7ffffffd, 0x7fffffff}
+    value_tags = (set(range(31)) | set(range(32, 38))
+                  | {0x6ffffef5, 0x6ffffff0, 0x6ffffff9, 0x6ffffffa,
+                     0x6ffffffb, 0x6ffffffe, 0x6fffffff})
+    for pos in range(dynamic[4], dynamic[4] + dynamic[5], 16):
+        tag, value = struct.unpack_from('<qQ', data, pos)
+        if terminated:
+            if tag or value:
+                raise ValueError('nonempty dynamic records after terminator')
+            continue
+        if tag == 0:
+            terminated = True
+        elif tag in string_tags:
+            consume(value, 'rpath' if tag in (15, 29) else 'dynamic-tag-' + str(tag))
+        elif tag not in value_tags:
+            raise ValueError(('unsupported dynamic tag', tag))
+        tags.setdefault(tag, []).append(value)
+    if not terminated or tags.get(5) != [table[3]] or tags.get(10) != [table[5]]:
+        raise ValueError('dynamic string address/size mismatch')
+
+    # Bind section metadata to the ranges used by the loader as well.
+    phoff = struct.unpack_from('<Q', data, 32)[0]
+    phsize, phnum = struct.unpack_from('<HH', data, 54)
+    if phsize != 56 or not phnum or phoff + phsize * phnum > len(data):
+        raise ValueError('invalid program header table')
+    programs = [struct.unpack_from('<IIQQQQQQ', data, phoff + phsize * i)
+                for i in range(phnum)]
+    if [(p[2], p[3], p[5]) for p in programs if p[0] == 2] != [
+            (dynamic[4], dynamic[3], dynamic[5])]:
+        raise ValueError('dynamic section/program range mismatch')
+    def loaded(section):
+        return any(p[0] == 1 and p[3] <= section[3]
+                   and section[3] + section[5] <= p[3] + p[5]
+                   and p[2] + section[3] - p[3] == section[4] for p in programs)
+
+    if not loaded(table):
+        raise ValueError('dynamic strings do not map to loader file range')
+
+    symbol_tables, version_tables = 0, 0
+    for section in records:
+        if section[6] != index or section is dynamic:
+            continue
+        offset, size = section[4], section[5]
+        if section[1] == 11:  # Elf64_Sym.st_name
+            symbol_tables += 1
+            if (section[9] != 24 or size % 24 or not loaded(section)
+                    or tags.get(6) != [section[3]] or tags.get(11) != [24]):
+                raise ValueError('invalid dynamic symbol table')
+            for pos in range(offset, offset + size, 24):
+                consume(struct.unpack_from('<I', data, pos)[0], 'symbol')
+        elif section[1] == 0x6ffffffe:  # Elf64_Verneed / Elf64_Vernaux
+            version_tables += 1
+            if (not loaded(section) or tags.get(0x6ffffffe) != [section[3]]
+                    or tags.get(0x6fffffff) != [section[7]]):
+                raise ValueError('version-needed dynamic binding mismatch')
+            pos, count, seen = 0, 0, set()
+
+            def version_record(relative, layout):
+                width = struct.calcsize(layout)
+                if relative in seen or not 0 <= relative <= size - width:
+                    raise ValueError('invalid/cyclic version-needed record')
+                seen.add(relative)
+                return struct.unpack_from(layout, data, offset + relative)
+
+            while True:
+                version, number, file, auxiliary, following = version_record(pos, '<HHIII')
+                if version != 1 or not number or auxiliary < 16:
+                    raise ValueError('invalid version-needed header')
+                consume(file, 'version-file')
+                aux = pos + auxiliary
+                for i in range(number):
+                    _, _, _, name, next_aux = version_record(aux, '<IHHII')
+                    consume(name, 'version-name')
+                    if (i == number - 1 and next_aux != 0) or (i < number - 1 and next_aux < 16):
+                        raise ValueError('invalid version-needed auxiliary chain')
+                    aux += next_aux
+                count += 1
+                if not following:
+                    break
+                if following < 16:
+                    raise ValueError('invalid version-needed chain')
+                pos += following
+            if count != section[7]:
+                raise ValueError('version-needed count mismatch')
+        else:
+            raise ValueError(('unsupported dynamic string consumer', section[1]))
+    if symbol_tables != 1 or version_tables != int(0x6ffffffe in tags):
+        raise ValueError('missing/ambiguous dynamic consumer table')
+
+    paths = [c for c in consumers if c[2] == 'rpath']
+    if len(paths) != 1:
+        raise ValueError('expected exactly one RPATH/RUNPATH string')
+    start, end, _ = paths[0]
+    if any(a < end and start < b for a, b, role in consumers if role != 'rpath'):
+        raise ValueError('RPATH shares dynamic string bytes with another consumer')
+    return table[4] + start, table[4] + end - 1, strings[start:end - 1]
+
+
 def inspect(path, prefix, readelf):
     path = Path(path)
     data = path.read_bytes()
@@ -61,6 +187,16 @@ def inspect(path, prefix, readelf):
                      'prefixAtStringStart': begin == hit,
                      'readonlyAllocated': bool(flags & 2) and not bool(flags & 5)})
         start = hit + len(prefix)
+    dynamic_hits = [h for h in hits if h['section'] == '.dynstr']
+    if dynamic_hits:
+        indices = [i for i, s in enumerate(sections) if s[0] == '.dynstr']
+        if len(indices) != 1:
+            raise ValueError('ambiguous dynamic string section')
+        begin, end, value = exclusive_rpath(data, records, indices[0])
+        for h in dynamic_hits:
+            if h['stringStart'] != begin or h['stringEnd'] != end:
+                raise ValueError('dynamic prefix is not exclusively owned by RPATH')
+            h['exclusiveRpath'] = value.decode('ascii')
     return hits
 
 
@@ -131,10 +267,16 @@ def finalize(config):
     changes, dynamic, mappings, linkchanges = {}, {}, {}, {}
     for group in groups:
         name = group[0]; p = files[name]; data = p.read_bytes()
-        metadata = (p.name in ('Config.pm', 'Config_heavy.pl', '.packlist', 'config.sh')
-                    or '/CORE/' in '/' + name and p.suffix in ('.h', '.c', '.inc'))
-        if metadata:
-            text(data, name)  # Corrupt metadata never selects binary routing.
+        # Every pathname contributes its role, irrespective of which contained
+        # hardlink is encountered first. One inode gets one coherent edit.
+        metadata = any(Path(alias).name in ('Config.pm', 'Config_heavy.pl', '.packlist', 'config.sh')
+                       or '/CORE/' in '/' + alias and Path(alias).suffix in ('.h', '.c', '.inc')
+                       for alias in group)
+        cwd = any(Path(alias).name == 'Cwd.pm' for alias in group)
+        if metadata and cwd:
+            raise ValueError(('conflicting metadata/Cwd hardlink roles', group))
+        if metadata or cwd:
+            text(data, group)  # Corrupt metadata never selects binary routing.
         if data.startswith(b'\x7fELF'):
             hits = inspect(p, old, config['readelf'])
             mappings[name] = hits
@@ -147,7 +289,7 @@ def finalize(config):
                 if h['section'] == '.dynstr':
                     # Only a full colon-delimited RPATH component can own this
                     # occurrence. Every other dynamic use fails closed.
-                    if h['string'] is None or h['string'].encode() != rpath or old not in rpath:
+                    if h.get('exclusiveRpath') is None or h['exclusiveRpath'].encode() != rpath or old not in rpath:
                         raise ValueError(('unsupported dynamic prefix', name, h))
                 elif (h['section'] != '.rodata' or not h['readonlyAllocated']
                       or not h['prefixAtStringStart'] or h['stringEnd'] < 0
@@ -167,7 +309,7 @@ def finalize(config):
             changes[name] = replace_paths(text(data, name), old, new)
         # Runtime Cwd binding belongs exclusively to finalization. Validate its
         # complete text before replacing the source preparation provider.
-        if p.name == 'Cwd.pm' and config.get('externalPwd', False):
+        if cwd and config.get('externalPwd', False):
             original = changes.get(name, data)
             text(original, name)
             build = config['buildPwd'].encode(); runtime = config['runtimePwd'].encode()

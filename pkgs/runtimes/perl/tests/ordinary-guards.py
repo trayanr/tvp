@@ -43,6 +43,18 @@ def main(config, source):
             else:raise AssertionError(('unexpected acceptance',label))
         reject('metadata-NUL',lambda r:(r/'Config.pm').write_bytes(b'bad\0'))
         reject('metadata-encoding',lambda r:(r/'Config.pm').write_bytes(b'\xff'))
+        def aliased_metadata(root, target, data):
+            p = root/target
+            p.parent.mkdir(parents=True, exist_ok=True)
+            if p.exists():p.unlink()
+            (root/'A-data').write_bytes(data)
+            os.link(root/'A-data', p)
+        reject('metadata-hardlink-NUL',lambda r:aliased_metadata(r,'Config.pm',b'bad\0'))
+        reject('CORE-hardlink-encoding',lambda r:aliased_metadata(r,'lib/CORE/config.h',b'\xff'))
+        cwd_config = {'externalPwd':True,'buildPwd':'/nix/store/build-pwd/bin/pwd',
+                      'runtimePwd':config['tools']['readelf']}
+        reject('Cwd-hardlink-provider-guard',lambda r:aliased_metadata(r,'Cwd.pm',b'no provider'),cwd_config)
+        reject('conflicting-hardlink-roles',lambda r:os.link(r/'Config.pm',r/'Cwd.pm'),cwd_config)
         reject('prefix-boundary',lambda r:(r/'other.txt').write_text(old+'extra/lib'))
         reject('outside-hardlink',lambda r:os.link(r/'Config.pm',parent/'outside'))
         reject('escaping-link',lambda r:(r/'link').symlink_to('/etc/passwd'))
@@ -58,6 +70,13 @@ def main(config, source):
         assert (root/'Config.pm').stat().st_ino==(root/'Config-alias.pm').stat().st_ino
         assert (root/'alias').read_text()=='payload'
         results.append({'control':'internal-hardlink-and-absolute-link','status':'PASS'})
+        root=fixture()
+        original=(cwd_config['buildPwd']+'\n')*5
+        (root/'A-data').write_text(original);os.link(root/'A-data',root/'Cwd.pm')
+        f.finalize({'root':str(root),'artifact':old,**config['tools'],**cwd_config})
+        assert (root/'Cwd.pm').read_text()==(cwd_config['runtimePwd']+'\n')*5
+        assert (root/'A-data').stat().st_ino==(root/'Cwd.pm').stat().st_ino
+        results.append({'control':'Cwd-hardlink-provider-rebinding','status':'PASS'})
         # A tiny real ELF/shared fixture validates location restrictions and
         # compiled length/suffix semantics without rebuilding any compiler.
         root=fixture();c=parent/'fixture.c'
