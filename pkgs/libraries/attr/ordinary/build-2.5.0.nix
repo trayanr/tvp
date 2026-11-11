@@ -170,6 +170,17 @@ in
           builtins.toJSON {
             readelf = "${final.binutils}/bin/readelf";
             shell = "${final.runtime.shell}/bin/bash";
+            requiredDirectories = [
+              "lib"
+              "share/man"
+              "nix-support"
+              "bin"
+            ];
+            requiredFiles = [
+              "lib/libattr.a"
+              "lib/libattr.la"
+              "lib/${final.libraryFile}"
+            ];
             requiredRegular = [
               "lib/libattr.a"
               "lib/libattr.la"

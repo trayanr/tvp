@@ -56,6 +56,22 @@ def dynamic_elf(path, data):
         raise ValueError(('relocatable ELF has runtime segments', path))
     return dynamic
 
+# Validate every selected parent and leaf before staging any replacement.
+for kind, selectors in [('directory', config.get('requiredDirectories', [])),
+                        ('file', config.get('requiredFiles', []))]:
+    for selector in selectors:
+        parts = selector.split('/')
+        if not selector or any(part in ('', '.', '..') for part in parts):
+            raise ValueError(('unsafe required output selector', selector))
+        path = root
+        for index, part in enumerate(parts):
+            path = path / part
+            info = path.lstat()
+            directory = index < len(parts) - 1 or kind == 'directory'
+            if (stat.S_ISLNK(info.st_mode) or
+                    not (stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode))):
+                raise ValueError(('invalid required output target', path, kind))
+
 for directory, dirs, files in os.walk(root, followlinks=False):
     for name in dirs + files:
         p = Path(directory) / name

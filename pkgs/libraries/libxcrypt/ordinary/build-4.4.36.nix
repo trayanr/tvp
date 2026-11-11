@@ -167,6 +167,16 @@ in
           builtins.toJSON {
             readelf = "${final.binutils}/bin/readelf";
             shell = "${final.runtime.shell}/bin/bash";
+            requiredDirectories = [
+              "lib"
+              "share/man"
+              "nix-support"
+            ];
+            requiredFiles = [
+              "lib/libcrypt.a"
+              "lib/libcrypt.la"
+              "lib/libcrypt.so.1.1.0"
+            ];
             requiredRegular = [
               "lib/libcrypt.a"
               "lib/libcrypt.la"
