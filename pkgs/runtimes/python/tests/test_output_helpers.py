@@ -84,11 +84,24 @@ class OutputHelpers(unittest.TestCase):
             py_compile.compile(str(source), doraise=True)
             script = root / 'bin/pydoc3'
             script.write_text('#!/prior/python\nprint(42)\n')
+            helpers = {
+                root / 'lib/python3.12/ctypes/macholib/fetch_macholib': '#!/bin/sh',
+                root / 'lib/python3.5/plat-linux/regen': '#! /bin/sh',
+            }
+            for helper, shebang in helpers.items():
+                helper.parent.mkdir(parents=True, exist_ok=True)
+                helper.write_text(shebang + '\nprintf fixture\\n\n')
+                helper.chmod(0o755)
+                os.utime(helper, ns=(123456000000, 123456000000))
             subprocess.run([sys.executable, '-B', str(NATIVE / 'install.py'),
                             str(root), '/build/bash', '/helpers',
                             '/build/bash', '/runtime/bash'], check=True)
             self.assertIn('shell = "/runtime/bash"', source.read_text())
             self.assertEqual(script.read_text().splitlines()[0], '#!' + str(root) + '/bin/python3')
+            for helper in helpers:
+                self.assertEqual(helper.read_text(), '#!/runtime/bash\nprintf fixture\\n\n')
+                self.assertEqual(helper.stat().st_mode & 0o777, 0o755)
+                self.assertEqual(helper.stat().st_mtime_ns, 123456000000)
             cache = next((library / '__pycache__').glob('subprocess.*.pyc'))
             self.assertEqual(cache.read_bytes()[8:16], importlib.util.source_hash(source.read_bytes()))
 

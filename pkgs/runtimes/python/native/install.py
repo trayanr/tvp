@@ -17,10 +17,18 @@ for p in root.rglob('*'):
         data = p.read_bytes()
         if data.startswith(b'#!') and b'python' in data.split(b'\n', 1)[0]:
             p.write_bytes(b'#!' + str(root).encode() + b'/bin/python3\n' + data.split(b'\n', 1)[1])
-    if p.parent == root / 'bin':
+    stdlib_shell_helper = p.is_relative_to(root / 'lib') and (
+        (p.name == 'fetch_macholib' and p.parent.name == 'macholib')
+        or (p.name == 'regen' and p.parent.name.startswith('plat-'))
+    )
+    if p.parent == root / 'bin' or stdlib_shell_helper:
         data = p.read_bytes()
-        if data.startswith(b'#!' + source_shell.encode() + b'\n'):
-            p.write_bytes(b'#!' + runtime_shell.encode() + b'\n' + data.split(b'\n', 1)[1])
+        if data.startswith(b'#!'):
+            first, body = data.split(b'\n', 1)
+            directive = first[2:].strip().split(None, 1)
+            if directive and directive[0] in {source_shell.encode(), b'/bin/sh', b'/bin/bash'}:
+                argument = b' ' + directive[1] if len(directive) == 2 else b''
+                p.write_bytes(b'#!' + runtime_shell.encode() + argument + b'\n' + body)
     if p.name in ['install-sh', 'makesetup'] and p.parent.name.startswith('config-'):
         text = p.read_text().split('\n', 1)[1]
         if text.startswith('export PATH='):
