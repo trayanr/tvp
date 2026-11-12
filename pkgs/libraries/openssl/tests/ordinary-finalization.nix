@@ -27,6 +27,15 @@ let
     };
 in
 {
+  selfRuntimeDirectories = finalOnly "runtime" (
+    package.specification.runtime
+    // {
+      selfLibraryDirectories = [
+        "lib"
+        "lib/final-only-contract"
+      ];
+    }
+  );
   rendererInputs = {
     defaultPath = rendererDeclared package;
     editedPath = rendererDeclared (

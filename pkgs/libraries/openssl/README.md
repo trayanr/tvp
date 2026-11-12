@@ -128,3 +128,9 @@ For `der_chop`, the exact removed `getopts.pl` load/call is replaced by core
 `Getopt::Std::getopts`, preserving its option globals and DER-processing body.
 Unknown executable interpreters still reject. This does not supply non-core Perl
 modules required by other helpers, such as `tsget`'s `WWW::Curl::Easy`.
+
+The final-only self-runtime step seeds the declared output-relative library
+directories before authoritative RPATH pruning. The pruning step retains final
+self directories required by each runtime ELF and removes unused ones. This
+allows the installed CLI and libssl to load their sibling libraries without an
+ambient library path, while preserving the compiler artifact.

@@ -138,6 +138,7 @@ in
   };
   runtime = {
     libraries = [ ];
+    selfLibraryDirectories = [ "lib" ];
     perl = final.perl;
     shell = final.bash;
     tools = [
@@ -245,7 +246,29 @@ in
         inherit (final) python binutils;
         paths = [ "lib" ];
       })
-      (outputs.rpaths {
+      {
+      name = "openssl.self-runtime";
+      tools = [
+        final.python
+        final.binutils
+        final.patchelf
+      ];
+      # Seed the final self-library path before authoritative RPATH pruning.
+      run = ''${final.python}/bin/python3 -B ${../../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            paths = [
+              "bin"
+              "lib"
+            ];
+            directories = final.runtime.selfLibraryDirectories;
+            readelf = "${final.binutils}/bin/readelf";
+            patchelf = "${final.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../../lib/native-output}'';
+    }
+    (outputs.rpaths {
         inherit (final)
           python
           binutils
