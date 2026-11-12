@@ -11,7 +11,7 @@
   gnutar,
   gzip,
   gnumake,
-  sed,
+  gnused,
   grep,
   gawk,
   diffutils,
@@ -86,8 +86,8 @@ in
     coreutils
     ;
   tools = {
+    sed = gnused;
     inherit
-      sed
       rustc
       gnumake
       grep
@@ -122,10 +122,14 @@ in
   artifactName = "${final.pname}-${final.version}";
   dependencyProviders =
     final.libraries
-    // (builtins.removeAttrs final.tools [ "rustc" ])
+    // (builtins.removeAttrs final.tools [
+      "rustc"
+      "sed"
+    ])
     // lib.optionalAttrs (final.tvp.jit.yjit || final.tvp.jit.zjit) { rustc = final.tools.rustc; }
     // {
       inherit (final) bash coreutils;
+      gnused = final.tools.sed;
     }
     // (builtins.listToAttrs (
       map (name: {

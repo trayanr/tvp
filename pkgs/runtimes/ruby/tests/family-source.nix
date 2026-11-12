@@ -117,12 +117,14 @@ let
     checks = checks p;
   }) all;
   failed = builtins.filter (r: !(builtins.all (x: x) (builtins.attrValues r.checks))) results;
+  reviewContracts = import ./review-contracts.nix { inherit pkgs tvp; };
 in
 assert builtins.length inventory.rows == 149;
 assert builtins.all (r: r.compliant) inventory.rows;
 assert failed == [ ] || throw "Ruby/Bundler family source contracts: ${builtins.toJSON failed}";
+assert builtins.all (x: x) (builtins.attrValues reviewContracts);
 {
   count = builtins.length inventory.rows;
-  inherit results;
+  inherit results reviewContracts;
   qualification = "SOURCE_ONLY; all changed releases remain uncompiled and runtime-unqualified";
 }

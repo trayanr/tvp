@@ -99,7 +99,7 @@ let
             diffutils
             findutils
             ;
-          sed = candidate.tools.sed;
+          gnused = candidate.tools.sed;
           patch = candidate.tools.patch;
           gnumake = candidate.tools.make;
           gnutar = candidate.tools.tar;
@@ -208,13 +208,18 @@ in
       // pkgs.lib.optionalAttrs native {
         ruby_4_0_6 = tvp.builder {
           recipe = import ./owned/build-4.0.6.nix;
-          args = {
-            inherit tvp;
-            inherit (pkgs) lib;
-            base = retained.versionTable."4.0.6".def.base;
-            version = "4.0.6";
-            src = canonical.ruby_4_0_6.src;
-          } // (ownedDefinition retained.versionTable."4.0.6".def).deps;
+          args =
+            {
+              inherit tvp;
+              inherit (pkgs) lib;
+              base = retained.versionTable."4.0.6".def.base;
+              version = "4.0.6";
+              src = canonical.ruby_4_0_6.src;
+            }
+            // (builtins.removeAttrs (ownedDefinition retained.versionTable."4.0.6".def).deps [ "sed" ])
+            // {
+              gnused = candidate.tools.sed;
+            };
           dependencyNames = ruby4Definition.dependencyNames;
           infrastructure = retained.infra;
           metadata = {

@@ -26,6 +26,9 @@ let
   # sha256("tvp"), first 16 hex characters.
   tvpDigest = "f6f6ead0bd85c312";
   owned = ruby ? testContext;
+  # OPENSSL_VERSION reports the headers used to construct the extension.
+  opensslHeaderVersion =
+    if owned then ruby.specification.libraries.openssl.version else deps.openssl.version;
   suite =
     args:
     if !owned then
@@ -119,7 +122,7 @@ suite {
         script = ''
           ruby -e 'require "openssl"; print [OpenSSL::OPENSSL_VERSION.split[1], OpenSSL::Digest::SHA256.hexdigest("tvp")[0, 16]].join(" ")'
         '';
-        expected = "${deps.openssl.version} ${tvpDigest}";
+        expected = "${opensslHeaderVersion} ${tvpDigest}";
       };
 
       zlib = {
