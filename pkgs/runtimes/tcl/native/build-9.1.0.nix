@@ -23,7 +23,7 @@
   zlib,
   libgcc,
   patch,
-  patches,
+  testPatches ? [ ],
   doCheck ? true,
 }:
 final:
@@ -47,7 +47,7 @@ in
     version
     bash
     coreutils
-    patches
+    testPatches
     ;
   tools = {
     inherit
@@ -69,6 +69,18 @@ in
   libraries = {
     inherit zlib libgcc;
   };
+  artifactName = "${final.pname}-${final.version}";
+  dependencyProviders = final.tools // {
+    inherit (final.runtime) zlib libgcc;
+    bash = final.bash;
+    coreutils = final.coreutils;
+  };
+  testSource = final.src;
+  testShell = final.bash;
+  testPython = final.tools.python;
+  testPrepare = ../tests/prepare-native.py;
+  testRunner = ../tests/run-native.py;
+  upstreamExpected = "upstream-ok";
   environment = {
     tools = [
       final.tools.pkgConfig
@@ -86,6 +98,8 @@ in
     ];
   };
   runtime = {
+    shell = final.bash;
+    loader = "${final.base.compiler.libc}/lib/ld-linux-x86-64.so.2";
     inherit (final.libraries) zlib libgcc;
     libraries = [
       final.runtime.zlib
@@ -99,14 +113,6 @@ in
       inherit (final.tools) gzip findutils;
       compression = "gzip";
     })
-    {
-      name = "tcl.patch";
-      cwd = "source";
-      tools = [ final.tools.patch ];
-      run = lib.concatMapStringsSep "\n" (
-        p: "${final.tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
-      ) final.patches;
-    }
     (steps.prepareAutotools {
       name = "tcl.prepare";
       bash = final.bash;
@@ -137,38 +143,10 @@ in
       export LD_LIBRARY_PATH="$PWD"
       ${make} packages TCLSH_NATIVE="$PWD/tclsh"
     '')
-    (
-      (command "check" ''
-          export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC LANG=C.UTF-8 LC_ALL=C.UTF-8
-        export TVP_TEST_SHELL=${final.bash}/bin/bash TVP_TEST_ENV=${final.coreutils}/bin/env
-          export LD_LIBRARY_PATH="$PWD"
-          ${final.coreutils}/bin/timeout 900 ${make} test-tcl TESTFLAGS='-verbose bpse' < /dev/zero 2>&1 | tee core-tests.log
-          grep -Eq 'Total[[:space:]]+[1-9][0-9]*[[:space:]]+Passed[[:space:]]+[1-9][0-9]*' core-tests.log
-        if grep -E 'Failed[[:space:]]+[1-9][0-9]*|Test file error:|Test files exiting with errors:' core-tests.log; then exit 1; fi
-      '')
-      // {
-        enabled = final.tvp.features.doCheck;
-      }
-    )
-    (
-      (command "check-packages" ''
-            export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC LANG=C.UTF-8 LC_ALL=C.UTF-8
-        export TVP_TEST_SHELL=${final.bash}/bin/bash TVP_TEST_ENV=${final.coreutils}/bin/env
-            export LD_LIBRARY_PATH="$PWD"
-            "$CC" ${./client-probe.c} -ldl -o client-probe
-        ${final.tools.python}/bin/python3 -B ${./package-results-9.1.py} preflight "$PWD/.." client-preflight.json "$PWD/client-probe"
-          ${final.coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
-            ${final.tools.python}/bin/python3 -B ${./package-results-9.1.py} classify package-tests.log client-preflight.json package-results.json
-      '')
-      // {
-        enabled = final.tvp.features.doCheck;
-      }
-    )
     (command "install" ''
       export LD_LIBRARY_PATH="$PWD"
       ${make} install install-private-headers TCLSH_NATIVE="$PWD/tclsh"
       mkdir -p "$out/nix-support"
-      if test -f package-results.json; then cp package-results.json "$out/nix-support/bundled-upstream.json"; fi
       ln -s tclsh9.1 "$out/bin/tclsh"
       chmod -R u+w "$out"
     '')
@@ -176,6 +154,13 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "tcl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "tcl.relocate-prefix";
+      tools = [ final.tools.python ];
+      run = ''${final.tools.python}/bin/python3 -B ${../relocate.py} "$out"'';
+    }
     (outputs.shebangs {
       inherit (final.tools) python;
       paths = [
@@ -186,7 +171,12 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${final.bash}/bin/bash";
+      interpreter = "${final.runtime.shell}/bin/bash";
+    })
+    (outputs.interpreters {
+      inherit (final.tools) python binutils patchelf;
+      paths = [ "bin" ];
+      loader = final.runtime.loader;
     })
     (outputs.strip {
       inherit (final.tools) python binutils;
@@ -220,7 +210,7 @@ in
     })
     (outputs.development {
       inherit (final.tools) python;
-      libraries = [ final.libraries.zlib ];
+      libraries = [ final.runtime.zlib ];
     })
     (outputs.checkPaths {
       inherit (final.tools) python binutils patchelf;
