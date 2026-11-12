@@ -60,14 +60,9 @@ package.testContext.mkSuite {
           assert base.tvp.base == "tcl-base-probe";
           assert base.tests.version.specification.base.name == "tcl-base-probe";
           assert builtins.any (s: (s.env.TCL_SOURCE_PROBE or "") == "effective") environment.buildSteps;
-          assert builtins.all (
-            s:
-            !(builtins.elem s.name [
-              "tcl.check"
-              "tcl.check-packages"
-            ])
-            || !s.enabled
-          ) off.buildSteps;
+          assert off.artifact.drvPath == package.artifact.drvPath;
+          assert off.drvPath == package.drvPath;
+          assert !(off.tests ? upstream);
           "printf source-controls-ok";
         expected = "source-controls-ok";
       };

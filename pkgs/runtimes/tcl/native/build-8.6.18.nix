@@ -22,6 +22,8 @@
   patchelf,
   zlib,
   libgcc,
+  testPatches ? [ ],
+  patch,
   doCheck ? true,
 }:
 final:
@@ -35,7 +37,7 @@ let
       cwd = "source/unix";
       inherit run;
     };
-  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  make = ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {
   pname = "tcl";
@@ -46,43 +48,81 @@ in
     bash
     coreutils
     ;
-  environment = {
-    tools = [
+  tools = {
+    inherit
       pkgConfig
       gnumake
+      gnutar
+      gzip
+      findutils
       sed
       grep
       gawk
       diffutils
-      findutils
       python
+      binutils
+      patchelf
+      patch
+      ;
+  };
+  libraries = {
+    inherit zlib libgcc;
+  };
+  artifactName = "${final.pname}-${final.version}";
+  dependencyProviders = final.tools // {
+    inherit (final.runtime) zlib libgcc;
+    bash = final.bash;
+    coreutils = final.coreutils;
+  };
+  testSource = final.src;
+  inherit testPatches;
+  testShell = final.bash;
+  testPython = final.tools.python;
+  testPrepare = ../tests/prepare-native.py;
+  testRunner = ../tests/run-native.py;
+  upstreamExpected = "upstream-ok";
+  environment = {
+    tools = [
+      final.tools.pkgConfig
+      final.tools.gnumake
+      final.tools.sed
+      final.tools.grep
+      final.tools.gawk
+      final.tools.diffutils
+      final.tools.findutils
+      final.tools.python
     ];
     libraries = [
-      zlib
-      libgcc
+      final.libraries.zlib
+      final.libraries.libgcc
     ];
   };
-  runtime.libraries = [
-    zlib
-    libgcc
-  ];
+  runtime = {
+    shell = final.bash;
+    loader = "${final.base.compiler.libc}/lib/ld-linux-x86-64.so.2";
+    inherit (final.libraries) zlib libgcc;
+    libraries = [
+      final.runtime.zlib
+      final.runtime.libgcc
+    ];
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = gnutar;
-      inherit gzip findutils;
+      tar = final.tools.gnutar;
+      inherit (final.tools) gzip findutils;
       compression = "gzip";
     })
     (steps.prepareAutotools {
       name = "tcl.prepare";
       bash = final.bash;
-      inherit python;
+      inherit (final.tools) python;
       base = final.base;
       cwd = "source/unix";
     })
     (steps.shebangs {
       name = "tcl.package-shells";
-      inherit python;
+      inherit (final.tools) python;
       paths = [
         "pkgs"
         "unix"
@@ -96,43 +136,17 @@ in
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
       export LDFLAGS="''${LDFLAGS:-} -Wl,--no-as-needed -lgcc_s -Wl,--as-needed"
-      ./configure --prefix="$out" --enable-threads --enable-shared --with-zlib=${zlib}
+      ./configure --prefix="$out" --enable-threads --enable-shared --with-zlib=${final.libraries.zlib}
     '')
     (command "build" ''${make} binaries libraries doc'')
     (command "packages" ''
       export LD_LIBRARY_PATH="$PWD"
       ${make} packages TCLSH_NATIVE="$PWD/tclsh"
     '')
-    (
-      (command "check" ''
-          export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
-          export LD_LIBRARY_PATH="$PWD"
-          ${coreutils}/bin/timeout 900 ${make} test-tcl TESTFLAGS='-verbose bpse' < /dev/zero 2>&1 | tee core-tests.log
-          grep -Eq 'Total[[:space:]]+[1-9][0-9]*[[:space:]]+Passed[[:space:]]+[1-9][0-9]*' core-tests.log
-        if grep -E 'Failed[[:space:]]+[1-9][0-9]*|Test file error:|Test files exiting with errors:' core-tests.log; then exit 1; fi
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
-    (
-      (command "check-packages" ''
-            export HOME="$TMPDIR" LOGNAME=builder TERM=xterm TZ=UTC
-            export LD_LIBRARY_PATH="$PWD"
-            "$CC" ${./client-probe.c} -ldl -o client-probe
-        ${python}/bin/python3 -B ${./package-results.py} preflight "$PWD/.." client-preflight.json "$PWD/client-probe"
-          ${coreutils}/bin/timeout 900 ${make} test-packages TCLSH_NATIVE="$PWD/tclsh" TESTFLAGS='-verbose bpse' 2>&1 | tee package-tests.log
-            ${python}/bin/python3 -B ${./package-results.py} classify package-tests.log client-preflight.json package-results.json
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "install" ''
       export LD_LIBRARY_PATH="$PWD"
       ${make} install install-private-headers TCLSH_NATIVE="$PWD/tclsh"
       mkdir -p "$out/nix-support"
-      if test -f package-results.json; then cp package-results.json "$out/nix-support/bundled-upstream.json"; fi
       ln -s tclsh8.6 "$out/bin/tclsh"
       chmod -R u+w "$out"
     '')
@@ -140,8 +154,15 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "tcl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "tcl.relocate-prefix";
+      tools = [ final.tools.python ];
+      run = ''${final.tools.python}/bin/python3 -B ${../relocate.py} "$out"'';
+    }
     (outputs.shebangs {
-      inherit python;
+      inherit (final.tools) python;
       paths = [
         "bin"
         "lib"
@@ -150,10 +171,15 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${final.bash}/bin/bash";
+      interpreter = "${final.runtime.shell}/bin/bash";
+    })
+    (outputs.interpreters {
+      inherit (final.tools) python binutils patchelf;
+      paths = [ "bin" ];
+      loader = final.runtime.loader;
     })
     (outputs.strip {
-      inherit python binutils;
+      inherit (final.tools) python binutils;
       paths = [
         "bin"
         "lib"
@@ -161,11 +187,11 @@ in
       elfKinds = [ "runtime" ];
     })
     (outputs.stripArchives {
-      inherit python binutils;
+      inherit (final.tools) python binutils;
       paths = [ "lib" ];
     })
     (outputs.rpaths {
-      inherit python binutils patchelf;
+      inherit (final.tools) python binutils patchelf;
       base = final.base;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
@@ -176,11 +202,11 @@ in
       elfKinds = [ "runtime" ];
     })
     (outputs.development {
-      inherit python;
-      libraries = [ zlib ];
+      inherit (final.tools) python;
+      libraries = [ final.runtime.zlib ];
     })
     (outputs.checkPaths {
-      inherit python binutils patchelf;
+      inherit (final.tools) python binutils patchelf;
       paths = [
         "bin"
         "lib"
@@ -189,6 +215,7 @@ in
     })
   ];
   tvp.features = {
+    inherit doCheck;
     are = true;
     pkgConfig = true;
     zipfsImage = false;
