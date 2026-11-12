@@ -27,6 +27,13 @@ before, after = [s.encode() for s in bindings['shell']]
 slot = before + marker
 assert len(after) < len(slot) and b'\0' not in after
 changes, count = [], 0
+cvsserver_paths = {'bin/git-cvsserver', 'libexec/git-core/git-cvsserver'}
+cvsserver_seen = set()
+prefix_line = br'(my $prefix = $exec_path) =~ s/\Q$gitexecdir_relative\E$//;'
+prefix_binding = br'''my $prefix = $exec_path;
+	if ($prefix !~ s/\Q$gitexecdir_relative\E$// && !exists $ENV{GIT_EXEC_PATH}) {
+		$prefix =~ s{/bin$}{};
+	}'''
 for name, target in links.items():
     if old in os.fsencode(target):
         raise ValueError(('artifact link in runtime-prefix Git', name))
@@ -54,12 +61,25 @@ for group in groups:
             # Full interpreter paths, including Perl's generated eval/exec
             # fallback if present. Path boundaries reject partial matches.
             result = m.replace_paths(result, a, b)
+    if cvsserver_paths.intersection(group):
+        if (not set(group).issubset(cvsserver_paths)
+                or b'\0' in data or not data.startswith(b'#!')
+                or data.count(b'# BEGIN RUNTIME_PREFIX generated code.') != 1
+                or data.count(b'# END RUNTIME_PREFIX generated code.') != 1
+                or data.count(prefix_line) != 1):
+            raise ValueError(('unexpected git-cvsserver runtime header', group))
+        # libexec retains upstream discovery. Direct bin invocation strips bin
+        # only when Git has not supplied an explicit GIT_EXEC_PATH.
+        result = result.replace(prefix_line, prefix_binding)
+        cvsserver_seen.update(group)
     if marker in result:
         raise ValueError(('unbound Git shell slot', group))
     if result != data:
         changes.append((p, result, p.stat()))
 if not count:
     raise ValueError('no installed native Git shell slots')
+if cvsserver_seen != cvsserver_paths:
+    raise ValueError(('missing git-cvsserver entry points', cvsserver_seen))
 for p, result, st in changes:
     p.write_bytes(result)
     os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))

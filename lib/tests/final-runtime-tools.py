@@ -1,4 +1,4 @@
-"""Tiny offline fixtures for selected source plans; never compile/execute packages.
+"""Tiny offline fixtures for source plans; never compile/execute target packages.
 
 Input is the JSON from final-runtime-tools.nix. Run actual selected copy and
 standalone store-file finalizers over invented bytes, not realized app payloads.
@@ -15,6 +15,7 @@ import sys
 import tempfile
 
 rows = json.loads(Path(sys.argv[1]).read_text())['rows']
+fixture_perl = sys.argv[2]
 checks = {}
 
 def command(row, name, variant='fixtureCommands'):
@@ -110,8 +111,21 @@ with tempfile.TemporaryDirectory(prefix='tvp-runtime-tools-fixtures-') as td:
                 (a/'libexec/git-core').mkdir(parents=True)
                 os.link(a/'bin/git', a/'libexec/git-core/git-add')
                 (a/'bin/git-helper').write_text('#!'+binding['perl'][0]+'\n')
+                header = (Path(__file__).resolve().parents[2]/'pkgs/build-tools/git/tests/fixtures/runtime-prefix.pl').read_text()
+                for old, new in [('@GITEXECDIR_REL@','libexec/git-core'),('@PERLLIBDIR_REL@','share/perl5'),('@LOCALEDIR_REL@','share/locale'),('@PATHSEP@',':')]:
+                    header=header.replace(old,new)
+                cvsserver=a/'bin/git-cvsserver'
+                cvsserver.write_text('#!'+binding['perl'][0]+'\n'+header+'\ndie "ignored GITPERLLIB" if exists $ENV{GITPERLLIB} && !grep { $_ eq $ENV{GITPERLLIB} } @INC;\nprint __git_system_path("share/perl5"), "\\n", $Git::I18N::TEXTDOMAINDIR, "\\n";\n')
+                os.link(cvsserver,a/'libexec/git-core/git-cvsserver')
+                (a/'share/perl5').mkdir(parents=True)
+                (a/'share/locale').mkdir()
         run(command(row, 'output.copy-artifacts'), work, env)
         artifact_before = snapshot(a)
+        if name == 'git_2_56_0':
+            clean={k:v for k,v in os.environ.items() if k not in ('GIT_EXEC_PATH','GITPERLLIB','PERL5LIB','PERLLIB')}
+            original_entry=subprocess.run([fixture_perl,str(f/'bin/git-cvsserver')],env=clean,text=True,capture_output=True)
+            assert original_entry.returncode!=0 and 'Invalid system path' in original_entry.stderr
+            checks[name+'.originalBinHeaderReproducesFailure'] = True
         # The selected helper paths are independent store files, with explicit
         # primitive arguments; no source-directory sibling imports available.
         run(selected, work, env)
@@ -127,6 +141,24 @@ with tempfile.TemporaryDirectory(prefix='tvp-runtime-tools-fixtures-') as td:
             if native == 'git':
                 assert os.path.samefile(f/'bin/git', f/'libexec/git-core/git-add')
                 assert (f/'bin/git-helper').read_text().startswith('#!'+binding['perl'][1]+'\n')
+                assert os.path.samefile(f/'bin/git-cvsserver',f/'libexec/git-core/git-cvsserver')
+                clean={k:v for k,v in os.environ.items() if k not in ('GIT_EXEC_PATH','GITPERLLIB','PERL5LIB','PERLLIB')}
+                for entry in ['bin/git-cvsserver','libexec/git-core/git-cvsserver']:
+                    for overrides in [{},{'GIT_EXEC_PATH':str(f/'libexec/git-core')},{'GITPERLLIB':str(f/'share/perl5')}]:
+                        p=subprocess.run([fixture_perl,str(f/entry)],env={**clean,**overrides},text=True,capture_output=True)
+                        assert p.returncode==0,(entry,overrides,p.stderr)
+                        assert p.stdout.splitlines()==[str(f/'share/perl5'),str(f/'share/locale')],(entry,p.stdout)
+                # A distinct explicit exec prefix must take precedence over
+                # the script's bin/libexec location, for both derived paths.
+                override=work/'override';(override/'share/perl5').mkdir(parents=True)
+                for entry in ['bin/git-cvsserver','libexec/git-core/git-cvsserver']:
+                    p=subprocess.run([fixture_perl,str(f/entry)],env={**clean,'GIT_EXEC_PATH':str(override/'libexec/git-core')},text=True,capture_output=True)
+                    assert p.returncode==0,p.stderr
+                    assert p.stdout.splitlines()==[str(override/'share/perl5'),str(override/'share/locale')]
+                    p=subprocess.run([fixture_perl,str(f/entry)],env={**clean,'GITPERLLIB':str(override/'share/perl5')},text=True,capture_output=True)
+                    assert p.returncode==0,p.stderr
+                    assert p.stdout.splitlines()==[str(f/'share/perl5'),str(f/'share/locale')]
+                checks[name+'.cvsserverBinLibexecAndOverrides'] = True
             else:
                 assert b'LESS_OSC8_OPEN_ANY\0\x81-'+str(f).encode()+b'/bin/less-osc8-open\0' in b
         checks[name+'.selectedCopyAndStandaloneFinalizer'] = True
@@ -157,4 +189,16 @@ with tempfile.TemporaryDirectory(prefix='tvp-runtime-tools-fixtures-') as td:
             run(selected, work, env, success=False)
             assert snapshot(f) == before
             checks[name+'.unknownNativeShapeRejectsBeforeWrites'] = True
+            if native == 'git':
+                shutil.rmtree(f)
+                run(command(row, 'output.copy-artifacts'), work, env)
+                cvsserver=f/'bin/git-cvsserver'
+                original=cvsserver.read_bytes()
+                changed=original.replace(br'(my $prefix = $exec_path) =~ s/\Q$gitexecdir_relative\E$//;',b'UNRECOGNIZED_RUNTIME_HEADER')
+                assert changed!=original
+                cvsserver.write_bytes(changed)
+                before=snapshot(f)
+                run(selected,work,env,success=False)
+                assert snapshot(f)==before
+                checks[name+'.unknownCvsserverHeaderRejectsBeforeWrites'] = True
 print(json.dumps({'success': True, 'checks': checks, 'qualification': 'synthetic source/copy/format fixtures only; emitted layouts UNRUN'}, indent=2))
