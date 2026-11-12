@@ -31,6 +31,49 @@ def obj(payload, flags=2, name=b'.rodata', kind=1):
 
 
 class Finalization(unittest.TestCase):
+    def test_text_compiler_options_keep_complete_path_boundaries(self):
+        data = b'-I'+OLD+b'/include -L'+OLD+b'/lib -Wl,-R'+OLD+b'/lib\n'
+        self.assertEqual(module.replace_paths(data, OLD, NEW), data.replace(OLD, NEW))
+        for data in [b'foreign'+OLD, OLD+b'-other', b'foreign-I'+OLD+b'/include']:
+            with self.assertRaises(ValueError):
+                module.replace_paths(data, OLD, NEW)
+
+    def test_installed_relocatable_objects_are_preserved_without_mutation(self):
+        with tempfile.TemporaryDirectory() as work:
+            path = Path(work)/'extension.o'
+            original = obj(OLD+b'\0')
+            path.write_bytes(original)
+            records = module.relocatable_objects({'extension.o':path}, [['extension.o']], OLD, NEW)
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0][1], original.replace(OLD, NEW))
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_compiled_root_and_paths_preserve_width_and_leave_dynamic_paths(self):
+        data = OLD+b'\0'+OLD+b'/lib/ruby\0'
+        hits = [{'section':'.rodata', 'readonlyAllocated':True,
+                 'prefixAtStringStart':True, 'stringStart':0,
+                 'stringEnd':len(OLD), 'string':OLD.decode()},
+                {'section':'.rodata', 'readonlyAllocated':True,
+                 'prefixAtStringStart':True, 'stringStart':len(OLD)+1,
+                 'stringEnd':len(data)-1, 'string':(OLD+b'/lib/ruby').decode()}]
+        changed = module.compiled_paths(data, hits, OLD, NEW)
+        self.assertEqual(changed, NEW+b'\0'+NEW+b'/lib/ruby\0')
+        self.assertEqual(len(data), len(changed))
+        dynamic = dict(hits[0], section='.dynstr')
+        self.assertEqual(module.compiled_paths(data, [dynamic], OLD, NEW), data)
+
+    def test_compiled_paths_reject_unsupported_owners_and_widths(self):
+        data = OLD+b'\0'
+        hit = {'section':'.rodata', 'readonlyAllocated':True,
+               'prefixAtStringStart':True, 'stringStart':0,
+               'stringEnd':len(OLD), 'string':OLD.decode()}
+        for change in [{'section':'.text'}, {'readonlyAllocated':False},
+                       {'prefixAtStringStart':False}, {'stringEnd':-1}]:
+            with self.assertRaises(ValueError):
+                module.compiled_paths(data, [dict(hit, **change)], OLD, NEW)
+        with self.assertRaises(ValueError):
+            module.compiled_paths(data, [hit], OLD, NEW+b'long')
+
     def test_equal_width_and_exact_paths(self):
         data = obj(OLD+b'/lib/ruby\0suffix\0'+OLD+b'\0')
         changed = module.object_paths(data, OLD, NEW)

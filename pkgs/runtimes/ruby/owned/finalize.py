@@ -1,9 +1,10 @@
-"""Ruby's historical installed static archive around reviewed ELF finalization.
+"""Ruby's compiled paths and installed data around reviewed ELF finalization.
 
 Only lib/libruby-static.a, GNU ar, native non-LTO ELF64 objects and allocated,
 readonly .rodata path strings are supported. Equal-width replacements preserve
 object/relocation offsets. All members are inspected before ar writes a private
 archive. No production source, compiler invocation or build tree is needed.
+Installed relocatable gem objects are preserved around the dynamic-ELF pass.
 """
 from pathlib import Path
 import importlib.util
@@ -73,6 +74,80 @@ def object_paths(data, old, new):
     return data
 
 
+def compiled_paths(data, hits, old, new):
+    """Relocate Ruby's root and path constants in readonly ELF strings."""
+    if len(old) != len(new) or old == new:
+        raise ValueError('distinct equal-width prefixes required')
+    for hit in hits:
+        if hit['section'] == '.dynstr':
+            continue
+        start, end = hit['stringStart'], hit['stringEnd']
+        if (not (hit['section'] == '.rodata' or hit['section'].startswith('.rodata.str'))
+                or not hit['readonlyAllocated']
+                or not hit['prefixAtStringStart'] or end < 0
+                or data[start:start+len(old)] != old or data[end:end+1] != b'\0'
+                or data[start+len(old):start+len(old)+1] not in (b'/', b'\0')):
+            raise ValueError('unsupported Ruby compiled path string')
+        data = data[:start] + new + data[start+len(old):]
+    return data
+
+
+def replace_paths(data, old, new):
+    """Ruby's installed Makefiles also embed paths in -I/-L/-R options."""
+    allowed = b"/\x00\n\r\t '\";:),]}<>"
+    start = 0
+    while True:
+        pos = data.find(old, start)
+        if pos < 0:
+            break
+        end = pos + len(old)
+        option = (pos >= 2 and data[pos-2:pos] in (b'-I', b'-L', b'-R')
+                  and (pos == 2 or data[pos-3] in b" \t\r\n'\"=,:("))
+        if ((pos and (chr(data[pos-1]).isalnum() or data[pos-1] in b'/_+-.') and not option)
+                or (end < len(data) and data[end] not in allowed)):
+            raise ValueError(('non-path Ruby prefix occurrence', pos))
+        start = end
+    return data.replace(old, new)
+
+
+def relocate_compiled_paths(files, groups, old, new, inspector, readelf):
+    planned = []
+    for group in groups:
+        path = files[group[0]]
+        with path.open('rb') as source:
+            if source.read(4) != b'\x7fELF':
+                continue
+            source.seek(0)
+            data = source.read()
+        if old not in data:
+            continue
+        if len(data) >= 18 and struct.unpack_from('<H', data, 16)[0] == 1:
+            continue
+        changed = compiled_paths(data, inspector(path, old, readelf), old, new)
+        if changed != data:
+            planned.append((path, changed, path.stat()))
+    for path, data, info in planned:
+        path.write_bytes(data)
+        os.utime(path, ns=(info.st_atime_ns, info.st_mtime_ns))
+
+
+def relocatable_objects(files, groups, old, new):
+    preserved = []
+    for group in groups:
+        path = files[group[0]]
+        with path.open('rb') as source:
+            header = source.read(18)
+            if not header.startswith(b'\x7fELF') or len(header) < 18 or header[16:18] != b'\x01\x00':
+                continue
+            source.seek(0)
+            data = source.read()
+        # Unchanged object payloads need no dynamic-loader operation. Objects
+        # containing this prefix use the same bounded repair as static members.
+        changed = object_paths(data, old, new) if old in data else data
+        preserved.append((path, changed, path.stat()))
+    return preserved
+
+
 def relocate_archive(path, old, new, ar, readelf, directory):
     if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode) or path.stat().st_nlink != 1:
         raise ValueError('expected unlinked installed Ruby static archive')
@@ -106,23 +181,40 @@ def main():
     loader = importlib.util.spec_from_file_location('reviewed_elf_finalizer', shared)
     module = importlib.util.module_from_spec(loader)
     loader.loader.exec_module(module)
+    # Select Ruby's supported text/option forms only in this private module;
+    # the shared Perl procedure and its callers retain their original policy.
+    module.replace_paths = replace_paths
     # The reviewed walker validates the complete installed namespace first.
-    module.tree(root)
+    _, files, groups, _ = module.tree(root)
+    relocate_compiled_paths(files, groups, artifact.encode(), root.encode(),
+                           module.inspect, config['readelf'])
+    objects = relocatable_objects(files, groups, artifact.encode(), root.encode())
     archive = Path(root) / 'lib/libruby-static.a'
     config.update(root=root, artifact=artifact)
-    if not archive.exists() and not archive.is_symlink():
-        module.finalize(config)
-        return
     with tempfile.TemporaryDirectory(prefix='ruby-static-') as work:
-        staged = relocate_archive(archive, artifact.encode(), root.encode(),
-                                  config['ar'], config['readelf'], Path(work))
-        info = archive.stat()
-        # The reviewed ELF/text procedure must not route an ar file as text.
-        archive.unlink()
-        module.finalize(config)
-        archive.write_bytes(staged.read_bytes())
-        archive.chmod(stat.S_IMODE(info.st_mode))
-        os.utime(archive, ns=(info.st_atime_ns, info.st_mtime_ns))
+        staged = None
+        if archive.exists() or archive.is_symlink():
+            staged = relocate_archive(archive, artifact.encode(), root.encode(),
+                                      config['ar'], config['readelf'], Path(work))
+            info = archive.stat()
+        # Keep object names/inodes (and aliases) in the namespace while the
+        # Perl-specific walker processes dynamic ELF and text. Restore the
+        # actual object bytes before the authoritative final reference audit.
+        for path, _, _ in objects:
+            path.write_bytes(b'')
+        if staged:
+            archive.unlink()
+        try:
+            module.finalize(config)
+        finally:
+            if staged:
+                archive.write_bytes(staged.read_bytes())
+                archive.chmod(stat.S_IMODE(info.st_mode))
+                os.utime(archive, ns=(info.st_atime_ns, info.st_mtime_ns))
+            for path, data, state in objects:
+                path.write_bytes(data)
+                path.chmod(stat.S_IMODE(state.st_mode))
+                os.utime(path, ns=(state.st_atime_ns, state.st_mtime_ns))
         module.audit(root, [artifact])
 
 
