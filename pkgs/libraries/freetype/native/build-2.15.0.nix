@@ -45,6 +45,7 @@ let
 in
 {
   pname = "freetype";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -121,6 +122,21 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "freetype.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "freetype.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [ "lib" ];

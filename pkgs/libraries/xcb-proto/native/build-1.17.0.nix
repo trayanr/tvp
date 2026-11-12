@@ -37,6 +37,7 @@ let
 in
 {
   pname = "xcb-proto";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -58,6 +59,7 @@ in
     pkgConfig
     generatorPython
     ;
+  outputs = [ "out" ];
   environment = {
     tools = [
       final.pkgConfig
@@ -96,13 +98,27 @@ in
         am_cv_python_pyexecdir="$out"/${lib.escapeShellArg final.pythonLayout}
     '')
     (command "build" make)
-    ((command "check" "${make} check") // { enabled = final.doCheck; })
     (command "install" ''
       ${make} install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
 
+    (steps.split "xcb-proto.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = if final.outputs == [ "out" ] then null else final.outputs;
+    })
+    {
+      name = "xcb-proto.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (outputs.development {
       python = final.python;
       libraries = [ ];

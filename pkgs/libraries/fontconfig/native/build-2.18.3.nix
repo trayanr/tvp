@@ -49,6 +49,7 @@ let
 in
 {
   pname = "fontconfig";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -125,27 +126,36 @@ in
         "fc-lang/fc-lang.py"
       ];
     })
+    # Test binaries are private validation work. cache-build stays disabled:
+    # no generated cache payload needs rehashing after rebasing config/cache roots.
     (command "configure" ''
       export NINJA=${final.ninja}/bin/ninja
       ${final.meson}/bin/meson setup build . --prefix="$out" --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=enabled \
-        -Ddoc=disabled -Dnls=disabled -Dtests=enabled -Dtests-bwrap=disabled \
+        -Ddoc=disabled -Dnls=disabled -Dtests=disabled -Dtests-bwrap=disabled \
         -Dtests-external-fonts=disabled -Dtools=enabled -Dcache-build=disabled \
         -Dxml-backend=expat -Dfontations=disabled
     '')
     (command "build" ''${final.meson}/bin/meson compile -C build -j "$NIX_BUILD_CORES"'')
-    (
-      (command "check" ''
-        status=0
-        export TVP_SOURCE_ROOT
-        ${final.meson}/bin/meson test -C build --print-errorlogs || status=$?
-        cp -r build/meson-logs "$evidence/meson-logs"
-        exit "$status"
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    )
     (command "install" "${final.meson}/bin/meson install -C build --no-rebuild")
+    (command "receipt" ''
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (steps.split "fontconfig.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "fontconfig.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     {
       name = "fontconfig.self-rpaths";
       tools = [ final.patchelf ];
@@ -160,10 +170,6 @@ in
       tools = [ final.python ];
       run = ''${final.python}/bin/python3 -B ${../check-config-links.py} "$out"'';
     }
-    (command "receipt" ''
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
     (outputs.strip {
       python = final.python;
       binutils = final.binutils;

@@ -39,3 +39,7 @@ p.testContext.mkSuite {
     };
   };
 }
+
+// {
+  upstream = import ./upstream.nix { inherit package; };
+}

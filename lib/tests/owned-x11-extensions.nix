@@ -178,7 +178,10 @@ let
         testShell = builtins.elem wrappers.outPath (
           map toString overridden.tests.api.buildStepRunner.inputs
         );
-        checksRetained = p.specification.doCheck && (step p "check").enabled;
+        checksRetained =
+          p.specification.doCheck
+          && builtins.any (s: s.name == "${name}.check") p.tests.upstream.buildSteps
+          && !(builtins.any (s: s.name == "${name}.check") p.buildSteps);
         archiveGrepDeclared = builtins.elem p.specification.grep.outPath (
           map toString p.tests.archive.buildStepRunner.inputs
         );

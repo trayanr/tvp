@@ -42,6 +42,7 @@ let
 in
 {
   pname = "libdns_sd";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -86,8 +87,9 @@ in
       findutils = final.findutils;
       compression = "gzip";
     })
+    # Upstream's ST hook strips the linked client library; defer it to F.
     (command "build" ''
-      ${make} -C mDNSPosix os=linux CC="$CC" LD="$CC" ST="$STRIP" libdns_sd
+      ${make} -C mDNSPosix os=linux CC="$CC" LD="$CC" ST=${final.coreutils}/bin/true libdns_sd
     '')
     (command "install" ''
       install -Dm755 mDNSPosix/build/prod/libdns_sd.so "$out/lib/libdns_sd.so.1"
@@ -100,6 +102,21 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "libdns_sd.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "libdns_sd.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (outputs.strip {
       python = final.python;
       binutils = final.binutils;

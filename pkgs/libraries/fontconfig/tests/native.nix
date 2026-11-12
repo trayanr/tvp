@@ -16,7 +16,7 @@ package.testContext.mkSuite {
   ];
   libraries = [ package ];
   tests.consumer = {
-    script = ''cc ${./fixtures/consumer.c} -lfontconfig -o consumer; ./consumer ${./fixtures/font.bdf}'';
+    script = "cc ${./fixtures/consumer.c} -lfontconfig -o consumer; ./consumer ${./fixtures/font.bdf}";
     expected = package.version;
   };
   tests.installed = {
@@ -78,4 +78,8 @@ package.testContext.mkSuite {
     '';
     expected = package.version;
   };
+}
+
+// {
+  upstream = import ./upstream.nix { inherit package; };
 }
