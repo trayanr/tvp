@@ -5,6 +5,11 @@ Ordinary releases before 3.6.10 opt into Tcl8's retained string-result API with
 accesses with public result functions. The native definition adds the compiler
 option without changing retained recipes, test coverage or the selected Tcl.
 
+Releases before 3.5.6 also use `-fcommon`: their test header declares
+`pager3_refinfo_enable` in multiple translation units. The native definition at
+3.5.6 removes that option when upstream removes the global. Retained definitions
+and the shared version table keep their original data.
+
 The ordinary x86_64-linux table now selects owned, installed-artifact procedures
 for all 268 supported legacy releases, 3.0.0 through 3.53.3. Declared-broken 3.2.8
 keeps its original definition, status and debt row. The already-owned 3.53.4

@@ -433,58 +433,29 @@ let
       };
     };
   };
-  # Preserve the retained definitions verbatim; only ordinary supported native
-  # releases select these complete source procedures. Original options and patch
-  # records stay intact; native pre-3.6.10 adds Tcl8's string-result API opt-in.
-  remainingDefs = pkgs.lib.mapAttrs (_: definition: {
-    name = definition.name;
-    constructor = tvp.builder;
-    builder =
-      if definition.builder == ./build-3.48.0.nix then
-        ./ordinary/build-3.48.0.nix
-      else
-        ./ordinary/build-3.0.0.nix;
-    base = candidate.base;
-    source = import ./ordinary/source.nix { inherit (pkgs) fetchurl; };
-    testContext =
-      package:
-      tvpLib.tests.fromPackage {
-        builder = tvp.builder;
-        inherit package;
-      };
-    helpers = {
-      inherit tvp;
-    };
-    opts =
-      (definition.opts or { })
-      // pkgs.lib.optionalAttrs (pkgs.lib.versionOlder definition.name "3.6.10") {
-        # 3.6.10 replaced Tcl_Interp.result access with public result functions.
-        # Tcl8 retains that ABI behind this compatibility macro.
-        compileFlags = (definition.opts.compileFlags or [ ]) ++ [ "-DUSE_INTERP_RESULT" ];
-      };
-    patches = definition.patches or [ ];
-    deps = {
-      bash = constructionTool "bash";
-      coreutils = constructionTool "coreutils";
-      pkgConfig = constructionTool "pkgConfig";
-      gnumake = constructionTool "make";
-      gnutar = constructionTool "tar";
-      gzip = constructionTool "gzip";
-      findutils = constructionTool "findutils";
-      sed = constructionTool "sed";
-      grep = constructionTool "grep";
-      gawk = constructionTool "gawk";
-      diffutils = constructionTool "diffutils";
-      patch = constructionTool "patch";
-      python = constructionTool "python";
-      binutils = constructionTool "binutils";
-      patchelf = constructionTool "patchelf";
-      tcl = tvp.packages.tcl_8;
-      readline = tvp.packages.readline_8;
-      testZlib = tvp.packages.zlib_1;
-    };
-  }) defs;
-  remainingTable = tvpLib.packages.mkTable (import ./3.nix { defs = remainingDefs; });
+  # Native options add exact source-compatibility boundaries while the retained
+  # definitions and table remain unchanged.
+  remainingDefs = import ./ordinary/definitions.nix {
+    inherit
+      pkgs
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      defs
+      ;
+  };
+  remainingTable = pkgs.lib.mapAttrs (
+    version: entry:
+    entry
+    // {
+      def =
+        if entry.def.name == "3.4.2" && pkgs.lib.versionAtLeast version "3.5.6" then
+          remainingDefs."3.5.6"
+        else
+          entry.def;
+    }
+  ) (tvpLib.packages.mkTable (import ./3.nix { defs = remainingDefs; }));
   publicArgs = packageArgs // {
     versionTable = pkgs.lib.mapAttrs (
       version: entry:
