@@ -1,6 +1,18 @@
 { package }:
 let
   s = package.specification;
+  # Independent production-shaped construction followed by the original raw
+  # checks. No public final output, finalizer, wrapper or artifact is consumed.
+  upstream = package.edit (
+    spec:
+    (builtins.removeAttrs spec [ "artifactName" ])
+    // {
+      pname = "${spec.pname}-upstream";
+      validationRole = "upstream-execution";
+      plan = spec.upstreamPlan;
+      passthru = { };
+    }
+  );
 in
 package.testContext.mkSuite {
   inherit package;
@@ -11,6 +23,10 @@ package.testContext.mkSuite {
     s.helperPython
   ];
   tests = {
+    upstream = {
+      script = ''test -d ${upstream}; printf passed'';
+      expected = "passed";
+    };
     version = {
       script = ''llvm-config --version'';
       expected = package.version;
