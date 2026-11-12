@@ -16,14 +16,7 @@ let
 
   custom = (package.override { doCheck = false; }).editSteps (
     plan:
-    tvp.builder.steps.replace "zlib.check" (
-      old:
-      old
-      // {
-        tools = throw "disabled zlib check tools were forced";
-        run = throw "disabled zlib check command was forced";
-      }
-    ) plan
+    plan
     ++ [
       {
         name = "zlib.consumer-marker";

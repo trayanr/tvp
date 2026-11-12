@@ -1,5 +1,5 @@
-# Native source-GNU catalogue route; retained bootstrap procedure stays independent.
-# 1.3.2 only. zlib's handwritten configure rejects Autoconf platform flags.
+# Native source-GNU Zlib 1.3.2: handwritten configure with explicitly selected compiler.
+# 1.3.2 only: installed artifact/finalization split; upstream execution is test-only.
 {
   tvp,
   lib,
@@ -23,10 +23,11 @@
 }:
 let
   inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libz.so.1.3.2" ];
+
 in
 final:
 let
+  elfPaths = [ "lib/libz.so.${final.version}" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -35,7 +36,40 @@ let
       inherit name run;
       cwd = "source";
     };
-  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'';
+  make = ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  rpaths =
+    {
+      python,
+      binutils,
+      patchelf,
+      base,
+      paths,
+      libraries,
+      dlopenDirectories ? [ ],
+    }:
+    {
+      name = "output.rpaths";
+      tools = [
+        python
+        binutils
+        patchelf
+      ];
+      run = ''${python}/bin/python3 -B ${../../ordinary-compression-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths dlopenDirectories;
+            elfKinds = null;
+            libraries = lib.concatMap (
+              p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
+            ) libraries;
+            baseDirectories = base.runtimeDirectories;
+            readelf = "${binutils}/bin/readelf";
+            patchelf = "${patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../../lib/native-output}'';
+    };
+
 in
 {
   pname = "zlib";
@@ -46,81 +80,142 @@ in
     bash
     coreutils
     ;
-  environment = {
-    tools = [
+  tools = {
+    inherit
       gnumake
+      gnutar
+      gzip
+      findutils
+      python
+      binutils
+      patchelf
       sed
       grep
       gawk
       diffutils
-      findutils
+      ;
+  };
+  libraries = { };
+  inherit doCheck;
+  stripFlags = [
+    "-S"
+    "-p"
+  ];
+  dependencyProviders = final.tools // final.libraries;
+  environment = {
+    tools = [
+      final.tools.gnumake
+      final.tools.sed
+      final.tools.grep
+      final.tools.gawk
+      final.tools.diffutils
+      final.tools.findutils
     ];
     libraries = [ ];
   };
-  runtime.libraries = [ ];
+  runtime = {
+    libraries = [ ];
+    shell = final.bash;
+    pager = final.coreutils;
+    tools = [
+      final.coreutils
+      final.tools.sed
+      final.tools.grep
+      final.tools.diffutils
+    ];
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      inherit gzip findutils;
-      tar = gnutar;
+      gzip = final.tools.gzip;
+      findutils = final.tools.findutils;
+      tar = final.tools.gnutar;
       compression = "gzip";
     })
-    (steps.shebangs {
+    {
       name = "zlib.prepare";
-      inherit python;
-      paths = [ "configure" ];
-      names = [ "sh" ];
-      interpreter = "${bash}/bin/bash";
-    })
+      cwd = "source";
+      tools = [ final.tools.python ];
+      env = environment.env;
+      run = ''${final.tools.python}/bin/python3 -B ${../../ordinary-compression-source.py} zlib ${final.bash}/bin/bash'';
+    }
     (command "zlib.configure" ''./configure --prefix="$out" --shared'')
     (command "zlib.build" make)
-    ((command "zlib.check" "${make} check") // { enabled = doCheck; })
     (command "zlib.install" ''
       ${make} install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "zlib.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "zlib.relocate-runtime";
+      tools = [
+        final.tools.python
+        final.tools.patchelf
+        final.tools.binutils
+      ];
+      run = ''${final.tools.python}/bin/python3 -B ${../../ordinary-compression-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.tools.patchelf}/bin/patchelf ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            family = "zlib";
+            readelf = "${final.tools.binutils}/bin/readelf";
+            buildShell = "${final.bash}/bin/bash";
+            shell = "${final.runtime.shell}/bin/bash";
+            pager = "${final.runtime.pager}/bin/cat";
+            paths = map (p: "${p}/bin") final.runtime.tools;
+          }
+        )
+      }'';
+    }
     (outputs.strip {
-      inherit python binutils;
+      flags = final.stripFlags;
+      python = final.tools.python;
+      binutils = final.tools.binutils;
       paths = elfPaths;
     })
     (outputs.stripArchives {
-      inherit python binutils;
+      python = final.tools.python;
+      binutils = final.tools.binutils;
       paths = [ "lib/libz.a" ];
     })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
+    (rpaths {
+      python = final.tools.python;
+      binutils = final.tools.binutils;
+      patchelf = final.tools.patchelf;
       base = final.base;
       paths = elfPaths;
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
     })
     (outputs.development {
-      inherit python;
+      python = final.tools.python;
       libraries = [ ];
     })
     {
       name = "output.manuals";
       tools = [
-        gzip
-        findutils
+        final.tools.gzip
+        final.tools.findutils
       ];
-      run = ''${gzip}/bin/gzip -n -9 "$out/share/man/man3/zlib.3"'';
+      run = ''${final.tools.gzip}/bin/gzip -n -9 "$out/share/man/man3/zlib.3"'';
     }
     (outputs.checkSymlinks {
-      inherit python;
+      python = final.tools.python;
       paths = [
         "lib/libz.so"
         "lib/libz.so.1"
       ];
     })
     (outputs.checkPaths {
-      inherit python binutils patchelf;
+      python = final.tools.python;
+      binutils = final.tools.binutils;
+      patchelf = final.tools.patchelf;
       paths = elfPaths;
     })
   ];
   tvp = {
-    reportedVersion = version;
+    reportedVersion = final.version;
     features = {
       libName = "z";
       versionFunction = true;
@@ -133,6 +228,6 @@ in
     description = "Lossless data-compression library implementing the DEFLATE algorithm";
     homepage = "https://zlib.net/";
     license = lib.licenses.zlib;
-    platforms = [ "x86_64-linux" ];
+    platforms = lib.platforms.unix;
   };
 }
