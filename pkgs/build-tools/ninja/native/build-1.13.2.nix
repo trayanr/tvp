@@ -1,5 +1,4 @@
 # Native ordinary 1.13.2 retains browse with full public Python and the selected shell.
-# Embedded runtime paths require reconstructing this single-stage procedure.
 {
   lib,
   tvp,
@@ -23,6 +22,16 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
+  # Fixed-width valid paths preserve C++ string lengths, including CMake's
+  # generated Makefile fragments. The selected build shell runs during bootstrap.
+  padded =
+    path:
+    assert builtins.stringLength path <= 256;
+    lib.concatStrings (lib.replicate (256 - builtins.stringLength path) "/") + path;
+  buildShell = padded "${final.bash}/bin/bash";
+  runtimeShell = padded "${final.runtime.shell}/bin/bash";
+  buildPython = padded "${python}/bin/python3";
+  runtimePython = padded "${final.runtime.python}/bin/python3";
   environment = final.base.environment final.environment;
   # The selected compiler wrapper is an explicit tool interface. Keep required
   # transitive development paths when callers replace upstream scalar flags or
@@ -80,6 +89,22 @@ in
     shell = bash;
     inherit python;
   };
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "ninja.install";
+    command = (
+      (command "ninja.check" ''
+        status=0
+        ${helperPython}/bin/python3 -B misc/ninja_syntax_test.py -v > "$out/.tvp-evidence/check.log" 2>&1 || status=$?
+        printf '%s\n' "$status" > "$out/.tvp-evidence/check.status"
+        cat "$out/.tvp-evidence/check.log"
+        test "$status" = 0
+      '')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -88,8 +113,8 @@ in
       compression = "gzip";
     })
     (command "ninja.prepare" ''
-      ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
-      ${helperPython}/bin/python3 -B - ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"} <<'PY'
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
+      ${helperPython}/bin/python3 -B - ${lib.escapeShellArg buildShell} <<'PY'
       from pathlib import Path
       import sys
       p = Path('src/subprocess-posix.cc')
@@ -103,37 +128,62 @@ in
       python = helperPython;
       paths = [ "src/inline.sh" ];
       names = [ "sh" ];
-      interpreter = "${final.runtime.shell}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "ninja.build" ''
       mkdir -p "$out/.tvp-evidence"
       trap 'status=$?; if (( status != 0 )); then cat "$out/.tvp-evidence/build.log"; fi' EXIT
       # Only the prepared compiler environment contributes flags.
-      ${helperPython}/bin/python3 -B configure.py --bootstrap --verbose --with-python=${final.runtime.python}/bin/python3 > "$out/.tvp-evidence/build.log" 2>&1
+      ${helperPython}/bin/python3 -B configure.py --bootstrap --verbose --with-python=${lib.escapeShellArg buildPython} > "$out/.tvp-evidence/build.log" 2>&1
       cp build.ninja "$out/.tvp-evidence/"
     '')
-    (
-      (command "ninja.check" ''
-        status=0
-        ${helperPython}/bin/python3 -B misc/ninja_syntax_test.py -v > "$out/.tvp-evidence/check.log" 2>&1 || status=$?
-        printf '%s\n' "$status" > "$out/.tvp-evidence/check.status"
-        cat "$out/.tvp-evidence/check.log"
-        test "$status" = 0
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "ninja.install" ''
       install -Dm755 ninja "$out/bin/ninja"
-      # Drop the unused /usr/bin/python shebang: this file is an imported module.
-      tail -n +2 misc/ninja_syntax.py > ninja_syntax.py
-      install -Dm644 ninja_syntax.py "$out/share/ninja/ninja_syntax.py"
+      install -Dm644 misc/ninja_syntax.py "$out/share/ninja/ninja_syntax.py"
       install -Dm644 doc/manual.asciidoc "$out/share/doc/ninja/manual.asciidoc"
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
       install -Dm644 COPYING "$out/share/licenses/ninja/COPYING"
     '')
-    (command "ninja.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
+    (steps.split "ninja.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "ninja.relocate";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            fixed = [
+              [
+                buildShell
+                runtimeShell
+              ]
+              [
+                buildPython
+                runtimePython
+              ]
+            ];
+            text = [
+              [
+                "${final.bash}/bin/bash"
+                "${final.runtime.shell}/bin/bash"
+              ]
+            ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "ninja.module-header";
+      run = ''
+        # This file is an imported module; discard only its unused script header.
+        tail -n +2 "$out/share/ninja/ninja_syntax.py" > ninja_syntax.py
+        cp ninja_syntax.py "$out/share/ninja/ninja_syntax.py"
+      '';
+    }
+    {
+      name = "ninja.remove-evidence";
+      run = ''rm -rf "$out/.tvp-evidence"'';
+    }
     (outputs.strip {
       python = helperPython;
       inherit binutils;

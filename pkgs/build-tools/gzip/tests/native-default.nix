@@ -37,7 +37,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -76,7 +76,7 @@ let
   );
   provider = d.grep.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -96,7 +96,7 @@ let
   );
   shellProvider = d.grep.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -116,7 +116,7 @@ let
   );
   pagerProvider = d.pager.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -153,7 +153,7 @@ p.testContext.mkSuite {
   libraries = [ ];
   tests = {
     upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
+      script = "test -d ${upstream}/nix-support/upstream; printf upstream";
       expected = "upstream";
     };
     version = {
@@ -182,7 +182,7 @@ p.testContext.mkSuite {
       expected = "preserved";
     };
     zgrep-pin = {
-      script = ''grep -Fq '${d.grep}/bin/grep' ${p}/bin/zgrep; printf pinned'';
+      script = "grep -Fq '${d.grep}/bin/grep' ${p}/bin/zgrep; printf pinned";
       expected = "pinned";
     };
     zgrep = {

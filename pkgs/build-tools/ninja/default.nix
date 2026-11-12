@@ -148,7 +148,7 @@ let
 
     };
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
       "1.13.0" = versionTable."1.13.0" // {
         def = if native then ownedDefs."1.13.0" else versionTable."1.13.0".def;
@@ -164,7 +164,13 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import (if package ? artifact then ./tests/older-native-default.nix else ./tests/native-default.nix)
+        import
+          (
+            if package ? artifact && !(package.specification ? upstreamCheck) then
+              ./tests/older-native-default.nix
+            else
+              ./tests/native-default.nix
+          )
           {
             inherit
               pkgs
@@ -176,6 +182,21 @@ let
       else
         constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

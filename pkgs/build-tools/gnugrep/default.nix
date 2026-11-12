@@ -140,7 +140,7 @@ let
       ;
     libc = candidate.toolchain.libc;
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
       "3.11" = versionTable."3.11" // {
         def = if native then ownedDefs."3.11" else versionTable."3.11".def;
@@ -168,6 +168,21 @@ let
         import ../ordinary-text-contracts.nix { inherit tvp package; }
       )
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

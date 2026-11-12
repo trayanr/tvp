@@ -38,6 +38,8 @@ let
 in
 {
   pname = "bash";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -75,6 +77,31 @@ in
     libraries = final.environment.libraries;
     dlopenDirectories = [ ];
   };
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "bash.source-shells";
+      python = final.python;
+      paths = [ "tests" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = final.doCheck;
+    before = "bash.install";
+    command = (
+      (command "check" ''
+        ./bash --noprofile --norc -c 'set -eu; test "$((21 * 2))" = 42; declare -A a=([tvp]=ok); test "''${a[tvp]}" = ok'
+        ${make} -C examples/loadables all
+      '')
+      // {
+        enabled = final.doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -89,7 +116,6 @@ in
       paths = [
         "configure"
         "support"
-        "tests"
       ];
       names = [
         "sh"
@@ -105,20 +131,32 @@ in
     (command "build" make)
     # Bounded shipped smoke tests: their diagnostics are retained, not a claim
     # of the entire Bash upstream conformance suite.
-    (
-      (command "check" ''
-        ./bash --noprofile --norc -c 'set -eu; test "$((21 * 2))" = 42; declare -A a=([tvp]=ok); test "''${a[tvp]}" = ok'
-        ${make} -C examples/loadables all
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    )
     (command "install" ''
       ${make} install
       ln -s bash "$out/bin/sh"
-      ${final.python}/bin/python3 -B ${./self-helpers.py} "$out" ${../../../../lib/native-output} ${final.coreutils}/bin/install
     '')
+    (steps.split "bash.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "bash.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../../build-tools/owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "bash.self-helpers";
+      tools = [ final.python ];
+      run = ''
+        ${final.python}/bin/python3 -B ${./self-helpers.py} "$out" ${../../../../lib/native-output} ${final.coreutils}/bin/install
+      '';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin/bashbug" ];

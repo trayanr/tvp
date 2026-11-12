@@ -77,6 +77,8 @@ let
 in
 {
   pname = "pkg-config";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -100,57 +102,22 @@ in
     overrides.flags.NIX_CFLAGS_COMPILE = [ "-std=${cStandard}" ];
   };
   runtime.libraries = (final.base.environment final.environment).libraries;
-  plan = steps.sequence [
-    (steps.unpack {
-      src = final.src;
-      tar = gnutar;
-      inherit gzip findutils;
-      compression = "gzip";
-    })
-    (steps.prepareAutotools {
-      name = "pkg-config.prepare";
-      bash = final.bash;
-      inherit python;
-      base = final.base;
-    })
+  upstreamPreparation = [
     (steps.shebangs {
       name = "pkg-config.source-shells";
       inherit python;
-      paths = [
-        "configure"
-        "glib/configure"
-        "config.guess"
-        "config.sub"
-        "install-sh"
-        "missing"
-        "check"
-        "glib/install-sh"
-        "glib/missing"
-      ];
+      paths = [ "check" ];
       names = [
         "sh"
         "bash"
       ];
       interpreter = "${final.bash}/bin/bash";
     })
-    (command "pkg-config.charset-source" ''
-      ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
-      ${python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
-      import json, sys
-      from pathlib import Path
-      path = Path('glib/glib/libcharset/localcharset.c')
-      text = path.read_text()
-      assert text.count('@TVP_CHARSET_DIR@') == 1
-      path.write_text(text.replace('"@TVP_CHARSET_DIR@"', json.dumps(sys.argv[1])))
-      PYCODE
-    '')
-    (logged "configure" ''
-      # Empty compiled default: only explicitly provided public .pc directories.
-      ./configure --prefix="$out" --with-internal-glib --with-pc-path= --disable-dependency-tracking
-      cp config.log "$out/.tvp-evidence/"
-    '')
-    (logged "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "pkg-config.install";
+    command = (
       (logged "check" ''
         # The complete pkg-config discovery suite; not bundled GLib's own suite.
         ${gnumake}/bin/make -C check -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash TESTS_SHELL=${final.bash}/bin/bash check
@@ -176,12 +143,84 @@ in
       // {
         enabled = doCheck;
       }
-    )
+    );
+  };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "pkg-config.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "pkg-config.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "glib/configure"
+        "config.guess"
+        "config.sub"
+        "install-sh"
+        "missing"
+        "glib/install-sh"
+        "glib/missing"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "pkg-config.charset-source" ''
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
+      ${python}/bin/python3 -B - ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
+      import json, sys
+      from pathlib import Path
+      path = Path('glib/glib/libcharset/localcharset.c')
+      text = path.read_text()
+      assert text.count('@TVP_CHARSET_DIR@') == 1
+      path.write_text(text.replace('"@TVP_CHARSET_DIR@"', json.dumps(sys.argv[1])))
+      PYCODE
+    '')
+    (logged "configure" ''
+      # Empty compiled default: only explicitly provided public .pc directories.
+      ./configure --prefix="$out" --with-internal-glib --with-pc-path= --disable-dependency-tracking
+      cp config.log "$out/.tvp-evidence/"
+    '')
+    (logged "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     (logged "install" ''
       ${gnumake}/bin/make SHELL=${final.bash}/bin/bash install
-      ${gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"
     '')
-    (command "pkg-config.remove-evidence" ''rm -rf "$out/.tvp-evidence"'')
+    (steps.split "pkg-config.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "pkg-config.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "output.manuals";
+      tools = [ gzip ];
+      run = ''${gzip}/bin/gzip -n -9 "$out/share/man/man1/pkg-config.1"'';
+    }
+    {
+      name = "pkg-config.remove-evidence";
+      run = ''rm -rf "$out/.tvp-evidence"'';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = [ "bin" ];

@@ -47,7 +47,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -83,7 +83,7 @@ let
   );
   macroProvider = d.m4.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -114,11 +114,11 @@ p.testContext.mkSuite {
   libraries = [ ];
   tests = {
     version = {
-      script = ''bison --version | awk 'NR==1 {print $NF}' '';
+      script = "bison --version | awk 'NR==1 {print $NF}' ";
       expected = p.version;
     };
     upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
+      script = "test -d ${upstream}/nix-support/upstream; printf upstream";
       expected = "upstream";
     };
     parser = {

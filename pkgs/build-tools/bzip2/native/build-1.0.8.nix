@@ -67,6 +67,11 @@ in
     libraries = [ ];
     shell = bash;
   };
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "bzip2.install";
+    command = ((command "bzip2.check" "${make} check") // { enabled = doCheck; });
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -80,7 +85,6 @@ in
       ${make} -f Makefile-libbz2_so
       ${make} libbz2.a bzip2 bzip2recover
     '')
-    ((command "bzip2.check" "${make} check") // { enabled = doCheck; })
     (command "bzip2.install" ''
       ${make} install PREFIX="$out"
       for pair in 'bzegrep bzgrep' 'bzfgrep bzgrep' 'bzless bzmore' 'bzcmp bzdiff'; do
@@ -92,9 +96,27 @@ in
       ln -s libbz2.so.1.0 "$out/lib/libbz2.so.1"
       ln -s libbz2.so.1.0 "$out/lib/libbz2.so"
       mkdir -p "$out/nix-support" "$out/share"
-      mv "$out/man" "$out/share/man"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "bzip2.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "bzip2.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "bzip2.manual-layout";
+      run = ''mv "$out/man" "$out/share/man"'';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;

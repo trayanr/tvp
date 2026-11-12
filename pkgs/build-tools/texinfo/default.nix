@@ -67,39 +67,53 @@ let
       def = if native then defs."7.1" else previous.recipes.texinfo.versionTable."7.1".def;
     };
   };
-  publicArgs =
-    {
-      inherit (previous.recipes.texinfo) infra pname;
-    }
-    // {
-      inherit versionTable;
-      source =
-        { version, sha256 }:
-        pkgs.fetchurl {
-          url = "https://mirrors.kernel.org/gnu/texinfo/texinfo-${version}.tar.xz";
-          inherit sha256;
-        };
-      testDeps = {
-        sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-        alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
-        sourceGzip = candidate.tools.gzip;
+  installedArgs = {
+    inherit (previous.recipes.texinfo) infra pname;
+  }
+  // {
+    inherit versionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://mirrors.kernel.org/gnu/texinfo/texinfo-${version}.tar.xz";
+        inherit sha256;
       };
-      extraArgs.mkTests = pkgs.lib.makeOverridable (
+    testDeps = {
+      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sourceGzip = candidate.tools.gzip;
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native-default.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else
+        (previous.recipes.texinfo.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
         { pkgs }:
         package:
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvp
-              tvpLib
-              package
-              ;
-          }
-        else
-          (previous.recipes.texinfo.extraArgs.mkTests.override { inherit pkgs; }) package
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
       ) { inherit pkgs; };
     };
+  };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "texinfo";
 in

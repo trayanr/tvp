@@ -43,6 +43,8 @@ let
 in
 {
   pname = "patch";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -82,7 +84,33 @@ in
     libraries = [ ];
     dlopenDirectories = [ ];
   };
-  # A single stage retains the configured installation paths without relocation.
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "patch.source-shells";
+      python = final.python;
+      paths = [ "tests" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = final.doCheck;
+    before = "patch.install";
+    command = (
+      (command "patch.check" ''
+        status=0
+        ${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || status=$?
+        if (( status )); then cat tests/test-suite.log >&2 || :; fi
+        exit "$status"
+      '')
+      // {
+        enabled = final.doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -100,7 +128,6 @@ in
       python = final.python;
       paths = [
         "configure"
-        "tests"
         "build-aux"
       ];
       names = [
@@ -115,18 +142,22 @@ in
         ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "patch.build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "patch.check" ''
-        status=0
-        ${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || status=$?
-        if (( status )); then cat tests/test-suite.log >&2 || :; fi
-        exit "$status"
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    )
     (command "patch.install" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install'')
+    (steps.split "patch.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "patch.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     {
       name = "output.manuals";
       tools = [ final.gzip ];

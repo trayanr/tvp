@@ -1,5 +1,4 @@
 # Ordinary 5.48 only: owned commands and explicit compression/output policy.
-# One prefix keeps the compiled default magic database path coherent with edits.
 {
   tvp,
   lib,
@@ -45,6 +44,8 @@ let
 in
 {
   pname = "file";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -100,6 +101,21 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "file.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "file.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;

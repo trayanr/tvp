@@ -37,7 +37,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -76,7 +76,7 @@ let
   );
   provider = d.perl.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -96,7 +96,7 @@ let
   );
   localeProvider = d.perl.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -116,7 +116,7 @@ let
   );
   ncursesProvider = d.ncurses.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -145,7 +145,7 @@ p.testContext.mkSuite {
   libraries = [ ];
   tests = {
     upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
+      script = "test -d ${upstream}/nix-support/upstream; printf upstream";
       expected = "upstream";
     };
     version = {
@@ -202,7 +202,7 @@ p.testContext.mkSuite {
       expected = "reader";
     };
     tex-support = {
-      script = ''test -s ${p}/texmf-dist/tex/texinfo/texinfo.tex; printf ok'';
+      script = "test -s ${p}/texmf-dist/tex/texinfo/texinfo.tex; printf ok";
       expected = "ok";
     };
 

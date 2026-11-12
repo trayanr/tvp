@@ -48,9 +48,11 @@ let
         tvp.builder.steps.insertAfter "output.copy-artifacts" [
           {
             name = "gperf.normalize-upstream-evidence";
-            tools = [ p.specification.tools.python ];
+            tools = [ (p.specification.tools.python or d.python) ];
             run = ''
-              ${p.specification.tools.python}/bin/python3 -B - "$out/nix-support/upstream" <<'PYTHON'
+              ${
+                (p.specification.tools.python or d.python)
+              }/bin/python3 -B - "$out/nix-support/upstream" <<'PYTHON'
               import hashlib, json, os, stat, sys
               from pathlib import Path
 
@@ -100,7 +102,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -130,7 +132,7 @@ let
         name = "gperf.option-control";
         cwd = "source";
         tools = [ d.grep ];
-        run = ''grep -q '^CXXFLAGS = -O0$' src/Makefile'';
+        run = "grep -q '^CXXFLAGS = -O0$' src/Makefile";
       }
     ]
   );
@@ -143,7 +145,7 @@ let
       }
     ]
   );
-  runtimeProvider = p.editSteps (_: [
+  runtimeProvider = (p.edit (s: removeAttrs s [ "artifactName" ])).editSteps (_: [
     {
       name = "gperf.runtime-provider";
       run = ''
@@ -166,16 +168,18 @@ p.testContext.mkSuite {
   libraries = [ ];
   tests = {
     version = {
-      script = ''gperf --version | awk 'NR==1 {print $NF}' '';
+      script = "gperf --version | awk 'NR==1 {print $NF}' ";
       expected = p.version;
     };
     upstream = {
       script =
         if !(p ? artifact) then
-          ''test -d ${upstream}/nix-support/upstream; printf upstream''
+          "test -d ${upstream}/nix-support/upstream; printf upstream"
         else
           ''
-            ${p.specification.tools.python}/bin/python3 -B - ${upstream} ${upstream.artifact} <<'PYTHON'
+            ${
+              (p.specification.tools.python or d.python)
+            }/bin/python3 -B - ${upstream} ${upstream.artifact} <<'PYTHON'
             import hashlib, json, os, sys
             from pathlib import Path
             final, artifact = map(Path, sys.argv[1:])

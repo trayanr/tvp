@@ -45,6 +45,8 @@ let
 in
 {
   pname = "binutils";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -100,6 +102,20 @@ in
     final.zlib
     final.zstd
   ];
+  upstreamCheck = {
+    enabled = final.doCheck;
+    before = "binutils.install";
+    command = # Affordable shipped checks; DejaGNU's target matrix is outside this gate.
+      (
+        (
+          (command "check" "${make} check-libiberty check-libsframe")
+          // {
+            cwd = "build";
+            enabled = final.doCheck;
+          }
+        )
+      );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -146,16 +162,6 @@ in
         } ${lib.escapeShellArgs final.configureFlags}
     '')
     ((command "build" make) // { cwd = "build"; })
-    # Affordable shipped checks; DejaGNU's target matrix is outside this gate.
-    (
-      (
-        (command "check" "${make} check-libiberty check-libsframe")
-        // {
-          cwd = "build";
-          enabled = final.doCheck;
-        }
-      )
-    )
     (
       (command "install" ''
         ${make} install
@@ -166,6 +172,21 @@ in
         cwd = "build";
       }
     )
+    (steps.split "binutils.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "binutils.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [ "bin" ];

@@ -14,23 +14,26 @@ let
     binutils
   ];
 
-  custom = (package.override { doCheck = false; }).editSteps (
-    plan:
-    tvp.builder.steps.replace "xz.check" (
-      old:
-      old
+  custom =
+    ((package.override { doCheck = false; }).edit (
+      s:
+      s
       // {
-        tools = throw "disabled XZ check tools were forced";
-        run = throw "disabled XZ check command was forced";
+        upstreamCheck = s.upstreamCheck // {
+          command = throw "disabled upstream check was forced";
+        };
       }
-    ) plan
-    ++ [
-      {
-        name = "xz.consumer-marker";
-        run = ''printf '%s\n' 'edited' > "$out/nix-support/consumer-marker"'';
-      }
-    ]
-  );
+    )).editSteps
+      (
+        plan:
+        plan
+        ++ [
+          {
+            name = "xz.consumer-marker";
+            run = ''printf '%s\n' 'edited' > "$out/nix-support/consumer-marker"'';
+          }
+        ]
+      );
 in
 package.testContext.mkSuite {
   inherit package;

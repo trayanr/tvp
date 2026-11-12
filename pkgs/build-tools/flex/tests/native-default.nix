@@ -50,7 +50,7 @@ let
           )
         ]
       );
-  skeleton = p.editSteps (plan: [
+  skeleton = (p.edit (s: removeAttrs s [ "artifactName" ])).editSteps (plan: [
     (builtins.head plan)
     {
       name = "flex.skeleton-fixture";
@@ -77,7 +77,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -113,7 +113,7 @@ let
   );
   macroProvider = d.m4.edit (
     s:
-    s
+    (removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -144,11 +144,11 @@ p.testContext.mkSuite {
   libraries = [ p ];
   tests = {
     version = {
-      script = ''flex --version | awk 'NR==1 {print $NF}' '';
+      script = "flex --version | awk 'NR==1 {print $NF}' ";
       expected = p.version;
     };
     upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
+      script = "test -d ${upstream}/nix-support/upstream; printf upstream";
       expected = "upstream";
     };
     scanner = {
