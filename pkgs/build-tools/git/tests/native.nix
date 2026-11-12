@@ -4,7 +4,7 @@
   tvp,
   package,
 }:
-package.testContext.mkSuite {
+(package.testContext.mkSuite {
   inherit package;
   tools = with package.specification; [
     gawk
@@ -43,6 +43,18 @@ package.testContext.mkSuite {
       '';
       tools = [ package.specification.helperPython ];
       expected = "interfaces-ok";
+    };
+    cvsserver-entry-paths = {
+      script = ''
+        unset GIT_EXEC_PATH GITPERLLIB PERL5LIB PERLLIB
+        for entry in ${package}/bin/git-cvsserver ${package}/libexec/git-core/git-cvsserver; do
+          test "$("$entry" --version)" = 'git-cvsserver version ${package.version}'
+        done
+        test "$(GIT_EXEC_PATH=${package}/libexec/git-core ${package}/bin/git-cvsserver --version)" = 'git-cvsserver version ${package.version}'
+        test "$(GITPERLLIB=${package}/share/perl5 ${package}/bin/git-cvsserver --version)" = 'git-cvsserver version ${package.version}'
+        printf cvsserver-entry-paths-ok
+      '';
+      expected = "cvsserver-entry-paths-ok";
     };
     version = {
       script = ''git --version | awk '{print $3}' '';
@@ -90,4 +102,7 @@ package.testContext.mkSuite {
       tools = [ package.tvp.deps.python ];
     };
   };
+})
+// {
+  upstream = import ./upstream.nix { inherit package; };
 }

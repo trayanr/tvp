@@ -29,10 +29,39 @@
   openssl,
   zlib,
   doCheck ? true,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    patches
+    bash
+    coreutils
+    toolPython
+    gnumake
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    gawk
+    diffutils
+    binutils
+    patchelf
+    patch
+    python
+    ninja
+    rustc
+    cargo
+    runtimeBash
+    openssl
+    zlib
+    doCheck
+    ;
   inherit (tvp.builder) steps outputs;
+  configurePrefix = if builtins.isString final.configurePrefix && !(builtins.hasContext final.configurePrefix) && builtins.match "/tvp/[A-Za-z0-9][A-Za-z0-9_+./-]*" final.configurePrefix != null && !(builtins.elem ".." (lib.splitString "/" final.configurePrefix)) then final.configurePrefix else throw "Node configurePrefix must be a context-free /tvp path";
   command =
     name: run:
     (final.base.environment final.environment)
@@ -45,13 +74,35 @@ let
 in
 {
   pname = "nodejs";
-  inherit
+  inherit (args)
     base
     src
     version
+    patches
     bash
     coreutils
+    toolPython
+    gnumake
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    gawk
+    diffutils
+    binutils
+    patchelf
+    patch
+    python
+    ninja
+    rustc
+    cargo
+    runtimeBash
+    openssl
+    zlib
     ;
+  doCheck = args.doCheck or true;
+
   environment = {
     tools = [
       python
@@ -70,9 +121,10 @@ in
       zlib
     ];
   };
+  configurePrefix = "/tvp/node";
   runtime = {
     libraries = final.environment.libraries;
-    shell = runtimeBash;
+    shell = final.runtimeBash;
   };
   plan = steps.sequence [
     (steps.unpack {
@@ -120,7 +172,7 @@ in
     (command "configure" ''
       export CARGO_NET_OFFLINE=true
       export CARGO_HOME="$TMPDIR/cargo-home"
-      ${python}/bin/python3 configure --prefix="$out" --ninja --v8-enable-temporal-support \
+      ${python}/bin/python3 configure --prefix=${lib.escapeShellArg configurePrefix} --ninja --v8-enable-temporal-support \
         --with-intl=full-icu --shared-openssl --shared-openssl-includes=${lib.getDev openssl}/include \
         --shared-openssl-libpath=${lib.getLib openssl}/lib --shared-zlib \
         --shared-zlib-includes=${lib.getDev zlib}/include --shared-zlib-libpath=${lib.getLib zlib}/lib
@@ -130,15 +182,6 @@ in
       export CARGO_HOME="$TMPDIR/cargo-home"
       ${ninja}/bin/ninja -C out/Release -j"$NIX_BUILD_CORES" node
     '')
-    (
-      (command "check" ''
-        ${python}/bin/python3 tools/test.py --mode=release --timeout=120 \
-          parallel/test-assert-deep parallel/test-buffer-tostring parallel/test-crypto-hash parallel/test-zlib-convenience-methods
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "install" ''
       ${python}/bin/python3 tools/install.py install --dest-dir="" --prefix="$out"
       chmod -R u+w "$out"
@@ -158,6 +201,13 @@ in
               path.chmod(info.st_mode & ~0o111)
       PYTHON
     '')
+    (steps.split "nodejs.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    {
+      name = "nodejs.relocate";
+      tools = [ toolPython ];
+      run = ''${toolPython}/bin/python3 -B ${./finalize.py} "$out" "$TVP_ARTIFACT_ROOT" ${../../../../lib/installed-tree.py} ${lib.escapeShellArg final.configurePrefix}'';
+    }
     (outputs.shebangs {
       python = toolPython;
       paths = [ "lib/node_modules" ];

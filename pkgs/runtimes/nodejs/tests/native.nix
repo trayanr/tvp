@@ -121,7 +121,7 @@ let
       == package.drvPath;
   };
 in
-package.testContext.mkSuite {
+(package.testContext.mkSuite {
   inherit package;
   tools = [
     package.tvp.deps.grep
@@ -196,4 +196,4 @@ package.testContext.mkSuite {
       expected = "owned";
     };
   };
-}
+}) // { upstream = import ./upstream.nix { inherit package; }; }
