@@ -107,6 +107,10 @@ suite {
       };
     }
 
+    // pkgs.lib.optionalAttrs (owned && pkgs.lib.versionAtLeast php.version "5.3.0") {
+      phar-helper = import ./phar-helper.nix { package = php; };
+    }
+
     # phpize, php-config and installed headers have a separate install path.
     // pkgs.lib.optionalAttrs php.tvp.features.functionEntryEnd {
       compile = {

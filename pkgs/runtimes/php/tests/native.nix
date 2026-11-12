@@ -197,6 +197,7 @@ package.testContext.mkSuite {
 
   tests =
     {
+      phar-helper = import ./phar-helper.nix { inherit package; };
       constructor =
         assert builtins.all (x: x) (builtins.attrValues contracts);
         {
