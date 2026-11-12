@@ -1,6 +1,6 @@
 # Independent ordinary native Curl 8.23.0 procedure. Preserve the realized
-# default-base shared-only profile explicitly. One compiled prefix: runtime
-# edits rebuild; no compilation-reuse or binary-prefix relocation claim.
+# default-base shared-only profile explicitly. Installation produces A;
+# installed metadata and runtime library repair happen in F.
 {
   tvp,
   lib,
@@ -82,7 +82,71 @@ in
     zstd
     nghttp2
   ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      inherit python;
+      bash = final.bash;
+      base = final.base;
+      name = "curl.prepare";
+    })
+    (steps.shebangs {
+      name = "curl.shell-scripts";
+      inherit python;
+      paths = [
+        "scripts"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (steps.shebangs {
+      name = "curl.perl-scripts";
+      inherit python;
+      paths = [
+        "scripts"
+      ];
+      names = [ "perl" ];
+      interpreter = "${perl}/bin/perl";
+    })
+    (steps.shebangs {
+      name = "curl.python-scripts";
+      inherit python;
+      paths = [
+        "scripts"
+      ];
+      names = [
+        "python"
+        "python3"
+      ];
+      interpreter = "${python}/bin/python3";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      export PERL=${perl}/bin/perl PYTHON=${python}/bin/python3
+      ./configure --prefix="$out" --enable-shared --disable-static --disable-dependency-tracking \
+        --with-openssl=${openssl} --with-zlib=${zlib} --with-zstd=${zstd} --with-nghttp2=${nghttp2} \
+        --with-ca-bundle=${ca-certificates}/etc/ssl/certs/ca-bundle.crt --without-ca-path \
+        ${lib.escapeShellArgs configureOptions}
+    '')
+    (command "build" make)
+    (command "install" ''
+      ${make} install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+      test -f "$out/lib/libcurl.so.4.8.0"
+      test ! -e "$out/lib/libcurl.a"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -140,6 +204,8 @@ in
         ${lib.escapeShellArgs configureOptions}
     '')
     (command "build" make)
+  ];
+  upstreamCheck =
     (
       (command "check" ''
         status=0
@@ -149,25 +215,16 @@ in
         exit "$status"
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
-    )
-    (command "install" ''
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      printf '%s\n' ${
-        if doCheck then "executed" else "DISABLED-doCheck-false"
-      } > "$out/nix-support/upstream-scope"
-      ${lib.optionalString doCheck ''
-        cp upstream-tests.status "$out/nix-support/"
-        # Keep bounded, path-free results in the runtime output. The complete
-        # raw runner transcript remains in the Nix build log, including failures.
-        grep '^TESTDONE:' upstream-tests.log > "$out/nix-support/upstream-summary"
-      ''}
-      test -f "$out/lib/libcurl.so.4.8.0"
-      test ! -e "$out/lib/libcurl.a"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "curl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["bin/curl-config" "lib/pkgconfig" "lib/libcurl.la"];
+    })
     (outputs.shebangs {
       inherit python;
       paths = [ "bin/curl-config" ];
@@ -209,7 +266,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     inherit doCheck;
     tls = true;

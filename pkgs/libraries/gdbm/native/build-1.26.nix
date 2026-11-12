@@ -58,7 +58,7 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -77,7 +77,6 @@ in
       ./configure --prefix="$out" --enable-shared --disable-static --enable-libgdbm-compat
     '')
     (command "build" make)
-    ((command "check" ''${make} check'') // { enabled = doCheck; })
     (command "install" ''
       ${make} install
       mkdir -p "$out/include/gdbm"
@@ -87,6 +86,37 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "gdbm.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+      cwd = "source";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      ./configure --prefix="$out" --enable-shared --disable-static --enable-libgdbm-compat
+    '')
+    (command "build" make)
+  ];
+  upstreamCheck =
+    ((command "check" ''${make} check'') // { enabled = final.doCheck; });
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "gdbm.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libgdbm.la" "lib/libgdbm_compat.la"];
+    })
     (outputs.shebangs {
       inherit python;
       paths = [
@@ -130,7 +160,7 @@ in
       ];
       elfKinds = [ "runtime" ];
     })
-  ];
+  ]);
   tvp.features = {
     compatLib = true;
     shared = true;

@@ -54,7 +54,24 @@ in
     cc = final.base.compiler;
     revision = final.revision;
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    {
+      name = "source.copy";
+      tools = [ coreutils ];
+      run = ''cp -R ${final.src} source; chmod -R u+w source'';
+    }
+    (command "configure" ''
+      ${python}/bin/python3 build/gen.py --no-last-commit-position --no-static-libstdc++ --no-strip ${lib.optionalString final.allowWarnings "--allow-warnings"}
+      printf '%s\n' '#define LAST_COMMIT_POSITION_NUM 0' ${lib.escapeShellArg ''#define LAST_COMMIT_POSITION "${final.revision}"''} > out/last_commit_position.h
+    '')
+    (command "build" ''${ninja}/bin/ninja -C out -j"$NIX_BUILD_CORES" gn'')
+    (command "install" ''
+      install -Dm755 out/gn "$out/bin/gn"
+      install -Dm644 LICENSE "$out/share/licenses/gn/LICENSE"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     {
       name = "source.copy";
       tools = [ coreutils ];
@@ -65,11 +82,12 @@ in
       printf '%s\n' '#define LAST_COMMIT_POSITION_NUM 0' ${lib.escapeShellArg ''#define LAST_COMMIT_POSITION "${final.revision}"''} > out/last_commit_position.h
     '')
     (command "build" ''${ninja}/bin/ninja -C out -j"$NIX_BUILD_CORES"'')
-    ((command "check" ''out/gn_unittests'') // { enabled = doCheck; })
-    (command "install" ''
-      install -Dm755 out/gn "$out/bin/gn"
-      install -Dm644 LICENSE "$out/share/licenses/gn/LICENSE"
-    '')
+  ];
+  upstreamCheck =
+    ((command "check" ''out/gn_unittests'') // { enabled = final.doCheck; });
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "gn.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.strip {
       inherit python binutils;
       paths = [ "bin" ];
@@ -85,7 +103,7 @@ in
       inherit python binutils patchelf;
       paths = [ "bin" ];
     })
-  ];
+  ]);
   meta = {
     description = "GN meta-build system at the exact revision required by Dart";
     homepage = "https://gn.googlesource.com/gn/";

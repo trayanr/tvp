@@ -133,7 +133,7 @@ let
           inherit pkgs tvpLib;
           inherit package;
         }
-      else if package ? testContext && package ? artifact then
+      else if package ? testContext && package.specification ? features then
         import ./tests/ordinary.nix {
           inherit
             pkgs

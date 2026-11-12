@@ -1,4 +1,4 @@
-# 2.9.0: public CMake/Ninja source-GNU procedure; CTest failures gate the output.
+# 2.9.0: public CMake/Ninja source-GNU procedure; CTest runs in independent validation.
 {
   tvp,
   lib,
@@ -72,7 +72,27 @@ in
     "-DEXPAT_BUILD_TOOLS=ON"
     "-DEXPAT_BUILD_EXAMPLES=ON"
   ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = final.tools.gnutar;
+      inherit (final.tools) xz findutils;
+      compression = "xz";
+    })
+    (command "configure" ''
+      ${final.tools.cmake}/bin/cmake -S source -B build -G Ninja \
+        -DCMAKE_MAKE_PROGRAM=${final.tools.ninja}/bin/ninja -DCMAKE_INSTALL_PREFIX="$out" \
+        -DCMAKE_INSTALL_RPATH="$out/lib" ${lib.escapeShellArgs (lib.filter (flag: flag != "-DEXPAT_BUILD_TESTS=ON") final.cmakeFlags ++ [ "-DEXPAT_BUILD_TESTS=OFF" ])}
+    '')
+    (command "build" ''${final.tools.cmake}/bin/cmake --build build --parallel "$NIX_BUILD_CORES" --verbose'')
+    (command "install" ''
+      ${final.tools.cmake}/bin/cmake --install build
+      mkdir -p "$out/share/licenses/expat"
+      cp source/COPYING "$out/share/licenses/expat/"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = final.tools.gnutar;
@@ -85,17 +105,21 @@ in
         -DCMAKE_INSTALL_RPATH="$out/lib" ${lib.escapeShellArgs final.cmakeFlags}
     '')
     (command "build" ''${final.tools.cmake}/bin/cmake --build build --parallel "$NIX_BUILD_CORES" --verbose'')
+  ];
+  upstreamCheck =
     (
       (command "check" ''${final.tools.cmake}/bin/ctest --test-dir build --output-on-failure --no-tests=error -j "$NIX_BUILD_CORES"'')
       // {
         enabled = final.tvp.features.doCheck;
       }
-    )
-    (command "install" ''
-      ${final.tools.cmake}/bin/cmake --install build
-      mkdir -p "$out/share/licenses/expat"
-      cp source/COPYING "$out/share/licenses/expat/"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "expat.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/cmake"];
+    })
     (outputs.strip {
       inherit (final.tools) python binutils;
       paths = [
@@ -123,7 +147,7 @@ in
         "lib"
       ];
     })
-  ];
+  ]);
   tvp.features = {
     inherit doCheck;
     shared = true;

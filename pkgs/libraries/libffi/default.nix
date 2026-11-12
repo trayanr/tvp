@@ -222,7 +222,7 @@ let
           libffi = package;
           pkg-config = package.tvp.declaredTestDependencies.pkg-config;
         }
-      else if package ? testContext && package ? artifact then
+      else if package ? testContext && package.specification ? features then
         import ./tests/ordinary.nix {
           inherit
             pkgs

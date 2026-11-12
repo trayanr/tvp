@@ -62,7 +62,28 @@ in
     libraries = [ cxxRuntime ];
     dlopenDirectories = [ ];
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    {
+      name = "source.unpack";
+      tools = [
+        gnutar
+        bzip2
+        findutils
+      ];
+      run = ''
+        mkdir source
+        ${bzip2}/bin/bzip2 -dc ${final.src} | ${gnutar}/bin/tar -xf - --strip-components=1 -C source
+        chmod -R u+w source
+        epoch=$(find source -type f -printf '%T@\n' | sort -n | tail -n1)
+        printf '%s\n' "''${epoch%%.*}" > source-date-epoch
+      '';
+    }
+    (command "patchelf.configure" ''${bash}/bin/bash ./configure --prefix="$out"'')
+    (command "patchelf.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    (command "patchelf.install" ''${gnumake}/bin/make install'')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     {
       name = "source.unpack";
       tools = [
@@ -115,6 +136,8 @@ in
     }
     (command "patchelf.configure" ''${bash}/bin/bash ./configure --prefix="$out"'')
     (command "patchelf.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+  ];
+  upstreamCheck =
     (
       (command "patchelf.check" ''
           status=0
@@ -123,10 +146,12 @@ in
         ${python}/bin/python3 -B ${./check-upstream.py} "$status" ${lib.escapeShellArg (lib.concatStringsSep ":" final.base.runtimeDirectories)} ${patchelf}/bin/patchelf
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
-    )
-    (command "patchelf.install" ''${gnumake}/bin/make install'')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "patchelf.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
       name = "output.manuals";
       tools = [ gzip ];
@@ -149,7 +174,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     inherit doCheck;
   };

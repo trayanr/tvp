@@ -20,7 +20,7 @@
 }:
 final:
 let
-  inherit (tvp.builder) steps;
+  inherit (tvp.builder) steps outputs;
   platform = platforms.mkNative {
     buildPlatform = final.base.platform;
     hostPlatform = final.base.platform;
@@ -97,11 +97,17 @@ in
       (command "install" ''
         mkdir -p "$out/include" "$out/share/licenses/linux-headers"
         cp -r usr/include/. "$out/include/"
-        ${final.tools.findutils}/bin/find "$out/include" -type f ! -name '*.h' -delete
         cp COPYING "$out/share/licenses/linux-headers/"
         cp -r LICENSES "$out/share/licenses/linux-headers/"
         test -f "$out/include/linux/version.h"
       '')
+      (steps.split "headers.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "headers.prune";
+        tools = [ final.tools.findutils ];
+        run = ''${final.tools.findutils}/bin/find "$out/include" -type f ! -name '*.h' -delete'';
+      }
     ];
   meta = {
     description = "Linux userspace API headers";

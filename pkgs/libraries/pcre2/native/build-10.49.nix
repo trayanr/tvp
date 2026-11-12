@@ -59,7 +59,63 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    {
+      name = "source.unpack";
+      tools = [
+        gnutar
+        bzip2
+        findutils
+      ];
+      run = ''
+        mkdir source
+        ${bzip2}/bin/bzip2 -dc ${final.src} | ${gnutar}/bin/tar -xf - --strip-components=1 -C source
+        chmod -R u+w source
+        epoch=$(${findutils}/bin/find source -type f -not -newer "$NIX_BUILD_TOP/.." -printf '%T@\n' | sort -n | tail -n1)
+        epoch=''${epoch%%.*}
+        if (( ''${epoch:-0} < 315532800 )); then epoch=315532800; fi
+        printf '%s\n' "$epoch" > source-date-epoch
+      '';
+    }
+    (steps.prepareAutotools {
+      name = "pcre2.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "pcre2.source-shells";
+      inherit python;
+      paths = [
+        "compile"
+        "config.guess"
+        "config.sub"
+        "install-sh"
+        "missing"
+        "depcomp"
+        "ar-lib"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      ./configure --prefix="$out" --enable-pcre2-16 --enable-pcre2-32 --enable-jit --enable-unicode --enable-shared ${
+        if static then "--enable-static" else "--disable-static"
+      }
+    '')
+    (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
+    (command "install" ''
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     {
       name = "source.unpack";
       tools = [
@@ -131,17 +187,21 @@ in
       }
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
+  ];
+  upstreamCheck =
     (
       (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
-    )
-    (command "install" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "pcre2.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["bin/pcre2-config" "lib/pkgconfig" "lib/libpcre2-8.la" "lib/libpcre2-16.la" "lib/libpcre2-32.la" "lib/libpcre2-posix.la"];
+    })
     {
       name = "pcre2.self-rpaths";
       tools = [
@@ -206,7 +266,7 @@ in
         "lib"
       ];
     })
-  ];
+  ]);
   tvp.features = {
     shared = true;
     inherit static;

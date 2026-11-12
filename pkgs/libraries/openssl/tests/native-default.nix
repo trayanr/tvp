@@ -118,13 +118,27 @@ package.testContext.mkSuite {
 )
 
 // (
-  if package.specification ? upstreamIsolation && package.specification.doCheck then
+  if package.specification ? upstreamIsolation && (package.specification.doCheck or true) then
     {
       upstream = import ./upstream.nix {
         inherit package tvpLib;
         inherit (pkgs) lib;
         inherit builder;
       };
+    }
+  else
+    { }
+)
+
+// (
+  if
+    (package ? specification)
+    && (package.specification ? upstreamPlan)
+    && (package.specification.upstreamCheck.enabled or true)
+  then
+    {
+      # Independent native upstream registration.
+      upstream = import ../native/upstream.nix { package = package; };
     }
   else
     { }

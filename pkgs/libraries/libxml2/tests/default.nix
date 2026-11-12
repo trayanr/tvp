@@ -192,3 +192,8 @@ mkSuite {
       # These are the two reviewed corpus profiles, not an API availability boundary.
       relaxng-corpus = import ./relaxng-corpus.nix { inherit pkgs libxml2; };
     }
+
+// (if (libxml2 ? specification) && (libxml2.specification ? upstreamPlan) && (libxml2.specification.upstreamCheck.enabled or true) then {
+  # Independent native upstream registration.
+  upstream = import ../native/upstream.nix { package = libxml2; };
+} else { })

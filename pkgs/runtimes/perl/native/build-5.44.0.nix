@@ -66,7 +66,46 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.shebangs {
+      name = "perl.prepare-shells";
+      inherit python;
+      paths = [
+        "Configure"
+        "hints"
+      ];
+      names = [ "sh" ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      # Configure publishes the operational command as "make" regardless of an
+      # absolute input. Preserve that consumer contract through the declared
+      # host tool, without retaining its path only in config_args.
+      ${final.bash}/bin/bash ./Configure -des -Dprefix="$out" -Duseshrplib \
+        '-Dlocincpth= ' '-Dloclibpth= ' -Dcc="$CC" -Dld="$CC" \
+        -Dar="$AR" -Dnm="$NM" -Dranlib="$RANLIB" -Dmake=make \
+        -Dsh=${final.bash}/bin/bash
+    '')
+    (command "build" make)
+    (command "install" ''
+      ${make} install
+    '')
+    (command "receipt" ''
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  artifactName = "${final.pname}-${final.version}";
+  finalizeHelper = ./../ordinary/elf-finalize.py;
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -104,12 +143,21 @@ in
         -Dsh=${final.bash}/bin/bash
     '')
     (command "build" make)
-    ((command "check" ''TEST_JOBS="$NIX_BUILD_CORES" ${make} test_harness'') // { enabled = doCheck; })
-    (command "install" ''
-      ${make} install
-      # installperl makes shared objects read-only; output fixups require writes.
-      chmod -R u+w "$out"
-    '')
+  ];
+  upstreamCheck =
+    ((command "check" ''TEST_JOBS="$NIX_BUILD_CORES" ${make} test_harness'') // { enabled = final.doCheck; });
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "perl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "perl.relocate";
+      tools = [ python binutils patchelf ];
+      run = ''${python}/bin/python3 -B ${final.finalizeHelper} ${lib.escapeShellArg (builtins.toJSON {
+        readelf = "${binutils}/bin/readelf";
+        patchelf = "${patchelf}/bin/patchelf";
+        externalPwd = false;
+      })} "$out" "$TVP_ARTIFACT_ROOT"'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [ "bin" ];
@@ -119,10 +167,6 @@ in
       ];
       selfInterpreter = "bin/perl";
     })
-    (command "receipt" ''
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
     (
       (outputs.shebangs {
         inherit python;
@@ -171,7 +215,7 @@ in
       ];
       elfKinds = [ "runtime" ];
     })
-  ];
+  ]);
   tvp.features = {
     globImportable = false;
     shared = true;

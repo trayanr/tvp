@@ -63,7 +63,7 @@ in
     libraries = [ zlib ];
   };
   runtime.libraries = [ zlib ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit xz findutils;
@@ -79,6 +79,33 @@ in
       ./configure --prefix="$out" --without-python --with-zlib=${lib.getDev zlib}
     '')
     (command "build" make)
+    (command "install" ''
+      ${make} install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  artifactName = "${final.pname}-${final.version}";
+  finalizeHelper = ./../ordinary/finalize.py;
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit xz findutils;
+      tar = gnutar;
+    })
+    (steps.prepareAutotools {
+      inherit python bash;
+      base = final.base;
+      name = "libxml2.prepare";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${bash}/bin/bash SHELL=${bash}/bin/bash
+      ./configure --prefix="$out" --without-python --with-zlib=${lib.getDev zlib}
+    '')
+    (command "build" make)
+  ];
+  upstreamCheck =
     (
       (command "check" ''
         ${make} check > make-check.log 2>&1
@@ -87,14 +114,21 @@ in
         ${python}/bin/python3 -B ${./check-upstream.py}
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
-    )
-    (command "install" ''
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "libxml2.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "libxml2.relocate";
+      tools = [ python binutils patchelf ];
+      run = ''
+        mkdir finalize-helper
+        cp ${final.finalizeHelper} finalize-helper/finalize.py
+        cp ${../ordinary/elf.py} finalize-helper/elf.py
+        ${python}/bin/python3 -B finalize-helper/finalize.py "$out" "$TVP_ARTIFACT_ROOT" ${binutils}/bin/readelf ${patchelf}/bin/patchelf'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [ "bin/xml2-config" ];
@@ -126,7 +160,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     inherit doCheck;
     xpath = true;

@@ -54,13 +54,17 @@ in
   passthru = output: {
     distributionArchive = "${output}/share/gradle/gradle-${final.version}-all.zip";
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (command "unpack" ''
       ${unzip}/bin/unzip -q ${final.src} -d unpacked
       mkdir -p "$out/libexec/gradle" "$out/bin" "$out/nix-support" "$out/share/gradle"
       cp -a unpacked/gradle-${final.version}/. "$out/libexec/gradle/"
       cp ${final.src} "$out/share/gradle/gradle-${final.version}-all.zip"
     '')
+  ];
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "gradle.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (command "launchers" ''
       ${helperPython}/bin/python3 -B ${./render.py} "$out" ${
         lib.escapeShellArgs [
@@ -80,7 +84,7 @@ in
       names = [ "sh" ];
       interpreter = "${final.runtime.shell}/bin/bash";
     })
-  ];
+  ]);
   meta = {
     description = "Pinned Gradle build tool with owned Java runtime and offline wrapper seed";
     homepage = "https://gradle.org/";

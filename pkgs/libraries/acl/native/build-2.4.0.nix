@@ -64,7 +64,45 @@ in
     libraries = [ attr ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit gzip findutils;
+      tar = gnutar;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "acl.prepare";
+      inherit bash python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "acl.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "build-aux"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${bash}/bin/bash";
+    })
+    (command "acl.configure" ''
+      export CONFIG_SHELL=${bash}/bin/bash
+      export lt_cv_deplibs_check_method=pass_all
+      ./configure --prefix="$out" --enable-shared --enable-static
+    '')
+    (command "acl.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    (command "acl.install" ''
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit gzip findutils;
@@ -118,6 +156,8 @@ in
       ./configure --prefix="$out" --enable-shared --enable-static
     '')
     (command "acl.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+  ];
+  upstreamCheck =
     (
       (command "acl.check" ''
         "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
@@ -137,19 +177,21 @@ in
         exit "$status"
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
         tools = environment.tools ++ [
           attr
           perl
           python
         ];
       }
-    )
-    (command "acl.install" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "acl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libacl.la"];
+    })
     {
       name = "output.manuals";
       tools = [
@@ -201,7 +243,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     shared = true;
     static = true;
