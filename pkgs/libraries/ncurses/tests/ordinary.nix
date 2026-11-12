@@ -121,6 +121,19 @@ package.testContext.mkSuite {
       };
     }
 
+    // pkgs.lib.optionalAttrs (features.constUserData or false) {
+      cxx-const-user-pointer = {
+        script = ''
+          unset COLUMNS LINES TERMINFO TERMINFO_DIRS
+          export TERM=xterm TERMINFO=${ncurses}/share/terminfo TERMINFO_DIRS=${ncurses}/share/terminfo
+          c++ ${cxxFlags} ${./fixtures/cxx-user-pointer.cc} -lncurses++${suffix} -lform${suffix} -lmenu${suffix} -lpanel${suffix} ${ccFlags} -o cxx-user-pointer
+          TERM=xterm ./cxx-user-pointer
+        '';
+        expected = "user-pointer-ok";
+        tools = ccInputs;
+      };
+    }
+
     # Keep the binding library and its consumer dialect covered separately.
     // pkgs.lib.optionalAttrs (features.cxx or false) {
       cxx = {
@@ -136,11 +149,19 @@ package.testContext.mkSuite {
     };
 }
 
-// import ./ordinary-contract.nix { inherit package; }
+// pkgs.lib.optionalAttrs (features.modernInterfaces or true) (
+  import ./ordinary-contract.nix { inherit package; }
+)
+
+// pkgs.lib.optionalAttrs (features.userData or false) (
+  import ./native-contract.nix { inherit package; }
+)
 
 // import ../../../../lib/tests/command-source-edit.nix {
   inherit tvp package;
   compression = "gzip";
 }
 
-// import ../ordinary/contracts.nix { inherit tvp package; }
+// pkgs.lib.optionalAttrs (features.finalizationContracts or true) (
+  import ../ordinary/contracts.nix { inherit tvp package; }
+)

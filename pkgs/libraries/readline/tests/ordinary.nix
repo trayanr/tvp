@@ -81,7 +81,7 @@ package.testContext.mkSuite {
 }
 
 // import ./ordinary-contract.nix { inherit package; }
-// {
+// pkgs.lib.optionalAttrs features.shared {
   line-edit-history = import ./ordinary-terminal.nix { inherit package; };
 }
 
@@ -90,4 +90,13 @@ package.testContext.mkSuite {
   compression = "gzip";
 }
 
-// import ../../ncurses/ordinary/contracts.nix { inherit tvp package; }
+// pkgs.lib.optionalAttrs (features.finalizationContracts or true) (
+  import ../../ncurses/ordinary/contracts.nix { inherit tvp package; }
+)
+
+// pkgs.lib.optionalAttrs (features.shared && !features.static) (
+  import ./native-contract.nix { inherit package; }
+)
+// pkgs.lib.optionalAttrs ((features.upstreamCheck or false) && package.specification.doCheck) {
+  upstream = import ./upstream.nix { inherit package; };
+}
