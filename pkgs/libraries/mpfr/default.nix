@@ -284,17 +284,47 @@ let
       def = if native then ordinaryDefs."4.2.1" else versionTable."4.2.1".def;
     };
   };
-  publicArgs = packageArgs // {
+  previousPublicArgs = packageArgs // {
     versionTable = ordinaryTable;
     inherit source;
   };
   # Capture the entire legacy call, including its definition, dependencies,
   # options, infrastructure and test factory. Frozen compilers select it explicitly.
+  # Preserve the complete old arithmetic factory before public dependency promotion.
+  retainedDependencyRecipe = (import ../gmp { inherit pkgs tvp; }).recipes.gmp.constructionRecipe;
+  retainedDependency = (tvpLib.packages.mkVersions retainedDependencyRecipe).gmp_5_0_5;
   constructionRecipe = packageArgs // {
     versionTable = versionTable // {
+      "2.4.2" = versionTable."2.4.2" // {
+        def = defs."2.4.2" // { deps = defs."2.4.2".deps // {
+          gmp = tvpLib.packages.tagSelection defs."2.4.2".deps.gmp.__tvpSelection retainedDependency;
+        }; };
+      };
+      "3.0.1" = versionTable."3.0.1" // {
+        def = defs."3.0.1" // { deps = defs."3.0.1".deps // {
+          gmp = tvpLib.packages.tagSelection defs."3.0.1".deps.gmp.__tvpSelection retainedDependency;
+        }; };
+      };
       "4.2.2" = versionTable."4.2.2" // {
         def = defs."4.2.1";
       };
+    };
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "2.4.2" "3.0.1" "3.1.6" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          packageArgs.extraArgs.mkTests package
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../acl/native/upstream.nix { inherit package; };
+          }
+          else previousPublicArgs.extraArgs.mkTests package;
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

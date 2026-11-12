@@ -190,7 +190,7 @@ let
       def = if native then ownedDefs."2.4.0" else legacyDefs."2.4.0";
     };
   };
-  publicArgs = packageArgs // {
+  previousPublicArgs = packageArgs // {
     versionTable = publicVersionTable;
     source =
       { version, sha256 }:
@@ -222,6 +222,23 @@ let
       );
   };
   constructionRecipe = packageArgs;
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "2.3.0" "2.3.1" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          packageArgs.extraArgs.mkTests package
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ./native/upstream.nix { inherit package; };
+          }
+          else previousPublicArgs.extraArgs.mkTests package;
+    };
+  };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
 in

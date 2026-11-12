@@ -199,7 +199,7 @@ let
     "1.24" = "1.19";
     "1.25" = "1.25";
   };
-  publicArgs = packageArgs // {
+  previousPublicArgs = packageArgs // {
     versionTable =
       versionTable
       // (builtins.mapAttrs (
@@ -229,6 +229,20 @@ let
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "1.7.3" "1.8.1" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          import ./tests { inherit pkgs tvpLib; gdbm = package; }
+          else previousPublicArgs.extraArgs.mkTests package;
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
