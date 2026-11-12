@@ -29,6 +29,10 @@ def role(name):
         return 'evidence'
     if name == 'bin/c_rehash':
         return 'rehash'
+    if name == 'etc/ssl/misc/CA.pl':
+        return 'ca-perl'
+    if name == 'etc/ssl/misc/der_chop':
+        return 'der-perl'
     if re.fullmatch(r'etc/ssl/man/man([1-9])/[^/]+\.\1', name):
         return 'documentation'
     if (name.endswith(('.la', '.pc', '.cmake', '.h'))
@@ -94,6 +98,25 @@ def link_plan(root, files, links, old, new, replace_paths):
     return planned
 
 
+def misc_perl(data, name, root, config):
+    first, sep, body = data.partition(b'\n')
+    if not sep or not re.fullmatch(
+            b'#!' + re.escape(config['buildPerl'].encode()) + rb'(?:[ \t]+-[wT])?', first):
+        raise ValueError(('invalid installed Perl helper', name, first))
+    flags = first[len(b'#!' + config['buildPerl'].encode()):]
+    if name == 'etc/ssl/misc/der_chop':
+        # Perl removed getopts.pl; retain the old helper's argument globals
+        # through its core replacement without changing the DER algorithm.
+        old_load, old_call = b"require 'getopts.pl';", b"&Getopts('vd:')"
+        if body.count(old_load) != 1 or body.count(old_call) != 1:
+            raise ValueError(('unsupported der_chop option parser', name))
+        body = body.replace(old_load, b'use Getopt::Std ();')
+        body = body.replace(old_call, b"Getopt::Std::getopts('vd:')")
+    command_path = ':'.join([str(root/'bin'), *config['tools']])
+    preamble = ('BEGIN { $ENV{PATH} = ' + json.dumps(command_path) + '; }\n').encode()
+    return b'#!' + config['perl'].encode() + flags + sep + preamble + body
+
+
 def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manual_plan):
     root, files, groups, links = helper.tree(root)
     old, new = artifact.encode(), str(root).encode()
@@ -122,7 +145,7 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manu
         if selected_role == 'evidence':
             removals.update(group)
             continue
-        if selected_role in ('text', 'rehash', 'documentation'):
+        if selected_role in ('text', 'rehash', 'documentation', 'ca-perl', 'der-perl'):
             helper.text(data, group)
         if data.startswith(b'\x7fELF'):
             hits = inspect_elf(p, old, config['readelf'])
@@ -167,11 +190,17 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manu
             preamble = ('BEGIN { $ENV{PATH} = ' + json.dumps(str(root/'bin')+':'+':'.join(config['tools']))
                         + '; $ENV{OPENSSL} = ' + json.dumps(str(root/'bin/openssl')) + ' unless defined $ENV{OPENSSL}; }\n').encode()
             data = b'#!'+config['perl'].encode()+b'\n'+preamble+body
+        elif selected_role in ('ca-perl', 'der-perl'):
+            if not p.stat().st_mode & 0o111:
+                raise ValueError(('non-executable installed Perl helper', name))
+            data = misc_perl(data, name, root, config)
         elif data.startswith(b'#!') and p.stat().st_mode & 0o111:
             helper.text(data, name)
             first, sep, body = data.partition(b'\n')
             if re.fullmatch(rb'#!.*(?:sh|bash)(?:[ \t]+-e)?', first):
-                data = b'#!'+config['shell'].encode()+sep+body
+                command_path = ':'.join([str(root/'bin'), *config['tools']])
+                preamble = ('export PATH=' + shlex.quote(command_path) + '\n').encode()
+                data = b'#!'+config['shell'].encode()+sep+preamble+body
             else:
                 raise ValueError(('unreviewed installed executable script', name, first))
         if data != p.read_bytes() or name in rpaths:

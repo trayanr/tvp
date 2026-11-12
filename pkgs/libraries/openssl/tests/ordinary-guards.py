@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 import sys
 
@@ -42,6 +43,56 @@ class Guards(unittest.TestCase):
         with self.assertRaises((ValueError, OSError)):
             self.run_final()
         self.assertEqual(original,self.pc.read_bytes())
+    def install_helper(self, name, body):
+        path = self.root/name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(body)
+        path.chmod(0o755)
+        return path
+
+    def fake_openssl(self):
+        return self.install_helper('bin/openssl',
+            b'#!'+config['shell'].encode()+b'\nprintf "selected:%s\\n" "$*"\n')
+
+    def test_misc_perl_helpers_bind_runtime_commands(self):
+        self.fake_openssl()
+        for name in ['etc/ssl/misc/CA.pl', 'etc/ssl/misc/der_chop']:
+            body = b"system('openssl', 'fixture') == 0 or die 'command failed';\n"
+            if name.endswith('der_chop'):
+                body = b"require 'getopts.pl';\n&Getopts('vd:') or die 'options';\n" + body
+            path = self.install_helper(name, b'#!'+config['buildPerl'].encode()+b'\n'+body)
+        self.run_final()
+        for name in ['etc/ssl/misc/CA.pl', 'etc/ssl/misc/der_chop']:
+            path = self.root/name
+            result = subprocess.run([str(path)], env={'PATH': ''}, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, b'selected:fixture\n')
+
+    def test_misc_shell_helper_binds_runtime_commands(self):
+        self.fake_openssl()
+        path = self.install_helper('etc/ssl/misc/CA.sh', b'#!/bin/sh\nopenssl fixture\n')
+        self.run_final()
+        result = subprocess.run([str(path)], env={'PATH': ''}, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b'selected:fixture\n')
+
+    def test_misc_helpers_reject_unsupported_inputs_before_writes(self):
+        for name, data in [
+            ('CA.pl', b'#!/usr/bin/python3\nprint(1)\n'),
+            ('der_chop', b'#!'+config['buildPerl'].encode()+b'\nprint "missing parser";\n'),
+            ('unknown.pl', b'#!'+config['buildPerl'].encode()+b'\nprint "unsupported";\n'),
+        ]:
+            with self.subTest(name=name):
+                path = self.install_helper('etc/ssl/misc/'+name, data)
+                self.rejects()
+                self.assertEqual(path.read_bytes(), data)
+                path.unlink()
+
+    def test_misc_helper_hardlink_roles_reject(self):
+        first = self.install_helper('etc/ssl/misc/CA.pl', b'#!'+config['buildPerl'].encode()+b'\nexit 0;\n')
+        os.link(first, self.root/'etc/ssl/misc/der_chop')
+        self.rejects()
+
     def test_text_and_internal_alias(self):
         (self.root/'lib/alias').symlink_to('pkgconfig/openssl.pc')
         self.run_final()

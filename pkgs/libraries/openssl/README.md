@@ -95,8 +95,8 @@ family mutation procedure. Retained Perl compatibility is unchanged. OpenSSL ELF
 version-definition and static ET_REL policies remain visible in the local
 `elf.py` and `archive.py`; further ELF sharing needs another reviewed caller.
 
-This is a source-stage candidate: zero new compiled package producers. Independent
-source review, representative compilation, named consumer executions and one
+Source staging alone does not qualify a package. Independent source review,
+representative compilation, named consumer executions and one
 integrated latest gate are parent-owned. Existing Perl consumer holds (including
 eight OpenSSL 1.1.0–g identities), historical Python/Ruby/XZ holds, calendar raw
 nonpasses, and ACL/GCC/hardening/O1/full/default/readability/strict-split gates
@@ -119,4 +119,12 @@ payload plans pass before the existing write loop can replace any self-alias.
 Correct documentation and alias chains keep their payloads and targets. No cycle
 is generally accepted. The shared manual guard fixtures run the real selected
 Perl without compilation; `ordinary-finalization.nix` checks final-only binding
-edits without executing its synthetic identity markers.
+edits and declared renderer inputs without executing its synthetic identity markers.
+
+The legacy installed `CA.pl` and `der_chop` helpers bind runtime Perl after the
+artifact split. Their command path starts with the final OpenSSL `bin` followed
+by the declared runtime tools; installed shell helpers use the same command path.
+For `der_chop`, the exact removed `getopts.pl` load/call is replaced by core
+`Getopt::Std::getopts`, preserving its option globals and DER-processing body.
+Unknown executable interpreters still reject. This does not supply non-core Perl
+modules required by other helpers, such as `tsget`'s `WWW::Curl::Easy`.
