@@ -4,6 +4,17 @@
   package,
 }:
 let
+  suite = args:
+    if package ? testContext then
+      package.testContext.mkSuite {
+        package = package;
+        tools = package.specification.environment.tools;
+        libraries = [ ];
+        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
+          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
+        }) args.tests;
+      }
+    else tvpLib.tests.mkSuite args;
   inherit (pkgs) lib;
   atLeast = lib.versionAtLeast package.version;
   awk = "${package}/bin/gawk";
@@ -30,7 +41,7 @@ let
         ) 2>&1 | tee "$out/log"
       '';
 in
-(tvpLib.tests.mkSuite {
+(suite {
   inherit pkgs package;
   tests =
     {

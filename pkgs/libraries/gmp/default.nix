@@ -258,8 +258,26 @@ let
       def = if native then ordinaryDefs."6.2.0" else versionTable."6.2.1".def;
     };
   };
-  publicArgs = packageArgs // {
+  previousPublicArgs = packageArgs // {
     versionTable = ordinaryTable;
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "5.0.5" "5.1.3" "6.0.0a" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          packageArgs.extraArgs.mkTests package
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../acl/native/upstream.nix { inherit package; };
+          }
+          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

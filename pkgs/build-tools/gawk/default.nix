@@ -300,7 +300,7 @@ let
       ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
     ) { inherit pkgs; };
   };
-  publicArgs = installedArgs // {
+  previousPublicArgs = installedArgs // {
     extraArgs = installedArgs.extraArgs // {
       mkTests = pkgs.lib.makeOverridable (
         { pkgs }:
@@ -312,6 +312,24 @@ let
             installedArgs.extraArgs.mkTests package
         )
         // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "3.0.6" "3.1.8" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          import ./tests { inherit pkgs tvpLib package; }
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../../libraries/acl/native/upstream.nix { inherit package; };
+          }
+          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
       ) { inherit pkgs; };
     };
   };

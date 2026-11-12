@@ -298,16 +298,60 @@ let
       def = if native then ordinaryDefs."1.4.0" else versionTable."1.4.0".def;
     };
   };
-  publicArgs = packageArgs // {
+  previousPublicArgs = packageArgs // {
     versionTable = ordinaryTable;
     inherit source;
   };
   # Retain the complete historical construction, including its original test factory.
+  # Preserve the complete old arithmetic factory before public dependency promotion.
+  retainedDependencyRecipe = (import ../mpfr { inherit pkgs tvp; }).recipes.mpfr.constructionRecipe;
+  retainedDependency = (tvpLib.packages.mkVersions retainedDependencyRecipe).mpfr_3_1_6;
   constructionRecipe = packageArgs // {
     versionTable = versionTable // {
+      "1.0.3" = versionTable."1.0.3" // {
+        def = defs."1.0.3" // {
+          deps = defs."1.0.3".deps // {
+            mpfr = tvpLib.packages.tagSelection defs."1.0.3".deps.mpfr.__tvpSelection retainedDependency;
+          };
+        };
+      };
       "1.4.1" = versionTable."1.4.1" // {
         def = defs."1.4.0";
       };
+    };
+  };
+  compatibilityDefs = import ./compatibility {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      defs
+      ;
+  };
+  compatibilityVersions = [ "1.0.3" ];
+  publicArgs = previousPublicArgs // {
+    versionTable =
+      previousPublicArgs.versionTable
+      // builtins.listToAttrs (
+        map (version: {
+          name = version;
+          value = versionTable.${version} // {
+            def = if native then compatibilityDefs.${version} else versionTable.${version}.def;
+          };
+        }) compatibilityVersions
+      );
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          (packageArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../acl/native/upstream.nix { inherit package; };
+          }
+        else
+          (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
