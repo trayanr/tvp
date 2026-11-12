@@ -190,7 +190,7 @@ let
           }
         ];
       };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       {
         pkgs,
@@ -283,6 +283,25 @@ let
       "1.35" = versionTable."1.35" // {
         def = if native then ownedDefs."1.35" else versionTable."1.35".def;
       };
+    };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        {
+          pkgs,
+          locale,
+          helpers ? null,
+        }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs locale helpers; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs locale; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

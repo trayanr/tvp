@@ -1,4 +1,3 @@
-# 2.21 only. Configure embeds its final installation prefix; keep one stage.
 {
   tvp,
   lib,
@@ -37,6 +36,8 @@ let
 in
 {
   pname = "which";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -71,6 +72,16 @@ in
   runtime = {
     libraries = [ ];
   };
+  upstreamCheck = {
+    enabled = final.doCheck;
+    before = "which.install";
+    command = (
+      (command "which.check" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+      // {
+        enabled = final.doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -92,17 +103,26 @@ in
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "which.build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "which.check" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
-      // {
-        enabled = final.doCheck;
-      }
-    )
     (command "which.install" ''
       ${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "which.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "which.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     {
       name = "output.manuals";
       tools = [ final.gzip ];

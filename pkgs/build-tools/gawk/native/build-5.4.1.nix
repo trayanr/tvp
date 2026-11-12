@@ -42,6 +42,8 @@ let
 in
 {
   pname = "gawk";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -51,7 +53,6 @@ in
     ;
   environment = {
     tools = [
-      localeProvider
       gnumake
       sed
       grep
@@ -73,6 +74,30 @@ in
     readline
     ncurses
   ];
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "gawk.source-shells";
+      inherit python;
+      paths = [ "test" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "gawk.install";
+    command = (
+      (command "check" ''
+        export LOCPATH=${checkLocales} PAGER=cat
+              ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -91,7 +116,6 @@ in
       inherit python;
       paths = [
         "build-aux"
-        "test"
         "extension"
       ];
       names = [
@@ -108,14 +132,6 @@ in
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "check" ''
-        export LOCPATH=${checkLocales} PAGER=cat
-              ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
@@ -123,6 +139,21 @@ in
       cp config.h "$out/nix-support/config.h"
       grep -Ex 'gt_cv_func_gnugettext[0-9]+_libc=yes' config.log > "$out/nix-support/gettext-libc"
     '')
+    (steps.split "gawk.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gawk.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [

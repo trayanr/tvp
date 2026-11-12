@@ -54,7 +54,7 @@ let
       def = if native then defs."1.0" else constructionRecipe.versionTable."1.0".def;
     };
   };
-  publicArgs = constructionRecipe // {
+  installedArgs = constructionRecipe // {
     inherit versionTable;
     source =
       { version, sha256 }:
@@ -87,6 +87,21 @@ let
       else
         constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "gettext";

@@ -1,5 +1,4 @@
 # Native ordinary 1.12.1: compressed zipapp, full Python and explicit discovery.
-# Launcher and zipapp paths are finalized together; runtime edits reconstruct both.
 {
   tvp,
   lib,
@@ -21,7 +20,7 @@
 }:
 final:
 let
-  inherit (tvp.builder) steps;
+  inherit (tvp.builder) steps outputs;
   command =
     name: run:
     (final.base.environment final.environment)
@@ -80,7 +79,7 @@ in
       compression = "gzip";
     })
     (command "meson.prepare" ''
-      ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
       ${helperPython}/bin/python3 -B - <<'PYTHON'
       from pathlib import Path
       p = Path('mesonbuild/scripts/depfixer.py')
@@ -89,27 +88,57 @@ in
       PYTHON
     '')
     (command "meson.build" ''
-      ${final.runtime.python}/bin/python3 packaging/create_zipapp.py . --outfile meson.pyz \
-        --interpreter ${final.runtime.python}/bin/python3 --compress
+      ${python}/bin/python3 packaging/create_zipapp.py . --outfile meson.pyz \
+        --interpreter "" --compress
     '')
     (command "meson.install" ''
       install -Dm755 meson.pyz "$out/libexec/meson.pyz"
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
       install -Dm644 man/meson.1 "$out/share/man/man1/meson.1"
-      ${gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
-      ${helperPython}/bin/python3 -B - "$out" <<'PYTHON'
-      from pathlib import Path
-      import sys
-      out = sys.argv[1]
-      text = Path('${../meson.sh}').read_text()
-      for key, value in {'bash':'${final.runtime.shell}/bin/bash', 'python':'${final.runtime.python}/bin/python3',
-                        'ninja':'${final.runtime.ninja}/bin/ninja', 'cmake':'${final.runtime.cmake}/bin/cmake',
-                        'pkgConfig':'${final.runtime.pkg-config}/bin/pkg-config', 'out':out}.items():
-          assert '@' + key + '@' in text
-          text = text.replace('@' + key + '@', value)
-      p = Path(out) / 'bin/meson'; p.parent.mkdir(); p.write_text(text); p.chmod(0o755)
-      PYTHON
     '')
+    (steps.split "meson.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "meson.relocate";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "meson.launcher";
+      tools = [
+        helperPython
+        gzip
+      ];
+      run = ''
+        ${gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
+        ${helperPython}/bin/python3 -B - "$out" <<'PYTHON'
+        from pathlib import Path
+        import sys
+        out = sys.argv[1]
+        text = Path('${../meson.sh}').read_text()
+        for key, value in {'bash':'${final.runtime.shell}/bin/bash', 'python':'${final.runtime.python}/bin/python3',
+                          'ninja':'${final.runtime.ninja}/bin/ninja', 'cmake':'${final.runtime.cmake}/bin/cmake',
+                          'pkgConfig':'${final.runtime.pkg-config}/bin/pkg-config', 'out':out}.items():
+            assert '@' + key + '@' in text
+            text = text.replace('@' + key + '@', value)
+        p = Path(out) / 'bin/meson'; p.parent.mkdir(); p.write_text(text); p.chmod(0o755)
+        PYTHON
+      '';
+    }
+    {
+      name = "meson.zipapp-interpreter";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${../owned/bind-zipapp.py} "$out" ${lib.escapeShellArg "${final.runtime.python}/bin/python3"}'';
+    }
+
   ];
   meta = {
     description = "Meson compressed zipapp with owned native tools";

@@ -29,7 +29,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -67,7 +67,7 @@ c.mkSuite {
   ];
   tests = {
     version = {
-      script = ''file --version | head -1 | sed 's/^file-//' '';
+      script = "file --version | head -1 | sed 's/^file-//' ";
       expected = p.version;
     };
     operation = {
@@ -162,7 +162,7 @@ c.mkSuite {
       '';
     };
     upstream = {
-      script = ''test -s ${upstream}/nix-support/upstream; printf upstream'';
+      script = "test -s ${upstream}/nix-support/upstream; printf upstream";
       expected = "upstream";
     };
   };

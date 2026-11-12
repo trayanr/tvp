@@ -1,4 +1,3 @@
-# Native Make embeds its default shell, so installation stays in one stage.
 {
   tvp,
   lib,
@@ -86,6 +85,8 @@ let
 in
 {
   pname = "gnumake";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -112,6 +113,29 @@ in
     libraries = final.environment.libraries or [ ];
     shell = bash;
   };
+  upstreamPreparation = [
+    {
+      name = "gnumake.check-shell";
+      cwd = "source";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${./prepare-check.py} "${final.bash}/bin/sh"'';
+    }
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "gnumake.install";
+    command = (
+      (command "gnumake.check" ''
+        status=0
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check > upstream.log 2>&1 || status=$?
+        cat upstream.log
+        ${python}/bin/python3 -B ${./check-upstream.py} "$status"
+      '')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -130,7 +154,7 @@ in
       cwd = "source";
       tools = [ python ];
       run = ''
-        ${python}/bin/python3 -B ${../owned/prepare.py} ${lib.escapeShellArg "${final.runtime.shell}/bin/sh"}
+        ${python}/bin/python3 -B ${./prepare.py} ${lib.escapeShellArg "${final.bash}/bin/sh"}
       '';
     }
     (command "gnumake.configure" ''
@@ -139,22 +163,29 @@ in
         PERL=${perl}/bin/perl ${lib.escapeShellArgs configureFlags}
     '')
     (command "gnumake.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "gnumake.check" ''
-        status=0
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check > upstream.log 2>&1 || status=$?
-        cat upstream.log
-        ${python}/bin/python3 -B ${./check-upstream.py} "$status"
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "gnumake.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "gnumake.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gnumake.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            slots = [
+              [
+                "${final.bash}/bin/sh"
+                "${final.runtime.shell}/bin/sh"
+              ]
+            ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     {
       name = "output.manuals";
       tools = [ gzip ];

@@ -246,7 +246,7 @@ let
       opts.cStandard = "gnu17";
     };
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
       "0.27" = versionTable."0.27" // {
         def = if native then ownedDefs."0.27" else versionTable."0.27".def;
@@ -271,7 +271,13 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import (if package ? artifact then ./tests/older-native-default.nix else ./tests/native-default.nix)
+        import
+          (
+            if package ? artifact && !(package.specification ? upstreamCheck) then
+              ./tests/older-native-default.nix
+            else
+              ./tests/native-default.nix
+          )
           {
             inherit
               pkgs
@@ -283,6 +289,21 @@ let
       else
         constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = pkgs.lib.mapAttrs (
     _: package: if package ? testContext then package else withProvider package

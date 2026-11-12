@@ -6,7 +6,7 @@
 let
   make = package.specification.gnumake;
   construction = import ../../../../bases/source-gnu { };
-  sourceCopy = package.editSteps (_: [
+  sourceCopy = (package.edit (s: removeAttrs s [ "artifactName" ])).editSteps (_: [
     {
       name = "source.copy";
       run = ''cp ${package.src} "$out"'';
@@ -112,9 +112,7 @@ package.testContext.mkSuite {
       script =
         assert combinedSteps.specification.src.drvPath == sourceCopy.drvPath;
         assert combinedSteps.tests.lookup.drvPath != package.tests.lookup.drvPath;
-        assert
-          (builtins.head (builtins.filter (step: step.name == "which.check") combinedSteps.buildSteps))
-          .enabled;
+        assert combinedSteps.specification.upstreamCheck.command.enabled;
         ''
           cat ${combinedSteps}/nix-support/final-fields
           ${combinedSteps.specification.patchelf}/bin/patchelf --print-rpath ${combinedSteps}/bin/which | grep -q '${construction.toolchain.libc}/lib'

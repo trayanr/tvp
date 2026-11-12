@@ -1,6 +1,5 @@
 # Gettext 1.0: independent ordinary source-GNU recipe. Native spit, styling,
 # XML, Java and NLS retain the existing release profile. One compiled prefix;
-# runtime edits rebuild it, including source templates and installed helpers.
 {
   tvp,
   lib,
@@ -45,7 +44,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${final.tools.gnumake}/bin/make SHELL=${final.bash}/bin/bash'';
+  make = "${final.tools.gnumake}/bin/make SHELL=${final.bash}/bin/bash";
   elfPaths = [
     "bin"
     "lib"
@@ -59,6 +58,8 @@ let
 in
 {
   pname = "gettext";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -95,12 +96,19 @@ in
   };
   inherit configureFlags doCheck;
   environment = {
-    tools = (builtins.attrValues final.tools) ++ [
-      final.bash
-      final.coreutils
-      final.runtime.perl
-      final.runtime.jdk
-    ];
+    tools =
+      (builtins.attrValues (
+        removeAttrs final.tools [
+          "binutils"
+          "patchelf"
+        ]
+      ))
+      ++ [
+        final.bash
+        final.coreutils
+        final.runtime.perl
+        final.runtime.jdk
+      ];
     libraries = builtins.attrValues final.providers;
   };
   runtime = {
@@ -121,6 +129,22 @@ in
   # consumer needs Ncurses in the GNU linker's indirect DSO search path.
   # libgettextpo consumers need no additional public provider.
   developmentLibraries = [ final.providers.ncurses ];
+  upstreamCheck = {
+    enabled = final.doCheck;
+    before = "gettext.install";
+    command = (
+      (command "check" ''
+        status=0
+        ${make} -j1 check > upstream-check.log 2>&1 || status=$?
+        cat upstream-check.log
+        printf '%s\n' "$status" > upstream-check.status
+        exit "$status"
+      '')
+      // {
+        enabled = final.doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -156,28 +180,26 @@ in
       grep -q '^#define ENABLE_NLS 1$' gettext-tools/config.h
     '')
     (command "build" ''${make} -j"$NIX_BUILD_CORES"'')
-    (
-      (command "check" ''
-        status=0
-        ${make} -j1 check > upstream-check.log 2>&1 || status=$?
-        cat upstream-check.log
-        printf '%s\n' "$status" > upstream-check.status
-        exit "$status"
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    )
     (command "install" ''
       ${make} -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      ${lib.optionalString final.doCheck ''
-        cp upstream-check.status "$out/nix-support/"
-        grep -E '^# (TOTAL|PASS|SKIP|XFAIL|FAIL|XPASS|ERROR):|^Testsuite summary|^SKIP:|^FAIL:|^XFAIL:|^XPASS:' \
-          upstream-check.log > "$out/nix-support/upstream-summary"
-      ''}
     '')
+    (steps.split "gettext.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gettext.relocate";
+      tools = [ final.tools.python ];
+      run = ''${final.tools.python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.shebangs {
       python = final.tools.python;
       paths = helperPaths;

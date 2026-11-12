@@ -157,7 +157,7 @@ let
       };
     };
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
       "1.0.6" = versionTable."1.0.6" // {
         def = ordinaryDefs."1.0.6";
@@ -206,6 +206,21 @@ let
   };
   # Frozen construction selects the complete retained call and test factory.
   constructionRecipe = packageArgs;
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
+  };
   canonical = tvpLib.packages.mkVersions publicArgs;
 
 in

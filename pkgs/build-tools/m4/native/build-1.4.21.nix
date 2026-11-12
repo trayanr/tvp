@@ -1,4 +1,3 @@
-# 1.4.21 only. Configure embeds its final installation prefix; keep one stage.
 {
   tvp,
   lib,
@@ -81,6 +80,8 @@ let
 in
 {
   pname = "m4";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -103,6 +104,28 @@ in
     libraries = final.environment.libraries or [ ];
     shell = bash;
   };
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "m4.check-shells";
+      inherit python;
+      paths = [
+        "checks"
+        "tests"
+      ];
+      names = [ "sh" ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "m4.install";
+    command = (
+      (command "m4.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -119,30 +142,39 @@ in
     (steps.shebangs {
       name = "m4.check-shells";
       inherit python;
-      paths = [
-        "checks"
-        "tests"
-        "build-aux"
-      ];
+      paths = [ "build-aux" ];
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
     (command "m4.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --with-syscmd-shell=${final.runtime.shell}/bin/bash ${lib.escapeShellArgs configureFlags}
+      ./configure --prefix="$out" --with-syscmd-shell=${final.bash}/bin/bash ${lib.escapeShellArgs configureFlags}
     '')
+    (command "m4.shell-slot" "${python}/bin/python3 -B ${../ordinary/shell-slot.py} lib/config.h")
     (command "m4.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "m4.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "m4.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "m4.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "m4.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            slots = [
+              [
+                "${final.bash}/bin/bash"
+                "${final.runtime.shell}/bin/bash"
+              ]
+            ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     {
       name = "output.manuals";
       tools = [ gzip ];

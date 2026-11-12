@@ -40,6 +40,8 @@ let
 in
 {
   pname = "bison";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -85,6 +87,21 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "bison.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "bison.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [ "bin/yacc" ];

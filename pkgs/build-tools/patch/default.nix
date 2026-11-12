@@ -146,7 +146,7 @@ let
     };
   };
 
-  publicArgs = formerRecipe // {
+  installedArgs = formerRecipe // {
     inherit versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
@@ -166,6 +166,21 @@ let
       else
         formerRecipe.extraArgs.mkTests package
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "patch";

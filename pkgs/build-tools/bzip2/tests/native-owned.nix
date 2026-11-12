@@ -14,18 +14,21 @@ let
   ];
 
   custom =
-    ((package.override { doCheck = false; }).editRuntime (runtime: runtime // { libraries = [ ]; }))
-    .editSteps
+    (
+      ((package.override { doCheck = false; }).edit (
+        s:
+        s
+        // {
+          upstreamCheck = s.upstreamCheck // {
+            command = throw "disabled upstream check was forced";
+          };
+        }
+      )).editRuntime
+      (runtime: runtime // { libraries = [ ]; })
+    ).editSteps
       (
         plan:
-        tvp.builder.steps.replace "bzip2.check" (
-          old:
-          old
-          // {
-            tools = throw "disabled Bzip2 check tools were forced";
-            run = throw "disabled Bzip2 check command was forced";
-          }
-        ) plan
+        plan
         ++ [
           {
             name = "bzip2.consumer-marker";

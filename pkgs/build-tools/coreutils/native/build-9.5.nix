@@ -42,6 +42,8 @@ let
 in
 {
   pname = "coreutils";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -71,6 +73,33 @@ in
     gmp
     acl
   ];
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "coreutils.source-shells";
+      inherit python;
+      paths = [ "tests" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "coreutils.install";
+    command = (
+      (command "coreutils.check" ''
+        export TZDIR=${timezoneData}/share/zoneinfo
+        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
+        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
+          SH_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/ordinary-test-runner.py} coreutils $PWD/.tvp-filesystem-probe ${final.bash}/bin/bash"
+      '')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -86,10 +115,7 @@ in
     (steps.shebangs {
       name = "coreutils.source-shells";
       inherit python;
-      paths = [
-        "build-aux"
-        "tests"
-      ];
+      paths = [ "build-aux" ];
       names = [
         "sh"
         "bash"
@@ -104,17 +130,6 @@ in
       grep '^#define HAVE_GMP_H 1' lib/config.h
     '')
     (command "coreutils.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    (
-      (command "coreutils.check" ''
-        export TZDIR=${timezoneData}/share/zoneinfo
-        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
-          SH_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/ordinary-test-runner.py} coreutils $PWD/.tvp-filesystem-probe ${final.bash}/bin/bash"
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "coreutils.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
@@ -122,6 +137,21 @@ in
       cp lib/config.h "$out/nix-support/config.h"
       grep -Ex 'gt_cv_func_gnugettext[0-9]+_libc=yes' config.log > "$out/nix-support/gettext-libc"
     '')
+    (steps.split "coreutils.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "coreutils.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     {
       name = "output.manuals";
       tools = [

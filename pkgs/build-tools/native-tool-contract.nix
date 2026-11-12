@@ -26,7 +26,7 @@ let
   flagProbe =
     (p.edit (
       s:
-      s
+      (removeAttrs s [ "artifactName" ])
       // {
         environment = s.environment // {
           tools = s.environment.tools ++ [ tool.pkgConfig ];
@@ -71,7 +71,7 @@ let
   structured =
     (p.edit (
       s:
-      s
+      (removeAttrs s [ "artifactName" ])
       // {
         environment = s.environment // {
           libraries = [ tool.mpfr ];
@@ -116,7 +116,7 @@ let
       }).edit
       (
         s:
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           base = s.base.override {
             tools = map (
@@ -164,7 +164,7 @@ let
     )).edit
       (
         s:
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           plan = [
             (builtins.head s.plan)

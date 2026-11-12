@@ -36,6 +36,8 @@ let
 in
 {
   pname = "gnugrep";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -55,6 +57,28 @@ in
     libraries = [ pcre2 ];
   };
   runtime.libraries = [ pcre2 ];
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "gnugrep.source-shells";
+      inherit python;
+      paths = [ "tests" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "gnugrep.install";
+    command = (
+      (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+      // {
+        enabled = doCheck;
+      }
+    );
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -71,10 +95,7 @@ in
     (steps.shebangs {
       name = "gnugrep.source-shells";
       inherit python;
-      paths = [
-        "build-aux"
-        "tests"
-      ];
+      paths = [ "build-aux" ];
       names = [
         "sh"
         "bash"
@@ -88,12 +109,6 @@ in
       grep '^#define ENABLE_NLS 1' config.h
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
@@ -101,6 +116,21 @@ in
       cp config.h "$out/nix-support/config.h"
       grep -Ex 'gt_cv_func_gnugettext[0-9]+_libc=yes' config.log > "$out/nix-support/gettext-libc"
     '')
+    (steps.split "gnugrep.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gnugrep.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [ "bin" ];

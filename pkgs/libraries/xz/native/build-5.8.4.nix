@@ -45,6 +45,8 @@ let
 in
 {
   pname = "xz";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -67,6 +69,20 @@ in
     libraries = [ ];
     shell = bash;
   };
+  upstreamPreparation = [
+    (steps.shebangs {
+      name = "xz.check-shells";
+      inherit python;
+      paths = [ "tests" ];
+      names = [ "sh" ];
+      interpreter = "${bash}/bin/bash";
+    })
+  ];
+  upstreamCheck = {
+    enabled = doCheck;
+    before = "xz.install";
+    command = ((command "xz.check" "${make} check") // { enabled = doCheck; });
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -82,10 +98,7 @@ in
     (steps.shebangs {
       name = "xz.check-shells";
       inherit python;
-      paths = [
-        "tests"
-        "build-aux"
-      ];
+      paths = [ "build-aux" ];
       names = [ "sh" ];
       interpreter = "${bash}/bin/bash";
     })
@@ -105,15 +118,32 @@ in
     (command "xz.configure" ''
       export CONFIG_SHELL=${bash}/bin/bash
       ./configure --prefix="$out" --enable-shared --enable-static --enable-threads=posix \
-        gl_cv_posix_shell=${final.runtime.shell}/bin/bash
+        gl_cv_posix_shell=${bash}/bin/bash
     '')
     (command "xz.build" make)
-    ((command "xz.check" "${make} check") // { enabled = doCheck; })
     (command "xz.install" ''
       ${make} install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "xz.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "xz.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${../../../build-tools/owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [
+              [
+                "${bash}/bin/bash"
+                "${final.runtime.shell}/bin/bash"
+              ]
+            ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;
