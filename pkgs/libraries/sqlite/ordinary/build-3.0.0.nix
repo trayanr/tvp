@@ -25,6 +25,7 @@
   readline,
   testZlib,
   compileFlags ? [ ],
+  testFixtureRelinks ? false,
   configureIsExecutable ? true,
   hardeningDisable ? [ ],
   pkgConfigMajorMinor ? false,
@@ -103,6 +104,7 @@ in
     ;
   inherit
     compileFlags
+    testFixtureRelinks
     configureIsExecutable
     hardeningDisable
     pkgConfigMajorMinor
@@ -169,11 +171,19 @@ in
       export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib -lz"
       ${make} testfixture
     '')
-    (command "check-raw" ''
-      export HOME="$TMPDIR" TERM=xterm TZ=UTC
-      ${final.bash}/bin/bash ${final.captureScript} "$out/nix-support/sqlite-upstream" \
-        ${final.coreutils}/bin/timeout 900 ./testfixture test/quick.test
-    '')
+    (command "check-raw" (
+      # These older libtool launchers relink at execution. Repeat the exact
+      # fixture link environment; it never changes installed package features.
+      lib.optionalString final.testFixtureRelinks ''
+        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${final.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
+        export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib -lz"
+      ''
+      + ''
+        export HOME="$TMPDIR" TERM=xterm TZ=UTC
+        ${final.bash}/bin/bash ${final.captureScript} "$out/nix-support/sqlite-upstream" \
+          ${final.coreutils}/bin/timeout 900 ./testfixture test/quick.test
+      ''
+    ))
     (command "install" ''
       export TCLLIBPATH="$out/lib/tcl"
       ${make} install

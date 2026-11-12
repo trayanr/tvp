@@ -112,3 +112,15 @@ remove operational reports from public outputs only after acceptance. Prove that
 classifier and finalizer changes reuse the artifact, while source, compiler,
 provider, flags and preparation changes invalidate it. This proposal changes no
 shared builder API and requires parent documentation/source review before adoption.
+
+Legacy fixture compatibility remains explicit definition data. The 3.0.0–3.2.2
+and 3.2.5–3.5.6 libtool launchers relink the test fixture at execution, so their
+raw test step repeats the selected Tcl/zlib fixture link environment. The
+3.2.3–3.2.4 direct-link exception and 3.5.7 default-amalgamation boundary keep
+that environment disabled. Installed package features do not change.
+
+For 3.6.7–3.6.11 only, the test VFS callback returns the function-pointer type
+already required by that release's `xDlSym` API. The two-line source patch matches
+upstream 3.6.12 and keeps the callback body unchanged. These are native-only
+compatibility boundaries; the retained construction definitions stay exact.
+Source/identity checks do not replace canonical upstream and installed tests.

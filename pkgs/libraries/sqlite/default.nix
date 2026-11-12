@@ -445,17 +445,10 @@ let
       defs
       ;
   };
-  remainingTable = pkgs.lib.mapAttrs (
-    version: entry:
-    entry
-    // {
-      def =
-        if entry.def.name == "3.4.2" && pkgs.lib.versionAtLeast version "3.5.6" then
-          remainingDefs."3.5.6"
-        else
-          entry.def;
-    }
-  ) (tvpLib.packages.mkTable (import ./3.nix { defs = remainingDefs; }));
+  remainingTable = import ./ordinary/releases.nix {
+    inherit pkgs tvpLib;
+    defs = remainingDefs;
+  };
   publicArgs = packageArgs // {
     versionTable = pkgs.lib.mapAttrs (
       version: entry:
