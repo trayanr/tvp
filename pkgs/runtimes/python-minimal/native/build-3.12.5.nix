@@ -1,4 +1,4 @@
-# 3.12.5: independent public source-GNU CPython build profile, one prefix stage.
+# 3.12.5: independent public source-GNU CPython build profile, installed-artifact/final split.
 {
   tvp,
   lib,
@@ -32,10 +32,15 @@ let
     (final.base.environment final.environment)
     // {
       inherit name run;
-      cwd = "source";
     };
-  config = builtins.toJSON {
+  sourceCommand = name: run: (command name run) // { cwd = "source"; };
+  sourceConfig = builtins.toJSON {
     shell = "${final.bash}/bin/bash";
+    coreutils = toString final.coreutils;
+    sed = toString final.tools.sed;
+  };
+  config = builtins.toJSON {
+    shell = "${final.runtime.shell}/bin/bash";
     coreutils = toString final.coreutils;
     sed = toString final.tools.sed;
     helperPath = lib.makeBinPath [
@@ -68,6 +73,7 @@ in
     disabledModules
     patches
     ;
+  artifactName = "${final.pname}-${final.version}";
   tools = {
     inherit
       python
@@ -87,20 +93,22 @@ in
       ;
   };
 
+  dependencyProviders = final.tools;
   environment = {
-    tools = with final.tools; [
-      gnumake
-      findutils
-      patch
-      sed
-      grep
-      gawk
-      diffutils
-      file
+    tools = map (name: final.tools.${name}) [
+      "gnumake"
+      "findutils"
+      "patch"
+      "sed"
+      "grep"
+      "gawk"
+      "diffutils"
+      "file"
     ];
     libraries = [ ];
   };
   runtime = {
+    shell = bash;
     libraries = [ ];
   };
   development = {
@@ -114,8 +122,8 @@ in
       inherit (final.tools) xz findutils;
       compression = "xz";
     })
-    (command "python.validate-source" ''
-      ${final.tools.python}/bin/python3 -B ${./prefix.py} "$PWD" ${lib.escapeShellArg config} validate-source
+    (sourceCommand "python.validate-source" ''
+      ${final.tools.python}/bin/python3 -B ${./prefix.py} "$PWD" ${lib.escapeShellArg sourceConfig} validate-source
     '')
     (steps.prepareAutotools {
       name = "python.autotools";
@@ -123,24 +131,41 @@ in
       inherit (final.tools) python;
       base = final.base;
     })
-    (command "python.prepare" ''
+    (sourceCommand "python.prepare" ''
       ${lib.concatMapStringsSep "\n" (p: "${final.tools.patch}/bin/patch -p1 < ${p}") final.patches}
-      ${final.tools.python}/bin/python3 -B ${./prefix.py} "$PWD" ${lib.escapeShellArg config} prepare
+      ${final.tools.python}/bin/python3 -B ${./prefix.py} "$PWD" ${lib.escapeShellArg sourceConfig} prepare
       printf '%s\n' '*disabled*' ${lib.escapeShellArgs final.disabledModules} > Modules/Setup.local
     '')
-    (command "python.configure" ''
+    (sourceCommand "python.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
       ${final.bash}/bin/bash ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "python.build" ''
+    (sourceCommand "python.build" ''
       ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash
-      ./python -c 'import sys, json, subprocess, sysconfig'
     '')
-    (command "python.install" ''
+    (sourceCommand "python.install" ''
       ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash "COMPILEALL_OPTS=-j$NIX_BUILD_CORES" install
       mkdir -p "$out/share/licenses/python"
       cp LICENSE "$out/share/licenses/python/"
+    '')
+    (steps.split "python.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (command "python.relocate-prefix" ''
+      ${final.tools.python}/bin/python3 -B ${../../python/native/relocate.py} "$out"
       ${prefix "install"}
+      ${final.tools.python}/bin/python3 -B ${../../python/native/install.py} "$out" ${final.runtime.shell}/bin/bash ${
+        lib.escapeShellArg (
+          lib.makeBinPath [
+            final.bash
+            final.coreutils
+            final.tools.sed
+            final.tools.grep
+            final.tools.diffutils
+            final.tools.binutils
+          ]
+        )
+      } \
+        ${lib.escapeShellArg "${final.bash}/bin/bash"} ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"}
     '')
     (transform (
       outputs.strip {
@@ -166,6 +191,7 @@ in
         ];
         elfKinds = [ "runtime" ];
         libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       }
     ))
     (outputs.development {
@@ -180,9 +206,6 @@ in
       ];
       elfKinds = [ "runtime" ];
     })
-    (command "python.installed-profile" ''
-      "$out/bin/python3" -I -c 'import sys, json, subprocess, sysconfig'
-    '')
   ];
   configureFlags = [
     "--without-ensurepip"

@@ -20,12 +20,18 @@ package.testContext.mkSuite {
     steps-replacement = {
       script =
         let
-          control = package.editSteps (_: [
-            {
-              name = "contract.probe";
-              run = ''mkdir -p "$out"; printf '%s\n' 'edited plan executed' > "$out/marker"'';
+          control = package.edit (
+            s:
+            builtins.removeAttrs s [ "artifactName" ]
+            // {
+              plan = [
+                {
+                  name = "contract.probe";
+                  run = ''mkdir -p "$out"; printf '%s\n' 'edited plan executed' > "$out/marker"'';
+                }
+              ];
             }
-          ]);
+          );
         in
         ''cat ${control}/marker'';
       expected = "edited plan executed";
