@@ -88,6 +88,14 @@ package.testContext.mkSuite {
     };
 }
 
-// (import ../../ordinary-autotools-tests.nix { inherit pkgs tvp package; })
+// (
+  if package.tvp.historicalAutotools or false then
+    import ../../historical-autotools-tests.nix { inherit pkgs tvp package; }
+  else
+    (
+      { }
+      // (import ../../ordinary-autotools-tests.nix { inherit pkgs tvp package; })
 
-// (import ../../ordinary-autotools-split-tests.nix { inherit pkgs tvp package; })
+      // (import ../../ordinary-autotools-split-tests.nix { inherit pkgs tvp package; })
+    )
+)

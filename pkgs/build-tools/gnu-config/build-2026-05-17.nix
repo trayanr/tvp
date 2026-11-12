@@ -1,5 +1,5 @@
-# Dated Git snapshot: run shipped tests with declared fixture interpreters,
-# then install the two scripts with the selected runtime Bash. No compiler output.
+# Dated Git snapshot: install pristine scripts before binding the runtime shell.
+# Shipped test execution is an independent test derivation, never production work.
 {
   tvp,
   lib,
@@ -32,19 +32,30 @@ in
     version
     bash
     coreutils
+    sed
+    gawk
+    grep
+    revision
     ;
+  dependencyProviders = {
+    bash = final.bash;
+    coreutils = final.coreutils;
+    sed = final.sed;
+    gawk = final.gawk;
+    grep = final.grep;
+  };
   environment = {
     tools = [
-      bash
-      coreutils
-      sed
-      gawk
-      grep
+      final.bash
+      final.coreutils
+      final.sed
+      final.gawk
+      final.grep
     ];
     libraries = [ ];
   };
   runtime = {
-    inherit bash;
+    bash = final.bash;
   };
   plan = tvp.builder.steps.sequence [
     {
@@ -54,38 +65,21 @@ in
         chmod -R u+w source
       '';
     }
-    (command "upstream" ''
-      cd testsuite
-      # The harness generates executable uname/ldd mocks. Bind only their two
-      # interpreter directives; keep every assertion and fixture datum intact.
-      test "$(${grep}/bin/grep -c '^#!/bin/sh$' config-guess.sh)" = 2
-      ${sed}/bin/sed 's|^#!/bin/sh$|#!${final.bash}/bin/bash|' \
-        config-guess.sh > config-guess-selected.sh
-      sub=0; guess=0
-      ${final.bash}/bin/bash config-sub.sh > config-sub.log 2>&1 || sub=$?
-      ${final.bash}/bin/bash config-guess-selected.sh > config-guess.log 2>&1 || guess=$?
-      cat config-sub.log config-guess.log
-      printf '%s\n' "$sub" > config-sub.exit
-      printf '%s\n' "$guess" > config-guess.exit
-      printf 'config-sub.sh exit=%s; config-guess.sh exit=%s\n' "$sub" "$guess"
-      if (( sub )); then exit "$sub"; fi
-      if (( guess )); then exit "$guess"; fi
-      for fixture in uname ldd; do
-        IFS= read -r interpreter < "$fixture"
-        test "$interpreter" = '#!${final.bash}/bin/bash'
-        printf '%s: %s\n' "$fixture" "$interpreter"
-      done > fixture-interpreters
-    '')
     (command "install" ''
       install -Dm755 config.guess "$out/config.guess"
       install -Dm755 config.sub "$out/config.sub"
-      ${sed}/bin/sed -i '1s|^#! /bin/sh$|#!${final.runtime.bash}/bin/bash|' "$out/config.guess" "$out/config.sub"
       install -Dm644 ChangeLog-old "$out/share/doc/gnu-config/ChangeLog-old"
-      printf '%s\n' '${revision}' > "$out/share/doc/gnu-config/revision"
-      mkdir -p "$out/nix-support/upstream"
-      cp testsuite/config-{sub,guess}.{log,exit} "$out/nix-support/upstream/"
-      cp testsuite/fixture-interpreters "$out/nix-support/upstream/"
+      printf '%s\n' '${final.revision}' > "$out/share/doc/gnu-config/revision"
     '')
+    (tvp.builder.steps.split "gnu-config.finalize")
+    (tvp.builder.outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gnu-config.runtime-shell";
+      tools = [ final.sed ];
+      run = ''
+        ${final.sed}/bin/sed -i '1s|^#! /bin/sh$|#!${final.runtime.bash}/bin/bash|' "$out/config.guess" "$out/config.sub"
+      '';
+    }
   ];
   meta = {
     description = "GNU system type detection and canonicalisation scripts";
@@ -99,6 +93,6 @@ in
     platforms = lib.platforms.unix;
   };
   tvp = {
-    inherit revision;
+    revision = final.revision;
   };
 }

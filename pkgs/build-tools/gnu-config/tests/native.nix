@@ -86,11 +86,29 @@ p.testContext.mkSuite {
     };
     upstream = {
       script = ''
-        for suite in config-sub config-guess; do
-          test "$(cat ${p}/nix-support/upstream/$suite.exit)" = 0
-          cat ${p}/nix-support/upstream/$suite.log >&2
-          grep -q '^PASS:' ${p}/nix-support/upstream/$suite.log
-        done
+          cp -R ${p.src} source
+          chmod -R u+w source
+          cd source
+        cd testsuite
+        # The harness generates executable uname/ldd mocks. Bind only their two
+        # interpreter directives; keep every assertion and fixture datum intact.
+        test "$(${d.grep}/bin/grep -c '^#!/bin/sh$' config-guess.sh)" = 2
+        ${d.sed}/bin/sed 's|^#!/bin/sh$|#!${p.specification.bash}/bin/bash|' \
+          config-guess.sh > config-guess-selected.sh
+        sub=0; guess=0
+        ${p.specification.bash}/bin/bash config-sub.sh > config-sub.log 2>&1 || sub=$?
+        ${p.specification.bash}/bin/bash config-guess-selected.sh > config-guess.log 2>&1 || guess=$?
+        cat config-sub.log config-guess.log
+        printf '%s\n' "$sub" > config-sub.exit
+        printf '%s\n' "$guess" > config-guess.exit
+        printf 'config-sub.sh exit=%s; config-guess.sh exit=%s\n' "$sub" "$guess"
+        if (( sub )); then exit "$sub"; fi
+        if (( guess )); then exit "$guess"; fi
+        for fixture in uname ldd; do
+          IFS= read -r interpreter < "$fixture"
+          test "$interpreter" = '#!${p.specification.bash}/bin/bash'
+          printf '%s: %s\n' "$fixture" "$interpreter"
+        done > fixture-interpreters
         printf upstream
       '';
       expected = "upstream";

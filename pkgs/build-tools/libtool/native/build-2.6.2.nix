@@ -1,5 +1,4 @@
-# Ordinary 2.6.2 only: explicit owned construction and installed macro interface.
-# Shipped configure/Makefiles stay authoritative; no maintainer regeneration.
+# Complete ordinary procedure for libtool 2.4.7; installed output repair follows the artifact split.
 {
   tvp,
   lib,
@@ -39,10 +38,11 @@ let
       inherit name run;
       cwd = "source";
     };
-  make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   elfPaths = [ "lib" ];
 in
 {
+  tvp.ordinaryAutotools = true;
   pname = "libtool";
   inherit
     base
@@ -50,51 +50,93 @@ in
     version
     bash
     coreutils
+    autoconf
+    automake
+    m4
+    file
+    patch
+    gnumake
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    gawk
+    diffutils
+    python
+    binutils
+    patchelf
+    configureFlags
+    patches
     ;
+  dependencyProviders = {
+    bash = final.bash;
+    coreutils = final.coreutils;
+    autoconf = final.autoconf;
+    automake = final.automake;
+    m4 = final.m4;
+    file = final.file;
+    patch = final.patch;
+    gnumake = final.gnumake;
+    gnutar = final.gnutar;
+    xz = final.xz;
+    findutils = final.findutils;
+    sed = final.sed;
+    grep = final.grep;
+    gawk = final.gawk;
+    diffutils = final.diffutils;
+    python = final.python;
+    binutils = final.binutils;
+    patchelf = final.patchelf;
+  };
   environment = {
     tools = [
-      autoconf
-      automake
-      m4
-      file
-      gnumake
-      sed
-      grep
-      gawk
-      diffutils
-      findutils
+      final.autoconf
+      final.automake
+      final.m4
+      final.file
+      final.gnumake
+      final.sed
+      final.grep
+      final.gawk
+      final.diffutils
+      final.findutils
     ];
     libraries = [ ];
   };
   runtime = {
+    shell = final.bash;
     tools = [
-      coreutils
-      sed
-      grep
-      gawk
-      bash
-      autoconf
-      automake
-      m4
-      file
+      final.coreutils
+      final.sed
+      final.grep
+      final.gawk
+      final.bash
+      final.autoconf
+      final.automake
+      final.m4
+      final.file
     ];
     libraries = [ ];
   };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = gnutar;
-      inherit xz findutils;
+      tar = final.gnutar;
+      xz = final.xz;
+      findutils = final.findutils;
       compression = "xz";
     })
     (
       (command "libtool.patch" ''
-        ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch -p1 < ${p}") patches}
+        ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
         # Preserve shipped timestamps so adapted templates cannot trigger aclocal,
         # automake or help2man regeneration. Only ltmain.sh is explicitly rebuilt.
         for script in libtoolize.in build-aux/ltmain.in; do
+          test "$(${final.grep}/bin/grep -Fo '@TVP_AUTOCONF@' "$script" | ${final.coreutils}/bin/wc -l)" = 1
+          test "$(${final.grep}/bin/grep -Fo '@TVP_AUTOMAKE@' "$script" | ${final.coreutils}/bin/wc -l)" = 1
           cp -p "$script" "$script.timestamp"
-          sed -i -e 's|@TVP_AUTOCONF@|${autoconf}/bin/autoconf|g' -e 's|@TVP_AUTOMAKE@|${automake}/bin/automake|g' "$script"
+          sed -i -e 's|@TVP_AUTOCONF@|${final.autoconf}/bin/autoconf|g' -e 's|@TVP_AUTOMAKE@|${final.automake}/bin/automake|g' "$script"
           touch -r "$script.timestamp" "$script"
           rm "$script.timestamp"
         done
@@ -104,14 +146,14 @@ in
       '')
       // {
         tools = [
-          patch
-          sed
+          final.patch
+          final.sed
         ];
       }
     )
     (steps.shebangs {
       name = "libtool.source-interpreter";
-      inherit python;
+      python = final.python;
       paths = [
         "libtoolize.in"
         "libtool-next-version.in"
@@ -119,15 +161,21 @@ in
       names = [ "sh" ];
       interpreter = "${final.bash}/bin/bash";
     })
+    {
+      name = "libtool.source-confinement";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-source.py}'';
+    }
     (steps.prepareAutotools {
       name = "libtool.prepare";
       bash = final.bash;
-      inherit python;
+      python = final.python;
       base = final.base;
     })
     (command "libtool.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --enable-shared --enable-static M4=${m4}/bin/m4 FILECMD=${file}/bin/file ${lib.escapeShellArgs configureFlags}
+      ./configure --prefix="$out" --enable-shared --enable-static M4=${final.m4}/bin/m4 FILECMD=${final.file}/bin/file ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "libtool.build" ''
       ${make} build-aux/ltmain.sh
@@ -140,8 +188,33 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "libtool.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "libtool.relocate-runtime";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            family = final.pname;
+            frontends = {
+              libtool = "shell";
+              libtoolize = "shell";
+            };
+            shell = "${final.runtime.shell}/bin/bash";
+            paths = map (p: "${p}/bin") final.runtime.tools;
+            replacements = [
+              {
+                old = "${final.bash}/bin/bash";
+                new = "${final.runtime.shell}/bin/bash";
+              }
+            ];
+          }
+        )
+      }'';
+    }
     (outputs.shebangs {
-      inherit python;
+      python = final.python;
       paths = [
         "bin"
         "share/libtool/build-aux"
@@ -150,25 +223,23 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${final.bash}/bin/bash";
+      interpreter = "${final.runtime.shell}/bin/bash";
     })
-    {
-      name = "libtool.runtime-tools";
-      tools = [ python ];
-      run = ''${python}/bin/python3 -B ${./runtime-tools.py} "$out" ${
-        lib.escapeShellArg (builtins.toJSON (map (p: "${p}/bin") final.runtime.tools))
-      }'';
-    }
+
     (outputs.strip {
-      inherit python binutils;
+      python = final.python;
+      binutils = final.binutils;
       paths = elfPaths;
     })
     (outputs.stripArchives {
-      inherit python binutils;
+      python = final.python;
+      binutils = final.binutils;
       paths = [ "lib/libltdl.a" ];
     })
     (outputs.rpaths {
-      inherit python binutils patchelf;
+      python = final.python;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       paths = elfPaths;
       base = final.base;
       libraries = final.runtime.libraries;
@@ -176,29 +247,33 @@ in
     })
     # libltdl's shared/static interface, .la file and installed aliases are retained.
     (outputs.development {
-      inherit python;
+      python = final.python;
       libraries = [ ];
     })
     (outputs.checkSymlinks {
-      inherit python;
+      python = final.python;
       paths = [
         "lib/libltdl.so"
         "lib/libltdl.so.7"
       ];
     })
     (outputs.checkPaths {
-      inherit python binutils patchelf;
+      python = final.python;
+      binutils = final.binutils;
+      patchelf = final.patchelf;
       paths = elfPaths;
     })
   ];
   development = package: { aclocalDirectories = [ "${package}/share/aclocal" ]; };
   tvp.features = {
+    toolDefaults = true;
     cxxDependencyTracking = true;
     acLibtool = true;
     ltdl = true;
     ltInit = true;
   };
   meta = {
+    homepage = "https://www.gnu.org/software/libtool/";
     description = "GNU portable library build tools and libltdl loader library";
     license = [
       lib.licenses.gpl2Plus

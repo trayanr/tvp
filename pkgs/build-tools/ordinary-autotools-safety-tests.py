@@ -7,7 +7,8 @@ import subprocess
 import sys
 import tempfile
 
-guard, api, output = sys.argv[1:]
+guard, api, output = sys.argv[1:4]
+historical = sys.argv[4] if len(sys.argv) == 5 else None
 configure = """#!/bin/sh
 PACKAGE_VERSION='1.12'
 PACKAGE_STRING='automake 1.12'
@@ -107,4 +108,19 @@ with tempfile.TemporaryDirectory(dir=Path.cwd()) as temporary:
     assert (root / 'bin/autoupdate').read_text().startswith('#!/selected/bin/perl -w\n')
     assert (root / 'share/tap-driver.pl').read_text().startswith('#!/selected/bin/perl\n')
     assert '/artifact' not in (root / 'bin/autoconf').read_text()
+    if historical is not None:
+        root = top / 'historical-output'
+        (root / 'bin').mkdir(parents=True)
+        (root / 'share').mkdir()
+        (root / 'bin/autoconf').write_text('#! /bin/sh -e\necho /artifact\n')
+        (root / 'bin/autoupdate').write_text('#!/bin/sh\necho /artifact\n')
+        (root / 'bin/autoscan').write_text('#!/usr/bin/perl -w\nprint 42;\n')
+        selected = dict(config, frontends={name: 'shipped' for name in classes})
+        run(historical, root, root, '/artifact', json.dumps(selected))
+        assert (root / 'bin/autoupdate').read_text().startswith('#!/selected/bin/bash\n')
+        assert (root / 'bin/autoscan').read_text().startswith('#!/selected/bin/perl -w\n')
+        (root / 'bin/autoscan').write_text('#!/usr/bin/python3\nprint(42)\n')
+        before = snapshot(root)
+        run(historical, root, root, '/artifact', json.dumps(selected), success=False)
+        assert snapshot(root) == before
 print('helper-contracts')
