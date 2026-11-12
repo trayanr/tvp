@@ -204,84 +204,94 @@ in
       interpreter = "${final.bash}/bin/bash";
     })
   ];
-  upstreamCheck =
-    ((command "check" ''${make} test'') // { enabled = final.doCheck; });
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "openssl.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    {
-      name = "openssl.relocate";
-      tools = [ python binutils patchelf ];
-      run = ''${python}/bin/python3 -B ${final.finalizeHelper} ${../ordinary/archive.py} ${../../../runtimes/perl/ordinary/elf-finalize.py} "$out" "$TVP_ARTIFACT_ROOT" ${lib.escapeShellArg (builtins.toJSON {
-        manual = { };
-        readelf = "${binutils}/bin/readelf";
-        patchelf = "${patchelf}/bin/patchelf";
-        perl = "${final.runtime.perl}/bin/perl";
-        buildPerl = "${buildPerl}/bin/perl";
-        shell = "${final.runtime.shell}/bin/bash";
-        tools = [ ];
-        rehash = final.tvp.features.rehash or false;
-      })} ${../ordinary/elf.py} ${../ordinary/manuals.py}'';
-    }
-    (outputs.shebangs {
-      inherit python;
-      paths = [ "bin/c_rehash" ];
-      names = [ "perl" ];
-      interpreter = "${final.runtime.perl}/bin/perl";
-    })
-    (
+  upstreamCheck = ((command "check" ''${make} test'') // { enabled = final.doCheck; });
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "openssl.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "openssl.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
+        ];
+        run = ''${python}/bin/python3 -B ${final.finalizeHelper} ${../ordinary/archive.py} ${../../../runtimes/perl/ordinary/elf-finalize.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              manual = { };
+              readelf = "${binutils}/bin/readelf";
+              patchelf = "${patchelf}/bin/patchelf";
+              perl = "${final.runtime.perl}/bin/perl";
+              buildPerl = "${buildPerl}/bin/perl";
+              shell = "${final.runtime.shell}/bin/bash";
+              tools = [ ];
+              rehash = final.tvp.features.rehash or false;
+            }
+          )
+        } ${../ordinary/elf.py} ${../ordinary/manuals.py}'';
+      }
       (outputs.shebangs {
         inherit python;
+        paths = [ "bin/c_rehash" ];
+        names = [ "perl" ];
+        interpreter = "${final.runtime.perl}/bin/perl";
+      })
+      (
+        (outputs.shebangs {
+          inherit python;
+          paths = [
+            "bin"
+            "lib"
+          ];
+          names = [
+            "sh"
+            "bash"
+          ];
+          interpreter = "${final.bash}/bin/bash";
+        })
+        // {
+          name = "output.shell-shebangs";
+        }
+      )
+      (outputs.strip {
+        inherit python binutils;
         paths = [
           "bin"
           "lib"
         ];
-        names = [
-          "sh"
-          "bash"
-        ];
-        interpreter = "${final.bash}/bin/bash";
+        elfKinds = [ "runtime" ];
       })
-      // {
-        name = "output.shell-shebangs";
-      }
-    )
-    (outputs.strip {
-      inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.stripArchives {
-      inherit python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-  ]);
+      (outputs.stripArchives {
+        inherit python binutils;
+        paths = [ "lib" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+    ]
+  );
   tvp.features = {
     sha256 = true;
     pbkdf2 = true;

@@ -138,19 +138,31 @@ mkSuite {
         ];
       };
     }
-    // pkgs.lib.optionalAttrs ((package.tvp.features.doCheck or false) && !(package.specification ? upstreamPlan)) {
-      upstream = {
-        script = ''
-          test "$(cat ${package}/nix-support/upstream-tests.status)" = 0
-          grep -F 'TESTDONE: 10 tests out of 10 reported OK' ${package}/nix-support/upstream-summary >&2
-          printf upstream-10-ok
-        '';
-        expected = "upstream-10-ok";
-      };
-    };
+    //
+      pkgs.lib.optionalAttrs
+        ((package.tvp.features.doCheck or false) && !(package.specification ? upstreamPlan))
+        {
+          upstream = {
+            script = ''
+              test "$(cat ${package}/nix-support/upstream-tests.status)" = 0
+              grep -F 'TESTDONE: 10 tests out of 10 reported OK' ${package}/nix-support/upstream-summary >&2
+              printf upstream-10-ok
+            '';
+            expected = "upstream-10-ok";
+          };
+        };
 }
 
-// (if (package ? specification) && (package.specification ? upstreamPlan) && (package.specification.upstreamCheck.enabled or true) then {
-  # Independent native upstream registration.
-  upstream = import ../native/upstream.nix { package = package; };
-} else { })
+// (
+  if
+    (package ? specification)
+    && (package.specification ? upstreamPlan)
+    && (package.specification.upstreamCheck.enabled or true)
+  then
+    {
+      # Independent native upstream registration.
+      upstream = import ../native/upstream.nix { package = package; };
+    }
+  else
+    { }
+)

@@ -107,55 +107,60 @@ in
     (command "libyaml.configure" ''./configure --prefix="$out" --enable-shared --enable-static'')
     (command "libyaml.build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
   ];
-  upstreamCheck =
-    (
-      (command "libyaml.check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
-      // {
-        enabled = final.tvp.features.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "libyaml.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["lib/pkgconfig" "lib/libyaml.la"];
-    })
-    (outputs.strip {
-      inherit (final.tools) python binutils;
-      paths = [ "lib/libyaml-0.so.2.0.9" ];
-    })
-    (outputs.stripArchives {
-      inherit (final.tools) python binutils;
-      paths = [ "lib/libyaml.a" ];
-    })
-    (outputs.libtool {
-      inherit (final.tools) python;
-      paths = [ "lib/libyaml.la" ];
-    })
-    (outputs.rpaths {
-      inherit (final.tools) python binutils patchelf;
-      base = final.base;
-      paths = [ "lib/libyaml-0.so.2.0.9" ];
-      libraries = final.runtime.libraries;
-    })
-    (outputs.development {
-      inherit (final.tools) python;
-      libraries = [ ];
-    })
-    (outputs.checkSymlinks {
-      inherit (final.tools) python;
-      paths = [
-        "lib/libyaml.so"
-        "lib/libyaml-0.so.2"
-      ];
-    })
-    (outputs.checkPaths {
-      inherit (final.tools) python binutils patchelf;
-      paths = [ "lib" ];
-      elfKinds = [ "runtime" ];
-    })
-  ]);
+  upstreamCheck = (
+    (command "libyaml.check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+    // {
+      enabled = final.tvp.features.doCheck;
+    }
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "libyaml.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "lib/pkgconfig"
+          "lib/libyaml.la"
+        ];
+      })
+      (outputs.strip {
+        inherit (final.tools) python binutils;
+        paths = [ "lib/libyaml-0.so.2.0.9" ];
+      })
+      (outputs.stripArchives {
+        inherit (final.tools) python binutils;
+        paths = [ "lib/libyaml.a" ];
+      })
+      (outputs.libtool {
+        inherit (final.tools) python;
+        paths = [ "lib/libyaml.la" ];
+      })
+      (outputs.rpaths {
+        inherit (final.tools) python binutils patchelf;
+        base = final.base;
+        paths = [ "lib/libyaml-0.so.2.0.9" ];
+        libraries = final.runtime.libraries;
+      })
+      (outputs.development {
+        inherit (final.tools) python;
+        libraries = [ ];
+      })
+      (outputs.checkSymlinks {
+        inherit (final.tools) python;
+        paths = [
+          "lib/libyaml.so"
+          "lib/libyaml-0.so.2"
+        ];
+      })
+      (outputs.checkPaths {
+        inherit (final.tools) python binutils patchelf;
+        paths = [ "lib" ];
+        elfKinds = [ "runtime" ];
+      })
+    ]
+  );
   tvp.features = {
     document = true;
     pkgConfig = true;

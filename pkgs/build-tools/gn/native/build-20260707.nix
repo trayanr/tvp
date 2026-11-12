@@ -83,27 +83,29 @@ in
     '')
     (command "build" ''${ninja}/bin/ninja -C out -j"$NIX_BUILD_CORES"'')
   ];
-  upstreamCheck =
-    ((command "check" ''out/gn_unittests'') // { enabled = final.doCheck; });
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "gn.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.strip {
-      inherit python binutils;
-      paths = [ "bin" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      paths = [ "bin" ];
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [ "bin" ];
-    })
-  ]);
+  upstreamCheck = ((command "check" ''out/gn_unittests'') // { enabled = final.doCheck; });
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "gn.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.strip {
+        inherit python binutils;
+        paths = [ "bin" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        paths = [ "bin" ];
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [ "bin" ];
+      })
+    ]
+  );
   meta = {
     description = "GN meta-build system at the exact revision required by Dart";
     homepage = "https://gn.googlesource.com/gn/";

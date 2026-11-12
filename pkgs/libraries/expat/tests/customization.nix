@@ -5,7 +5,12 @@ let
   force = q: builtins.tryEval (builtins.deepSeq q.drvPath true);
   equal = q: q.drvPath == p.drvPath;
   source = p.override { src = builtins.toFile "customization-source" "explicit source control"; };
-  step = name: q: if name == "expat.check" then q.specification.upstreamCheck else builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
+  step =
+    name: q:
+    if name == "expat.check" then
+      q.specification.upstreamCheck
+    else
+      builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
   results = [
     (equal (p.override { }))
     (equal (p.override (_: { })))

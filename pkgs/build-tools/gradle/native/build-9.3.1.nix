@@ -62,29 +62,32 @@ in
       cp ${final.src} "$out/share/gradle/gradle-${final.version}-all.zip"
     '')
   ];
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "gradle.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (command "launchers" ''
-      ${helperPython}/bin/python3 -B ${./render.py} "$out" ${
-        lib.escapeShellArgs [
-          (toString final.runtime.shell)
-          (toString final.runtime.jdk)
-          (toString final.runtime.coreutils)
-          (toString final.runtime.python)
-          final.version
-          "${final.seedTemplate}"
-        ]
-      }
-      chmod +x "$out/bin/"*
-    '')
-    (outputs.shebangs {
-      python = helperPython;
-      paths = [ "libexec/gradle/bin/gradle" ];
-      names = [ "sh" ];
-      interpreter = "${final.runtime.shell}/bin/bash";
-    })
-  ]);
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "gradle.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (command "launchers" ''
+        ${helperPython}/bin/python3 -B ${./render.py} "$out" ${
+          lib.escapeShellArgs [
+            (toString final.runtime.shell)
+            (toString final.runtime.jdk)
+            (toString final.runtime.coreutils)
+            (toString final.runtime.python)
+            final.version
+            "${final.seedTemplate}"
+          ]
+        }
+        chmod +x "$out/bin/"*
+      '')
+      (outputs.shebangs {
+        python = helperPython;
+        paths = [ "libexec/gradle/bin/gradle" ];
+        names = [ "sh" ];
+        interpreter = "${final.runtime.shell}/bin/bash";
+      })
+    ]
+  );
   meta = {
     description = "Pinned Gradle build tool with owned Java runtime and offline wrapper seed";
     homepage = "https://gradle.org/";

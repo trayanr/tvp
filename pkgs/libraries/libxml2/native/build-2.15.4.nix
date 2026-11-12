@@ -105,62 +105,68 @@ in
     '')
     (command "build" make)
   ];
-  upstreamCheck =
-    (
-      (command "check" ''
-        ${make} check > make-check.log 2>&1
-        cat make-check.log
-        cat runsuite.log
-        ${python}/bin/python3 -B ${./check-upstream.py}
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "libxml2.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    {
-      name = "libxml2.relocate";
-      tools = [ python binutils patchelf ];
-      run = ''
-        mkdir finalize-helper
-        cp ${final.finalizeHelper} finalize-helper/finalize.py
-        cp ${../ordinary/elf.py} finalize-helper/elf.py
-        ${python}/bin/python3 -B finalize-helper/finalize.py "$out" "$TVP_ARTIFACT_ROOT" ${binutils}/bin/readelf ${patchelf}/bin/patchelf'';
+  upstreamCheck = (
+    (command "check" ''
+      ${make} check > make-check.log 2>&1
+      cat make-check.log
+      cat runsuite.log
+      ${python}/bin/python3 -B ${./check-upstream.py}
+    '')
+    // {
+      enabled = final.doCheck;
     }
-    (outputs.shebangs {
-      inherit python;
-      paths = [ "bin/xml2-config" ];
-      names = [ "sh" ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = elfPaths;
-      libraries = final.runtime.libraries;
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ zlib ];
-    })
-    (outputs.checkSymlinks {
-      inherit python;
-      paths = [
-        "lib/libxml2.so"
-        "lib/libxml2.so.16"
-      ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "libxml2.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "libxml2.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
+        ];
+        run = ''
+          mkdir finalize-helper
+          cp ${final.finalizeHelper} finalize-helper/finalize.py
+          cp ${../ordinary/elf.py} finalize-helper/elf.py
+          ${python}/bin/python3 -B finalize-helper/finalize.py "$out" "$TVP_ARTIFACT_ROOT" ${binutils}/bin/readelf ${patchelf}/bin/patchelf'';
+      }
+      (outputs.shebangs {
+        inherit python;
+        paths = [ "bin/xml2-config" ];
+        names = [ "sh" ];
+        interpreter = "${final.bash}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = elfPaths;
+        libraries = final.runtime.libraries;
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ zlib ];
+      })
+      (outputs.checkSymlinks {
+        inherit python;
+        paths = [
+          "lib/libxml2.so"
+          "lib/libxml2.so.16"
+        ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     inherit doCheck;
     xpath = true;

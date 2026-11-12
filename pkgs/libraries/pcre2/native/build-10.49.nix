@@ -188,85 +188,94 @@ in
     '')
     (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
   ];
-  upstreamCheck =
-    (
-      (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
-      // {
-        enabled = final.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "pcre2.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["bin/pcre2-config" "lib/pkgconfig" "lib/libpcre2-8.la" "lib/libpcre2-16.la" "lib/libpcre2-32.la" "lib/libpcre2-posix.la"];
-    })
-    {
-      name = "pcre2.self-rpaths";
-      tools = [
-        python
-        patchelf
-      ];
-      run = ''
-        ${python}/bin/python3 -B - "$out" ${patchelf}/bin/patchelf <<'PYTHON'
-        from pathlib import Path
-        import subprocess, sys
-        root = Path(sys.argv[1])
-        for directory in ['bin', 'lib']:
-            for p in sorted((root/directory).iterdir()):
-                if p.is_symlink() or not p.is_file(): continue
-                with p.open('rb') as f: magic=f.read(4)
-                if magic == b'\x7fELF':
-                    subprocess.run([sys.argv[2], '--add-rpath', str(root/'lib'), str(p)], check=True)
-        PYTHON
-      '';
+  upstreamCheck = (
+    (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check'')
+    // {
+      enabled = final.doCheck;
     }
-    (outputs.shebangs {
-      inherit python;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      names = [
-        "sh"
-        "bash"
-      ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.stripArchives {
-      inherit python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-  ]);
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "pcre2.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "bin/pcre2-config"
+          "lib/pkgconfig"
+          "lib/libpcre2-8.la"
+          "lib/libpcre2-16.la"
+          "lib/libpcre2-32.la"
+          "lib/libpcre2-posix.la"
+        ];
+      })
+      {
+        name = "pcre2.self-rpaths";
+        tools = [
+          python
+          patchelf
+        ];
+        run = ''
+          ${python}/bin/python3 -B - "$out" ${patchelf}/bin/patchelf <<'PYTHON'
+          from pathlib import Path
+          import subprocess, sys
+          root = Path(sys.argv[1])
+          for directory in ['bin', 'lib']:
+              for p in sorted((root/directory).iterdir()):
+                  if p.is_symlink() or not p.is_file(): continue
+                  with p.open('rb') as f: magic=f.read(4)
+                  if magic == b'\x7fELF':
+                      subprocess.run([sys.argv[2], '--add-rpath', str(root/'lib'), str(p)], check=True)
+          PYTHON
+        '';
+      }
+      (outputs.shebangs {
+        inherit python;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        names = [
+          "sh"
+          "bash"
+        ];
+        interpreter = "${final.bash}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = [
+          "bin"
+          "lib"
+        ];
+      })
+      (outputs.stripArchives {
+        inherit python binutils;
+        paths = [ "lib" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = [
+          "bin"
+          "lib"
+        ];
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [
+          "bin"
+          "lib"
+        ];
+      })
+    ]
+  );
   tvp.features = {
     shared = true;
     inherit static;

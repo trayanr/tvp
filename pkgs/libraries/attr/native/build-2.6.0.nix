@@ -141,84 +141,89 @@ in
     '')
     (command "attr.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
   ];
-  upstreamCheck =
-    (
-      (command "attr.check" ''
-        "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
-        status=0
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
-          RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} attr $PWD/.tvp-filesystem-probe $PWD/test/run" \
-          || status=$?
-        cat test-suite.log
-        exit "$status"
-      '')
-      // {
-        enabled = final.doCheck;
-        tools = environment.tools ++ [
-          perl
-          python
-        ];
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "attr.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["lib/pkgconfig" "lib/libattr.la"];
-    })
-    {
-      name = "output.manuals";
-      tools = [
-        gzip
-        findutils
+  upstreamCheck = (
+    (command "attr.check" ''
+      "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
+      status=0
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check \
+        RUN_LOG_COMPILER="${python}/bin/python3 -B ${../../../../lib/tests/filesystem-test-runner.py} attr $PWD/.tvp-filesystem-probe $PWD/test/run" \
+        || status=$?
+      cat test-suite.log
+      exit "$status"
+    '')
+    // {
+      enabled = final.doCheck;
+      tools = environment.tools ++ [
+        perl
+        python
       ];
-      run = ''
-        while IFS= read -r -d $'\0' manual; do
-          ${gzip}/bin/gzip -n -9 "$manual"
-        done < <(find "$out/share/man" -type f ! -name '*.gz' -print0)
-        while IFS= read -r -d "" manual; do
-          target=$(readlink "$manual")
-          rm "$manual"
-          ln -s "$target.gz" "$manual.gz"
-        done < <(find "$out/share/man" -type l ! -name '*.gz' -print0)
-      '';
     }
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.stripArchives {
-      inherit python binutils;
-      paths = [ "lib/libattr.a" ];
-    })
-    (outputs.libtool {
-      inherit python;
-      paths = [ "lib/libattr.la" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = elfPaths;
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkSymlinks {
-      inherit python;
-      paths = [
-        "lib/libattr.so"
-        "lib/libattr.so.1"
-      ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "attr.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "lib/pkgconfig"
+          "lib/libattr.la"
+        ];
+      })
+      {
+        name = "output.manuals";
+        tools = [
+          gzip
+          findutils
+        ];
+        run = ''
+          while IFS= read -r -d $'\0' manual; do
+            ${gzip}/bin/gzip -n -9 "$manual"
+          done < <(find "$out/share/man" -type f ! -name '*.gz' -print0)
+          while IFS= read -r -d "" manual; do
+            target=$(readlink "$manual")
+            rm "$manual"
+            ln -s "$target.gz" "$manual.gz"
+          done < <(find "$out/share/man" -type l ! -name '*.gz' -print0)
+        '';
+      }
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.stripArchives {
+        inherit python binutils;
+        paths = [ "lib/libattr.a" ];
+      })
+      (outputs.libtool {
+        inherit python;
+        paths = [ "lib/libattr.la" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = elfPaths;
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkSymlinks {
+        inherit python;
+        paths = [
+          "lib/libattr.so"
+          "lib/libattr.so.1"
+        ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     shared = true;
     static = true;

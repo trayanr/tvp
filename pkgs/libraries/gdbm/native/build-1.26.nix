@@ -108,59 +108,65 @@ in
     '')
     (command "build" make)
   ];
-  upstreamCheck =
-    ((command "check" ''${make} check'') // { enabled = final.doCheck; });
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "gdbm.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["lib/pkgconfig" "lib/libgdbm.la" "lib/libgdbm_compat.la"];
-    })
-    (outputs.shebangs {
-      inherit python;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      names = [
-        "sh"
-        "bash"
-      ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-  ]);
+  upstreamCheck = ((command "check" ''${make} check'') // { enabled = final.doCheck; });
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "gdbm.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "lib/pkgconfig"
+          "lib/libgdbm.la"
+          "lib/libgdbm_compat.la"
+        ];
+      })
+      (outputs.shebangs {
+        inherit python;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        names = [
+          "sh"
+          "bash"
+        ];
+        interpreter = "${final.bash}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+    ]
+  );
   tvp.features = {
     compatLib = true;
     shared = true;

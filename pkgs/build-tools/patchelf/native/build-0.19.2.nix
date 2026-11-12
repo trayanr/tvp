@@ -137,44 +137,46 @@ in
     (command "patchelf.configure" ''${bash}/bin/bash ./configure --prefix="$out"'')
     (command "patchelf.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
   ];
-  upstreamCheck =
-    (
-      (command "patchelf.check" ''
-          status=0
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check SHELL=${bash}/bin/bash || status=$?
-        cat tests/test-suite.log
-        ${python}/bin/python3 -B ${./check-upstream.py} "$status" ${lib.escapeShellArg (lib.concatStringsSep ":" final.base.runtimeDirectories)} ${patchelf}/bin/patchelf
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "patchelf.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    {
-      name = "output.manuals";
-      tools = [ gzip ];
-      run = ''
-        ${gzip}/bin/gzip -n -9 "$out/share/man/man1/patchelf.1"
-      '';
+  upstreamCheck = (
+    (command "patchelf.check" ''
+        status=0
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" check SHELL=${bash}/bin/bash || status=$?
+      cat tests/test-suite.log
+      ${python}/bin/python3 -B ${./check-upstream.py} "$status" ${lib.escapeShellArg (lib.concatStringsSep ":" final.base.runtimeDirectories)} ${patchelf}/bin/patchelf
+    '')
+    // {
+      enabled = final.doCheck;
     }
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = elfPaths;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories;
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "patchelf.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "output.manuals";
+        tools = [ gzip ];
+        run = ''
+          ${gzip}/bin/gzip -n -9 "$out/share/man/man1/patchelf.1"
+        '';
+      }
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = elfPaths;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories;
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     inherit doCheck;
   };

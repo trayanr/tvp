@@ -144,78 +144,93 @@ in
     '')
     (command "build" make)
   ];
-  upstreamCheck =
-    ((command "check" ''TEST_JOBS="$NIX_BUILD_CORES" ${make} test_harness'') // { enabled = final.doCheck; });
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "perl.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    {
-      name = "perl.relocate";
-      tools = [ python binutils patchelf ];
-      run = ''${python}/bin/python3 -B ${final.finalizeHelper} ${lib.escapeShellArg (builtins.toJSON {
-        readelf = "${binutils}/bin/readelf";
-        patchelf = "${patchelf}/bin/patchelf";
-        externalPwd = false;
-      })} "$out" "$TVP_ARTIFACT_ROOT"'';
+  upstreamCheck = (
+    (command "check" ''TEST_JOBS="$NIX_BUILD_CORES" ${make} test_harness'')
+    // {
+      enabled = final.doCheck;
     }
-    (outputs.shebangs {
-      inherit python;
-      paths = [ "bin" ];
-      names = [
-        "perl"
-        "perl5.44.0"
-      ];
-      selfInterpreter = "bin/perl";
-    })
-    (
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "perl.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "perl.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
+        ];
+        run = ''${python}/bin/python3 -B ${final.finalizeHelper} ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              readelf = "${binutils}/bin/readelf";
+              patchelf = "${patchelf}/bin/patchelf";
+              externalPwd = false;
+            }
+          )
+        } "$out" "$TVP_ARTIFACT_ROOT"'';
+      }
       (outputs.shebangs {
         inherit python;
+        paths = [ "bin" ];
+        names = [
+          "perl"
+          "perl5.44.0"
+        ];
+        selfInterpreter = "bin/perl";
+      })
+      (
+        (outputs.shebangs {
+          inherit python;
+          paths = [
+            "bin"
+            "lib"
+          ];
+          names = [
+            "sh"
+            "bash"
+          ];
+          interpreter = "${final.bash}/bin/bash";
+        })
+        // {
+          name = "output.shell-shebangs";
+        }
+      )
+      (outputs.strip {
+        inherit python binutils;
         paths = [
           "bin"
           "lib"
         ];
-        names = [
-          "sh"
-          "bash"
-        ];
-        interpreter = "${final.bash}/bin/bash";
+        elfKinds = [ "runtime" ];
       })
-      // {
-        name = "output.shell-shebangs";
-      }
-    )
-    (outputs.strip {
-      inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-  ]);
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+    ]
+  );
   tvp.features = {
     globImportable = false;
     shared = true;

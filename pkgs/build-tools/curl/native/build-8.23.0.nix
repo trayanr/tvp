@@ -205,68 +205,74 @@ in
     '')
     (command "build" make)
   ];
-  upstreamCheck =
-    (
-      (command "check" ''
-        status=0
-        ${make} -C tests test TFLAGS='1 2 3 4 5 6 7 8 9 10' > upstream-tests.log 2>&1 || status=$?
-        cat upstream-tests.log
-        printf '%s\n' "$status" > upstream-tests.status
-        exit "$status"
-      '')
-      // {
-        enabled = final.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "curl.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["bin/curl-config" "lib/pkgconfig" "lib/libcurl.la"];
-    })
-    (outputs.shebangs {
-      inherit python;
-      paths = [ "bin/curl-config" ];
-      names = [ "sh" ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.libtool {
-      inherit python;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = elfPaths;
-      libraries = final.runtime.libraries;
-    })
-    # libcurl.pc Requires.private names all four even in the shared-only profile.
-    (outputs.development {
-      inherit python;
-      libraries = [
-        zlib
-        zstd
-        openssl
-        nghttp2
-      ];
-    })
-    (outputs.checkSymlinks {
-      inherit python;
-      paths = [
-        "lib/libcurl.so"
-        "lib/libcurl.so.4"
-      ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+  upstreamCheck = (
+    (command "check" ''
+      status=0
+      ${make} -C tests test TFLAGS='1 2 3 4 5 6 7 8 9 10' > upstream-tests.log 2>&1 || status=$?
+      cat upstream-tests.log
+      printf '%s\n' "$status" > upstream-tests.status
+      exit "$status"
+    '')
+    // {
+      enabled = final.doCheck;
+    }
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "curl.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "bin/curl-config"
+          "lib/pkgconfig"
+          "lib/libcurl.la"
+        ];
+      })
+      (outputs.shebangs {
+        inherit python;
+        paths = [ "bin/curl-config" ];
+        names = [ "sh" ];
+        interpreter = "${final.bash}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.libtool {
+        inherit python;
+        paths = [ "lib" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = elfPaths;
+        libraries = final.runtime.libraries;
+      })
+      # libcurl.pc Requires.private names all four even in the shared-only profile.
+      (outputs.development {
+        inherit python;
+        libraries = [
+          zlib
+          zstd
+          openssl
+          nghttp2
+        ];
+      })
+      (outputs.checkSymlinks {
+        inherit python;
+        paths = [
+          "lib/libcurl.so"
+          "lib/libcurl.so.4"
+        ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     inherit doCheck;
     tls = true;

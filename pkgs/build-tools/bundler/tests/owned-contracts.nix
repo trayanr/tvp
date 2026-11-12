@@ -172,15 +172,19 @@ let
   contracts = {
     libyaml = identities yaml;
     libyamlBoundary = {
-      defaultCheckEnabled = (step "libyaml.check" yaml).enabled;
+      defaultCheckEnabled = yaml.specification.upstreamCheck.enabled && yaml.tests ? upstream;
       editedCheckDisabled =
         !yamlChecksDisabled.specification.tvp.features.doCheck
-        && !(step "libyaml.check" yamlChecksDisabled).enabled;
+        && !yamlChecksDisabled.specification.upstreamCheck.enabled
+        && !(yamlChecksDisabled.tests ? upstream);
       editedCheckReenabled =
         yamlChecksReenabled.specification.tvp.features.doCheck
-        && (step "libyaml.check" yamlChecksReenabled).enabled;
+        && yamlChecksReenabled.specification.upstreamCheck.enabled
+        && yamlChecksReenabled.tests ? upstream;
       overrideEditEquivalent = yamlChecksDisabled.drvPath == (yaml.override { doCheck = false; }).drvPath;
-      disabledCheckChangesProducer = yamlChecksDisabled.drvPath != yaml.drvPath;
+      disabledCheckReusesProducer =
+        yamlChecksDisabled.artifact.drvPath == yaml.artifact.drvPath
+        && yamlChecksDisabled.drvPath == yaml.drvPath;
       reenabledCheckRestoresProducer = yamlChecksReenabled.drvPath == yaml.drvPath;
     };
     ruby = identities ruby;

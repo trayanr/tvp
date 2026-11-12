@@ -170,50 +170,56 @@ in
       printf '0\n' > upstream-check.status
       printf '1\n' > upstream-strict.status
       printf '%s\n' 'KNOWN-NONPASS: stale 1998 zipinfo header/date fixture; raw make check exits 0' > upstream-qualification
-    '') // { enabled = final.doCheck; };
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "unzip.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.shebangs {
-      inherit python;
-      paths = [ "bin/zipgrep" ];
-      names = [ "sh" ];
-      interpreter = "${final.runtime.shell}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = elfPaths;
-      libraries = final.runtime.libraries;
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    {
-      name = "output.manuals";
-      tools = [ gzip ];
-      run = ''for path in "$out"/share/man/man1/*.1; do ${gzip}/bin/gzip -n -9 "$path"; done'';
-    }
-    {
-      name = "output.zipinfo-link";
-      # Upstream installs a hard link. Stripping or ELF rewriting may replace
-      # an inode, so restore the alias to the finalized executable explicitly.
-      run = ''
-        test ! -L "$out/bin/zipinfo"
-        ln -f "$out/bin/unzip" "$out/bin/zipinfo"
-        test "$out/bin/unzip" -ef "$out/bin/zipinfo"
-      '';
-    }
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+    '')
+    // {
+      enabled = final.doCheck;
+    };
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "unzip.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.shebangs {
+        inherit python;
+        paths = [ "bin/zipgrep" ];
+        names = [ "sh" ];
+        interpreter = "${final.runtime.shell}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = elfPaths;
+        libraries = final.runtime.libraries;
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      {
+        name = "output.manuals";
+        tools = [ gzip ];
+        run = ''for path in "$out"/share/man/man1/*.1; do ${gzip}/bin/gzip -n -9 "$path"; done'';
+      }
+      {
+        name = "output.zipinfo-link";
+        # Upstream installs a hard link. Stripping or ELF rewriting may replace
+        # an inode, so restore the alias to the finalized executable explicitly.
+        run = ''
+          test ! -L "$out/bin/zipinfo"
+          ln -f "$out/bin/unzip" "$out/bin/zipinfo"
+          test "$out/bin/unzip" -ef "$out/bin/zipinfo"
+        '';
+      }
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     bzip2 = false;
     encryption = true;

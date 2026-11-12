@@ -113,33 +113,36 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/"
     '')
   ];
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "zip.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      paths = elfPaths;
-      libraries = final.runtime.libraries;
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    {
-      name = "output.manuals";
-      tools = [ gzip ];
-      run = ''for path in "$out"/share/man/man1/*.1; do ${gzip}/bin/gzip -n -9 "$path"; done'';
-    }
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
-  ]);
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "zip.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        paths = elfPaths;
+        libraries = final.runtime.libraries;
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      {
+        name = "output.manuals";
+        tools = [ gzip ];
+        run = ''for path in "$out"/share/man/man1/*.1; do ${gzip}/bin/gzip -n -9 "$path"; done'';
+      }
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     bzip2 = true;
     encryption = true;

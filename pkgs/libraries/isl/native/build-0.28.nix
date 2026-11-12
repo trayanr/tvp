@@ -133,47 +133,52 @@ in
     '')
     (command "build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
   ];
-  upstreamCheck =
-    (
-      (command "check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || { status=$?; cat test-suite.log >&2; exit "$status"; }'')
-      // {
-        enabled = final.tvp.features.doCheck;
-      }
-    );
-  plan = steps.sequence (final.artifactPlan ++ [
-    (steps.split "isl.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (outputs.relocateText {
-      inherit python;
-      paths = ["lib/pkgconfig" "lib/libisl.la"];
-    })
-    (outputs.libtool {
-      inherit (final.tools) python;
-      paths = [ "lib/libisl.la" ];
-    })
-    (outputs.strip {
-      inherit (final.tools) python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.stripArchives {
-      inherit (final.tools) python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit (final.tools) python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      paths = [ "lib" ];
-    })
-    (outputs.development {
-      inherit (final.tools) python;
-      libraries = final.development.libraries;
-    })
-    (outputs.checkPaths {
-      inherit (final.tools) python binutils patchelf;
-      paths = [ "lib" ];
-    })
-  ]);
+  upstreamCheck = (
+    (command "check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || { status=$?; cat test-suite.log >&2; exit "$status"; }'')
+    // {
+      enabled = final.tvp.features.doCheck;
+    }
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "isl.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "lib/pkgconfig"
+          "lib/libisl.la"
+        ];
+      })
+      (outputs.libtool {
+        inherit (final.tools) python;
+        paths = [ "lib/libisl.la" ];
+      })
+      (outputs.strip {
+        inherit (final.tools) python binutils;
+        paths = [ "lib" ];
+      })
+      (outputs.stripArchives {
+        inherit (final.tools) python binutils;
+        paths = [ "lib" ];
+      })
+      (outputs.rpaths {
+        inherit (final.tools) python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        paths = [ "lib" ];
+      })
+      (outputs.development {
+        inherit (final.tools) python;
+        libraries = final.development.libraries;
+      })
+      (outputs.checkPaths {
+        inherit (final.tools) python binutils patchelf;
+        paths = [ "lib" ];
+      })
+    ]
+  );
   tvp.features = {
     inherit doCheck;
     shared = true;
