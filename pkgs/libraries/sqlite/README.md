@@ -1,5 +1,10 @@
 # SQLite source staging
 
+Ordinary releases before 3.6.10 opt into Tcl8's retained string-result API with
+`USE_INTERP_RESULT`. Those sources access `Tcl_Interp.result`; 3.6.10 replaces the
+accesses with public result functions. The native definition adds the compiler
+option without changing retained recipes, test coverage or the selected Tcl.
+
 The ordinary x86_64-linux table now selects owned, installed-artifact procedures
 for all 268 supported legacy releases, 3.0.0 through 3.53.3. Declared-broken 3.2.8
 keeps its original definition, status and debt row. The already-owned 3.53.4

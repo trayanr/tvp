@@ -434,8 +434,8 @@ let
     };
   };
   # Preserve the retained definitions verbatim; only ordinary supported native
-  # releases select these complete source procedures. Options and patch records
-  # remain the original per-definition data, including historical exceptions.
+  # releases select these complete source procedures. Original options and patch
+  # records stay intact; native pre-3.6.10 adds Tcl8's string-result API opt-in.
   remainingDefs = pkgs.lib.mapAttrs (_: definition: {
     name = definition.name;
     constructor = tvp.builder;
@@ -455,7 +455,13 @@ let
     helpers = {
       inherit tvp;
     };
-    opts = definition.opts or { };
+    opts =
+      (definition.opts or { })
+      // pkgs.lib.optionalAttrs (pkgs.lib.versionOlder definition.name "3.6.10") {
+        # 3.6.10 replaced Tcl_Interp.result access with public result functions.
+        # Tcl8 retains that ABI behind this compatibility macro.
+        compileFlags = (definition.opts.compileFlags or [ ]) ++ [ "-DUSE_INTERP_RESULT" ];
+      };
     patches = definition.patches or [ ];
     deps = {
       bash = constructionTool "bash";
