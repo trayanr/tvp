@@ -166,7 +166,7 @@ in
     (command "check-build" ''
       # Fixture-only zlib and target Tcl linkage never change installed features.
       export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${final.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
-      export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib"
+      export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib -lz"
       ${make} testfixture
     '')
     (command "check-raw" ''
