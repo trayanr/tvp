@@ -28,6 +28,7 @@ package.testContext.mkSuite {
               patchelf = "${deps.patchelf}/bin/patchelf";
               perl = "${package.runtime.perl}/bin/perl";
               shell = "${package.runtime.shell}/bin/bash";
+              coreutils = "${deps.coreutils}";
             }
           }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/source.py}
           printf guards-ok

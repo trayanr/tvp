@@ -101,11 +101,11 @@ class Guards(unittest.TestCase):
                 (root/'payload').write_bytes(original + b'\0')
                 (root/case).symlink_to('payload')
                 with self.assertRaises(ValueError):
-                    source.prepare(root, config['shell'], config['perl'])
+                    source.prepare(root, config['shell'], config['perl'], config['coreutils'])
                 self.assertEqual((root/'safe.sh').read_bytes(), before)
                 (root/case).unlink(); (root/case).write_bytes(original+b'\0')
                 with self.assertRaises(ValueError):
-                    source.prepare(root, config['shell'], config['perl'])
+                    source.prepare(root, config['shell'], config['perl'], config['coreutils'])
                 self.assertEqual((root/'safe.sh').read_bytes(), before)
 
     def test_source_makefile_ssl_target_preserves_alias(self):
@@ -116,7 +116,7 @@ class Guards(unittest.TestCase):
             target.chmod(0o640)
             alias=root/'crypto/Makefile'; alias.symlink_to('Makefile.ssl')
             before=alias.lstat()
-            result=source.prepare(root,config['shell'],config['perl'])
+            result=source.prepare(root,config['shell'],config['perl'],config['coreutils'])
             self.assertEqual(result['changed'],['crypto/Makefile.ssl'])
             self.assertEqual(target.read_bytes(),b'SHELL='+config['shell'].encode()+b'\n#define CFLAGS "$(notdir $(CC)) $(CFLAG)"\n')
             self.assertEqual(target.stat().st_mode & 0o777,0o640)
@@ -148,9 +148,33 @@ class Guards(unittest.TestCase):
                     target.rename(root/'payload');alias.unlink();alias.symlink_to('payload')
                 elif case=='trailing-slash':alias.unlink();alias.symlink_to('Makefile.ssl/')
                 with self.assertRaises((ValueError,OSError)):
-                    source.prepare(root,config['shell'],config['perl'])
+                    source.prepare(root,config['shell'],config['perl'],config['coreutils'])
                 self.assertEqual(safe.read_bytes(),original)
                 self.assertEqual(safe.stat().st_mtime_ns,metadata.st_mtime_ns)
+    def test_source_coreutils_binding_and_command_boundaries(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            script = root/'testca'
+            script.write_bytes(b'#!/bin/sh\n/bin/rm -f missing\n/usr/bin/cp a b\n'
+                               b'/bin/mv a b\n/bin/cat a\n'
+                               b'# /bin/rmdir /bin/rm.extra /opt/bin/rm prefix/bin/rm\n')
+            source.prepare(root, config['shell'], config['perl'], config['coreutils'])
+            self.assertEqual(script.read_text(), '#!'+config['shell']+'\n'
+                             +config['coreutils']+'/bin/rm -f missing\n'
+                             +config['coreutils']+'/bin/cp a b\n'
+                             +config['coreutils']+'/bin/mv a b\n'
+                             +config['coreutils']+'/bin/cat a\n'
+                             +'# /bin/rmdir /bin/rm.extra /opt/bin/rm prefix/bin/rm\n')
+
+    def test_source_missing_coreutils_rejects_before_writes(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            script = root/'testca'
+            original = b'#!/bin/sh\n/bin/rm -f missing\n'
+            script.write_bytes(original)
+            with self.assertRaises(ValueError):
+                source.prepare(root, config['shell'], config['perl'], '/nix/store/missing-coreutils')
+            self.assertEqual(script.read_bytes(), original)
 
 
 unittest.main()

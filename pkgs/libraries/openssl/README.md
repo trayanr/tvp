@@ -63,6 +63,13 @@ preserving its link. Other selected aliases, chains, directories and escaping or
 hardlinked targets remain rejected. Compiler diagnostic rewriting follows the
 actual `crypto/Makefile` target and preserves every compiler option.
 
+Historical test and utility scripts also bind literal `rm`, `cp`, `mv` and `cat`
+paths to the effective Coreutils provider. Their arguments and failure handling
+remain upstream's. The first 0.9.7c build compiled but failed in `testca` on
+`/bin/rm`; its raw failure and compiled tree are retained separately. Upstream's
+`bctest ignore` deliberately skips the external arithmetic cross-check when `bc`
+is absent. That coverage gap remains explicit; no replacement calculator is used.
+
 Definition capabilities distinguish the ENGINE API from installed dynamic modules
 and the universal `openssl.pc` from split `libssl.pc`/`libcrypto.pc` metadata.
 The 0.9.7 range exposes the API and universal module; dynamic modules and split

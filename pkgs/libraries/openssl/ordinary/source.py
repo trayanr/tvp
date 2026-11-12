@@ -12,7 +12,7 @@ def selected(path, data=b''):
             or data.startswith(b'#!'))
 
 
-def prepare(root, shell, perl, encoding="utf-8"):
+def prepare(root, shell, perl, coreutils, encoding="utf-8"):
     if encoding not in ("utf-8", "latin-1"):
         raise ValueError("unsupported declared source encoding")
     root = Path(root)
@@ -21,9 +21,10 @@ def prepare(root, shell, perl, encoding="utf-8"):
     for p in [root, *root.parents]:
         if not stat.S_ISDIR(p.lstat().st_mode):
             raise ValueError(('source parent is not a directory', p))
-    for tool in [shell, perl]:
+    commands = {name: str(Path(coreutils)/'bin'/name) for name in ('rm', 'cp', 'mv', 'cat')}
+    for tool in [shell, perl, *commands.values()]:
         if not tool.startswith('/nix/store/') or not os.access(tool, os.X_OK):
-            raise ValueError(('missing explicit source interpreter', tool))
+            raise ValueError(('missing explicit source tool', tool))
     changes, aliases, regular = {}, [], {}
     for directory, dirs, names in os.walk(root, followlinks=False):
         for name in sorted(dirs + names):
@@ -74,6 +75,10 @@ def prepare(root, shell, perl, encoding="utf-8"):
         # Literal shell frontends in make templates/scripts, never an FHS lookup.
         updated = re.sub(rb'(?<![A-Za-z0-9_./-])/(?:usr/)?bin/(?:sh|bash)(?![A-Za-z0-9_./-])',
                          lambda _: shell.encode(), updated)
+        # Older upstream tests and utility scripts hardcode these Coreutils
+        # commands. Keep their arguments and exit handling; bind the provider.
+        updated = re.sub(rb'(?<![A-Za-z0-9_./-])/(?:usr/)?bin/(rm|cp|mv|cat)(?![A-Za-z0-9_./-])',
+                         lambda match: commands[match[1].decode()].encode(), updated)
         # Diagnostic metadata must not retain the build-only compiler store
         # closure. Preserve every reported compiler option and its order.
         if p == diagnostic_makefile and not (root/'util/mkbuildinf.pl').exists():

@@ -103,6 +103,7 @@ in
   ] ++ [ ] ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}" ++ final.compileFlags;
   environment = {
     tools = [
+      final.coreutils
       final.buildPerl
       final.pkgConfig
       final.gnumake
@@ -138,7 +139,7 @@ in
       compression = "gzip";
     })
     (command "prepare" ''
-      ${final.python}/bin/python3 -B ${final.sourceHelper} ${final.bash}/bin/bash ${final.buildPerl}/bin/perl ${lib.escapeShellArg final.sourceEncoding}
+      ${final.python}/bin/python3 -B ${final.sourceHelper} ${final.bash}/bin/bash ${final.buildPerl}/bin/perl ${final.coreutils} ${lib.escapeShellArg final.sourceEncoding}
     '')
     (command "configure" ''
       export PERL=${final.buildPerl}/bin/perl HASHBANGPERL=${final.buildPerl}/bin/perl
