@@ -94,7 +94,7 @@ def link_plan(root, files, links, old, new, replace_paths):
     return planned
 
 
-def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
+def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manual_plan):
     root, files, groups, links = helper.tree(root)
     old, new = artifact.encode(), str(root).encode()
     if (old == new or len(old) != len(new)
@@ -104,7 +104,14 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
         p = config[name]
         if not p.startswith('/nix/store/') or not os.path.isfile(p) or not os.access(p, os.X_OK):
             raise ValueError(('missing explicit final provider', name))
-    planned = link_plan(root, files, links, old, new, helper.replace_paths)
+    restorations, manual_evidence = manual_plan(root, files, links, config['manual'], role)
+    # Virtual regular pages replace only the source-proven direct self-aliases.
+    # Resolve every remaining link against that complete namespace before writes.
+    virtual_files = files | {name: root/name for name in restorations}
+    virtual_links = {name: target for name, target in links.items() if name not in restorations}
+    planned = link_plan(root, virtual_files, virtual_links, old, new, helper.replace_paths)
+    restored_data = {name: helper.replace_paths(helper.text(data, name), old, new)
+                     for name, data in restorations.items()}
     changes, rpaths, removals = {}, {}, set()
     for group in groups:
         roles = {role(name) for name in group}
@@ -188,12 +195,18 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
             for alias in group[1:]:
                 files[alias].unlink(); os.link(p, files[alias])
             p.chmod(mode)
+    for name, data in restored_data.items():
+        p = root/name
+        p.unlink()
+        p.write_bytes(data)
+        p.chmod(0o644)
     for name, target in planned.items():
         if target != links[name]:
             p = root/name; p.unlink(); p.symlink_to(target)
     helper.audit(str(root), [artifact])
-    return {'relocated': sorted(changes), 'removedOperationalEvidence': sorted(removals)}
+    return {'relocated': sorted(changes), 'removedOperationalEvidence': sorted(removals),
+            'restoredManuals': manual_evidence}
 
 
 if __name__ == '__main__':
-    print(json.dumps(finalize(load(sys.argv[2]), sys.argv[3], sys.argv[4], json.loads(sys.argv[5]), load(sys.argv[1]).relocate, load(sys.argv[6]).inspect), sort_keys=True))
+    print(json.dumps(finalize(load(sys.argv[2]), sys.argv[3], sys.argv[4], json.loads(sys.argv[5]), load(sys.argv[1]).relocate, load(sys.argv[6]).inspect, load(sys.argv[7]).plan), sort_keys=True))

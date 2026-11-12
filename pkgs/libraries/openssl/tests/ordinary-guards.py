@@ -16,7 +16,11 @@ def load(path):
 config = json.loads(sys.argv.pop(1))
 output, archive, elf, helper = [load(sys.argv.pop(1)) for _ in range(4)]
 source = load(sys.argv.pop(1))
-config.update(buildPerl=config['perl'], rehash=False, tools=[])
+manuals = load(sys.argv.pop(1))
+renderer = sys.argv.pop(1)
+config.update(buildPerl=config['perl'], rehash=False, tools=[], manual={
+    'perl': config['perl'], 'renderHelper': renderer, 'epoch': 'nix-support/source-date-epoch',
+    'source': '/nix/store/missing-source', 'version': '0.9.7c', 'encoding': 'latin-1', 'sections': []})
 
 
 
@@ -32,7 +36,7 @@ class Guards(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
     def run_final(self, config_=None):
-        return output.finalize(helper,self.root,self.old,config_ or config,archive.relocate,elf.inspect)
+        return output.finalize(helper,self.root,self.old,config_ or config,archive.relocate,elf.inspect,manuals.plan)
     def rejects(self):
         original=self.pc.read_bytes()
         with self.assertRaises((ValueError, OSError)):

@@ -93,6 +93,17 @@ in
     ;
   sourceHelper = ./source.py;
   finalHelper = ./output.py;
+  # Final-only source binding; edits here never enter preparation/compilation.
+  manualHelper = ./manuals.py;
+  manualRenderer = ./manual-render.pl;
+  manualSource = final.src;
+  manualEncoding = final.sourceEncoding;
+  manualPerl = final.buildPerl;
+  manualSections = [
+    { directory = "doc/apps"; section = "1"; exceptions = { config = "5"; }; }
+    { directory = "doc/crypto"; section = "3"; exceptions = { des_modes = "7"; }; }
+    { directory = "doc/ssl"; section = "3"; exceptions = { }; }
+  ];
   archiveHelper = ./archive.py;
   elfHelper = ./elf.py;
   # Shared pure tree/text inspection owns no family mutations or recipe.
@@ -195,10 +206,20 @@ in
           final.python
           final.binutils
           final.patchelf
+          final.manualPerl
         ];
         run = ''${final.python}/bin/python3 -B ${final.finalHelper} ${final.archiveHelper} ${final.inspectionHelper} "$out" "$TVP_ARTIFACT_ROOT" ${
           lib.escapeShellArg (
             builtins.toJSON {
+              manual = {
+                source = toString final.manualSource;
+                version = final.version;
+                encoding = final.manualEncoding;
+                perl = "${final.manualPerl}/bin/perl";
+                renderHelper = toString final.manualRenderer;
+                sections = final.manualSections;
+                epoch = "nix-support/source-date-epoch";
+              };
               readelf = "${final.binutils}/bin/readelf";
               patchelf = "${final.patchelf}/bin/patchelf";
               perl = "${final.runtime.perl}/bin/perl";
@@ -208,7 +229,7 @@ in
               rehash = final.features.rehash;
             }
           )
-        } ${final.elfHelper}'';
+        } ${final.elfHelper} ${final.manualHelper}'';
       }
       (outputs.strip {
         inherit (final) python binutils;

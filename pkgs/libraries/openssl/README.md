@@ -102,3 +102,21 @@ eight OpenSSL 1.1.0–g identities), historical Python/Ruby/XZ holds, calendar r
 nonpasses, and ACL/GCC/hardening/O1/full/default/readability/strict-split gates
 remain unwaived. Exact representative proposals and source-preflight receipts
 are recorded in the external immutable implementation handoff.
+
+Final-only manual content recovery binds `manualSource` (the effective pinned
+`src` by default), version, encoding, section mapping, `manualPerl` (selected
+build Perl), `manualRenderer` and `manualHelper` visibly in each independent
+procedure. `manuals.py` reads the archive as data, verifies its release header and
+unique regular POD roles, and renders only direct self-aliases in documentation
+roles. It never runs upstream scripts or extracts archive paths. Pod::Man runs
+through the selected local helper with an empty tool path and cleared Perl/host
+inputs; its explicit UTC date comes from the artifact's regular source epoch.
+Store optimization may hardlink the archive and providers; archive POD hardlink
+members, aliases and aliased ancestors are rejected. All mapped POD text is
+validated before rendering. The selected encoding decodes POD bytes before
+character-mode parsing; conflicting POD encoding declarations reject. The complete virtual namespace and all installed
+payload plans pass before the existing write loop can replace any self-alias.
+Correct documentation and alias chains keep their payloads and targets. No cycle
+is generally accepted. The shared manual guard fixtures run the real selected
+Perl without compilation; `ordinary-finalization.nix` checks final-only binding
+edits without executing its synthetic identity markers.

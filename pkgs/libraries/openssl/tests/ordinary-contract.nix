@@ -30,7 +30,15 @@ package.testContext.mkSuite {
               shell = "${package.runtime.shell}/bin/bash";
               coreutils = "${deps.coreutils}";
             }
-          }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/source.py}
+          }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/source.py} ${../ordinary/manuals.py} ${../ordinary/manual-render.pl}
+          ${deps.python}/bin/python3 -B ${./manual-guards.py} '${
+            builtins.toJSON {
+              readelf = "${deps.binutils}/bin/readelf";
+              patchelf = "${deps.patchelf}/bin/patchelf";
+              perl = "${package.specification.manualPerl}/bin/perl";
+              shell = "${package.runtime.shell}/bin/bash";
+            }
+          }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/manuals.py} ${../ordinary/manual-render.pl}
           printf guards-ok
         '';
         expected = "guards-ok";
