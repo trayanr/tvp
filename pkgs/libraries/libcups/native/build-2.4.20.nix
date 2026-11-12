@@ -6,6 +6,7 @@
   src,
   version,
   patches,
+  testPatches ? [ ../patches/testfile-explicit-search-path.patch ],
   patch,
   bash,
   coreutils,
@@ -44,15 +45,18 @@ let
           test "$status" = 0
       '';
     };
+  productionPatches = builtins.filter (p: !(builtins.elem p final.testPatches)) final.patches;
   make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {
   pname = "libcups";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
     version
     patches
+    testPatches
     patch
     bash
     coreutils
@@ -107,13 +111,16 @@ in
       findutils = final.findutils;
       compression = "gzip";
     })
+    # The declared testfile patch is private validation preparation. Caller
+    # production patches retain the original effective override interface.
     {
       name = "source.patch";
       cwd = "source";
+      enabled = productionPatches != [ ];
       tools = [ final.patch ];
       run = lib.concatMapStringsSep "\n" (
         p: "${final.patch}/bin/patch -p1 < ${lib.escapeShellArg "${p}"}"
-      ) final.patches;
+      ) productionPatches;
     }
     (steps.prepareAutotools {
       name = "libcups.prepare";
@@ -130,17 +137,26 @@ in
         --with-rcdir=no --with-rclevels=no
     '')
     (command "build" make)
-    (command "check" ''
-      export CUPS_TEST_BINDIR=${final.coreutils}/bin
-      export CUPS_TEST_SEARCH_PATH=/nonexistent:${final.coreutils}/bin
-      # Offline libcups unit subset. Network/server/credential/system tests are excluded.
-      ${make} -C cups testarray testfile testhttp testipp testi18n testoptions testppd testpwg testraster
-    '')
     (command "install" "${make} install")
     (command "receipt" ''
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "libcups.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "libcups.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [

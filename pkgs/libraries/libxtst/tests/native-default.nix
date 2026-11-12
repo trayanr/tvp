@@ -11,3 +11,7 @@ import ../../../../lib/xorg-library-tests.nix {
   api = ./fixtures/api.c;
   consumer = ./fixtures/consumer.c;
 }
+
+// {
+  upstream = import ./upstream.nix { inherit package; };
+}

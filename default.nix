@@ -177,6 +177,7 @@ let
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
       owned-fontconfig = import ./lib/tests/owned-fontconfig.nix { inherit pkgs tvp; };
       owned-x11 = import ./lib/tests/owned-x11.nix { inherit pkgs tvp; };
+      jdk-support-splits = import ./lib/tests/jdk-support-splits.nix { inherit pkgs tvp; };
       owned-jdk-source-stage = import ./lib/tests/jdk-source-stage { inherit pkgs tvp; };
       owned-x11-extensions = import ./lib/tests/owned-x11-extensions.nix { inherit pkgs tvp; };
       owned-catalogue = import ./lib/tests/owned-catalogue.nix { inherit pkgs tvp; };
@@ -685,14 +686,15 @@ let
           compiler = bases.default.stdenv.cc;
           python = tvp.packages.python_3;
         };
-        named-outputs = {
-          inherit (tvp.packages) bash coreutils;
-        }
-        // pkgs.lib.listToAttrs (
-          pkgs.lib.imap0 (
-            i: p: pkgs.lib.nameValuePair "floor${toString i}" p
-          ) bases.default.stdenv.initialPath
-        );
+        named-outputs =
+          {
+            inherit (tvp.packages) bash coreutils;
+          }
+          // pkgs.lib.listToAttrs (
+            pkgs.lib.imap0 (
+              i: p: pkgs.lib.nameValuePair "floor${toString i}" p
+            ) bases.default.stdenv.initialPath
+          );
         reusable-output = {
           inherit (tvp.packages) bash;
           python = tvp.packages.python_3;

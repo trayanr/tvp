@@ -42,6 +42,7 @@ let
 in
 {
   pname = "alsa-lib";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -104,12 +105,26 @@ in
       ./configure --prefix="$out" --libdir="$out/lib" --disable-python
     '')
     (command "build" make)
-    (command "check" "${make} check")
     (command "install" "${make} install")
     (command "receipt" ''
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "alsa-lib.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "alsa-lib.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [

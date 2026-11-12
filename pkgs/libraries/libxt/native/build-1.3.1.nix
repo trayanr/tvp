@@ -47,6 +47,7 @@ let
 in
 {
   pname = "libxt";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -77,6 +78,7 @@ in
     libxau
     libxdmcp
     ;
+  outputs = [ "out" ];
   environment = {
     tools = [
       final.perl
@@ -132,12 +134,26 @@ in
       ./configure --prefix="$out" --libdir="$out"/${lib.escapeShellArg final.libraryDirectory}
     '')
     (command "build" make)
-    ((command "check" "${make} check") // { enabled = final.doCheck; })
     (command "install" ''
       ${make} install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "libxt.finalize")
+    (tvp.builder.outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      outputs = final.outputs;
+    })
+    {
+      name = "libxt.relocate";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        if builtins.elem "evidence" final.outputs then
+          ''"$evidence" "''${TVP_ARTIFACT_OUTPUTS[evidence]}"''
+        else
+          ""
+      }'';
+    }
     (xorg.finish {
       outputs = tvp.builder.outputs;
       inherit (final)

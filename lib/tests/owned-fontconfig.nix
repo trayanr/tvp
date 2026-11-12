@@ -15,14 +15,7 @@ let
       ];
     }
   );
-  disabled = (p.override { doCheck = false; }).editSteps (
-    steps.replace "fontconfig.check" (_: {
-      name = "fontconfig.check";
-      enabled = false;
-      tools = throw "disabled inputs forced";
-      run = throw "disabled body forced";
-    })
-  );
+  disabled = p.override { doCheck = false; };
   insert = steps.insertAfter "fontconfig.build" [
     {
       name = "local.probe";
@@ -34,8 +27,9 @@ let
   contracts = {
     distinctOrdinaryRecipe = p.drvPath != variant.drvPath && p.tvp.base == "source-gnu-candidate";
     retainedVariant = variant.tvp.base == tvp.bases.default.name;
-    zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
-    runtimeRebuilds = p.drvPath != substituted.drvPath && !(substituted ? artifact);
+    realSplit = (steps.partition p.buildSteps).split && p.artifact.drvPath != p.drvPath;
+    runtimeReusesArtifact =
+      p.drvPath != substituted.drvPath && p.artifact.drvPath == substituted.artifact.drvPath;
     compileInputsPreserved =
       p.specification.environment.libraries == substituted.specification.environment.libraries;
     runtimeOperation = lib.hasInfix (builtins.unsafeDiscardStringContext (toString compatible)) (
@@ -46,7 +40,11 @@ let
     archiveHashPreserved = p.src.outputHash == variant.src.outputHash;
     distinctSourceProducer = p.src.drvPath != variant.src.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
-    disabledLazy = !(builtins.any (s: s.name == "fontconfig.check") (steps.active disabled.buildSteps));
+    disabledLazy =
+      !(builtins.any (s: s.name == "fontconfig.check") (steps.active disabled.tests.upstream.buildSteps));
+    checkReusesArtifact =
+      disabled.artifact.drvPath == p.artifact.drvPath && disabled.drvPath == p.drvPath;
+    privateChecks = builtins.any (s: s.name == "fontconfig.check") p.tests.upstream.buildSteps;
     checkFeature = !disabled.tvp.features.doCheck && disabled.tvp.features.tests;
     unknownRejected = !(builtins.tryEval (p.override { unknown = true; }).drvPath).success;
     currentArguments =
