@@ -137,15 +137,15 @@ let
       }
     ]
   );
-  customized =
-    (p.override {
-      inherit ninja pkg-config;
-      meson = reboundMeson;
-      doCheck = false;
-    }).editSteps
-      (steps.replace "fontconfig.check" (old: old // { run = throw "disabled Fontconfig check"; }));
+  customized = p.override {
+    inherit ninja pkg-config;
+    meson = reboundMeson;
+    doCheck = false;
+  };
+  # Construction and finalization have separate workspaces. Verify the selected
+  # tools in A and carry only the resulting trace through the normal payload copy.
   tracedFontconfig = customized.editSteps (
-    steps.append [
+    steps.insertBefore "fontconfig.finalize" [
       {
         name = "fontconfig.verify-invocations";
         run = ''
@@ -171,6 +171,21 @@ let
     metadataCurrent =
       customized.tvp.deps.ninja == ninja && customized.tvp.declaredDependencies.pkg-config == pkg-config;
     featuresCurrent = !customized.tvp.features.doCheck && customized.tvp.features.tests;
+    independentUpstream =
+      p.tests.upstream.passthru.raw != null
+      && customized.tests.upstream.passthru.raw == null
+      && builtins.isString customized.tests.upstream.drvPath;
+    checkGuardReusesProduction =
+      (p.override { doCheck = false; }).artifact.drvPath == p.artifact.drvPath
+      && (p.override { doCheck = false; }).drvPath == p.drvPath;
+    noProductionCheck = !(builtins.any (s: s.name == "fontconfig.check") customized.buildSteps);
+    traceBeforeSplit =
+      builtins.any (
+        s: s.name == "fontconfig.verify-invocations"
+      ) (steps.partition tracedFontconfig.buildSteps).first
+      && !(builtins.any (
+        s: s.name == "fontconfig.verify-invocations"
+      ) (steps.partition tracedFontconfig.buildSteps).second);
     customizedSelection = customized.__tvpSelection.kind == "override";
     testsRebound =
       customized.tests.consumer.drvPath != p.tests.consumer.drvPath
@@ -188,6 +203,7 @@ assert failed == [ ] || throw "Native Meson contracts: ${lib.concatStringsSep ",
     test -x ${fixture}/bin/probe
     test -e ${traced.tests.run}
     test -e ${tracedFontconfig.tests.installed}
+    test -e ${tracedFontconfig.tests.upstream}
     test -e ${tracedFontconfig}/tool-invocations
     cat ${traced}/tool-invocations
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
