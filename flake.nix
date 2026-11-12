@@ -60,6 +60,9 @@
             dependencyRoots
             dependencyInventory
             migrationStatusManifest
+            upstreamIsolationInventory
+            upstreamIsolationReport
+            upstreamIsolationStrict
             recipeSplitInventory
             recipeSplitReport
             recipeSplitStrict

@@ -63,6 +63,7 @@ package.testContext.mkSuite {
       };
       artifact-excluded = {
         script = ''
+          test ! -e ${package}/nix-support/upstream-build-tree
           test ! -e ${package}/nix-support/upstream.raw
           test ! -e ${package}/nix-support/upstream.exit
           test -f ${package}/include/openssl/ssl.h

@@ -79,6 +79,12 @@ let
       recipe-splits = pkgs.writeText "tvp-recipe-splits.json" (
         builtins.toJSON (tvpLib.recipeSplits.enforce tvp.recipeSplitReport)
       );
+      upstream-test-isolation = pkgs.writeText "tvp-upstream-test-isolation.json" (
+        builtins.toJSON (tvpLib.upstreamTestIsolation.enforce tvp.upstreamIsolationReport)
+      );
+      upstream-test-isolation-contracts = import ./lib/tests/openssl-upstream-isolation.nix {
+        inherit pkgs tvp;
+      };
       recipe-split-contracts = import ./lib/tests/recipe-splits.nix { inherit pkgs tvp; };
       upstream-tracking = import ./tools/upstream/tests {
         inherit pkgs tvp ownedCLI;
@@ -578,6 +584,20 @@ let
       splitReport = tvp.recipeSplitReport;
       latest = latestSelection.metadata;
     };
+    upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
+    upstreamIsolationReport =
+      (tvpLib.upstreamTestIsolation.validate {
+        inventory = tvp.upstreamIsolationInventory;
+      })
+      // {
+        artifactFinalizationDebt = tvp.recipeSplitReport.counts.remainingDebt;
+      };
+    upstreamIsolationStrict = tvpLib.upstreamTestIsolation.enforce (
+      tvpLib.upstreamTestIsolation.validate {
+        inventory = tvp.upstreamIsolationInventory;
+        strict = true;
+      }
+    );
     recipeSplitInventory = tvpLib.recipeSplits.inventory { inherit canonical variants; };
     recipeSplitReport =
       (tvpLib.recipeSplits.validate {

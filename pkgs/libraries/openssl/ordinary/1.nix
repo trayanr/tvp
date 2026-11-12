@@ -55,6 +55,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -131,6 +132,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -206,6 +208,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -282,6 +285,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -361,6 +365,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvpLib.packages.withConstraint {
         reason = "OpenSSL 1.1.0–1.1.0g Configure imports File::Glob qw/glob/; Perl 5.30 removed that export. Eight consumer holds remain unwaived.";
       } tvp.packages.perl_5_28;
@@ -434,6 +439,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -508,6 +514,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -518,7 +525,7 @@ tvpLib.packages.mkDefs {
     };
     opts = {
       forceGccName = true;
-      compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+      testCompileFlags = [ "-Wno-error=incompatible-pointer-types" ];
       cStandard = "gnu17";
       features = {
         shared = true;
@@ -585,6 +592,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -594,7 +602,7 @@ tvpLib.packages.mkDefs {
       runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
-      compileFlags = [ "-Wno-error=implicit-function-declaration" ];
+      testCompileFlags = [ "-Wno-error=implicit-function-declaration" ];
       features = {
         shared = true;
         static = true;
@@ -660,6 +668,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;

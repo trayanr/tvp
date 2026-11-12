@@ -52,6 +52,15 @@ def prepare(root, shell, perl, coreutils, encoding="utf-8"):
     diagnostic_makefile = (root/'crypto/Makefile').resolve(strict=False)
     for p, data in regular.items():
         relative = p.relative_to(root)
+        # These files construct/run upstream fixtures only. Retain their original
+        # bytes in A; interpreter/FHS adaptations belong to private T.
+        if (relative.parts[0] in ('test', 'fuzz')
+                or relative.as_posix() in ('util/run_tests.pl', 'util/shlib_wrap.sh', 'util/shlib_wrap.sh.in',
+                    'util/opensslwrap.sh', 'util/selftest.pl', 'util/mkcerts.sh',
+                    'util/pod2mantest', 'util/point.sh', 'util/perl/checkhandshake.pm',
+                    'util/cavs-to-evptest.pl', 'util/perl/OpenSSL/Test.pm')
+                or relative.as_posix().startswith(('util/perl/OpenSSL/Test/', 'crypto/threads/', 'crypto/des/t/'))):
+            continue
         # Text input selection is a semantic role, not a NUL/binary fallback.
         if not selected(p, data):
             continue
@@ -91,6 +100,12 @@ def prepare(root, shell, perl, coreutils, encoding="utf-8"):
             if updated.count(anchor) != 1:
                 raise ValueError('Perl compiler diagnostic anchor')
             updated = updated.replace(anchor, b"$cflags =~ s{^(?:/[^ /]+)+/([^ /]+)(?= |$)}{$1};\n" + anchor)
+        if relative == Path('Makefile.org') and b'sub_all:' in data:
+            match = re.search(rb'^DIRS=[^\n]+$', updated, re.M)
+            if not match or b'test' not in match[0].split():
+                raise ValueError('legacy production directory anchor')
+            dirs = b' '.join(x for x in match[0].split(b'=', 1)[1].split() if x != b'test')
+            updated += b'\nTVP_PRODUCTION_DIRS = ' + dirs + b'\n'
         if updated != data:
             changes[p] = updated
     for p, data in changes.items():

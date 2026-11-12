@@ -392,7 +392,10 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+        import ./tests/native-default.nix {
+          inherit pkgs tvpLib package;
+          builder = tvp.builder;
+        }
       else
         (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
     ) { inherit pkgs; };

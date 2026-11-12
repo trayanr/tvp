@@ -19,14 +19,15 @@ flags are explicitly selected through the existing source-GNU hardening adapter;
 this is source ownership, **not** hardening equivalence or qualification.
 HARDENING-GATE-1 remains OPEN_UNWAIVED.
 
-Each procedure unpacks, prepares, configures, builds serially, runs upstream tests,
-and installs shared/static libraries, headers, engines/providers as provided by
-that release, and development metadata before `steps.split`. A nonzero upstream
-exit fails the artifact; there is no classifier or tolerated-failure conversion.
-The raw output and exit receipt are retained in the immutable artifact only.
-The final package removes those operational files, relocates equal-width self
-paths, binds runtime scripts, strips and finalizes development/ELF metadata.
-`doCheck = false` is an explicit customization, never qualification evidence.
+Each ordinary procedure unpacks, prepares, configures, builds serially and installs
+production products before `steps.split`, saving a bounded prepared tree in A.
+F removes that checkpoint before the existing finalization and output audits.
+Upstream fixtures are constructed in private T, executed and captured in private
+R, then accepted only by the registered owned `tests.upstream` U. Nonzero raw
+status fails U and its normal batch while A/F remain independently valid.
+`doCheck = false` disables this test gate and explicitly records missing workload
+coverage; it does not alter production compilation. See the complete
+[ordinary upstream contract](ordinary/README.md) for targets, retention and limits.
 OpenSSL 3.0.4's CVE/RSA status and named test exclusion remain unchanged and
 UNWAIVED. No upstream crypto is patched and no conformance claim is made.
 
@@ -68,7 +69,7 @@ preserving its link. Other selected aliases, chains, directories and escaping or
 hardlinked targets remain rejected. Compiler diagnostic rewriting follows the
 actual `crypto/Makefile` target and preserves every compiler option.
 
-Historical test and utility scripts also bind literal `rm`, `cp`, `mv` and `cat`
+Private test preparation and shared production utility preparation bind literal `rm`, `cp`, `mv` and `cat`
 paths to the effective Coreutils provider. Their arguments and failure handling
 remain upstream's. The first 0.9.7c build compiled but failed in `testca` on
 `/bin/rm`; its raw failure and compiled tree are retained separately. Upstream's
@@ -81,13 +82,11 @@ The 0.9.7 range exposes the API and universal module; dynamic modules and split
 pkg-config interfaces begin at 0.9.8. Certificate fixtures provide an explicit
 request/DN configuration instead of relying on an installed default.
 
-Proposed parent STRUCTURE paragraph: OpenSSL keeps complete version-start
-procedures and an installed-artifact split. Build and runtime Perl bindings are
-separate. Equal-width self-path relocation covers runtime versioned ELF and
-static ET_REL archive members, while raw upstream evidence remains only in the
-artifact. Runtime-only and final-helper edits preserve the artifact; source,
-compiler and configure edits invalidate it. Source-only staging does not close
-consumer, hardening or upstream-test holds.
+The adopted STRUCTURE policy requires production/test isolation separately from
+the artifact/final split. Test-only preparation, patches, tools, construction,
+execution and acceptance must not enter A/F. Runtime-only and final-helper edits
+preserve A; source/compiler/configure edits invalidate it. Source inspection and
+tiny marker controls do not close consumer, hardening or upstream-test holds.
 
 Shared tree/text/path/audit primitives live in `lib/installed-tree.py`.
 They preserve the reviewed primitive function bodies and contain no Perl or other

@@ -53,6 +53,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
       runtimeCoreutils = tvp.packages.coreutils;
@@ -127,6 +128,7 @@ tvpLib.packages.mkDefs {
       diffutils = constructionTool "diffutils";
       findutils = constructionTool "findutils";
       gzip = constructionTool "gzip";
+      testPatchTool = constructionTool "patch";
       buildPerl = tvp.packages.perl_5;
       testCmake = tvp.packages.cmake;
       perl = tvp.packages.perl_5;

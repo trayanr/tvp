@@ -291,8 +291,11 @@ remain explicit, separate operations.
 ### Artifact and finalization boundary
 
 Every next migrated package must have an explicit artifact/finalization split.
-The normal boundary is after configure, compilation, upstream checks and installation
-have produced an installed artifact, before output repair:
+The normal boundary is after configure, compilation and installation have produced
+an installed artifact, before output repair. Compilation/install and final packaging
+must not depend on upstream-test construction, execution, acceptance, or test-only
+preparation, patches or tools. Upstream tests are separate derivations registered
+through the required test factory and remain normal suite/batch admission gates:
 
 ```nix
 (command "package.install" installCommand)
@@ -1348,3 +1351,35 @@ undeclared dependencies nor changes construction inputs. Recipes without the map
 retain the existing metadata behavior. Inputs used during construction, such as
 Dart's Bash, remain construction providers; `tvp.runtimeProviders` records an
 independently edited runtime shell.
+
+### Upstream-test isolation policy
+
+Artifact/final compliance and upstream isolation are distinct measures. A meaningful
+artifact/final split remains required; moving only acceptance past the split does
+not isolate fixture construction or execution. Test-only fields must be consumed
+only by validation. Shared production generators, installed bindings and libraries
+remain production inputs even when tests also use them.
+
+The evaluated upstream-isolation inventory checks actual effective specifications,
+active commands, fresh producer/projection identities and dependency contexts.
+Inspected ordinary families use A (installed artifact plus bounded retained
+build state), F (repaired final outputs), T (private fixture construction), R (raw
+execution evidence) and U (registered owned acceptance test). F drops retained
+state before output repair. Installed tests consume F; SQLite veryquick U also explicitly
+consumes F's CLI for runner-database reconciliation. No validation producer may
+feed A/F. R preserving a failing raw status does not pass U or its batch.
+
+Retained-state manifests define the production checkpoint, layout, generated
+metadata and safe private restoration. Only private copies may receive test
+patches, metadata rebasing or instrumented engine compilation. Test-only edits
+must preserve A/F, expectation edits preserve T/R, runner edits preserve T, and
+finalizer edits preserve A/T/R. Production source/compiler edits invalidate A.
+Meaningful positive, invalidation and negative contracts accompany the policy.
+
+Unaudited recipes (including retained/native SQLite and OpenSSL procedures) are
+UNAUDITED, never compliant by default. Broken/disabled coverage retains its explicit
+disposition. Scoped checks admit only the inspected scope; strict exposure rejects
+all remaining isolation debt and is not an unconditional failing full-suite check.
+This does not change audits/split-baseline.json, frozen construction identities or
+any full-validation/default admission hold. Source inspection and tiny controls
+are not canonical runtime qualification.
