@@ -34,6 +34,20 @@ package.testContext.mkSuite {
         expected = package.version;
       };
     }
+    // pkgs.lib.optionalAttrs (package.tvp.features.nextVersion or false) {
+      next-version = {
+        script = ''env -i PATH=/no-tools ${package}/bin/libtool-next-version --version'';
+        expected = pkgs.lib.removeSuffix "\n" ''
+          libtool-next-version (GNU libtool) ${package.version}
+          Copyright (C) 2026 Free Software Foundation, Inc.
+          License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+          This is free software: you are free to change and redistribute it.
+          There is NO WARRANTY, to the extent permitted by law.
+
+          Written by Bruno Haible.
+        '';
+      };
+    }
     // pkgs.lib.optionalAttrs package.tvp.features.acLibtool {
       core-project = {
         script = ''
@@ -50,7 +64,7 @@ package.testContext.mkSuite {
           make install >&2
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
           ./install/bin/answer
-          ./libtool --tag=CC --mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
+          ./libtool ${pkgs.lib.optionalString package.tvp.features.cxxDependencyTracking "--tag=CC "}--mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
           if readelf -d static-answer | grep -q 'libanswer.so'; then exit 1; fi
           ./static-answer
         '';
@@ -77,7 +91,7 @@ package.testContext.mkSuite {
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
           ./install/bin/answer
           "$CC" -c ${./fixtures/static-main.c} -o static-main.o
-          ./libtool --tag=CC --mode=link "$CC" -static static-main.o libanswer.la -o static-answer >&2
+          ./libtool ${pkgs.lib.optionalString package.tvp.features.cxxDependencyTracking "--tag=CC "}--mode=link "$CC" -static static-main.o libanswer.la -o static-answer >&2
           if readelf -d static-answer | grep -q 'libanswer.so'; then exit 1; fi
           ./static-answer
         '';
@@ -111,7 +125,7 @@ package.testContext.mkSuite {
           readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
           readelf -d ./install/bin/answer | grep -Fq 'libcppanswer.so.1'
           ./install/bin/answer
-          ./libtool --tag=CC --mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
+          ./libtool ${pkgs.lib.optionalString package.tvp.features.cxxDependencyTracking "--tag=CC "}--mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
           if readelf -d static-answer | grep -q 'libanswer.so'; then exit 1; fi
           ./static-answer
         '';
@@ -138,7 +152,7 @@ package.testContext.mkSuite {
               readelf -d ./install/bin/answer | grep -Fq 'libanswer.so.1'
               readelf -d ./install/bin/answer | grep -Fq 'libcppanswer.so.1'
               ./install/bin/answer
-              ./libtool --tag=CC --mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
+              ./libtool ${pkgs.lib.optionalString package.tvp.features.cxxDependencyTracking "--tag=CC "}--mode=link "$CC" -static ${./fixtures/static-main.c} libanswer.la -o static-answer >&2
               if readelf -d static-answer | grep -q 'libanswer.so'; then exit 1; fi
               ./static-answer
             '';
@@ -146,6 +160,14 @@ package.testContext.mkSuite {
           };
         };
 }
-// (import ./ordinary-controls.nix { inherit pkgs tvp package; })
+// (
+  if package.tvp.historicalAutotools or false then
+    import ../../historical-autotools-tests.nix { inherit pkgs tvp package; }
+  else
+    (
+      { }
+      // (import ./ordinary-controls.nix { inherit pkgs tvp package; })
 
-// (import ../../ordinary-autotools-split-tests.nix { inherit pkgs tvp package; })
+      // (import ../../ordinary-autotools-split-tests.nix { inherit pkgs tvp package; })
+    )
+)

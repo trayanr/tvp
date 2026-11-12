@@ -1,6 +1,4 @@
-# 1.19 only: owned commands replace setup-hook construction. The shipped
-# configure/Makefiles avoid a production Autoconf/Automake regeneration cycle.
-# Installed Perl programs embed data and sibling paths, so keep one prefix/stage.
+# Automake 1.19: complete installed artifact before API aliases and runtime repair.
 {
   tvp,
   lib,
@@ -37,101 +35,170 @@ let
     };
 in
 {
+  tvp.ordinaryAutotools = true;
   pname = "automake";
   inherit
     base
     src
     version
+    autoconf
+    perl
     bash
     coreutils
+    gnumake
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    gawk
+    diffutils
+    python
+    configureFlags
     ;
+  dependencyProviders = {
+    autoconf = final.autoconf;
+    perl = final.perl;
+    bash = final.bash;
+    coreutils = final.coreutils;
+    gnumake = final.gnumake;
+    gnutar = final.gnutar;
+    xz = final.xz;
+    findutils = final.findutils;
+    sed = final.sed;
+    grep = final.grep;
+    gawk = final.gawk;
+    diffutils = final.diffutils;
+    python = final.python;
+  };
+  apiVersion = lib.versions.majorMinor final.version;
   environment = {
     tools = [
-      perl
-      autoconf
-      gnumake
-      sed
-      grep
-      gawk
-      diffutils
-      findutils
+      final.perl
+      final.autoconf
+      final.gnumake
+      final.sed
+      final.grep
+      final.gawk
+      final.diffutils
+      final.findutils
     ];
     libraries = [ ];
   };
   runtime = {
-    inherit perl;
+    perl = final.perl;
+    shell = final.bash;
     tools = [
-      coreutils
-      sed
-      grep
-      bash
+      final.coreutils
+      final.sed
+      final.grep
+      final.bash
     ];
   };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = gnutar;
-      inherit xz findutils;
+      tar = final.gnutar;
+      xz = final.xz;
+      findutils = final.findutils;
       compression = "xz";
     })
+    {
+      name = "automake.source-confinement";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-source.py}'';
+    }
     (steps.prepareAutotools {
       name = "automake.prepare";
       bash = final.bash;
-      inherit python;
+      python = final.python;
       base = final.base;
     })
+    {
+      name = "automake.api";
+      cwd = "source";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../ordinary/prepare-api.py} ${
+        lib.escapeShellArgs [
+          final.version
+          final.apiVersion
+        ]
+      }'';
+    }
     (command "automake.configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" PERL=${final.runtime.perl}/bin/perl AUTOCONF=${autoconf}/bin/autoconf AUTOM4TE=${autoconf}/bin/autom4te AUTORECONF=${autoconf}/bin/autoreconf AUTOHEADER=${autoconf}/bin/autoheader AUTOUPDATE=${autoconf}/bin/autoupdate ${lib.escapeShellArgs configureFlags}
+      ./configure --prefix="$out" PERL=${final.perl}/bin/perl AUTOCONF=${final.autoconf}/bin/autoconf AUTOM4TE=${final.autoconf}/bin/autom4te AUTORECONF=${final.autoconf}/bin/autoreconf AUTOHEADER=${final.autoconf}/bin/autoheader AUTOUPDATE=${final.autoconf}/bin/autoupdate ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "automake.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
+    (command "automake.build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     (command "automake.install" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
-      # Upstream installs hardlinked aliases. Relative symlinks keep explicit
-      # interpreter/runtime edits coherent on both command names.
-      ln -sf automake "$out/bin/automake-1.19"
-      ln -sf aclocal "$out/bin/aclocal-1.19"
+      ${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
       cp ${../setup-hook.sh} "$out/nix-support/setup-hook"
     '')
+    (steps.split "automake.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "automake.relocate-runtime";
+      tools = [ final.python ];
+      run = ''${final.python}/bin/python3 -B ${../../ordinary-autotools-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            family = final.pname;
+            perl = "${final.runtime.perl}/bin/perl";
+            frontends = {
+              automake = "perl";
+              aclocal = "perl";
+            };
+            shell = "${final.runtime.shell}/bin/bash";
+            paths = map (p: "${p}/bin") final.runtime.tools;
+            replacements = [
+              {
+                old = "${final.perl}";
+                new = "${final.runtime.perl}";
+              }
+            ];
+          }
+        )
+      }'';
+    }
+    {
+      name = "automake.aliases";
+      tools = [ final.coreutils ];
+      run = ''
+        # Upstream installs hardlinked aliases. Relative symlinks keep explicit
+        # interpreter/runtime edits coherent on both command names.
+        ln -sf automake "$out/bin/automake-${final.apiVersion}"
+        ln -sf aclocal "$out/bin/aclocal-${final.apiVersion}"
+      '';
+    }
     (outputs.shebangs {
-      inherit python;
+      python = final.python;
       paths = [ "bin" ];
       names = [ "perl" ];
       interpreter = "${final.runtime.perl}/bin/perl";
     })
     (
       (outputs.shebangs {
-        inherit python;
-        paths = [ "share/automake-1.19" ];
+        python = final.python;
+        paths = [ "share/automake-${final.apiVersion}" ];
         names = [
           "sh"
           "bash"
         ];
-        interpreter = "${final.bash}/bin/bash";
+        interpreter = "${final.runtime.shell}/bin/bash";
       })
       // {
         name = "output.shell-helpers";
       }
     )
-    {
-      name = "automake.runtime-tools";
-      tools = [ python ];
-      run = ''${python}/bin/python3 -B ${../../autotools-runtime.py} "$out" ${
-        lib.escapeShellArg (builtins.toJSON (map (t: "${t}/bin") final.runtime.tools))
-      } ${
-        lib.escapeShellArgs [
-          "automake"
-          "aclocal"
-        ]
-      }'';
-    }
+
     (outputs.checkSymlinks {
-      inherit python;
+      python = final.python;
       paths = [
-        "bin/automake-1.19"
-        "bin/aclocal-1.19"
+        "bin/automake-${final.apiVersion}"
+        "bin/aclocal-${final.apiVersion}"
       ];
     })
   ];
