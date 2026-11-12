@@ -49,8 +49,25 @@ in
     bash
     coreutils
     ;
-  tools = { inherit gnumake gnutar gzip python perl binutils patchelf sed grep gawk diffutils findutils; };
-  libraries = { inherit attr; };
+  tools = {
+    inherit
+      gnumake
+      gnutar
+      gzip
+      python
+      perl
+      binutils
+      patchelf
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      ;
+  };
+  libraries = {
+    inherit attr;
+  };
   dependencyProviders = final.tools // final.libraries;
   environment = {
     tools = [
@@ -193,12 +210,10 @@ in
     ++ [
       (steps.split "acl.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
-      (outputs.relocateText {
-        inherit (final.tools) python;
-        paths = [
-          "lib/pkgconfig"
-          "lib/libacl.la"
-        ];
+      (import ../native/relocate-prefix.nix {
+        inherit lib;
+        inherit (final.tools) python binutils patchelf;
+        bash = final.bash;
       })
       {
         name = "output.manuals";

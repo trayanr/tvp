@@ -192,12 +192,14 @@ in
     ++ [
       (steps.split "acl.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
-      (outputs.relocateText {
-        inherit python;
-        paths = [
-          "lib/pkgconfig"
-          "lib/libacl.la"
-        ];
+      (import ./relocate-prefix.nix {
+        inherit
+          lib
+          python
+          binutils
+          patchelf
+          ;
+        bash = final.bash;
       })
       {
         name = "output.manuals";

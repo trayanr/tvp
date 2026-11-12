@@ -1,5 +1,5 @@
 # Native source-GNU catalogue route; retained bootstrap procedure stays independent.
-# 2.4.0 only. Compiled locale/configuration paths retain the configured prefix.
+# 2.4.0 only. Rebase compiled locale paths after the artifact split.
 {
   tvp,
   lib,
@@ -189,12 +189,14 @@ in
     ++ [
       (steps.split "acl.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
-      (outputs.relocateText {
-        inherit python;
-        paths = [
-          "lib/pkgconfig"
-          "lib/libacl.la"
-        ];
+      (import ./relocate-prefix.nix {
+        inherit
+          lib
+          python
+          binutils
+          patchelf
+          bash
+          ;
       })
       {
         name = "output.manuals";
