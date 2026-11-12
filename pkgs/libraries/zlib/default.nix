@@ -228,6 +228,321 @@ let
     };
   };
   ordinaryDefs = tvpLib.packages.mkDefs {
+    "1.0.1" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.0.1.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = false;
+        compress2 = false;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.0.4" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.0.1.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = false;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.0.8" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.0.1.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = true;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.1.2" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.1.2.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = true;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.1.3" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.1.3.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = true;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.2.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = true;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
+    "1.2.0.5" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.2.0.5.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      opts.features = {
+        libName = "z";
+        versionFunction = true;
+        compress2 = true;
+        pkgConfig = false;
+        static = false;
+      };
+      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          gzip
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+      };
+    };
     "1.2.3" = {
       constructor = tvp.builder;
       builder = ./ordinary/build-1.2.3.nix;
@@ -900,6 +1215,96 @@ let
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "1.0.1" = versionTable."1.0.1" // {
+        def = ordinaryDefs."1.0.1";
+      };
+      "1.0.2" = versionTable."1.0.2" // {
+        def = ordinaryDefs."1.0.1";
+      };
+      "1.0.4" = versionTable."1.0.4" // {
+        def = ordinaryDefs."1.0.4";
+      };
+      "1.0.5" = versionTable."1.0.5" // {
+        def = ordinaryDefs."1.0.4";
+      };
+      "1.0.6" = versionTable."1.0.6" // {
+        def = ordinaryDefs."1.0.4";
+      };
+      "1.0.7" = versionTable."1.0.7" // {
+        def = ordinaryDefs."1.0.4";
+      };
+      "1.0.8" = versionTable."1.0.8" // {
+        def = ordinaryDefs."1.0.8";
+      };
+      "1.0.9" = versionTable."1.0.9" // {
+        def = ordinaryDefs."1.0.8";
+      };
+      "1.1.0" = versionTable."1.1.0" // {
+        def = ordinaryDefs."1.0.8";
+      };
+      "1.1.1" = versionTable."1.1.1" // {
+        def = ordinaryDefs."1.0.8";
+      };
+      "1.1.2" = versionTable."1.1.2" // {
+        def = ordinaryDefs."1.1.2";
+      };
+      "1.1.3" = versionTable."1.1.3" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.1.4" = versionTable."1.1.4" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.0" = versionTable."1.2.0" // {
+        def = ordinaryDefs."1.2.0";
+      };
+      "1.2.0.1" = versionTable."1.2.0.1" // {
+        def = ordinaryDefs."1.2.0";
+      };
+      "1.2.0.2" = versionTable."1.2.0.2" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.0.3" = versionTable."1.2.0.3" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.0.4" = versionTable."1.2.0.4" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.0.5" = versionTable."1.2.0.5" // {
+        def = ordinaryDefs."1.2.0.5";
+      };
+      "1.2.0.6" = versionTable."1.2.0.6" // {
+        def = ordinaryDefs."1.2.0.5";
+      };
+      "1.2.0.7" = versionTable."1.2.0.7" // {
+        def = ordinaryDefs."1.2.0.5";
+      };
+      "1.2.0.8" = versionTable."1.2.0.8" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.1" = versionTable."1.2.1" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.1.1" = versionTable."1.2.1.1" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.1.2" = versionTable."1.2.1.2" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.2" = versionTable."1.2.2" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.2.1" = versionTable."1.2.2.1" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.2.2" = versionTable."1.2.2.2" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.2.3" = versionTable."1.2.2.3" // {
+        def = ordinaryDefs."1.1.3";
+      };
+      "1.2.2.4" = versionTable."1.2.2.4" // {
+        def = ordinaryDefs."1.1.3";
+      };
       "1.2.3" = versionTable."1.2.3" // {
         def = ordinaryDefs."1.2.3";
       };
@@ -1020,6 +1425,36 @@ let
         if
           package ? artifact
           && builtins.elem package.version [
+            "1.0.1"
+            "1.0.2"
+            "1.0.4"
+            "1.0.5"
+            "1.0.6"
+            "1.0.7"
+            "1.0.8"
+            "1.0.9"
+            "1.1.0"
+            "1.1.1"
+            "1.1.2"
+            "1.1.3"
+            "1.1.4"
+            "1.2.0"
+            "1.2.0.1"
+            "1.2.0.2"
+            "1.2.0.3"
+            "1.2.0.4"
+            "1.2.0.5"
+            "1.2.0.6"
+            "1.2.0.7"
+            "1.2.0.8"
+            "1.2.1"
+            "1.2.1.1"
+            "1.2.1.2"
+            "1.2.2"
+            "1.2.2.1"
+            "1.2.2.2"
+            "1.2.2.3"
+            "1.2.2.4"
             "1.2.3"
             "1.2.3.1"
             "1.2.3.2"
@@ -1074,6 +1509,50 @@ let
         else
           packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
       )
+      //
+        pkgs.lib.optionalAttrs
+          (
+            package ? artifact
+            && builtins.elem package.version [
+              "1.0.1"
+              "1.0.2"
+              "1.0.4"
+              "1.0.5"
+              "1.0.6"
+              "1.0.7"
+              "1.0.8"
+              "1.0.9"
+              "1.1.0"
+              "1.1.1"
+              "1.1.2"
+              "1.1.3"
+              "1.1.4"
+              "1.2.0"
+              "1.2.0.1"
+              "1.2.0.2"
+              "1.2.0.3"
+              "1.2.0.4"
+              "1.2.0.5"
+              "1.2.0.6"
+              "1.2.0.7"
+              "1.2.0.8"
+              "1.2.1"
+              "1.2.1.1"
+              "1.2.1.2"
+              "1.2.2"
+              "1.2.2.1"
+              "1.2.2.2"
+              "1.2.2.3"
+              "1.2.2.4"
+              "1.3.2"
+            ]
+          )
+          (
+            import ./tests/source-migration.nix {
+              inherit tvp pkgs;
+              inherit package;
+            }
+          )
       // pkgs.lib.optionalAttrs (package.version == "1.3.2") (
         import ./tests/owned.nix {
           inherit tvp tvpLib package;
