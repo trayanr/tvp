@@ -216,7 +216,7 @@ in
                 version = final.version;
                 encoding = final.manualEncoding;
                 perl = "${final.manualPerl}/bin/perl";
-                renderHelper = toString final.manualRenderer;
+                renderHelper = "${final.manualRenderer}";
                 sections = final.manualSections;
                 epoch = "nix-support/source-date-epoch";
               };
