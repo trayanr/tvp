@@ -131,7 +131,9 @@ directions. The 3.0.0–3.3.7 test interpreter initializes Tcl before clock call
 The 3.1.0–3.3.13 corruption fixtures use upstream's later RDWR correction so seek
 writes modify the intended header. The 3.1.1–3.7.5 engine computes a negative
 integer's serialization magnitude with defined unsigned arithmetic, including
-INT64_MIN. The 3.46.0–3.47.2 recovery fixture removes a previous test's output
+INT64_MIN. The 3.1.0–3.2.1 selector also uses the signed 48-bit limit for six-byte
+integer storage; its original unsigned limit truncated values and secondary-index
+rowids outside that range. The 3.46.0–3.47.2 recovery fixture removes a previous test's output
 before saving its input snapshot. Patch-context boundaries are definition data;
 no versioned builder imports another recipe.
 

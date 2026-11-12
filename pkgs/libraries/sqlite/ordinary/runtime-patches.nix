@@ -44,6 +44,12 @@ lib.optionals (within "3.0.0" "3.0.7") [
     reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
   }
 ]
+++ lib.optionals (within "3.1.0" "3.2.2") [
+  {
+    file = ../patches/legacy-serial-signed-six-byte.patch;
+    reason = "Use the signed48-bit maximum when choosing six-byte integer storage. The original unsigned48-bit bound truncates valid64-bit values and corrupts secondary-index rowids; this is the correct bound used by later upstream source.";
+  }
+]
 ++ lib.optionals (within "3.46.0" "3.48.0") [
   {
     file = ../patches/legacy-recovery-output-isolation.patch;
