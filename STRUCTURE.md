@@ -291,7 +291,7 @@ remain explicit, separate operations.
 ### Artifact and finalization boundary
 
 Every next migrated package must have an explicit artifact/finalization split.
-The normal boundary is after configure, compilation, upstream checks and installation
+The normal boundary is after configure, compilation and installation
 have produced an installed artifact, before output repair:
 
 ```nix
@@ -306,13 +306,18 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
-A raw upstream test capture may be stored in an unqualified artifact. Keep test
-execution and result classification in independent input files: execute before
-the split, then classify the immutable capture before accepting the final output.
-Preserve the original output and exit status even when a test fails. Remove
-operational reports from the final package, retaining originals in the artifact
-and evidence. A classifier edit must replay those reports and reuse compilation;
-an intermediate containing a nonpass never qualifies a canonical package by itself.
+Upstream test construction, execution and result classification belong in separate
+validation derivations. A failed upstream test must not prevent compilation artifacts,
+final outputs or installed-result tests from being realized. The normal test batch
+still includes the strict upstream result and fails when that result fails.
+
+During migration, a recipe may retain a raw upstream capture in its artifact.
+Classify that immutable capture in an independent test, never in finalization.
+Preserve the original output and exit status, and remove the copied operational
+reports from the final package. Classifier edits must reuse compilation and final
+outputs. Capture execution before the split remains explicit isolation debt until
+it moves into separate validation derivations; a valid final output does not waive
+an upstream nonpass.
 
 An installed program can embed both its prefix and its length, as shared Perl does.
 Its specification may set `artifactName = "${final.pname}-${final.version}";` to

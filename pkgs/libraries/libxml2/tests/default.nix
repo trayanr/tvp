@@ -10,6 +10,7 @@
   xz,
 }:
 let
+  specification = libxml2.specification or { };
   deps = libxml2.passthru.tvp.deps or { };
   features = libxml2.passthru.tvp.features or { };
 
@@ -167,6 +168,20 @@ mkSuite {
       };
     };
 }
+//
+  pkgs.lib.optionalAttrs
+    (
+      libxml2 ? artifact
+      && specification ? captureHelper
+      && specification ? classificationBinding
+      && (specification.doCheck or false)
+    )
+    {
+      upstream = import ./upstream.nix {
+        inherit libxml2;
+        lib = pkgs.lib;
+      };
+    }
 //
   pkgs.lib.optionalAttrs
     (builtins.elem libxml2.version [

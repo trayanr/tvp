@@ -165,17 +165,10 @@ in
     (steps.split "libxml2.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
-      name = "libxml2.classify-upstream";
-      tools = [
-        final.tools.python
-        final.coreutils
-      ];
-      run = ''
-        ${lib.optionalString final.doCheck ''
-          ${final.tools.python}/bin/python3 -B ${final.classifier} "$TVP_ARTIFACT_ROOT/nix-support/upstream-raw" ${lib.escapeShellArg final.version} --contracts ${final.sourceContracts} --binding-json ${lib.escapeShellArg final.classificationBinding} --artifact "$TVP_ARTIFACT_ROOT"
-          ${final.coreutils}/bin/rm -r "$out/nix-support/upstream-raw"
-        ''}
-      '';
+      name = "libxml2.remove-upstream-evidence";
+      tools = [ final.coreutils ];
+      enabled = final.doCheck;
+      run = ''${final.coreutils}/bin/rm -r "$out/nix-support/upstream-raw"'';
     }
     {
       name = "libxml2.relocate";
