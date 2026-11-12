@@ -153,6 +153,17 @@ in
       mkdir -p "$PKG_CONFIG_LIBDIR"
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags} --without-debug --without-tests
     '')
+    # Configure emits headers.sh with a literal /bin/sh interpreter.
+    (steps.shebangs {
+      name = "ncurses.install-helpers";
+      python = final.python;
+      paths = [ "headers.sh" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
     (command "build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     # Upstream supplies interactive test programs; installed C/C++/database
     # consumers are exercised by the ordinary suite instead of a make check target.

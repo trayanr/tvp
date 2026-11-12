@@ -161,7 +161,10 @@ in
         fi
       done
       ${final.sed}/bin/sed -i 's|SRC_SUBDIRS="$SRC_SUBDIRS misc test"|SRC_SUBDIRS="$SRC_SUBDIRS misc"|' configure
-      ${final.python}/bin/python3 -B ${./source.py} ${final.bash}/bin/bash ${final.perl}/bin/perl '["configure", "config.guess", "config.sub", "install-sh", "misc", "progs", "include", "ncurses", "c++", "man"]'
+      helpers=(configure config.guess config.sub install-sh misc progs include ncurses c++ man)
+      if test -f mkinstalldirs; then helpers+=(mkinstalldirs); fi
+      selections=$(${final.python}/bin/python3 -c 'import json, sys; print(json.dumps(sys.argv[1:]))' "''${helpers[@]}")
+      ${final.python}/bin/python3 -B ${./source.py} ${final.bash}/bin/bash ${final.perl}/bin/perl "$selections"
     '')
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
@@ -171,6 +174,17 @@ in
       ) ''export CXXFLAGS="''${CXXFLAGS:--O2} -std=${final.cxxStandard}"''}
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags} --without-debug
     '')
+    # Configure emits headers.sh with a literal /bin/sh interpreter.
+    (steps.shebangs {
+      name = "ncurses.install-helpers";
+      python = final.python;
+      paths = [ "headers.sh" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
     (command "build" ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
     # Upstream supplies interactive test programs; installed C/C++/database
     # consumers are exercised by the ordinary suite instead of a make check target.
