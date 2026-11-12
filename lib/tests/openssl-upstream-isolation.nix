@@ -6,7 +6,7 @@ let
   policy = tvp.lib.upstreamTestIsolation;
   reference = tvp.canonical.openssl_0_9_7c.specification;
   inherit (reference) bash coreutils python;
-  mandatoryPlans = builtins.toFile "openssl-mandatory-generation-plans.json" (
+  mandatoryPlans = pkgs.writeText "openssl-mandatory-generation-plans.json" (
     builtins.toJSON (
       lib.genAttrs
         [
