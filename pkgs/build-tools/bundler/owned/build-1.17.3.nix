@@ -79,10 +79,8 @@ in
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.relocateText {
       inherit (final.tools) python;
-      paths = [
-        "bin"
-        "lib"
-      ];
+      # Gem executables live under lib; top-level bin is created by wrappers below.
+      paths = [ "lib" ];
     })
     {
       name = "bundler.wrappers";
