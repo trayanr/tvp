@@ -15,6 +15,13 @@ import sys
 import tarfile
 
 
+RESOURCE_STAGE = 'nix-support/module-resources'
+RESOURCE_PATHS = (
+    'jdk.jpackage/jdk/jpackage/internal/resources/jpackageapplauncher',
+    'jdk.jpackage/jdk/jpackage/internal/resources/libjpackageapplauncheraux.so',
+)
+
+
 def restore(sidecar, target):
     layout=json.loads((sidecar/'layout.json').read_text())
     if target.exists() or target.parent.resolve()!=target.parent: raise ValueError('private assembly workspace required')
@@ -46,6 +53,22 @@ def restore(sidecar, target):
     return layout
 
 
+def prepare(sidecar, public, target):
+    """Stage compiled resources under the public root for ordinary ELF steps."""
+    layout = restore(sidecar, target)
+    modules = target/'build'/layout['configuration']/'jdk/modules'
+    sources = [modules/name for name in RESOURCE_PATHS]
+    for path in sources:
+        if path.is_symlink() or not path.is_file() or not path.read_bytes().startswith(b'\x7fELF'):
+            raise ValueError(('missing compiled native resource', str(path)))
+    stage = public/RESOURCE_STAGE
+    stage.mkdir()
+    for name, path in zip(RESOURCE_PATHS, sources):
+        destination = stage/name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+
+
 def mirror(raw, public, assembly, conf):
     """Map native module inputs to exact corresponding public image products."""
     pending=[]
@@ -64,10 +87,22 @@ def mirror(raw, public, assembly, conf):
                     raise ValueError(('unmatched native module product',str(p),str(relative)))
                 pending.append((p,after.read_bytes()))
     if not pending: raise ValueError('empty native module map')
+    # These class-path resources have no public bin/lib counterpart. Their
+    # private copies receive the same selected final ELF operations first.
+    for name in RESOURCE_PATHS:
+        before = assembly/'build'/conf/'jdk/modules'/name
+        after = public/RESOURCE_STAGE/name
+        if (before.is_symlink() or after.is_symlink()
+                or not before.is_file() or not after.is_file()
+                or not before.read_bytes().startswith(b'\x7fELF')
+                or not after.read_bytes().startswith(b'\x7fELF')):
+            raise ValueError(('missing repaired module resource', name))
+        pending.append((before, after.read_bytes()))
     # Full map validation before the first changed private native write.
     for p,data in pending:
         if p.read_bytes()!=data:
             info=p.stat(); p.write_bytes(data); os.utime(p,ns=(info.st_atime_ns,info.st_mtime_ns))
+    shutil.rmtree(public/RESOURCE_STAGE)
 
 
 def commands(make, shell, public, assembly, conf, false, image="images/jdk"):
@@ -90,7 +125,7 @@ def commands(make, shell, public, assembly, conf, false, image="images/jdk"):
 def assemble(sidecar, raw, public, target, make, shell, false, image):
     if Path(image).is_absolute() or '..' in Path(image).parts or not Path(image).parts:
         raise ValueError('relative selected image directory required')
-    layout=restore(sidecar,target); conf=layout['configuration']
+    layout=json.loads((sidecar/'layout.json').read_text()); conf=layout['configuration']
     mirror(raw,public,target,conf)
     build=target/'build'/conf
     # No stale JMOD/hash/image/CDS products may bypass native regeneration.
@@ -113,5 +148,6 @@ def assemble(sidecar, raw, public, target, make, shell, false, image):
 
 if __name__=='__main__':
     action=sys.argv[1]
-    if action=='assemble': assemble(*[Path(x) if i<4 else x for i,x in enumerate(sys.argv[2:])])
+    if action=='prepare': prepare(*map(Path, sys.argv[2:]))
+    elif action=='assemble': assemble(*[Path(x) if i<4 else x for i,x in enumerate(sys.argv[2:])])
     else: raise ValueError('unknown assembly action')

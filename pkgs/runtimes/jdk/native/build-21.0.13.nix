@@ -64,6 +64,7 @@ let
     "bin"
     "lib"
   ];
+  resourcePaths = [ "nix-support/module-resources" ];
 in
 {
   pname = "jdk";
@@ -253,8 +254,62 @@ in
       paths = outputPaths;
     })
     {
+      name = "jdk.prepare-compiled-products";
+      tools = [ final.python ];
+      run = ''
+        ${final.python}/bin/python3 -B ${final.assemblyScript} prepare \
+          "$TVP_ARTIFACT_ROOT/nix-support/assembly" "$out" "$TVP_SOURCE_ROOT/assembly"
+      '';
+    }
+    (
+      (outputs.interpreters {
+        inherit (final) python binutils patchelf;
+        paths = resourcePaths;
+        loader = "${final.base.compiler.libc}/${final.dynamicLinker}";
+      })
+      // {
+        name = "jdk.resource-interpreters";
+      }
+    )
+    (
+      (outputs.rpaths {
+        inherit (final)
+          python
+          binutils
+          patchelf
+          base
+          ;
+        paths = resourcePaths;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories;
+      })
+      // {
+        name = "jdk.resource-rpaths";
+      }
+    )
+    (
+      (outputs.strip {
+        inherit (final) python binutils;
+        paths = resourcePaths;
+      })
+      // {
+        name = "jdk.resource-strip";
+      }
+    )
+    {
       name = "jdk.assemble-compiled-products";
-      tools = [ final.python final.coreutils final.bash final.gnumake final.findutils final.sed final.grep final.gawk final.zip final.unzip ];
+      tools = [
+        final.python
+        final.coreutils
+        final.bash
+        final.gnumake
+        final.findutils
+        final.sed
+        final.grep
+        final.gawk
+        final.zip
+        final.unzip
+      ];
       run = ''
         ${final.python}/bin/python3 -B ${final.assemblyScript} assemble \
           "$TVP_ARTIFACT_ROOT/nix-support/assembly" "$TVP_ARTIFACT_ROOT" "$out" "$TVP_SOURCE_ROOT/assembly" \

@@ -130,24 +130,57 @@ def main():
         assert not (tree/'build/stage2-gcc').exists() and (tree/'build/stage2-start').is_file()
         assert os.path.samefile(tree/'build/gcc/cc1',tree/'build/gcc/compiler-alias')
         assert str(tree) in (tree/'build/Makefile').read_text()
+        # Execute the actual raw-validation prelude with the runner's readonly
+        # root. Stop before make; only a tiny checkpoint and shell wiring run.
+        gcc_control=evaluated['gcc_16_2_0']
+        artifact=work/'gcc-capture-artifact'
+        shutil.copytree(checkpoint,artifact/'nix-support/upstream-build-tree')
+        production=artifact/'nix-support/production';production.mkdir()
+        (production/'stage-flags.txt').write_text('CFLAGS=-O2\nCXXFLAGS=-O2\n')
+        prelude=gcc_control['validationCommand'].split('check_status=0\n',1)[0]
+        assert prelude!=gcc_control['validationCommand']
+        prelude=prelude.replace(gcc_control['artifact'],str(artifact))
+        for broken in (True,False):
+            workspace=work/('capture-negative' if broken else 'capture-positive');workspace.mkdir()
+            body=prelude
+            if broken:
+                body=body.replace('checkpoint="$(cat tree-path)"','checkpoint="$(cat tree-path)"\nexport TVP_SOURCE_ROOT="$checkpoint"')
+            body+='\ntest "$TVP_SOURCE_ROOT" = "$1"\ntest "${PYTHONPATH%%:*}" = "$checkpoint/source/gcc/testsuite"\nprintf capture-wiring-ok\n'
+            result=subprocess.run([shutil.which('bash'),'-euc','readonly TVP_SOURCE_ROOT="$1"\n'+body,'capture-control',str(workspace)],cwd=workspace,env={**os.environ,'out':str(workspace/'result'),'CC':'unused-cc','CXX':'unused-cxx'},capture_output=True,text=True)
+            if broken:
+                assert result.returncode!=0 and 'readonly variable' in result.stderr
+            else:
+                assert result.returncode==0,(result.returncode,result.stderr)
+                assert result.stdout.endswith('capture-wiring-ok')
         # Actual retained JDK selection, copy and native-byte map, no JDK tool.
         raw=work/'jdk-raw'; build=raw/'build/conf'
         for name in ['make/CreateJmods.gmk','make/Images.gmk','make/common/dummy.gmk','src/java.base/share/classes/module-info.java','src/java.base/share/native/should-not-retain.c','build/conf/spec.gmk','build/conf/jdk/modules/java.base/module-info.class','build/conf/jdk/modules/jdk.jlink/module-info.class','build/conf/jdk/release','build/conf/support/src.zip','build/conf/support/modules_libs/java.base/libnative.so','build/conf/support/modules_cmds/java.base/java']:
             p=raw/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('fixture '+str(raw)+'\n')
         (build/'support/modules_libs/java.base/libnative.so').write_bytes(b'\x7fELFnative-library')
         (build/'support/modules_cmds/java.base/java').write_bytes(b'\x7fELFnative-command')
+        for name in jdk.RESOURCE_PATHS:
+            path=build/'jdk/modules'/name
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_bytes(b'\x7fELFnative-resource')
         checkpoint=work/'jdk-checkpoint';jdk_state.save(raw,checkpoint,'conf')
-        assembly=work/'assembly';jdk.restore(checkpoint,assembly)
-        assert not (assembly/'src/java.base/share/native/should-not-retain.c').exists()
-        assert str(assembly) in (assembly/'build/conf/spec.gmk').read_text()
         image=work/'raw-image';public=work/'public-image'
         for r in (image,public):
             (r/'lib').mkdir(parents=True);(r/'bin').mkdir()
             (r/'lib/libnative.so').write_bytes(b'\x7fELFnative-library')
             (r/'bin/java').write_bytes(b'\x7fELFnative-command')
+        (public/'nix-support').mkdir()
+        assembly=work/'assembly';jdk.prepare(checkpoint,public,assembly)
+        assert not (assembly/'src/java.base/share/native/should-not-retain.c').exists()
+        assert str(assembly) in (assembly/'build/conf/spec.gmk').read_text()
+        for name in jdk.RESOURCE_PATHS:
+            staged=public/jdk.RESOURCE_STAGE/name
+            assert staged.read_bytes()==b'\x7fELFnative-resource'
+            staged.write_bytes(b'\x7fELFrepaired-resource')
         (public/'lib/libnative.so').write_bytes(b'\x7fELFrepaired-library')
         jdk.mirror(image,public,assembly,'conf')
         assert (assembly/'build/conf/support/modules_libs/java.base/libnative.so').read_bytes()==(public/'lib/libnative.so').read_bytes()
+        assert all((assembly/'build/conf/jdk/modules'/name).read_bytes()==b'\x7fELFrepaired-resource' for name in jdk.RESOURCE_PATHS)
+        assert not (public/jdk.RESOURCE_STAGE).exists()
         cmds=jdk.commands('/explicit/make','/explicit/bash',public,assembly,'conf','/explicit/false','selected-image')
         assert cmds[-2][-2:]==['MODULE=java.base','all'] and cmds[-1][-1]=='jdk'
         assert all('Main.gmk' not in ' '.join(c) for c in cmds)

@@ -11,7 +11,11 @@ later bounded compilation. The retained legacy/bootstrap procedures are unchange
 F copies only the raw public image and epoch receipt, repairs its loaders and
 RPATHs, strips native products, then mirrors the repaired bytes into exact matching
 private module-native inputs. The original raw image must match each native input
-before mapping. Native CreateJmods runs all non-java.base modules first, then
+before mapping. The compiled jpackage launcher and auxiliary library are staged
+under the final root and receive the existing interpreter, selected-runtime RPATH
+and strip operations. Their repaired bytes return to the private module class
+tree before packaging; the temporary resource stage is removed. Native CreateJmods
+runs all non-java.base modules first, then
 java.base with native hash generation; Images.gmk jdk runs jlink and the existing
 profile's image-only CDS, release, src.zip and jpackage packaging. Module version,
 target, date, compression, classlist and JLI flags come from retained native specs.
