@@ -129,7 +129,12 @@ def main(ordinary):
         extra=commands/(path.name[:-1]+'1');shutil.copytree(path,extra);assert inspect()['structuralErrors'];shutil.rmtree(extra);cases.append('duplicate counter')
         (raw/'unknown').write_text('');assert inspect()['structuralErrors'];(raw/'unknown').unlink();cases.append('unknown root record')
         log=raw/'runxmlconf.log';log.unlink();assert inspect()['structuralErrors'];log.write_text('');cases.append('missing log')
-        original=(path/'stdout').read_bytes();(path/'stdout').unlink();os.link(path/'stderr',path/'stdout');assert inspect()['structuralErrors'];(path/'stdout').unlink();(path/'stdout').write_bytes(original);cases.append('hardlink alias')
+        original=(path/'stdout').read_bytes();(path/'stdout').unlink();os.link(path/'stderr',path/'stdout');assert inspect()==baseline;(path/'stdout').unlink();(path/'stdout').write_bytes(original);cases.append('content-equivalent hardlinks')
+        exit_record=raw/'exit.json';exit_bytes=exit_record.read_bytes();alias=tmp/'exit-alias.json'
+        os.link(exit_record,alias)
+        assert exit_record.stat().st_nlink==2 and inspect()==baseline
+        assert exit_record.read_bytes()==alias.read_bytes()==exit_bytes
+        alias.unlink();cases.append('Nix-store-style hardlinked exit record stays unchanged')
         (path/'stdout').unlink();(path/'stdout').symlink_to(path/'stderr');assert inspect()['structuralErrors'];(path/'stdout').unlink();(path/'stdout').write_bytes(original);cases.append('symlink node')
         (path/'stdout').unlink();os.mkfifo(path/'stdout');assert inspect()['structuralErrors'];(path/'stdout').unlink();(path/'stdout').write_bytes(original);cases.append('special node')
         missing_binding=m.inspect(raw,'2.15.3')

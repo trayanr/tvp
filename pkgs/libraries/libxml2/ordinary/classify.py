@@ -17,7 +17,9 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def regular(path, single_link=True):
+# Nix store optimisation hardlinks identical immutable files. This reader never
+# writes them; record contents and structure, rather than link count, bind reports.
+def regular(path, single_link=False):
     state = path.lstat()
     if not stat.S_ISREG(state.st_mode) or (single_link and state.st_nlink != 1):
         raise ValueError(('special/aliased record', str(path)))
@@ -33,7 +35,7 @@ def unique(pairs):
     return value
 
 
-def read_record(path, single_link=True):
+def read_record(path, single_link=False):
     value = json.loads(regular(Path(path), single_link), object_pairs_hook=unique)
     if not isinstance(value, dict):
         raise ValueError('record must be an object')
