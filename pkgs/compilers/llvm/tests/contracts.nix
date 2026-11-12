@@ -60,7 +60,7 @@ in
     "-DLLVM_ENABLE_LIBPFM=OFF"
     "-DLLVM_ENABLE_Z3_SOLVER=OFF"
     "-DLLVM_INCLUDE_DOCS=OFF"
-    "-DLLVM_INCLUDE_TESTS=ON"
+    "-DLLVM_INCLUDE_TESTS=OFF"
     "-DLLVM_INSTALL_UTILS=ON"
     "-DCLANG_DEFAULT_CXX_STDLIB=libstdc++"
     "-DCLANG_DEFAULT_RTLIB=libgcc"
@@ -105,7 +105,10 @@ in
   installedScripts =
     has "${alternate}/bin/python3" (run changed "llvm.python-scripts")
     && has "${alternate}/bin/perl" (run changed "llvm.perl-scripts");
-  upstream = has "test/Assembler" (run p "llvm.check") && has "test/Bitcode" (run p "llvm.check");
+  upstream =
+    has "test/Assembler" s.upstreamCheck
+    && has "test/Bitcode" s.upstreamCheck
+    && builtins.elem "-DLLVM_INCLUDE_TESTS=ON" s.upstreamCmakeFlags;
   upstreamTools =
     lib.all
       (
@@ -115,7 +118,9 @@ in
             name = "${old.name}-llvm-upstream-tool-contract";
           });
           selected = p.edit (s: s // { ${name} = tool; });
-          check = builtins.head (builtins.filter (x: x.name == "llvm.check") selected.buildSteps);
+          check = builtins.head (
+            builtins.filter (x: x.name == "llvm.check") selected.specification.upstreamPlan
+          );
         in
         selected.tvp.deps.${name}.drvPath == tool.drvPath
         && builtins.elem tool.drvPath (map (t: t.drvPath) check.tools)
@@ -135,6 +140,7 @@ in
       "linker"
       "loader"
       "preprocessor"
+      "upstream"
       "version"
     ];
   rebound =

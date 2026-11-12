@@ -82,6 +82,12 @@ let
 in
 {
   pname = "llvm";
+  artifactName = "${final.pname}-${final.version}";
+  finalizer = ./finalize.py;
+  rubyFinalizer = ../../../runtimes/ruby/owned/finalize.py;
+  archiveFinalizer = ../../../libraries/libxml2/ordinary/finalize.py;
+  archiveElfFinalizer = ../../../libraries/libxml2/ordinary/elf.py;
+  elfFinalizer = ../../../runtimes/perl/ordinary/elf-finalize.py;
   inherit (args)
     base
     src
@@ -167,7 +173,7 @@ in
     "-DLLVM_ENABLE_LIBPFM=OFF"
     "-DLLVM_ENABLE_Z3_SOLVER=OFF"
     "-DLLVM_INCLUDE_DOCS=OFF"
-    "-DLLVM_INCLUDE_TESTS=ON"
+    "-DLLVM_INCLUDE_TESTS=OFF"
     "-DLLVM_INSTALL_UTILS=ON"
     "-DCLANG_DEFAULT_CXX_STDLIB=libstdc++"
     "-DCLANG_DEFAULT_RTLIB=libgcc"
@@ -179,6 +185,43 @@ in
     "-DFFI_INCLUDE_DIR=${libffi}/include"
     "-DFFI_LIBRARY_DIR=${libffi}/lib"
   ];
+  upstreamCmakeFlags = builtins.filter (f: f != "-DLLVM_INCLUDE_TESTS=OFF") final.cmakeFlags ++ [
+    "-DLLVM_INCLUDE_TESTS=ON"
+  ];
+  # The validator owns its own source/build workspace. Test tools, execution and
+  # raw failures never participate in either installed-output producer.
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit xz findutils;
+    })
+    (command "configure" ''
+      ${cmake}/bin/cmake -S source/llvm -B build -G Ninja \
+        -DCMAKE_MAKE_PROGRAM=${ninja}/bin/ninja -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_INSTALL_RPATH="$out/lib" \
+        -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" \
+        -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+        -DCMAKE_PREFIX_PATH=${
+          lib.escapeShellArg (
+            lib.concatStringsSep ";" (map (p: "${lib.getDev p}") final.environment.libraries)
+          )
+        } \
+        ${lib.escapeShellArgs final.upstreamCmakeFlags}
+    '')
+    (command "build" ''${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES"'')
+    (command "check" (
+      final.upstreamCheck
+      + ''
+        mkdir -p "$out"
+      ''
+    ))
+  ];
+  upstreamCheck = ''
+    ${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES" FileCheck not
+    ${python}/bin/python3 build/bin/llvm-lit -sv -j"$NIX_BUILD_CORES" source/llvm/test/Assembler source/llvm/test/Bitcode
+  '';
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -200,16 +243,40 @@ in
         ${lib.escapeShellArgs final.cmakeFlags}
     '')
     (command "build" ''${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES"'')
-    (command "check" ''
-      ${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES" FileCheck not
-      ${python}/bin/python3 build/bin/llvm-lit -sv -j"$NIX_BUILD_CORES" source/llvm/test/Assembler source/llvm/test/Bitcode
-    '')
     (command "install" ''
       ${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp build/CMakeCache.txt "$out/nix-support/CMakeCache.txt"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "llvm.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    {
+      name = "llvm.relocate-installed";
+      tools = [
+        coreutils
+        helperPython
+        binutils
+        patchelf
+      ];
+      run = ''
+        # Preserve the immutable original in the artifact. The final tree
+        # contains operational metadata only, never a rewritten raw cache.
+        rm -- "$out/nix-support/CMakeCache.txt"
+        ${helperPython}/bin/python3 -B ${final.finalizer} ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              rubyFinalizer = final.rubyFinalizer;
+              archiveFinalizer = final.archiveFinalizer;
+              archiveElfFinalizer = final.archiveElfFinalizer;
+              readelf = "${binutils}/bin/readelf";
+              patchelf = "${patchelf}/bin/patchelf";
+              ar = "${binutils}/bin/ar";
+            }
+          )
+        } "$out" "$TVP_ARTIFACT_ROOT" ${final.elfFinalizer}
+      '';
+    }
     (outputs.strip {
       python = helperPython;
       inherit binutils;
