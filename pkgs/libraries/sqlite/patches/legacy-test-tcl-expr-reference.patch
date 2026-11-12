@@ -1,0 +1,14 @@
+--- a/test/tclsqlite.test
++++ b/test/tclsqlite.test
+@@ -62,4 +62,5 @@
+   lappend v $msg
+ } {0 {}}
++catch {expr x*} msg
+ do_test tcl-1.6 {
+   set v [catch {
+@@ -70,3 +71,2 @@
+-  regsub {:.*$} $msg {} msg
+-  lappend v $msg
+-} {1 {syntax error in expression "x*"}}
++  lappend v $msg
++} [list 1 $msg]

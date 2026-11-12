@@ -433,16 +433,42 @@ let
       };
     };
   };
+  # Native options add exact source-compatibility boundaries while the retained
+  # definitions and table remain unchanged.
+  remainingDefs = import ./ordinary/definitions.nix {
+    inherit
+      pkgs
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      defs
+      ;
+  };
+  remainingTable = import ./ordinary/releases.nix {
+    inherit pkgs tvpLib;
+    defs = remainingDefs;
+  };
   publicArgs = packageArgs // {
-    versionTable = versionTable // {
-      "3.53.4" = versionTable."3.53.4" // {
-        def = if native then ownedDefs."3.53.4" else versionTable."3.53.4".def;
-      };
-    };
+    versionTable = pkgs.lib.mapAttrs (
+      version: entry:
+      entry
+      // {
+        def =
+          if !native || (entry.status.level or "ok") == "broken" then
+            entry.def
+          else if version == "3.53.4" then
+            ownedDefs."3.53.4"
+          else
+            remainingTable.${version}.def;
+      }
+    ) versionTable;
     extraArgs.mkTests =
       package:
       if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
+        import (
+          if package.version == "3.53.4" then ./tests/native-default.nix else ./tests/ordinary-default.nix
+        ) { inherit pkgs tvpLib package; }
       else
         constructionRecipe.extraArgs.mkTests package;
   };

@@ -1,0 +1,10 @@
+--- a/test/types3.test
++++ b/test/types3.test
+@@ -22,3 +22,4 @@
+-do_test types3-1.1 {
+-  set V {}
+-  append V {}
++do_test types3-1.1 {
++  set V {}
++  append V x
++  set V [eval [list string replace $V 0 end]]

@@ -1,0 +1,12 @@
+--- a/src/tclsqlite.c
++++ b/src/tclsqlite.c
+@@ -1718,2 +1718,9 @@
+   interp = Tcl_CreateInterp();
++#ifdef SQLITE_TEST
++  if( Tcl_Init(interp)!=TCL_OK ){
++    fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
++    Tcl_DeleteInterp(interp);
++    return 1;
++  }
++#endif
+   Sqlite3_Init(interp);

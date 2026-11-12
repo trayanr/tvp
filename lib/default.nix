@@ -7,6 +7,7 @@ in
 {
   inherit versions tests platforms;
   sources = import ./sources { inherit lib; };
+  upstreamTestIsolation = import ./upstream-test-isolation.nix { inherit lib; };
   recipeSplits = import ./recipe-splits.nix { inherit lib; };
   android = import ./android.nix { inherit lib; };
   provenance = import ./provenance.nix { inherit lib; };
