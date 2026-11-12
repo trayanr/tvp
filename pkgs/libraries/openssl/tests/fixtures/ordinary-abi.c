@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 int main(void) {
