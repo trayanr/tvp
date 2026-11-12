@@ -8,6 +8,36 @@
 }:
 let
   deps = php.passthru.tvp.deps or { };
+  owned = php ? testContext;
+  runtimeProvider =
+    dependency:
+    if !owned then
+      dependency
+    else
+      let
+        matches = builtins.filter (p: p.pname == dependency.pname) php.specification.runtime.libraries;
+      in
+      if builtins.length matches == 1 then
+        builtins.head matches
+      else
+        throw "PHP: expected one runtime provider for ${dependency.pname}";
+  suite =
+    args:
+    if !owned then
+      tvpLib.tests.mkSuite args
+    else
+      php.testContext.mkSuite {
+        inherit (args) package;
+        tools = php.specification.environment.tools ++ [ deps.binutils ];
+        libraries = [ php ];
+        tests = builtins.mapAttrs (
+          _: spec:
+          builtins.removeAttrs spec [ "extraInputs" ]
+          // pkgs.lib.optionalAttrs (spec ? extraInputs) {
+            tools = php.specification.environment.tools ++ spec.extraInputs;
+          }
+        ) args.tests;
+      };
 
   consumerStandard = php.tvp.features.consumerCStandard or null;
   configureEnv = pkgs.lib.optionalString (
@@ -18,21 +48,23 @@ let
   tvpDigest = "f6f6ead0bd85c312";
   linkage = dependency: soname: {
     script = ''
-      paths=$(ldd "$(command -v php)" | awk '/${soname}/ { print $3 }')
+      paths=$(${
+        if owned then "LD_TRACE_LOADED_OBJECTS=1" else "ldd"
+      } "${php}/bin/php" | awk '/${soname}/ { print $3 }')
       test -n "$paths"
       while IFS= read -r path; do
         case "$path" in
-          ${pkgs.lib.escapeShellArg "${pkgs.lib.getLib dependency}/"}*) ;;
+          ${pkgs.lib.escapeShellArg "${pkgs.lib.getLib (runtimeProvider dependency)}/"}*) ;;
           *) echo "Unexpected library path: $path" >&2; exit 1 ;;
         esac
       done <<< "$paths"
       printf linked
     '';
     expected = "linked";
-    extraInputs = [ pkgs.glibc.bin ];
+    extraInputs = pkgs.lib.optionals (!owned) [ pkgs.glibc.bin ];
   };
 in
-tvpLib.tests.mkSuite {
+suite {
   inherit pkgs;
   package = php;
 
@@ -88,13 +120,22 @@ tvpLib.tests.mkSuite {
           php -d extension="$PWD/modules/tvp.so" -r 'echo tvp_answer();'
         '';
         expected = "42";
-        extraInputs = [
-          pkgs.stdenv.cc
-          pkgs.autoconf
-          pkgs.automake
-          pkgs.libtool
-          pkgs.gnumake
-        ];
+        extraInputs =
+          if owned then
+            [
+              php.tvp.declaredTestDependencies.autoconf
+              php.tvp.declaredTestDependencies.automake
+              php.tvp.declaredTestDependencies.libtool
+              php.tvp.declaredTestDependencies.gnumake
+            ]
+          else
+            [
+              pkgs.stdenv.cc
+              pkgs.autoconf
+              pkgs.automake
+              pkgs.libtool
+              pkgs.gnumake
+            ];
       };
     }
     // pkgs.lib.optionalAttrs (!php.tvp.features.functionEntryEnd) {
@@ -110,13 +151,22 @@ tvpLib.tests.mkSuite {
           php -c "$PWD/php.ini" -r 'echo tvp_answer();'
         '';
         expected = "42";
-        extraInputs = [
-          pkgs.stdenv.cc
-          pkgs.autoconf
-          pkgs.automake
-          pkgs.libtool
-          pkgs.gnumake
-        ];
+        extraInputs =
+          if owned then
+            [
+              php.tvp.declaredTestDependencies.autoconf
+              php.tvp.declaredTestDependencies.automake
+              php.tvp.declaredTestDependencies.libtool
+              php.tvp.declaredTestDependencies.gnumake
+            ]
+          else
+            [
+              pkgs.stdenv.cc
+              pkgs.autoconf
+              pkgs.automake
+              pkgs.libtool
+              pkgs.gnumake
+            ];
       };
     }
 
@@ -151,10 +201,12 @@ tvpLib.tests.mkSuite {
 
       openssl-linkage = {
         script = ''
-          ldd "$(command -v php)" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
+          ${
+            if owned then "LD_TRACE_LOADED_OBJECTS=1" else "ldd"
+          } "${php}/bin/php" | awk '/libssl\.so/ { print $3 }' | grep -q "^${(runtimeProvider deps.openssl).out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = pkgs.lib.optionals (!owned) [ pkgs.glibc.bin ];
       };
     }
 
@@ -163,7 +215,7 @@ tvpLib.tests.mkSuite {
         script = ''
           php -r '$v = explode(" ", OPENSSL_VERSION_TEXT); echo $v[1], " ", substr(openssl_digest("tvp", "sha256"), 0, 16);'
         '';
-        expected = "${deps.openssl.version} ${tvpDigest}";
+        expected = "${(runtimeProvider deps.openssl).version} ${tvpDigest}";
       };
     }
 
@@ -172,7 +224,7 @@ tvpLib.tests.mkSuite {
         script = ''
           php -r 'echo explode(" ", OPENSSL_VERSION_TEXT)[1], " ", substr(openssl_digest("tvp", "sha256"), 0, 16);'
         '';
-        expected = "${deps.openssl.version} ${tvpDigest}";
+        expected = "${(runtimeProvider deps.openssl).version} ${tvpDigest}";
       };
     }
 
@@ -198,10 +250,12 @@ tvpLib.tests.mkSuite {
 
       sqlite-linkage = {
         script = ''
-          ldd "$(command -v php)" | awk '/libsqlite3\.so/ { print $3 }' | grep -q "^${deps.sqlite.out}/" && printf linked
+          ${
+            if owned then "LD_TRACE_LOADED_OBJECTS=1" else "ldd"
+          } "${php}/bin/php" | awk '/libsqlite3\.so/ { print $3 }' | grep -q "^${(runtimeProvider deps.sqlite).out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ pkgs.glibc.bin ];
+        extraInputs = pkgs.lib.optionals (!owned) [ pkgs.glibc.bin ];
       };
     }
 

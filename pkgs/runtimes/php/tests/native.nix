@@ -90,15 +90,21 @@ let
       };
     }
   );
-  marker = package.editSteps (_: [
-    {
-      name = "php.marker";
-      run = "mkdir $out; printf selected > $out/marker";
+  marker = package.edit (
+    s:
+    builtins.removeAttrs s [ "artifactName" ]
+    // {
+      plan = [
+        {
+          name = "php.marker";
+          run = "mkdir $out; printf selected > $out/marker";
+        }
+      ];
     }
-  ]);
+  );
   runtimeControl = (package.editRuntime (r: r // { libraries = [ deps.zlib ]; })).edit (
     s:
-    s
+    builtins.removeAttrs s [ "artifactName" ]
     // {
       plan = [
         (
@@ -142,7 +148,19 @@ let
       )).env.PHP_CONTRACT == "selected";
     unknown = rejects (package.override { unknownDependency = package; }).drvPath;
     feature = !((package.override { testFeatures.passwordApi = false; }).tvp.features.passwordApi);
-    provider = (package.override { openssl = deps.zlib; }).drvPath != package.drvPath;
+    provider =
+      (package.override {
+        openssl = deps.openssl.editSteps (
+          xs:
+          xs
+          ++ [
+            {
+              name = "provider.control";
+              run = "true";
+            }
+          ]
+        );
+      }).drvPath != package.drvPath;
     opensslRuntime = runtimeContract deps.openssl "openssl-linkage";
     zlibRuntime = runtimeContract deps.zlib "zlib-linkage";
     sqliteRuntime = runtimeContract deps.sqlite "sqlite-linkage";
@@ -190,9 +208,21 @@ package.testContext.mkSuite {
           expected = "qualified";
         };
       upstream = {
+        tools = package.specification.environment.tools ++ [
+          deps.gnutar
+          deps.gzip
+          deps.toolPython
+        ];
         script = ''
-          cp ${package}/share/php/run-tests.php run-tests.php
-          cp -r ${package}/share/php/upstream-tests tests
+          mkdir extracted tests
+          ${deps.gnutar}/bin/tar -xzf ${package.src} -C extracted --strip-components=1 \
+            php-${package.version}/run-tests.php \
+            php-${package.version}/ext/standard/tests/strings/str_rot13_basic.phpt \
+            php-${package.version}/ext/standard/tests/strings/strrev.phpt \
+            php-${package.version}/ext/standard/tests/array/array_sum.phpt \
+            php-${package.version}/ext/standard/tests/array/array_product_variation1.phpt
+          cp extracted/run-tests.php run-tests.php
+          cp extracted/ext/standard/tests/strings/*.phpt extracted/ext/standard/tests/array/*.phpt tests/
           chmod -R u+w tests
           export TEST_PHP_EXECUTABLE=${package}/bin/php TEST_PHP_CGI_EXECUTABLE=${package}/bin/php-cgi
           export NO_INTERACTION=1 REPORT_EXIT_STATUS=1
@@ -348,7 +378,7 @@ package.testContext.mkSuite {
         script = ''
           php -r '$v = explode(" ", OPENSSL_VERSION_TEXT); echo $v[1], " ", substr(openssl_digest("tvp", "sha256"), 0, 16);'
         '';
-        expected = "${deps.openssl.version} ${tvpDigest}";
+        expected = "${(runtimeProvider deps.openssl).version} ${tvpDigest}";
       };
     }
 
@@ -357,7 +387,7 @@ package.testContext.mkSuite {
         script = ''
           php -r 'echo explode(" ", OPENSSL_VERSION_TEXT)[1], " ", substr(openssl_digest("tvp", "sha256"), 0, 16);'
         '';
-        expected = "${deps.openssl.version} ${tvpDigest}";
+        expected = "${(runtimeProvider deps.openssl).version} ${tvpDigest}";
       };
     }
 
