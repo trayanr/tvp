@@ -20,15 +20,7 @@ let
     }
   ];
   edited = (p.editSteps insert).editRuntime (r: r);
-  disabled = (p.override { doCheck = false; }).editSteps (
-    steps.replace "ruby.check" (_: {
-      name = "ruby.check";
-      enabled = false;
-      tools = throw "disabled tools";
-      libraries = throw "disabled libraries";
-      run = throw "disabled run";
-    })
-  );
+  disabled = p.override { doCheck = false; };
   tagged =
     (tvp.lib.packages.withConstraint { reason = "Ruby contract fixture."; } tvp.packages.ruby_4)
     .editRuntime
@@ -333,8 +325,8 @@ let
       && !(lib.hasInfix (builtins.unsafeDiscardStringContext "${p.specification.coreutils}/bin/env") script);
     distinctRecipes =
       p.drvPath != pilot.drvPath && p.tvp.base == "source-gnu-candidate" && pilot.tvp.base != p.tvp.base;
-    zeroSplit = !(steps.partition p.buildSteps).split && !(p ? artifact);
-    runtimeRebuilds = p.drvPath != runtime.drvPath && !(runtime ? artifact);
+    installedSplit = (steps.partition p.buildSteps).split && p ? artifact;
+    runtimeRebuilds = p.drvPath != runtime.drvPath && runtime.artifact.drvPath == p.artifact.drvPath;
     runtimeSummaryGuard =
       !(builtins.tryEval (p.editRuntime (r: r // { libraries = [ ]; })).drvPath).success;
     runtimeSummaryFollowsProviders =
@@ -361,7 +353,10 @@ let
       && !(p.override { zjit = false; }).tvp.jit.zjit;
     disabledLazy =
       builtins.isString disabled.drvPath
-      && !(lib.any (s: s.name == "ruby.check") (steps.active disabled.buildSteps));
+      && disabled.drvPath == p.drvPath
+      && disabled.artifact.drvPath == p.artifact.drvPath
+      && !(disabled.tests ? upstream-basic)
+      && p.tests ? upstream-basic;
     orderedReplay =
       (edited.override { doCheck = false; }).drvPath
       == (((p.override { doCheck = false; }).editSteps insert).editRuntime (r: r)).drvPath;
@@ -437,7 +432,7 @@ let
         (
           q:
           q.tests.gems.drvPath == runtime.tests.gems.drvPath
-          && q.tvp.deps.zlib.drvPath == p.tvp.deps.zlib.drvPath
+          && q.tvp.deps.zlib.drvPath == compatibleZlib.drvPath
         )
         (
           [
@@ -456,7 +451,13 @@ let
           ]
           ++ tagged.all
         );
-    legacy = tvp.canonical.ruby_4_0_5 ? overrideAttrs && !(tvp.canonical.ruby_4_0_5 ? edit);
+    historicOwned = tvp.canonical.ruby_4_0_5 ? artifact && tvp.canonical.ruby_4_0_5 ? edit;
+    retainedLegacy =
+      let
+        retained = (import ../../pkgs/runtimes/ruby { inherit pkgs tvp; }).recipes.ruby.constructionRecipe;
+        q = (tvp.lib.packages.mkVersions retained).ruby_4_0_5;
+      in
+      q ? overrideAttrs && !(q ? edit);
   };
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in

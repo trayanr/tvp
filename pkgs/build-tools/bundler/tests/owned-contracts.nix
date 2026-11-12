@@ -63,7 +63,7 @@ let
     family: original:
     (original.edit (
       s:
-      s
+      (builtins.removeAttrs s [ "artifactName" ])
       // {
         src = "${tinySource}/source.tar.gz";
         environment = s.environment // {
@@ -161,7 +161,7 @@ let
     directory: family: attr:
     let
       factory = (import directory { inherit pkgs tvp; }).recipes.${family};
-      old = tvp.canonical.${attr};
+      old = (tvp.lib.packages.mkVersions factory.constructionRecipe).${attr};
       chosen = pkgs // {
         runCommand = name: args: script: { selectedPkgs = true; };
       };
@@ -185,7 +185,7 @@ let
     };
     ruby = identities ruby;
     bundler = (identities bundler) // {
-      selectedInterpreter = contains "${shim}/bin/ruby" (step "bundler.install" replaced).run;
+      selectedInterpreter = contains "${shim}/bin/ruby" (step "bundler.wrappers" replaced).run;
       provider =
         let
           env = base.environment { tools = [ replaced ]; };
