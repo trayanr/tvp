@@ -36,6 +36,7 @@ let
     let
       d = p.specification;
       parts = steps.partition p.buildSteps;
+      copy = builtins.head (steps.partition d.plan).second;
       suffix = p.editSteps (
         plan:
         plan
@@ -88,6 +89,11 @@ let
     {
       installedBeforeSplit = builtins.any (s: s.name == "${p.pname}.install") parts.first;
       copyFirst = (builtins.head parts.second).name == "output.copy-artifacts";
+      copyTransport =
+        if p.outputs == [ "out" ] then
+          !(lib.hasInfix "TVP_ARTIFACT_OUTPUTS" copy.run) && lib.hasInfix "TVP_ARTIFACT_ROOT" copy.run
+        else
+          lib.hasInfix "TVP_ARTIFACT_OUTPUTS" copy.run;
       equalWidth = builtins.stringLength p.outPath == builtins.stringLength p.artifact.outPath;
       allOutputs =
         p.outputs == p.artifact.outputs

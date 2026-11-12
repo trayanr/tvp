@@ -107,7 +107,7 @@ in
     (steps.split "xcb-proto.finalize")
     (tvp.builder.outputs.copyArtifacts {
       coreutils = final.coreutils;
-      outputs = final.outputs;
+      outputs = if final.outputs == [ "out" ] then null else final.outputs;
     })
     {
       name = "xcb-proto.relocate";

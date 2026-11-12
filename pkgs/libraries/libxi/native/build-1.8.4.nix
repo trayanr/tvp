@@ -142,7 +142,7 @@ in
     (steps.split "libxi.finalize")
     (tvp.builder.outputs.copyArtifacts {
       coreutils = final.coreutils;
-      outputs = final.outputs;
+      outputs = if final.outputs == [ "out" ] then null else final.outputs;
     })
     {
       name = "libxi.relocate";
