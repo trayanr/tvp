@@ -137,19 +137,32 @@ let
     };
   rows = builtins.mapAttrs (_: perRow) canonical;
   failures = lib.filterAttrs (_: row: !(builtins.all (x: x) (builtins.attrValues row))) rows;
-  retained = tvp.variants.build-steps.fontconfig_2_18_3;
-  retainedRuntime = retained.editRuntime (r: r // { libraries = [ pkgs.expat ]; });
+  publicProfile = tvp.variants.build-steps.fontconfig_2_18_3;
+  publicRuntime = publicProfile.editRuntime (r: r // { libraries = [ pkgs.expat ]; });
+  privateProfile = (import ../../bootstrap/source-gcc-graphviz-tests.nix { }).packages.fontconfig;
   contracts = {
     inherit rows;
     scopedCompliant = report.success && report.counts.compliant == 21;
-    retainedDebt =
-      !(steps.partition retained.buildSteps).split
-      && !(retained ? artifact)
-      && retainedRuntime.drvPath != retained.drvPath;
+    publicProfileSplit =
+      (steps.partition publicProfile.buildSteps).split
+      && publicProfile ? artifact
+      && publicRuntime.drvPath != publicProfile.drvPath
+      && publicRuntime.artifact.drvPath == publicProfile.artifact.drvPath;
+    privateSharedRole =
+      !(steps.partition privateProfile.buildSteps).split
+      && !(privateProfile ? artifact)
+      &&
+        privateProfile.outputs == [
+          "out"
+          "evidence"
+        ]
+      && builtins.any (
+        s: s.name == "fontconfig.check" && lib.hasInfix "$evidence" (s.run or "")
+      ) privateProfile.buildSteps;
   };
 in
 assert failures == { } || throw "JDK support split contracts: ${builtins.toJSON failures}";
-assert contracts.scopedCompliant && contracts.retainedDebt;
+assert contracts.scopedCompliant && contracts.publicProfileSplit && contracts.privateSharedRole;
 (tvp.canonical.xorgproto_2026_1.testContext.mkTest {
   package = tvp.canonical.xorgproto_2026_1;
   name = "jdk-support-splits";

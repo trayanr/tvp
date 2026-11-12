@@ -169,67 +169,49 @@ in
   };
   inherit canonical;
   variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    fontconfig_2_18_3 = tvp.builder {
-      recipe = import ./build-steps-2.18.3.nix;
-      args = {
-        inherit (pkgs) lib;
-        inherit tvp;
-        base = tvp.bases.default;
-        version = "2.18.3";
-        src = source {
+    fontconfig_2_18_3 =
+      tvpLib.packages.tagSelection
+        {
+          namespace = "variants.build-steps";
+          selector = "fontconfig_2_18_3";
+          kind = "variant";
+          pname = "fontconfig";
           version = "2.18.3";
-          inherit (versionTable."2.18.3") sha256;
-        };
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnutar
-          xz
-          ;
-      } // defs."2.18.3".deps;
-      dependencyNames = [
-        "binutils"
-        "bash"
-        "coreutils"
-        "gnutar"
-        "xz"
-        "meson"
-        "ninja"
-        "python"
-        "pkg-config"
-        "gperf"
-        "freetype"
-        "expat"
-        "patchelf"
-      ];
-      infrastructure = packageArgs.infra;
-      metadata = {
-        status.level = "ok";
-        canonical = false;
-        variant = "build-steps";
-        builder = "build-steps-2.18.3.nix";
-        definition = "2.18.3";
-        declaredTestDependencies.python = tvp.packages.python_3;
-      };
-      selection = {
-        namespace = "variants.build-steps";
-        selector = "fontconfig_2_18_3";
-        kind = "variant";
-        pname = "fontconfig";
-        version = "2.18.3";
-        canonical = "fontconfig_2_18_3";
-      };
-      mkTests =
-        package:
-        packageArgs.extraArgs.mkTests package
-        // {
-          runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
-            inherit package;
-            stdenv = package.stdenv;
-            python = tvp.packages.python_3;
-          };
-        };
-    };
+          canonical = "fontconfig_2_18_3";
+        }
+        (
+          (tvpLib.packages.mkVersions (
+            publicArgs
+            // {
+              variant = "build-steps";
+              testDeps.python = tvp.packages.python_3;
+              versionTable = {
+                "2.18.3" = versionTable."2.18.3" // {
+                  def = ownedDefs."2.18.3" // {
+                    builder = ./public-build-steps.nix;
+                    inherit source;
+                    deps = ownedDefs."2.18.3".deps // {
+                      freetype = defs."2.18.3".deps.freetype;
+                    };
+                  };
+                };
+              };
+              extraArgs.mkTests = pkgs.lib.makeOverridable (
+                { pkgs }:
+                package:
+                (import ./tests/native.nix { inherit package; })
+                // {
+                  upstream = import ./tests/profile-upstream.nix { inherit package; };
+                  runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
+                    inherit package;
+                    stdenv = tvp.bases.default.stdenv;
+                    python = package.tvp.declaredTestDependencies.python;
+                  };
+                }
+              ) { inherit pkgs; };
+            }
+          )).fontconfig_2_18_3
+        );
   };
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

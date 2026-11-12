@@ -255,11 +255,27 @@ let
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   variants = tvpLib.packages.mkVariants (
-    constructionRecipe
+    (
+      publicArgs
+      // {
+        versionTable = {
+          "8.3" = versionTable."8.3" // {
+            def =
+              if native then
+                ordinaryDefs."8.3"
+                // {
+                  builder = ./ordinary/build-8.3-ncurses64.nix;
+                }
+              else
+                versionTable."8.3".def;
+          };
+        };
+      }
+    )
     // {
       inherit pkgs;
       profiles.ncurses64 = {
-        base = tvp.bases.default;
+        base = if native then candidate.base else tvp.bases.default;
         versions."8.3".deps.ncurses =
           tvp.lib.packages.withConstraint
             {

@@ -26,7 +26,13 @@ let
   env = p.specification.base.environment p.specification.environment;
   contracts = {
     distinctOrdinaryRecipe = p.drvPath != variant.drvPath && p.tvp.base == "source-gnu-candidate";
-    retainedVariant = variant.tvp.base == tvp.bases.default.name;
+    retainedVariant =
+      variant.tvp.deps.freetype.drvPath == (tvp.lib.packages.mkVersions
+        (import ../../pkgs/libraries/freetype { inherit pkgs tvp; }).recipes.freetype.constructionRecipe
+      ).freetype_2_15_0.drvPath;
+    publicVariantSplit =
+      (steps.partition variant.buildSteps).split
+      && builtins.any (s: lib.hasInfix "-Dtests=enabled" (s.run or "")) variant.buildSteps;
     realSplit = (steps.partition p.buildSteps).split && p.artifact.drvPath != p.drvPath;
     runtimeReusesArtifact =
       p.drvPath != substituted.drvPath && p.artifact.drvPath == substituted.artifact.drvPath;
