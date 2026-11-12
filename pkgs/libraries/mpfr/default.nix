@@ -296,35 +296,60 @@ let
   constructionRecipe = packageArgs // {
     versionTable = versionTable // {
       "2.4.2" = versionTable."2.4.2" // {
-        def = defs."2.4.2" // { deps = defs."2.4.2".deps // {
-          gmp = tvpLib.packages.tagSelection defs."2.4.2".deps.gmp.__tvpSelection retainedDependency;
-        }; };
+        def = defs."2.4.2" // {
+          deps = defs."2.4.2".deps // {
+            gmp = tvpLib.packages.tagSelection defs."2.4.2".deps.gmp.__tvpSelection retainedDependency;
+          };
+        };
       };
       "3.0.1" = versionTable."3.0.1" // {
-        def = defs."3.0.1" // { deps = defs."3.0.1".deps // {
-          gmp = tvpLib.packages.tagSelection defs."3.0.1".deps.gmp.__tvpSelection retainedDependency;
-        }; };
+        def = defs."3.0.1" // {
+          deps = defs."3.0.1".deps // {
+            gmp = tvpLib.packages.tagSelection defs."3.0.1".deps.gmp.__tvpSelection retainedDependency;
+          };
+        };
       };
       "4.2.2" = versionTable."4.2.2" // {
         def = defs."4.2.1";
       };
     };
   };
-  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
-  compatibilityVersions = [ "2.4.2" "3.0.1" "3.1.6" ];
+  compatibilityDefs = import ./compatibility {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      defs
+      ;
+  };
+  compatibilityVersions = [
+    "2.4.2"
+    "3.0.1"
+    "3.1.6"
+  ];
   publicArgs = previousPublicArgs // {
-    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
-      name = version;
-      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
-    }) compatibilityVersions);
+    versionTable =
+      previousPublicArgs.versionTable
+      // builtins.listToAttrs (
+        map (version: {
+          name = version;
+          value = versionTable.${version} // {
+            def = if native then compatibilityDefs.${version} else versionTable.${version}.def;
+          };
+        }) compatibilityVersions
+      );
     extraArgs = previousPublicArgs.extraArgs // {
-      mkTests = package:
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
         if package ? testContext && builtins.elem package.version compatibilityVersions then
-          packageArgs.extraArgs.mkTests package
+          (packageArgs.extraArgs.mkTests.override { inherit pkgs; }) package
           // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
             upstream = import ../acl/native/upstream.nix { inherit package; };
           }
-          else previousPublicArgs.extraArgs.mkTests package;
+        else
+          (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
