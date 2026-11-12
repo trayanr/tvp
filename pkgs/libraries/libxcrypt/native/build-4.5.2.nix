@@ -60,7 +60,7 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit xz findutils;
@@ -89,17 +89,57 @@ in
       ./configure --prefix="$out" --enable-shared --enable-static
     '')
     (command "libxcrypt.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    (
-      (command "libxcrypt.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "libxcrypt.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit xz findutils;
+      tar = gnutar;
+    })
+    (steps.prepareAutotools {
+      name = "libxcrypt.prepare";
+      inherit bash python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "libxcrypt.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "build-aux"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${bash}/bin/bash";
+    })
+    (command "libxcrypt.configure" ''
+      export CONFIG_SHELL=${bash}/bin/bash
+      ./configure --prefix="$out" --enable-shared --enable-static
+    '')
+    (command "libxcrypt.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+  ];
+  upstreamCheck =
+    (
+      (command "libxcrypt.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+      // {
+        enabled = final.doCheck;
+      }
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "libxcrypt.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libcrypt.la"];
+    })
     {
       name = "output.manuals";
       tools = [
@@ -145,7 +185,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     shared = true;
     static = true;

@@ -138,7 +138,7 @@ mkSuite {
         ];
       };
     }
-    // pkgs.lib.optionalAttrs (package.tvp.features.doCheck or false) {
+    // pkgs.lib.optionalAttrs ((package.tvp.features.doCheck or false) && !(package.specification ? upstreamPlan)) {
       upstream = {
         script = ''
           test "$(cat ${package}/nix-support/upstream-tests.status)" = 0
@@ -149,3 +149,8 @@ mkSuite {
       };
     };
 }
+
+// (if (package ? specification) && (package.specification ? upstreamPlan) && (package.specification.upstreamCheck.enabled or true) then {
+  # Independent native upstream registration.
+  upstream = import ../native/upstream.nix { package = package; };
+} else { })

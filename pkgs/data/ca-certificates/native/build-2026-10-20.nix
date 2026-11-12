@@ -23,6 +23,14 @@ final: {
       tools = [ final.coreutils ];
       run = ''
         install -Dm644 ${final.src} "$out/etc/ssl/certs/ca-bundle.crt"
+      '';
+    }
+    (tvp.builder.steps.split "certificates.finalize")
+    (tvp.builder.outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "certificates.setup-hook";
+      tools = [ final.coreutils ];
+      run = ''
         mkdir -p "$out/nix-support"
         # Exact former substitution; the hook is output data, never executed here.
         hook=$(cat ${../setup-hook.sh})

@@ -1,6 +1,6 @@
 # Independent ordinary native unzip 6.0 Unix generic procedure.
-# One compiled prefix: runtime edits rebuild this stage. Retained builder is
-# unchanged; no setup hooks or generic fixup phases run on this route.
+# Installation produces A; installed runtime and manual repair happen in F.
+# The retained construction procedure keeps its original protocol.
 {
   tvp,
   lib,
@@ -22,6 +22,7 @@
   patchelf,
   cflags,
   hardeningDisable,
+  doCheck ? true,
 }:
 final:
 let
@@ -76,7 +77,7 @@ in
     libraries = [ ];
     shell = final.bash;
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -104,7 +105,46 @@ in
       head -n1 unix/configure > source-shell
       printf '%s\n' ${final.bash}/bin/bash > make-shell
     '')
+    (command "install" ''
+      ${make} install
+      mkdir -p "$out/nix-support"
+      cp flags source-shell make-shell "$out/nix-support/"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/"
 
+      install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (command "prepare" ''
+      # Make's flags rule explicitly calls sh, independently of its own SHELL.
+      # Select the same shell for both and propagate SHELL through recursive make.
+      ${python}/bin/python3 - <<'PYTHON'
+      from pathlib import Path
+      configure = Path('unix/configure')
+      text = configure.read_text()
+      assert text.startswith(':\n#!/bin/sh -x\n')
+      configure.write_text(text.replace(':\n#!/bin/sh -x\n', '#!${final.bash}/bin/bash\n:\n', 1))
+      p = Path('unix/Makefile')
+      text = p.read_text()
+      assert text.count('\tsh unix/configure ') == 1
+      p.write_text(text.replace('\tsh unix/configure ', '\t${final.bash}/bin/bash unix/configure '))
+      PYTHON
+    '')
+    (command "build" ''
+      ${make} generic
+      # Capture the selected probe and shell contract without a build-tree path.
+      head -n1 unix/configure > source-shell
+      printf '%s\n' ${final.bash}/bin/bash > make-shell
+    '')
+  ];
+  upstreamCheck =
     (command "check" ''
       # The shipped target exits zero with a stale zipinfo-format fixture.
       # Preserve that nonpass explicitly; accept only this exact known mismatch.
@@ -130,16 +170,10 @@ in
       printf '0\n' > upstream-check.status
       printf '1\n' > upstream-strict.status
       printf '%s\n' 'KNOWN-NONPASS: stale 1998 zipinfo header/date fixture; raw make check exits 0' > upstream-qualification
-    '')
-    (command "install" ''
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp flags source-shell make-shell "$out/nix-support/"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/"
-
-      install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
-      cp upstream-check.log upstream-check.status upstream-strict.status upstream-qualification upstream-zipinfo.actual upstream-zipinfo.expected "$out/nix-support/"
-    '')
+    '') // { enabled = final.doCheck; };
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "unzip.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.shebangs {
       inherit python;
       paths = [ "bin/zipgrep" ];
@@ -179,7 +213,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     bzip2 = false;
     encryption = true;

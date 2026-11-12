@@ -73,7 +73,7 @@ in
     libraryDirectories = [ "${output}/lib" ];
     pkgconfig = [ "${output}/lib/pkgconfig" ];
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = final.tools.gnutar;
@@ -88,13 +88,39 @@ in
     })
     (command "libyaml.configure" ''./configure --prefix="$out" --enable-shared --enable-static'')
     (command "libyaml.build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    (command "libyaml.install" ''${final.tools.gnumake}/bin/make install'')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = final.tools.gnutar;
+      inherit (final.tools) gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "libyaml.prepare";
+      bash = final.bash;
+      inherit (final.tools) python;
+      base = final.base;
+    })
+    (command "libyaml.configure" ''./configure --prefix="$out" --enable-shared --enable-static'')
+    (command "libyaml.build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+  ];
+  upstreamCheck =
     (
       (command "libyaml.check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
       // {
         enabled = final.tvp.features.doCheck;
       }
-    )
-    (command "libyaml.install" ''${final.tools.gnumake}/bin/make install'')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "libyaml.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libyaml.la"];
+    })
     (outputs.strip {
       inherit (final.tools) python binutils;
       paths = [ "lib/libyaml-0.so.2.0.9" ];
@@ -129,7 +155,7 @@ in
       paths = [ "lib" ];
       elfKinds = [ "runtime" ];
     })
-  ];
+  ]);
   tvp.features = {
     document = true;
     pkgConfig = true;

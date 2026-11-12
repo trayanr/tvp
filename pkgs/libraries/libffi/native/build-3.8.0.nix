@@ -48,7 +48,6 @@ in
     ;
   environment = {
     tools = [
-      dejagnu
       pkgConfig
       gnumake
       sed
@@ -60,7 +59,7 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -79,7 +78,6 @@ in
       ./configure --prefix="$out" --libdir="$out/lib" --disable-multi-os-directory --enable-shared --disable-static
     '')
     (command "build" make)
-    ((command "check" ''${make} check'') // { enabled = doCheck; })
     (command "install" ''
       ${make} install
       # Preserve the ordinary x86_64 compatibility spelling after relocating to lib.
@@ -89,6 +87,37 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+  ];
+  inherit doCheck;
+  upstreamPlan = map (step: step // { tools = (step.tools or [ ]) ++ [ dejagnu ]; }) (steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "libffi.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+      cwd = "source";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      ./configure --prefix="$out" --libdir="$out/lib" --disable-multi-os-directory --enable-shared --disable-static
+    '')
+    (command "build" make)
+  ]);
+  upstreamCheck =
+    ((command "check" ''${make} check'') // { enabled = final.doCheck; });
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "libffi.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libffi.la"];
+    })
     (outputs.shebangs {
       inherit python;
       paths = [ "lib" ];
@@ -120,7 +149,7 @@ in
       paths = [ "lib" ];
       elfKinds = [ "runtime" ];
     })
-  ];
+  ]);
   tvp.features = {
     headersInIncludedir = true;
     variadic = true;

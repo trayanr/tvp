@@ -125,14 +125,19 @@ mkSuite {
     };
     upstream-record = {
       script = ''
-        test "$(grep -c '#####  testing' ${package}/nix-support/upstream-check.log)" = 6
-        test "$(cat ${package}/nix-support/upstream-check.status)" = 0
-        test "$(cat ${package}/nix-support/upstream-strict.status)" = 1
-        test "$(grep -c '#####  WARNING:' ${package}/nix-support/upstream-check.log)" = 1
-        grep -F 'KNOWN-NONPASS: stale 1998 zipinfo' ${package}/nix-support/upstream-qualification >&2
+        test "$(grep -c '#####  testing' ${(import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution}/raw/upstream-check.log)" = 6
+        test "$(cat ${(import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution}/raw/upstream-check.status)" = 0
+        test "$(cat ${(import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution}/raw/upstream-strict.status)" = 1
+        test "$(grep -c '#####  WARNING:' ${(import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution}/raw/upstream-check.log)" = 1
+        grep -F 'KNOWN-NONPASS: stale 1998 zipinfo' ${(import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution}/raw/upstream-qualification >&2
         printf upstream-unix-check-qualified
       '';
       expected = "upstream-unix-check-qualified";
     };
   };
 }
+
+// (if (package ? specification) && (package.specification ? upstreamPlan) && (package.specification.upstreamCheck.enabled or true) then {
+  # Independent native upstream registration.
+  upstream = import ../native/upstream.nix { package = package; };
+} else { })

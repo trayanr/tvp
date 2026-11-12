@@ -1,6 +1,6 @@
 # Independent ordinary native zip 3.0 Unix generic procedure.
-# One compiled prefix: runtime edits rebuild this stage. Retained builder is
-# unchanged; no setup hooks or generic fixup phases run on this route.
+# Installation produces A; installed runtime and manual repair happen in F.
+# The retained construction procedure keeps its original protocol.
 {
   tvp,
   lib,
@@ -78,7 +78,7 @@ in
     libraries = [ bzip2 ];
     shell = final.bash;
   };
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -112,6 +112,10 @@ in
       cp flags source-shell make-shell "$out/nix-support/"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/"
     '')
+  ];
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "zip.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;
@@ -135,7 +139,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     bzip2 = true;
     encryption = true;

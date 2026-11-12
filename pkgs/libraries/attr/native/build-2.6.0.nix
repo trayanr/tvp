@@ -61,7 +61,45 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit gzip findutils;
+      tar = gnutar;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "attr.prepare";
+      inherit bash python;
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "attr.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "build-aux"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${bash}/bin/bash";
+    })
+    (command "attr.configure" ''
+      export CONFIG_SHELL=${bash}/bin/bash
+      export lt_cv_deplibs_check_method=pass_all
+      ./configure --prefix="$out" --enable-shared --enable-static
+    '')
+    (command "attr.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    (command "attr.install" ''
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit gzip findutils;
@@ -102,6 +140,8 @@ in
       ./configure --prefix="$out" --enable-shared --enable-static
     '')
     (command "attr.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+  ];
+  upstreamCheck =
     (
       (command "attr.check" ''
         "$CC" ${../../../../lib/tests/filesystem-capabilities.c} -o .tvp-filesystem-probe
@@ -113,18 +153,20 @@ in
         exit "$status"
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
         tools = environment.tools ++ [
           perl
           python
         ];
       }
-    )
-    (command "attr.install" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "attr.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libattr.la"];
+    })
     {
       name = "output.manuals";
       tools = [
@@ -176,7 +218,7 @@ in
       inherit python binutils patchelf;
       paths = elfPaths;
     })
-  ];
+  ]);
   tvp.features = {
     shared = true;
     static = true;

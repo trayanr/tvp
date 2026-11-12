@@ -73,7 +73,7 @@ in
   # The CLI embeds SQLite and links Readline; the Tcl module embeds SQLite and
   # uses Tcl stubs. Neither module nor libsqlite3 dynamically links target Tcl.
   runtime.libraries = [ readline ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -111,6 +111,59 @@ in
       grep -Fx 'TCL_MAJOR_VERSION = 8' Makefile
     '')
     (command "build" ''${make} all'')
+    (command "install" ''
+      ${make} install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+      # Man pages are the only compressed output in the retained profile.
+      ${gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
+      test -f "$out/lib/libsqlite3.a"
+      test -f "$out/lib/tcl/libsqlite${version}.so"
+      test -f "$out/lib/tcl/pkgIndex.tcl"
+    '')
+  ];
+  finalizeHelper = ./../ordinary/finalize.py;
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.shebangs {
+      name = "sqlite.source-shells";
+      inherit python;
+      paths = [
+        "configure"
+        "autosetup"
+        "tool"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      export autosetup_tclsh=${tcl}/bin/tclsh
+      export CC_FOR_BUILD="$CC"
+      ./configure --prefix="$out" --all --enable-shared --enable-static \
+        --enable-tcl --with-tcl=${tcl}/lib --with-tclsh=${tcl}/bin/tclsh \
+        --enable-readline --with-readline-header=${readline}/include/readline/readline.h \
+        --with-readline-ldflags="-L${readline}/lib -lreadline" \
+        TCLLIBDIR="$out/lib/tcl"
+      grep -E '^LDFLAGS.zlib = *$' Makefile
+      grep -Fx 'HAVE_TCL = 1' Makefile
+      grep -Fx 'TCL_CONFIG_SH = ${tcl}/lib/tclConfig.sh' Makefile
+      grep -Fx 'TCLSH_CMD = ${tcl}/bin/tclsh' Makefile
+      grep -Fx 'B.tclsh = $(TCLSH_CMD)' Makefile
+      grep -Fx 'TCL_MAJOR_VERSION = 8' Makefile
+    '')
+    (command "build" ''${make} all'')
+  ];
+  upstreamCheck =
     (
       (command "check" ''
         export HOME="$TMPDIR" TERM=xterm TZ=UTC
@@ -146,19 +199,17 @@ in
         grep -E '^upstream veryquick jobs=[1-9][0-9]* cases=[1-9][0-9]* errors=0 unfinished=0$' upstream.log
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
-    )
-    (command "install" ''
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      # Man pages are the only compressed output in the retained profile.
-      ${gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
-      test -f "$out/lib/libsqlite3.a"
-      test -f "$out/lib/tcl/libsqlite${version}.so"
-      test -f "$out/lib/tcl/pkgIndex.tcl"
-    '')
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "sqlite.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "sqlite.relocate";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${final.finalizeHelper} "$out" "$TVP_ARTIFACT_ROOT"'';
+    }
     (outputs.strip {
       inherit python binutils;
       paths = [
@@ -191,7 +242,7 @@ in
         "lib"
       ];
     })
-  ];
+  ]);
   tvp = {
     reportedVersion = version;
     pkgConfigVersion = version;

@@ -83,7 +83,7 @@ in
     libraries = [ final.libraries.gmp ];
   };
   runtime.libraries = [ final.libraries.gmp ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit (final.tools) xz findutils;
@@ -98,18 +98,11 @@ in
       inherit (final.tools) python;
       base = final.base;
     })
-
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
-    (
-      (command "check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || { status=$?; cat test-suite.log >&2; exit "$status"; }'')
-      // {
-        enabled = final.tvp.features.doCheck;
-      }
-    )
     (command "install" ''
       ${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash install
       mkdir -p "$out/share/licenses/isl"
@@ -117,6 +110,43 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit (final.tools) xz findutils;
+      tar = final.tools.gnutar;
+    })
+    (command "validate-source" ''
+      ${final.tools.python}/bin/python3 -B ${./validate-source.py} "$PWD" '{}' validate-source
+    '')
+    (steps.prepareAutotools {
+      name = "isl.prepare";
+      bash = final.bash;
+      inherit (final.tools) python;
+      base = final.base;
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+    '')
+    (command "build" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'')
+  ];
+  upstreamCheck =
+    (
+      (command "check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || { status=$?; cat test-suite.log >&2; exit "$status"; }'')
+      // {
+        enabled = final.tvp.features.doCheck;
+      }
+    );
+  plan = steps.sequence (final.artifactPlan ++ [
+    (steps.split "isl.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.relocateText {
+      inherit python;
+      paths = ["lib/pkgconfig" "lib/libisl.la"];
+    })
     (outputs.libtool {
       inherit (final.tools) python;
       paths = [ "lib/libisl.la" ];
@@ -143,7 +173,7 @@ in
       inherit (final.tools) python binutils patchelf;
       paths = [ "lib" ];
     })
-  ];
+  ]);
   tvp.features = {
     inherit doCheck;
     shared = true;
