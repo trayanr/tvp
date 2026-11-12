@@ -36,6 +36,29 @@ in
       ];
     }
   );
+  runtimeProviders = builtins.listToAttrs (
+    map
+      (
+        field:
+        let
+          marker = builtins.toFile "${field}-contract" "runtime provider identity marker\n";
+          changed = package.edit (spec: spec // { ${field} = marker; });
+        in
+        {
+          name = field;
+          value = (finalOnly field marker) // {
+            effectiveProvider = builtins.elem marker (map toString changed.specification.runtime.tools);
+          };
+        }
+      )
+      [
+        "runtimeCoreutils"
+        "runtimeSed"
+        "runtimeGrep"
+        "runtimeGawk"
+        "runtimeFindutils"
+      ]
+  );
   rendererInputs = {
     defaultPath = rendererDeclared package;
     editedPath = rendererDeclared (

@@ -59,6 +59,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       features = {
@@ -128,6 +133,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       cStandard = "gnu17";
@@ -198,6 +208,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       hardeningDisable = [ "format" ];
@@ -268,6 +283,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       compileFlags = [ "-Wno-error=incompatible-pointer-types" ];

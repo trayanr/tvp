@@ -21,6 +21,11 @@
   patchelf,
   buildPerl,
   perl,
+  runtimeCoreutils,
+  runtimeSed,
+  runtimeGrep,
+  runtimeGawk,
+  runtimeFindutils,
   doCheck ? true,
   cStandard ? null,
   compileFlags ? [ ],
@@ -82,6 +87,11 @@ in
     patchelf
     buildPerl
     perl
+    runtimeCoreutils
+    runtimeSed
+    runtimeGrep
+    runtimeGawk
+    runtimeFindutils
     doCheck
     cStandard
     compileFlags
@@ -100,9 +110,25 @@ in
   manualEncoding = final.sourceEncoding;
   manualPerl = final.buildPerl;
   manualSections = [
-    { directory = "doc/apps"; section = "1"; exceptions = { config = "5"; }; }
-    { directory = "doc/crypto"; section = "3"; exceptions = { des_modes = "7"; }; }
-    { directory = "doc/ssl"; section = "3"; exceptions = { }; }
+    {
+      directory = "doc/apps";
+      section = "1";
+      exceptions = {
+        config = "5";
+      };
+    }
+    {
+      directory = "doc/crypto";
+      section = "3";
+      exceptions = {
+        des_modes = "7";
+      };
+    }
+    {
+      directory = "doc/ssl";
+      section = "3";
+      exceptions = { };
+    }
   ];
   archiveHelper = ./archive.py;
   elfHelper = ./elf.py;
@@ -134,18 +160,20 @@ in
   dependencyProviders = {
     perl = final.runtime.perl;
   };
+  # Installed helpers use registered runtime providers, independently of build tools.
+  runtimeTools = [
+    final.runtimeCoreutils
+    final.runtimeSed
+    final.runtimeGrep
+    final.runtimeGawk
+    final.runtimeFindutils
+  ];
   runtime = {
     libraries = [ ];
     selfLibraryDirectories = [ "lib" ];
     perl = final.perl;
     shell = final.bash;
-    tools = [
-      final.coreutils
-      final.sed
-      final.grep
-      final.gawk
-      final.findutils
-    ];
+    tools = final.runtimeTools;
   };
   plan =
     assert !final.forceGccName || throw "OpenSSL unified builds do not use a gcc-name workaround";
@@ -245,28 +273,28 @@ in
         paths = [ "lib" ];
       })
       {
-      name = "openssl.self-runtime";
-      tools = [
-        final.python
-        final.binutils
-        final.patchelf
-      ];
-      # Seed the final self-library path before authoritative RPATH pruning.
-      run = ''${final.python}/bin/python3 -B ${../../../../lib/append-self-rpaths.py} "$out" ${
-        lib.escapeShellArg (
-          builtins.toJSON {
-            paths = [
-              "bin"
-              "lib"
-            ];
-            directories = final.runtime.selfLibraryDirectories;
-            readelf = "${final.binutils}/bin/readelf";
-            patchelf = "${final.patchelf}/bin/patchelf";
-          }
-        )
-      } ${../../../../lib/native-output}'';
-    }
-    (outputs.rpaths {
+        name = "openssl.self-runtime";
+        tools = [
+          final.python
+          final.binutils
+          final.patchelf
+        ];
+        # Seed the final self-library path before authoritative RPATH pruning.
+        run = ''${final.python}/bin/python3 -B ${../../../../lib/append-self-rpaths.py} "$out" ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              paths = [
+                "bin"
+                "lib"
+              ];
+              directories = final.runtime.selfLibraryDirectories;
+              readelf = "${final.binutils}/bin/readelf";
+              patchelf = "${final.patchelf}/bin/patchelf";
+            }
+          )
+        } ${../../../../lib/native-output}'';
+      }
+      (outputs.rpaths {
         inherit (final)
           python
           binutils

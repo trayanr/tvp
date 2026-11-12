@@ -56,6 +56,11 @@ tvpLib.packages.mkDefs {
       buildPerl = tvp.packages.perl_5;
       testCmake = tvp.packages.cmake;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       features = {

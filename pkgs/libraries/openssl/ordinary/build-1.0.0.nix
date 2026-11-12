@@ -21,6 +21,11 @@
   patchelf,
   buildPerl,
   perl,
+  runtimeCoreutils,
+  runtimeSed,
+  runtimeGrep,
+  runtimeGawk,
+  runtimeFindutils,
   doCheck ? true,
   cStandard ? null,
   compileFlags ? [ ],
@@ -82,6 +87,11 @@ in
     patchelf
     buildPerl
     perl
+    runtimeCoreutils
+    runtimeSed
+    runtimeGrep
+    runtimeGawk
+    runtimeFindutils
     doCheck
     cStandard
     compileFlags
@@ -100,9 +110,25 @@ in
   manualEncoding = final.sourceEncoding;
   manualPerl = final.buildPerl;
   manualSections = [
-    { directory = "doc/apps"; section = "1"; exceptions = { config = "5"; }; }
-    { directory = "doc/crypto"; section = "3"; exceptions = { des_modes = "7"; }; }
-    { directory = "doc/ssl"; section = "3"; exceptions = { }; }
+    {
+      directory = "doc/apps";
+      section = "1";
+      exceptions = {
+        config = "5";
+      };
+    }
+    {
+      directory = "doc/crypto";
+      section = "3";
+      exceptions = {
+        des_modes = "7";
+      };
+    }
+    {
+      directory = "doc/ssl";
+      section = "3";
+      exceptions = { };
+    }
   ];
   archiveHelper = ./archive.py;
   elfHelper = ./elf.py;
@@ -130,18 +156,20 @@ in
   dependencyProviders = {
     perl = final.runtime.perl;
   };
+  # Installed helpers use registered runtime providers, independently of build tools.
+  runtimeTools = [
+    final.runtimeCoreutils
+    final.runtimeSed
+    final.runtimeGrep
+    final.runtimeGawk
+    final.runtimeFindutils
+  ];
   runtime = {
     libraries = [ ];
     selfLibraryDirectories = [ "lib" ];
     perl = final.perl;
     shell = final.bash;
-    tools = [
-      final.coreutils
-      final.sed
-      final.grep
-      final.gawk
-      final.findutils
-    ];
+    tools = final.runtimeTools;
   };
   plan = steps.sequence [
     (steps.unpack {

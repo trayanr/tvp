@@ -57,6 +57,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       forceGccName = true;
@@ -128,6 +133,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       forceGccName = true;
@@ -198,6 +208,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       forceGccName = true;
@@ -269,6 +284,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       features = {
@@ -322,6 +342,11 @@ tvpLib.packages.mkDefs {
       inherit tvp;
     };
     deps = {
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
       bash = constructionTool "bash";
       coreutils = constructionTool "coreutils";
       pkgConfig = constructionTool "pkgConfig";
@@ -411,6 +436,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       features = {
@@ -480,6 +510,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       forceGccName = true;
@@ -552,6 +587,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       compileFlags = [ "-Wno-error=implicit-function-declaration" ];
@@ -622,6 +662,11 @@ tvpLib.packages.mkDefs {
       gzip = constructionTool "gzip";
       buildPerl = tvp.packages.perl_5;
       perl = tvp.packages.perl_5;
+      runtimeCoreutils = tvp.packages.coreutils;
+      runtimeSed = tvp.packages.gnused;
+      runtimeGrep = tvp.packages.gnugrep;
+      runtimeGawk = tvp.packages.gawk;
+      runtimeFindutils = tvp.packages.findutils;
     };
     opts = {
       features = {

@@ -134,3 +134,13 @@ directories before authoritative RPATH pruning. The pruning step retains final
 self directories required by each runtime ELF and removes unused ones. This
 allows the installed CLI and libssl to load their sibling libraries without an
 ambient library path, while preserving the compiler artifact.
+
+Installed helper tools are separate typed runtime dependencies:
+`runtimeCoreutils`, `runtimeSed`, `runtimeGrep`, `runtimeGawk` and
+`runtimeFindutils`. Definition data selects their registered ordinary packages;
+construction tools remain scoped to the compilation artifact. Effective runtime
+provider edits rebind the helper command path after the split and preserve that
+artifact. A registered compiler reference carried by full Perl's Config/XS
+interface has a separate documented role; it does not justify unregistered
+bootstrap tools in installed helper paths. Final-root ownership still requires
+its actual closure audit, without expanding the baseline allowance.
