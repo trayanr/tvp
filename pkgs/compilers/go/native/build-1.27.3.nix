@@ -128,7 +128,7 @@ in
     '')
     (command "build" ''
       export CC=${lib.escapeShellArg final.runtime.cc} CXX=${lib.escapeShellArg final.runtime.cxx}
-      export GOROOT="$PWD" GOROOT_FINAL="$out/share/go"
+      export GOROOT="$PWD"
       export GOROOT_BOOTSTRAP="${bootstrap}/share/go"
       printf '%s\n' "$CC" "$CXX" "$GO_LDSO" "$GOROOT_BOOTSTRAP" > "$NIX_BUILD_TOP/evidence/build-providers"
       cd src
@@ -141,8 +141,9 @@ in
       ln -s ../share/go/bin/gofmt "$out/bin/gofmt"
       cp "$NIX_BUILD_TOP/evidence/build-providers" "$out/nix-support/build-providers"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      GOENV=off "$out/bin/go" env -json > "$out/nix-support/installed-environment.json"
     '')
+    (steps.split "go.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
     # Go's compiler tools carry Go build IDs/symbols. Preserve those bytes;
     # validate ELF paths without treating source testdata as installed programs.
     (outputs.checkPaths {

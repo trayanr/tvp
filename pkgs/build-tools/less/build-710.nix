@@ -21,9 +21,30 @@
   pcre2,
   patch,
   patches ? [ ],
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    gnumake
+    gnutar
+    gzip
+    findutils
+    sed
+    grep
+    gawk
+    python
+    binutils
+    patchelf
+    ncurses
+    pcre2
+    patch
+    patches
+    ;
   inherit (tvp.builder) steps outputs;
   command =
     name: run:
@@ -36,13 +57,28 @@ let
 in
 {
   pname = "less";
-  inherit
+  inherit (args)
     base
     src
     version
     bash
     coreutils
+    gnumake
+    gnutar
+    gzip
+    findutils
+    sed
+    grep
+    gawk
+    python
+    binutils
+    patchelf
+    ncurses
+    pcre2
+    patch
     ;
+  patches = args.patches or [ ];
+
   environment = {
     tools = [
       gnumake
@@ -56,10 +92,11 @@ in
       pcre2
     ];
   };
-  runtime.libraries = [
-    ncurses
-    pcre2
-  ];
+  artifactName = "${final.pname}-${final.version}";
+  runtime = {
+    shell = final.bash;
+    libraries = final.environment.libraries;
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -105,6 +142,15 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (steps.split "less.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    {
+      name = "less.transport";
+      tools = [ python ];
+      run = ''${python}/bin/python3 -B ${./finalize.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (builtins.toJSON [ "${final.bash}/bin/bash" "${final.runtime.shell}/bin/bash" ])
+      } ${../../../lib/installed-tree.py} ${../../libraries/libxml2/ordinary/elf.py} ${binutils}/bin/readelf'';
+    }
     (outputs.shebangs {
       inherit python;
       paths = [ "bin" ];
@@ -112,7 +158,7 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${final.bash}/bin/bash";
+      interpreter = "${final.runtime.shell}/bin/bash";
     })
     {
       name = "less.bind-link-helper";
@@ -124,8 +170,8 @@ in
         root = Path(sys.argv[1])
         p = root / 'bin/less-osc8-open'
         first, rest = p.read_text().split('\n', 1)
-        assert first == '#!${final.bash}/bin/bash'
-        p.write_text(first + f'\nPATH={root}/bin:${coreutils}/bin:${final.bash}/bin:"$' + '{PATH-}"; export PATH\n' + rest)
+        assert first == '#!${final.runtime.shell}/bin/bash'
+        p.write_text(first + f'\nPATH={root}/bin:${coreutils}/bin:${final.runtime.shell}/bin:"$' + '{PATH-}"; export PATH\n' + rest)
         PYTHON
       '';
     }

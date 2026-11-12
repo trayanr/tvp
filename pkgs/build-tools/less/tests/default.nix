@@ -2,27 +2,9 @@
 let
   p = package;
   d = p.tvp.deps;
-  upstream = p.editSteps (
-    tvp.builder.steps.insertAfter "less.build" [
-      (
-        (p.specification.base.environment p.specification.environment)
-        // {
-          name = "less.upstream";
-          cwd = "source";
-          run = ''
-            ${d.gnumake}/bin/make SHELL=${p.specification.bash}/bin/bash LESSTEST=1 LDFLAGS="''${LDFLAGS-} -Wl,--wrap=popen,--wrap=pclose,--wrap=system"
-            ${d.gnumake}/bin/make -C lesstest SHELL=${p.specification.bash}/bin/bash CC="$CC" CFLAGS="''${CFLAGS-} -I${d.ncurses}/include/ncursesw"
-            (cd lesstest; ${p.tvp.declaredTestDependencies.perl}/bin/perl ./runtest -e -l ../less_t lt) > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
-            cat upstream.log >&2
-            mkdir -p "$out/nix-support/upstream"
-            cp upstream.log "$out/nix-support/upstream/"
-          '';
-        }
-      )
-    ]
-  );
+
 in
-p.testContext.mkSuite {
+(p.testContext.mkSuite {
   inherit package;
   tools = [
     d.python
@@ -30,10 +12,6 @@ p.testContext.mkSuite {
   ];
   libraries = [ ];
   tests = {
-    upstream = {
-      script = ''test -s ${upstream}/nix-support/upstream/upstream.log; printf upstream'';
-      expected = "upstream";
-    };
     version = {
       script = ''${p}/bin/less --version | head -1'';
       expected = "less 710 (PCRE2 regular expressions)";
@@ -81,4 +59,4 @@ p.testContext.mkSuite {
       expected = "declared";
     };
   };
-}
+}) // { upstream = import ./upstream.nix { inherit package; }; }

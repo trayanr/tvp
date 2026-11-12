@@ -7,7 +7,7 @@ let
     export GOENV=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off
   '';
 in
-package.testContext.mkSuite {
+(package.testContext.mkSuite {
   inherit package;
   tools = [
     s.coreutils
@@ -74,4 +74,4 @@ package.testContext.mkSuite {
       expected = "local";
     };
   };
-}
+}) // { installed-environment = import ./installed-environment.nix { inherit package; }; }

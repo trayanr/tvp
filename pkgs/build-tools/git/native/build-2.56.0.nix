@@ -29,10 +29,40 @@
   binutils,
   patchelf,
   doCheck ? true,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    helperPython
+    rustc
+    cargo
+    pkg-config
+    perl
+    python
+    curl
+    openssl
+    zlib
+    expat
+    pcre2
+    gnumake
+    gnutar
+    xz
+    findutils
+    diffutils
+    gawk
+    gnused
+    gnugrep
+    binutils
+    patchelf
+    doCheck
+    ;
   inherit (tvp.builder) steps outputs;
+  configurePrefix = if builtins.isString final.configurePrefix && !(builtins.hasContext final.configurePrefix) && builtins.match "/tvp/[A-Za-z0-9][A-Za-z0-9_+./-]*" final.configurePrefix != null && !(builtins.elem ".." (lib.splitString "/" final.configurePrefix)) then final.configurePrefix else throw "Git configurePrefix must be a context-free /tvp path";
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -50,9 +80,9 @@ let
       '';
     };
   make = ''
-    ${gnumake}/bin/make -j"$NIX_BUILD_CORES" prefix="$out" \
-        SHELL=${final.bash}/bin/bash SHELL_PATH=${final.runtime.shell}/bin/bash \
-        PERL_PATH=${final.runtime.perl}/bin/perl PYTHON_PATH=${final.runtime.python}/bin/python3 \
+    ${gnumake}/bin/make -j"$NIX_BUILD_CORES" prefix=${lib.escapeShellArg configurePrefix} RUNTIME_PREFIX=YesPlease \
+        SHELL=${final.bash}/bin/bash SHELL_PATH=${final.bash}/bin/bash \
+        PERL_PATH=${final.perl}/bin/perl PYTHON_PATH=${final.python}/bin/python3 \
         CURL_CONFIG=${curl}/bin/curl-config NO_GETTEXT=YesPlease NO_TCLTK=YesPlease USE_LIBPCRE2=YesPlease'';
   paths = [
     "bin"
@@ -61,16 +91,36 @@ let
 in
 {
   pname = "git";
-  inherit
+  inherit (args)
     base
     src
     version
     bash
     coreutils
     helperPython
+    rustc
+    cargo
+    pkg-config
+    perl
+    python
+    curl
+    openssl
+    zlib
+    expat
+    pcre2
+    gnumake
+    gnutar
+    xz
+    findutils
+    diffutils
     gawk
+    gnused
     gnugrep
+    binutils
+    patchelf
     ;
+  doCheck = args.doCheck or true;
+
   environment = {
     tools = [
       coreutils
@@ -97,10 +147,12 @@ in
       pcre2
     ];
   };
+  configurePrefix = "/tvp/git";
   runtime = {
-    libraries = environment.libraries;
-    shell = bash;
-    inherit perl python;
+    libraries = final.environment.libraries;
+    shell = final.bash;
+    perl = final.perl;
+    python = final.python;
   };
   tvp.features = {
     http = true;
@@ -110,40 +162,45 @@ in
     manpages = false;
     bundledSshClient = false;
   };
+  upstreamPreparation = steps.shebangs {
+    name = "git.test-shells";
+    python = helperPython;
+    paths = [ "t" ];
+    names = [ "sh" "bash" ];
+    interpreter = "${final.bash}/bin/bash";
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
       inherit xz findutils;
     })
-    (steps.shebangs {
-      name = "git.test-shells";
-      python = helperPython;
-      paths = [ "t" ];
-      names = [
-        "sh"
-        "bash"
-      ];
-      interpreter = "${final.bash}/bin/bash";
-    })
+    (command "source-slots" ''
+      ${helperPython}/bin/python3 -B ${./prepare.py}
+    '')
     (command "configure" ''
-      ${final.bash}/bin/bash ./configure --prefix="$out" \
+      ${final.bash}/bin/bash ./configure --prefix=${lib.escapeShellArg configurePrefix} \
         --with-curl=${curl} --with-openssl=${openssl} --with-expat=${expat} --with-zlib=${zlib}
     '')
     (command "build" ''${make}'')
-    (
-      (command "check" ''
-        cd t
-        # t0001 setgid fixture is sandbox-excluded; only prior host evidence exists.
-        ${final.bash}/bin/bash t0000-basic.sh --verbose-log
-        ${final.bash}/bin/bash t0008-ignores.sh --verbose-log
-        ${final.bash}/bin/bash t1300-config.sh --verbose-log
-      '')
-      // {
-        enabled = doCheck;
-      }
-    )
-    (command "install" ''${make} install'')
+    (command "install" ''
+      ${make} DESTDIR="$TVP_SOURCE_ROOT/stage" install
+      mkdir -p "$out"
+      cp -a "$TVP_SOURCE_ROOT/stage"${lib.escapeShellArg configurePrefix}/. "$out/"
+    '')
+    (steps.split "git.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    {
+      name = "git.bind-runtime";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${./finalize.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (builtins.toJSON {
+          shell = [ "${final.bash}/bin/bash" "${final.runtime.shell}/bin/bash" ];
+          perl = [ "${final.perl}/bin/perl" "${final.runtime.perl}/bin/perl" ];
+          python = [ "${final.python}/bin/python3" "${final.runtime.python}/bin/python3" ];
+        })
+      } ${../../../../lib/installed-tree.py} ${../../../libraries/libxml2/ordinary/elf.py} ${binutils}/bin/readelf'';
+    }
     (
       (outputs.shebangs {
         python = helperPython;

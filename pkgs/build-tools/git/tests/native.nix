@@ -4,7 +4,7 @@
   tvp,
   package,
 }:
-package.testContext.mkSuite {
+(package.testContext.mkSuite {
   inherit package;
   tools = with package.specification; [
     gawk
@@ -90,4 +90,4 @@ package.testContext.mkSuite {
       tools = [ package.tvp.deps.python ];
     };
   };
-}
+}) // { upstream = import ./upstream.nix { inherit package; }; }
