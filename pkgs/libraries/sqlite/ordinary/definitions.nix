@@ -364,12 +364,22 @@ let
       constructionTool
       ;
   };
+  testPortability = import ./test-portability-definitions.nix {
+    inherit
+      pkgs
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+  };
+  testPortabilityPatches = import ./test-portability-patches.nix { inherit (pkgs) lib; };
   runtimePatches = import ./runtime-patches.nix { inherit (pkgs) lib; };
 in
 pkgs.lib.mapAttrs (
   name: definition:
   definition
   // {
-    patches = (definition.patches or [ ]) ++ runtimePatches name;
+    patches = (definition.patches or [ ]) ++ runtimePatches name ++ testPortabilityPatches name;
   }
-) (migrated // compatibility // runtimeCompatibility)
+) (migrated // compatibility // runtimeCompatibility // testPortability)

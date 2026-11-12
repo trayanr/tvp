@@ -1,0 +1,11 @@
+--- a/test/tclsqlite.test
++++ b/test/tclsqlite.test
+@@ -223,6 +223,6 @@
+     execsql {CREATE TABLE t3(a,b,c)}
+     catch {unset x}
+-    set x(1) 5
+-    set x(2) 7
++    set x(1) [string trim " 5"]
++    set x(2) [string trim " 7"]
+     execsql {
+       INSERT INTO t3 VALUES($::x(1),$::x(2),$::x(3));

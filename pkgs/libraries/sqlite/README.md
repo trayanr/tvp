@@ -140,3 +140,29 @@ the minimum/maximum 64-bit values and smaller boundary values. Original failed
 raw reports remain retained. These declared source/fixture patches preserve
 expectations and fault loops; new raw reports describe the patched source,
 not a pristine upstream checkout. Canonical qualification is still required.
+
+Test portability patches cover 97 supported releases through 3.7.6.3. They retain
+all original failures as historical evidence; the candidate's patched producers
+still require canonical execution. Broken 3.2.8 remains excluded.
+
+The 3.0.0 private test fixture compiles pragma.c and enables its lock diagnostics
+under SQLITE_TEST, following 3.0.1, with a matching pager declaration. The release
+library keeps its debug policy. Releases 3.0.0–3.0.7 sort only the two attach2
+leftover-journal membership assertions, following 3.0.8; an extra journal still
+fails. Releases 3.0.0–3.5.8 compare the entire callback expression error to a direct
+Tcl reference, following 3.5.9. Releases 3.0.7–3.5.5 correct only the zero-hex
+alternate-form reference to padded zero, matching the existing formatter and
+3.5.6's explicit vector. All original format calls and values remain.
+
+Releases 3.1.0–3.6.1 construct fresh strings for the original 5/7 TEXT inputs,
+keeping SQL, blob bytes and expectations. Releases 3.2.3–3.7.6.3 append then remove
+a character to construct an actual empty string for types3-1.1; the original
+empty value and string/TEXT expectation remain. The removal uses the generic Tcl
+command through a list evaluation: the compiled empty-replacement shortcut can
+return a typeless empty object, while the generic command constructs a string.
+Releases 3.5.9–3.7.6.3 backport
+3.7.7's realnum support verbatim within nan.test, using it only for numeric
+infinity assertions. SQL CAST-to-text, signs, types, NULL and payload assertions
+remain exact. Four NaN patch contexts preserve the changing source case lists;
+complete native definitions at 3.0.8, 3.5.9, 3.6.3, 3.6.18 and 3.7.7 record the
+new source boundaries without changing either ordered procedure or providers.
