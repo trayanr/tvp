@@ -1,7 +1,12 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.dart;
+  captured = import ../../../sdks/retained-adapters.nix { inherit pkgs tvp; };
+  retained =
+    (import ./legacy.nix {
+      inherit pkgs;
+      tvp = captured.callerTvp;
+    }).recipes.dart;
   candidate = import ../../../bases/source-gnu { };
   tool =
     role:
@@ -47,7 +52,7 @@ let
             tvp.lib.packages.withConstraint {
               category = "artifact";
               reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-            } tvp.canonical."dart-bootstrap_3_13_0_103_1_beta"
+            } captured.canonical."dart-bootstrap_3_13_0_103_1_beta"
           );
           devtoolsAssets = (
             tvp.lib.packages.withConstraint {

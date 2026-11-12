@@ -1,7 +1,12 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.flutter;
+  captured = import ../../../sdks/retained-adapters.nix { inherit pkgs tvp; };
+  retained =
+    (import ./legacy.nix {
+      inherit pkgs;
+      tvp = captured.callerTvp;
+    }).recipes.flutter;
   candidate = import ../../../bases/source-gnu { };
   tool =
     role:
@@ -50,7 +55,7 @@ let
           git = tvp.packages.git_2;
           curl = tvp.packages.curl_8;
           gradle = tvp.packages.gradle_9;
-          androidSdk = tvp.android.profiles.flutter;
+          androidSdk = tvp.android.constructionProfiles.flutter;
           jdk = tvp.packages.jdk_21;
           ca-certificates = tvp.packages.ca-certificates;
           gawk = tvp.packages.gawk;

@@ -65,7 +65,72 @@ let
         blob = retained.versionTable."30.0.16248370".def.blob;
       };
     })."30.0.16248370";
+  historical =
+    (tvpLib.packages.mkDefs {
+      "28.2.13676358" = {
+        constructor = tvp.builder;
+        builder = ./native/build-28.2.13676358.nix;
+        base = candidate.base;
+        helpers = {
+          inherit tvp;
+        };
+        testContext =
+          package:
+          tvpLib.tests.fromPackage {
+            builder = tvp.builder;
+            inherit package;
+          };
+        source =
+          { version, sha256 }:
+          import <nix/fetchurl.nix> {
+            url = "https://dl.google.com/android/repository/android-ndk-r28c-linux.zip";
+            inherit sha256;
+          };
+        deps =
+          pkgs.lib.mapAttrs
+            (
+              role: provider:
+              if provider ? __tvpSelection then
+                provider
+              else
+                tvpLib.packages.tagSelection {
+                  namespace = "source-gnu.inputs";
+                  selector = role;
+                  kind = "source-base-build-tool";
+                  reason = "Explicit candidate-base provider for Android payload installation, host finalization or owned tests; preserve its construction generation.";
+                } provider
+            )
+            {
+              inherit (candidate.tools)
+                bash
+                coreutils
+                python
+                binutils
+                patchelf
+                sed
+                grep
+                diffutils
+                findutils
+                ;
+              runtimeLibc = candidate.toolchain.libc;
+              runtimeCompiler = candidate.toolchain.runtime;
+              unzip = tvp.packages.unzip;
+              zlib = tvp.packages.zlib_1;
+              gnumake = tvp.packages.gnumake;
+              perl = candidate.tools.perl;
+            };
+        opts = {
+          sdkPath = "ndk/28.2.13676358";
+          archiveRoot = "android-ndk-r28c";
+          packageMetadata = ./metadata-28.2.13676358.xml;
+        };
+        blob = retained.versionTable."28.2.13676358".def.blob;
+      };
+    })."28.2.13676358";
   versionTable = retained.versionTable // {
+    "28.2.13676358" = retained.versionTable."28.2.13676358" // {
+      def = if native then historical else retained.versionTable."28.2.13676358".def;
+    };
     "30.0.16248370" = retained.versionTable."30.0.16248370" // {
       def = if native then definition else retained.versionTable."30.0.16248370".def;
     };

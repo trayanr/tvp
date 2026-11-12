@@ -1,4 +1,4 @@
-{ tvp }:
+{ tvp, pkgs }:
 let
   # These are released composition artifacts, not ordinary tool dependencies.
   # Use the exact namespace so a future prefix alias cannot move an SDK profile.
@@ -28,6 +28,7 @@ let
       operation = "named-sdk-profile";
       reason = "Explicit named SDK composition; preserve its released artifact/profile constraints.";
     } (mkSdk args);
+  retained = import ./retained-adapters.nix { inherit pkgs tvp; };
   common = [
     p.android-commandline-tools_23_0
     p.android-platform-tools_37_0_1
@@ -35,6 +36,15 @@ let
 in
 {
   inherit mkSdk;
+  # Exact released construction composition for Flutter, including legacy tests.
+  constructionProfiles.flutter = mkProfile "flutter" {
+    name = "android-sdk-flutter-3.47";
+    components = common ++ [
+      retained.canonical.android-platform_36_r2
+      (tvp.lib.packages.mkVersions retained.buildTools).android-build-tools_36_0_0
+      (tvp.lib.packages.mkVersions retained.ndk).android-ndk_28_2_13676358
+    ];
+  };
   profiles = {
     latest = mkProfile "latest" {
       name = "android-sdk-latest";

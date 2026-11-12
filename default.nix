@@ -175,6 +175,9 @@ let
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
       owned-ruby = import ./lib/tests/owned-ruby.nix { inherit pkgs tvp; };
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
+      remaining-adapter-profiles = pkgs.writeText "tvp-remaining-adapter-profile-contracts" (
+        builtins.toJSON (import ./lib/tests/remaining-adapter-profiles.nix { inherit pkgs tvp; })
+      );
       owned-fontconfig = import ./lib/tests/owned-fontconfig.nix { inherit pkgs tvp; };
       owned-x11 = import ./lib/tests/owned-x11.nix { inherit pkgs tvp; };
       jdk-support-splits = import ./lib/tests/jdk-support-splits.nix { inherit pkgs tvp; };
@@ -841,7 +844,7 @@ let
         ;
       compositions = tvp.android.profiles;
     };
-    android = import ./sdks/android.nix { inherit tvp; };
+    android = import ./sdks/android.nix { inherit tvp pkgs; };
     inherit
       bases
       canonical
