@@ -15,7 +15,8 @@ def replace(path, replacements):
     os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
 
 replace('Lib/subprocess.py', [('@TVP_SHELL@', runtime_shell)])
-replace('Makefile.pre.in', [('SHELL=\t\t/bin/sh -e', 'SHELL= ' + build_shell + ' -e')])
+replace('Makefile.pre.in', [('SHELL=\t\t/bin/sh', 'SHELL= ' + build_shell)])
 replace('Misc/python-config.sh.in', [('#!/bin/sh', '#!' + build_shell),
     ('dirname ', utilities + '/dirname '), ('which readlink', 'command -v ' + utilities + '/readlink'),
-    ('readlink -f', utilities + '/readlink -f')])
+    ('readlink -f', utilities + '/readlink -f'),
+    ('| sed ', '| ' + sed + ' ')])

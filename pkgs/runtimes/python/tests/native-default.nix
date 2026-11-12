@@ -9,6 +9,13 @@
 let
   lib = pkgs.lib;
   deps = package.tvp.deps;
+  tlsClosurePatch =
+    {
+      "3.11.18" = ./patches/python-3.11.18-tls13-closure.patch;
+      "3.12.16" = ./patches/python-3.12.16-tls13-closure.patch;
+    }
+    .${package.version} or null;
+  pythonLib = "lib/python${lib.versions.majorMinor package.version}";
   support = package.tvp.declaredTestDependencies;
   testLinker = import ./native-linker.nix {
     builder = tvp.builder;
@@ -78,25 +85,25 @@ package.testContext.mkSuite {
           deps.gawk
           deps.sed
         ];
-        script = ''
-          export PATH=${testLinker}/bin:$PATH
-          export LD_LIBRARY_PATH=${package.compiler.libc}/lib
-          python3 -m test -v -j"$NIX_BUILD_CORES" ${lib.escapeShellArgs package.tvp.upstreamModules} > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
-          cat upstream.log >&2
-          grep -E 'Total tests: run=[1-9]' upstream.log >&2
-          printf passed
-        '';
+        script =
+          lib.optionalString (tlsClosurePatch != null) ''
+            mkdir validation
+            cp -R ${package}/${pythonLib}/{test,ctypes} validation/
+            chmod -R u+w validation/test
+            ${support.patch}/bin/patch --batch --fuzz=0 -d validation -p1 < ${tlsClosurePatch} >&2
+            export PYTHONPATH="$PWD/validation"
+          ''
+          + ''
+            export PATH=${testLinker}/bin:$PATH
+            export LD_LIBRARY_PATH=${package.compiler.libc}/lib
+            python3 -m test -v -j"$NIX_BUILD_CORES" ${lib.escapeShellArgs package.tvp.upstreamModules} > upstream.log 2>&1 || { cat upstream.log >&2; exit 1; }
+            cat upstream.log >&2
+            grep -E 'Total tests: run=[1-9]|Ran [1-9][0-9]* tests?' upstream.log >&2
+            printf passed
+          '';
         expected = "passed";
       };
-      upstream-profile = {
-        script = ''
-          python3 -m test -v -j"$NIX_BUILD_CORES" test_decimal test_zstd test_ensurepip test_venv test_codecs > upstream-profile.log 2>&1 || { cat upstream-profile.log >&2; exit 1; }
-          cat upstream-profile.log >&2
-          grep -E 'Total tests: run=[1-9]' upstream-profile.log >&2
-          printf passed
-        '';
-        expected = "passed";
-      };
+
       openssl-linkage = linkage deps.openssl "lib(ssl|crypto)\\.so" [
         "_ssl"
         "_hashlib"
@@ -115,13 +122,28 @@ package.testContext.mkSuite {
       zlib-linkage = linkage deps.zlib "libz\\.so" [ "zlib" ];
       bzip2-linkage = linkage deps.bzip2 "libbz2\\.so" [ "_bz2" ];
       xz-linkage = linkage deps.xz "liblzma\\.so" [ "_lzma" ];
+
+    }
+    // lib.optionalAttrs (deps ? zstd) {
       zstd-linkage = linkage deps.zstd "libzstd\\.so" [ "_zstd" ];
-      decimal-linkage = linkage deps.mpdecimal "libmpdec\\.so" [ "_decimal" ];
       zstd = {
         script = ''python3 -c 'from compression import zstd; assert zstd.decompress(zstd.compress(b"tvp")) == b"tvp"; print("roundtrip")' '';
         expected = "roundtrip";
       };
-
+    }
+    // lib.optionalAttrs (deps ? mpdecimal) {
+      decimal-linkage = linkage deps.mpdecimal "libmpdec\\.so" [ "_decimal" ];
+    }
+    // lib.optionalAttrs package.tvp.features.measuredProfile {
+      upstream-profile = {
+        script = ''
+          python3 -m test -v -j"$NIX_BUILD_CORES" test_decimal test_zstd test_ensurepip test_venv test_codecs > upstream-profile.log 2>&1 || { cat upstream-profile.log >&2; exit 1; }
+          cat upstream-profile.log >&2
+          grep -E 'Total tests: run=[1-9]' upstream-profile.log >&2
+          printf passed
+        '';
+        expected = "passed";
+      };
       installed-profile = {
         script = ''python3 ${./native-profile.py} ${./general-purpose-profile.json} ${package} ${package.runtime.shell}/bin/bash'';
         expected = "complete";
@@ -161,6 +183,25 @@ package.testContext.mkSuite {
           meson compile -C build >&2
           (cd build; python3 -c 'import answer; assert answer.answer()==42'; ./embed)
         '';
+        expected = "42";
+      };
+    }
+    // lib.optionalAttrs (deps ? libxcrypt) {
+      crypt = {
+        script = ''python3 -c 'import crypt; h=crypt.crypt("tvp", "$6$tvp$"); assert crypt.crypt("tvp", h)==h and crypt.crypt("wrong", h)!=h; print("verified")' '';
+        expected = "verified";
+      };
+      crypt-linkage = linkage deps.libxcrypt "libcrypt\\.so" [ "_crypt" ];
+    }
+    // lib.optionalAttrs (!package.tvp.features.embedFlag && package.tvp.features.finalizeEx) {
+      embed-legacy = {
+        script = ''"$CC" ${./fixtures/embed.c} $(python3-config --cflags --ldflags) -o embed; ./embed'';
+        expected = "42";
+      };
+    }
+    // lib.optionalAttrs (!package.tvp.features.finalizeEx) {
+      embed-finalize = {
+        script = ''"$CC" ${./fixtures/embed-legacy.c} $(python3-config --cflags --ldflags) -o embed; ./embed'';
         expected = "42";
       };
     }
