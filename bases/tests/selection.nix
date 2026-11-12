@@ -76,9 +76,10 @@ let
       &&
         tvp.packages.glibc_2_39.specification.base.compiler.drvPath == (import ../source-gnu { })
         .base.compiler.drvPath;
-    canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
-      tvp.packages.gcc_13_3_0
-    ];
+    canonical-tools =
+      tvp.packages.gcc_13_3_0.tvp.base == "source-gnu-candidate"
+      && tvp.packages.gcc_13_3_0.rawCompiler
+      && tvp.packages.gcc_13_3_0.specification.glibc.drvPath == bases.default.stdenv.cc.libc.drvPath;
   };
   failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) contracts);
 in
