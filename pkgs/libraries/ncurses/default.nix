@@ -179,44 +179,6 @@ let
       category = "construction";
       reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
     } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "6.6" = {
-      constructor = tvp.builder;
-      builder = ./native/build-6.6.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/ncurses/ncurses-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-        pkgConfig = constructionTool "pkgConfig";
-      };
-    };
-  };
   ordinaryDefs = import ./ordinary {
     inherit
       tvp
@@ -228,6 +190,40 @@ let
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "4.2" = versionTable."4.2" // {
+        def = if native then ordinaryDefs."4.2" else versionTable."4.2".def;
+      };
+      "5.0" = versionTable."5.0" // {
+        def = if native then ordinaryDefs."5.0" else versionTable."5.0".def;
+      };
+      "5.1" = versionTable."5.1" // {
+        def = if native then ordinaryDefs."5.0" else versionTable."5.1".def;
+      };
+      "5.2" = versionTable."5.2" // {
+        def = if native then ordinaryDefs."5.0" else versionTable."5.2".def;
+      };
+      "5.3" = versionTable."5.3" // {
+        def = if native then ordinaryDefs."5.3" else versionTable."5.3".def;
+      };
+      "5.4" = versionTable."5.4" // {
+        def = if native then ordinaryDefs."5.3" else versionTable."5.4".def;
+      };
+      "5.5" = versionTable."5.5" // {
+        def = if native then ordinaryDefs."5.5" else versionTable."5.5".def;
+      };
+      "5.6" = versionTable."5.6" // {
+        def = if native then ordinaryDefs."5.5" else versionTable."5.6".def;
+      };
+      "5.7" = versionTable."5.7" // {
+        def = if native then ordinaryDefs."5.5" else versionTable."5.7".def;
+      };
+      "5.8" = versionTable."5.8" // {
+        def = if native then ordinaryDefs."5.8" else versionTable."5.8".def;
+      };
+      "5.9" = versionTable."5.9" // {
+        def = if native then ordinaryDefs."5.8" else versionTable."5.9".def;
+      };
+
       "6.0" = versionTable."6.0" // {
         def = if native then ordinaryDefs."6.0" else versionTable."6.0".def;
       };
@@ -248,7 +244,7 @@ let
       };
 
       "6.6" = versionTable."6.6" // {
-        def = if native then ownedDefs."6.6" else versionTable."6.6".def;
+        def = if native then ordinaryDefs."6.6" else versionTable."6.6".def;
       };
     };
     extraArgs.mkTests =

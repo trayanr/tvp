@@ -154,45 +154,6 @@ let
       category = "construction";
       reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
     } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "8.3" = {
-      constructor = tvp.builder;
-      builder = ./native/build-8.3.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-  };
   ordinaryDefs = import ./ordinary {
     inherit
       tvp
@@ -205,6 +166,40 @@ let
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "2.1" = versionTable."2.1" // {
+        def = if native then ordinaryDefs."2.1" else versionTable."2.1".def;
+      };
+      "2.2" = versionTable."2.2" // {
+        def = if native then ordinaryDefs."2.2" else versionTable."2.2".def;
+      };
+      "2.2.1" = versionTable."2.2.1" // {
+        def = if native then ordinaryDefs."2.2.1" else versionTable."2.2.1".def;
+      };
+      "4.0" = versionTable."4.0" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.0".def;
+      };
+      "4.1" = versionTable."4.1" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.1".def;
+      };
+      "4.2" = versionTable."4.2" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.2".def;
+      };
+      "4.2a" = versionTable."4.2a" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.2a".def;
+      };
+      "4.3" = versionTable."4.3" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."4.3".def;
+      };
+      "5.0" = versionTable."5.0" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.0".def;
+      };
+      "5.1" = versionTable."5.1" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.1".def;
+      };
+      "5.2" = versionTable."5.2" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.2".def;
+      };
+
       "6.0" = versionTable."6.0" // {
         def = if native then ordinaryDefs."6.0" else versionTable."6.0".def;
       };
@@ -237,7 +232,7 @@ let
       };
 
       "8.3" = versionTable."8.3" // {
-        def = if native then ownedDefs."8.3" else versionTable."8.3".def;
+        def = if native then ordinaryDefs."8.3" else versionTable."8.3".def;
       };
     };
     extraArgs.mkTests = pkgs.lib.makeOverridable (
