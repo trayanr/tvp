@@ -31,7 +31,7 @@ let
     let
       base = s.base.override { compiler = sentinel; };
     in
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       inherit base;
       plan = [

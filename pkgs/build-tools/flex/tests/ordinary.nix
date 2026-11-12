@@ -51,7 +51,7 @@ let
           )
         ]
       );
-  skeleton = p.editSteps (plan: [
+  skeleton = (p.edit (s: removeAttrs s [ "artifactName" ])).editSteps (plan: [
     (builtins.head plan)
     {
       name = "flex.skeleton-fixture";
@@ -80,7 +80,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (builtins.removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -116,7 +116,7 @@ let
   );
   macroProvider = d.m4.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {

@@ -41,7 +41,7 @@ let
   );
   macroProvider = d.m4.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -65,7 +65,7 @@ let
   };
   alternateXZ = p.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -87,7 +87,7 @@ let
     let
       base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
     in
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       inherit base;
       plan = [

@@ -9,7 +9,7 @@ let
   steps = tvp.builder.steps;
   shell = d.coreutils.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -40,7 +40,7 @@ let
   );
   alternate = d.coreutils.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {

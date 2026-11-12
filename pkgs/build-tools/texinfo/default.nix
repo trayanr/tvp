@@ -67,38 +67,39 @@ let
       def = if native then defs."7.1" else previous.recipes.texinfo.versionTable."7.1".def;
     };
   };
-  installedArgs = {
-    inherit (previous.recipes.texinfo) infra pname;
-  }
-  // {
-    inherit versionTable;
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        url = "https://mirrors.kernel.org/gnu/texinfo/texinfo-${version}.tar.xz";
-        inherit sha256;
+  installedArgs =
+    {
+      inherit (previous.recipes.texinfo) infra pname;
+    }
+    // {
+      inherit versionTable;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://mirrors.kernel.org/gnu/texinfo/texinfo-${version}.tar.xz";
+          inherit sha256;
+        };
+      testDeps = {
+        sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+        alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+        sourceGzip = candidate.tools.gzip;
       };
-    testDeps = {
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
-      sourceGzip = candidate.tools.gzip;
+      extraArgs.mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        if package ? testContext then
+          import ./tests/native-default.nix {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
+        else
+          (previous.recipes.texinfo.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
     };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
-      else
-        (previous.recipes.texinfo.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
   publicArgs = installedArgs // {
     extraArgs = installedArgs.extraArgs // {
       mkTests = pkgs.lib.makeOverridable (

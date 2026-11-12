@@ -7,7 +7,7 @@ let
     marker:
     p.edit (
       s:
-      s
+      (builtins.removeAttrs s [ "artifactName" ])
       // {
         development = output: {
           aclocalDirectories = [

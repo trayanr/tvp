@@ -38,7 +38,7 @@ let
         let
           base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
         in
-        s
+        (builtins.removeAttrs s [ "artifactName" ])
         // {
           inherit base;
           plan = [
@@ -77,7 +77,7 @@ let
   );
   provider = d.grep.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -97,7 +97,7 @@ let
   );
   shellProvider = d.grep.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
@@ -117,7 +117,7 @@ let
   );
   pagerProvider = d.pager.edit (
     s:
-    s
+    (builtins.removeAttrs s [ "artifactName" ])
     // {
       plan = [
         {
