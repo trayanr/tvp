@@ -178,7 +178,10 @@ in
       '';
     }
     (command "configure" ''
-      export CFLAGS="-g -O2 ${lib.concatStringsSep " " final.productionFlags} ${lib.concatStringsSep " " final.configureProbeFlags}"
+      export CFLAGS="-g -O2 ${lib.concatStringsSep " " final.productionFlags}"
+      # Probe-only diagnostics must not enter configure's recorded CFLAGS.
+      # Each command has a fresh environment; construction flags resume at build.
+      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${lib.concatStringsSep " " final.configureProbeFlags}"
       export CONFIG_SHELL=${final.bash}/bin/bash
       export PKG_CONFIG=${final.pkg-config}/bin/pkg-config
       export PKG_CONFIG_PATH=${

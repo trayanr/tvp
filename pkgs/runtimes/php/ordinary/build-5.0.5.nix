@@ -267,7 +267,12 @@ in
   meta = {
     description = "General-purpose PHP interpreter";
     homepage = "https://www.php.net/";
-    license = lib.licenses.php301;
+    license = {
+      shortName = "PHP-3.0";
+      fullName = "PHP License v3.0";
+      url = "https://www.php.net/license/3_0.txt";
+      free = true;
+    };
     platforms = [ "x86_64-linux" ];
     mainProgram = "php";
   };
