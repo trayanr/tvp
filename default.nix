@@ -565,7 +565,8 @@ let
     };
     status = pkgs.callPackage ./tools/status.nix {
       inherit ownedCLI;
-      python3 = tvp.packages.python_3;
+      # Pure migration rendering needs only the retained tooling Python's stdlib.
+      python3 = (import ./bases/source-gnu { }).tools.python;
       migrationFacts = tvp.migrationStatusManifest;
       coreutils = tvp.packages.coreutils;
       gnugrep = tvp.packages.gnugrep;
