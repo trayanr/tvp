@@ -81,13 +81,7 @@ let
     script = ''
       test "$(cat ${execution}/make-check.exit)" = 0
       ${lib.optionalString s.bootstrap "grep -Fx 'Comparison successful.' ${execution}/bootstrap-compare.log >/dev/null"}
-      ${s.python}/bin/python3 -B - ${execution}/upstream.json <<'PYTHON'
-      import json, sys
-      x = json.load(open(sys.argv[1]))
-      suites = x['suites']
-      assert suites and sum(s['counts'].get('PASS', 0) for s in suites.values()) > 0
-      assert all(not s['unexpected'] for s in suites.values()), 'unclassified raw GCC 13 outcomes'
-      PYTHON
+      ${s.python}/bin/python3 -B ${./audit-upstream-13.3.0.py} ${execution}/upstream.json ${execution} > audit.json
       printf classified
     '';
     expected = "classified";
