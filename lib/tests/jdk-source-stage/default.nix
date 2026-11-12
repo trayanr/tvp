@@ -109,7 +109,7 @@ let
   plain = builtins.unsafeDiscardStringContext;
   has = needle: haystack: lib.hasInfix (plain needle) (plain haystack);
   step = q: name: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
-  text = q: lib.concatStringsSep "\n" (map (s: s.run) q.buildSteps);
+  text = q: lib.concatStringsSep "\n" (map (s: s.run or "") q.buildSteps);
   defaultRpaths = tvp.builder.outputs.rpaths {
     inherit (spec) python binutils patchelf;
     paths = [ "bin" ];
@@ -185,9 +185,9 @@ let
         "jdk.patch"
         "jdk.configure"
         "jdk.exploded-image"
-        "jdk.pre-image-rpaths"
         "jdk.images"
         "jdk.install"
+        "jdk.retain-assembly"
       ];
     overrideAndEdit = overridden.drvPath == edited.drvPath;
     selectedActualCommands =

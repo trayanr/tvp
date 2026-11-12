@@ -1,4 +1,4 @@
-# Ordinary 21.0.13: explicit owned construction and pre-module ELF cleanup.
+# Ordinary 21.0.13: raw production, then native module/image packaging.
 # The retained legacy recipe independently serves frozen construction callers.
 {
   tvp,
@@ -67,6 +67,9 @@ let
 in
 {
   pname = "jdk";
+  assemblyScript = ./assembly.py;
+  assemblyStateScript = ./assembly-state.py;
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -155,6 +158,7 @@ in
       final.libcups
     ];
   };
+  runtime.dlopenDirectories = [ "${final.libcups}/lib" ];
   runtime.libraries = [
     final.zlib
     final.alsa
@@ -190,23 +194,6 @@ in
         --disable-warnings-as-errors
     '')
     (command "exploded-image" "${make} exploded-image")
-    (
-      (outputs.rpaths {
-        workspaceRoot = "source/build/${final.configurationName}";
-        # Images also package the separate support originals into JMOD payloads.
-        paths = [
-          "jdk"
-          "support/modules_libs"
-          "support/modules_cmds"
-        ];
-        elfKinds = [ "runtime" ];
-        inherit (final) python binutils patchelf;
-        dlopenDirectories = [ "${final.libcups}/lib" ];
-      })
-      // {
-        name = "jdk.pre-image-rpaths";
-      }
-    )
     (command "images" "${make} images")
     (command "install" ''
       mkdir -p "$out"
@@ -214,6 +201,24 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (command "retain-assembly" ''
+      ${final.python}/bin/python3 -B ${final.assemblyStateScript} save "$PWD" "$out/nix-support/assembly" ${lib.escapeShellArg final.configurationName}
+    '')
+    (steps.split "jdk.finalize")
+    {
+      name = "jdk.copy-raw-image";
+      tools = [ final.coreutils ];
+      run = ''
+        mkdir -p "$out/nix-support"
+        for entry in "$TVP_ARTIFACT_ROOT"/*; do
+          if test "''${entry##*/}" != nix-support; then
+            ${final.coreutils}/bin/cp -a --no-preserve=ownership "$entry" "$out/"
+          fi
+        done
+        ${final.coreutils}/bin/cp "$TVP_ARTIFACT_ROOT/nix-support/source-date-epoch" "$out/nix-support/"
+        ${final.coreutils}/bin/chmod -R u+w "$out"
+      '';
+    }
     {
       name = "jdk.installed-loaders-and-self-paths";
       tools = [
@@ -241,12 +246,21 @@ in
         ;
       paths = outputPaths;
       libraries = final.runtime.libraries;
-      dlopenDirectories = [ "${final.libcups}/lib" ];
+      dlopenDirectories = final.runtime.dlopenDirectories;
     })
     (outputs.strip {
       inherit (final) python binutils;
       paths = outputPaths;
     })
+    {
+      name = "jdk.assemble-compiled-products";
+      tools = [ final.python final.coreutils final.bash final.gnumake final.findutils final.sed final.grep final.gawk final.zip final.unzip ];
+      run = ''
+        ${final.python}/bin/python3 -B ${final.assemblyScript} assemble \
+          "$TVP_ARTIFACT_ROOT/nix-support/assembly" "$TVP_ARTIFACT_ROOT" "$out" "$TVP_SOURCE_ROOT/assembly" \
+          ${final.gnumake}/bin/make ${final.bash}/bin/bash ${final.coreutils}/bin/false ${lib.escapeShellArg final.imageDirectory}
+      '';
+    }
     (outputs.checkPaths {
       inherit (final) python binutils patchelf;
       paths = outputPaths;

@@ -1,6 +1,6 @@
 # Ordinary raw GCC probes on the owned test constructor. All providers and
 # rebound package paths come from the effective specification.
-{ package }:
+{ package, tvp, lib }:
 let
   gcc = package;
   spec = package.specification;
@@ -23,7 +23,7 @@ assert
     null
     null
   ];
-package.testContext.mkSuite {
+(package.testContext.mkSuite {
   inherit package;
   tools = spec.environment.tools;
   # Tests name their own raw include/link flags. No consumer driver replaces gcc.
@@ -142,16 +142,6 @@ package.testContext.mkSuite {
       '';
       expected = "42";
     };
-    upstream-audit = {
-      script = ''
-        test "$(cat ${gcc.validation}/make-check.exit)" = 0
-        grep -Fx 'Comparison successful.' ${gcc.validation}/bootstrap-compare.log >/dev/null
-        ${spec.python}/bin/python3 -B ${./audit-upstream.py} ${gcc.validation}/upstream.json \
-          ${./upstream-known-16.2.0.json} ${spec.version} ${spec.base.platform.system} ${gcc.validation} > audit.json
-        printf classified
-      '';
-      expected = "classified";
-    };
     raw-libc-construction = {
       script = ''
         mkdir headers
@@ -206,4 +196,6 @@ package.testContext.mkSuite {
       expected = "stable-index";
     };
   };
+}) // {
+  upstream-audit = (import ./upstream-16.2.0.nix { inherit package tvp lib; }).acceptance;
 }

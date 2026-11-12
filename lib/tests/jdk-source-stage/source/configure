@@ -20,3 +20,9 @@ printf '%s\n' "$cups" > cups-selected
 # The two patched source tokens must use the selected inputs.
 grep -Fx "shell=$CONFIG_SHELL" src/java.base/unix/native/libjava/childproc.c
 grep -Fx "font=$font/lib/libfontconfig.so" src/java.desktop/unix/native/common/awt/fontpath.c
+
+mkdir -p make/common src/java.base/share/classes "build/$conf"
+cp fixture-CreateJmods.gmk make/CreateJmods.gmk
+cp fixture-Images.gmk make/Images.gmk
+printf module > src/java.base/share/classes/module-info.java
+printf 'TOPDIR:=%s\nOUTPUTDIR:=%s/build/%s\n' "$PWD" "$PWD" "$conf" > "build/$conf/spec.gmk"
