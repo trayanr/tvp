@@ -24,6 +24,14 @@
   tcl,
   readline,
   testZlib,
+  testPatches ? [ ],
+  testCompileFlags ? [ ],
+  runnerScript ? ../tests/upstream-runner.tcl,
+  upstreamExpected ? "SQLite upstream raw result accepted",
+  testRestoreScript ? ../tests/upstream-restore.py,
+  testPrepareScript ? ../tests/upstream-prepare.py,
+  stateScript ? ./build-state.py,
+  stateManifest ? ./retained-state.json,
   compileFlags ? [ ],
   testFixtureRelinks ? false,
   configureIsExecutable ? true,
@@ -101,6 +109,14 @@ in
     tcl
     readline
     testZlib
+    testPatches
+    testCompileFlags
+    runnerScript
+    upstreamExpected
+    testPrepareScript
+    testRestoreScript
+    stateScript
+    stateManifest
     ;
   inherit
     compileFlags
@@ -132,119 +148,176 @@ in
     final.readline
     final.tcl
   ];
-  plan = steps.sequence [
-    (steps.unpack {
-      src = final.src;
-      tar = final.gnutar;
-      inherit (final) gzip findutils;
-      compression = "gzip";
-    })
-    (command "prepare" ''
-      ${final.python}/bin/python3 -B ${final.prepareScript} "$PWD" ${
-        if final.configureIsExecutable then "executable" else "make-executable"
-      }
-      ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
-    '')
-    (steps.prepareAutotools {
-      name = "sqlite.autotools-shells";
-      inherit (final) bash python base;
-    })
-    (command "configure" ''
-      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      export CC_FOR_BUILD="$CC"
-      mkdir -p "$out/lib/tcl"
-      export TCLLIBPATH="$out/lib/tcl"
-      # Early configure reads config_TARGET_*; later TEA uses --with-tcl.
-      # Both explicitly name the installed Tcl8 provider, never an FHS search.
-      export config_TARGET_TCL_INC="-I${final.tcl}/include"
-      export config_TARGET_TCL_LIBS="-L${final.tcl}/lib -ltcl8.6 -lm -ldl"
-      export config_TARGET_READLINE_INC="-I${final.readline}/include"
-      export config_TARGET_READLINE_LIBS="-L${final.readline}/lib -lreadline"
-      ./configure --prefix="$out" --enable-all --enable-shared --enable-static \
-        --with-tcl=${final.tcl}/lib --with-tclsh=${final.tcl}/bin/tclsh \
-        --with-readline-inc=-I${final.readline}/include --with-readline-lib=-lreadline
-    '')
-    (command "build" ''${make} all'')
-    (command "check-build" ''
-      # Fixture-only zlib and target Tcl linkage never change installed features.
-      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${final.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
-      export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib -lz"
-      ${make} testfixture
-    '')
-    (command "check-raw" (
-      # These older libtool launchers relink at execution. Repeat the exact
-      # fixture link environment; it never changes installed package features.
-      lib.optionalString final.testFixtureRelinks ''
-        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${final.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
-        export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib -lz"
-      ''
-      + ''
-        export HOME="$TMPDIR" TERM=xterm TZ=UTC
-        ${final.bash}/bin/bash ${final.captureScript} "$out/nix-support/sqlite-upstream" \
-          ${final.coreutils}/bin/timeout 900 ./testfixture test/quick.test
-      ''
-    ))
-    (command "install" ''
-      export TCLLIBPATH="$out/lib/tcl"
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      test -x "$out/bin/sqlite3"
-      test -f "$out/lib/libsqlite3.a"
-      test -f "$out/lib/libsqlite3.so"
-      test -f "$out/include/sqlite3.h"
-    '')
-    (steps.split "sqlite.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (finalCommand "accept-upstream" ''
-      ${final.python}/bin/python3 -B ${final.classifyScript} "$out/nix-support/sqlite-upstream"
-    '')
-    (finalCommand "relocate-installed-text" ''
-      ${final.python}/bin/python3 -B ${final.finalizeScript} "$out"
-    '')
-    (finalCommand "compress-manual" ''
-      if [[ -f "$out/share/man/man1/sqlite3.1" ]]; then
-        ${final.gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
-      fi
-    '')
-    (outputs.strip {
-      inherit (final) python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.stripArchives {
-      inherit (final) python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit (final)
-        python
-        binutils
-        patchelf
-        base
-        ;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.development {
-      python = final.python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit (final) python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-  ];
+  productionSharedProviders = [ final.tcl.tvp.deps.zlib ];
+  upstreamBuilder = tvp.builder;
+  upstreamIsolation = {
+    schema = 1;
+    protocol = "quick";
+    statePath = "nix-support/upstream-build-tree";
+    productionSteps = [
+      "source.unpack"
+      "sqlite.prepare"
+      "sqlite.autotools-shells"
+      "sqlite.configure"
+      "sqlite.build"
+      "sqlite.install"
+      "sqlite.save-build-tree"
+    ];
+    finalSteps = [
+      "output.copy-artifacts"
+      "sqlite.drop-build-tree"
+      "sqlite.relocate-installed-text"
+      "sqlite.compress-manual"
+      "output.strip"
+      "output.strip-archives"
+      "output.rpaths"
+      "output.development"
+      "output.check-paths"
+    ];
+    testInputFields = [
+      "testZlib"
+      "testPatches"
+      "testCompileFlags"
+      "testFixtureRelinks"
+      "testPrepareScript"
+      "testRestoreScript"
+      "captureScript"
+      "classifyScript"
+      "runnerScript"
+      "upstreamExpected"
+    ];
+  };
+  plan =
+    map
+      (
+        step:
+        if (step.kind or "command") == "split" then
+          step
+        else
+          step
+          // {
+            upstreamRole =
+              if builtins.elem step.name final.upstreamIsolation.productionSteps then
+                "production"
+              else
+                "finalization";
+          }
+      )
+      (
+        steps.sequence [
+          (steps.unpack {
+            src = final.src;
+            tar = final.gnutar;
+            inherit (final) gzip findutils;
+            compression = "gzip";
+          })
+          (command "prepare" ''
+            ${final.python}/bin/python3 -B ${final.prepareScript} "$PWD" ${
+              if final.configureIsExecutable then "executable" else "make-executable"
+            }
+            ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
+          '')
+          (steps.prepareAutotools {
+            name = "sqlite.autotools-shells";
+            inherit (final) bash python base;
+          })
+          (command "configure" ''
+            export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+            export CC_FOR_BUILD="$CC"
+            mkdir -p "$out/lib/tcl"
+            export TCLLIBPATH="$out/lib/tcl"
+            # Early configure reads config_TARGET_*; later TEA uses --with-tcl.
+            # Both explicitly name the installed Tcl8 provider, never an FHS search.
+            export config_TARGET_TCL_INC="-I${final.tcl}/include"
+            export config_TARGET_TCL_LIBS="-L${final.tcl}/lib -ltcl8.6 -lm -ldl"
+            export config_TARGET_READLINE_INC="-I${final.readline}/include"
+            export config_TARGET_READLINE_LIBS="-L${final.readline}/lib -lreadline"
+            ./configure --prefix="$out" --enable-all --enable-shared --enable-static \
+              --with-tcl=${final.tcl}/lib --with-tclsh=${final.tcl}/bin/tclsh \
+              --with-readline-inc=-I${final.readline}/include --with-readline-lib=-lreadline
+          '')
+          (command "build" "${make} all")
+          (command "install" ''
+            export TCLLIBPATH="$out/lib/tcl"
+            ${make} install
+            mkdir -p "$out/nix-support"
+            cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+            test -x "$out/bin/sqlite3"
+            test -f "$out/lib/libsqlite3.a"
+            test -f "$out/lib/libsqlite3.so"
+            test -f "$out/include/sqlite3.h"
+          '')
+          (command "save-build-tree" ''
+            ${final.python}/bin/python3 -B ${final.stateScript} save "$PWD" \
+              "$out/nix-support/upstream-build-tree" ${final.stateManifest} quick "$out" \
+              "$TVP_SOURCE_ROOT/source-date-epoch"
+          '')
+          (steps.split "sqlite.finalize")
+          (outputs.copyArtifacts { coreutils = final.coreutils; })
+          (finalCommand "drop-build-tree" ''
+            ${final.coreutils}/bin/rm -rf -- "$out/nix-support/upstream-build-tree"
+          '')
+          (finalCommand "relocate-installed-text" ''
+            ${final.python}/bin/python3 -B ${final.finalizeScript} "$out"
+          '')
+          (finalCommand "compress-manual" ''
+            if [[ -f "$out/share/man/man1/sqlite3.1" ]]; then
+              ${final.gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
+            fi
+          '')
+          (outputs.strip {
+            inherit (final) python binutils;
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+          (outputs.stripArchives {
+            inherit (final) python binutils;
+            paths = [ "lib" ];
+          })
+          (outputs.rpaths {
+            inherit (final)
+              python
+              binutils
+              patchelf
+              base
+              ;
+            libraries = final.runtime.libraries;
+            dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+          (outputs.development {
+            python = final.python;
+            libraries = [ ];
+          })
+          (outputs.checkPaths {
+            inherit (final) python binutils patchelf;
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+        ]
+      );
   tvp = {
+    testDeps = {
+      inherit (final) testZlib;
+      patches = final.testPatches;
+      compileFlags = final.testCompileFlags;
+      inherit (final)
+        testFixtureRelinks
+        testPrepareScript
+        testRestoreScript
+        captureScript
+        classifyScript
+        runnerScript
+        upstreamExpected
+        ;
+    };
     reportedVersion = final.reportedVersion;
     pkgConfigVersion =
       if final.pkgConfigMajorMinor then lib.versions.majorMinor final.version else final.version;

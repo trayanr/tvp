@@ -25,7 +25,16 @@
   tcl,
   readline,
   testZlib,
+  testPatches ? [ ],
+  testCompileFlags ? [ ],
+  runnerScript ? ../tests/upstream-runner.tcl,
+  upstreamExpected ? "SQLite upstream raw result accepted",
+  testRestoreScript ? ../tests/upstream-restore.py,
+  testPrepareScript ? ../tests/upstream-prepare.py,
+  stateScript ? ./build-state.py,
+  stateManifest ? ./retained-state.json,
   compileFlags ? [ ],
+  testFixtureRelinks ? false,
   configureIsExecutable ? true,
   hardeningDisable ? [ ],
   pkgConfigMajorMinor ? false,
@@ -101,9 +110,18 @@ in
     tcl
     readline
     testZlib
+    testPatches
+    testCompileFlags
+    runnerScript
+    upstreamExpected
+    testPrepareScript
+    testRestoreScript
+    stateScript
+    stateManifest
     ;
   inherit
     compileFlags
+    testFixtureRelinks
     configureIsExecutable
     hardeningDisable
     pkgConfigMajorMinor
@@ -128,135 +146,185 @@ in
     libraries = [ final.readline ];
   };
   runtime.libraries = [ final.readline ];
-  plan = steps.sequence [
-    (steps.unpack {
-      src = final.src;
-      tar = final.gnutar;
-      inherit (final) gzip findutils;
-      compression = "gzip";
-    })
-    (command "prepare" ''
-      ${final.python}/bin/python3 -B ${final.prepareScript} "$PWD" ${
-        if final.configureIsExecutable then "executable" else "make-executable"
-      }
-      ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
-    '')
-    (steps.shebangs {
-      name = "sqlite.autosetup-shells";
-      inherit (final) python;
-      paths = [
-        "configure"
-        "autosetup"
-        "tool"
-      ];
-      names = [
-        "sh"
-        "bash"
-      ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (command "configure" ''
-      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      export CC_FOR_BUILD="$CC"
-      mkdir -p "$out/lib/tcl"
-      export TCLLIBPATH="$out/lib/tcl"
-      export autosetup_tclsh=${final.tcl}/bin/tclsh
-      ./configure --prefix="$out" --all --enable-shared --enable-static \
-        --enable-tcl --with-tcl=${final.tcl}/lib --with-tclsh=${final.tcl}/bin/tclsh \
-        --enable-readline --with-readline-header=${final.readline}/include/readline/readline.h \
-        --with-readline-ldflags="-L${final.readline}/lib -lreadline" \
-        TCLLIBDIR="$out/lib/tcl"
-      grep -Fx 'HAVE_TCL = 1' Makefile
-      grep -Fx 'TCL_CONFIG_SH = ${final.tcl}/lib/tclConfig.sh' Makefile
-    '')
-    (command "build" ''${make} all'')
-    (command "check-build" ''
-      # Fixture-only zlib and target Tcl linkage never change installed features.
-      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${final.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
-      export NIX_LDFLAGS="$NIX_LDFLAGS -L${final.testZlib}/lib -rpath ${final.testZlib}/lib -L${final.tcl}/lib -rpath ${final.tcl}/lib"
-      ${make} testfixture LDFLAGS.libsqlite3="-lm -lz"
-    '')
-    (command "check-raw" ''
-      export HOME="$TMPDIR" TERM=xterm TZ=UTC
-      cat > fixture-runner.tcl <<'TCL'
-      if {[package require -exact sqlite3 ${final.reportedVersion}] ne "${final.reportedVersion}"} {error "wrong runner SQLite"}
-      set argv0 test/testrunner.tcl
-      set argv [list --jobs 8 veryquick]
-      source $argv0
-      sqlite3 results testrunner.db
-      set jobs [results onecolumn {select count(*) from jobs}]
-      set cases [results onecolumn {select sum(ntest) from jobs}]
-      set errors [results onecolumn {select sum(nerr) from jobs}]
-      set unfinished [results onecolumn {select count(*) from jobs where state!='done' or ntest is null or nerr is null}]
-      puts "upstream veryquick jobs=$jobs cases=$cases errors=$errors unfinished=$unfinished"
-      if {$jobs<1 || $cases<1 || $errors!=0 || $unfinished!=0} {exit 1}
-      TCL
-      ${final.bash}/bin/bash ${final.captureScript} "$out/nix-support/sqlite-upstream" \
-        ${final.coreutils}/bin/timeout 900 ./testfixture fixture-runner.tcl
-      cp testrunner.log "$out/nix-support/sqlite-upstream/runner.log"
-      cp testrunner.db "$out/nix-support/sqlite-upstream/runner.db"
-    '')
-    (command "install" ''
-      export TCLLIBPATH="$out/lib/tcl"
-      ${make} install
-      mkdir -p "$out/nix-support"
-      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
-      test -x "$out/bin/sqlite3"
-      test -f "$out/lib/libsqlite3.a"
-      test -f "$out/lib/libsqlite3.so"
-      test -f "$out/include/sqlite3.h"
-    '')
-    (steps.split "sqlite.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
-    (finalCommand "accept-upstream" ''
-      ${final.python}/bin/python3 -B ${final.classifyScript} "$out/nix-support/sqlite-upstream" "$out/bin/sqlite3"
-    '')
-    (finalCommand "relocate-installed-text" ''
-      ${final.python}/bin/python3 -B ${final.finalizeScript} "$out"
-    '')
-    (finalCommand "compress-manual" ''
-      if [[ -f "$out/share/man/man1/sqlite3.1" ]]; then
-        ${final.gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
-      fi
-    '')
-    (outputs.strip {
-      inherit (final) python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.stripArchives {
-      inherit (final) python binutils;
-      paths = [ "lib" ];
-    })
-    (outputs.rpaths {
-      inherit (final)
-        python
-        binutils
-        patchelf
-        base
-        ;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-    (outputs.development {
-      python = final.python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit (final) python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-    })
-  ];
+  productionSharedProviders = [ final.tcl.tvp.deps.zlib ];
+  upstreamBuilder = tvp.builder;
+  upstreamIsolation = {
+    schema = 1;
+    protocol = "veryquick";
+    statePath = "nix-support/upstream-build-tree";
+    productionSteps = [
+      "source.unpack"
+      "sqlite.prepare"
+      "sqlite.autosetup-shells"
+      "sqlite.configure"
+      "sqlite.build"
+      "sqlite.install"
+      "sqlite.save-build-tree"
+    ];
+    finalSteps = [
+      "output.copy-artifacts"
+      "sqlite.drop-build-tree"
+      "sqlite.relocate-installed-text"
+      "sqlite.compress-manual"
+      "output.strip"
+      "output.strip-archives"
+      "output.rpaths"
+      "output.development"
+      "output.check-paths"
+    ];
+    testInputFields = [
+      "testZlib"
+      "testPatches"
+      "testCompileFlags"
+      "testFixtureRelinks"
+      "testPrepareScript"
+      "testRestoreScript"
+      "captureScript"
+      "classifyScript"
+      "runnerScript"
+      "upstreamExpected"
+    ];
+  };
+  plan =
+    map
+      (
+        step:
+        if (step.kind or "command") == "split" then
+          step
+        else
+          step
+          // {
+            upstreamRole =
+              if builtins.elem step.name final.upstreamIsolation.productionSteps then
+                "production"
+              else
+                "finalization";
+          }
+      )
+      (
+        steps.sequence [
+          (steps.unpack {
+            src = final.src;
+            tar = final.gnutar;
+            inherit (final) gzip findutils;
+            compression = "gzip";
+          })
+          (command "prepare" ''
+            ${final.python}/bin/python3 -B ${final.prepareScript} "$PWD" ${
+              if final.configureIsExecutable then "executable" else "make-executable"
+            }
+            ${lib.concatMapStringsSep "\n" (p: "${final.patch}/bin/patch -p1 < ${p}") final.patches}
+          '')
+          (steps.shebangs {
+            name = "sqlite.autosetup-shells";
+            inherit (final) python;
+            paths = [
+              "configure"
+              "autosetup"
+              "tool"
+            ];
+            names = [
+              "sh"
+              "bash"
+            ];
+            interpreter = "${final.bash}/bin/bash";
+          })
+          (command "configure" ''
+            export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+            export CC_FOR_BUILD="$CC"
+            mkdir -p "$out/lib/tcl"
+            export TCLLIBPATH="$out/lib/tcl"
+            export autosetup_tclsh=${final.tcl}/bin/tclsh
+            ./configure --prefix="$out" --all --enable-shared --enable-static \
+              --enable-tcl --with-tcl=${final.tcl}/lib --with-tclsh=${final.tcl}/bin/tclsh \
+              --enable-readline --with-readline-header=${final.readline}/include/readline/readline.h \
+              --with-readline-ldflags="-L${final.readline}/lib -lreadline" \
+              TCLLIBDIR="$out/lib/tcl"
+            grep -Fx 'HAVE_TCL = 1' Makefile
+            grep -Fx 'TCL_CONFIG_SH = ${final.tcl}/lib/tclConfig.sh' Makefile
+          '')
+          (command "build" "${make} all")
+          (command "install" ''
+            export TCLLIBPATH="$out/lib/tcl"
+            ${make} install
+            mkdir -p "$out/nix-support"
+            cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+            test -x "$out/bin/sqlite3"
+            test -f "$out/lib/libsqlite3.a"
+            test -f "$out/lib/libsqlite3.so"
+            test -f "$out/include/sqlite3.h"
+          '')
+          (command "save-build-tree" ''
+            ${final.python}/bin/python3 -B ${final.stateScript} save "$PWD" \
+              "$out/nix-support/upstream-build-tree" ${final.stateManifest} veryquick "$out" \
+              "$TVP_SOURCE_ROOT/source-date-epoch"
+          '')
+          (steps.split "sqlite.finalize")
+          (outputs.copyArtifacts { coreutils = final.coreutils; })
+          (finalCommand "drop-build-tree" ''
+            ${final.coreutils}/bin/rm -rf -- "$out/nix-support/upstream-build-tree"
+          '')
+          (finalCommand "relocate-installed-text" ''
+            ${final.python}/bin/python3 -B ${final.finalizeScript} "$out"
+          '')
+          (finalCommand "compress-manual" ''
+            if [[ -f "$out/share/man/man1/sqlite3.1" ]]; then
+              ${final.gzip}/bin/gzip -n "$out/share/man/man1/sqlite3.1"
+            fi
+          '')
+          (outputs.strip {
+            inherit (final) python binutils;
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+          (outputs.stripArchives {
+            inherit (final) python binutils;
+            paths = [ "lib" ];
+          })
+          (outputs.rpaths {
+            inherit (final)
+              python
+              binutils
+              patchelf
+              base
+              ;
+            libraries = final.runtime.libraries;
+            dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+          (outputs.development {
+            python = final.python;
+            libraries = [ ];
+          })
+          (outputs.checkPaths {
+            inherit (final) python binutils patchelf;
+            paths = [
+              "bin"
+              "lib"
+            ];
+          })
+        ]
+      );
   tvp = {
+    testDeps = {
+      inherit (final) testZlib;
+      patches = final.testPatches;
+      compileFlags = final.testCompileFlags;
+      inherit (final)
+        testFixtureRelinks
+        testPrepareScript
+        testRestoreScript
+        captureScript
+        classifyScript
+        runnerScript
+        upstreamExpected
+        ;
+    };
     reportedVersion = final.reportedVersion;
     pkgConfigVersion =
       if final.pkgConfigMajorMinor then lib.versions.majorMinor final.version else final.version;

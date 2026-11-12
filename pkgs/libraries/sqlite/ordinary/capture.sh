@@ -1,4 +1,4 @@
-# Raw execution only. The final-stage classifier owns acceptance.
+# Raw execution only. The registered upstream test classifier owns acceptance.
 # stdout/stderr are retained byte-for-byte; a failed intermediate is unqualified.
 set -eu
 receipt=$1

@@ -37,19 +37,7 @@ let
           ++ [ "-DUSE_INTERP_RESULT" ]
           ++ pkgs.lib.optional (pkgs.lib.versionOlder definition.name "3.5.6") "-fcommon";
       };
-    patches =
-      (definition.patches or [ ])
-      ++ pkgs.lib.optionals
-        (builtins.elem definition.name [
-          "3.6.10"
-          "3.6.11"
-        ])
-        [
-          {
-            file = ../patches/3.6.7-test-async-dlsym.patch;
-            reason = "Match the VFS xDlSym function-pointer return type; upstream fixed this test callback in 3.6.12.";
-          }
-        ];
+    patches = definition.patches or [ ];
     deps = {
       bash = constructionTool "bash";
       coreutils = constructionTool "coreutils";
@@ -284,12 +272,7 @@ let
         configureIsExecutable = false;
         hardeningDisable = [ "format" ];
       };
-      patches = [
-        {
-          file = ../patches/3.6.7-test-async-dlsym.patch;
-          reason = "Match the VFS xDlSym function-pointer return type; upstream fixed this test callback in 3.6.12.";
-        }
-      ];
+      patches = [ ];
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";
@@ -380,6 +363,23 @@ pkgs.lib.mapAttrs (
   name: definition:
   definition
   // {
-    patches = (definition.patches or [ ]) ++ runtimePatches name ++ testPortabilityPatches name;
+    patches = (definition.patches or [ ]) ++ runtimePatches name;
+    opts = (definition.opts or { }) // {
+      testPatches = tvpLib.packages.checkPatches "sqlite.${name}.testPatches" (
+        pkgs.lib.optionals
+          (builtins.elem name [
+            "3.6.7"
+            "3.6.10"
+            "3.6.11"
+          ])
+          [
+            {
+              file = ../patches/3.6.7-test-async-dlsym.patch;
+              reason = "Only src/test_async.c: match VFS xDlSym callback type; upstream fixed this test adapter in 3.6.12.";
+            }
+          ]
+        ++ testPortabilityPatches name
+      );
+    };
   }
 ) (migrated // compatibility // runtimeCompatibility // testPortability)
