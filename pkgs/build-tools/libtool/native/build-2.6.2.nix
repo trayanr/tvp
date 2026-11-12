@@ -213,6 +213,25 @@ in
         )
       }'';
     }
+    {
+      name = "libtool.next-version-runtime";
+      tools = [ final.python ];
+      run = ''
+        ${final.python}/bin/python3 -B - "$out/bin/libtool-next-version" ${lib.escapeShellArg (lib.makeBinPath final.runtime.tools)} <<'PY'
+        import os
+        from pathlib import Path
+        import shlex
+        import sys
+
+        path = Path(sys.argv[1])
+        info = path.stat()
+        first, body = path.read_bytes().split(b'\n', 1)
+        preamble = ('PATH=' + shlex.quote(sys.argv[2]) + ':"''${PATH-}"\nexport PATH\n').encode()
+        path.write_bytes(first + b'\n' + preamble + body)
+        os.utime(path, ns=(info.st_atime_ns, info.st_mtime_ns))
+        PY
+      '';
+    }
     (outputs.shebangs {
       python = final.python;
       paths = [
@@ -271,6 +290,7 @@ in
     acLibtool = true;
     ltdl = true;
     ltInit = true;
+    nextVersion = true;
   };
   meta = {
     homepage = "https://www.gnu.org/software/libtool/";

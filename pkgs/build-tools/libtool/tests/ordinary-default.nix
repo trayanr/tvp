@@ -34,6 +34,20 @@ package.testContext.mkSuite {
         expected = package.version;
       };
     }
+    // pkgs.lib.optionalAttrs (package.tvp.features.nextVersion or false) {
+      next-version = {
+        script = ''env -i PATH=/no-tools ${package}/bin/libtool-next-version --version'';
+        expected = pkgs.lib.removeSuffix "\n" ''
+          libtool-next-version (GNU libtool) ${package.version}
+          Copyright (C) 2026 Free Software Foundation, Inc.
+          License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+          This is free software: you are free to change and redistribute it.
+          There is NO WARRANTY, to the extent permitted by law.
+
+          Written by Bruno Haible.
+        '';
+      };
+    }
     // pkgs.lib.optionalAttrs package.tvp.features.acLibtool {
       core-project = {
         script = ''

@@ -98,10 +98,10 @@ p.testContext.mkSuite {
         sub=0; guess=0
         ${p.specification.bash}/bin/bash config-sub.sh > config-sub.log 2>&1 || sub=$?
         ${p.specification.bash}/bin/bash config-guess-selected.sh > config-guess.log 2>&1 || guess=$?
-        cat config-sub.log config-guess.log
+        cat config-sub.log config-guess.log >&2
         printf '%s\n' "$sub" > config-sub.exit
         printf '%s\n' "$guess" > config-guess.exit
-        printf 'config-sub.sh exit=%s; config-guess.sh exit=%s\n' "$sub" "$guess"
+        printf 'config-sub.sh exit=%s; config-guess.sh exit=%s\n' "$sub" "$guess" >&2
         if (( sub )); then exit "$sub"; fi
         if (( guess )); then exit "$guess"; fi
         for fixture in uname ldd; do
