@@ -36,6 +36,14 @@ package.testContext.mkSuite {
         expected = "tvp";
       };
 
+      indexed-integers = {
+        script = ''
+          "$CC" ${./fixtures/indexed-integers.c} -lsqlite3 -o indexed-integers
+          ./indexed-integers
+        '';
+        expected = "indexed-integers";
+      };
+
       # The shell is a second artifact, and the one people reach for by hand.
       cli = {
         script = ''

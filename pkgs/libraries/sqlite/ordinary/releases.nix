@@ -8,7 +8,21 @@ let
   table = tvpLib.packages.mkTable (import ../3.nix { inherit defs; });
   select =
     version: definition:
-    if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.2.5" then
+    if definition.name == "3.0.1" && pkgs.lib.versionAtLeast version "3.0.2" then
+      defs."3.0.2"
+    else if definition.name == "3.0.6" && pkgs.lib.versionAtLeast version "3.0.7" then
+      defs."3.0.7"
+    else if definition.name == "3.7.0" && pkgs.lib.versionAtLeast version "3.7.6" then
+      defs."3.7.6"
+    else if definition.name == "3.19.0" && pkgs.lib.versionAtLeast version "3.46.0" then
+      defs."3.46.0"
+    else if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.3.14" then
+      defs."3.3.14"
+    else if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.3.8" then
+      defs."3.3.8"
+    else if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.3.0" then
+      defs."3.3.0"
+    else if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.2.5" then
       defs."3.2.5"
     else if definition.name == "3.1.2" && pkgs.lib.versionAtLeast version "3.2.3" then
       defs."3.2.3"

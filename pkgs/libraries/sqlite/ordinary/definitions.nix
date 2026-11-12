@@ -355,5 +355,21 @@ let
       };
     };
   };
+  runtimeCompatibility = import ./runtime-compatibility-definitions.nix {
+    inherit
+      pkgs
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+  };
+  runtimePatches = import ./runtime-patches.nix { inherit (pkgs) lib; };
 in
-migrated // compatibility
+pkgs.lib.mapAttrs (
+  name: definition:
+  definition
+  // {
+    patches = (definition.patches or [ ]) ++ runtimePatches name;
+  }
+) (migrated // compatibility // runtimeCompatibility)

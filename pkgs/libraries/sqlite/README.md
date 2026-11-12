@@ -124,3 +124,19 @@ already required by that release's `xDlSym` API. The two-line source patch match
 upstream 3.6.12 and keeps the callback body unchanged. These are native-only
 compatibility boundaries; the retained construction definitions stay exact.
 Source/identity checks do not replace canonical upstream and installed tests.
+
+The native runtime-compatibility definitions make five measured repairs explicit.
+The 3.0.0–3.0.6 pager/B-tree test adapters preserve complete host pointers in both
+directions. The 3.0.0–3.3.7 test interpreter initializes Tcl before clock calls.
+The 3.1.0–3.3.13 corruption fixtures use upstream's later RDWR correction so seek
+writes modify the intended header. The 3.1.1–3.7.5 engine computes a negative
+integer's serialization magnitude with defined unsigned arithmetic, including
+INT64_MIN. The 3.46.0–3.47.2 recovery fixture removes a previous test's output
+before saving its input snapshot. Patch-context boundaries are definition data;
+no versioned builder imports another recipe.
+
+The shared ordinary installed suite adds an indexed-integer regression covering
+the minimum/maximum 64-bit values and smaller boundary values. Original failed
+raw reports remain retained. These declared source/fixture patches preserve
+expectations and fault loops; new raw reports describe the patched source,
+not a pristine upstream checkout. Canonical qualification is still required.
