@@ -86,6 +86,7 @@ in
   finalizer = ./finalize.py;
   rubyFinalizer = ../../../runtimes/ruby/owned/finalize.py;
   archiveFinalizer = ../../../libraries/libxml2/ordinary/finalize.py;
+  archiveElfFinalizer = ../../../libraries/libxml2/ordinary/elf.py;
   elfFinalizer = ../../../runtimes/perl/ordinary/elf-finalize.py;
   inherit (args)
     base
@@ -267,6 +268,7 @@ in
             builtins.toJSON {
               rubyFinalizer = final.rubyFinalizer;
               archiveFinalizer = final.archiveFinalizer;
+              archiveElfFinalizer = final.archiveElfFinalizer;
               readelf = "${binutils}/bin/readelf";
               patchelf = "${patchelf}/bin/patchelf";
               ar = "${binutils}/bin/ar";

@@ -26,6 +26,9 @@ let
   finalizer = edit {
     finalizer = builtins.toFile "llvm-finalizer-contract.py" "raise RuntimeError('fixture')\n";
   };
+  archiveModule = edit {
+    archiveElfFinalizer = builtins.toFile "llvm-archive-elf-contract.py" "raise RuntimeError('fixture')\n";
+  };
   upstreamEdit = edit { upstreamCheck = "exit 23"; };
   source = p.override { src = builtins.toFile "llvm-source-contract" "fixture"; };
   compiler = edit { base = s.base.override { compiler = alternate; }; };
@@ -65,6 +68,8 @@ in
     lib.hasInfix "cp build/CMakeCache.txt" (runs parts.first)
     && lib.hasInfix "rm -- \"$out/nix-support/CMakeCache.txt\"" (runs parts.second);
   finalizerReuse = finalizer.artifact.drvPath == p.artifact.drvPath && finalizer.drvPath != p.drvPath;
+  archiveModuleReuse =
+    archiveModule.artifact.drvPath == p.artifact.drvPath && archiveModule.drvPath != p.drvPath;
   runtimeReuse = runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
   testReuse =
     upstreamEdit.artifact.drvPath == p.artifact.drvPath
