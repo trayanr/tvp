@@ -25,9 +25,44 @@ let
 
   # sha256("tvp"), first 16 hex characters.
   tvpDigest = "f6f6ead0bd85c312";
+  owned = ruby ? testContext;
+  suite =
+    args:
+    if !owned then
+      tvpLib.tests.mkSuite (args // { inherit pkgs; })
+    else
+      ruby.testContext.mkSuite (
+        args
+        // {
+          tools =
+            ruby.specification.environment.tools
+            ++ (with (import ../../../../bases/source-gnu { }).tools; [
+              make
+              grep
+              sed
+              gawk
+              diffutils
+            ]);
+          libraries = [ ruby ];
+          tests = builtins.mapAttrs (
+            _: test:
+            (builtins.removeAttrs test [ "extraInputs" ])
+            // pkgs.lib.optionalAttrs (test ? extraInputs) {
+              tools =
+                test.extraInputs
+                ++ (with (import ../../../../bases/source-gnu { }).tools; [
+                  make
+                  grep
+                  sed
+                  gawk
+                  diffutils
+                ]);
+            }
+          ) args.tests;
+        }
+      );
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs;
+suite {
   package = ruby;
 
   tests =
@@ -120,6 +155,20 @@ tvpLib.tests.mkSuite {
       };
     }
 
+    // pkgs.lib.optionalAttrs owned {
+      embedding = {
+        script = ''
+          ${consumerCompiler}/bin/cc ${./fixtures/embed.c} \
+            -I${ruby}/include/ruby-${ruby.libDir} \
+            -I${ruby}/include/ruby-${ruby.libDir}/x86_64-linux \
+            -L${ruby}/lib -Wl,-rpath,${ruby}/lib -lruby -o embed
+          env -i HOME="$TMPDIR" ./embed
+        '';
+        expected = "42";
+        extraInputs = [ consumerCompiler ];
+      };
+    }
+
     # Restored as guarded tests rather than removed from the fixtures: the
     # universal forms above satisfy 2.0, and these keep the coverage that
     # lowering them to the oldest common denominator would have cost everyone.
@@ -203,7 +252,9 @@ tvpLib.tests.mkSuite {
       openssl-linkage = {
         script = ''
           so=$(ruby -e 'require "openssl"; print $LOADED_FEATURES.grep(/openssl\.so$/).first')
-          ldd "$so" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
+          ${
+            if owned then "${ruby.tvp.cc.libc.bin}/bin/ldd" else "ldd"
+          } "$so" | awk '/libssl\.so/ { print $3 }' | grep -q "^${deps.openssl.out}/" && printf linked
         '';
         expected = "linked";
         extraInputs = [ ruby.tvp.cc.libc.bin ];
@@ -216,7 +267,9 @@ tvpLib.tests.mkSuite {
       yaml-linkage = {
         script = ''
           so=$(ruby -e 'require "yaml"; print $LOADED_FEATURES.grep(/psych\.so$/).first')
-          ldd "$so" | awk '/libyaml/ { print $3 }' | grep -q "^${deps.libyaml.out}/" && printf linked
+          ${
+            if owned then "${ruby.tvp.cc.libc.bin}/bin/ldd" else "ldd"
+          } "$so" | awk '/libyaml/ { print $3 }' | grep -q "^${deps.libyaml.out}/" && printf linked
         '';
         expected = "linked";
         extraInputs = [ ruby.tvp.cc.libc.bin ];
@@ -227,7 +280,9 @@ tvpLib.tests.mkSuite {
       fiddle-linkage = {
         script = ''
           so=$(ruby -e 'require "fiddle"; print $LOADED_FEATURES.grep(/fiddle\.so$/).first')
-          ldd "$so" | awk '/libffi\.so/ { print $3 }' | grep -q "^${deps.libffi.out}/" && printf linked
+          ${
+            if owned then "${ruby.tvp.cc.libc.bin}/bin/ldd" else "ldd"
+          } "$so" | awk '/libffi\.so/ { print $3 }' | grep -q "^${deps.libffi.out}/" && printf linked
         '';
         expected = "linked";
         extraInputs = [ ruby.tvp.cc.libc.bin ];

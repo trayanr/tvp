@@ -8,9 +8,44 @@
 }:
 let
   inherit (bundler.passthru.tvp) deps;
+  owned = bundler ? testContext;
+  suite =
+    args:
+    if !owned then
+      tvpLib.tests.mkSuite (args // { inherit pkgs; })
+    else
+      bundler.testContext.mkSuite (
+        args
+        // {
+          tools =
+            bundler.specification.environment.tools
+            ++ (with (import ../../../../bases/source-gnu { }).tools; [
+              make
+              grep
+              sed
+              gawk
+              diffutils
+            ]);
+          libraries = [ bundler ];
+          tests = builtins.mapAttrs (
+            _: test:
+            (builtins.removeAttrs test [ "extraInputs" ])
+            // pkgs.lib.optionalAttrs (test ? extraInputs) {
+              tools =
+                test.extraInputs
+                ++ (with (import ../../../../bases/source-gnu { }).tools; [
+                  make
+                  grep
+                  sed
+                  gawk
+                  diffutils
+                ]);
+            }
+          ) args.tests;
+        }
+      );
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs;
+suite {
   package = bundler;
 
   tests = {
