@@ -87,6 +87,8 @@ let
 in
 {
   pname = "glibc";
+  artifactName = "${final.pname}-${final.version}";
+  finalizerScript = ./finalize.py;
   inherit (args)
     base
     bash
@@ -221,7 +223,7 @@ in
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${shell} \
         ${lib.escapeShellArgs final.makeFlags} sysconfdir="$out/etc" install
     '')
-    (command "finalize" "build" ''
+    (command "installed-data" "build" ''
       ${lib.concatMapStringsSep "\n" (dir: ''ln -sT lib "$out/${dir}"'') final.platform.libcLibdirAliases}
       mkdir -p "$out/lib/locale"
       I18NPATH="$TVP_SOURCE_ROOT/source/localedata" \
@@ -235,6 +237,18 @@ in
       ln -sfn "$out/${final.platform.dynamicLinker}" "$bin/bin/ld.so"
       cp ../source/COPYING* ../source/LICENSES "$out/share/licenses/glibc/"
     '')
+    (tvp.builder.steps.split "glibc.finalize")
+    (tvp.builder.outputs.copyArtifacts { inherit coreutils; outputs = final.outputs; })
+    {
+      name = "glibc.transport";
+      tools = [ python3Minimal binutils ];
+      run = ''
+        ${python3Minimal}/bin/python3 -B ${final.finalizerScript} "$(
+          ${python3Minimal}/bin/python3 -c 'import json,sys; print(json.dumps({"roots":{"out":sys.argv[1],"bin":sys.argv[2]},"artifacts":{"out":sys.argv[3],"bin":sys.argv[4]},"readelf":sys.argv[5],"linuxHeaders":sys.argv[6]}))' \
+            "$out" "$bin" "''${TVP_ARTIFACT_OUTPUTS[out]}" "''${TVP_ARTIFACT_OUTPUTS[bin]}" ${binutils}/bin/readelf ${linuxHeaders}
+        )" ${../../libxml2/ordinary/elf.py}
+      '';
+    }
     # Bind installed shell scripts without touching ELF, loader or libc search
     # paths. A later mkTools call can bind to the future runtime interpreters.
     {

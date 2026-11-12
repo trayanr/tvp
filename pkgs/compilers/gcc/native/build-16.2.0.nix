@@ -3,7 +3,9 @@
 # Construction-tree upstream checks and the real three-stage comparison remain
 # mandatory; the restricted selected consumer driver is a separate interface.
 {
+  tvp,
   lib,
+  patchelf,
   base,
   bash,
   coreutils,
@@ -85,6 +87,7 @@ let
     patches
     tuple
     ;
+  inherit (tvp.builder) steps outputs;
   libc = final.glibc;
   shell = "${bash}/bin/bash";
   includes = final.libcFlags;
@@ -96,6 +99,7 @@ let
       name = "gcc.${name}";
       cwd = "build";
       run = ''
+        validation="$out/nix-support/production"
         mkdir -p "$validation"
         export TVP_SOURCE_ROOT
         status=0
@@ -133,6 +137,14 @@ let
 in
 {
   pname = "gcc";
+  inherit patchelf;
+  configurePrefix = "/tvp/gcc";
+  checkpointScript = ./checkpoint.py;
+  finalizerScript = ./finalize.py;
+  upstreamRestore = ../tests/restore-16.2.0.py;
+  upstreamCapture = ../tests/capture-16.2.0.nix;
+  upstreamSummarizer = ../tests/summarise-upstream.py;
+  upstreamClassifier = ../tests/audit-upstream.py;
   # Argument values are editable specification data.
   inherit (args)
     base
@@ -187,10 +199,7 @@ in
       zstd
       libxcrypt
     ];
-  outputs = [
-    "out"
-    "validation"
-  ];
+  outputs = [ "out" ];
   environment = {
     tools = [
       coreutils
@@ -200,12 +209,7 @@ in
       which
       perl
       python
-      pythonConfig
       file
-      dejagnu
-      expect
-      flock
-      graphviz
       gnutar
       xz
       gzip
@@ -247,6 +251,17 @@ in
     "--with-native-system-header-dir=/include"
   ];
   passthru = package: {
+    # The passthru callback receives the raw final output, before catalogue
+    # decoration. Fresh lowering with empty passthru projects the exact A only;
+    # it creates no new stage or reverse dependency on validation.
+    validation = (import ../tests/upstream-16.2.0.nix {
+      inherit tvp lib;
+      package = {
+        specification = final;
+        artifact = (import ../../../../lib/owned-build.nix { inherit lib; }
+          (final // { passthru = {}; })).artifact;
+      };
+    }).execution;
     platform = {
       system = final.base.platform.system;
       dynamicLinker = "lib/ld-linux-x86-64.so.2";
@@ -306,7 +321,7 @@ in
       '';
     }
     (command "configure" ''
-      args=(--prefix="$out" --libdir="$out/lib" ${lib.escapeShellArgs final.configureFlags})
+      args=(--prefix=${lib.escapeShellArg final.configurePrefix} --libdir=${lib.escapeShellArg "${final.configurePrefix}/lib"} ${lib.escapeShellArgs final.configureFlags})
       printf '%q ' ${shell} ../source/configure "''${args[@]}" > "$validation/configure-command.txt"
       printf '\n' >> "$validation/configure-command.txt"
       ${shell} ../source/configure "''${args[@]}"
@@ -331,40 +346,9 @@ in
         cp "$file" "$validation/configure/$file"
       done
     '')
-    (command "check" ''
-      mkdir -p boards "$PWD/home" "$PWD/cache" "$validation"
-      cat > boards/tvp.exp <<'BOARD'
-      load_base_board_description "unix"
-      unset_board_info isremote
-      set_board_info isremote 0
-      set_board_info cflags " -B${libc}/lib/ -idirafter ${libc}/include -L${libc}/lib -Wl,-rpath,${libc}/lib "
-      set_board_info ldflags " -B${libc}/lib/ -L${libc}/lib -Wl,-rpath,${libc}/lib "
-      BOARD
-      cat > site-tvp.exp <<SITE
-      lappend boards_dir "$PWD/boards"
-      set HOSTCC "$CC"
-      set HOSTCXX "$CXX"
-      SITE
-      export DEJAGNU="$PWD/site-tvp.exp" HOME="$PWD/home" XDG_CACHE_HOME="$PWD/cache"
-      export FONTCONFIG_FILE=${fonts}/etc/fonts/fonts.conf PYTHONNOUSERSITE=1
-      export PYTHONPATH="$TVP_SOURCE_ROOT/source/gcc/testsuite''${PYTHONPATH:+:$PYTHONPATH}"
-      printf '%s\n' "HOSTCC=$CC" "HOSTCXX=$CXX" "SHELL=$SHELL" "FONTCONFIG_FILE=$FONTCONFIG_FILE" > "$validation/test-environment.txt"
-      check_status=0
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" -k SHELL=${shell} "''${flags[@]}" \
-        "CXXFLAGS_FOR_TARGET=-O2 -g ${includes} ${links}" \
-        RUNTESTFLAGS=--target_board=tvp \
-        check-gcc check-target-libstdc++-v3 check-target-libgomp \
-        check-target-libatomic check-target-libitm check-target-libquadmath \
-        check-target-libsanitizer > "$validation/make-check.log" 2>&1 || check_status=$?
-      head -n 1 "$validation/make-check.log" > "$validation/invocation.txt"
-      printf '%s\n' "$check_status" > "$validation/make-check.exit"
-      find . -type f \( -name '*.sum' -o -name '*.log' \) -exec cp --parents {} "$validation" \;
-      ${python}/bin/python3 -B ${../tests/summarise-upstream.py} "$validation" > "$validation/outcomes.txt"
-      # The qualification endpoint audits complete raw summaries and failures.
-      # Retaining make's nonzero status is not an upstream pass assertion.
-    '')
     (command "install" ''
-      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${shell} "''${flags[@]}" install
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${shell} "''${flags[@]}" DESTDIR="$PWD/install-root" install
+      cp -a "install-root${final.configurePrefix}/." "$out/"
       if test -d "$out/lib64" && ! test -L "$out/lib64"; then
         cp -a "$out/lib64/." "$out/lib/"
         rm -rf "$out/lib64"
@@ -379,5 +363,38 @@ in
       done
       "$out/bin/gcc" -dumpspecs > "$validation/builtin.specs"
     '')
+    (command "checkpoint" ''
+      ${python}/bin/python3 -B ${final.checkpointScript} save "$TVP_SOURCE_ROOT" "$out/nix-support/upstream-build-tree"
+    '')
+    (steps.split "gcc.finalize")
+    {
+      name = "gcc.copy-public";
+      tools = [ coreutils ];
+      run = ''
+        mkdir -p "$out"
+        for directory in bin include lib lib64 libexec share; do
+          if test -e "$TVP_ARTIFACT_ROOT/$directory" || test -L "$TVP_ARTIFACT_ROOT/$directory"; then
+            ${coreutils}/bin/cp -a --no-preserve=ownership "$TVP_ARTIFACT_ROOT/$directory" "$out/"
+          fi
+        done
+        ${coreutils}/bin/chmod -R u+w "$out"
+      '';
+    }
+    {
+      name = "gcc.relocate-public";
+      tools = [ python binutils final.patchelf ];
+      run = ''${python}/bin/python3 -B ${final.finalizerScript} "$out" "$TVP_ARTIFACT_ROOT" ${lib.escapeShellArg final.configurePrefix} ${binutils}/bin/readelf ${final.patchelf}/bin/patchelf ${../../../../pkgs/libraries/libxml2/ordinary/elf.py}'';
+    }
+    (outputs.interpreters {
+      inherit python binutils;
+      inherit (final) patchelf;
+      paths = [ "bin" "libexec" "lib" ];
+      loader = "${libc}/lib/ld-linux-x86-64.so.2";
+    })
+    (outputs.checkPaths {
+      inherit python binutils;
+      inherit (final) patchelf;
+      paths = [ "bin" "libexec" "lib" ];
+    })
   ];
 }

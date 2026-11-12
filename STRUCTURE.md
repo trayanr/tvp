@@ -310,6 +310,15 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
+Raw JDK installation remains in A. Reassembly of JMODs and images over retained
+compiled classes and native products is F packaging: native JMOD hash generation,
+jlink, image metadata and image-only CDS generation may run there. Native or Java
+compilation, generated source and compile-dependent optimization remain in A. F
+must retain the complete packaging inputs and invoke packaging makefiles directly,
+never a top-level build target that can dispatch compilation. This clarifies the
+normal installed-artifact boundary; it does not waive qualification.
+
+
 Upstream test construction, execution and result classification belong in separate
 validation derivations. A failed upstream test must not prevent compilation artifacts,
 final outputs or installed-result tests from being realized. The normal test batch

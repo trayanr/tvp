@@ -30,18 +30,51 @@ specification fields such as `glibc` and `binutils`. This procedure has no
 `runtime` schema for `.editRuntime`; adding arbitrary runtime data does not
 change raw GCC's search paths.
 
-`out` holds the raw compiler, plugin headers, LTO tools and matching target
-runtimes. `validation` deliberately maps the reference `evidence` output to the
-existing public API: `bootstrap-compare.log`, `stage_final`, `config.log`,
-`stage2-objects.txt`, `stage2-objects.sha256`, `stage3-start.log`,
-`test-environment.txt`, `invocation.txt`, `make-check.log`, `make-check.exit`,
-all raw summaries/logs and `upstream.json`. Other command logs, stage flags,
-installed ELF inventory and builtin specs are retained too. Both output siblings
-come from the same derivation. Upstream checks include all seven make targets;
-libquadmath/libsanitizer have compiler-integrated tests rather than standalone
-summaries. The audit requires six completed summaries and retains known raw
-19 FAIL / 2 XPASS outcomes. Later qualification must compare each full summary
-multiset and make status with the historical control, not just these totals.
+`out` holds the public raw compiler, plugin headers, LTO tools and matching
+runtimes. Production now has exactly `[ "out" ]`; `^validation` is intentionally
+no longer a sibling output. `package.validation` is the independent raw R producer.
+The registered `upstream-audit` test consumes R without gating A or F. Existing
+consumers of the attribute retain the same raw file names and classifier rules.
+The private pinned compiler and its evidence output remain unchanged.
+
+A retains mandatory real bootstrap/comparison, configure/install logs, stage flags,
+stage_final, stage2 object hashes, builtin specs and installed ELF inventory under
+nix-support/production. A's nix-support/upstream-build-tree retains patched source,
+active stage3 compiler/target libraries and generated build prerequisites with
+modes, hardlinks and timestamps; obsolete stage1/2 object trees and installation
+staging are excluded. Checkpoint size and actual check-target sufficiency are
+UNKNOWN until later qualification. No external filesystem or NAS retention is used.
+R restores a private copy, rebases only generated text roots if necessary, and
+runs the same seven DejaGNU targets without invoking bootstrap/production all.
+Summaries/logs and make status remain raw. U keeps the current strict requirement
+on make status and six completed summaries, with the unchanged known raw
+19 FAIL / 2 XPASS rules. No compatibility observation becomes strict acceptance.
+
+GCC configures with stable `/tvp/gcc` plus DESTDIR staging. F whitelists installed
+bin/include/lib/lib64/libexec/share only, transports supported text metadata and
+exclusive dynamic RPATHs (including A/lib), and repairs ELF interpreters. It never
+copies checkpoint or provenance. Native executable-relative GCC search remains
+responsible for self discovery; no consumer wrapper or stage-evidence protocol
+is introduced. The ordinary raw -B/static-PIE/libc-construction API remains intact.
+
+Field classification:
+
+* A: src/version/layoutPatch/patches, tuple/configurePrefix/configureFlags,
+  libcFlags/linkFlags, glibc/binutils and target libraries, base/compiler and
+  bootstrap flags, checkpointScript and normal configure/bootstrap/install tools.
+  These are genuine compile inputs; no runtime alias promises their independence.
+* F: finalizerScript, patchelf and final copy/interpreter/check steps. Final step
+  edits reuse A; direct shared tools still retain their A effects where used.
+* R: dejagnu/expect/flock/graphviz/fonts/pythonConfig and upstreamCapture/
+  upstreamSummarizer/upstreamRestore; edits reuse both A and F.
+* U: upstreamClassifier and unchanged known-result data; classifier edits reuse R
+  as well as A/F. The existing independent test factory registers U.
+
+One later bounded latest bootstrap must measure and test checkpoint restoration
+without production rebuilding, compare full raw summary multisets/statuses with
+the retained baseline, and exercise raw C/C++/LTO/plugin/fixincludes/static-PIE/
+libc construction and native runtime/self paths. Emitted layout and final A
+exclusion remain later proof requirements, never waived by source contracts.
 
 Source staging is not compilation or qualification. Canonical GCC is UNBUILT,
 installed tests are NOT_RUN and the hardening gate is OPEN_UNWAIVED. A parent

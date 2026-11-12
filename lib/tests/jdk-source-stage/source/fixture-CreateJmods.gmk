@@ -1,0 +1,8 @@
+# Offline source protocol fixture; no archive editor or compiler.
+include $(SPEC)
+all:
+	test "$(CC)" = "$(CXX)"
+	test "$(JAVAC)" = "$(JAVAC_CMD)"
+	mkdir -p $(OUTPUTDIR)/images/jmods
+	printf '%s\n' '$(MODULE)' >> $(OUTPUTDIR)/packaging-order
+	touch $(OUTPUTDIR)/images/jmods/$(MODULE).jmod

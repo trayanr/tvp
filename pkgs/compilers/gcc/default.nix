@@ -146,6 +146,7 @@ let
     "16.2.0" = {
       constructor = tvp.builder;
       builder = ./native/build-16.2.0.nix;
+      helpers = { inherit tvp; };
       base = candidate.base;
       source =
         { version, sha256 }:
@@ -187,6 +188,7 @@ let
           category = "construction";
           reason = "Explicit candidate target libc; moving public glibc consumes this raw compiler and would introduce a cycle.";
         } candidate.toolchain.libc;
+        patchelf = constructionTool "patchelf";
         layoutPatch = reference.native.sources.layout;
         inherit (reference.harness.previous.harness) dejagnu expect flock;
         python = reference.harness.previous.profile;
@@ -229,7 +231,7 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-16.2.0.nix { inherit package; }
+        import ./tests/native-16.2.0.nix { inherit package tvp; lib = pkgs.lib; }
       else
         (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
     ) { inherit pkgs; };
