@@ -10,6 +10,7 @@
   xz,
 }:
 let
+  specification = libxml2.specification or { };
   deps = libxml2.passthru.tvp.deps or { };
   features = libxml2.passthru.tvp.features or { };
 
@@ -94,6 +95,35 @@ mkSuite {
       };
     }
 
+    // pkgs.lib.optionalAttrs (libxml2 ? artifact) {
+      relocated-metadata = {
+        script = ''
+          test "$(xml2-config --prefix)" = ${libxml2}
+          export PKG_CONFIG_LIBDIR=${libxml2}/lib/pkgconfig
+          test "$(pkg-config --variable=prefix libxml-2.0)" = ${libxml2}
+          test -f ${libxml2}/include/libxml2/libxml/parser.h
+          printf relocated
+        '';
+        expected = "relocated";
+        extraInputs = [ pkg-config ];
+      };
+    }
+
+    // pkgs.lib.optionalAttrs ((libxml2 ? artifact) && (features.static or false)) {
+      static-api = {
+        script = ''
+          ${doc}
+          cc ${./fixtures/compile.c} $(xml2-config --cflags) ${libxml2}/lib/libxml2.a $(pkg-config --static --libs libxml-2.0 | sed 's/-lxml2//g') -o static-api
+          ./static-api
+        '';
+        expected = "catalogue";
+        extraInputs = [
+          pkg-config
+          libxml2.tvp.cc
+        ] ++ pkgs.lib.attrValues deps;
+      };
+    }
+
     # xmllint gained --xpath at 2.7.7; below that the engine is reachable only
     # through --shell, which is a different code path from what consumers use.
     // pkgs.lib.optionalAttrs (features.xpath or true) {
@@ -124,13 +154,34 @@ mkSuite {
       # the declared one.
       xz-linkage = {
         script = ''
-          ldd ${libxml2}/lib/libxml2.so | awk '/liblzma\.so/ { print $3 }' | grep -q "^${deps.xz.out}/" && printf linked
+          ldd ${libxml2}/lib/libxml2.so | awk '/liblzma\.so/ { print $3 }' | grep -q "^${(deps.liblzma or deps.xz).out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ libxml2.tvp.cc.libc.bin ];
+        extraInputs =
+          if libxml2 ? testContext then
+            [
+              libxml2.tvp.cc.libc
+              libxml2.tvp.deps.gawk
+            ]
+          else
+            [ libxml2.tvp.cc.libc.bin ];
       };
     };
 }
+//
+  pkgs.lib.optionalAttrs
+    (
+      libxml2 ? artifact
+      && specification ? captureHelper
+      && specification ? classificationBinding
+      && (specification.doCheck or false)
+    )
+    {
+      upstream = import ./upstream.nix {
+        inherit libxml2;
+        lib = pkgs.lib;
+      };
+    }
 //
   pkgs.lib.optionalAttrs
     (builtins.elem libxml2.version [

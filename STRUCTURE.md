@@ -295,7 +295,8 @@ The normal boundary is after configure, compilation and installation have produc
 an installed artifact, before output repair. Compilation/install and final packaging
 must not depend on upstream-test construction, execution, acceptance, or test-only
 preparation, patches or tools. Upstream tests are separate derivations registered
-through the required test factory and remain normal suite/batch admission gates:
+through the required test factory and remain normal suite/batch admission gates.
+Final packaging must remain realizable when upstream acceptance fails:
 
 ```nix
 (command "package.install" installCommand)
@@ -308,6 +309,19 @@ The prefix produces `package.artifact`. The suffix produces the public package i
 fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact and
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
+
+Upstream test construction, execution and result classification belong in separate
+validation derivations. A failed upstream test must not prevent compilation artifacts,
+final outputs or installed-result tests from being realized. The normal test batch
+still includes the strict upstream result and fails when that result fails.
+
+During migration, a recipe may retain a raw upstream capture in its artifact.
+Classify that immutable capture in an independent test, never in finalization.
+Preserve the original output and exit status, and remove the copied operational
+reports from the final package. Classifier edits must reuse compilation and final
+outputs. Capture execution before the split remains explicit isolation debt until
+it moves into separate validation derivations; a valid final output does not waive
+an upstream nonpass.
 
 An installed program can embed both its prefix and its length, as shared Perl does.
 Its specification may set `artifactName = "${final.pname}-${final.version}";` to
@@ -1382,4 +1396,7 @@ disposition. Scoped checks admit only the inspected scope; strict exposure rejec
 all remaining isolation debt and is not an unconditional failing full-suite check.
 This does not change audits/split-baseline.json, frozen construction identities or
 any full-validation/default admission hold. Source inspection and tiny controls
-are not canonical runtime qualification.
+are not canonical runtime qualification. Ordinary Libxml2 retains raw upstream
+capture before A as transition debt; separating its final-package acceptance does
+not establish execution isolation or strict conformance. Its upstream test remains
+in the normal batch, and known upstream/schema nonpasses remain unwaived.
