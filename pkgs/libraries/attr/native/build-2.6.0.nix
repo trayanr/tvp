@@ -1,5 +1,5 @@
 # Native source-GNU catalogue route; retained bootstrap procedure stays independent.
-# 2.6.0 only. Compiled locale/configuration paths retain the configured prefix.
+# 2.6.0 only. Rebase compiled locale/configuration paths after the artifact split.
 {
   tvp,
   lib,
@@ -164,13 +164,47 @@ in
     ++ [
       (steps.split "attr.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
-      (outputs.relocateText {
-        inherit python;
-        paths = [
-          "lib/pkgconfig"
-          "lib/libattr.la"
+      {
+        name = "attr.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
         ];
-      })
+        # Use the same prefix relocation as Attr 2.5.x. Fixed-width slash padding
+        # keeps native/archive string positions while rebasing locale/config paths.
+        run = ''${python}/bin/python3 -B ${../../ordinary-attr-crypt-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${patchelf}/bin/patchelf ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              readelf = "${binutils}/bin/readelf";
+              requiredDirectories = [
+                "bin"
+                "lib"
+                "share/man"
+                "nix-support"
+              ];
+              requiredFiles = [
+                "bin/attr"
+                "bin/getfattr"
+                "bin/setfattr"
+                "lib/libattr.a"
+                "lib/libattr.la"
+                "lib/libattr.so.1.1.2600"
+                "lib/pkgconfig/libattr.pc"
+              ];
+              requiredRegular = [
+                "lib/libattr.a"
+                "lib/libattr.la"
+                "nix-support/propagated-build-inputs"
+              ];
+              libtoolData = [ "lib/libattr.la" ];
+              buildShell = "${bash}/bin/bash";
+              shell = "${bash}/bin/bash";
+              paths = [ ];
+            }
+          )
+        }'';
+      }
       {
         name = "output.manuals";
         tools = [
