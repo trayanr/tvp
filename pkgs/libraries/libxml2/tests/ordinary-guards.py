@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory() as temp:
     raw=tmp/'raw'
     capture(raw,[sys.executable,str(ordinary/'capture-command.py'),sys.executable,
                  '-c','print("Total 12 tests, no errors")'])
-    assert classify(raw,'2.7.4')['summaryPresent']
+    rejects(lambda:classify(raw,'2.7.4'))  # summary-only evidence never qualifies
     units=list((raw/'commands').iterdir()); assert len(units)==1
     record=units[0]/'exit.json'; original_record=record.read_bytes()
     changed=json.loads(original_record);changed['exit']=7;record.write_text(json.dumps(changed))

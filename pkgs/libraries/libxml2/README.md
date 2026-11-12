@@ -34,21 +34,53 @@ UNWAIVED, never rewritten into PASS. The two existing corpus declarations and
 latest's existing raw-audit behavior are unchanged. No claim of upstream
 qualification for other versions is made. Parent review must resolve any new raw
 body contract using actual immutable evidence, rather than weakening it blindly.
-All 68 real make-output body contracts are pending: only a narrow summary
-protocol is presently recognized. Command echoes/additional records are rejected
-until reviewed, even when upstream exits zero. This is a source-stage gap and
-must be resolved before representative qualification; it does not reduce the
-implemented release scope.
+`source-contracts.json` records all 68 exact source archive hashes, selected
+source-role hashes and eight CHECKER inventory groups. Fuzzer introduction at
+2.9.11 is an independent capability boundary. These are source facts and parser
+hypotheses, not 68 tested runtime bodies. The source archive is read and hashed
+again by the classifier; an unknown effective `.edit src` fails binding even if
+its version is unchanged. No source manifest is trusted from a version alone.
 
-Upstream's `CHECKER` prefix also runs `capture-command.py` around individual test
-executables, recording their original arguments, working directory, separate
-stdout/stderr bytes and exit status. It preserves channel redirections and
-propagates failures back to Make. This separates silent programs
-and intentionally diagnostic tests from Make's compiler and command echoes.
-The capture includes `runxmlconf.log`, whose expected W3C failures must be checked
-by identity, alongside the RNG/instance diagnostics in `runsuite.log`.
-Per-command result handlers and expected inventories remain pending real boundary
-captures. The summary-only classifier is a staging guard, not runtime acceptance.
+The five procedures pass explicit final-only contracts and effective source,
+runtime, feature and tool bindings. The classifier reads the original artifact's
+installed configured header, interpreting supported literal preprocessor branches
+rather than grepping disabled defines. Unknown header/source shapes are gaps.
+No compiler or host interpreter is used to infer features. Its Python standard
+library archive reader needs no source unpacking or package execution.
+
+`classify.py --inspect` emits structural observations with separate
+`protocolValid`, `strictPass`, per-unit outcomes, operational nonpasses and
+coverage gaps. This inspection report is never a passing test receipt. The same
+CLI without `--inspect` exits nonzero on every nonpass or gap. Both require raw
+root/version, `--contracts`, `--binding` (JSON file, or `--binding-json`) and
+`--artifact` inputs. Missing source/feature/manifest evidence rejects. Command
+argv, cwd, adapter hash-counter definition, exact inventory, raw node types,
+record keys/types, required logs and supported bodies are validated read-only.
+
+Source-recognized handlers cover exact testchar output, legacy/modern dictionary,
+source-ordered legacy API progress and modern silence, enabled module output,
+catalog silence, feature-selected recursion headers/positive terminal totals,
+and the exact nine 2.15.3 parser negative diagnostics. Other diagnostic/body shapes
+remain unqualified. Counts are parsed from the current report; no recursion,
+runtest or fuzz execution count is transplanted between releases. The shared
+`tests/real-output-contracts.py` suite uses tiny synthetic fixtures across the
+same 68 entries; it does not execute upstream tests.
+
+The repaired immutable 2.15.3 capture has ten CHECKER units. Seven individual
+bodies are recognized success observations. Strict acceptance remains false:
+runtest has unexplained DTD/entity/thread stderr, W3C executes zero tests with
+missing xmlconf, runsuite retains seven incorrect RNG acceptances and three
+valid-instance failures, and three XSTC metadata files/groups are absent. Log
+frames classify their first event line; diagnostic-tail failure words are not
+separate events. Source resets of ten/three expected errors never waive events.
+Historical W3C fifteen/five-failure counts have no identity allowlist here.
+
+The complete outer Make/script/catalog/SGML/fuzzer grammar and unrecorded
+per-command exits remain `OUTER_REPORT_GAP`. Source corpus membership and
+aggregate totals also cannot prove each test glob executed. No current report
+can pass these unresolved coverage gates. The original capture/install/prepare/
+build commands are unchanged; extending capture is separate work. Other 67
+releases remain uncompiled and all runtime qualification holds remain unwaived.
 
 Finalization copies the installed artifact, classifies and removes operational
 reports, then relocates text, compiled catalog paths and ELF RPATHs before strip,

@@ -83,6 +83,23 @@ in
   captureHelper = ./capture.py;
   commandCaptureHelper = ./capture-command.py;
   classifier = ./classify.py;
+  sourceContracts = ./source-contracts.json;
+  classificationBinding = builtins.toJSON {
+    schema = 1;
+    inherit (final) version;
+    source = "${final.src}";
+    sourceCwd = "/build/workspace/source";
+    system = "x86_64-linux";
+    features = final.tvp.features;
+    runtime = {
+      shell = "${final.runtime.shell}";
+      libraries = map (x: "${x}") final.runtime.libraries;
+    };
+    make = "${final.tools.gnumake}";
+    bash = "${final.bash}";
+    python = "${final.tools.python}";
+    commandCaptureHelper = "${final.commandCaptureHelper}";
+  };
   finalizationHelper = ./finalize.py;
   elfHelper = ./elf.py;
   configureFlags = [
@@ -157,7 +174,7 @@ in
       ];
       run = ''
         ${lib.optionalString final.doCheck ''
-          ${final.tools.python}/bin/python3 -B ${final.classifier} "$out/nix-support/upstream-raw" ${lib.escapeShellArg final.version}
+          ${final.tools.python}/bin/python3 -B ${final.classifier} "$TVP_ARTIFACT_ROOT/nix-support/upstream-raw" ${lib.escapeShellArg final.version} --contracts ${final.sourceContracts} --binding-json ${lib.escapeShellArg final.classificationBinding} --artifact "$TVP_ARTIFACT_ROOT"
           ${final.coreutils}/bin/rm -r "$out/nix-support/upstream-raw"
         ''}
       '';
