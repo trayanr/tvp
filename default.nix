@@ -563,17 +563,26 @@ let
       inherit tvpLib;
       graph = tvp.graph;
     };
-    status = pkgs.callPackage ./tools/status.nix {
-      inherit ownedCLI;
-      # Pure migration rendering needs only the retained tooling Python's stdlib.
-      python3 = (import ./bases/source-gnu { }).tools.python;
-      migrationFacts = tvp.migrationStatusManifest;
-      coreutils = tvp.packages.coreutils;
-      gnugrep = tvp.packages.gnugrep;
-      gnused = tvp.packages.gnused;
-      packages = canonical;
-      inherit bases tvpLib;
-    };
+    status =
+      let
+        # Keep progress reporting available while public package outputs change.
+        tooling = (import ./bases/source-gnu { }).tools;
+      in
+      pkgs.callPackage ./tools/status.nix {
+        ownedCLI = import ./tools/lib/owned-cli.nix {
+          inherit (pkgs) lib;
+          inherit (tooling) bash coreutils;
+          shellcheck = pkgs.shellcheck-minimal;
+          platform = bases.default.platform;
+        };
+        python3 = tooling.python;
+        migrationFacts = tvp.migrationStatusManifest;
+        coreutils = tooling.coreutils;
+        gnugrep = tooling.grep;
+        gnused = tooling.sed;
+        packages = canonical;
+        inherit bases tvpLib;
+      };
   };
 
   tvp = {
@@ -685,14 +694,15 @@ let
           compiler = bases.default.stdenv.cc;
           python = tvp.packages.python_3;
         };
-        named-outputs = {
-          inherit (tvp.packages) bash coreutils;
-        }
-        // pkgs.lib.listToAttrs (
-          pkgs.lib.imap0 (
-            i: p: pkgs.lib.nameValuePair "floor${toString i}" p
-          ) bases.default.stdenv.initialPath
-        );
+        named-outputs =
+          {
+            inherit (tvp.packages) bash coreutils;
+          }
+          // pkgs.lib.listToAttrs (
+            pkgs.lib.imap0 (
+              i: p: pkgs.lib.nameValuePair "floor${toString i}" p
+            ) bases.default.stdenv.initialPath
+          );
         reusable-output = {
           inherit (tvp.packages) bash;
           python = tvp.packages.python_3;
