@@ -288,16 +288,20 @@ let
   publicArgs = installedArgs // {
     extraArgs = installedArgs.extraArgs // {
       mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
+        {
+          pkgs,
+          locale,
+          helpers ? null,
+        }:
         package:
         (
           if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs locale helpers; }) package
           else
             installedArgs.extraArgs.mkTests package
         )
         // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
+      ) { inherit pkgs locale; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
