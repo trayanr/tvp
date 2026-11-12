@@ -22,7 +22,7 @@ package.testContext.mkTest {
     ${tools.gnutar}/bin/tar -xzf ${s.testSource}
     cd tcl${package.version}
     ${builtins.concatStringsSep "\n" (
-      map (p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") s.testPatches
+      map (p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p} >&2") s.testPatches
     )}
     cd unix
     ${s.testShell}/bin/bash ./configure --prefix=${package} --enable-threads --enable-shared \
