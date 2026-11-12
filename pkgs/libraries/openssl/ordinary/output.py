@@ -29,6 +29,8 @@ def role(name):
         return 'evidence'
     if name == 'bin/c_rehash':
         return 'rehash'
+    if re.fullmatch(r'etc/ssl/man/man([1-9])/[^/]+\.\1', name):
+        return 'documentation'
     if (name.endswith(('.la', '.pc', '.cmake', '.h'))
             or name in ('include', 'lib/pkgconfig', 'lib/cmake', 'etc')
             or name.startswith(('include/', 'lib/pkgconfig/', 'lib/cmake/', 'etc/'))):
@@ -47,7 +49,7 @@ def link_plan(root, files, links, old, new, replace_paths):
     planned = {name: replace_paths(value.encode(), old, new).decode()
                for name, value in links.items()}
     for name in planned:
-        if role(name) != 'ordinary':
+        if role(name) not in ('ordinary', 'documentation'):
             raise ValueError(('unsupported installed semantic alias', name))
         pending, current, followed = name.split('/'), [], 0
         while pending:
@@ -79,6 +81,10 @@ def link_plan(root, files, links, old, new, replace_paths):
                 raise ValueError(('non-directory installed link component', name, candidate))
             current.append(part)
         final = '/'.join(current)
+        if role(name) == 'documentation':
+            if (final not in files or role(final) != 'documentation'
+                    or Path(final).parent != Path(name).parent):
+                raise ValueError(('unsupported documentation alias target', name, final))
         if role(final) == 'evidence':
             raise ValueError(('alias to removed evidence', name))
         if name.startswith(('bin/', 'libexec/')):
@@ -109,7 +115,7 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf):
         if selected_role == 'evidence':
             removals.update(group)
             continue
-        if selected_role in ('text', 'rehash'):
+        if selected_role in ('text', 'rehash', 'documentation'):
             helper.text(data, group)
         if data.startswith(b'\x7fELF'):
             hits = inspect_elf(p, old, config['readelf'])

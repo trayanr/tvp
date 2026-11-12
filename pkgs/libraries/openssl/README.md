@@ -48,6 +48,11 @@ metadata. Semantic metadata aliases are rejected; ordinary library aliases resol
 one raw component at a time, including directory requirements before `..`.
 Every validation plan completes before writes.
 
+Installed manuals under `etc/ssl/man/manN` have a separate validated text role.
+Their aliases must resolve to regular manual pages in the same section directory;
+metadata aliases and aliases to other roles remain rejected. This final-only
+rule reuses the completed compilation artifact.
+
 `tests/native-default.nix` remains the universal family interface. Ordinary ports
 add installed shared/static SSL/SHA1 consumers and provider checks guarded at the
 whole-test level. The same suite checks selected Perl rehashing, engine/module

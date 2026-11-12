@@ -176,5 +176,35 @@ class Guards(unittest.TestCase):
                 source.prepare(root, config['shell'], config['perl'], '/nix/store/missing-coreutils')
             self.assertEqual(script.read_bytes(), original)
 
+    def test_documentation_alias_relocates_validated_text(self):
+        man = self.root/'etc/ssl/man/man7';man.mkdir(parents=True)
+        page = man/'des_modes.7';page.write_text('manual '+self.old+'/etc/ssl\n')
+        alias = man/'Modes of DES.7';alias.symlink_to('des_modes.7')
+        self.run_final()
+        self.assertEqual(os.readlink(alias), 'des_modes.7')
+        self.assertEqual(alias.read_text(), 'manual '+str(self.root)+'/etc/ssl\n')
+
+    def test_documentation_alias_rejects_wrong_roles_and_bad_text(self):
+        for case in ['metadata', 'other-section', 'NUL', 'encoding', 'directory', 'dangling', 'self']:
+            with self.subTest(case=case):
+                man = self.root/'etc/ssl/man/man7';man.mkdir(parents=True, exist_ok=True)
+                page = man/'des_modes.7';page.write_text('manual\n')
+                alias = man/'Modes of DES.7'
+                target = 'des_modes.7'
+                if case=='metadata':target='../../../../lib/pkgconfig/openssl.pc'
+                elif case=='other-section':
+                    other=self.root/'etc/ssl/man/man3';other.mkdir()
+                    (other/'des_modes.3').write_text('manual\n');target='../man3/des_modes.3'
+                elif case=='NUL':page.write_bytes(b'manual\0')
+                elif case=='encoding':page.write_bytes(b'manual\xff')
+                elif case=='directory':page.unlink();page.mkdir()
+                elif case=='dangling':page.unlink()
+                elif case=='self':target='Modes of DES.7'
+                alias.symlink_to(target)
+                self.rejects()
+                alias.unlink()
+                if page.is_dir():page.rmdir()
+                elif page.exists():page.unlink()
+
 
 unittest.main()
