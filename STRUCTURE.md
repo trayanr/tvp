@@ -1362,10 +1362,10 @@ remain production inputs even when tests also use them.
 
 The evaluated upstream-isolation inventory checks actual effective specifications,
 active commands, fresh producer/projection identities and dependency contexts.
-Inspected ordinary SQLite releases use A (installed artifact plus bounded retained
+Inspected ordinary families use A (installed artifact plus bounded retained
 build state), F (repaired final outputs), T (private fixture construction), R (raw
 execution evidence) and U (registered owned acceptance test). F drops retained
-state before output repair. Installed tests consume F; modern U also explicitly
+state before output repair. Installed tests consume F; SQLite veryquick U also explicitly
 consumes F's CLI for runner-database reconciliation. No validation producer may
 feed A/F. R preserving a failing raw status does not pass U or its batch.
 
@@ -1376,7 +1376,7 @@ must preserve A/F, expectation edits preserve T/R, runner edits preserve T, and
 finalizer edits preserve A/T/R. Production source/compiler edits invalidate A.
 Meaningful positive, invalidation and negative contracts accompany the policy.
 
-Unaudited recipes (including retained SQLite procedures and native 3.53.4) are
+Unaudited recipes (including retained/native SQLite and OpenSSL procedures) are
 UNAUDITED, never compliant by default. Broken/disabled coverage retains its explicit
 disposition. Scoped checks admit only the inspected scope; strict exposure rejects
 all remaining isolation debt and is not an unconditional failing full-suite check.

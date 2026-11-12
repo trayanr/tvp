@@ -85,6 +85,9 @@ let
       upstream-test-isolation-contracts = import ./lib/tests/upstream-test-isolation.nix {
         inherit pkgs tvp;
       };
+      openssl-upstream-isolation-contracts = import ./lib/tests/openssl-upstream-isolation.nix {
+        inherit pkgs tvp;
+      };
       recipe-split-contracts = import ./lib/tests/recipe-splits.nix { inherit pkgs tvp; };
       upstream-tracking = import ./tools/upstream/tests {
         inherit pkgs tvp ownedCLI;

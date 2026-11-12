@@ -28,7 +28,7 @@ let
   # occur even when hidden in a child materializer's payload.
   consumes = p: q: builtins.hasAttr (plain q.drvPath) (context p);
   fresh = p: same p (lower p.specification);
-  testFields = [
+  sqliteFields = [
     "testZlib"
     "testPatches"
     "testCompileFlags"
@@ -41,13 +41,29 @@ let
     "upstreamExpected"
   ];
   marker = builtins.toFile "upstream-isolation-differential" "isolation sentinel\n";
+  opensslFields = [
+    "doCheck"
+    "testPerl"
+    "testTools"
+    "testPatchTool"
+    "testPatches"
+    "testCompileFlags"
+    "testEnvironment"
+    "testPrepareScript"
+    "testRestoreScript"
+    "captureScript"
+    "classifyScript"
+    "runnerScript"
+    "upstreamExpected"
+  ];
+  isOpenSSL = p: lib.hasPrefix "openssl-" p.specification.upstreamIsolation.protocol;
+  testFields = p: if isOpenSSL p then opensslFields else sqliteFields;
   perturb =
     p:
     p.edit (
       s:
       s
       // {
-        testZlib = s.coreutils;
         testPatches = [
           {
             file = marker;
@@ -55,7 +71,6 @@ let
           }
         ];
         testCompileFlags = [ "-DTVP_ISOLATION_SENTINEL" ];
-        testFixtureRelinks = !(s.testFixtureRelinks or false);
         testPrepareScript = marker;
         testRestoreScript = marker;
         captureScript = marker;
@@ -63,6 +78,23 @@ let
         runnerScript = marker;
         upstreamExpected = "edited expectation";
       }
+      // (
+        if isOpenSSL p then
+          {
+            doCheck = false;
+            testPerl = s.coreutils;
+            testTools = [ s.coreutils ];
+            testPatchTool = s.coreutils;
+            testEnvironment = {
+              TERM = "edited";
+            };
+          }
+        else
+          {
+            testZlib = s.coreutils;
+            testFixtureRelinks = !(s.testFixtureRelinks or false);
+          }
+      )
     );
   inspectAudited =
     name: p:
@@ -116,7 +148,19 @@ let
                 runnerScript
                 testPatches
                 ;
-              testOnlyProviders = lib.subtractLists (s.productionSharedProviders or [ ]) [ s.testZlib ];
+              testOnlyProviders =
+                lib.subtractLists
+                  (s.productionSharedProviders or (if isOpenSSL p then s.environment.tools else [ ]))
+                  (
+                    if isOpenSSL p then
+                      [
+                        s.testPerl
+                        s.testPatchTool
+                      ]
+                      ++ s.testTools
+                    else
+                      [ s.testZlib ]
+                  );
             }
           )
         );
@@ -139,9 +183,14 @@ let
             && builtins.elem policy.protocol [
               "quick"
               "veryquick"
+              "openssl-0.9.7"
+              "openssl-1.0.0"
+              "openssl-1.1.0"
+              "openssl-3.0.0"
+              "openssl-4.0.0"
             ]
             && policy.statePath == "nix-support/upstream-build-tree"
-            && policy.testInputFields == testFields;
+            && policy.testInputFields == testFields p;
           testInputIndependence = same p changed && same p.artifact changed.artifact;
           forwardEdges = consumes t p.artifact && consumes r t && consumes u r;
           noReverseEdges =
@@ -170,19 +219,28 @@ let
         inherit failed checks;
         protocol = policy.protocol;
         status = p.tvp.status or { level = "ok"; };
-        roles = lib.genAttrs [ "A" "F" "T" "R" "U" ] (
-          role:
-          identity (
-            {
-              A = p.artifact;
-              F = p;
-              T = t;
-              R = r;
-              U = u;
-            }
-            .${role}
-          )
-        );
+        roles =
+          lib.genAttrs
+            [
+              "A"
+              "F"
+              "T"
+              "R"
+              "U"
+            ]
+            (
+              role:
+              identity (
+                {
+                  A = p.artifact;
+                  F = p;
+                  T = t;
+                  R = r;
+                  U = u;
+                }
+                .${role}
+              )
+            );
       };
 in
 rec {
@@ -195,6 +253,14 @@ rec {
         audited = false;
         compliant = false;
         disposition = "UNAUDITED";
+        status = p.tvp.status or { level = "ok"; };
+      }
+    else if isOpenSSL p && !p.specification.doCheck then
+      {
+        id = name;
+        audited = false;
+        compliant = false;
+        disposition = "DISABLED_UPSTREAM_WORKLOAD";
         status = p.tvp.status or { level = "ok"; };
       }
     else
