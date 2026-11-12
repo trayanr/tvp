@@ -6,6 +6,28 @@ let
   policy = tvp.lib.upstreamTestIsolation;
   reference = tvp.canonical.openssl_0_9_7c.specification;
   inherit (reference) bash coreutils python;
+  mandatoryPlans = builtins.toFile "openssl-mandatory-generation-plans.json" (
+    builtins.toJSON (
+      lib.genAttrs
+        [
+          "openssl_3_0_0"
+          "openssl_4_0_0"
+        ]
+        (
+          name:
+          let
+            s = tvp.canonical.${name}.specification;
+            run = phase: (builtins.head (builtins.filter (step: step.name == "openssl.${phase}") s.plan)).run;
+          in
+          {
+            build = run "build";
+            install = run "install";
+            shell = "${s.bash}/bin/bash";
+            make = "${s.gnumake}/bin/make";
+          }
+        )
+    )
+  );
   base = reference.base.override { tools = [ coreutils ]; };
   context = tvp.lib.tests.forBase {
     inherit base coreutils;
@@ -421,6 +443,8 @@ let
         ${../../pkgs/libraries/openssl/tests/upstream-classify.py} \
         ${../../pkgs/libraries/openssl/ordinary/build-state.json} \
         ${../../pkgs/libraries/openssl/tests/upstream-restore.py} >&2
+      ${python}/bin/python3 -B ${../../pkgs/libraries/openssl/tests/mandatory-generation-contract.py} \
+        ${mandatoryPlans} >&2
       printf 'Upstream isolation tiny contracts passed'
     '';
     expected = "Upstream isolation tiny contracts passed";

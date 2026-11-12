@@ -49,6 +49,12 @@ Unified `build_tests` is an alias for `build_programs`, not a portable fixture-o
 target. Default build_sw/all constructs noinst test programs; module lists also
 contain noinst test providers, and libraries include static libtestutil. Production
 restrictions select the upstream INSTALL_* sets, keeping all shipped products.
+For 3.x/4.x, production build and install also pass a concrete
+`GENERATED_MANDATORY` list from configured `configdata.pm`, excluding only the
+`test/` and `fuzz/` roots. This keeps production headers, metadata and provider
+products while excluding the global `provider_internal_test.cnf` fixture.
+Command-line selection propagates to recursive install makes. It changes neither
+the saved Makefile/configdata nor private T/R, which retain unrestricted generation.
 The original unrestricted Makefiles/configuration survive in the checkpoint, so T
 can build the real tests without reconfiguring production or disabling tests in
 Configure. Make may regenerate identified metadata or relink in private T/R;

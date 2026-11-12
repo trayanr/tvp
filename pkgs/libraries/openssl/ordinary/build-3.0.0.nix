@@ -54,11 +54,23 @@ let
   make = ''${final.gnumake}/bin/make -j1 SHELL=${final.bash}/bin/bash'';
   # Upstream INSTALL_* sets exclude noinst test libraries/programs/modules.
   # Keep tests configured: T uses the original Makefile sets without these overrides.
+  # Global mandatory generators also include test fixtures. Select their concrete
+  # production subset from configdata; a make self-reference would recurse.
+  selectProductionGenerated = ''
+    productionGenerated=$(
+      ${final.buildPerl}/bin/perl -I. -Mconfigdata -e '
+        my $mandatory = $configdata::unified_info{depends}->{""};
+        die "Missing mandatory generation set\n" unless ref($mandatory) eq "ARRAY";
+        print join " ", grep { !m{\A(?:test|fuzz)/} } @$mandatory;
+      '
+    )
+  '';
   productionMake =
     make
     + " 'LIBS=$(INSTALL_LIBS)' 'SHLIBS=$(INSTALL_SHLIBS)'"
     + " 'PROGRAMS=$(INSTALL_PROGRAMS)' 'ENGINES=$(INSTALL_ENGINES)'"
-    + " 'MODULES=$(INSTALL_MODULES) $(INSTALL_ENGINES)'";
+    + " 'MODULES=$(INSTALL_MODULES) $(INSTALL_ENGINES)'"
+    + " \"GENERATED_MANDATORY=$productionGenerated\"";
   productionTargets = [ "build_sw" ];
 in
 {
@@ -278,8 +290,12 @@ in
             ${final.buildPerl}/bin/perl ./Configure linux-x86_64 --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
           '')
 
-          (command "build" "${productionMake} ${lib.escapeShellArgs productionTargets}")
+          (command "build" ''
+            ${selectProductionGenerated}
+            ${productionMake} ${lib.escapeShellArgs productionTargets}
+          '')
           (command "install" ''
+            ${selectProductionGenerated}
             ${productionMake} ${lib.escapeShellArg final.installTarget}
             # Normalize the installed metadata directory search permissions.
             if test -d "$out/lib/pkgconfig"; then chmod 755 "$out/lib/pkgconfig"; fi
