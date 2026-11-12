@@ -112,7 +112,7 @@ package.testContext.mkSuite {
               test "$(head -n1 ${package}/bin/c_rehash)" = '#!${package.runtime.perl}/bin/perl'
               unset OPENSSL
               PATH= ${package}/bin/c_rehash certs >rehash.log
-              hash=$(openssl x509 -in certs/ca.pem -noout -subject_hash)
+              hash=$(openssl x509 -in certs/ca.pem -noout -hash)
               test -L "certs/$hash.0"
               test "$(readlink "certs/$hash.0")" = ca.pem
               printf rehash-ok
