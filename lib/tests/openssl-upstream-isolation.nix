@@ -443,6 +443,11 @@ let
         ${../../pkgs/libraries/openssl/tests/upstream-classify.py} \
         ${../../pkgs/libraries/openssl/ordinary/build-state.json} \
         ${../../pkgs/libraries/openssl/tests/upstream-restore.py} >&2
+      ${python}/bin/python3 -B ${../../pkgs/libraries/openssl/tests/upstream-state-contract.py} \
+        ${../../pkgs/libraries/openssl/ordinary/build-state.py} \
+        ${../../pkgs/libraries/openssl/tests/upstream-classify.py} \
+        ${tvp.canonical.openssl_4_0_0.specification.stateManifest} \
+        ${../../pkgs/libraries/openssl/tests/upstream-restore.py} --require-production-metadata >&2
       ${python}/bin/python3 -B ${../../pkgs/libraries/openssl/tests/mandatory-generation-contract.py} \
         ${mandatoryPlans} >&2
       printf 'Upstream isolation tiny contracts passed'

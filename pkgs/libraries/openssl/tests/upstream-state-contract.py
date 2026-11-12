@@ -32,6 +32,13 @@ with tempfile.TemporaryDirectory() as tmp:
                 p.write_text(str(source) + '\nprefix=/nix/store/production-prefix\n')
             else:
                 p.mkdir()
+        production_metadata = (
+            'OpenSSLConfigVersion.cmake', 'OpenSSLConfig.cmake',
+            'builddata.pm', 'installdata.pm',
+        ) if protocol == 'openssl-4.0.0' and '--require-production-metadata' in sys.argv[5:] else ()
+        for index, name in enumerate(production_metadata):
+            (source / name).write_bytes(('checkpoint:' + name).encode())
+            os.utime(source / name, ns=(120123456780 + index, 120123456780 + index))
         (source / 'apps/openssl').write_bytes(b'ELF\0historical source=' + str(source).encode())
         (source / 'apps/openssl').chmod(0o751)
         (source / 'libcrypto.so').write_bytes(b'ELF\0unchanged')
@@ -44,6 +51,7 @@ with tempfile.TemporaryDirectory() as tmp:
         checkpoint = root / (protocol + '-state')
         state.save(source, checkpoint, manifest, protocol, '/nix/store/production-prefix', epoch)
         layout = json.loads((checkpoint / 'layout.json').read_text())
+        assert all(name in layout['members'] for name in production_metadata), 'production metadata not retained'
         assert '.git/history' not in layout['members'] and 'temp.db' not in layout['members']
         workspace = root / (protocol + '-private'); workspace.mkdir()
         restore.restore(checkpoint, workspace)
@@ -54,6 +62,9 @@ with tempfile.TemporaryDirectory() as tmp:
         assert (private / 'apps/openssl').read_bytes() == (source / 'apps/openssl').read_bytes()
         assert (private / 'libcrypto.so.0').readlink() == Path('libcrypto.so')
         assert str(private) in (private / 'Makefile').read_text()
+        for name in production_metadata:
+            assert (private / name).read_bytes() == (source / name).read_bytes()
+            assert (private / name).stat().st_mtime_ns == (source / name).stat().st_mtime_ns
         assert 'prefix=/nix/store/production-prefix' in (private / 'Makefile').read_text()
         (private / 'test/private-marker').write_text('private')
         assert not (source / 'test/private-marker').exists()
@@ -90,4 +101,4 @@ with tempfile.TemporaryDirectory() as tmp:
             pass
         else:
             raise AssertionError('invalid capture accepted: ' + kind)
-print('Five checkpoint protocols and strict capture controls passed')
+print('Checkpoint protocols and strict capture controls passed')

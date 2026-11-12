@@ -51,7 +51,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${final.gnumake}/bin/make -j1 SHELL=${final.bash}/bin/bash'';
+  make = ''${final.gnumake}/bin/make SHELL=${final.bash}/bin/bash'';
   # Upstream INSTALL_* sets exclude noinst test libraries/programs/modules.
   # Keep tests configured: T uses the original Makefile sets without these overrides.
   # Global mandatory generators also include test fixtures. Select their concrete
@@ -132,7 +132,24 @@ in
     testCmake
     ;
   stateScript = ./build-state.py;
-  stateManifest = ./build-state.json;
+  # Only this release's checkpoint changes when its metadata requirements change.
+  stateManifest = builtins.toFile "openssl-4.0.0-build-state.json" (
+    builtins.toJSON {
+      protocols."openssl-4.0.0" =
+        let
+          original = (builtins.fromJSON (builtins.readFile ./build-state.json)).protocols."openssl-4.0.0";
+        in
+        original
+        // {
+          generatedPatterns = original.generatedPatterns ++ [
+            "OpenSSLConfigVersion.cmake"
+            "OpenSSLConfig.cmake"
+            "builddata.pm"
+            "installdata.pm"
+          ];
+        };
+    }
+  );
   testPrepareScript = ../tests/upstream-prepare.py;
   testRestoreScript = ../tests/upstream-restore.py;
   captureScript = ../tests/upstream-capture.py;
@@ -292,11 +309,11 @@ in
 
           (command "build" ''
             ${selectProductionGenerated}
-            ${productionMake} ${lib.escapeShellArgs productionTargets}
+            ${productionMake} -j"''${NIX_BUILD_CORES:-1}" ${lib.escapeShellArgs productionTargets}
           '')
           (command "install" ''
             ${selectProductionGenerated}
-            ${productionMake} ${lib.escapeShellArg final.installTarget}
+            ${productionMake} -j1 ${lib.escapeShellArg final.installTarget}
             # Normalize the installed metadata directory search permissions.
             if test -d "$out/lib/pkgconfig"; then chmod 755 "$out/lib/pkgconfig"; fi
             mkdir -p "$out/nix-support"

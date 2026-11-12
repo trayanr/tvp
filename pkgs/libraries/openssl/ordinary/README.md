@@ -55,6 +55,10 @@ For 3.x/4.x, production build and install also pass a concrete
 products while excluding the global `provider_internal_test.cnf` fixture.
 Command-line selection propagates to recursive install makes. It changes neither
 the saved Makefile/configdata nor private T/R, which retain unrestricted generation.
+The 4.0.0 procedure uses Nix's core allowance for production compilation and keeps
+installation and upstream tests serial. Its protocol-specific checkpoint manifest
+also retains the generated CMake files and their build/install Perl metadata;
+changing those requirements leaves older release producers unchanged.
 The original unrestricted Makefiles/configuration survive in the checkpoint, so T
 can build the real tests without reconfiguring production or disabling tests in
 Configure. Make may regenerate identified metadata or relink in private T/R;
