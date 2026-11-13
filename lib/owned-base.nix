@@ -11,6 +11,7 @@ let
       shell,
       tools,
       referencePackages ? [ ],
+      coreutils ? null,
     }:
     let
       fail = message: throw "TVP owned base: ${message}";
@@ -81,6 +82,8 @@ let
           )
         then
           fail "compiler must declare nonempty runtimeDirectories"
+        else if coreutils != null && !(package coreutils && matchesExecution coreutils) then
+          fail "Coreutils must execute on the selected platform"
         else if !(package shell && builtins.isList tools && builtins.all package tools) then
           fail "shell and baseline tools must be packages"
         else if !(builtins.all matchesExecution ([ shell ] ++ tools)) then
@@ -101,8 +104,14 @@ let
         environment = composeEnvironment;
         override =
           replacements:
-          make (args // (if builtins.isFunction replacements then replacements args else replacements));
-      };
+          let
+            changes = if builtins.isFunction replacements then replacements args else replacements;
+            reboundTools = lib.optionalAttrs (coreutils != null && changes ? coreutils && !(changes ? tools)) {
+              tools = map (tool: if tool.outPath == coreutils.outPath then changes.coreutils else tool) tools;
+            };
+          in
+          make (args // reboundTools // changes);
+      } // lib.optionalAttrs (coreutils != null) { inherit coreutils; };
     in
     builtins.seq checked base;
 in

@@ -2,8 +2,23 @@
   lib,
   versions,
   tests,
+  familyContext ? null,
 }:
 rec {
+  # New ordinary authoring; retained construction keeps the low-level API.
+  mkFamily = import ./family.nix {
+    inherit lib;
+    defaultContext = familyContext;
+    api = {
+      inherit
+        mkDefs
+        mkTable
+        mkVersions
+        mkAliases
+        ;
+    };
+  };
+
   # Evaluation-only evidence of the expression selected by a definition. Never
   # feed this tag to a builder or use a realised version to guess its intent.
   # Reapply it to output projections; explicit overrides are choices of their
@@ -182,11 +197,9 @@ rec {
     else
       blob;
 
-  # `base` is required of every definition rather than defaulted per package.
-  # There are a few dozen definitions in the whole repo, so stating it is cheap,
-  # and a definition that silently landed on the wrong ground would be invisible
-  # while a missing one fails to evaluate. `null` says the builder is not on a
-  # base at all, which is a fact worth declaring rather than inferring.
+  # The low-level interface validates resolved definitions. mkFamily supplies its
+  # selected base before reaching this layer; retained callers declare it directly.
+  # `null` records the historical no-base constructor boundary.
   checkDef =
     attr: entry:
     if !(entry ? def) then
@@ -242,6 +255,7 @@ rec {
       source ? null,
       variant ? null,
       rebindTests ? null,
+      argumentDefaults ? null,
     }:
     lib.mapAttrs' (
       version: rawEntry:
@@ -300,56 +314,59 @@ rec {
           canonical = attr;
         };
         owned = recipe ? constructor;
-        ownedPackage = recipe.constructor {
-          recipe = builder;
-          args =
-            builtins.intersectAttrs (builtins.functionArgs builder) infra
-            // (recipe.helpers or { })
-            // {
-              inherit base version;
-              src =
-                if (recipe.source or source) == null then
-                  throw "TVP: owned definition ${attr} requires a family source factory."
-                else
-                  (recipe.source or source) {
-                    inherit version;
-                    inherit (entry) sha256;
-                  };
-            }
-            // checkDeps attr recipe.deps
-            // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
-            // (recipe.opts or { })
-            // removeAttrs currentExtraArgs [ "mkTests" ];
-          dependencyNames = recipe.dependencyNames or (lib.attrNames (checkDeps attr recipe.deps));
-          infrastructure = infra;
-          inherit selection;
-          testContext = recipe.testContext or null;
-          metadata =
-            packageMeta
-            // {
-              inherit status definition;
-              builder = baseNameOf recipe.builder;
-              declaredTestDependencies = checkDeps "${attr} tests" testDeps;
-              dependencyReasons = recipe.dependencyReasons or { };
-            }
-            // lib.optionalAttrs (variant != null) {
-              canonical = false;
-              inherit variant;
-            }
-            // lib.optionalAttrs (patches != [ ]) {
-              patches = map (p: {
-                inherit (p) reason;
-                file = baseNameOf p.file;
-              }) patches;
-            }
-            // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
-          mkTests =
-            package:
-            removeAttrs ((currentExtraArgs.mkTests or (_: { })) package) (status.knownTestFailures or [ ]);
-          passthru = lib.optionalAttrs (currentExtraArgs ? mkTests && currentExtraArgs.mkTests ? override) {
-            inherit (currentExtraArgs) mkTests;
-          };
-        };
+        ownedPackage = recipe.constructor (
+          {
+            recipe = builder;
+            args =
+              builtins.intersectAttrs (builtins.functionArgs builder) infra
+              // (recipe.helpers or { })
+              // {
+                inherit base version;
+                src =
+                  if (recipe.source or source) == null then
+                    throw "TVP: owned definition ${attr} requires a family source factory."
+                  else
+                    (recipe.source or source) {
+                      inherit version;
+                      inherit (entry) sha256;
+                    };
+              }
+              // checkDeps attr recipe.deps
+              // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
+              // (recipe.opts or { })
+              // removeAttrs currentExtraArgs [ "mkTests" ];
+            dependencyNames = recipe.dependencyNames or (lib.attrNames (checkDeps attr recipe.deps));
+            infrastructure = infra;
+            inherit selection;
+            testContext = recipe.testContext or null;
+            metadata =
+              packageMeta
+              // {
+                inherit status definition;
+                builder = baseNameOf recipe.builder;
+                declaredTestDependencies = checkDeps "${attr} tests" testDeps;
+                dependencyReasons = recipe.dependencyReasons or { };
+              }
+              // lib.optionalAttrs (variant != null) {
+                canonical = false;
+                inherit variant;
+              }
+              // lib.optionalAttrs (patches != [ ]) {
+                patches = map (p: {
+                  inherit (p) reason;
+                  file = baseNameOf p.file;
+                }) patches;
+              }
+              // lib.optionalAttrs (recipe ? blob) { blob = checkBlob attr recipe.blob; };
+            mkTests =
+              package:
+              removeAttrs ((currentExtraArgs.mkTests or (_: { })) package) (status.knownTestFailures or [ ]);
+            passthru = lib.optionalAttrs (currentExtraArgs ? mkTests && currentExtraArgs.mkTests ? override) {
+              inherit (currentExtraArgs) mkTests;
+            };
+          }
+          // lib.optionalAttrs (argumentDefaults != null) { inherit argumentDefaults; }
+        );
       in
       lib.nameValuePair attr (
         if owned then

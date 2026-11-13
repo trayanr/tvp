@@ -36,10 +36,12 @@ let
           gzip
           gnused
           gnugrep
-          gawk
           diffutils
           findutils
           ;
+        gawk = tvpLib.packages.withConstraint {
+          reason = "Patchelf is a build prerequisite of MPFR; Gawk 5 depends on MPFR. Select the MPFR-free Gawk 4.0 line for the build-only AWK role.";
+        } tvp.packages.gawk_4_0;
         python = constructionTool "python";
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";

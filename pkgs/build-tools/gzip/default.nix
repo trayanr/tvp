@@ -34,7 +34,9 @@ let
         findutils = tvp.packages.findutils_4;
         sed = tvp.packages.gnused_4;
         grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
+        gawk = tvpLib.packages.withConstraint {
+          reason = "Gzip is used by MPFR build prerequisites; Gawk 5 depends on MPFR. Keep the build-only AWK input on the MPFR-free Gawk 4.0 line.";
+        } tvp.packages.gawk_4_0;
         diffutils = tvp.packages.diffutils_3;
         python = host "python" "Independent source/output helper avoids catalogue dependency cycles.";
         binutils = host "linker" "Owned ELF output tools independent of catalogue consumers.";

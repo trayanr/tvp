@@ -14,6 +14,7 @@
   infrastructure ? { },
   passthru ? { },
   testContext ? null,
+  argumentDefaults ? null,
 }:
 let
   steps = import ./build-steps.nix;
@@ -23,7 +24,12 @@ let
     current: edits: customized:
     let
       unknown = lib.subtractLists (builtins.attrNames declared) (builtins.attrNames current);
-      definition = recipe current;
+      resolved =
+        if argumentDefaults == null then
+          current
+        else
+          builtins.intersectAttrs declared (argumentDefaults current) // current;
+      definition = recipe resolved;
       # A field introduced by an arbitrary edit is not automatically a recipe
       # input. Only published fields or an explicit projection describe providers.
       published = builtins.attrNames (
@@ -53,7 +59,7 @@ let
           (
             builtins.intersectAttrs (lib.genAttrs (
               if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
-            ) (_: null)) current
+            ) (_: null)) resolved
           );
       provenance = metadata // {
         base = specification.base.name;
@@ -113,7 +119,7 @@ let
             overrides:
             reselect (
               call (
-                current // (if builtins.isFunction overrides then overrides current else overrides)
+                current // (if builtins.isFunction overrides then overrides resolved else overrides)
               ) edits true
             );
           edit = edit: reselect (call current (edits ++ [ edit ]) true);

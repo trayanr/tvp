@@ -1,178 +1,156 @@
-# Writing an owned recipe
+# Writing an ordinary package family
 
-Start here for the current `tvp.builder` API. [STRUCTURE.md](../STRUCTURE.md)
-defines catalogue layout, release routing and admission rules. The
-[output helper reference](native-output-steps.md) and
-[test reference](owned-tests.md) describe the focused APIs. Retained construction
-procedures are separate controls, not templates for new recipes.
-The supported execution target is native x86_64 GNU/Linux.
+Use `tvp.lib.packages.mkFamily` for new ordinary families. MPFR is the first
+migrated family. [STRUCTURE.md](../STRUCTURE.md) defines repository layout and
+admission rules; [output helpers](native-output-steps.md) and
+[owned tests](owned-tests.md) describe the focused execution APIs.
 
-## A complete small example
+## Definitions contain the actual choices
 
-[examples/native-recipe.nix](examples/native-recipe.nix) is a standalone example
-using the explicitly selected [source-GNU base](../bases/source-gnu/README.md).
-It compiles a C program, installs `out` and `bin`, splits before packaging,
-creates a launcher from an editable runtime message and attaches two installed
-tests. It imports neither nixpkgs nor the ordinary catalogue.
-
-From the repository root, inspect or build the example:
-
-```sh
-nix eval --offline --raw --file lib/examples/native-recipe.nix package.artifact.drvPath
-nix build --offline --file lib/examples/native-recipe.nix package
-nix build --offline --file lib/examples/native-recipe.nix batch
-```
-
-Evaluation does not compile. Building may realize the example's selected base and
-tools if they are absent; `--offline` prevents fetching, not local dependency
-builds. This example's tests exercise its installed program and metadata. They
-do not qualify the compiler, other recipes or historical releases.
-
-The essential plan is visible in the recipe:
+Each definition states its complete procedure and additional dependencies. Copy
+these records where needed so each can be read independently. Avoid a shared
+`common` definition or a version-switching procedure merely to reduce repetition.
 
 ```nix
-plan = [
-  # Configure/build/install with explicit environment records.
-  (steps.split "example.finalize")
-  (outputs.copyArtifacts {
-    coreutils = final.coreutils;
-    outputs = final.outputs;
-  })
-  (outputs.template {
-    python = final.python;
-    output = "bin";
-    path = "bin/example";
-    template = launcher;
-    values = { /* explicit template values */ };
-  })
-];
+defs = {
+  "4.2.1" = {
+    builder = ./ordinary/build-4.2.1.nix;
+    deps = {
+      inherit (tvp.packages) gnumake gnutar xz diffutils findutils;
+      python = tvp.packages.python-build_3_12_5;
+      patchelf = tvp.packages.patchelf_0;
+      sed = tvp.packages.gnused;
+      grep = tvp.packages.gnugrep;
+      gawk = tvp.lib.packages.withConstraint {
+        reason = "Gawk 5 depends on MPFR; use the MPFR-free build AWK.";
+      } tvp.packages.gawk_4_0;
+      gmp = tvp.packages.gmp_6;
+    };
+  };
+};
 ```
 
-This excerpt shows the boundary; the linked file includes the enabled commands
-on both sides and the complete template values required for evaluation.
+Real compatibility options or patches stay beside their definition, with their
+reasons. Release blocks select a definition and supply versions and source hashes.
+See [MPFR's definitions](../pkgs/libraries/mpfr/default.nix) and
+[release blocks](../pkgs/libraries/mpfr/releases.nix).
 
-## Specification and customization
+## Register sources and tests once
 
-A procedure accepts an attribute set of constructor arguments and returns either
-specification data or `final: { ... }`. `final` is the effective specification
-after edits. Publish editable fields explicitly and derive command records from
-the selected environment:
+The family entry point connects the table to one source factory and one test suite:
 
 ```nix
-(final.base.environment final.environment) // {
-  name = "example.build";
-  run = ''"$CC" ${final.src} -o answer'';
-}
+family = tvp.lib.packages.mkFamily {
+  pname = "mpfr";
+  inherit defs;
+  releases = import ./releases.nix;
+  source = { version, sha256 }: import <nix/fetchurl.nix> {
+    url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+    inherit sha256;
+  };
+  tests = import ./tests/family.nix;
+};
 ```
 
-`environment`, named `environments`, `runtime` and `plan` are specification data.
-Their exact fields are defined by each recipe. Adding an arbitrary field with
-`.edit` does not make it an operative input. Dependency metadata must describe
-the same effective providers consumed by commands.
+It returns `canonical`, `aliases` and `recipes.<pname>`. The release function
+receives `{ defs }` with the constructor's definition names attached. A test
+function receives `{ package, lib, context }`. It returns named test derivations,
+usually through `context.mkSuite`; capability-specific tests use the effective
+package's declared features. Each release gets tests of its own final output.
+Writing the suite once does not reuse another version's test result.
 
-| Operation | Use it for |
-| --- | --- |
-| `.override { dependency = replacement; }` | Replacing a declared constructor argument. A function of current arguments is also accepted. |
-| `.edit (spec: spec // { ... })` | Editing fields the procedure explicitly publishes and consumes. |
-| `.editRuntime (runtime: runtime // { ... })` | Editing that recipe's supported runtime choices. |
-| `.editSteps (steps.replace "name" update)` | Replacing a named operation; insertion, deletion and disabling use the same editors. |
+The test runner is shared globally. MPFR's version, arithmetic and optional
+Float128 assertions are declared once in [its suite](../pkgs/libraries/mpfr/tests/family.nix).
+Independent upstream acceptance stays a normal test leaf. Diagnostics go to
+stderr; stdout is compared exactly with the declared `expected` string. Failed
+commands and pipelines stay failures. Expected trailing newlines are not supported.
 
-Edits accumulate in order and replay after argument overrides. Unknown constructor
-arguments, missing step targets and duplicate step names fail. Tests, provenance
-and named-output projections are reconstructed from the customized package.
-`overrideAttrs` is not an owned-package API.
+## What the selected build context supplies
 
-For a real dependency replacement, with `tvp` already imported:
+The catalogue binds the ordinary-family context once. Definitions do not repeat:
 
-```nix
-tvp.canonical.mpfr_4_2_2.override {
-  gmp = tvp.canonical.gmp_6_2_1;
-}
-```
+- the owned constructor;
+- the base/compiler and platform selection;
+- the standard `tvp` and `lib` helper arguments;
+- Bash, Coreutils and Binutils from the selected base;
+- the test context, derived from the effective package.
 
-GMP is a compilation dependency, so this may change the artifact and final output.
-The example does not promise compatibility for arbitrary replacement versions.
+Only arguments declared by a procedure are supplied. There is no host PATH
+search, hook execution or arbitrary dependency discovery. Additional tools and
+libraries must be named explicitly in `deps`, using TVP package selectors.
+Resolved standard providers remain visible in `tvp.declaredDependencies`.
 
-For a final-only change in the standalone example:
+A compatible ordinary base exposes `shell`, `coreutils`, `compiler`, platform
+facts and the pure environment interface. Standard defaults are resolved on each
+constructor call. `.override { base = otherBase; }` recomputes the default tools;
+explicit argument replacements take precedence. Replacing `base.coreutils` through
+`base.override` also rebinds its baseline tool slot; an explicit `tools` replacement
+remains the caller's complete choice. The currently bound context is
+native x86_64 GNU/Linux. Platform support belongs to that context and to genuine
+recipe restrictions, not duplicated conditionals in version tables.
 
-```nix
-let example = import ./lib/examples/native-recipe.nix { };
-in example.package.editRuntime (runtime: runtime // { message = "custom answer"; })
-```
+Older `mkVersions` callers retain their explicit constructor/base/helper protocol
+while they are migrated. Frozen construction modules keep their complete pinned
+calls. They do not silently acquire ordinary defaults. Direct `tvp.builder` calls
+remain available for low-level fixtures and specialized construction work.
 
-Its compiled program stays exact; only packaging and the rebound tests change.
-Runtime edits to another recipe preserve compilation only when its active prefix
-does not consume those fields. An ELF lookup edit does not relink code or prove
-ABI compatibility. Ruby, for example, exposes named runtime providers and derives
-`runtime.libraries` from them; callers edit a supported named provider.
+## Public dependencies and bootstrap cycles
 
-## Splits and named outputs
+Ordinary dependencies select `tvp.packages`, including an explicit version line
+when compatibility or bootstrapping requires it. Such constraints state why.
+Replacing a retained construction tool with an ordinary producer changes the
+build inputs and can require rebuilding; identical version numbers do not imply
+identical derivations.
 
-Every new or migrated package needs an artifact/finalization split. Put source
-preparation, configuration, compilation and installation before it. Put installed
-path relocation, stripping, interpreter/RPATH repair, wrappers and final checks
-after it. Upstream-test construction, execution and acceptance belong in separate
-validation derivations, not in either production stage. A failed upstream test
-must still fail the normal batch while allowing the package to be built.
+For example, MPFR cannot use latest Gawk because Gawk 5 depends on MPFR.
+Patchelf, Gzip and File also need MPFR-free AWK selections when they occur before
+MPFR in that dependency graph. Their build-only AWK roles use the public Gawk 4.0
+line. Bootstrap providers elsewhere still need earlier tools; those choices
+remain explicit in their retained construction or compatibility definitions.
 
-The prefix produces `package.artifact`. The suffix runs in a fresh workspace.
-Required handoff files must be retained explicitly; process state does not carry
-across steps. Each command has a fresh shell and temporary directory. The runner
-owns logging, failure and cancellation handling; there are no inherited phase or
-setup hooks. One split is supported, with enabled commands on both sides.
+## Customization
 
-The default output list is `[ "out" ]`; `[ "out" "bin" ]` and other declared
-named outputs work with the same split. Names must be unique, context-free,
-nonreserved lowercase shell identifiers, with `out` first. All artifact outputs
-share one derivation; all final outputs share another. Every command receives the
-declared output paths. Multioutput variables are readonly and cannot be set in
-step `env`.
+`.override` replaces procedure arguments, including supplied standard defaults.
+A function receives the resolved arguments. `.edit` transforms the published
+specification; `.editSteps` and `.editRuntime` transform its plan and runtime.
+Edits replay after argument overrides. Unknown arguments, missing step targets
+and duplicate names fail. Named outputs and tests follow the customized package.
+`overrideAttrs` is not an owned-package interface.
 
-Pass `outputs = final.outputs` to `outputs.copyArtifacts` for either one or several
-outputs. Installed repair helpers accept `output = "bin"`, defaulting to `"out"`.
-Relative selectors and self paths then belong to that output. Text and
-authoritative RPATH rebasing use its matching artifact prefix; sibling-output
-mappings require explicit recipe policy. Repeated operations need distinct step
-names. See the [helper reference](native-output-steps.md) for selectors and limits.
+Use argument overrides to replace a base or dependency. A generic specification
+edit retains its constructor arguments; adding an unused field does not create
+an operative input. Commands and dependency metadata must read the same effective
+published providers.
 
-The runner supplies readonly `TVP_ARTIFACT_ROOT` and, for named splits,
-`TVP_ARTIFACT_OUTPUTS`. Recipe authors normally consume these through the copy and
-repair helpers. Every final output must exclude references to **all** artifact
-outputs; Nix enforces this, including sibling artifacts. `package.artifact` is a
-build handle, not a runtime dependency. Compiled prefix/length fields and other
-binary formats require a source-bound relocation operation; generic text repair
-does not handle them.
+The family test factory is overridable with `tests`; replacing that suite changes
+validation, not package compilation. Retained factories keep their historical
+interfaces. The [test reference](owned-tests.md) distinguishes these factories
+from individual test derivations.
 
-## Tools, libraries and tests
+## Procedure and split boundaries
 
-Select a base explicitly. `base.environment` supplies the compiler, shell and
-baseline tools; name additional tools and libraries in the recipe's environment.
-Tools can contribute pure `buildEnvironment` data. Public library requirements
-belong in `development`; runtime lookup providers remain separate. No provider
-executes hooks or recursively activates arbitrary tools. See
-[source-GNU](../bases/source-gnu/README.md) for native platform and base selection,
-and [STRUCTURE.md](../STRUCTURE.md#inputs-discovery-and-runtime-roles)
-for provider composition.
+Procedures remain complete independent version-start files. They receive resolved
+`src`, `version`, providers and helpers and return `final: { ... }` specification
+data. Their ordered `plan` contains named records and one `steps.split` marker.
+Source preparation, compilation and installation produce the artifact. Output
+relocation, stripping, interpreter/RPATH repair, wrappers and audits produce the
+final package in a fresh workspace. A failed upstream test must not block either
+production stage; its acceptance leaf still keeps the normal test batch red.
 
-Attach a required test factory to a catalogue definition. Use
-`tvp.lib.tests.fromPackage { builder = tvp.builder; inherit package; }` so tests
-follow the effective base, Bash and Coreutils. The standalone example shows this
-as `testContext` plus `mkTests`. Its suite is an attribute set of named leaves;
-`mkBatch` links those exact leaves. Installed tests consume the final package,
-and an independent strict upstream leaf remains in the normal suite when required.
+Single and named outputs share this boundary. Pass `outputs = final.outputs` to
+`outputs.copyArtifacts`. Installed helpers accept `output = "bin"`, defaulting to
+`"out"`; relative selectors and self paths belong to the selected output. Every
+final output must exclude all artifact paths, including sibling artifacts.
+Compiled prefix/length fields require explicit source-bound relocation. See the
+[helper reference](native-output-steps.md) for precise behavior and limits.
 
-Tests declare an exact `expected` string. Stdout is the compared result; send
-diagnostics to stderr. A failed command remains a failure even if a later command
-could print the expected result. Test-script or expectation edits should not
-invalidate package compilation. The [test reference](owned-tests.md) covers
-tools, libraries, environment overrides and current customization limits.
+The [low-level standalone example](examples/native-recipe.nix) demonstrates the
+underlying owned constructor and installed-output operations. It explicitly
+supplies wiring that `mkFamily` now provides for ordinary definitions. Building
+it may realize uncached tools; `--offline` prevents fetching, not local builds.
 
-For catalogue integration, keep source hashes and version tables in the family
-definition, complete version-start procedures in their own files, and tests in
-the family test factory. [MPFR's definition](../pkgs/libraries/mpfr/default.nix)
-and [procedure](../pkgs/libraries/mpfr/build-4.2.2.nix) illustrate the current call
-interface. Version-specific upstream nonpasses, unavailable host capabilities,
-binary adapters and frozen construction controls retain their explicit limits;
-source evaluation or a passing installed test does not waive them.
-MPFR's retained inline upstream check is isolation debt; its call interface does
-not make that check placement a template for new procedures.
+This is an incremental API migration. Existing recipes may retain isolation debt
+or known upstream failures; the new entry point does not waive them. MPFR's later
+procedures still have retained inline upstream checks. Source evaluation, a
+working compiler or an installed test does not establish full historical,
+platform, hardening or catalogue qualification.

@@ -63,17 +63,28 @@ strict failure behavior with the opt-in source GNU base. Its negative derivation
 are separate from the passing suite. The attached `owned-tests` check runs their
 actual runners in subprocesses, without nested Nix builds.
 
-Ordinary catalogue definitions opt in with a context factory outside `tvp` metadata:
+Ordinary `mkFamily` callers declare their suite once with `tests = import ./tests/family.nix;`.
+The function receives `{ package, lib, context }` and uses `context.mkSuite`, normally
+with `libraries = [ package ];` and scripts invoking `"$CC"` or `"$CXX"`. Each version
+gets distinct tests of its own final output. The shared suite declaration reuses code;
+a cached test result is reused only when its derivation identity is unchanged.
+
+The ordinary context comes from the effective package. The family constructor supplies
+it, so definitions do not repeat `testContext` or standard test tools. The normal
+catalogue builds the batch with that same context. Argument `override`, `edit` and
+`editSteps` reconstruct it from the current specification's base, Bash and Coreutils.
+Use argument overrides when replacing the base or providers so standard defaults are
+resolved together. The family factory supports `.mkTests.override { tests = replacement; }`;
+this replaces the suite function, not package compilation.
+
+Retained low-level definitions can still opt in explicitly:
 
 ```nix
 testContext = package:
   tvp.lib.tests.fromPackage { builder = tvp.builder; inherit package; };
 ```
 
-The regular factory uses `package.testContext.mkSuite`, with `libraries = [ package ];`
-and scripts invoking `"$CC"` or `"$CXX"`. The normal catalogue builds its batch with
-that same context. `override`, `edit` and `editSteps` reconstruct the context from
-the current specification's base, Bash and Coreutils. A base or shell replacement
-must provide a compatible native tool interface. Public development libraries expand
-transitively. Context functions remain outside serializable package metadata and
-named test leaves. The final all-batch and plan writer still use legacy infrastructure.
+A base or shell replacement must provide a compatible native tool interface. Public
+development libraries expand transitively. Context functions remain outside serializable
+package metadata and named test leaves. The final all-batch and plan writer still use
+legacy infrastructure. The new family interface does not rewrite those callers.

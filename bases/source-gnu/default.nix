@@ -16,6 +16,7 @@ let
     inherit platform referencePackages;
     compiler = toolchain.driver;
     shell = tools.bash;
+    coreutils = tools.coreutils;
     tools = [
       tools.coreutils
       tools.linker

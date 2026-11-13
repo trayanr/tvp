@@ -149,50 +149,54 @@ Version data is split in two. A **definition** is a whole build recipe; a **rele
 version and its hash. Definitions live in the package's `default.nix`, releases in version
 files beside it.
 
-```nix
-# pkgs/runtimes/ruby/default.nix
-defs = {
-  "2.7.0" = {
-    builder = ./build-2.7.nix;
-    base = tvp.bases.default;
-    deps = {
-      openssl = tvp.packages.openssl_1_1_1w;
-      readline = pkgs.readline;
-      zlib = pkgs.zlib;
-      gdbm = pkgs.gdbm;
-    };
-  };
-  …
-};
+The ordinary `mkFamily` entry point supplies the selected build context. Each
+definition contains its procedure, additional TVP dependencies and real compatibility
+options or patches. Source resolution and the test suite are declared once per family.
+Copy definitions in full rather than hiding their inputs behind a `common` overlay.
 
-versionTable = merge {
-  "2" = mkTable (import ./2.nix { inherit defs; });
-  "3" = mkTable (import ./3.nix { inherit defs; });
+```nix
+# pkgs/libraries/mpfr/default.nix — one complete definition
+"4.2.2" = {
+  builder = ./build-4.2.2.nix;
+  deps = {
+    inherit (tvp.packages) gnumake gnutar xz diffutils findutils;
+    python = tvp.packages.python-build_3_12_5;
+    patchelf = tvp.packages.patchelf_0;
+    sed = tvp.packages.gnused;
+    grep = tvp.packages.gnugrep;
+    gawk = tvp.lib.packages.withConstraint {
+      reason = "Gawk 5 depends on MPFR; use the MPFR-free build AWK.";
+    } tvp.packages.gawk_4_0;
+    gmp = tvp.packages.gmp_6;
+  };
 };
 ```
 
 ```nix
-# pkgs/runtimes/ruby/3.nix
+family = tvp.lib.packages.mkFamily {
+  pname = "mpfr";
+  inherit defs packageMeta;
+  releases = import ./releases.nix;
+  source = { version, sha256 }: import <nix/fetchurl.nix> {
+    url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+    inherit sha256;
+  };
+  tests = import ./tests/family.nix;
+};
+```
+
+```nix
+# pkgs/libraries/mpfr/releases.nix — excerpt
 { defs }:
 [
   {
-    def = defs."2.7.0";                    # 3.0 needs no recipe of its own
+    def = defs."4.0.2";
     releases = {
-      "3.0.0" = "sha256-oT7RQaHBjrlnqsHjP01q1fIb4axUPDRODW/u7lSvjig=";
-      …
+      "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
+      "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
+      "4.1.1" = "sha256-/9GVvVZ9uv/DuYsj/QCq0FN2gMmJYXHkT+P/eeKKwz0=";
+      "4.2.0" = "sha256-BqN43xNQEkjBsttaqXeiyBJq6Emp2be+JUb7Spwm2ZM=";
     };
-  }
-
-  {
-    def = defs."3.4.0";                    # one release; upstream shipped it oddly
-    releases = {
-      "3.4.0" = "sha256-BoyFI0QhdL00AOeG9KaVI1LIKxufYhD9F/tIIwhtM3k=";
-    };
-  }
-
-  {
-    def = defs."3.3.0";                    # and back again
-    releases = { "3.4.1" = "sha256-PTheXSLTaLBkyBehPtjjzD9xp3BdftG654ATwzqnyH8="; … };
   }
 ]
 ```
@@ -218,11 +222,11 @@ without duplicating the build procedure.
   for the same reason — **and to the release when the release does**, as OpenSSL 3.0.4 is
   alone among its 64. Declaring both for one release is a contradiction, not a merge, and
   throws.
-- **Every definition declares `base`.** There is no per-package default: a definition that
-  silently landed on the wrong ground would be invisible, while a missing one fails to
-  evaluate. Owned definitions select a base with explicit compiler, shell and tool
-  inputs. Retained helper-based definitions use `null` to declare their construction
-  boundary; it is not the pattern for a new owned recipe.
+- **The ordinary family context supplies the base and owned constructor.** Version
+  tables do not repeat platform selection, helpers or the standard Bash/Coreutils/
+  Binutils inputs. Additional providers come from `tvp.packages`. A genuine construction
+  or compatibility exception may explicitly replace the base. Retained low-level
+  `mkVersions` callers still declare their own base; `null` records a legacy boundary.
 - **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
   `hardeningDisable` are builder arguments but not dependencies, and `deps` is what the
   canonical-graph contract is written about. `checkDeps` throws on a non-derivation.
@@ -272,19 +276,21 @@ roughly three quarters of those lines were exact duplicates of a neighbour.
 ## Owned recipes
 
 For a short starting point and a complete evaluable example, see
-[Writing an owned recipe](lib/NATIVE-RECIPES.md). This section defines the
+[Writing an ordinary package family](lib/NATIVE-RECIPES.md). This section defines the
 catalogue-wide contracts and migration limits.
 
 `tvp.builder` owns the execution protocol and lowers prepared commands directly to
 `builtins.derivation`. A package supplies the complete procedure. It does not inherit
 configure, install or fixup hooks from a shared package builder.
 
-The package index selects `constructor = tvp.builder`, a version-start `builder` file,
-an explicit `base`, `deps` and optional `opts`/`helpers`. Its `source` factory receives
-`{ version, sha256 }` and supplies the resolved `src` to the procedure. A required
-test factory is attached by the index; `testContext` derives its context from the
-effective package. See [MPFR's definition](pkgs/libraries/mpfr/default.nix) and
-[complete procedure](pkgs/libraries/mpfr/build-4.2.2.nix).
+The ordinary package index uses `tvp.lib.packages.mkFamily`. Definitions select a
+version-start `builder` file, additional `deps` and optional `opts`/patches. The
+catalogue binds the constructor, base/platform, standard tools and helper arguments
+once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
+function receives `{ package, lib, context }`. Each test context follows the effective
+package. See [MPFR's definition](pkgs/libraries/mpfr/default.nix) and
+[complete procedure](pkgs/libraries/mpfr/build-4.2.2.nix). This is the new authoring
+interface; other families retain their prior wiring until reimplemented.
 
 A specification keeps `environment`, `runtime` and `plan` at the same level. Use
 `inherit (tvp.builder) steps outputs;` and a readable ordered `steps.sequence`.
@@ -410,7 +416,11 @@ The final audit/full-validation gate requires the outstanding list to be resolve
 ### Inputs, discovery and runtime roles
 
 `base.environment specification.environment` derives compiler commands and baseline
-tools from the selected base. Every additional tool and library is named explicitly,
+tools from the selected base. For ordinary families, declared Bash, Coreutils and
+Binutils arguments default to that base's named providers. Resolved providers remain
+visible in `tvp.declaredDependencies`, including when a definition customizes its
+metadata projection. Replacing the base with `.override` recomputes these defaults;
+explicit procedure arguments win. Every additional tool and library is named explicitly,
 including commands used only by configure or upstream checks. Tools contribute their
 discovery conventions; libraries expose their development layout. Do not add a tool
 to the base merely to make one package's undeclared command work.
@@ -712,12 +722,13 @@ bootstrap ladder lives under `bootstrap/`. Bootstrap construction inputs stay pi
 and independent of the ordinary catalogue they help construct. Necessary seed and
 binary boundaries remain declared, with their provenance and required follow-up.
 
-The candidate is selected explicitly by migrated definitions. The public default
-remains the retained GCC16 environment until the migration/default-switch gates
-pass. Selecting a packaged GCC release is separate from promoting a base.
+The ordinary `mkFamily` context selects source-GNU once in the catalogue entry point;
+version definitions do not repeat that choice. Families awaiting the authoring migration
+keep their existing selections. The public `tvp.bases.default` alias remains the retained
+GCC16 environment until the migration/default-switch gates pass. Selecting a packaged GCC release is separate from promoting a base.
 
-- Every definition declares its base. A missing one fails rather than selecting a
-  compiler implicitly.
+- Ordinary families resolve their base from the selected build context. Specialized
+  construction and retained low-level callers declare their base explicitly.
 - The base supplies the compiler, shell and minimal explicit baseline. Additional
   tools and libraries belong to recipe arguments and environment contributions.
 - Compatibility choices need measured reasons. Ordinary dependency aliases may move
@@ -833,8 +844,9 @@ recipes keep their own tested support lists. Tool versions, bootstrap parents an
 minimum kernel version remain choices of their base or recipe. The
 `checks.native-platform-interface` contract checks rejection and base wiring.
 
-An ordinary definition selects `base = tvp.bases.default`. When porting a package, its
-dependency graph must be ported too: changing only its compiler can leave libraries on
+The ordinary family context supplies the native platform and base. Select a different
+context centrally when adding supported platforms; keep genuine per-procedure
+restrictions explicit. When porting a package, its dependency graph must be ported too: changing only its compiler can leave libraries on
 the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
 libraries. The assembler's rebuilt variants are explicitly marked noncanonical and remain
 separate from the ordinary compiler and libc packages in the catalogue.

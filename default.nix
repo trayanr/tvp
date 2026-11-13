@@ -8,11 +8,20 @@
   pkgs, # TODO: nixpkgs check and abort if not or auto import channel
 }:
 let
-  tvpLib = import ./lib { inherit (pkgs) lib; };
+  tvpLib = import ./lib {
+    inherit (pkgs) lib;
+    familyContext = {
+      base = (import ./bases/source-gnu { }).base;
+      builder = tvp.builder;
+      helpers = {
+        inherit tvp;
+        inherit (pkgs) lib;
+      };
+    };
+  };
 
-  # The ground packages are built on. Defined before `packages` because every
-  # version table names one, and exposed on `tvp` so a version table can reach
-  # it the same way it reaches `tvp.packages`.
+  # Retained and specialized construction bases remain available independently
+  # of the ordinary family context selected above.
   baseSet = import ./bases {
     inherit pkgs tvpLib tvp;
     inherit (universe) recipes;
@@ -148,6 +157,9 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
+      ordinary-family = pkgs.writeText "tvp-ordinary-family-contracts" (
+        builtins.toJSON (import ./lib/tests/family.nix { inherit (pkgs) lib; })
+      );
       split-named-outputs = import ./lib/tests/split-named-outputs.nix { inherit pkgs tvp; };
       output-checks = import ./lib/tests/output-checks.nix {
         inherit (pkgs) lib;

@@ -20,8 +20,10 @@ in {
 }
 ```
 
-`builder.base { name; platform; compiler; shell; tools; }` returns pure base
-data and an environment composer. The shell is a package, included on step
+`builder.base { name; platform; compiler; shell; tools; coreutils ? null; }` returns
+pure base data and an environment composer. The ordinary-family context binds this
+base once and supplies Bash, Coreutils and Binutils to declared procedure arguments.
+Version definitions only select additional TVP dependencies. The shell is a package, included on step
 PATH before baseline tools. Explicit step tools precede that floor. Baseline
 shell/tools and selected step tools may contribute pure `buildEnvironment`
 data. The compiler supplies CC/CXX, Binutils commands, libc and target runtime
@@ -31,6 +33,8 @@ DSO lookup flags; the generic composer does not choose a linker policy.
 
 Replace a whole toolchain with `base.override { compiler = otherDriver; }`.
 It reconstructs the environment, commands and runtime directories together.
+`base.override { coreutils = otherCoreutils; }` also replaces the previous provider in
+the baseline tool list, unless an explicit replacement `tools` list is supplied.
 A nested record overlay cannot rebind a captured environment. Use
 `base.environment { overrides.values.CC = "/explicit/compiler"; }` for an
 invocation-specific replacement; this alone does not replace the C++ runtime.
