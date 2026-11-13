@@ -103,7 +103,11 @@ def finalize(config, inspector):
         if len(old)!=len(new) or old==new or not re.fullmatch(rb'/nix/store/[a-z0-9]{32}-[^/]+',old):
             raise ValueError('invalid glibc transport roots')
         mapping.append((old,new)); trees[name]=elf.tree(roots[name])
-    planned_links=[]; pending=[]
+    planned_links=[]; pending=[]; removals=[]
+    cache=Path(roots['out'])/'etc/ld.so.cache'
+    if (cache.parent.is_symlink() or (cache.parent.exists() and not cache.parent.is_dir()) or cache.is_symlink()
+            or (cache.exists() and not cache.is_file())):
+        raise ValueError('owned glibc cache location required')
     def transport(value):
         for old,new in mapping: value=elf.replace_paths(value,old,new)
         return value
@@ -138,6 +142,12 @@ def finalize(config, inspector):
         for root,files,groups,links in trees.values():
             for group in groups:
                 p=files[group[0]]; data=p.read_bytes(); updated=data
+                if cache in [files[n] for n in group]:
+                    if len(group)!=1 or not data.startswith(b'glibc-ld.so.cache1.1'):
+                        raise ValueError('unsupported/shared glibc cache')
+                    # ldconfig regenerates this binary from final library paths.
+                    removals.append(cache)
+                    continue
                 if any(old in data for old,new in mapping):
                     if data.startswith(b'\x7fELF'):
                         updated=native(p,data,mapping,elf,config['readelf'])
@@ -162,6 +172,7 @@ def finalize(config, inspector):
         for path,value in planned_links:
             if os.readlink(path)!=value: path.unlink(); path.symlink_to(value)
         for alias in aliases: alias.unlink(); os.link(getconf,alias)
+        for path in removals: path.unlink()
 
 
 if __name__=='__main__': finalize(json.loads(sys.argv[1]),sys.argv[2])

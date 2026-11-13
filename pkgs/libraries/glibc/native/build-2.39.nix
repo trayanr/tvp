@@ -263,5 +263,13 @@ in
           ${lib.escapeShellArg "${coreutils}/bin:${sed}/bin:${grep}/bin:${gawk}/bin"}
       '';
     }
+    {
+      name = "glibc.cache";
+      tools = [ ];
+      run = ''
+        "$bin/sbin/ldconfig" -i -X -C "$out/etc/ld.so.cache" -f /dev/null "$out/lib"
+        test -s "$out/etc/ld.so.cache"
+      '';
+    }
   ];
 }
