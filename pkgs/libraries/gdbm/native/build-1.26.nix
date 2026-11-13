@@ -114,14 +114,54 @@ in
     ++ [
       (steps.split "gdbm.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
-      (outputs.relocateText {
-        inherit python;
-        paths = [
-          "lib/pkgconfig"
-          "lib/libgdbm.la"
-          "lib/libgdbm_compat.la"
+      {
+        name = "gdbm.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
         ];
-      })
+        # 1.26 installs libtool metadata, not pkg-config files. Reuse the family
+        # finalizer to rebase both that metadata and the compiled locale paths.
+        run = ''${python}/bin/python3 -B ${../ordinary/output.py} "$out" "$TVP_ARTIFACT_ROOT" ${patchelf}/bin/patchelf ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              readelf = "${binutils}/bin/readelf";
+              shell = "${final.bash}/bin/bash";
+              buildShell = "${final.bash}/bin/bash";
+              paths = [ ];
+              requiredDirectories = [
+                "bin"
+                "lib"
+                "include"
+                "share/man"
+                "nix-support"
+              ];
+              requiredFiles = [
+                "bin/gdbmtool"
+                "bin/gdbm_dump"
+                "bin/gdbm_load"
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+                "include/gdbm.h"
+                "include/dbm.h"
+                "include/ndbm.h"
+              ];
+              libtoolData = [
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+              ];
+              requiredRegular = [
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+                "include/gdbm.h"
+                "include/dbm.h"
+                "include/ndbm.h"
+              ];
+            }
+          )
+        }'';
+      }
       (outputs.shebangs {
         inherit python;
         paths = [
