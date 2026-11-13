@@ -386,6 +386,12 @@ The runner supports one split and requires active commands in both stages.
 Single-output and named-output recipes use the same boundary. All named artifact
 outputs share one artifact derivation, and all named final outputs share one final
 derivation; named outputs do not create independent finalization derivations.
+`outputs.copyArtifacts { inherit coreutils; outputs = final.outputs; }` handles one or several
+outputs uniformly. Installed repair helpers accept `output = "bin"` (default
+`"out"`); relative selectors and self paths then belong to that declared output.
+Text and RPATH rebasing use its matching artifact prefix. Sibling artifact
+references still require explicit recipe policy. Selecting an output does not
+rename the step; repeated helper calls need distinct record names.
 Caller output checks run on the final stage.
 Existing unsplit recipes remain migration work. After the remaining ports, audit
 the whole package set, repair applicable boundaries and run the full applicable

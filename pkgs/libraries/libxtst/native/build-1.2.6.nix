@@ -146,7 +146,7 @@ in
     (steps.split "libxtst.finalize")
     (tvp.builder.outputs.copyArtifacts {
       coreutils = final.coreutils;
-      outputs = if final.outputs == [ "out" ] then null else final.outputs;
+      outputs = final.outputs;
     })
     {
       name = "libxtst.relocate";

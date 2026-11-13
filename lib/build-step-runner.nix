@@ -123,6 +123,22 @@ let
     in
     if bad != [ ] then
       throw "TVP step ${step.name}: reserved or malformed env key: ${lib.concatStringsSep ", " bad}"
+    else if
+      step ? outputSelection
+      && !(
+        builtins.isString step.outputSelection
+        && !(builtins.hasContext step.outputSelection)
+        && builtins.elem step.outputSelection outputNames
+      )
+    then
+      throw "TVP step ${step.name}: output selector must name a declared output (${lib.concatStringsSep ", " outputNames})"
+    else if
+      step ? artifactOutputSelection
+      &&
+        builtins.sort builtins.lessThan step.artifactOutputSelection
+        != builtins.sort builtins.lessThan outputNames
+    then
+      throw "TVP step ${step.name}: artifact outputs must match the complete declared output list"
     else
       {
         inherit (step) name;
