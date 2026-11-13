@@ -3,6 +3,7 @@
 ELF inspection/rebasing/strip remain explicit shared output operations in recipes.
 This helper never modifies executable bytes or follows a discovered link.
 """
+import gzip
 import os
 from pathlib import Path
 import stat
@@ -49,6 +50,8 @@ def finalize(root, artifact):
         rel = path.relative_to(root).as_posix()
         if rel.startswith('nix-support/sqlite-upstream/'):
             return 'raw'
+        if rel.startswith('share/man/') and path.suffix == '.gz':
+            return 'compressed-metadata'
         if path.suffix in ('.pc', '.la', '.tcl') or rel.startswith('share/man/'):
             return 'metadata'
         return 'artifact'
@@ -60,12 +63,16 @@ def finalize(root, artifact):
         p = paths[0]
         if role(p) == 'raw':
             removals.extend(paths)
-        elif role(p) == 'metadata':
+        elif role(p) in ('metadata', 'compressed-metadata'):
             data = p.read_bytes()
-            if b'\0' in data:
+            compressed = role(p) == 'compressed-metadata'
+            text = gzip.decompress(data) if compressed else data
+            if b'\0' in text:
                 raise ValueError(f'not text: {p}')
-            data.decode('utf-8')
-            changes.append((p, data.replace(os.fsencode(artifact), os.fsencode(root))))
+            text.decode('utf-8')
+            relocated = text.replace(os.fsencode(artifact), os.fsencode(root))
+            if relocated != text:
+                changes.append((p, gzip.compress(relocated, mtime=0) if compressed else relocated))
     # All validation is complete before the first write/unlink. Preserve aliases.
     for path, data in changes:
         info = path.stat()
