@@ -28,6 +28,7 @@ slot = before + marker
 assert len(after) < len(slot) and b'\0' not in after
 changes, count = [], 0
 cvsserver_paths = {'bin/git-cvsserver', 'libexec/git-core/git-cvsserver'}
+scalar_paths = {'bin/scalar', 'libexec/git-core/scalar'}
 cvsserver_seen = set()
 prefix_line = br'(my $prefix = $exec_path) =~ s/\Q$gitexecdir_relative\E$//;'
 prefix_binding = br'''my $prefix = $exec_path;
@@ -44,7 +45,10 @@ for group in groups:
         raise ValueError(('artifact bytes in runtime-prefix Git', group))
     result = data
     if marker in data:
-        if not all(n.startswith(('bin/git', 'libexec/git-core/git')) for n in group):
+        if not all(
+            n.startswith(('bin/git', 'libexec/git-core/git')) or n in scalar_paths
+            for n in group
+        ):
             raise ValueError(('unknown Git slot owner', group))
         hits = elf.inspect(p, slot, sys.argv[6])
         if not hits or len(hits) != data.count(marker):
