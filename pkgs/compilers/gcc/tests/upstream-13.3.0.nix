@@ -47,6 +47,8 @@ let
                 validation="$out"
                 mkdir -p "$validation"
                 cp -a ${package.artifact}/nix-support/production/. "$validation/"
+                # Archive copying preserves immutable store permissions.
+                chmod -R u+w "$validation"
                 mapfile -t flags < "$validation/stage-flags.txt"
                 ${import s.upstreamCapture {
                   inherit
