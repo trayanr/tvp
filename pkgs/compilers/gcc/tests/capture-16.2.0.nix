@@ -10,6 +10,19 @@
   sourceRoot,
 }:
 ''
+  # Bind only the restored test helper; immutable production source stays exact.
+  ${s.python}/bin/python3 -B ${../../../../lib/output-tools}/shebangs.py \
+    "${sourceRoot}/source/libgomp/testsuite" \
+    ${
+      lib.escapeShellArg (
+        builtins.toJSON {
+          paths = [ "flock" ];
+          names = [ "perl" ];
+          interpreter = "${s.perl}/bin/perl";
+          selfInterpreter = null;
+        }
+      )
+    } ${../../../../lib/native-output}
   mkdir -p boards "$PWD/home" "$PWD/cache" "$validation"
   cat > boards/tvp.exp <<'BOARD'
   load_base_board_description "unix"
@@ -30,6 +43,7 @@
   check_status=0
   ${s.gnumake}/bin/make -j"$NIX_BUILD_CORES" -k SHELL=${shell} "''${flags[@]}" \
     "CXXFLAGS_FOR_TARGET=-O2 -g ${includes} ${links}" \
+    PLUGINCC="$CXX" \
     RUNTESTFLAGS=--target_board=tvp \
     check-gcc check-target-libstdc++-v3 check-target-libgomp \
     check-target-libatomic check-target-libitm check-target-libquadmath \
