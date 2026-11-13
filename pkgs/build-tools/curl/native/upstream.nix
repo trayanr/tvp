@@ -51,6 +51,7 @@ in
 (package.testContext.mkTest {
   package = raw;
   name = "upstream";
+  tools = [ package.tvp.deps.gnugrep ];
   script = ''
     cat ${raw}/raw/log >&2
     test "$(cat ${raw}/raw/status)" = 0
