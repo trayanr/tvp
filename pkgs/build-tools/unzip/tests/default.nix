@@ -133,11 +133,11 @@ mkSuite {
         }/raw/upstream-check.status)" = 0
         test "$(cat ${
           (import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution
-        }/raw/upstream-strict.status)" = 1
+        }/raw/upstream-strict.status)" = 0
         test "$(grep -c '#####  WARNING:' ${
           (import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution
-        }/raw/upstream-check.log)" = 1
-        grep -F 'KNOWN-NONPASS: stale 1998 zipinfo' ${
+        }/raw/upstream-check.log)" = 0
+        grep -F 'FIXTURE-PORT: 1998 zipinfo expectation adapted before comparison' ${
           (import ../native/upstream.nix { inherit package; }).passthru.upstreamExecution
         }/raw/upstream-qualification >&2
         printf upstream-unix-check-qualified

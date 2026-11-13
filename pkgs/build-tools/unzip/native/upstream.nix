@@ -38,7 +38,7 @@ let
                     status=0
                     ${s.bash}/bin/bash -euo pipefail "$TVP_SOURCE_ROOT/upstream-check.sh" > "$out/raw/log" 2>&1 || status=$?
                     printf '%s\n' "$status" > "$out/raw/status"
-                    for evidence in upstream-check.log upstream-check.status upstream-strict.status upstream-qualification upstream-zipinfo.actual upstream-zipinfo.expected; do
+                    for evidence in upstream-check.log upstream-check.status upstream-strict.status upstream-qualification upstream-zipinfo.actual upstream-zipinfo.expected upstream-zipinfo.original; do
                       if test -f "$evidence"; then cp "$evidence" "$out/raw/"; fi
                     done
                   '';

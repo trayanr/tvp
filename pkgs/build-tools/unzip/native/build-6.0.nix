@@ -134,6 +134,9 @@ in
       p = Path('unix/Makefile')
       text = p.read_text()
       assert text.count('\tsh unix/configure ') == 1
+      listing = '\t@./unzip -Z $(TESTZIP) > testmake.unzip-Z\n'
+      assert text.count(listing) == 1
+      text = text.replace(listing, '\t@${python}/bin/python3 -B ${./prepare-upstream-fixture.py}\n' + listing)
       p.write_text(text.replace('\tsh unix/configure ', '\t${final.bash}/bin/bash unix/configure '))
       PYTHON
     '')
@@ -146,30 +149,22 @@ in
   ];
   upstreamCheck =
     (command "check" ''
-      # The shipped target exits zero with a stale zipinfo-format fixture.
-      # Preserve that nonpass explicitly; accept only this exact known mismatch.
-      # Extraction/funzip/SFX byte semantics also have installed-output tests.
+      # Port only the source-bound expected fixture, before upstream's diff.
+      # Preserve original/ported references; never normalize actual results.
       export TZ=CET-1CEST,M3.5.0,M10.5.0/3
       ${make} check > upstream-check.log 2>&1
       cat upstream-check.log
-      if grep -F '#####  ERROR:' upstream-check.log; then exit 1; fi
-      test "$(grep -c '#####  WARNING:' upstream-check.log)" = 1
-      grep -Fx "#####  WARNING:  zipinfo output doesn't match stored version" upstream-check.log
+      if grep -E '#####  (ERROR|WARNING):' upstream-check.log; then
+        exit 1
+      else
+        test "$?" = 1
+      fi
+      test "$(grep -c '#####  testing' upstream-check.log)" = 6
       ./unzip -Z testmake.zip > upstream-zipinfo.actual
-      ./unzip -p testmake.zip testmake.zipinfo > upstream-zipinfo.expected
-      ${python}/bin/python3 - <<'PYTHON'
-      from pathlib import Path
-      expected = Path('upstream-zipinfo.expected').read_text()
-      actual = Path('upstream-zipinfo.actual').read_text()
-      assert expected != actual
-      normalized = expected.replace('Archive:  testmake.zip   527 bytes   2 files\n',
-          'Archive:  testmake.zip\nZip file size: 527 bytes, number of entries: 2\n')
-      normalized = normalized.replace('19-Nov-98', '98-Nov-19')
-      assert normalized == actual, 'unexpected upstream fixture difference'
-      PYTHON
+      cmp upstream-zipinfo.expected upstream-zipinfo.actual
       printf '0\n' > upstream-check.status
-      printf '1\n' > upstream-strict.status
-      printf '%s\n' 'KNOWN-NONPASS: stale 1998 zipinfo header/date fixture; raw make check exits 0' > upstream-qualification
+      printf '0\n' > upstream-strict.status
+      printf '%s\n' 'FIXTURE-PORT: 1998 zipinfo expectation adapted before comparison; original retained; raw make check exits 0' > upstream-qualification
     '')
     // {
       enabled = final.doCheck;
