@@ -25,6 +25,7 @@ let
           printf 'doCheck=false; upstream UNRUN\n' > "$out/log"
         '' else ''
           ${s.gnumake}/bin/make -j"$NIX_BUILD_CORES" prefix=${s.configurePrefix} RUNTIME_PREFIX=YesPlease \
+            gitexecdir=libexec/git-core template_dir=share/git-core/templates sysconfdir=etc \
             SHELL=${s.bash}/bin/bash SHELL_PATH=${s.bash}/bin/bash TEST_SHELL_PATH=${s.bash}/bin/bash \
             PERL_PATH=${s.perl}/bin/perl PYTHON_PATH=${s.python}/bin/python3 \
             CURL_CONFIG=${s.curl}/bin/curl-config NO_GETTEXT=YesPlease NO_TCLTK=YesPlease USE_LIBPCRE2=YesPlease \

@@ -81,6 +81,7 @@ let
     };
   make = ''
     ${gnumake}/bin/make -j"$NIX_BUILD_CORES" prefix=${lib.escapeShellArg configurePrefix} RUNTIME_PREFIX=YesPlease \
+        gitexecdir=libexec/git-core template_dir=share/git-core/templates sysconfdir=etc \
         SHELL=${final.bash}/bin/bash SHELL_PATH=${final.bash}/bin/bash \
         PERL_PATH=${final.perl}/bin/perl PYTHON_PATH=${final.python}/bin/python3 \
         CURL_CONFIG=${curl}/bin/curl-config NO_GETTEXT=YesPlease NO_TCLTK=YesPlease USE_LIBPCRE2=YesPlease'';
