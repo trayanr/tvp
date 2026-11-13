@@ -62,29 +62,31 @@ in
     ;
   # The runner and test factory use the effective base's canonical providers.
   inherit (tools) bash coreutils;
-  toolProviders = context.selectTools [
-    "bash"
-    "coreutils"
-    "binutils"
-    "gnumake"
-    "gnutar"
-    "xz"
-    "python"
-    "patchelf"
-    "sed"
-    "grep"
-    "gawk"
-    "diffutils"
-    "findutils"
-  ];
+  toolProviders = {
+    inherit (tools)
+      bash
+      coreutils
+      binutils
+      gnumake
+      gnutar
+      xz
+      python
+      patchelf
+      sed
+      grep
+      gawk
+      diffutils
+      findutils
+      ;
+  };
   environment = {
-    tools = map (name: tools.${name}) [
-      "gnumake"
-      "sed"
-      "grep"
-      "gawk"
-      "diffutils"
-      "findutils"
+    tools = [
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
     ];
     libraries = [ final.gmp ];
   };

@@ -12,7 +12,7 @@ let
     steps = edits // source // { cmake = import ./cmake-steps.nix { inherit lib; }; };
     base = import ./owned-base.nix { inherit lib; };
     outputs = import ./native-output-steps.nix { inherit lib; };
-    forBase = base: import ./base-context.nix { inherit lib builder base; };
+    forBase = base: import ./base-context.nix { inherit builder base; };
   };
 in
 builder

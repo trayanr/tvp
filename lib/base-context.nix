@@ -1,6 +1,5 @@
 # Bind helper implementation inputs once. Explicit call arguments still win.
 {
-  lib,
   builder,
   base,
 }:
@@ -28,7 +27,6 @@ let
 in
 {
   inherit tools;
-  selectTools = names: lib.genAttrs names (name: tools.${name});
   steps = bind builder.steps;
   outputs = bind builder.outputs;
 }

@@ -151,8 +151,13 @@ Builder implementations bind helpers once with `tvp.builder.forBase final.base`.
 The returned `steps` and `outputs` obtain implementation tools from that base; explicit
 helper-call arguments take precedence. A builder therefore needs package inputs such
 as `base`, `src`, `version` and `gmp`, rather than repeated Python/Binutils/Make
-arguments. `context.selectTools` publishes the consumed tool roles as `toolProviders`
-for dependency metadata without forcing unused base providers.
+arguments. Publish consumed providers with a direct attribute record:
+
+```nix
+toolProviders = { inherit (tools) bash coreutils binutils gnumake python; };
+```
+
+These references provide dependency metadata without forcing unused base providers.
 
 The family test factory is overridable with `tests`; replacing that suite changes
 validation, not package compilation. Retained factories keep their historical
