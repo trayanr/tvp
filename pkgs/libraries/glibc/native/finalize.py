@@ -19,17 +19,29 @@ import tempfile
 # Source-defined install defaults (not unrelated upstream /etc or /var defaults).
 DEFAULTS = {b'', b'/lib', b'/lib/', b'/lib64', b'/lib64/',
     b'/lib/ld-linux-x86-64.so.2', b'/etc', b'/etc/ld.so.cache',
-    b'/etc/ld.so.conf', b'/etc/nscd.conf', b'/etc/ld.so.preload', b'/lib/gconv', b'/lib/gconv/',
+    b'/etc/ld.so.conf', b'/etc/nscd.conf', b'/etc/ld.so.preload', b'/etc/localtime', b'/lib/gconv', b'/lib/gconv/',
     b'/lib/locale', b'/lib/locale/', b'/share/locale', b'/share/i18n',
     b'/share/zoneinfo', b'/libexec/getconf', b'/libexec/getconf/',
     b'/lib/locale/locale-archive', b'/lib/gconv/gconv-modules',
     b'/lib/gconv/gconv-modules.cache', b'/lib/gconv/gconv-modules.d',
-    b'/share/i18n/locales', b'/share/i18n/charmaps'}
+    b'/share/i18n/locales', b'/share/i18n/charmaps', b'/share/i18n/repertoiremaps'}
 GETCONF = ('POSIX_V6_LP64_OFF64', 'XBS5_LP64_OFF64', 'POSIX_V7_LP64_OFF64')
+NLSPATH = (b'/share/locale/%L/%N:', b'/share/locale/%L/LC_MESSAGES/%N:',
+    b'/share/locale/%l/%N:', b'/share/locale/%l/LC_MESSAGES/%N:')
+# GCC16 folds the locale tools' path copies into aligned 16-byte constants.
+# These complete pool layouts preserve adjacent chunks used by separate stores.
+PATH_ARRAYS = (b'/lib/local/LC_IDENTIFICATI',
+    b'/lib/locale/locale-archivec-2.39/share/i18are/i18n/locales/repertoiremaps/n/repertoiremaps')
 
 
 def slot(value, old, new, role):
     if len(old)!=len(new) or old==new: raise ValueError('equal-width distinct glibc roots required')
+    if value == b''.join(old+suffix for suffix in NLSPATH):
+        return b''.join(new+suffix for suffix in NLSPATH)
+    if value == old+b'/lib/locale:'+old+b'/share/i18n':
+        return new+b'/lib/locale:'+new+b'/share/i18n'
+    if value == b'locale: %-15.15s archive: '+old+b'/lib/locale/locale-archive\n%s\n':
+        return b'locale: %-15.15s archive: '+new+b'/lib/locale/locale-archive\n%s\n'
     # dl-usage.c's single help literal contains both LD_SO_CACHE and RTLD.
     # Match its complete normalized content, not just two familiar markers.
     # This hash is from glibc-2.39/elf/dl-usage.c, with only those macros expanded.
@@ -56,9 +68,18 @@ def readonly_constants(data, old, new):
         if len(owners)!=1: raise ValueError('ambiguous glibc constant owner')
         name,section=owners[0]
         if name.startswith('.rodata') and section[2]&2 and not section[2]&5:
+            array=next((old+tail for tail in PATH_ARRAYS
+                        if data.startswith(old+tail,pos)),None)
+            if array is not None:
+                if (pos%16 or len(array)%16 or pos+len(array)>section[4]+section[5]
+                        or old.rsplit(b'/',1)[1][33:] != new.rsplit(b'/',1)[1][33:]):
+                    raise ValueError('unsupported glibc path-array layout')
+                result=result[:pos]+new+result[pos+len(old):]
+                pos+=len(old)
+                continue
             begin=max(section[4],data.rfind(b'\0',section[4],pos)+1)
             end=data.find(b'\0',pos,section[4]+section[5])
-            if end<0: raise ValueError('unterminated glibc constant')
+            if end<0: end=section[4]+section[5]  # A fixed-size array may omit its NUL.
             try: value=slot(data[begin:end],old,new,name)
             except ValueError:
                 begin=pos
@@ -72,9 +93,11 @@ def native(path, data, mapping, elf, readelf):
     result=data
     for old,new in mapping:
         try: hits=elf.inspect(path,old,readelf)
-        except UnicodeDecodeError:
+        except UnicodeDecodeError: hits=None
+        if hits is None or any(h['section'].startswith('.rodata') and h['readonlyAllocated']
+                               and h['stringEnd']<0 for h in hits):
             changed=readonly_constants(result,old,new)
-            if changed==result: raise
+            if changed==result: raise ValueError('unsupported glibc constant layout')
             result=changed
             # Inspect every remaining occurrence with the unchanged shared
             # policy; dynamic strings and PT_INTERP keep their normal checks.
