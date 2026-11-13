@@ -394,16 +394,17 @@ in
     (outputs.interpreters {
       inherit python binutils;
       inherit (final) patchelf;
+      # Startup objects under lib are relocatable, without an ELF interpreter.
       paths = [
         "bin"
         "libexec"
-        "lib"
       ];
       loader = "${libc}/lib/ld-linux-x86-64.so.2";
     })
     (outputs.checkPaths {
       inherit python binutils;
       inherit (final) patchelf;
+      elfKinds = [ "runtime" ];
       paths = [
         "bin"
         "libexec"
