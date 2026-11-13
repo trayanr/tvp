@@ -25,6 +25,18 @@ def finalize(root, artifact, readelf, patchelf, elf):
     constants = {old + p for p in (
         b'/etc/fonts', b'/etc/fonts/conf.d', b'/share/fontconfig/conf.avail',
         b'/var/cache/fontconfig')}
+    # fcinit.c's source-defined fallback XML is one complete readonly string.
+    # Keep every directory, attribute and whitespace byte pinned to this profile.
+    fallback = (
+        b'<fontconfig>\t<dir>/usr/share/fonts</dir>\n'
+        b'\t<dir>/usr/local/share/fonts</dir>\n'
+        b'  <dir prefix="xdg">fonts</dir>'
+        b'  <cachedir>' + old + b'/var/cache/fontconfig</cachedir>'
+        b'  <cachedir prefix="xdg">fontconfig</cachedir>'
+        b'  <include ignore_missing="yes">' + old + b'/etc/fonts/conf.d</include>'
+        b'  <include ignore_missing="yes" prefix="xdg">fontconfig/conf.d</include>'
+        b'  <include ignore_missing="yes" prefix="xdg">fontconfig/fonts.conf</include>'
+        b'</fontconfig>')
     changes, dynamics, aliases = {}, {}, {}
     for group in groups:
         name = group[0]
@@ -48,7 +60,10 @@ def finalize(root, artifact, readelf, patchelf, elf):
                     raise ValueError(('unsupported compiled Fontconfig slot', name, hit))
                 else:
                     a, b = hit['stringStart'], hit['stringEnd']
-                    if data[a:b] not in constants:
+                    value = data[a:b]
+                    known_fallback = value == fallback and all(
+                        re.fullmatch(r'lib/libfontconfig\.so\.[0-9.]+', n) for n in group)
+                    if value not in constants and not known_fallback:
                         raise ValueError(('unknown Fontconfig constant', name, data[a:b]))
                     updated = updated[:a] + data[a:b].replace(old, new) + updated[b:]
             changes[name] = updated
