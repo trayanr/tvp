@@ -181,6 +181,5 @@ in
   meta = {
     description = "Correctly rounded multiple-precision floating-point arithmetic";
     license = lib.licenses.lgpl3Plus;
-    platforms = [ "x86_64-linux" ];
   };
 }
