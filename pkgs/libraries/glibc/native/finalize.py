@@ -40,10 +40,47 @@ def slot(value, old, new, role):
     return new+value[len(old):]
 
 
+def readonly_constants(data, old, new):
+    # The shared inspector has validated the ELF layout before its diagnostic
+    # string decoding failed. Readonly constants need not follow another NUL.
+    shoff=struct.unpack_from('<Q',data,40)[0]
+    shsize,shnum,names=struct.unpack_from('<HHH',data,58)
+    records=[struct.unpack_from('<IIQQQQIIQQ',data,shoff+i*shsize) for i in range(shnum)]
+    table=records[names]; strings=data[table[4]:table[4]+table[5]]
+    sections=[(strings[r[0]:strings.index(b'\0',r[0])].decode('ascii'),r) for r in records]
+    result=data; pos=0
+    while True:
+        pos=data.find(old,pos)
+        if pos<0: break
+        owners=[(name,r) for name,r in sections if r[1]!=8 and r[4]<=pos and pos+len(old)<=r[4]+r[5]]
+        if len(owners)!=1: raise ValueError('ambiguous glibc constant owner')
+        name,section=owners[0]
+        if name.startswith('.rodata') and section[2]&2 and not section[2]&5:
+            begin=max(section[4],data.rfind(b'\0',section[4],pos)+1)
+            end=data.find(b'\0',pos,section[4]+section[5])
+            if end<0: raise ValueError('unterminated glibc constant')
+            try: value=slot(data[begin:end],old,new,name)
+            except ValueError:
+                begin=pos
+                value=slot(data[begin:end],old,new,name)
+            result=result[:begin]+value+result[end:]
+        pos+=len(old)
+    return result
+
+
 def native(path, data, mapping, elf, readelf):
     result=data
     for old,new in mapping:
-        hits=elf.inspect(path,old,readelf)
+        try: hits=elf.inspect(path,old,readelf)
+        except UnicodeDecodeError:
+            changed=readonly_constants(result,old,new)
+            if changed==result: raise
+            result=changed
+            # Inspect every remaining occurrence with the unchanged shared
+            # policy; dynamic strings and PT_INTERP keep their normal checks.
+            with tempfile.TemporaryDirectory() as directory:
+                view=Path(directory)/'native'; view.write_bytes(result)
+                hits=elf.inspect(view,old,readelf)
         for h in hits:
             begin,end=h['stringStart'],h['stringEnd']
             if h['section']=='.interp':
