@@ -169,6 +169,9 @@ let
       ordinary-family = pkgs.writeText "tvp-ordinary-family-contracts" (
         builtins.toJSON (import ./lib/tests/family.nix { inherit (pkgs) lib; })
       );
+      tool-providers = pkgs.writeText "tvp-tool-provider-contracts" (
+        builtins.toJSON (import ./lib/tests/tool-providers.nix { inherit (pkgs) lib; })
+      );
       split-named-outputs = import ./lib/tests/split-named-outputs.nix { inherit pkgs tvp; };
       output-checks = import ./lib/tests/output-checks.nix {
         inherit (pkgs) lib;

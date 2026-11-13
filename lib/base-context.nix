@@ -4,11 +4,15 @@
   base,
 }:
 let
-  tools = (base.standardTools or { }) // {
-    bash = base.shell;
-    coreutils = base.coreutils;
-    binutils = base.compiler.bintools;
-  };
+  providers = import ./tool-providers.nix;
+  tools = builtins.mapAttrs providers.tag (
+    (base.standardTools or { })
+    // {
+      bash = base.shell;
+      coreutils = base.coreutils;
+      binutils = base.compiler.bintools;
+    }
+  );
   defaults = tools // {
     inherit base;
     tar = tools.gnutar;
@@ -18,7 +22,16 @@ let
     builtins.mapAttrs (
       _: helper:
       if builtins.isFunction helper && builtins.functionArgs helper != { } then
-        args: helper (builtins.intersectAttrs (builtins.functionArgs helper) defaults // args)
+        args:
+        helper (
+          builtins.mapAttrs (
+            name: value:
+            let
+              role = if name == "tar" then "gnutar" else name;
+            in
+            providers.tag role value
+          ) (builtins.intersectAttrs (builtins.functionArgs helper) defaults // args)
+        )
       else if builtins.isAttrs helper then
         bind helper
       else

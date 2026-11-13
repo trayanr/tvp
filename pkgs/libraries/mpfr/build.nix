@@ -62,23 +62,6 @@ in
     ;
   # The runner and test factory use the effective base's canonical providers.
   inherit (tools) bash coreutils;
-  toolProviders = {
-    inherit (tools)
-      bash
-      coreutils
-      binutils
-      gnumake
-      gnutar
-      xz
-      python
-      patchelf
-      sed
-      grep
-      gawk
-      diffutils
-      findutils
-      ;
-  };
   environment = {
     tools = [
       tools.gnumake

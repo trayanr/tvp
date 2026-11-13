@@ -18,6 +18,7 @@
 }:
 let
   steps = import ./build-steps.nix;
+  toolProviders = import ./tool-providers.nix;
   build = import (if owned then ./owned-build.nix else ./native-build.nix) { inherit lib; };
   declared = builtins.functionArgs recipe;
   call =
@@ -53,8 +54,24 @@ let
       # construction provider. Only explicitly declared dependency names can be
       # projected here; recipes without a projection retain the old behavior.
       dependencyProviders = specification.dependencyProviders or { };
+      # Collect only active production providers; upstream plans may depend on A.
+      usedTools =
+        if !owned then
+          { }
+        else
+          let
+            parts = steps.partition plan;
+            active = builtins.filter (step: step.enabled or true) (parts.first ++ parts.second);
+          in
+          toolProviders.collect (
+            [
+              (toolProviders.tag "bash" specification.bash)
+              (toolProviders.tag "coreutils" specification.coreutils)
+            ]
+            ++ builtins.concatMap (step: step.tools or [ ]) active
+          );
       dependencies =
-        (specification.toolProviders or { })
+        usedTools
         // (lib.mapAttrs
           (
             name: original:

@@ -6,8 +6,7 @@
 }:
 {
   pname,
-  defs,
-  releases,
+  versionTable,
   source,
   tests,
   packageMeta ? { },
@@ -37,57 +36,53 @@ let
     // {
       inherit base;
     };
-  definitions = api.mkDefs (
-    lib.mapAttrs (
-      _: def:
-      let
-        declared = builtins.functionArgs (import def.builder);
-        definitionConstructor = def.constructor or constructor;
-        standardDependencies =
-          specification:
-          builtins.filter (name: declared ? ${name}) (
-            builtins.attrNames (standardProviders specification.base)
-          );
-        additionalDependencies = def.dependencyNames or (builtins.attrNames def.deps);
-      in
-      def
-      // {
-        constructor = definitionConstructor;
-        base = def.base or context.base;
-        helpers = def.helpers or { };
-        dependencyNames =
-          specification:
-          lib.unique (
-            (
-              if builtins.isFunction additionalDependencies then
-                additionalDependencies specification
-              else
-                additionalDependencies
-            )
-            ++ standardDependencies specification
-          );
-        testContext =
-          def.testContext or (
-            package:
-            (import ./tests.nix { inherit lib; }).fromPackage {
-              builder = definitionConstructor;
-              inherit package;
-            }
-          );
-      }
-    ) defs
-  );
-  versionTable = api.mkTable (releases {
-    defs = definitions;
-  });
+  prepareDefinition =
+    def:
+    let
+      declared = builtins.functionArgs (import def.builder);
+      definitionConstructor = def.constructor or constructor;
+      standardDependencies =
+        specification:
+        builtins.filter (name: declared ? ${name}) (
+          builtins.attrNames (standardProviders specification.base)
+        );
+      additionalDependencies = def.dependencyNames or (builtins.attrNames def.deps);
+    in
+    def
+    // {
+      constructor = definitionConstructor;
+      base = def.base or context.base;
+      helpers = def.helpers or { };
+      dependencyNames =
+        specification:
+        lib.unique (
+          (
+            if builtins.isFunction additionalDependencies then
+              additionalDependencies specification
+            else
+              additionalDependencies
+          )
+          ++ standardDependencies specification
+        );
+      testContext =
+        def.testContext or (
+          package:
+          (import ./tests.nix { inherit lib; }).fromPackage {
+            builder = definitionConstructor;
+            inherit package;
+          }
+        );
+    };
+  prepareEntry = entry: entry // { def = prepareDefinition entry.def; };
   family = {
     inherit
       pname
-      versionTable
       source
       packageMeta
       testDeps
       ;
+    versionTable = lib.mapAttrs (_: prepareEntry) versionTable;
+    inherit instantiate;
     infra = {
       inherit lib;
     };
@@ -114,25 +109,20 @@ let
         family
         // {
           versionTable = {
-            ${version} = entry // {
-              def = entry.def // {
-                inherit base;
-                deps = entry.def.deps // deps;
-                opts = (entry.def.opts or { }) // opts;
-              };
-            };
+            ${version} = prepareEntry (
+              entry
+              // {
+                def = entry.def // {
+                  inherit base;
+                  deps = entry.def.deps // deps;
+                  opts = (entry.def.opts or { }) // opts;
+                };
+              }
+            );
           };
         }
       );
     in
     builtins.head (builtins.attrValues selected);
-  canonical = api.mkVersions family;
 in
-{
-  inherit canonical;
-  inherit instantiate;
-  recipes.${pname} = family // {
-    inherit instantiate;
-  };
-  aliases = api.mkAliases { inherit pname versionTable canonical; };
-}
+family

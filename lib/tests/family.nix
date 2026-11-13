@@ -50,20 +50,20 @@ let
       inherit lib;
       familyContext = context;
     }).packages;
-  args = {
-    pname = "family-model";
-    defs."1" = {
+  defs = api.mkDefs {
+    "1" = {
       builder = ./fixtures/family-recipe.nix;
       deps.dependency = package "dependency";
     };
-    releases =
-      { defs }:
-      [
-        {
-          def = defs."1";
-          releases."1" = "model";
-        }
-      ];
+  };
+  args = {
+    pname = "family-model";
+    versionTable = api.mkTable [
+      {
+        def = defs."1";
+        releases."1" = "model";
+      }
+    ];
     source = _: builtins.toFile "family-source" "source";
     tests =
       { package, context, ... }:
@@ -76,8 +76,22 @@ let
       };
   };
   family = api.mkFamily args;
-  p = family.canonical.family-model_1;
-  withoutTests = (api.mkFamily (args // { tests = _: { }; })).canonical.family-model_1;
+  canonical = api.mkVersions family;
+  aliases = api.mkAliases {
+    inherit (family) pname versionTable;
+    inherit canonical;
+  };
+  p = canonical.family-model_1;
+  build = args: (api.mkVersions (api.mkFamily args)).family-model_1;
+  withDefinition =
+    def:
+    args
+    // {
+      versionTable."1" = args.versionTable."1" // {
+        inherit def;
+      };
+    };
+  withoutTests = build (args // { tests = _: { }; });
   replacement = base.override {
     compiler = compiler "second-compiler";
     shell = package "second-shell";
@@ -92,15 +106,7 @@ let
   });
   retested = p.mkTests.override { tests = _: { }; };
   customDependencies =
-    dependencyNames:
-    (api.mkFamily (
-      args
-      // {
-        defs."1" = args.defs."1" // {
-          inherit dependencyNames;
-        };
-      }
-    )).canonical.family-model_1;
+    dependencyNames: build (withDefinition (defs."1" // { inherit dependencyNames; }));
   floorVisible =
     package: builtins.all (name: package.tvp.declaredDependencies ? ${name}) standardNames;
   standardNames = [
@@ -112,13 +118,15 @@ let
   coreutilsOnly = base.override { coreutils = package "replacement-coreutils"; };
   edited = p.edit (s: s // { base = replacement; });
   independent = api.mkFamily (
-    args
+    (withDefinition (
+      defs."1"
+      // {
+        deps.dependency = throw "public dependency was forced";
+      }
+    ))
     // {
       context = context // {
         base = throw "final base was forced during construction";
-      };
-      defs."1" = args.defs."1" // {
-        deps.dependency = throw "public dependency was forced";
       };
     }
   );
@@ -129,6 +137,8 @@ let
   };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   results = {
+    explicitComposition = family ? versionTable && !(family ? canonical) && !(family ? aliases);
+    generatedAliases = aliases.family-model.drvPath == p.drvPath;
     stageLocalInstantiation = constructed.drvPath == p.drvPath;
     baseEditRebindsMake =
       edited.specification.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
@@ -202,17 +212,8 @@ let
     );
     invalidDependency =
       rejects
-        (api.mkFamily (
-          args
-          // {
-            defs."1" = args.defs."1" // {
-              deps.dependency = "not a package";
-            };
-          }
-        )).canonical.family-model_1.drvPath;
-    missingContext = rejects (
-      (api.mkFamily (args // { context = null; })).canonical.family-model_1.drvPath
-    );
+        (build (withDefinition (defs."1" // { deps.dependency = "not a package"; }))).drvPath;
+    missingContext = rejects ((build (args // { context = null; })).drvPath);
   };
   failed = builtins.filter (name: !results.${name}) (builtins.attrNames results);
 in

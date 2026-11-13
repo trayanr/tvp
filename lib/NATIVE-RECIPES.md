@@ -12,8 +12,8 @@ these records where needed so each can be read independently. Avoid a shared
 `common` definition or a version-switching procedure merely to reduce repetition.
 
 ```nix
-defs = {
-  "4.2.1" = {
+defs = tvp.lib.packages.mkDefs {
+  "4.2.2" = {
     builder = ./build.nix;
     deps.gmp = tvp.packages.gmp_6;
   };
@@ -27,29 +27,43 @@ See [MPFR's definitions](../pkgs/libraries/mpfr/default.nix) and
 
 ## Register sources and tests once
 
-The family entry point connects the table to one source factory and one test suite:
+Keep the version/hash table literal and construct the public sets explicitly:
 
 ```nix
+versionTable = tvp.lib.packages.mkTable [
+  { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+];
+pname = "mpfr";
 family = tvp.lib.packages.mkFamily {
-  pname = "mpfr";
-  inherit defs;
-  releases = { defs }: [
-    { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
-  ];
+  inherit pname versionTable;
   source = { version, sha256 }: import <nix/fetchurl.nix> {
     url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
     inherit sha256;
   };
   tests = import ./tests;
 };
+canonical = tvp.lib.packages.mkVersions family;
 ```
 
-It returns `canonical`, `aliases`, `recipes.<pname>` and `instantiate`. The release function
-receives `{ defs }` with the constructor's definition names attached. A test
-function receives `{ package, lib, context }`. It returns named test derivations,
-usually through `context.mkSuite`; capability-specific tests use the effective
-package's declared features. Each release gets tests of its own final output.
-Writing the suite once does not reuse another version's test result.
+```nix
+in {
+  recipes.mpfr = family;
+  inherit canonical;
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
+}
+```
+
+`mkDefs` names complete definitions; `mkTable` associates each release/hash with
+one of them. `mkFamily` supplies context and shared test wiring, returning recipe
+arguments for `mkVersions` plus stage-local `instantiate`. Canonical construction
+and alias generation remain visible in the package file. There is no releases
+callback or second version list.
+
+A test function receives `{ package, lib, context }`. It returns named test
+derivations, usually through `context.mkSuite`; capability-specific tests use the
+effective package's declared features. Each release gets tests of its own final
+output. Writing the suite once does not reuse another version's test result.
 
 The test runner is shared globally. MPFR's version, arithmetic and optional
 Float128 assertions are declared once in [its suite](../pkgs/libraries/mpfr/tests/default.nix).
@@ -68,8 +82,9 @@ The catalogue binds the ordinary-family context once. Definitions do not repeat:
 - Make, Tar, XZ, text tools, Python and Patchelf from `base.standardTools`;
 - the test context, derived from the effective package.
 
-Only arguments declared by a procedure are supplied. There is no host PATH
-search, hook execution or arbitrary dependency discovery. Package-specific tools
+Only declared constructor arguments receive defaults. Bound helpers and tools come
+from `tvp.builder.forBase final.base`. There is no host PATH search, hook execution
+or filesystem-based dependency discovery. Package-specific tools
 and libraries belong in `deps`, using TVP package selectors. Common tool selections
 live once in the [base's standard tool set](../bases/source-gnu/standard-tools.nix);
 MPFR definitions therefore only select GMP and compatibility options.
@@ -151,13 +166,14 @@ Builder implementations bind helpers once with `tvp.builder.forBase final.base`.
 The returned `steps` and `outputs` obtain implementation tools from that base; explicit
 helper-call arguments take precedence. A builder therefore needs package inputs such
 as `base`, `src`, `version` and `gmp`, rather than repeated Python/Binutils/Make
-arguments. Publish consumed providers with a direct attribute record:
-
-```nix
-toolProviders = { inherit (tools) bash coreutils binutils gnumake python; };
-```
-
-These references provide dependency metadata without forcing unused base providers.
+arguments. The builder collects dependency metadata from the bound providers used
+by active steps and the runner. Helpers retain the role of their effective tool
+arguments, including explicit replacements. Package authors declare their actual
+step tools and package-specific `deps` once; no separate provider record is needed.
+Unused standard providers and disabled steps stay lazy. Distinct providers used for
+one role are retained as numbered metadata entries such as `gnumake#1` and
+`gnumake#2`. Upstream-only plans are collected by their own test derivation, outside
+production metadata.
 
 The family test factory is overridable with `tests`; replacing that suite changes
 validation, not package compilation. Retained factories keep their historical

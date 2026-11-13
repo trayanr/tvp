@@ -34,7 +34,7 @@ public transitive dependencies use `libraries`. `environment` supplies explicit
 `base.environment` overrides (`values`, `flags`, `paths`). Suite defaults for
 these three fields can be replaced by a case declaration. The selected base
 supplies the compiler, Binutils, shell, runtime and baseline tools. There are no
-setup hooks or inferred dependencies.
+setup hooks or host dependency searches.
 
 On a returned owned test, `.override` currently accepts `package`, `tools` and
 `libraries`. `script`, `expected`, `environment` and the test name are captured

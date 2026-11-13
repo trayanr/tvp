@@ -161,31 +161,39 @@ Copy definitions in full rather than hiding their inputs behind a `common` overl
 
 ```nix
 # pkgs/libraries/mpfr/default.nix — one complete definition
-"4.2.2" = {
-  builder = ./build.nix;
-  deps.gmp = tvp.packages.gmp_6;
+defs = tvp.lib.packages.mkDefs {
+  "4.2.2" = {
+    builder = ./build.nix;
+    deps.gmp = tvp.packages.gmp_6;
+  };
 };
 ```
 
 ```nix
+versionTable = tvp.lib.packages.mkTable [
+  { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+];
+pname = "mpfr";
 family = tvp.lib.packages.mkFamily {
-  pname = "mpfr";
-  inherit defs packageMeta;
-  releases = { defs }: [
-    { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
-  ];
+  inherit pname versionTable packageMeta;
   source = { version, sha256 }: import <nix/fetchurl.nix> {
     url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
     inherit sha256;
   };
   tests = import ./tests;
 };
+canonical = tvp.lib.packages.mkVersions family;
+in {
+  recipes.mpfr = family;
+  inherit canonical;
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
+}
 ```
 
 ```nix
 # Version and hash table inside MPFR default.nix — excerpt
-{ defs }:
-[
+versionTable = tvp.lib.packages.mkTable [
   {
     def = defs."4.0.2";
     releases = {
@@ -195,7 +203,7 @@ family = tvp.lib.packages.mkFamily {
       "4.2.0" = "sha256-BqN43xNQEkjBsttaqXeiyBJq6Emp2be+JUb7Spwm2ZM=";
     };
   }
-]
+];
 ```
 
 Many releases share a definition; a compatibility boundary adds one definition,
@@ -281,8 +289,9 @@ catalogue-wide contracts and migration limits.
 `builtins.derivation`. A package supplies the complete procedure. It does not inherit
 configure, install or fixup hooks from a shared package builder.
 
-The ordinary package index uses `tvp.lib.packages.mkFamily`. Definitions select a
-version-start `builder` file, package-specific `deps` and optional `opts`/patches. The
+The ordinary package index prepares shared context with `tvp.lib.packages.mkFamily`.
+Definitions select a complete `builder` file, package-specific `deps` and optional
+`opts`/patches. `versionTable`, canonical construction and alias generation stay explicit. The
 catalogue binds the constructor, base/platform, standard tools and helper arguments
 once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
 function receives `{ package, lib, context }`. Each test context follows the effective
@@ -305,8 +314,10 @@ own construction context.
 
 `tvp.builder.forBase final.base` binds standard source/output helpers once. They still
 produce named step records, and helper arguments can replace defaults explicitly.
-Base edits rebind implicit providers and helpers from the effective base. `toolProviders`
-records consumed roles without making the entire standard tool set an execution input.
+Base edits rebind implicit providers and helpers from the effective base. The builder
+collects provider metadata from active steps and the runner. Helpers retain the roles
+of their actual tool arguments, including replacements. Unused base providers remain
+lazy; package authors do not repeat a metadata-only provider list.
 
 `family.instantiate { version; base; deps; opts ? {}; }` selects a construction call
 before forcing public packages. `tvp.baseTiers` exposes the source-owned seed, target,
