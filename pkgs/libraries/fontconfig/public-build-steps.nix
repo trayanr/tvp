@@ -135,7 +135,6 @@ in
     (steps.split "fontconfig.finalize")
     (tvp.builder.outputs.copyArtifacts {
       coreutils = final.coreutils;
-      outputs = final.outputs;
     })
     {
       name = "fontconfig.relocate";
