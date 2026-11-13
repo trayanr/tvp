@@ -66,15 +66,23 @@ for group in groups:
             # fallback if present. Path boundaries reject partial matches.
             result = m.replace_paths(result, a, b)
     if cvsserver_paths.intersection(group):
+        dbi_import = b'\nuse DBI;\n'
+        dbi_connect = b'    $self->{dbh} = DBI->connect('
         if (not set(group).issubset(cvsserver_paths)
                 or b'\0' in data or not data.startswith(b'#!')
                 or data.count(b'# BEGIN RUNTIME_PREFIX generated code.') != 1
                 or data.count(b'# END RUNTIME_PREFIX generated code.') != 1
-                or data.count(prefix_line) != 1):
+                or data.count(prefix_line) != 1
+                or data.count(dbi_import) != 1
+                or data.count(dbi_connect) != 1):
             raise ValueError(('unexpected git-cvsserver runtime header', group))
         # libexec retains upstream discovery. Direct bin invocation strips bin
         # only when Git has not supplied an explicit GIT_EXEC_PATH.
         result = result.replace(prefix_line, prefix_binding)
+        # Informational commands need only core Perl. Actual CVS database
+        # service still requires the optional DBI module and database driver.
+        result = result.replace(dbi_import, b'\n')
+        result = result.replace(dbi_connect, b'    require DBI;\n' + dbi_connect)
         cvsserver_seen.update(group)
     if marker in result:
         raise ValueError(('unbound Git shell slot', group))
