@@ -91,9 +91,11 @@ in
     {
       coreutils,
       outputs ? null,
+      preserveHardlinks ? true,
     }:
     let
       names = if outputs == null then null else import ./named-outputs.nix { inherit lib; } outputs;
+      noPreserve = if preserveHardlinks then "ownership" else "ownership,links";
     in
     {
       name = "output.copy-artifacts";
@@ -109,7 +111,7 @@ in
             test -d "''${TVP_ARTIFACT_OUTPUTS[${name}]}"
             test -n "''${${name}:?missing final output ${name}}"
             test ! -e "${"$" + name}"
-            ${coreutils}/bin/cp -a --no-preserve=ownership "''${TVP_ARTIFACT_OUTPUTS[${name}]}" "${"$" + name}"
+            ${coreutils}/bin/cp -a --no-preserve=${noPreserve} "''${TVP_ARTIFACT_OUTPUTS[${name}]}" "${"$" + name}"
             ${coreutils}/bin/chmod -R u+w "${"$" + name}"
           '') names
           + ''
@@ -120,7 +122,7 @@ in
         else
           ''
             test -n "$TVP_ARTIFACT_ROOT"
-            ${coreutils}/bin/cp -a --no-preserve=ownership "$TVP_ARTIFACT_ROOT" "$out"
+            ${coreutils}/bin/cp -a --no-preserve=${noPreserve} "$TVP_ARTIFACT_ROOT" "$out"
             ${coreutils}/bin/chmod -R u+w "$out"
             if [[ -f "$out/nix-support/source-date-epoch" ]]; then
               ${coreutils}/bin/cp "$out/nix-support/source-date-epoch" source-date-epoch

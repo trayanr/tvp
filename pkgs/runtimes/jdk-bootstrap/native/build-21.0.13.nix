@@ -101,7 +101,10 @@ in
       }
     )
     (steps.split "jdk-bootstrap.finalize")
-    (outputs.copyArtifacts { inherit (final) coreutils; })
+    (outputs.copyArtifacts {
+      inherit (final) coreutils;
+      preserveHardlinks = false;
+    })
     (outputs.interpreters {
       inherit (final) python binutils patchelf;
       paths = [
