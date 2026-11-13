@@ -40,8 +40,10 @@
   export FONTCONFIG_FILE=${s.fonts}/etc/fonts/fonts.conf PYTHONNOUSERSITE=1
   export PYTHONPATH="${sourceRoot}/source/gcc/testsuite''${PYTHONPATH:+:$PYTHONPATH}"
   printf '%s\n' "HOSTCC=$CC" "HOSTCXX=$CXX" "SHELL=$SHELL" "FONTCONFIG_FILE=$FONTCONFIG_FILE" > "$validation/test-environment.txt"
+  # GCC clears MAKEOVERRIDES; preserve its default explicit forwarding list.
+  printf '%s\n' 'EXTRA_GCC_FLAGS += "PLUGINCC=$(PLUGINCC)"' > tvp-plugin-host.mk
   check_status=0
-  ${s.gnumake}/bin/make -j"$NIX_BUILD_CORES" -k SHELL=${shell} "''${flags[@]}" \
+  ${s.gnumake}/bin/make -f Makefile -f tvp-plugin-host.mk -j"$NIX_BUILD_CORES" -k SHELL=${shell} "''${flags[@]}" \
     "CXXFLAGS_FOR_TARGET=-O2 -g ${includes} ${links}" \
     PLUGINCC="$CXX" \
     RUNTESTFLAGS=--target_board=tvp \
