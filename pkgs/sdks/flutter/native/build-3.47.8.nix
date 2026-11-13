@@ -153,7 +153,10 @@ in
       }
     )
     (steps.split "flutter.finalize")
-    (outputs.copyArtifacts { inherit (final) coreutils; })
+    (outputs.copyArtifacts {
+      inherit (final) coreutils;
+      preserveHardlinks = false;
+    })
     (command "flutter.bind-dart" ''
       sdk="$out/libexec/flutter"
       mkdir -p "$out/bin"
