@@ -23,6 +23,21 @@ def metadata_paths(data, old, new, elf):
     return data.replace(old,new)
 
 
+def runtime_paths(value, artifact, prefix, root, elf):
+    value=elf.replace_paths(value.encode(),artifact,os.fsencode(root))
+    value=elf.replace_paths(value,prefix.encode(),os.fsencode(root)).decode()
+    directories=[]
+    for directory in value.split(':'):
+        if directory == str(root) or directory.startswith(str(root)+'/'):
+            # Resolve the installed lib64 alias and upstream lib/../lib64 spelling.
+            target=Path(directory).resolve(strict=True)
+            if not target.is_relative_to(root) or not target.is_dir():
+                raise ValueError('GCC runtime directory escapes final output')
+            directory=str(target)
+        directories.append(directory)
+    return ':'.join(directories)
+
+
 def finalize(root, artifact, prefix, readelf, patchelf, inspector):
     spec=importlib.util.spec_from_file_location('gcc_elf', inspector)
     elf=importlib.util.module_from_spec(spec); spec.loader.exec_module(elf)
@@ -34,12 +49,17 @@ def finalize(root, artifact, prefix, readelf, patchelf, inspector):
             p=files[group[0]]; data=p.read_bytes(); updated=data; dynamic=None
             if data.startswith(b'\x7fELF'):
                 hits=elf.inspect(p,old,readelf)
+                # Built-in compiler prefix strings stay relocatable; runtime lookup
+                # paths must instead name the final self-library directory.
+                if prefix.encode() in data:
+                    hits += [h for h in elf.inspect(p,prefix.encode(),readelf)
+                             if h['section'] == '.dynstr']
                 if any(h['section'] != '.dynstr' or not h.get('exclusiveRpath') for h in hits):
                     raise ValueError(('unsupported GCC native artifact path',group))
                 if hits:
                     values={h['exclusiveRpath'] for h in hits}
                     if len(values)!=1: raise ValueError('ambiguous GCC RPATH')
-                    dynamic=elf.replace_paths(values.pop().encode(),old,new).decode()
+                    dynamic=runtime_paths(values.pop(),old,prefix,root,elf)
             elif old in data or prefix.encode() in data:
                 # Installed scripts/pkgconfig/headers/libtool/spec metadata only.
                 if not (data.startswith(b'#!') or p.suffix in ('.la','.pc','.h','.hpp','.cmake','.specs','.py','.1','.info')
