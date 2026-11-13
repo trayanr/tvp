@@ -27,6 +27,16 @@ let
     else
       builtins.seq (validatePassthru names declaredPassthru) names;
   compiler = if base ? compiler then base.compiler else base.stdenv.cc;
+  # Retained Nixpkgs wrappers need an explicit native role to consume flags.
+  # Their declared suffix is provider protocol data; no setup hook is sourced.
+  nativeWrapperRole =
+    prefix: wrapper:
+    if !(base ? compiler && wrapper ? suffixSalt) then
+      ""
+    else if builtins.match "[A-Za-z0-9_]+" wrapper.suffixSalt == null then
+      throw "TVP owned build: invalid compiler wrapper role suffix"
+    else
+      "export ${prefix}_${wrapper.suffixSalt}=1\n";
   # Opt-in consumers must not silently discard an unknown recipe exception.
   # The legacy branch is exactly the earlier rendering and compiler protocol.
   hardeningValidation =
@@ -76,7 +86,9 @@ let
               // {
                 tools = lib.unique (step.tools ++ baselineTools);
                 run =
-                  ''
+                  nativeWrapperRole "NIX_CC_WRAPPER_TARGET_HOST" compiler
+                  + nativeWrapperRole "NIX_BINTOOLS_WRAPPER_TARGET_HOST" compiler.bintools
+                  + ''
                     export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " compiler.defaultHardeningFlags)}
                     export SOURCE_DATE_EPOCH=315532800
                     if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then

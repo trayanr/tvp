@@ -110,8 +110,33 @@ let
     "gnumake"
   ];
   coreutilsOnly = base.override { coreutils = package "replacement-coreutils"; };
+  edited = p.edit (s: s // { base = replacement; });
+  independent = api.mkFamily (
+    args
+    // {
+      context = context // {
+        base = throw "final base was forced during construction";
+      };
+      defs."1" = args.defs."1" // {
+        deps.dependency = throw "public dependency was forced";
+      };
+    }
+  );
+  constructed = independent.instantiate {
+    version = "1";
+    inherit base;
+    deps.dependency = package "dependency";
+  };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   results = {
+    stageLocalInstantiation = constructed.drvPath == p.drvPath;
+    baseEditRebindsMake =
+      edited.specification.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
+    baseEditRebindsShell = edited.specification.bash.drvPath == replacement.shell.drvPath;
+    baseEditRebindsMetadata =
+      edited.tvp.declaredDependencies.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
+    baseEditRebindsTests =
+      edited.tests.message.specification.base.compiler.drvPath == replacement.compiler.drvPath;
     implicitConstructor = p ? artifact && !(p ? overrideAttrs);
     implicitHelpers = builtins.isString p.drvPath;
     standardShell = p.specification.bash.drvPath == base.shell.drvPath;

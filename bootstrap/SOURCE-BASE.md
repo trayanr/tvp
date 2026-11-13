@@ -25,15 +25,19 @@ nix build --impure -f bootstrap/source-consumer-tests.nix consumer
 
 GMP 6.3.0 uses native assembly, source-built M4 1.4.21, shared/static libraries,
 and C++. Its configure probes deliberately use GNU17 with GCC 16. MPFR 4.2.2 and
-MPC 1.4.1 reuse the existing owned recipes through ordinary specification and
-step edits. Their shared-only defaults are preserved. All three execute upstream
-suites: GMP 200 PASS; MPFR 196 PASS and 2 SKIP (the decimal64/decimal128 conversion
-tests require unavailable compiler decimal-float support); MPC 75 PASS. Evidence
-collectors gate these raw counts and individual test records, not just `make`
-exit status. These are upstream test programs, not counts of internal assertions.
+MPC 1.4.1 use owned recipes. MPFR uses the same single procedure as the public
+family, instantiated with this earlier compiler and GMP. Their shared-only defaults
+are preserved. The explicit evidence endpoints require GMP 200 PASS, MPFR 196 PASS
+and two named decimal-float SKIPs, and MPC 75 PASS. These count upstream test
+programs, not internal assertions; changed compiler capabilities require fresh
+qualification of those expectations.
 
-Compilation artifacts retain configure/build/check/install logs, raw upstream
-logs and test records. Named `evidence` endpoints collect them without recompiling.
+MPFR compilation/install produces A and saves its compiled source checkpoint.
+Finalization produces F independently. `mpfr.tests.upstream` restores A in a private
+workspace, executes `make check`, and retains its status, raw log and individual
+records. `evidence.mpfr` collects these and applies the existing strict count/skip
+checks. It depends on upstream acceptance; requesting MPFR alone no longer runs its
+upstream suite. GMP/MPC still retain their earlier inline-check evidence layout.
 Finalized libraries remove this evidence, relocate development metadata, and
 use explicit owned strip, archive, RPATH, path, and symlink operations. Split
 artifacts and multiple named outputs are never combined. The original GMP public

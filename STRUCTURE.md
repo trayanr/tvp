@@ -14,6 +14,7 @@ bases/                        the ground packages are built on; `tvp.bases`
 ├── default.nix               default and compatibility bases, pinned bootstrap inputs
 ├── stdenv/                   vendored build protocol and native constructor
 ├── wrappers/                 native compiler and linker wrappers
+├── tiers/                    seed, target, native, full and retained construction contexts
 ├── source-gnu/               source-owned candidate base and explicit toolchain/tool inputs
 ├── gcc13-owned/              retained bootstrap stages and consumer graphs
 │   └── tests/                checks explicitly attached by this base
@@ -87,9 +88,12 @@ default.nix → pkgs/ → <category>/ → <package>/ → build-VERSION.nix
 Indexes merge with a duplicate-name check rather than `//`, because `//` resolves a clash
 silently in favour of whichever set came last.
 
-## Builders are named for the version they start at
+## Builders describe complete procedures
 
-`build-VERSION.nix` serves every version from `VERSION` until the next builder file.
+Use `build.nix` when one procedure serves the family, as MPFR does. Compatibility
+options belong in its definition table. When upstream needs a structurally different
+procedure, use independent `build-VERSION.nix` files; each serves versions from
+`VERSION` until the next builder file.
 
 ```
 build-2.0.nix      serves 2.0 … 2.2
@@ -121,9 +125,10 @@ Rules:
   another versioned build file, filters its argument set, or overrides its result to
   manufacture a different procedure. Copy the procedure at a real compatibility
   boundary and keep adjacent files diffable.
-- **Every meaningful dependency is a function argument.** That is the seam `.override`
-  needs. Reusable generic `tvp.builder.steps` and `tvp.builder.outputs` helpers are
-  allowed; provider selection and the package's ordered procedure stay visible.
+- **Package-specific dependencies are function arguments.** That is the seam `.override`
+  needs. Standard construction tools belong to the base, where they can also be
+  overridden. `tvp.builder.forBase final.base` binds generic step/output helpers to
+  those providers; the package's ordered procedure stays visible.
 - **Use an effective fixed-point specification.** Owned procedures have the shape
   `{ explicit arguments }: final: { ... }`. Build commands, metadata and tests read the
   effective `final` fields so edits propagate. Retained stdenv procedures keep their
@@ -146,8 +151,8 @@ is what the shared test suite is for; see below.
 ## Definitions and releases
 
 Version data is split in two. A **definition** is a whole build recipe; a **release** is a
-version and its hash. Definitions live in the package's `default.nix`, releases in version
-files beside it.
+version and its hash. Definitions live in the package's `default.nix`. Small families
+keep their version/hash table there too; large families use version files beside it.
 
 The ordinary `mkFamily` entry point supplies the selected build context. Each
 definition contains its procedure, package-specific TVP dependencies and real
@@ -157,7 +162,7 @@ Copy definitions in full rather than hiding their inputs behind a `common` overl
 ```nix
 # pkgs/libraries/mpfr/default.nix — one complete definition
 "4.2.2" = {
-  builder = ./build-4.2.2.nix;
+  builder = ./build.nix;
   deps.gmp = tvp.packages.gmp_6;
 };
 ```
@@ -166,17 +171,19 @@ Copy definitions in full rather than hiding their inputs behind a `common` overl
 family = tvp.lib.packages.mkFamily {
   pname = "mpfr";
   inherit defs packageMeta;
-  releases = import ./releases.nix;
+  releases = { defs }: [
+    { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+  ];
   source = { version, sha256 }: import <nix/fetchurl.nix> {
     url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
     inherit sha256;
   };
-  tests = import ./tests/family.nix;
+  tests = import ./tests;
 };
 ```
 
 ```nix
-# pkgs/libraries/mpfr/releases.nix — excerpt
+# Version and hash table inside MPFR default.nix — excerpt
 { defs }:
 [
   {
@@ -280,7 +287,7 @@ catalogue binds the constructor, base/platform, standard tools and helper argume
 once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
 function receives `{ package, lib, context }`. Each test context follows the effective
 package. See [MPFR's definition](pkgs/libraries/mpfr/default.nix) and
-[complete procedure](pkgs/libraries/mpfr/build-4.2.2.nix). This is the new authoring
+[complete procedure](pkgs/libraries/mpfr/build.nix). This is the new authoring
 interface; other families retain their prior wiring until reimplemented.
 
 A specification keeps `environment`, `runtime` and `plan` at the same level. Use
@@ -288,6 +295,23 @@ A specification keeps `environment`, `runtime` and `plan` at the same level. Use
 Helpers return ordinary records. Names identify steps for edits and diagnostics;
 they do not dispatch hidden phases. Source preparation and installed-output repair
 remain explicit, separate operations.
+
+The MPFR exemplar keeps a flat package directory: `default.nix` contains its
+independent definitions, versions and hashes; `build.nix` is the shared complete
+procedure; `tests/` holds installed assertions and upstream restoration/acceptance.
+Compatibility flags are definition options. There are no retained/ordinary/variant
+copies of the MPFR procedure. Generic checks instantiate that same recipe in their
+own construction context.
+
+`tvp.builder.forBase final.base` binds standard source/output helpers once. They still
+produce named step records, and helper arguments can replace defaults explicitly.
+Base edits rebind implicit providers and helpers from the effective base. `toolProviders`
+records consumed roles without making the entire standard tool set an execution input.
+
+`family.instantiate { version; base; deps; opts ? {}; }` selects a construction call
+before forcing public packages. `tvp.baseTiers` exposes the source-owned seed, target,
+native and full contexts, plus retained construction-input adapters. The tier selects
+provider generations; it does not select an earlier package builder implementation.
 
 ### Artifact and finalization boundary
 

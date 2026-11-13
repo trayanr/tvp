@@ -14,7 +14,7 @@ these records where needed so each can be read independently. Avoid a shared
 ```nix
 defs = {
   "4.2.1" = {
-    builder = ./ordinary/build-4.2.1.nix;
+    builder = ./build.nix;
     deps.gmp = tvp.packages.gmp_6;
   };
 };
@@ -23,7 +23,7 @@ defs = {
 Real compatibility options or patches stay beside their definition, with their
 reasons. Release blocks select a definition and supply versions and source hashes.
 See [MPFR's definitions](../pkgs/libraries/mpfr/default.nix) and
-[release blocks](../pkgs/libraries/mpfr/releases.nix).
+[version and hash table](../pkgs/libraries/mpfr/default.nix).
 
 ## Register sources and tests once
 
@@ -33,16 +33,18 @@ The family entry point connects the table to one source factory and one test sui
 family = tvp.lib.packages.mkFamily {
   pname = "mpfr";
   inherit defs;
-  releases = import ./releases.nix;
+  releases = { defs }: [
+    { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+  ];
   source = { version, sha256 }: import <nix/fetchurl.nix> {
     url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
     inherit sha256;
   };
-  tests = import ./tests/family.nix;
+  tests = import ./tests;
 };
 ```
 
-It returns `canonical`, `aliases` and `recipes.<pname>`. The release function
+It returns `canonical`, `aliases`, `recipes.<pname>` and `instantiate`. The release function
 receives `{ defs }` with the constructor's definition names attached. A test
 function receives `{ package, lib, context }`. It returns named test derivations,
 usually through `context.mkSuite`; capability-specific tests use the effective
@@ -50,7 +52,7 @@ package's declared features. Each release gets tests of its own final output.
 Writing the suite once does not reuse another version's test result.
 
 The test runner is shared globally. MPFR's version, arithmetic and optional
-Float128 assertions are declared once in [its suite](../pkgs/libraries/mpfr/tests/family.nix).
+Float128 assertions are declared once in [its suite](../pkgs/libraries/mpfr/tests/default.nix).
 Independent upstream acceptance stays a normal test leaf. Diagnostics go to
 stderr; stdout is compared exactly with the declared `expected` string. Failed
 commands and pipelines stay failures. Expected trailing newlines are not supported.
@@ -91,9 +93,21 @@ The currently bound context is
 native x86_64 GNU/Linux. Platform support belongs to that context and to genuine
 recipe restrictions, not duplicated conditionals in version tables.
 
-Older `mkVersions` callers retain their explicit constructor/base/helper protocol
-while they are migrated. Frozen construction modules keep their complete pinned
-calls. They do not silently acquire ordinary defaults. Direct `tvp.builder` calls
+Construction calls use the same family definition before a public package is created:
+
+```nix
+family.instantiate {
+  version = "4.2.2";
+  base = earlierBase;
+  deps.gmp = earlierGmp;
+}
+```
+
+This replaces dependency choices before evaluation, avoiding a lookup of the final
+compiler being constructed. `tvp.baseTiers` exposes `seed`, `target`, `native` and
+`full` source-owned contexts; `retained` adapts existing construction generations.
+See [base tiers](../bases/tiers/README.md). MPFR's old construction recipe has been
+removed; other families still keep their earlier interfaces until they are migrated. Direct `tvp.builder` calls
 remain available for low-level fixtures and specialized construction work.
 
 ## Public dependencies and bootstrap cycles
@@ -120,10 +134,25 @@ Edits replay after argument overrides. Unknown arguments, missing step targets
 and duplicate names fail. Named outputs and tests follow the customized package.
 `overrideAttrs` is not an owned-package interface.
 
-Use argument overrides to replace a base or dependency. A generic specification
-edit retains its constructor arguments; adding an unused field does not create
-an operative input. Commands and dependency metadata must read the same effective
-published providers.
+Argument overrides replace package inputs. Base edits also rebind automatic tools,
+helpers, commands, metadata and attached tests from the effective specification:
+
+```nix
+mpfr.edit (spec: spec // {
+  base = spec.base.override { standardTools.gnumake = myMake; };
+})
+```
+
+Explicit procedure argument overrides retain precedence over defaults. Named steps
+remain inspectable and support `editSteps`, including disabling `output.strip` or
+inserting a command. Changing a step after the split only changes finalization.
+
+Builder implementations bind helpers once with `tvp.builder.forBase final.base`.
+The returned `steps` and `outputs` obtain implementation tools from that base; explicit
+helper-call arguments take precedence. A builder therefore needs package inputs such
+as `base`, `src`, `version` and `gmp`, rather than repeated Python/Binutils/Make
+arguments. `context.selectTools` publishes the consumed tool roles as `toolProviders`
+for dependency metadata without forcing unused base providers.
 
 The family test factory is overridable with `tests`; replacing that suite changes
 validation, not package compilation. Retained factories keep their historical
@@ -132,7 +161,7 @@ from individual test derivations.
 
 ## Procedure and split boundaries
 
-Procedures remain complete independent version-start files. They receive resolved
+Procedures remain complete independent files. They receive resolved
 `src`, `version`, providers and helpers and return `final: { ... }` specification
 data. Their ordered `plan` contains named records and one `steps.split` marker.
 Source preparation, compilation and installation produce the artifact. Output
@@ -153,7 +182,9 @@ supplies wiring that `mkFamily` now provides for ordinary definitions. Building
 it may realize uncached tools; `--offline` prevents fetching, not local builds.
 
 This is an incremental API migration. Existing recipes may retain isolation debt
-or known upstream failures; the new entry point does not waive them. MPFR's later
-procedures still have retained inline upstream checks. Source evaluation, a
-working compiler or an installed test does not establish full historical,
+or known upstream failures; the new entry point does not waive them. MPFR retains a
+compiled checkpoint in its artifact and runs upstream checks independently. The production checkpoint writer and test restore code are separate;
+editing the test reader does not change A or F. Check flags and acceptance likewise
+remain outside production. Other families may retain earlier isolation debt. Source
+evaluation, a working compiler or an installed test does not establish full historical,
 platform, hardening or catalogue qualification.

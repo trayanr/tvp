@@ -158,75 +158,68 @@ let
     }
   ) { };
   gmp = b.gnu-gmp;
-  originalMpfr = make (import ../pkgs/libraries/mpfr/build-steps-4.2.2.nix) {
-    tvp = {
-      inherit builder;
+  # MPFR uses the same owned procedure as the catalogue, on the earlier BUILD tier.
+  mpfrBase = builder.base {
+    name = "source-output-tools-mpfr";
+    inherit (base) platform;
+    compiler = base.stdenv.cc // {
+      inherit runtimeDirectories;
     };
-    inherit
-      lib
-      base
-      gmp
-      bash
-      coreutils
-      python
-      patchelf
-      ;
-    src = sources.mpfr;
-    version = "4.2.2";
-    gnumake = b.gnumake-musl;
-    gnutar = b.gnutar-latest;
-    xz = b.xz;
-    binutils = b.gnu-binutils;
+    shell = bash;
+    inherit coreutils;
+    tools = base.stdenv.initialPath;
+    standardTools = {
+      gnumake = b.gnumake-musl;
+      gnutar = b.gnutar-latest;
+      xz = b.xz;
+      inherit python patchelf;
+      sed = b.gnused;
+      grep = b.build-grep;
+      gawk = b.gawk;
+      diffutils = b.diffutils;
+      findutils = b.findutils;
+    };
+    construction = {
+      kind = "stage";
+      previous = base.name;
+    };
   };
-  mpfr =
-    (originalMpfr.edit (
-      s:
-      s
-      // {
-        environment = s.environment // {
-          tools = buildTools;
-        };
-      }
-    )).editSteps
-      (
-        plan:
-        builder.steps.insertAfter "mpfr.prepare"
-          [
-            (builder.steps.shebangs {
-              name = "mpfr.shebangs";
-              inherit python;
-              paths = [
-                "ar-lib"
-                "install-sh"
-                "version-ext.sh"
-                "compile"
-                "missing"
-                "config.sub"
-                "configure"
-                "config.guess"
-                "ltmain.sh"
-                "depcomp"
-                "test-driver"
-              ];
-              names = [
-                "sh"
-                "bash"
-              ];
-              interpreter = "${bash}/bin/bash";
-            })
-          ]
-          (
-            builder.steps.replace "source.unpack" (
-              _:
-              builder.steps.unpack {
-                src = sources.mpfr;
-                tar = b.gnutar-latest;
-                xz = b.xz;
-                findutils = b.findutils;
-              }
-            ) plan
-          )
-      );
+  mpfr = builder {
+    recipe = import ../pkgs/libraries/mpfr/build.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit lib gmp;
+      base = mpfrBase;
+      src = sources.mpfr;
+      version = "4.2.2";
+      sourceScripts = [
+        "ar-lib"
+        "install-sh"
+        "version-ext.sh"
+        "compile"
+        "missing"
+        "config.sub"
+        "configure"
+        "config.guess"
+        "ltmain.sh"
+        "depcomp"
+        "test-driver"
+      ];
+    };
+    dependencyNames = [ "gmp" ];
+    metadata = { };
+    selection.kind = "private-output-tool-qualification";
+    testContext =
+      package: (import ../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      import ../pkgs/libraries/mpfr/tests/default.nix {
+        inherit package lib;
+        context = package.testContext;
+      };
+  };
   consumer = make (
     { library }:
     final: {

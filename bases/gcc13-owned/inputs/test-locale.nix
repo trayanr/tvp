@@ -1,7 +1,11 @@
 # The frozen grep UTF-8 test originally used the standalone public glibc.
-# Preserve that complete construction graph when public MPFR moves to the owned
-# recipe and Zstd moves to owned construction: substituting the base libc would change the historical test too.
-{ tvpLib, recipes }:
+# Preserve the selected libc inputs while MPFR uses its shared owned construction
+# recipe. This is a stage-local dependency, not the public MPFR instantiation.
+{
+  tvpLib,
+  recipes,
+  construction,
+}:
 let
   select =
     family: version: deps:
@@ -24,7 +28,13 @@ let
   bison = select recipes.bison.constructionRecipe "3.8.2" { inherit m4; };
   gmp = select recipes.gmp.constructionRecipe "6.3.0" { inherit m4; };
   isl = select recipes.isl.constructionRecipe "0.28" { inherit gmp; };
-  mpfr = select recipes.mpfr.constructionRecipe "4.2.2" { inherit gmp; };
+  mpfr = recipes.mpfr.instantiate {
+    version = "4.2.2";
+    base = construction.ownedBases.gcc13;
+    deps = {
+      inherit gmp;
+    };
+  };
   mpc = select recipes.mpc.constructionRecipe "1.4.1" { inherit gmp mpfr; };
   zlib = select recipes.zlib.constructionRecipe "1.3.2" { };
   xz = select recipes.xz.constructionRecipe "5.8.4" { };

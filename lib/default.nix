@@ -16,6 +16,10 @@ in
   provenance = import ./provenance.nix { inherit lib; };
   graph = import ./graph.nix { inherit lib; };
   bases = import ./bases.nix { inherit lib platforms; };
+  baseTiers = import ../bases/tiers {
+    inherit lib;
+    builder = import ./builder.nix { inherit lib; };
+  };
   packages = import ./packages.nix {
     inherit
       lib

@@ -16,7 +16,8 @@ def run():
         raise ValueError('Prior construction audit failed')
     raw = audit.nix_json('derivation', 'show', '--recursive', '--file',
                          str(ROOT / 'source-consumer-tests.nix'), 'consumer',
-                         'chain.evidence.gmp', 'chain.evidence.mpfr', 'chain.evidence.mpc')
+                         'chain.evidence.gmp', 'chain.evidence.mpfr', 'chain.evidence.mpc',
+                         'chain.mpfr.tests.upstream')
     graph = raw.get('derivations', raw)
     normalized = copy.deepcopy(graph)
     roles = audit.nix_json('eval', '--json', '--impure', '--expr', f'''
@@ -25,16 +26,34 @@ def run():
             coreutils=toString f.composition.coreutils;
             build=map toString [b.gnu-gcc-unwrapped b.gnu-binutils b.build-python b.build-m4
               b.gnu-tool-floor.gnu-make b.gnu-tool-floor.gnu-findutils];
-            target=map toString [f.composition.cc.libc f.gmp f.mpfr f.mpc]; }}''')
+            target=map toString [f.composition.cc.libc f.gmp f.mpfr f.mpc];
+            mpfr={{ artifact=f.mpfr.artifact.drvPath; final=f.mpfr.drvPath;
+                    upstream=f.mpfr.tests.upstream.drvPath;
+                    raw=f.mpfr.tests.upstream.specification.validation.execution.drvPath;
+                    production=f.mpfr.tests.upstream.specification.validation.production.drvPath; }};
+          }}''')
     producers = {audit.store_path(o.get('path', n['env'][name])): audit.store_path(d)
                  for d, n in graph.items() for name, o in n['outputs'].items()}
     profiles, failures = {}, []
-    stage_names = {'gmp-6.3.0', 'mpfr-4.2.2', 'mpc-1.4.1',
-                   'gmp-6.3.0-artifacts', 'mpfr-4.2.2-artifacts', 'mpc-1.4.1-artifacts',
+    mpfr = {role: audit.store_path(drv) for role, drv in roles['mpfr'].items()}
+    mpfr_roles = {mpfr[role]: role for role in ('artifact', 'final', 'upstream', 'raw')}
+    if mpfr['production'] != mpfr['artifact']:
+        failures.append('MPFR upstream production is not its compilation artifact')
+    if len(mpfr_roles) != 4:
+        failures.append('MPFR artifact, final and upstream roles are not distinct')
+    graph_drvs = {audit.store_path(drv) for drv in graph}
+    failures += ['Missing MPFR ' + role + ' runner: ' + drv
+                 for drv, role in mpfr_roles.items() if drv not in graph_drvs]
+    stage_names = {'gmp-6.3.0', 'mpc-1.4.1',
+                   'gmp-6.3.0-artifacts', 'mpc-1.4.1-artifacts',
                    'source-gmp-evidence-6.3.0', 'source-mpfr-evidence-4.2.2',
                    'source-mpc-evidence-1.4.1', 'source-arithmetic-consumers-1'}
     for drv, n in normalized.items():
         full = audit.store_path(drv)
+        mpfr_role = mpfr_roles.get(full)
+        if mpfr_role is not None and 'structuredAttrs' not in n:
+            failures.append('Invalid MPFR ' + mpfr_role + ' runner: ' + full)
+            continue
         if full in prior['ownedRunnerProfile']:
             n['env']['PATH'] = ''; n['env']['allowSubstitutes'] = ''
             continue
@@ -46,13 +65,16 @@ def run():
             data = n['structuredAttrs']
             expected_fields = {'builder', 'name', 'outputs', 'stageInputs', 'system'}
             checks_valid = True
-            if name in {'gmp-6.3.0', 'mpfr-4.2.2', 'mpc-1.4.1'}:
+            if name in {'gmp-6.3.0', 'mpc-1.4.1'} or mpfr_role == 'final':
                 expected_fields.add('outputChecks')
                 refs = data.get('outputChecks', {}).get('out', {}).get('disallowedReferences', [])
                 checks_valid = (len(refs) == 1 and producers.get(refs[0]) in deps
                                 and refs[0].endswith(name + '-artifacts')
                                 and data['outputChecks'] == {'out': {'disallowedReferences': refs}})
-            valid = (checks_valid and name in stage_names and n['builder'] == roles['shell']
+                if mpfr_role == 'final':
+                    checks_valid = checks_valid and producers.get(refs[0]) == mpfr['artifact']
+            valid = (checks_valid and (name in stage_names or mpfr_role is not None)
+                     and n['builder'] == roles['shell']
                      and n['args'][0] == '-euc'
                      and n['args'][1].startswith('source "$NIX_ATTRS_SH_FILE"\n')
                      and set(data) == expected_fields

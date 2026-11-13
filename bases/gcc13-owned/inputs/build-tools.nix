@@ -176,7 +176,7 @@ tvpLib.packages.mergeVariants {
           package:
           import ../../../pkgs/build-tools/gnugrep/tests {
             inherit pkgs tvpLib package;
-            locale = import ./test-locale.nix { inherit tvpLib recipes; };
+            locale = import ./test-locale.nix { inherit tvpLib recipes construction; };
           };
       };
       inherit pkgs;

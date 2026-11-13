@@ -26,12 +26,14 @@ let
       binutils = base.compiler.bintools;
     };
   defaults =
-    supplied:
+    { arguments, specification }:
     let
-      base = supplied.base or context.base;
+      base = arguments.base or context.base;
     in
     context.helpers
-    // standardProviders base
+    // lib.genAttrs (builtins.attrNames (standardProviders base)) (
+      name: (standardProviders specification.base).${name}
+    )
     // {
       inherit base;
     };
@@ -89,10 +91,7 @@ let
     infra = {
       inherit lib;
     };
-    argumentDefaults =
-      supplied:
-      # The actual procedure filters standard inputs; no PATH discovery.
-      defaults supplied;
+    argumentDefaults = defaults;
     extraArgs.mkTests = lib.makeOverridable (
       { tests }:
       package:
@@ -102,10 +101,38 @@ let
       }
     ) { inherit tests; };
   };
+  instantiate =
+    {
+      version,
+      base ? context.base,
+      deps ? { },
+      opts ? { },
+    }:
+    let
+      entry = versionTable.${version};
+      selected = api.mkVersions (
+        family
+        // {
+          versionTable = {
+            ${version} = entry // {
+              def = entry.def // {
+                inherit base;
+                deps = entry.def.deps // deps;
+                opts = (entry.def.opts or { }) // opts;
+              };
+            };
+          };
+        }
+      );
+    in
+    builtins.head (builtins.attrValues selected);
   canonical = api.mkVersions family;
 in
 {
   inherit canonical;
-  recipes.${pname} = family;
+  inherit instantiate;
+  recipes.${pname} = family // {
+    inherit instantiate;
+  };
   aliases = api.mkAliases { inherit pname versionTable canonical; };
 }

@@ -1,5 +1,5 @@
 # Construction never follows the public default it is building. These exact
-# selections reproduce the reviewed GCC16 native three-stage producer on v3.
+# selections keep the GCC16 construction on v3; MPFR uses the shared owned recipe.
 {
   pkgs,
   tvpLib,
@@ -80,18 +80,47 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  mpfr = select recipes.mpfr.constructionRecipe {
-    "4.2.1" = {
-      deps = {
-        gmp = inputs.gmp_6_3_0;
-      };
-    };
-    "4.2.2" = {
-      deps = {
-        gmp = inputs.gmp_6_3_0;
-      };
-    };
-  };
+  mpfr.gcc16 = builtins.listToAttrs (
+    map
+      (
+        version:
+        let
+          name = tvpLib.versions.attrName "mpfr" version;
+          package =
+            (recipes.mpfr.instantiate {
+              inherit version;
+              base = construction.ownedBases.gcc13-owned-v3;
+              deps.gmp = inputs.gmp_6_3_0;
+            }).edit
+              (
+                spec:
+                spec
+                // {
+                  tvp = spec.tvp // {
+                    canonical = false;
+                    variant = "gcc16";
+                  };
+                }
+              );
+        in
+        {
+          inherit name;
+          value = tvpLib.packages.tagSelection {
+            namespace = "variants.gcc16";
+            selector = name;
+            kind = "variant";
+            pname = "mpfr";
+            inherit version;
+            canonical = name;
+          } package;
+        }
+      )
+      [
+        "4.2.1"
+        "4.2.2"
+      ]
+  );
+
   mpc = select recipes.mpc.constructionRecipe {
     "1.3.1" = {
       deps = {

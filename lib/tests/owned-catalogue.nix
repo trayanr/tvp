@@ -5,6 +5,7 @@ let
   steps = tvp.builder.steps;
   family = (import ../../pkgs/libraries/mpfr { inherit pkgs tvp; }).recipes.mpfr;
   p = tvp.canonical.mpfr_4_2_2;
+  constructionMpfr = import ./fixtures/mpfr.nix { inherit pkgs tvp; };
   gmp = tvp.packages.gmp_6_2;
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   insert = steps.insertAfter "mpfr.build" [
@@ -29,11 +30,11 @@ let
     bases = { };
   };
   variants = api.mkVariants (
-    family
+    (builtins.removeAttrs family [ "instantiate" ])
     // {
       inherit pkgs;
       profiles.fixture = {
-        base = tvp.bases.default;
+        base = tvp.baseTiers.seed;
         versions."4.2.2".deps = {
           inherit gmp;
         };
@@ -126,12 +127,17 @@ let
     ) edits;
   candidate = import ../../bases/source-gnu { };
   sentinel = (import ../../bases/source-gnu/tests/probes.nix { }).sentinel;
-  contextChanged =
-    (p.override {
-      bash = tvp.packages.bash;
-      coreutils = tvp.bases.default.components.floor.coreutils;
-    }).edit
-      (spec: spec // { base = candidate.base.override { compiler = sentinel; }; });
+  contextChanged = p.edit (
+    spec:
+    spec
+    // {
+      base = spec.base.override {
+        compiler = sentinel;
+        shell = tvp.packages.bash;
+        coreutils = tvp.bases.default.components.floor.coreutils;
+      };
+    }
+  );
   contextBatch = contextChanged.testContext.mkBatch {
     name = "context-rebound";
     suite = contextChanged.tests;
@@ -323,25 +329,18 @@ let
       && contextBatch.testSuite.arithmetic.drvPath == contextChanged.tests.arithmetic.drvPath
       && !(p.tvp ? testContext)
       && !(p.tests ? testContext);
-    variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.bases.default.name;
+    variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.baseTiers.seed.name;
 
-    canonicalOwned = p.tvp.builder == "build-4.2.2.nix" && !(p ? overrideAttrs);
+    canonicalOwned = p.tvp.builder == "build.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
-    distinctPilot =
-      p.drvPath != tvp.variants.build-steps.mpfr_4_2_2.drvPath
-      && p.tvp.base == "source-gnu-candidate"
-      && tvp.variants.build-steps.mpfr_4_2_2.tvp.base == tvp.bases.default.name;
-    distinctArtifact = p.artifact.drvPath != tvp.variants.build-steps.mpfr_4_2_2.artifact.drvPath;
-    archiveHash =
-      p.src.outputHash == (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.outputHash;
-    distinctSourceProducer =
-      p.src.drvPath != (api.mkVersions family.constructionRecipe).mpfr_4_2_2.src.drvPath;
-    # Older ordinary MPFR is now owned; frozen callers retain the complete legacy call.
-    legacyPreserved =
-      let
-        retained = (api.mkVersions family.constructionRecipe).mpfr_4_2_1;
-      in
-      !(retained ? edit) && retained ? overrideAttrs;
+    constructionScope =
+      constructionMpfr.drvPath != p.drvPath
+      && p.tvp.base == tvp.baseTiers.full.name
+      && constructionMpfr.tvp.base == tvp.baseTiers.seed.name;
+    distinctArtifact = p.artifact.drvPath != constructionMpfr.artifact.drvPath;
+    archiveHash = p.src.outputHash == constructionMpfr.src.outputHash;
+    sharedSourceProducer = p.src.drvPath == constructionMpfr.src.drvPath;
+    constructionOwned = constructionMpfr ? edit && !(constructionMpfr ? overrideAttrs);
     olderOrdinaryOwned = tvp.canonical.mpfr_4_2_1 ? artifact && tvp.canonical.mpfr_4_2_1 ? edit;
     exactEdits = tagged "mpfr_4_2_2" p;
     publicExactEdits = tagged "mpfr_4_2_2" tvp.packages.mpfr_4_2_2;
@@ -378,8 +377,8 @@ let
       && (changed.out.mkTests changed.out).version.drvPath == changed.tests.version.drvPath
       && (changed.passthru.mkTests changed).version.drvPath == changed.tests.version.drvPath
       &&
-        ((changed.mkTests.override { inherit pkgs; }) changed).version.drvPath
-        == changed.tests.version.drvPath;
+        ((changed.mkTests.override { tests = import ../../pkgs/libraries/mpfr/tests; }) changed)
+        .version.drvPath == changed.tests.version.drvPath;
     projections =
       changed.out.tvp.customization == changed.tvp.customization
       && (builtins.head changed.all).tests.version.drvPath == changed.tests.version.drvPath;

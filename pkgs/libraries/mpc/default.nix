@@ -302,10 +302,15 @@ let
     versionTable = ordinaryTable;
     inherit source;
   };
-  # Retain the complete historical construction, including its original test factory.
-  # Preserve the complete old arithmetic factory before public dependency promotion.
-  retainedDependencyRecipe = (import ../mpfr { inherit pkgs tvp; }).recipes.mpfr.constructionRecipe;
-  retainedDependency = (tvpLib.packages.mkVersions retainedDependencyRecipe).mpfr_3_1_6;
+  # Keep MPC's earlier MPFR dependency version, using the shared owned MPFR recipe.
+  retainedDependency = (import ../mpfr { inherit pkgs tvp; }).instantiate {
+    version = "3.1.6";
+    base = import ../../../bases/tiers/construction.nix {
+      lib = pkgs.lib;
+      builder = tvp.builder;
+    } tvp.bases.default;
+    deps.gmp = defs."1.0.3".deps.gmp;
+  };
   constructionRecipe = packageArgs // {
     versionTable = versionTable // {
       "1.0.3" = versionTable."1.0.3" // {

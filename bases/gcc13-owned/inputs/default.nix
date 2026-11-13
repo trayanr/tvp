@@ -81,6 +81,13 @@ let
     };
   };
   construction = {
+    ownedBases = lib.mapAttrs (
+      _: base:
+      import ../../tiers/construction.nix {
+        inherit lib;
+        builder = tvp.builder;
+      } base
+    ) construction.bases;
     bases = lib.mapAttrs (
       _: base:
       base

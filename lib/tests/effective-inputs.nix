@@ -50,7 +50,12 @@ let
     in
     lib.concatStringsSep "\n" (
       map (step: step.run or "") p.buildSteps
-      ++ map (step: step.run or "") (s.upstreamPlan or [ ])
+      ++ map (step: step.run or "") (
+        let
+          plan = s.upstreamPlan or [ ];
+        in
+        if builtins.isFunction plan then plan p.artifact else plan
+      )
       ++ [
         (s.upstreamCheck.run or "")
         (s.upstreamCheck.command.run or "")
@@ -167,10 +172,6 @@ let
       "canonical.gettext_1_0"
       "runtime"
       "jdk"
-    ];
-    variant-mpfr = [
-      "variants.build-steps.mpfr_4_2_2"
-      "gmp"
     ];
     variant-json-c = [
       "variants.build-steps.json-c_0_19"

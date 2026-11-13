@@ -13,6 +13,7 @@ let
       referencePackages ? [ ],
       coreutils ? null,
       standardTools ? { },
+      construction ? null,
     }:
     let
       fail = message: throw "TVP owned base: ${message}";
@@ -40,6 +41,40 @@ let
       checked =
         if name == "" then
           fail "name must be nonempty"
+        else if
+          construction != null
+          && !(
+            builtins.isAttrs construction
+            && builtins.elem (construction.kind or null) [
+              "seed"
+              "stage"
+              "legacy-inputs"
+            ]
+            &&
+              lib.subtractLists [
+                "kind"
+                "previous"
+                "sourceBase"
+              ] (builtins.attrNames construction) == [ ]
+            &&
+              builtins.all
+                (
+                  key:
+                  let
+                    value = construction.${key} or null;
+                  in
+                  value == null || (builtins.isString value && value != "" && !(builtins.hasContext value))
+                )
+                [
+                  "previous"
+                  "sourceBase"
+                ]
+            && (construction.previous or null) != name
+            && (construction.kind == "stage" -> (construction.previous or null) != null)
+            && (construction.kind == "seed" -> (construction.previous or null) == null)
+          )
+        then
+          fail "construction must identify a seed or an earlier named tier"
         else if
           platform.system != "x86_64-linux"
           || platform.config != "x86_64-unknown-linux-gnu"
@@ -102,38 +137,70 @@ let
         else
           true;
       composeEnvironment = import ./build-environment.nix { inherit lib base; };
-      base = {
-        inherit
-          name
-          platform
-          compiler
-          shell
-          tools
-          referencePackages
-          ;
-        runtimeDirectories = compiler.runtimeDirectories;
-        # Validate only selected roles; forcing the whole set would create cycles.
-        standardTools = lib.mapAttrs (
-          name: tool:
-          if package tool && matchesExecution tool then
-            tool
-          else
-            fail "standard tool ${name} must execute on the selected platform"
-        ) standardTools;
-        environment = composeEnvironment;
-        override =
-          replacements:
-          let
-            changes = if builtins.isFunction replacements then replacements args else replacements;
-            reboundTools = lib.optionalAttrs (coreutils != null && changes ? coreutils && !(changes ? tools)) {
-              tools = map (tool: if tool.outPath == coreutils.outPath then changes.coreutils else tool) tools;
-            };
-            reboundStandards = lib.optionalAttrs (changes ? standardTools) {
-              standardTools = standardTools // changes.standardTools;
-            };
-          in
-          make (args // reboundTools // changes // reboundStandards);
-      } // lib.optionalAttrs (coreutils != null) { inherit coreutils; };
+      base =
+        {
+          inherit
+            name
+            platform
+            compiler
+            shell
+            tools
+            referencePackages
+            ;
+          runtimeDirectories = compiler.runtimeDirectories;
+          # Validate only selected roles; forcing the whole set would create cycles.
+          standardTools = lib.mapAttrs (
+            name: tool:
+            if package tool && matchesExecution tool then
+              tool
+            else
+              fail "standard tool ${name} must execute on the selected platform"
+          ) standardTools;
+          environment = composeEnvironment;
+          override =
+            replacements:
+            let
+              changes = if builtins.isFunction replacements then replacements args else replacements;
+              reboundTools = lib.optionalAttrs (!(changes ? tools)) {
+                tools = map (
+                  tool:
+                  if coreutils != null && changes ? coreutils && tool.outPath == coreutils.outPath then
+                    changes.coreutils
+                  else if changes ? shell && tool.outPath == shell.outPath then
+                    changes.shell
+                  else
+                    tool
+                ) tools;
+              };
+              reboundStandards = lib.optionalAttrs (changes ? standardTools) {
+                standardTools = standardTools // changes.standardTools;
+              };
+            in
+            make (args // reboundTools // changes // reboundStandards);
+          # Edits transform the complete selected input record and re-enter all
+          # validation/environment binding, just like explicit argument overrides.
+          edit =
+            transform:
+            let
+              edited = transform args;
+              nextCoreutils = edited.coreutils or null;
+              nextShell = edited.shell or shell;
+              reboundTools = lib.optionalAttrs ((edited.tools or [ ]) == tools) {
+                tools = map (
+                  tool:
+                  if coreutils != null && nextCoreutils != null && tool.outPath == coreutils.outPath then
+                    nextCoreutils
+                  else if tool.outPath == shell.outPath then
+                    nextShell
+                  else
+                    tool
+                ) tools;
+              };
+            in
+            make (edited // reboundTools);
+        }
+        // lib.optionalAttrs (coreutils != null) { inherit coreutils; }
+        // lib.optionalAttrs (construction != null) { inherit construction; };
     in
     builtins.seq checked base;
 in

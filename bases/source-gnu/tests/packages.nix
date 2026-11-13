@@ -162,17 +162,28 @@ let
       }
     )
   );
-  mpfr = qualify "mpfr" (
-    make (import ../../../pkgs/libraries/mpfr/build-steps-4.2.2.nix) (
-      common
-      // {
-        src = sources.mpfr;
-        version = "4.2.2";
-        inherit gmp;
-        inherit (tools) xz;
-      }
-    )
-  );
+  mpfr = builder {
+    recipe = import ../../../pkgs/libraries/mpfr/build.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit lib base gmp;
+      src = sources.mpfr;
+      version = "4.2.2";
+    };
+    dependencyNames = [ "gmp" ];
+    metadata = { };
+    selection.kind = "source-gnu-candidate-test";
+    testContext =
+      package: (import ../../../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      import ../../../pkgs/libraries/mpfr/tests/default.nix {
+        inherit package lib;
+        context = package.testContext;
+      };
+  };
   mpc = qualify "mpc" (
     make (import ../../../pkgs/libraries/mpc/build-steps-1.4.1.nix) (
       common

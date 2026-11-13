@@ -256,6 +256,8 @@ rec {
       variant ? null,
       rebindTests ? null,
       argumentDefaults ? null,
+      # Method exported by mkFamily; it is not a build input.
+      instantiate ? null,
     }:
     lib.mapAttrs' (
       version: rawEntry:

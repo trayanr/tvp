@@ -11,10 +11,7 @@ let
   tvpLib = import ./lib {
     inherit (pkgs) lib;
     familyContext = {
-      base =
-        (import ./bases/source-gnu {
-          standardTools = import ./bases/source-gnu/standard-tools.nix { inherit tvp; };
-        }).base;
+      base = baseTiers.full;
       builder = tvp.builder;
       helpers = {
         inherit tvp;
@@ -31,6 +28,15 @@ let
   };
   bases = baseSet.bases;
   construction = baseSet.construction;
+  baseTiers =
+    (import ./bases/tiers/source-gnu.nix {
+      inherit (pkgs) lib;
+      builder = tvp.builder;
+      standardTools = import ./bases/source-gnu/standard-tools.nix { inherit tvp; };
+    })
+    // {
+      retained = construction.ownedBases;
+    };
 
   universe = import ./pkgs { inherit pkgs tvp; };
 
@@ -192,6 +198,17 @@ let
             inherit (tvp) builder;
           }
         )
+      );
+      base-tiers = pkgs.writeText "tvp-base-tier-contracts" (
+        builtins.toJSON (
+          import ./lib/tests/base-tiers.nix {
+            inherit (pkgs) lib;
+            inherit (tvp) builder;
+          }
+        )
+      );
+      mpfr-family = pkgs.writeText "tvp-mpfr-family-contracts" (
+        builtins.toJSON (import ./lib/tests/mpfr-family.nix { inherit pkgs tvp; })
       );
       source-gnu-hardening = import ./bases/source-gnu/hardening/check.nix { inherit tvp; };
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
@@ -873,6 +890,7 @@ let
     android = import ./sdks/android.nix { inherit tvp pkgs; };
     inherit
       bases
+      baseTiers
       canonical
       packages
       variants

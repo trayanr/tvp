@@ -63,7 +63,7 @@ strict failure behavior with the opt-in source GNU base. Its negative derivation
 are separate from the passing suite. The attached `owned-tests` check runs their
 actual runners in subprocesses, without nested Nix builds.
 
-Ordinary `mkFamily` callers declare their suite once with `tests = import ./tests/family.nix;`.
+Ordinary `mkFamily` callers declare their suite once with `tests = import ./tests;`.
 The function receives `{ package, lib, context }` and uses `context.mkSuite`, normally
 with `libraries = [ package ];` and scripts invoking `"$CC"` or `"$CXX"`. Each version
 gets distinct tests of its own final output. The shared suite declaration reuses code;
@@ -73,8 +73,8 @@ The ordinary context comes from the effective package. The family constructor su
 it, so definitions do not repeat `testContext` or standard test tools. The normal
 catalogue builds the batch with that same context. Argument `override`, `edit` and
 `editSteps` reconstruct it from the current specification's base, Bash and Coreutils.
-Use argument overrides when replacing the base or providers so standard defaults are
-resolved together. The family factory supports `.mkTests.override { tests = replacement; }`;
+Argument overrides and specification base edits both reconstruct automatic tools and
+helper bindings. Package-specific providers remain explicit inputs. The family factory supports `.mkTests.override { tests = replacement; }`;
 this replaces the suite function, not package compilation.
 
 Retained low-level definitions can still opt in explicitly:

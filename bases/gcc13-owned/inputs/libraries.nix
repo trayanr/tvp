@@ -128,20 +128,34 @@ tvpLib.packages.mergeVariants {
       };
     }
   );
-  mpfr = tvpLib.packages.mkVariants (
-    recipes.mpfr.constructionRecipe
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = construction.bases.gcc13;
-        versions."4.2.1" = {
-          deps = {
-            gmp = construction.variants.gcc13.gmp_6_3_0;
-          };
-        };
-      };
-    }
-  );
+  mpfr.gcc13.mpfr_4_2_1 =
+    tvpLib.packages.tagSelection
+      {
+        namespace = "variants.gcc13";
+        selector = "mpfr_4_2_1";
+        kind = "variant";
+        pname = "mpfr";
+        version = "4.2.1";
+        canonical = "mpfr_4_2_1";
+      }
+      (
+        (recipes.mpfr.instantiate {
+          version = "4.2.1";
+          base = construction.ownedBases.gcc13;
+          deps.gmp = construction.variants.gcc13.gmp_6_3_0;
+        }).edit
+          (
+            spec:
+            spec
+            // {
+              tvp = spec.tvp // {
+                canonical = false;
+                variant = "gcc13";
+              };
+            }
+          )
+      );
+
   attr = tvpLib.packages.mkVariants (
     recipes.attr.constructionRecipe
     // {

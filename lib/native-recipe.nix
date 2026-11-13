@@ -28,7 +28,11 @@ let
         if argumentDefaults == null then
           current
         else
-          builtins.intersectAttrs declared (argumentDefaults current) // current;
+          builtins.intersectAttrs declared (argumentDefaults {
+            arguments = current;
+            inherit specification;
+          })
+          // current;
       definition = recipe resolved;
       # A field introduced by an arbitrary edit is not automatically a recipe
       # input. Only published fields or an explicit projection describe providers.
@@ -50,7 +54,8 @@ let
       # projected here; recipes without a projection retain the old behavior.
       dependencyProviders = specification.dependencyProviders or { };
       dependencies =
-        lib.mapAttrs
+        (specification.toolProviders or { })
+        // (lib.mapAttrs
           (
             name: original:
             dependencyProviders.${name}
@@ -60,9 +65,11 @@ let
             builtins.intersectAttrs (lib.genAttrs (
               if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
             ) (_: null)) resolved
-          );
+          )
+        );
       provenance = metadata // {
         base = specification.base.name;
+        baseConstruction = specification.base.construction or null;
         cc =
           if owned && specification.base ? compiler then
             specification.base.compiler
