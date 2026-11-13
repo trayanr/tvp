@@ -98,7 +98,7 @@ let
       name = "gcc.${name}";
       cwd = "build";
       run = ''
-        validation="$out/nix-support/production"
+        export validation="$out/nix-support/production"
         mkdir -p "$validation"
         export TVP_SOURCE_ROOT
         status=0

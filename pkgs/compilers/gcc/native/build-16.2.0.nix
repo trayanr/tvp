@@ -99,7 +99,7 @@ let
       name = "gcc.${name}";
       cwd = "build";
       run = ''
-        validation="$out/nix-support/production"
+        export validation="$out/nix-support/production"
         mkdir -p "$validation"
         export TVP_SOURCE_ROOT
         status=0
@@ -254,14 +254,15 @@ in
     # The passthru callback receives the raw final output, before catalogue
     # decoration. Fresh lowering with empty passthru projects the exact A only;
     # it creates no new stage or reverse dependency on validation.
-    validation = (import ../tests/upstream-16.2.0.nix {
-      inherit tvp lib;
-      package = {
-        specification = final;
-        artifact = (import ../../../../lib/owned-build.nix { inherit lib; }
-          (final // { passthru = {}; })).artifact;
-      };
-    }).execution;
+    validation =
+      (import ../tests/upstream-16.2.0.nix {
+        inherit tvp lib;
+        package = {
+          specification = final;
+          artifact =
+            (import ../../../../lib/owned-build.nix { inherit lib; } (final // { passthru = { }; })).artifact;
+        };
+      }).execution;
     platform = {
       system = final.base.platform.system;
       dynamicLinker = "lib/ld-linux-x86-64.so.2";
@@ -382,19 +383,31 @@ in
     }
     {
       name = "gcc.relocate-public";
-      tools = [ python binutils final.patchelf ];
+      tools = [
+        python
+        binutils
+        final.patchelf
+      ];
       run = ''${python}/bin/python3 -B ${final.finalizerScript} "$out" "$TVP_ARTIFACT_ROOT" ${lib.escapeShellArg final.configurePrefix} ${binutils}/bin/readelf ${final.patchelf}/bin/patchelf ${../../../../pkgs/libraries/libxml2/ordinary/elf.py}'';
     }
     (outputs.interpreters {
       inherit python binutils;
       inherit (final) patchelf;
-      paths = [ "bin" "libexec" "lib" ];
+      paths = [
+        "bin"
+        "libexec"
+        "lib"
+      ];
       loader = "${libc}/lib/ld-linux-x86-64.so.2";
     })
     (outputs.checkPaths {
       inherit python binutils;
       inherit (final) patchelf;
-      paths = [ "bin" "libexec" "lib" ];
+      paths = [
+        "bin"
+        "libexec"
+        "lib"
+      ];
     })
   ];
 }
