@@ -65,6 +65,7 @@ versions, with separate results for different derivations.
 Each definition states its complete procedure and additional dependencies. Copy
 these records where needed so each can be read independently. Avoid a shared
 `common` definition or a version-switching procedure merely to reduce repetition.
+Use `tvp.lib` directly; do not introduce `tvpLib = tvp.lib;` just to shorten access.
 
 ```nix
 packageRecipes = tvp.lib.packages.mkDefs {

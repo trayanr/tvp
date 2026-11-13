@@ -1,10 +1,9 @@
 { tvp, ... }:
 let
-  tvpLib = tvp.lib;
-  packageRecipes = tvpLib.packages.mkDefs {
+  packageRecipes = tvp.lib.packages.mkDefs {
     "2.4.2" = {
       builder = ./build-2.4.2.nix;
-      deps.gmp = tvpLib.packages.withConstraint {
+      deps.gmp = tvp.lib.packages.withConstraint {
         reason = "MPFR 2.4.2/3.0.1 headers use __gmp_const, removed by GMP 5.1; use the compatible GMP 5.0 line.";
       } tvp.packages.gmp_5_0;
       opts.installedInterface = {
@@ -14,7 +13,7 @@ let
     };
     "3.0.1" = {
       builder = ./build-2.4.2.nix;
-      deps.gmp = tvpLib.packages.withConstraint {
+      deps.gmp = tvp.lib.packages.withConstraint {
         reason = "MPFR 2.4.2/3.0.1 headers use __gmp_const, removed by GMP 5.1; use the compatible GMP 5.0 line.";
       } tvp.packages.gmp_5_0;
     };
@@ -33,7 +32,7 @@ let
       deps.gmp = tvp.packages.gmp_6;
     };
   };
-  versionTable = tvpLib.packages.mkTable [
+  versionTable = tvp.lib.packages.mkTable [
     {
       def = packageRecipes."2.4.2";
       releases = {
@@ -82,7 +81,7 @@ let
     include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
   };
   pname = "mpfr";
-  family = tvpLib.packages.mkFamily {
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable packageMeta;
     source =
       { version, sha256 }:
@@ -92,11 +91,11 @@ let
       };
     tests = import ./tests;
   };
-  canonical = tvpLib.packages.mkVersions family;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
   recipes.mpfr = family;
   inherit canonical;
   inherit (family) instantiate;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }
