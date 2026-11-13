@@ -12,9 +12,20 @@ def restore(sidecar, workspace, policy):
     checkpoint=importlib.util.module_from_spec(module); module.loader.exec_module(checkpoint)
     selected=checkpoint.selected
     layout = json.loads((sidecar/'layout.json').read_text()); original = Path(layout['root'])
-    target = original if original.is_relative_to('/build') and not original.exists() else workspace/'checkpoint'
-    if target.exists() or target.parent.resolve() != target.parent:
+    # The runner already creates its private workspace. Reuse that exact root
+    # when it matches production: generated scripts and binaries contain paths
+    # beyond the small generated-text rebasing allowlist below.
+    same_workspace = original == workspace
+    target = workspace if same_workspace else (
+        original if original.is_relative_to('/build') and not original.exists()
+        else workspace/'checkpoint')
+    if target.resolve() != target or (target.exists() and not (
+            same_workspace and target.is_dir())):
         raise ValueError('nonprivate restore destination')
+    if same_workspace and any(os.path.lexists(target/top) for top in ('source', 'build')):
+        raise ValueError('restore namespace already occupied')
+    if os.path.lexists(workspace/'tree-path'):
+        raise ValueError('restore receipt already exists')
     with tarfile.open(sidecar/'tree.tar') as archive:
         members = archive.getmembers(); names = {m.name for m in members}
         if len(names) != len(members) or names != set(layout['members']) or names != set(layout['mtimeNs']):
@@ -32,11 +43,12 @@ def restore(sidecar, workspace, policy):
                     raise ValueError('external checkpoint link')
             elif not (m.isfile() or m.isdir()):
                 raise ValueError('special checkpoint member')
-        target.mkdir()
+        target.mkdir(exist_ok=same_workspace)
         archive.extractall(target, filter='fully_trusted')
-    for parent, dirs, files in os.walk(target):
-        for p in [Path(parent)] + [Path(parent)/n for n in files]:
-            if not p.is_symlink(): p.chmod(p.stat().st_mode | 0o200)
+    # Touch only archive members, not unrelated runner-owned workspace files.
+    for name in names:
+        p = target/name
+        if not p.is_symlink(): p.chmod(p.stat().st_mode | 0o200)
     # Rebase generated text only. Native products relocate through their own
     # executable-relative lookup; original A runtime libraries remain immutable.
     if target != original:

@@ -55,6 +55,46 @@ def archive_bytes(body):
     return b'!<arch>\n'+header+body+(b'\n' if len(body)%2 else b'')
 
 
+
+def restore_workspace_guards(save, restore, policy, work):
+    # Generated helper paths are runtime prerequisites, not Makefile text.
+    original=work/'original-workspace'; original.mkdir()
+    for name in ('source/gcc/testsuite/tiny.exp', 'build/Makefile', 'build/stage_final',
+                 'build/gcc/xgcc', 'build/gcc/cc1', 'build/gcc/cc1plus',
+                 'source/libgomp/testsuite/flock',
+                 'build/target/libstdc++-v3/include/bits/c++config.h'):
+        path=original/name; path.parent.mkdir(parents=True,exist_ok=True)
+        path.write_text('fixture\n')
+    flags=original/'build/target/libstdc++-v3/scripts/testsuite_flags'
+    flags.parent.mkdir(); flags.write_text(str(original/'build/gcc/xgcc')+'\n')
+    extra=original/'build/target/libgomp/libgomp-site-extra.exp'
+    extra.parent.mkdir(parents=True); extra.write_text(str(original/'source/libgomp/testsuite/flock')+'\n')
+    checkpoint=work/'checkpoint'; save(original,checkpoint)
+    shutil.rmtree(original); original.mkdir()
+    marker=original/'runner-owned'; marker.write_text('preserve\n'); marker.chmod(0o400)
+    restore(checkpoint,original,policy)
+    assert Path((original/'tree-path').read_text().strip())==original
+    assert Path(flags.read_text().strip()).is_file()
+    assert Path(extra.read_text().strip()).is_file()
+    assert (original/'build/target/libstdc++-v3/include/bits/c++config.h').read_text()=='fixture\n'
+    assert marker.read_text()=='preserve\n' and marker.stat().st_mode & 0o777 == 0o400
+    # Existing directories/files and dangling links must fail before extraction.
+    for name,kind in [('source','directory'),('build','file'),
+                      ('source','symlink'),('build','symlink'),('tree-path','symlink')]:
+        shutil.rmtree(original); original.mkdir()
+        marker=original/'runner-owned'; marker.write_text('preserve\n')
+        occupied=original/name
+        if kind=='directory': occupied.mkdir()
+        elif kind=='file': occupied.write_text('existing\n')
+        else: occupied.symlink_to(work/'missing-outside')
+        reject(lambda:restore(checkpoint,original,policy))
+        assert marker.read_text()=='preserve\n'
+        assert not (original/'source/gcc/testsuite/tiny.exp').exists()
+        assert not (work/'missing-outside').exists()
+        if kind=='symlink': assert occupied.is_symlink()
+        if kind=='file': assert occupied.read_text()=='existing\n'
+
+
 def main():
     evaluated=json.loads(Path(sys.argv[1]).read_text())
     readelf=sys.argv[2]
@@ -147,6 +187,9 @@ def main():
         gcc_restore.restore(checkpoint13,restored13,work/'gcc13.py')
         tree13=Path((restored13/'tree-path').read_text().strip())
         assert (tree13/alias.relative_to(source)).read_text()=='native header fixture\n'
+        for policy,path in ((gcc,work/'gcc.py'),(gcc13,work/'gcc13.py')):
+            controls=work/('restore-layout-'+policy.__name__); controls.mkdir()
+            restore_workspace_guards(policy.save,gcc_restore.restore,path,controls)
         outside=work/'external-header';outside.write_text('outside\n')
         for policy in (gcc,gcc13):
             for i,target in enumerate([outside,source/'build/stage2-gcc/obsolete.o',
