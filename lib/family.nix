@@ -17,22 +17,23 @@
 assert context != null || throw "TVP family: a selected build context is required";
 let
   constructor = context.builder;
-  standardNames = [
-    "bash"
-    "coreutils"
-    "binutils"
-  ];
+  standardProviders =
+    base:
+    (base.standardTools or { })
+    // {
+      bash = base.shell;
+      coreutils = base.coreutils;
+      binutils = base.compiler.bintools;
+    };
   defaults =
     supplied:
     let
       base = supplied.base or context.base;
     in
     context.helpers
+    // standardProviders base
     // {
       inherit base;
-      bash = base.shell;
-      coreutils = base.coreutils;
-      binutils = base.compiler.bintools;
     };
   definitions = api.mkDefs (
     lib.mapAttrs (
@@ -40,7 +41,11 @@ let
       let
         declared = builtins.functionArgs (import def.builder);
         definitionConstructor = def.constructor or constructor;
-        standardDependencies = builtins.filter (name: declared ? ${name}) standardNames;
+        standardDependencies =
+          specification:
+          builtins.filter (name: declared ? ${name}) (
+            builtins.attrNames (standardProviders specification.base)
+          );
         additionalDependencies = def.dependencyNames or (builtins.attrNames def.deps);
       in
       def
@@ -49,10 +54,16 @@ let
         base = def.base or context.base;
         helpers = def.helpers or { };
         dependencyNames =
-          if builtins.isFunction additionalDependencies then
-            specification: lib.unique (additionalDependencies specification ++ standardDependencies)
-          else
-            lib.unique (additionalDependencies ++ standardDependencies);
+          specification:
+          lib.unique (
+            (
+              if builtins.isFunction additionalDependencies then
+                additionalDependencies specification
+              else
+                additionalDependencies
+            )
+            ++ standardDependencies specification
+          );
         testContext =
           def.testContext or (
             package:

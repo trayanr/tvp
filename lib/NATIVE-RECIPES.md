@@ -15,17 +15,7 @@ these records where needed so each can be read independently. Avoid a shared
 defs = {
   "4.2.1" = {
     builder = ./ordinary/build-4.2.1.nix;
-    deps = {
-      inherit (tvp.packages) gnumake gnutar xz diffutils findutils;
-      python = tvp.packages.python-build_3_12_5;
-      patchelf = tvp.packages.patchelf_0;
-      sed = tvp.packages.gnused;
-      grep = tvp.packages.gnugrep;
-      gawk = tvp.lib.packages.withConstraint {
-        reason = "Gawk 5 depends on MPFR; use the MPFR-free build AWK.";
-      } tvp.packages.gawk_4_0;
-      gmp = tvp.packages.gmp_6;
-    };
+    deps.gmp = tvp.packages.gmp_6;
   };
 };
 ```
@@ -73,19 +63,31 @@ The catalogue binds the ordinary-family context once. Definitions do not repeat:
 - the base/compiler and platform selection;
 - the standard `tvp` and `lib` helper arguments;
 - Bash, Coreutils and Binutils from the selected base;
+- Make, Tar, XZ, text tools, Python and Patchelf from `base.standardTools`;
 - the test context, derived from the effective package.
 
 Only arguments declared by a procedure are supplied. There is no host PATH
-search, hook execution or arbitrary dependency discovery. Additional tools and
-libraries must be named explicitly in `deps`, using TVP package selectors.
+search, hook execution or arbitrary dependency discovery. Package-specific tools
+and libraries belong in `deps`, using TVP package selectors. Common tool selections
+live once in the [base's standard tool set](../bases/source-gnu/standard-tools.nix);
+MPFR definitions therefore only select GMP and compatibility options.
 Resolved standard providers remain visible in `tvp.declaredDependencies`.
 
-A compatible ordinary base exposes `shell`, `coreutils`, `compiler`, platform
-facts and the pure environment interface. Standard defaults are resolved on each
+A compatible ordinary base exposes `shell`, `coreutils`, `compiler`, `standardTools`,
+platform facts and the pure environment interface. Standard defaults are resolved on each
 constructor call. `.override { base = otherBase; }` recomputes the default tools;
 explicit argument replacements take precedence. Replacing `base.coreutils` through
 `base.override` also rebinds its baseline tool slot; an explicit `tools` replacement
-remains the caller's complete choice. The currently bound context is
+remains the caller's complete choice. Named standard-tool overrides merge by role:
+`base.override { standardTools.gnumake = otherMake; }` keeps the other standard
+providers. Bash, Coreutils and Binutils use their canonical base fields rather than
+entries in `standardTools`.
+
+Default resolution remains lazy: a procedure receives the roles it declares, and each
+step names the tools it uses. Unused standard providers are not forced or added to
+that step's PATH. This preserves bootstrap direction and cache identities. A tool
+building itself must select its earlier construction provider explicitly.
+The currently bound context is
 native x86_64 GNU/Linux. Platform support belongs to that context and to genuine
 recipe restrictions, not duplicated conditionals in version tables.
 
@@ -102,10 +104,11 @@ Replacing a retained construction tool with an ordinary producer changes the
 build inputs and can require rebuilding; identical version numbers do not imply
 identical derivations.
 
-For example, MPFR cannot use latest Gawk because Gawk 5 depends on MPFR.
-Patchelf, Gzip and File also need MPFR-free AWK selections when they occur before
-MPFR in that dependency graph. Their build-only AWK roles use the public Gawk 4.0
-line. Bootstrap providers elsewhere still need earlier tools; those choices
+For example, the shared base tool set selects Gawk 4.0 because Gawk 5 depends on
+MPFR. Patchelf, Gzip and File also need MPFR-free AWK selections when they occur
+before MPFR in that dependency graph. Their build-only AWK roles use the public
+Gawk 4.0 line. This choice belongs to the base tool policy rather than each MPFR
+definition. Bootstrap providers elsewhere still need earlier tools; those choices
 remain explicit in their retained construction or compatibility definitions.
 
 ## Customization

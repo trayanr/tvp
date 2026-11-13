@@ -1,6 +1,7 @@
 # Opt-in native base; direct import does not load nixpkgs or the catalogue.
 {
   bootstrap ? import ../../bootstrap { },
+  standardTools ? null,
 }:
 let
   lib = import ../../bootstrap/owned-lib.nix { system = "x86_64-linux"; };
@@ -17,6 +18,24 @@ let
     compiler = toolchain.driver;
     shell = tools.bash;
     coreutils = tools.coreutils;
+    standardTools =
+      if standardTools != null then
+        standardTools
+      else
+        {
+          gnumake = tools.make;
+          gnutar = tools.tar;
+          inherit (tools)
+            xz
+            python
+            patchelf
+            sed
+            grep
+            gawk
+            diffutils
+            findutils
+            ;
+        };
     tools = [
       tools.coreutils
       tools.linker

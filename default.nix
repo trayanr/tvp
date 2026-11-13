@@ -11,7 +11,10 @@ let
   tvpLib = import ./lib {
     inherit (pkgs) lib;
     familyContext = {
-      base = (import ./bases/source-gnu { }).base;
+      base =
+        (import ./bases/source-gnu {
+          standardTools = import ./bases/source-gnu/standard-tools.nix { inherit tvp; };
+        }).base;
       builder = tvp.builder;
       helpers = {
         inherit tvp;

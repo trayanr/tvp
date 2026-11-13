@@ -20,14 +20,20 @@ in {
 }
 ```
 
-`builder.base { name; platform; compiler; shell; tools; coreutils ? null; }` returns
-pure base data and an environment composer. The ordinary-family context binds this
-base once and supplies Bash, Coreutils and Binutils to declared procedure arguments.
-Version definitions only select additional TVP dependencies. The shell is a package, included on step
-PATH before baseline tools. Explicit step tools precede that floor. Baseline
-shell/tools and selected step tools may contribute pure `buildEnvironment`
-data. The compiler supplies CC/CXX, Binutils commands, libc and target runtime
-directories. There is no stdenv, setup script, dependency hook or hidden build.
+`builder.base { name; platform; compiler; shell; tools; coreutils ? null; standardTools ? {}; }`
+returns pure base data and an environment composer. The ordinary-family context binds
+this base once. Bash, Coreutils and Binutils come from its canonical fields; Make,
+Tar, XZ, text tools, Python and Patchelf come from its named `standardTools` set.
+Version definitions select package-specific dependencies such as MPFR's GMP.
+
+The ordinary catalogue selects public TVP tool roles once in
+[standard-tools.nix](standard-tools.nix). Direct source-GNU imports retain independent
+construction-tool defaults. A procedure receives only the standard roles it declares;
+its steps list the tools they use. Named defaults are lazy and are not appended to
+every step's PATH. The existing `tools` list supplies the minimal baseline PATH.
+The shell precedes that baseline; explicit step tools precede the floor. Tools may
+contribute pure `buildEnvironment` data. The compiler supplies CC/CXX, Binutils
+commands, libc and target runtime directories. There are no setup hooks.
 The selected linker in `inputs.nix` explicitly contributes GNU ld's indirect
 DSO lookup flags; the generic composer does not choose a linker policy.
 
@@ -35,6 +41,10 @@ Replace a whole toolchain with `base.override { compiler = otherDriver; }`.
 It reconstructs the environment, commands and runtime directories together.
 `base.override { coreutils = otherCoreutils; }` also replaces the previous provider in
 the baseline tool list, unless an explicit replacement `tools` list is supplied.
+`base.override { standardTools.gnumake = otherMake; }` replaces that named role
+while keeping the other standard tools. Bash, Coreutils and Binutils remain tied
+to `shell`, `coreutils` and `compiler`; using those names in `standardTools` is rejected.
+Tools building themselves must select earlier construction providers explicitly.
 A nested record overlay cannot rebind a captured environment. Use
 `base.environment { overrides.values.CC = "/explicit/compiler"; }` for an
 invocation-specific replacement; this alone does not replace the C++ runtime.

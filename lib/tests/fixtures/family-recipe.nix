@@ -8,6 +8,7 @@
   bash,
   coreutils,
   binutils,
+  gnumake,
   dependency,
   message ? "first",
 }:
@@ -20,13 +21,17 @@ final: {
     bash
     coreutils
     binutils
+    gnumake
     dependency
     ;
   runtime.message = message;
   plan = [
     {
       name = "model.install";
-      tools = [ final.dependency ];
+      tools = [
+        final.dependency
+        final.gnumake
+      ];
       run = ''mkdir -p "$out"; printf compiled > "$out/program"'';
     }
     (tvp.builder.steps.split "model.finalize")

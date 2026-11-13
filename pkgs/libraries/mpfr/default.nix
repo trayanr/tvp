@@ -4,25 +4,9 @@ let
   defs = {
     "2.4.2" = {
       builder = ./ordinary/build-2.4.2.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvpLib.packages.withConstraint {
-          reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
-        } tvp.packages.gmp_5_0;
-      };
+      deps.gmp = tvpLib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts = {
         checkCFlags = [ "-std=gnu17" ];
         float128 = false;
@@ -31,25 +15,9 @@ let
     };
     "3.0.1" = {
       builder = ./ordinary/build-2.4.2.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvpLib.packages.withConstraint {
-          reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
-        } tvp.packages.gmp_5_0;
-      };
+      deps.gmp = tvpLib.packages.withConstraint {
+        reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
+      } tvp.packages.gmp_5_0;
       opts = {
         checkCFlags = [ "-std=gnu17" ];
         float128 = false;
@@ -57,23 +25,7 @@ let
     };
     "3.1.6" = {
       builder = ./ordinary/build-2.4.2.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvp.packages.gmp_6;
-      };
+      deps.gmp = tvp.packages.gmp_6;
       opts = {
         checkCFlags = [ "-std=gnu17" ];
         float128 = false;
@@ -81,63 +33,15 @@ let
     };
     "4.0.2" = {
       builder = ./ordinary/build-4.0.2.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvp.packages.gmp_6;
-      };
+      deps.gmp = tvp.packages.gmp_6;
     };
     "4.2.1" = {
       builder = ./ordinary/build-4.2.1.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvp.packages.gmp_6;
-      };
+      deps.gmp = tvp.packages.gmp_6;
     };
     "4.2.2" = {
       builder = ./build-4.2.2.nix;
-      deps = {
-        inherit (tvp.packages)
-          gnumake
-          gnutar
-          xz
-          diffutils
-          findutils
-          ;
-        python = tvp.packages.python-build_3_12_5;
-        patchelf = tvp.packages.patchelf_0;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "MPFR needs AWK to configure; the public Gawk 5 line depends on MPFR. The Gawk 4.0 line has no MPFR dependency.";
-        } tvp.packages.gawk_4_0;
-        gmp = tvp.packages.gmp_6;
-      };
+      deps.gmp = tvp.packages.gmp_6;
     };
   };
   packageMeta.upstream = {

@@ -29,6 +29,11 @@ let
     shell = package "first-shell";
     coreutils = package "first-coreutils";
     tools = [ (package "first-coreutils") ];
+    standardTools = {
+      gnumake = package "first-make";
+      gnutar = package "first-tar";
+      unused = throw "unused standard tool forced";
+    };
   };
   context = {
     inherit builder base;
@@ -78,6 +83,7 @@ let
     shell = package "second-shell";
     coreutils = package "second-coreutils";
     tools = [ (package "second-coreutils") ];
+    standardTools.gnumake = package "second-make";
   };
   rebound = p.override { base = replacement; };
   explicit = (p.override { bash = package "explicit-shell"; }).override { base = replacement; };
@@ -101,6 +107,7 @@ let
     "bash"
     "coreutils"
     "binutils"
+    "gnumake"
   ];
   coreutilsOnly = base.override { coreutils = package "replacement-coreutils"; };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
@@ -110,6 +117,17 @@ let
     standardShell = p.specification.bash.drvPath == base.shell.drvPath;
     standardCoreutils = p.specification.coreutils.drvPath == base.coreutils.drvPath;
     standardBinutils = p.specification.binutils.drvPath == base.compiler.bintools.drvPath;
+    standardMake = p.specification.gnumake.drvPath == base.standardTools.gnumake.drvPath;
+    makeOverrideRebinds =
+      rebound.specification.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
+    partialToolOverride = replacement.standardTools.gnutar.drvPath == base.standardTools.gnutar.drvPath;
+    explicitToolWins =
+      ((p.override { gnumake = package "explicit-make"; }).override { base = replacement; })
+      .specification.gnumake.drvPath == (package "explicit-make").drvPath;
+    toolMetadataRebound =
+      rebound.tvp.declaredDependencies.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
+    onlyConsumedStandards =
+      !(p.tvp.declaredDependencies ? gnutar) && !(p.tvp.declaredDependencies ? unused);
     declaredFloor = builtins.all (n: p.tvp.declaredDependencies ? ${n}) [
       "bash"
       "coreutils"
@@ -142,6 +160,21 @@ let
       && withoutTests.artifact.drvPath == p.artifact.drvPath
       && withoutTests.drvPath == p.drvPath;
     unknownArgument = rejects (p.override { typo = true; }).drvPath;
+    invalidStandardTool =
+      rejects
+        (p.override { base = base.override { standardTools.gnumake = "not a package"; }; }).drvPath;
+    wrongStandardPlatform =
+      rejects
+        (p.override {
+          base = base.override {
+            standardTools.gnumake = (package "foreign-make") // {
+              system = "aarch64-linux";
+            };
+          };
+        }).drvPath;
+    reservedStandardTool = rejects (
+      base.override { standardTools.coreutils = package "shadow-coreutils"; }
+    );
     invalidDependency =
       rejects
         (api.mkFamily (

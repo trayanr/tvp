@@ -150,25 +150,15 @@ version and its hash. Definitions live in the package's `default.nix`, releases 
 files beside it.
 
 The ordinary `mkFamily` entry point supplies the selected build context. Each
-definition contains its procedure, additional TVP dependencies and real compatibility
-options or patches. Source resolution and the test suite are declared once per family.
+definition contains its procedure, package-specific TVP dependencies and real
+compatibility options or patches. Common build tools are selected once in the base. Source resolution and the test suite are declared once per family.
 Copy definitions in full rather than hiding their inputs behind a `common` overlay.
 
 ```nix
 # pkgs/libraries/mpfr/default.nix — one complete definition
 "4.2.2" = {
   builder = ./build-4.2.2.nix;
-  deps = {
-    inherit (tvp.packages) gnumake gnutar xz diffutils findutils;
-    python = tvp.packages.python-build_3_12_5;
-    patchelf = tvp.packages.patchelf_0;
-    sed = tvp.packages.gnused;
-    grep = tvp.packages.gnugrep;
-    gawk = tvp.lib.packages.withConstraint {
-      reason = "Gawk 5 depends on MPFR; use the MPFR-free build AWK.";
-    } tvp.packages.gawk_4_0;
-    gmp = tvp.packages.gmp_6;
-  };
+  deps.gmp = tvp.packages.gmp_6;
 };
 ```
 
@@ -224,7 +214,8 @@ without duplicating the build procedure.
   throws.
 - **The ordinary family context supplies the base and owned constructor.** Version
   tables do not repeat platform selection, helpers or the standard Bash/Coreutils/
-  Binutils inputs. Additional providers come from `tvp.packages`. A genuine construction
+  Binutils inputs or `base.standardTools` (Make, Tar, XZ, text tools, Python and
+  Patchelf). Package-specific providers come from `tvp.packages`. A genuine construction
   or compatibility exception may explicitly replace the base. Retained low-level
   `mkVersions` callers still declare their own base; `null` records a legacy boundary.
 - **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
@@ -284,7 +275,7 @@ catalogue-wide contracts and migration limits.
 configure, install or fixup hooks from a shared package builder.
 
 The ordinary package index uses `tvp.lib.packages.mkFamily`. Definitions select a
-version-start `builder` file, additional `deps` and optional `opts`/patches. The
+version-start `builder` file, package-specific `deps` and optional `opts`/patches. The
 catalogue binds the constructor, base/platform, standard tools and helper arguments
 once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
 function receives `{ package, lib, context }`. Each test context follows the effective
@@ -417,10 +408,15 @@ The final audit/full-validation gate requires the outstanding list to be resolve
 
 `base.environment specification.environment` derives compiler commands and baseline
 tools from the selected base. For ordinary families, declared Bash, Coreutils and
-Binutils arguments default to that base's named providers. Resolved providers remain
+Binutils arguments default to that base's canonical fields. Other common build-tool
+arguments resolve from `base.standardTools`, selected once in
+[bases/source-gnu/standard-tools.nix](bases/source-gnu/standard-tools.nix).
+Default resolution is lazy and only supplies arguments declared by each procedure;
+step tool lists still state their actual execution inputs. Resolved providers remain
 visible in `tvp.declaredDependencies`, including when a definition customizes its
 metadata projection. Replacing the base with `.override` recomputes these defaults;
-explicit procedure arguments win. Every additional tool and library is named explicitly,
+explicit procedure arguments win. Partial `standardTools` overrides preserve the
+other roles. Every package-specific tool and library is named explicitly,
 including commands used only by configure or upstream checks. Tools contribute their
 discovery conventions; libraries expose their development layout. Do not add a tool
 to the base merely to make one package's undeclared command work.

@@ -12,6 +12,7 @@ let
       tools,
       referencePackages ? [ ],
       coreutils ? null,
+      standardTools ? { },
     }:
     let
       fail = message: throw "TVP owned base: ${message}";
@@ -84,6 +85,16 @@ let
           fail "compiler must declare nonempty runtimeDirectories"
         else if coreutils != null && !(package coreutils && matchesExecution coreutils) then
           fail "Coreutils must execute on the selected platform"
+        else if !(builtins.isAttrs standardTools) then
+          fail "standardTools must be a named package set"
+        else if
+          builtins.any (name: standardTools ? ${name}) [
+            "bash"
+            "coreutils"
+            "binutils"
+          ]
+        then
+          fail "standard Bash, Coreutils and Binutils come from shell, coreutils and compiler"
         else if !(package shell && builtins.isList tools && builtins.all package tools) then
           fail "shell and baseline tools must be packages"
         else if !(builtins.all matchesExecution ([ shell ] ++ tools)) then
@@ -101,6 +112,14 @@ let
           referencePackages
           ;
         runtimeDirectories = compiler.runtimeDirectories;
+        # Validate only selected roles; forcing the whole set would create cycles.
+        standardTools = lib.mapAttrs (
+          name: tool:
+          if package tool && matchesExecution tool then
+            tool
+          else
+            fail "standard tool ${name} must execute on the selected platform"
+        ) standardTools;
         environment = composeEnvironment;
         override =
           replacements:
@@ -109,8 +128,11 @@ let
             reboundTools = lib.optionalAttrs (coreutils != null && changes ? coreutils && !(changes ? tools)) {
               tools = map (tool: if tool.outPath == coreutils.outPath then changes.coreutils else tool) tools;
             };
+            reboundStandards = lib.optionalAttrs (changes ? standardTools) {
+              standardTools = standardTools // changes.standardTools;
+            };
           in
-          make (args // reboundTools // changes);
+          make (args // reboundTools // changes // reboundStandards);
       } // lib.optionalAttrs (coreutils != null) { inherit coreutils; };
     in
     builtins.seq checked base;
