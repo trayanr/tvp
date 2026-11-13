@@ -157,6 +157,23 @@ in
     (steps.split "tcl.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     {
+      name = "tcl.http-cancel-waits";
+      tools = [
+        final.coreutils
+        final.tools.patch
+      ];
+      run = ''
+        # This shipped script is finalized independently of the compiled core.
+        for directory in "$out" "$out/lib" "$out/lib/tcl9" "$out/lib/tcl9/9.0"; do
+          test -d "$directory" && test ! -L "$directory"
+        done
+        module="$out/lib/tcl9/9.0/http-2.10.2.tm"
+        test -f "$module" && test ! -L "$module"
+        test "$(stat -c %h "$module")" = 1
+        ${final.tools.patch}/bin/patch --batch --fuzz=0 -d "$out" -p1 < ${./http-cancel-waits.patch}
+      '';
+    }
+    {
       name = "tcl.relocate-prefix";
       tools = [ final.tools.python ];
       run = ''${final.tools.python}/bin/python3 -B ${../relocate.py} "$out"'';

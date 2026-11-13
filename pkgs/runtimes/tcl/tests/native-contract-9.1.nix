@@ -67,6 +67,13 @@ package.testContext.mkSuite {
         expected = "source-controls-ok";
       };
 
+    http-coroutine-cancel = {
+      script = ''
+        tclsh ${./fixtures/http-coroutine-cancel.tcl}
+      '';
+      expected = "http-coroutine-cancel-ok";
+    };
+
     zipfs-command = {
       script = ''
         cat > zipfs.tcl <<'TCL'
