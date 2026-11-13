@@ -139,7 +139,7 @@ in
     {
       name = "fontconfig.relocate";
       tools = [ final.python ];
-      run = ''${final.python}/bin/python3 -B ${./profile-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.binutils}/bin/readelf ${final.patchelf}/bin/patchelf ${../libxml2/ordinary/elf.py}'';
+      run = ''${final.python}/bin/python3 -B ${./profile-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.binutils}/bin/readelf ${final.patchelf}/bin/patchelf ${../libxml2/ordinary/elf.py} ${final.binutils}/bin/objdump'';
     }
     {
       name = "fontconfig.self-rpaths";

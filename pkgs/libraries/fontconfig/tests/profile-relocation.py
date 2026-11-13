@@ -79,6 +79,21 @@ def main(work, readelf, patchelf):
             assert b'foreign-provider' in path.read_bytes()
             assert old not in metadata.read_bytes()
         outputs[case] = True
+    # Recorded source-bound x86_64 strcpy lowering; no payload execution.
+    listing = (Path(__file__).parent / 'fixtures/config-path-vector.disasm').read_text()
+    old = b'/nix/store/' + b'a' * 32 + b'-fontconfig-2.18.3'
+    block = old + b'/et'
+    assert module.config_vector_owned(block, old, 0x44e90, listing)
+    outputs['vector-copy-layout'] = True
+    for case, changed in [
+            ('vector-wrong-address', listing.replace('# 44e90 ', '# 44e91 ')),
+            ('vector-wrong-tail', listing.replace('0x73746e6f662f63', '0x0')),
+            ('vector-wrong-store', listing.replace('0x30(%rax)', '0x31(%rax)')),
+            ('vector-wrong-function', listing.replace('<FcConfigGetFilename>:', '<Other>:'))]:
+        assert not module.config_vector_owned(block, old, 0x44e90, changed)
+        outputs[case] = True
+    assert not module.config_vector_owned(old + b'/xx', old, 0x44e90, listing)
+    outputs['vector-wrong-block'] = True
     shutil.rmtree(root)
     return outputs
 
