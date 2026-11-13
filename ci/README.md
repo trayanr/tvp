@@ -10,7 +10,28 @@ services. Buildbot dependencies are loaded only through `ci/buildbot/shell.nix`.
 Keep deployed configuration, credentials, NAS mounts and host setup scripts outside
 the repository. The service files and `config.example.json` are templates.
 
-## Developer workflow
+## Temporary migration workflow
+
+Owner-approved on 2026-11-14: keep CI execution and NAS/cache synchronization off
+until the owner declares the builder/base and package-authoring migration complete.
+Iterate on Tower with scoped local validation and reuse its existing Nix store.
+Do not copy iteration outputs to or from the NAS or publish a synthetic passing
+`tvp/full` status.
+
+The required `tvp/full` merge check on `master` is suspended for this migration
+period; all other branch protections stay unchanged. Baseline and follow-up merges
+retain their recorded validation scope, known failures and hardening/historical
+holds. A merge does not establish full-catalogue qualification.
+
+When the owner declares the migration complete, restore the original strict
+`tvp/full` requirement, including the up-to-date branch check, and deliberately
+re-enable CI and NAS operations. Landing the baseline or reaching zero split debt
+does not restart them automatically. See the [rollout plan](../lib/AUTHORING-MIGRATION.md)
+for the remaining work.
+
+## Normal developer workflow
+
+This is the workflow after the temporary migration exception ends.
 
 Open a non-draft expansion PR from a branch in this repository, targeting master, then
 add `ci:build`. The branch must already contain the **current** target tip: rebase or

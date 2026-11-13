@@ -5,6 +5,20 @@ MPFR implements it. The next work is to simplify construction-base composition,
 then convert complete package families while preserving their actual procedures
 and earlier construction inputs.
 
+## Migration execution policy
+
+On 2026-11-14 the owner approved suspending the required `tvp/full` merge check
+until this migration is complete. Other branch protections stay unchanged. Keep
+CI execution and NAS/cache synchronization off; use scoped Tower-local validation
+and cached outputs, with no synthetic passing CI status. Merging the baseline or
+later cleanup does not waive qualification limits, hardening holds or historical
+failures.
+
+When the owner declares completion, restore strict `tvp/full` protection and
+explicitly re-enable CI and NAS operations. The [CI migration workflow](../ci/README.md#temporary-migration-workflow)
+records the exception and restoration policy; the normal CI workflow remains
+documented for use afterward.
+
 ## What is already done
 
 - The owned constructor, artifact/final split, generic helpers and shared test
