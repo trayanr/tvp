@@ -62,7 +62,8 @@ def finalize(config, root, artifact, shared):
     config = dict(config)
     ruby = load('llvm_readonly_paths', config.pop('rubyFinalizer'))
     # Nix supplies these as separate store files, not repository siblings.
-    sys.modules['elf'] = load('llvm_archive_elf', config.pop('archiveElfFinalizer'))
+    inspector = load('llvm_archive_elf', config.pop('archiveElfFinalizer'))
+    sys.modules['elf'] = inspector
     container = load('llvm_archive_container', config.pop('archiveFinalizer'))
     elf = load('llvm_namespace', shared)
     root, files, groups, links = elf.tree(root)
@@ -111,7 +112,7 @@ def finalize(config, root, artifact, shared):
                 if len(data) >= 18 and struct.unpack_from('<H', data, 16)[0] == 1:
                     updated = ruby.object_paths(data, old, new) if old in data else data
                 else:
-                    hits = elf.inspect(path, old, config['readelf'])
+                    hits = inspector.inspect(path, old, config['readelf'])
                     updated = ruby.compiled_paths(data, hits, old, new) if old in data else data
                     result = subprocess.run(
                         [config['patchelf'], '--print-rpath', str(path)],
@@ -143,7 +144,7 @@ def finalize(config, root, artifact, shared):
                     [config['patchelf'], '--set-rpath', rpath, str(staged)],
                     check=True, capture_output=True,
                 )
-                elf.inspect(staged, old, config['readelf'])
+                inspector.inspect(staged, old, config['readelf'])
             if old in staged.read_bytes():
                 raise ValueError(('artifact bytes remain in planned payload', name))
             changes.append((path, staged, info))
