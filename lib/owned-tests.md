@@ -2,8 +2,9 @@
 
 `tvp.lib.tests.forBase { builder; base; coreutils; }` binds the owned builder,
 selected base and explicit Coreutils. Bash comes from `base.shell`. Catalogue
-factories must opt into this context explicitly; existing factories, variants and
-default batch routing still use the legacy helpers.
+factories select this context explicitly. Retained factories and aggregate test
+infrastructure can still use the legacy helpers; selecting this context does not
+rewrite those callers.
 
 From the repository root, with the qualified `base`, `coreutils` and `mpc` selected:
 
@@ -34,6 +35,12 @@ public transitive dependencies use `libraries`. `environment` supplies explicit
 these three fields can be replaced by a case declaration. The selected base
 supplies the compiler, Binutils, shell, runtime and baseline tools. There are no
 setup hooks or inferred dependencies.
+
+On a returned owned test, `.override` currently accepts `package`, `tools` and
+`libraries`. `script`, `expected`, `environment` and the test name are captured
+when `mkTest` is called. Reconstruct the test or suite to change those options;
+they are not additional `.override` arguments. Package customization rebuilds its
+attached tests through the package's factory.
 
 The script runs with the owned runner's `errexit`, `nounset`, `pipefail` and
 `inherit_errexit`. A failed command or pipeline aborts the test, including an early

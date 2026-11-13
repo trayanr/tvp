@@ -271,6 +271,10 @@ roughly three quarters of those lines were exact duplicates of a neighbour.
 
 ## Owned recipes
 
+For a short starting point and a complete evaluable example, see
+[Writing an owned recipe](lib/NATIVE-RECIPES.md). This section defines the
+catalogue-wide contracts and migration limits.
+
 `tvp.builder` owns the execution protocol and lowers prepared commands directly to
 `builtins.derivation`. A package supplies the complete procedure. It does not inherit
 configure, install or fixup hooks from a shared package builder.

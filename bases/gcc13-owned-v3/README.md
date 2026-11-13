@@ -1,8 +1,13 @@
-# Owned native build contract
+# Retained GCC 13 consumer contract
 
-`bases.default` and `bases.gcc13-owned` select `gcc13-owned-v3`. This is a
-consumer protocol revision of v2: GCC 13.3.0, binutils 2.42, glibc 2.39,
-the tool floor and patchelf are the same derivations. The old owned and v2
+This documents `tvp.bases.gcc13-owned-v3` and its retained stdenv protocol.
+The current `tvp.bases.default` and `tvp.bases.gcc16` select `gcc16-owned`;
+there is no public `tvp.bases.gcc13-owned` alias. For new owned recipes, start
+with the [authoring guide](../../lib/NATIVE-RECIPES.md) and explicitly select a
+base, such as [source-GNU](../source-gnu/README.md).
+
+GCC13 v3 is a consumer protocol revision of v2: GCC 13.3.0, binutils 2.42,
+glibc 2.39, the tool floor and patchelf are the same derivations. The old owned and v2
 construction environments remain pinned internally. Wrapper constructor defaults
 still select the original scripts; the frozen construction identity check guards
 against accidentally rebuilding that chain. Public compatibility bases remain

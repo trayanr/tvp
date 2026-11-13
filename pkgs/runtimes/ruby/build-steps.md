@@ -1,51 +1,38 @@
-# Owned Ruby 4.0.6
+# Owned Ruby procedures
 
-Canonical Ruby 4.0.6 and `variants.build-steps.ruby_4_0_6` share one
-`tvp.builder` recipe, selected base/libraries and default YJIT/ZJIT choices.
-Its inline `steps.sequence` plan includes source layout, configure/build,
-upstream `test-basic`, gem directory preparation, installation, consumer setup
-metadata and selected output operations. This is native x86_64 Linux only.
+Start with the [owned authoring guide](../../../lib/NATIVE-RECIPES.md) for the
+builder API. The public Ruby 4.0.6 [definition](default.nix) selects
+[owned/build-4.0.6.nix](owned/build-4.0.6.nix). Its build-steps variant uses that
+procedure with a separately selected retained base; do not assume the canonical
+and variant specifications have the same base.
 
-Use `.override { zlib = tvp.packages.zlib_1_3_1; }` to change recipe inputs.
-Use `.editSteps (steps.replace "ruby.check" (old: old // { enabled = false; }))`
-to edit a named record. Edits replay after overrides. Tools, libraries, JIT
-flags and `doCheck` are recipe arguments. Disabling both JITs removes Rust from
-active tools and dependency declarations without evaluating it.
+The production plan prepares source, configures, compiles and installs, then
+splits at `ruby.finalize`. Finalization copies the artifact, relocates embedded
+prefixes, repairs launchers and ELF lookup, compresses manuals and checks paths.
+Compiled load paths require Ruby's explicit [finalizer](owned/finalize.py);
+generic text relocation alone is insufficient. Final-only provider edits can
+reuse compilation when they do not change any prefix command or input.
 
-The owned constructor lowers directly to primitive derivations without inherited
-setup or phase hooks. It accepts inert `passthru` data, with constructor-owned
-`tvp`, `runtime` and `buildStepRunner` taking precedence. Recipes supplying
-passthru get final metadata and tests mirrored in `.passthru` on the package,
-`.out` and `.all`, including customized packages. `dependencyNames` can be a
-list or a function of the resolved specification; existing list calls retain
-their behavior. Ruby's installed consumer setup metadata remains an explicit compatibility
-record; owned consumers use Ruby's pure `buildEnvironment` provider.
+Use `.override { zlib = tvp.canonical.zlib_1_3_1; }` to replace a declared build
+input. Use an actual current step name for procedure edits, for example:
 
-The ELF helpers accept optional positive `elfKinds`: `runtime` or
-`relocatable`. Omitting it retains the old runtime-only implementation exactly.
-The new selection validates native objects even when excluding them, strips
-selected objects with declared binutils, and gives only runtime ELF to RPATH
-operations. Objects cannot be selected for RPATH operations. Tool failures and
-malformed ELF fail the build. Runtime operations validate headers, selected RPATH tools and lookup paths.
+```nix
+ruby.editSteps (tvp.builder.steps.insertAfter "ruby.relocate" [
+  { name = "local.verify-ruby"; run = ''test -x "$out/bin/ruby"''; }
+])
+```
 
-Ruby installs 32 objects as bundled gem sources. They retain debug stripping;
-99 runtime ELF files receive stripping, RPATH shrinking and lookup-path audits.
-No archive operation is selected. The two known manuals preserve `gzip -c -n`
-compression, whether rbinstall supplies plain or already compressed pages.
-Executable Ruby launchers, including nested gem launchers, select this output's
-`bin/ruby`. Nonexecutables, templates, examples and other interpreters retain
-their bytes. This intentionally improves nested launcher behavior in an empty
-environment; it is an observable change from the pre-migration controls.
+Edits replay after argument overrides. Tools, library providers and JIT flags
+are explicit constructor/specification data. Disabling both YJIT and ZJIT
+removes Rust from active tools and dependency declarations. Named
+`runtime.openssl`, `runtime.zlib`, `runtime.libyaml` and `runtime.libffi` select
+scoped ELF providers. `runtime.libraries` is their derived summary; edit the
+supported named providers rather than replacing that summary. Changing lookup
+paths does not relink extensions or prove ABI compatibility.
 
-The 16 shared Ruby consumers remain attached, including the independent GCC 13
-extension consumer, JITs, gem discovery and extension linkage. Additional tests
-check the actual runtime closure, empty-environment launchers and setup-hook
-discovery. `checks.ruby-build-steps` covers metadata, customization, lazy Rust
-selection and focused native object/manual fixtures. `test-basic` is a bounded
-upstream check, not the complete upstream suite.
-
-Ruby keeps one stage: compiled data embeds configuration and load paths. Named
-`runtime.openssl`, `runtime.zlib`, `runtime.libyaml` and `runtime.libffi` providers
-configure their scoped ELF files. `runtime.libraries` is their derived summary;
-conflicting summary edits fail with directions to edit a named provider. Runtime
-edits rebuild Ruby; no compilation reuse or binary relocation is claimed.
+Installed tests consume the final Ruby. The bounded upstream `test-basic` test
+is an independent [test leaf](tests/upstream.nix) in the normal suite, not a
+`ruby.check` production step. A failed upstream leaf keeps the batch red without
+invalidating the artifact or final package. This is a bounded check, not the full
+Ruby upstream suite. Test factories and native controls live in [tests](tests);
+version-specific JIT, gem, extension and host limitations remain explicit there.

@@ -1,7 +1,8 @@
-# Source GNU candidate
+# Source-GNU owned base
 
-This opt-in native x86_64 GNU/Linux base selects the complete source-built GCC
-and its matching C++ runtime. It does not change `tvp.bases.default` or aliases.
+This explicitly selected native x86_64 GNU/Linux base selects the complete
+source-built GCC and its matching C++ runtime. It does not change
+`tvp.bases.default` or aliases.
 Direct import needs neither nixpkgs nor the ordinary package catalogue:
 
 ```nix
@@ -44,9 +45,12 @@ not rebuilt with the full target compiler. Versions come from those selected
 package objects. Earlier host dependencies do not become target runtime
 providers by being reachable from a build tool.
 
-The complete small recipe [tests/consumer.nix](tests/consumer.nix) uses explicit
-tools and public library discovery. Its definition selects authoritative owned
-GMP, MPFR, MPC and JSON-C procedures, with ordinary source-shell and logging
+Start new recipes with the [current authoring guide](../../lib/NATIVE-RECIPES.md)
+and its split example. The retained qualification fixture
+[tests/consumer.nix](tests/consumer.nix) is deliberately unsplit; it exercises
+explicit tools and public library discovery, not the current authoring boundary.
+Its definition selects authoritative owned GMP, MPFR, MPC and JSON-C procedures,
+with ordinary source-shell and logging
 edits in [tests/packages.nix](tests/packages.nix). GMP retains shared and static
 archives; MPFR/MPC retain their recipes' shared-only policy. CMake Make/Ninja
 and Meson consumers exercise installed interfaces.
@@ -59,7 +63,8 @@ nix build --file bases/source-gnu/tests/probes.nix consumer
 Recipes keep `override`, `edit`, `editSteps` and `editRuntime`. Output operations
 consume declared runtime directories. Public development requirements control
 header/pkg-config discovery; applications using MPFR symbols directly declare
-MPFR as well as MPC. No full-catalogue port or default promotion is implied.
+MPFR as well as MPC. Selecting this base does not establish package qualification
+or change the public default base.
 Driver construction sharing and retirement of legacy recipe adapters remain
 separate work. The retained full-GCC upstream evidence has known failures and
 kernel-specific limits; this small consumer qualification adds no broader

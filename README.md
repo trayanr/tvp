@@ -51,6 +51,8 @@ broken releases, and borrowed infrastructure have separate scopes.
 
 ## Contributing
 
+Start with [Writing an owned recipe](lib/NATIVE-RECIPES.md) for the current
+builder, a complete small example, customization and test attachment.
 [STRUCTURE.md](STRUCTURE.md) describes the repository layout and the conventions a change
 is expected to follow — where a package lives, how builders are named and forked, how
 version tables and aliases work, and how tests are written.
