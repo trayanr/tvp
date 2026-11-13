@@ -1,9 +1,64 @@
 # Writing an ordinary package family
 
-Use `tvp.lib.packages.mkFamily` for new ordinary families. MPFR is the first
-migrated family. [STRUCTURE.md](../STRUCTURE.md) defines repository layout and
-admission rules; [output helpers](native-output-steps.md) and
-[owned tests](owned-tests.md) describe the focused execution APIs.
+This is the agreed authoring model for new ordinary families and for cleaning up
+existing ones. Use `tvp.lib.packages.mkFamily`; MPFR is the complete reference.
+The earlier migration to owned, split producers did not convert every family to
+this authoring interface. The [rollout plan](AUTHORING-MIGRATION.md) records the
+remaining base and package work.
+
+[STRUCTURE.md](../STRUCTURE.md) defines repository layout and admission rules;
+[output helpers](native-output-steps.md) and [owned tests](owned-tests.md) describe
+the focused execution APIs.
+
+## The package shape
+
+MPFR has one family index, two complete era builders and one test suite:
+
+```text
+mpfr/
+  default.nix
+  build-2.4.2.nix
+  build-4.0.2.nix
+  tests/
+    default.nix
+    upstream.nix
+    restore.py
+    fixtures/
+```
+
+| Location | Responsibility |
+|---|---|
+| `default.nix` | Complete `packageRecipes` records, literal versions/hashes, one source factory, one test factory, canonical packages and generated aliases. |
+| `build[-VERSION].nix` | A complete ordered procedure, its stable feature/layout/interface facts, package-specific inputs and small customization arguments. |
+| Selected base | Compiler, libc/runtime, platform, Bash/Coreutils, standard tool choices and environment contributions. |
+| Shared `lib/` | Execution, step/output helpers, provider tracking and test construction. |
+| Package `tests/` | Assertions, fixtures and independent upstream execution/acceptance for the effective package. |
+
+The ordinary family index lists builders and package-specific TVP dependencies.
+It does not repeat the constructor, platform, base selection, standard tools or
+helper/test wiring. Stable facts belong in the appropriate era builder; small
+release exceptions belong in the table. Copy complete recipe records and builders
+when a real difference calls for them, rather than hiding choices in a `common`
+overlay or importing one era builder into another.
+
+Use `build.nix` if the family has one procedure. Add versioned files for coherent
+source/build/install eras, not simply for every release or major version. Extra
+directories need a concrete purpose, such as source patches, package-specific
+helpers or large release data. Construction inputs and public profiles reuse the
+same procedures; they do not need duplicate `ordinary/`, `native/` or retained
+implementations.
+
+The builder's `buildFeatures`, `sourceLayout` and `installedInterface` group its
+effective facts. Use descriptive groups where they help; these names are not a
+requirement to add empty records to every package. Defaults are appropriate for
+real local choices. A bundle overridden by every era belongs in separate builders.
+
+The artifact contains compiled/installed production state. The final package adds
+output repairs after `steps.split`. Installed tests depend on that final package;
+upstream tests restore the artifact in their own derivations. A test-only edit must
+not invalidate either production stage. The shared test machinery supplies the
+runner; package assertions are written once per family and reused across its
+versions, with separate results for different derivations.
 
 ## Definitions contain the actual choices
 

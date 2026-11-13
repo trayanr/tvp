@@ -54,3 +54,8 @@ from the construction scope rather than from the public base being built.
 They remain ordinary named steps. Package `.edit` can replace the base and reconstruct
 helpers/test contexts; `.editSteps` can replace, disable or insert named steps. No new
 execution framework or ambient setup hooks are introduced.
+
+The [authoring rollout plan](../../lib/AUTHORING-MIGRATION.md) describes the remaining
+work beneath these interfaces: separate retained full-compiler tests from production,
+make construction callers use the common family model, then retire unused adapters.
+The presence of a tier does not mean that work has already been completed.

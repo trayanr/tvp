@@ -298,6 +298,9 @@ roughly three quarters of those lines were exact duplicates of a neighbour.
 For a short starting point and a complete evaluable example, see
 [Writing an ordinary package family](lib/NATIVE-RECIPES.md). This section defines the
 catalogue-wide contracts and migration limits.
+The [authoring rollout plan](lib/AUTHORING-MIGRATION.md) records the remaining
+construction-base and family cleanup; earlier split coverage does not certify
+adoption of this authoring interface.
 
 `tvp.builder` owns the execution protocol and lowers prepared commands directly to
 `builtins.derivation`. A package supplies the complete procedure. It does not inherit
@@ -314,8 +317,9 @@ package. See [MPFR's recipe table](pkgs/libraries/mpfr/default.nix),
 [modern procedure](pkgs/libraries/mpfr/build-4.0.2.nix). This is the new authoring
 interface; other families retain their prior wiring until reimplemented.
 
-A specification keeps `environment`, `runtime` and `plan` at the same level. Use
-`inherit (tvp.builder) steps outputs;` and a readable ordered `steps.sequence`.
+A specification keeps `environment`, `runtime` and `plan` at the same level. Bind
+`context = tvp.builder.forBase final.base;`, then use
+`inherit (context) steps outputs tools;` and a readable ordered `steps.sequence`.
 Helpers return ordinary records. Names identify steps for edits and diagnostics;
 they do not dispatch hidden phases. Source preparation and installed-output repair
 remain explicit, separate operations.
