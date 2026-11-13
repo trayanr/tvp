@@ -64,6 +64,7 @@ def main():
         # Standalone store-file style imports: helpers do not get siblings.
         for name,rel in [('glibc','pkgs/libraries/glibc/native/finalize.py'),
                          ('gcc','pkgs/compilers/gcc/native/checkpoint.py'),
+                         ('gcc13','pkgs/compilers/gcc/native/checkpoint-13.3.0.py'),
                          ('gcc_final','pkgs/compilers/gcc/native/finalize.py'),
                          ('gcc_restore','pkgs/compilers/gcc/tests/restore-16.2.0.py'),
                          ('jdk_state','pkgs/runtimes/jdk/native/assembly-state.py'),
@@ -124,12 +125,37 @@ def main():
         for name in ['source/gcc/testsuite/tiny.exp','build/Makefile','build/stage_final','build/gcc/xgcc','build/gcc/cc1','build/gcc/cc1plus','build/stage2-gcc/obsolete.o','build/stage2-start']:
             p=source/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('fixture '+str(source)+'\n')
         os.link(source/'build/gcc/cc1',source/'build/gcc/compiler-alias')
+        header=source/'source/libstdc++-v3/include/std/algorithm'
+        header.parent.mkdir(parents=True);header.write_text('native header fixture\n')
+        alias=source/'build/x86_64-unknown-linux-gnu/libstdc++-v3/include/algorithm'
+        alias.parent.mkdir(parents=True);alias.symlink_to(header)
+        (source/'build/headers').symlink_to(header.parent, target_is_directory=True)
+        (source/'build/all-source').symlink_to(source/'source', target_is_directory=True)
         checkpoint=work/'checkpoint';gcc.save(source,checkpoint)
         restored=work/'restoration';restored.mkdir();gcc_restore.restore(checkpoint,restored,work/'gcc.py')
         tree=Path((restored/'tree-path').read_text().strip())
         assert not (tree/'build/stage2-gcc').exists() and (tree/'build/stage2-start').is_file()
         assert os.path.samefile(tree/'build/gcc/cc1',tree/'build/gcc/compiler-alias')
         assert str(tree) in (tree/'build/Makefile').read_text()
+        assert alias.is_symlink() and os.path.isabs(os.readlink(alias))
+        for rel in ['build/x86_64-unknown-linux-gnu/libstdc++-v3/include/algorithm',
+                    'build/headers/algorithm','build/all-source/libstdc++-v3/include/std/algorithm']:
+            assert (tree/rel).read_text()=='native header fixture\n'
+        assert not os.path.isabs(os.readlink(tree/alias.relative_to(source)))
+        checkpoint13=work/'checkpoint13';gcc13.save(source,checkpoint13)
+        restored13=work/'restoration13';restored13.mkdir()
+        gcc_restore.restore(checkpoint13,restored13,work/'gcc13.py')
+        tree13=Path((restored13/'tree-path').read_text().strip())
+        assert (tree13/alias.relative_to(source)).read_text()=='native header fixture\n'
+        outside=work/'external-header';outside.write_text('outside\n')
+        for policy in (gcc,gcc13):
+            for i,target in enumerate([outside,source/'build/stage2-gcc/obsolete.o',
+                                       str(header)+'/.',source/'source/missing-header']):
+                alias.unlink();alias.symlink_to(target)
+                rejected=work/('rejected-'+policy.__name__+'-'+str(i))
+                reject(lambda:policy.save(source,rejected))
+                assert not rejected.exists()
+        alias.unlink();alias.symlink_to(header)
         # Execute the actual raw-validation prelude with the runner's readonly
         # root. Stop before make; only a tiny checkpoint and shell wiring run.
         gcc_control=evaluated['gcc_16_2_0']

@@ -27,24 +27,55 @@ def save(root, dest):
         if not (root/name).exists():
             raise ValueError(('missing active checkpoint prerequisite', name))
     entries = []
+    links = {}
     for top in ('source', 'build'):
+        if (root/top).is_symlink() or not (root/top).is_dir():
+            raise ValueError(('private checkpoint directory required', top))
+        entries.append((top, root/top))
         for parent, dirs, files in os.walk(root/top, followlinks=False):
             dirs[:] = sorted(n for n in dirs if selected(str((Path(parent)/n).relative_to(root))))
             for n in dirs + sorted(files):
                 p = Path(parent)/n; name = str(p.relative_to(root))
                 if selected(name):
                     if p.is_symlink():
-                        target = os.path.normpath(str(Path(name).parent/os.readlink(p)))
-                        if os.path.isabs(os.readlink(p)) or not selected(target) or target.startswith('../'):
+                        raw = os.readlink(p)
+                        if os.path.isabs(raw):
+                            if not Path(os.path.normpath(raw)).is_relative_to(root):
+                                raise ValueError(('external checkpoint link', name))
+                            try:
+                                resolved = p.resolve(strict=True)
+                            except (OSError, RuntimeError) as error:
+                                raise ValueError(('invalid checkpoint link', name)) from error
+                            if not resolved.is_relative_to(root):
+                                raise ValueError(('external checkpoint link', name))
+                            target = str(resolved.relative_to(root))
+                            links[name] = os.path.relpath(resolved, p.parent)
+                        else:
+                            target = os.path.normpath(str(Path(name).parent/raw))
+                            links[name] = raw
+                        if target in ('.', '..') or target.startswith('../') or not selected(target):
                             raise ValueError(('external checkpoint link', name))
+                        try:
+                            os.stat(p)  # The kernel must accept the raw target spelling.
+                        except OSError as error:
+                            raise ValueError(('invalid checkpoint link', name)) from error
                     elif not (p.is_file() or p.is_dir()):
                         raise ValueError(('special checkpoint file', name))
                     entries.append((name, p))
+    names = {name for name, p in entries}
+    for name, link in links.items():
+        target = os.path.normpath(str(Path(name).parent/link))
+        if target not in names:
+            raise ValueError(('missing checkpoint link target', name))
+    def normalized_link(info):
+        if info.issym():
+            info.linkname = links[info.name]
+        return info
     # All namespace checks precede checkpoint writes; tar preserves hardlinks.
     dest.mkdir(parents=True)
     with tarfile.open(dest/'tree.tar', 'w', format=tarfile.PAX_FORMAT) as archive:
         for name, p in entries:
-            archive.add(p, arcname=name, recursive=False)
+            archive.add(p, arcname=name, recursive=False, filter=normalized_link)
     (dest/'layout.json').write_text(json.dumps({'root': str(root), 'members': [n for n,p in entries],
         'mtimeNs': {n: p.lstat().st_mtime_ns for n,p in entries}}, sort_keys=True)+'\n')
 

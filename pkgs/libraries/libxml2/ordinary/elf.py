@@ -43,7 +43,8 @@ def exclusive_rpath(data, records, index):
                    0x7ffffffd, 0x7fffffff}
     value_tags = (set(range(31)) | set(range(32, 38))
                   | {0x6ffffef5, 0x6ffffff0, 0x6ffffff9, 0x6ffffffa,
-                     0x6ffffffb, 0x6ffffffe, 0x6fffffff})
+                     0x6ffffffb, 0x6ffffffc, 0x6ffffffd,
+                     0x6ffffffe, 0x6fffffff})
     for pos in range(dynamic[4], dynamic[4] + dynamic[5], 16):
         tag, value = struct.unpack_from('<qQ', data, pos)
         if terminated:
@@ -78,7 +79,7 @@ def exclusive_rpath(data, records, index):
     if not loaded(table):
         raise ValueError('dynamic strings do not map to loader file range')
 
-    symbol_tables, version_tables = 0, 0
+    symbol_tables, version_tables, definition_tables = 0, 0, 0
     for section in records:
         if section[6] != index or section is dynamic:
             continue
@@ -124,10 +125,46 @@ def exclusive_rpath(data, records, index):
                 pos += following
             if count != section[7]:
                 raise ValueError('version-needed count mismatch')
+        elif section[1] == 0x6ffffffd:  # Elf64_Verdef / Elf64_Verdaux
+            definition_tables += 1
+            if (not loaded(section) or tags.get(0x6ffffffc) != [section[3]]
+                    or tags.get(0x6ffffffd) != [section[7]]):
+                raise ValueError('version-definition dynamic binding mismatch')
+            pos, count, seen = 0, 0, set()
+
+            def definition_record(relative, layout):
+                width = struct.calcsize(layout)
+                if relative in seen or not 0 <= relative <= size - width:
+                    raise ValueError('invalid/cyclic version-definition record')
+                seen.add(relative)
+                return struct.unpack_from(layout, data, offset + relative)
+
+            while True:
+                version, _, _, number, _, auxiliary, following = definition_record(pos, '<HHHHIII')
+                if version != 1 or not number or auxiliary < 20:
+                    raise ValueError('invalid version-definition header')
+                aux = pos + auxiliary
+                for i in range(number):
+                    name, next_aux = definition_record(aux, '<II')
+                    consume(name, 'version-definition-name')
+                    if (i == number - 1 and next_aux != 0) or (i < number - 1 and next_aux < 8):
+                        raise ValueError('invalid version-definition auxiliary chain')
+                    aux += next_aux
+                count += 1
+                if not following:
+                    break
+                if following < 20:
+                    raise ValueError('invalid version-definition chain')
+                pos += following
+            if count != section[7]:
+                raise ValueError('version-definition count mismatch')
         else:
             raise ValueError(('unsupported dynamic string consumer', section[1]))
     if symbol_tables != 1 or version_tables != int(0x6ffffffe in tags):
         raise ValueError('missing/ambiguous dynamic consumer table')
+    if (definition_tables != int(0x6ffffffc in tags)
+            or (0x6ffffffc in tags) != (0x6ffffffd in tags)):
+        raise ValueError('missing/ambiguous version-definition table')
 
     paths = [c for c in consumers if c[2] == 'rpath']
     if len(paths) != 1:
