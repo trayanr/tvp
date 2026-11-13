@@ -79,7 +79,13 @@ tvp.builder {
                     pkgConfig = "${pkgConfig}/bin/pkg-config";
                     jsonC = toString jsonC;
                     zlib = toString zlib;
-                    shell = "${cmake.runtime.shell}/bin/bash";
+                    # Native CMake preserves its fixed-width compiled shell slot.
+                    shell =
+                      let
+                        shell = "${cmake.runtime.shell}/bin/bash";
+                      in
+                      assert builtins.stringLength shell <= 256;
+                      lib.concatStrings (lib.replicate (256 - builtins.stringLength shell) "/") + shell;
                     source = cmake.src;
                     fixture = {
                       "CMakeLists.txt" = ./fixtures/CMakeLists.txt;
