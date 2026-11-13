@@ -1,108 +1,59 @@
 { tvp, ... }:
 let
   tvpLib = tvp.lib;
-  defs = tvpLib.packages.mkDefs {
+  packageRecipes = tvpLib.packages.mkDefs {
     "2.4.2" = {
-      builder = ./build.nix;
+      builder = ./build-2.4.2.nix;
       deps.gmp = tvpLib.packages.withConstraint {
         reason = "MPFR 2.4.2/3.0.1 headers use __gmp_const, removed by GMP 5.1; use the compatible GMP 5.0 line.";
       } tvp.packages.gmp_5_0;
-      opts = {
-        checkCFlags = [ "-std=gnu17" ];
-        float128 = false;
-        mpfrRoundingNames = false;
-        hasPkgConfig = false;
+      opts.installedInterface = {
         sonameMajor = "1";
-        sourceScripts = [
-          "configure"
-          "config.guess"
-          "config.sub"
-          "install-sh"
-          "ltmain.sh"
-          "missing"
-          "depcomp"
-          "compile"
-        ];
+        mpfrRoundingNames = false;
       };
     };
     "3.0.1" = {
-      builder = ./build.nix;
+      builder = ./build-2.4.2.nix;
       deps.gmp = tvpLib.packages.withConstraint {
         reason = "MPFR 2.4.2/3.0.1 headers use __gmp_const, removed by GMP 5.1; use the compatible GMP 5.0 line.";
       } tvp.packages.gmp_5_0;
-      opts = {
-        checkCFlags = [ "-std=gnu17" ];
-        float128 = false;
-        hasPkgConfig = false;
-        sonameMajor = "4";
-        sourceScripts = [
-          "configure"
-          "config.guess"
-          "config.sub"
-          "install-sh"
-          "ltmain.sh"
-          "missing"
-          "depcomp"
-          "compile"
-        ];
-      };
     };
     "3.1.6" = {
-      builder = ./build.nix;
+      builder = ./build-2.4.2.nix;
       deps.gmp = tvp.packages.gmp_6;
-      opts = {
-        checkCFlags = [ "-std=gnu17" ];
-        float128 = false;
-        hasPkgConfig = false;
-        sonameMajor = "4";
-        sourceScripts = [
-          "configure"
-          "config.guess"
-          "config.sub"
-          "install-sh"
-          "ltmain.sh"
-          "missing"
-          "depcomp"
-          "compile"
-          "test-driver"
-        ];
-      };
+      opts.additionalSourceScripts = [ "test-driver" ];
     };
     "4.0.2" = {
-      builder = ./build.nix;
+      builder = ./build-4.0.2.nix;
       deps.gmp = tvp.packages.gmp_6;
       opts.checkCFlags = [ "-std=gnu17" ];
     };
     "4.2.1" = {
-      builder = ./build.nix;
-      deps.gmp = tvp.packages.gmp_6;
-    };
-    "4.2.2" = {
-      builder = ./build.nix;
+      builder = ./build-4.0.2.nix;
       deps.gmp = tvp.packages.gmp_6;
     };
   };
   versionTable = tvpLib.packages.mkTable [
     {
-      def = defs."2.4.2";
+      def = packageRecipes."2.4.2";
       releases = {
         "2.4.2" = "sha256-1ycbv7yd3zh9ORnfgxjNcZLGeyMpGb+hyzIC0HhD2hs=";
       };
     }
     {
-      def = defs."3.0.1";
+      def = packageRecipes."3.0.1";
       releases = {
         "3.0.1" = "sha256-KKltWPJ2NSipebKgFpWdziq7yP74FC+hhgZwwkh2AGE=";
       };
     }
     {
-      def = defs."3.1.6";
+      def = packageRecipes."3.1.6";
       releases = {
         "3.1.6" = "sha256-emKsGgRAhhT8zcUG5IRLEM8K0sKxZ3CX+PNdOhNEqVA=";
       };
     }
     {
-      def = defs."4.0.2";
+      def = packageRecipes."4.0.2";
       releases = {
         "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
         "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
@@ -111,14 +62,11 @@ let
       };
     }
     {
-      def = defs."4.2.1";
+      def = packageRecipes."4.2.1";
       releases = {
         "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
+        "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
       };
-    }
-    {
-      def = defs."4.2.2";
-      releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
     }
   ];
   packageMeta.upstream = {

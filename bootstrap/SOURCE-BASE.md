@@ -25,9 +25,10 @@ nix build --impure -f bootstrap/source-consumer-tests.nix consumer
 
 GMP 6.3.0 uses native assembly, source-built M4 1.4.21, shared/static libraries,
 and C++. Its configure probes deliberately use GNU17 with GCC 16. MPFR 4.2.2 and
-MPC 1.4.1 use owned recipes. MPFR uses the same single procedure as the public
-family, instantiated with this earlier compiler and GMP. Their shared-only defaults
-are preserved. The explicit evidence endpoints require GMP 200 PASS, MPFR 196 PASS
+MPC 1.4.1 use owned recipes. MPFR uses the public family's modern
+`build-4.0.2.nix` procedure, instantiated with this earlier compiler and GMP. Their
+shared-only defaults are preserved. The explicit evidence endpoints require GMP
+200 PASS, MPFR 196 PASS
 and two named decimal-float SKIPs, and MPC 75 PASS. These count upstream test
 programs, not internal assertions; changed compiler capabilities require fresh
 qualification of those expectations.

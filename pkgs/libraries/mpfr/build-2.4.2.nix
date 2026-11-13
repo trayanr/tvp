@@ -1,4 +1,4 @@
-# One owned MPFR procedure. Compatibility choices live in the definition table.
+# Complete MPFR 2.4/3.x procedure; release exceptions stay in default.nix.
 {
   tvp,
   lib,
@@ -6,26 +6,9 @@
   src,
   version,
   gmp,
-  checkCFlags ? [ ],
-  float128 ? true,
-  mpfrRoundingNames ? true,
-  hasPkgConfig ? true,
-  sonameMajor ? "6",
-  sourceScripts ? [
-    "configure"
-    "config.guess"
-    "config.sub"
-    "install-sh"
-    "ltmain.sh"
-    "missing"
-    "depcomp"
-    "test-driver"
-  ],
-  stripFlags ? [
-    "-S"
-    "-p"
-  ],
-  dlopenDirectories ? [ ],
+  additionalSourceScripts ? [ ],
+  installedInterface ? { },
+  checkCFlags ? [ "-std=gnu17" ],
   doCheck ? true,
 }:
 final:
@@ -51,15 +34,29 @@ in
     version
     gmp
     checkCFlags
-    float128
-    mpfrRoundingNames
-    hasPkgConfig
-    sonameMajor
-    sourceScripts
-    stripFlags
-    dlopenDirectories
     doCheck
     ;
+  inherit additionalSourceScripts;
+  buildFeatures.float128 = false;
+  sourceLayout.scripts = [
+    "configure"
+    "config.guess"
+    "config.sub"
+    "install-sh"
+    "ltmain.sh"
+    "missing"
+    "depcomp"
+    "compile"
+  ] ++ final.additionalSourceScripts;
+  installedInterface = {
+    hasPkgConfig = false;
+    sonameMajor = "4";
+    mpfrRoundingNames = true;
+  } // installedInterface;
+  stripFlags = [
+    "-S"
+    "-p"
+  ];
   # The runner and test factory use the effective base's canonical providers.
   inherit (tools) bash coreutils;
   environment = {
@@ -78,7 +75,7 @@ in
     (steps.prepareAutotools { name = "mpfr.prepare"; })
     (steps.shebangs {
       name = "mpfr.source-shells";
-      paths = final.sourceScripts;
+      paths = final.sourceLayout.scripts;
       names = [
         "sh"
         "bash"
@@ -89,7 +86,7 @@ in
       export CONFIG_SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
       ./configure --prefix="$out" --disable-static --disable-dependency-tracking ${
-        lib.optionalString (!final.float128) "--disable-float128"
+        lib.optionalString (!final.buildFeatures.float128) "--disable-float128"
       } --with-gmp=${lib.getDev final.gmp}
     '')
     (command "mpfr.build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
@@ -134,7 +131,9 @@ in
       run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
     }
     (outputs.relocateText {
-      paths = [ "lib/libmpfr.la" ] ++ lib.optional final.hasPkgConfig "lib/pkgconfig/mpfr.pc";
+      paths = [
+        "lib/libmpfr.la"
+      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
     })
     (outputs.strip {
       paths = elfPaths;
@@ -150,18 +149,18 @@ in
     (outputs.checkSymlinks {
       paths = [
         "lib/libmpfr.so"
-        "lib/libmpfr.so.${final.sonameMajor}"
+        "lib/libmpfr.so.${final.installedInterface.sonameMajor}"
       ];
     })
     (outputs.checkPaths { paths = elfPaths; })
   ];
   runtime = {
     libraries = [ final.gmp ];
-    dlopenDirectories = final.dlopenDirectories;
+    dlopenDirectories = [ ];
   };
   tvp.features = {
-    float128 = final.float128;
-    mpfrRoundingNames = final.mpfrRoundingNames;
+    float128 = final.buildFeatures.float128;
+    mpfrRoundingNames = final.installedInterface.mpfrRoundingNames;
   };
   meta = {
     description = "Correctly rounded multiple-precision floating-point arithmetic";

@@ -12,9 +12,9 @@ these records where needed so each can be read independently. Avoid a shared
 `common` definition or a version-switching procedure merely to reduce repetition.
 
 ```nix
-defs = tvp.lib.packages.mkDefs {
-  "4.2.2" = {
-    builder = ./build.nix;
+packageRecipes = tvp.lib.packages.mkDefs {
+  "4.2.1" = {
+    builder = ./build-4.0.2.nix;
     deps.gmp = tvp.packages.gmp_6;
   };
 };
@@ -31,7 +31,13 @@ Keep the version/hash table literal and construct the public sets explicitly:
 
 ```nix
 versionTable = tvp.lib.packages.mkTable [
-  { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+  {
+    def = packageRecipes."4.2.1";
+    releases = {
+      "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
+      "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
+    };
+  }
 ];
 pname = "mpfr";
 family = tvp.lib.packages.mkFamily {
@@ -185,7 +191,35 @@ from individual test derivations.
 Procedures remain complete independent files. They receive resolved
 `src`, `version`, providers and helpers and return `final: { ... }` specification
 data. Their ordered `plan` contains named records and one `steps.split` marker.
-Source preparation, compilation and installation produce the artifact. Output
+Keep a coherent source/build/install era in its own builder instead of repeating
+the same feature and layout switches in every recipe record. MPFR's
+[`build-2.4.2.nix`](../pkgs/libraries/mpfr/build-2.4.2.nix) owns the older layout,
+disabled Float128 and absence of pkg-config metadata;
+[`build-4.0.2.nix`](../pkgs/libraries/mpfr/build-4.0.2.nix) owns the modern layout,
+Float128, pkg-config metadata and SONAME 6. Both contain their complete procedure
+and share generic helpers; neither imports or overrides the other. Small exceptions
+remain recipe data: the extra `test-driver` in 3.1.6, older SONAME/rounding-name
+interfaces and test-only C17 flags. The identical 4.2.1 and 4.2.2 choices share one
+recipe record.
+
+The effective specification groups these facts under `buildFeatures`,
+`sourceLayout` and `installedInterface`. `.edit` can change a group while keeping
+its other fields, for example:
+
+```nix
+tvp.packages.mpfr_4.edit (spec: spec // {
+  installedInterface = spec.installedInterface // { hasPkgConfig = false; };
+})
+```
+
+Generic output settings such as `stripFlags` use `.edit` or `.editSteps`; runtime
+search directories use `.editRuntime`. They do not need constructor arguments in
+each era builder. `.override` still changes declared recipe inputs such as GMP,
+the base and upstream test policy.
+
+These builder boundaries describe upstream eras. The artifact/final split inside
+each builder describes reusable production stages. Source preparation,
+compilation and installation produce the artifact. Output
 relocation, stripping, interpreter/RPATH repair, wrappers and audits produce the
 final package in a fresh workspace. A failed upstream test must not block either
 production stage; its acceptance leaf still keeps the normal test batch red.

@@ -331,7 +331,7 @@ let
       && !(p.tests ? testContext);
     variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.baseTiers.seed.name;
 
-    canonicalOwned = p.tvp.builder == "build.nix" && !(p ? overrideAttrs);
+    canonicalOwned = p.tvp.builder == "build-4.0.2.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
     constructionScope =
       constructionMpfr.drvPath != p.drvPath
@@ -389,7 +389,16 @@ let
       &&
         lib.hasInfix dlopenDirectory
           (lib.findFirst (step: step.name == "output.rpaths") null runtimeDirectories.buildSteps).run
-      && runtimeDirectories.drvPath == (p.override { dlopenDirectories = [ dlopenDirectory ]; }).drvPath;
+      &&
+        runtimeDirectories.drvPath == (p.edit (
+          s:
+          s
+          // {
+            runtime = s.runtime // {
+              dlopenDirectories = [ dlopenDirectory ];
+            };
+          }
+        )).drvPath;
     metadataOnly = (p.edit (s: s // { meta.description = "fixture"; })).drvPath == p.drvPath;
     unknownArgument = rejects (p.override { unknownArgument = true; }).drvPath;
     noOp = (p.override { }).drvPath == p.drvPath;

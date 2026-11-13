@@ -39,13 +39,17 @@ let
           };
         };
       }
-    )).override
-      {
-        stripFlags = [
-          "--strip-debug"
-          "--preserve-dates"
-        ];
-      };
+    )).edit
+      (
+        spec:
+        spec
+        // {
+          stripFlags = [
+            "--strip-debug"
+            "--preserve-dates"
+          ];
+        }
+      );
   text = lib.concatStrings (map (s: s.run or "") rebound.buildSteps);
   edited = (p.editSteps (steps.delete "output.libtool")).editSteps (
     steps.replace "output.strip" (

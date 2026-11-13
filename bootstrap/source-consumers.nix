@@ -217,7 +217,7 @@ let
     };
   };
   mpfr = builder {
-    recipe = import ../pkgs/libraries/mpfr/build.nix;
+    recipe = import ../pkgs/libraries/mpfr/build-4.0.2.nix;
     args = {
       tvp = {
         inherit builder;

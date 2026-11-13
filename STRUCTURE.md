@@ -90,10 +90,12 @@ silently in favour of whichever set came last.
 
 ## Builders describe complete procedures
 
-Use `build.nix` when one procedure serves the family, as MPFR does. Compatibility
-options belong in its definition table. When upstream needs a structurally different
-procedure, use independent `build-VERSION.nix` files; each serves versions from
-`VERSION` until the next builder file.
+Use `build.nix` when one procedure serves the family. Use independent
+`build-VERSION.nix` files for stable upstream eras with different source layout,
+build features or installed interfaces, even when their step order is the same.
+Each serves versions from `VERSION` until the next builder file. MPFR uses
+`build-2.4.2.nix` for its older layout and `build-4.0.2.nix` for its modern layout.
+Small release exceptions stay in the definition table.
 
 ```
 build-2.0.nix      serves 2.0 … 2.2
@@ -106,10 +108,15 @@ version.
 
 Rules:
 
-- **A divergence creates a file, not a guard.** When a version needs the recipe changed,
-  copy the current builder to a file named for that version and change it there.
+- **A procedure divergence creates a file, not a guard.** When a version needs a new
+  procedure or starts a coherent source/build/install era, copy the current builder
+  to a file named for that version and change it there.
 - **Files stay guard-free.** A guard is permitted only when it is a single, obviously
   local line. Anything structural forks a file.
+- **A coherent era belongs in its builder.** Do not repeat a bundle of source-layout,
+  build-feature and installed-interface switches in every definition just to share one
+  procedure. Keep those stable facts in complete independent builders. An extra source
+  script or a test-only compiler flag is a local exception, not a new era.
 - **An optional *dependency* forks a builder; an optional *option* does not.** The test is
   which way the mistake fails: a forgotten dependency fails **silently** — the package
   builds, installs, exits 0 and quietly lacks a capability — while a forgotten option or
@@ -160,10 +167,10 @@ compatibility options or patches. Common build tools are selected once in the ba
 Copy definitions in full rather than hiding their inputs behind a `common` overlay.
 
 ```nix
-# pkgs/libraries/mpfr/default.nix — one complete definition
-defs = tvp.lib.packages.mkDefs {
-  "4.2.2" = {
-    builder = ./build.nix;
+# pkgs/libraries/mpfr/default.nix — one complete recipe record
+packageRecipes = tvp.lib.packages.mkDefs {
+  "4.2.1" = {
+    builder = ./build-4.0.2.nix;
     deps.gmp = tvp.packages.gmp_6;
   };
 };
@@ -171,7 +178,13 @@ defs = tvp.lib.packages.mkDefs {
 
 ```nix
 versionTable = tvp.lib.packages.mkTable [
-  { def = defs."4.2.2"; releases."4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE="; }
+  {
+    def = packageRecipes."4.2.1";
+    releases = {
+      "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
+      "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
+    };
+  }
 ];
 pname = "mpfr";
 family = tvp.lib.packages.mkFamily {
@@ -195,7 +208,7 @@ in {
 # Version and hash table inside MPFR default.nix — excerpt
 versionTable = tvp.lib.packages.mkTable [
   {
-    def = defs."4.0.2";
+    def = packageRecipes."4.0.2";
     releases = {
       "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
       "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
@@ -206,8 +219,9 @@ versionTable = tvp.lib.packages.mkTable [
 ];
 ```
 
-Many releases share a definition; a compatibility boundary adds one definition,
-without duplicating the build procedure.
+Many releases share a definition. A local compatibility exception adds a definition;
+a coherent source/build/install era adds a complete builder. MPFR 4.2.1 and 4.2.2
+share one definition because their builder, dependencies and options are identical.
 
 ### Rules
 
@@ -251,9 +265,9 @@ without duplicating the build procedure.
   `tvp.packages`, so a release cannot acquire a dependency its neighbours lack. That class
   of defect was real: two packages had versions silently using nixpkgs' dependency while
   their siblings pinned TVP's.
-- **A changed *value* is a definition; a changed *procedure* is a builder.** Ruby 3.4.0 sets
-  `libDir = "3.4.0+1"` because upstream shipped that tarball with `RUBY_PATCHLEVEL -1` —
-  a definition, not a builder fork.
+- **An isolated changed *value* is a definition; a changed procedure or coherent era
+  is a builder.** Ruby 3.4.0 sets `libDir = "3.4.0+1"` because upstream shipped that
+  tarball with `RUBY_PATCHLEVEL -1` — a definition, not a builder fork.
 - **Source URLs are derived from the version**, not stored per release.
 - **A release that exists upstream but cannot be packaged is declared.** `unavailable` on the
   package's upstream metadata is a list of `{ versions; reason; }`, and the delta report
@@ -295,8 +309,9 @@ Definitions select a complete `builder` file, package-specific `deps` and option
 catalogue binds the constructor, base/platform, standard tools and helper arguments
 once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
 function receives `{ package, lib, context }`. Each test context follows the effective
-package. See [MPFR's definition](pkgs/libraries/mpfr/default.nix) and
-[complete procedure](pkgs/libraries/mpfr/build.nix). This is the new authoring
+package. See [MPFR's recipe table](pkgs/libraries/mpfr/default.nix),
+[older procedure](pkgs/libraries/mpfr/build-2.4.2.nix) and
+[modern procedure](pkgs/libraries/mpfr/build-4.0.2.nix). This is the new authoring
 interface; other families retain their prior wiring until reimplemented.
 
 A specification keeps `environment`, `runtime` and `plan` at the same level. Use
@@ -306,11 +321,15 @@ they do not dispatch hidden phases. Source preparation and installed-output repa
 remain explicit, separate operations.
 
 The MPFR exemplar keeps a flat package directory: `default.nix` contains its
-independent definitions, versions and hashes; `build.nix` is the shared complete
-procedure; `tests/` holds installed assertions and upstream restoration/acceptance.
-Compatibility flags are definition options. There are no retained/ordinary/variant
-copies of the MPFR procedure. Generic checks instantiate that same recipe in their
-own construction context.
+independent `packageRecipes` records, versions and hashes; `build-2.4.2.nix` and
+`build-4.0.2.nix` are complete older and modern procedures; `tests/` holds the shared
+installed assertions and upstream restoration/acceptance. The older builder owns
+its source layout, disabled Float128 and lack of pkg-config metadata. The modern
+builder owns its source layout, Float128, pkg-config metadata and SONAME 6. Small
+exceptions such as 3.1.6's extra `test-driver`, older SONAMEs and test-only C17 flags
+remain recipe data. There are no retained/ordinary/variant copies of these
+procedures. Generic checks instantiate the selected recipe in their own construction
+context.
 
 `tvp.builder.forBase final.base` binds standard source/output helpers once. They still
 produce named step records, and helper arguments can replace defaults explicitly.
@@ -573,9 +592,9 @@ libxml2 = tvp.lib.packages.withConstraint {
 An exact exception needs source evidence and a newest-working/failing consumer
 control. Use `canonical` for strict exact selections, since public full names can
 be shadowed by aliases. `dependency-policy` rejects unexplained ordinary exact
-choices. A constraint belongs in the definition; fork a builder only when the
-build procedure changes. Explicit bootstrap/base inputs stay pinned. Matched SDK
-payloads and historical test baselines declare their artifact identity separately
+choices. A constraint belongs in the definition; fork a builder for a changed
+procedure or coherent source/build/install era. Explicit bootstrap/base inputs stay
+pinned. Matched SDK payloads and historical test baselines declare their artifact identity separately
 with `withConstraint { category = "artifact"; reason = …; }`.
 
 Adding a packaged release advances matching aliases and rebuilds consumers. The
@@ -1164,10 +1183,11 @@ definition in `default.nix` to one named for that version, change it there, and 
 block pointing at it. If later versions go back to the old recipe, open another block
 naming the old definition; that return is a fact, not a duplicate.
 
-**Add a version that needs a different build procedure** — copy the current builder to
-`build-<that version>.nix`, change it there, record in the header what forced the fork and
-the range it serves, and point a new definition at it. Add a test covering what you fixed:
-that is how the same gap gets detected in older builders.
+**Add a version that needs a different build procedure or starts a coherent era** —
+copy the current builder to `build-<that version>.nix`, change it there, record in the
+header what forced the fork and the range it serves, and point a new definition at it.
+Add a test covering what you fixed: that is how the same gap gets detected in older
+builders.
 
 **Add a package** — create `pkgs/<category>/<name>/` with a `default.nix` and one
 complete `build-<earliest version>.nix`, then name it in the category's `default.nix`.

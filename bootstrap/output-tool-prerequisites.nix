@@ -184,42 +184,49 @@ let
       previous = base.name;
     };
   };
-  mpfr = builder {
-    recipe = import ../pkgs/libraries/mpfr/build.nix;
-    args = {
-      tvp = {
-        inherit builder;
+  mpfr =
+    (builder {
+      recipe = import ../pkgs/libraries/mpfr/build-4.0.2.nix;
+      args = {
+        tvp = {
+          inherit builder;
+        };
+        inherit lib gmp;
+        base = mpfrBase;
+        src = sources.mpfr;
+        version = "4.2.2";
       };
-      inherit lib gmp;
-      base = mpfrBase;
-      src = sources.mpfr;
-      version = "4.2.2";
-      sourceScripts = [
-        "ar-lib"
-        "install-sh"
-        "version-ext.sh"
-        "compile"
-        "missing"
-        "config.sub"
-        "configure"
-        "config.guess"
-        "ltmain.sh"
-        "depcomp"
-        "test-driver"
-      ];
-    };
-    dependencyNames = [ "gmp" ];
-    metadata = { };
-    selection.kind = "private-output-tool-qualification";
-    testContext =
-      package: (import ../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
-    mkTests =
-      package:
-      import ../pkgs/libraries/mpfr/tests/default.nix {
-        inherit package lib;
-        context = package.testContext;
-      };
-  };
+      dependencyNames = [ "gmp" ];
+      metadata = { };
+      selection.kind = "private-output-tool-qualification";
+      testContext =
+        package: (import ../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+      mkTests =
+        package:
+        import ../pkgs/libraries/mpfr/tests/default.nix {
+          inherit package lib;
+          context = package.testContext;
+        };
+    }).edit
+      (
+        spec:
+        spec
+        // {
+          sourceLayout.scripts = [
+            "ar-lib"
+            "install-sh"
+            "version-ext.sh"
+            "compile"
+            "missing"
+            "config.sub"
+            "configure"
+            "config.guess"
+            "ltmain.sh"
+            "depcomp"
+            "test-driver"
+          ];
+        }
+      );
   consumer = make (
     { library }:
     final: {

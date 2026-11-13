@@ -13,10 +13,31 @@ let
       deps.gmp = bootstrap.gnu-gmp;
     };
   p = instantiate "4.2.2";
+  legacy = instantiate "3.0.1";
+  earliest = instantiate "2.4.2";
+  lastLegacy = instantiate "3.1.6";
   withoutCheck = p.override { doCheck = false; };
   checkFlags = p.override { checkCFlags = [ "-std=gnu17" ]; };
-  stripped = p.override { stripFlags = [ "--strip-debug" ]; };
+  stripped = p.edit (s: s // { stripFlags = [ "--strip-debug" ]; });
   runtime = p.editRuntime (r: r // { dlopenDirectories = [ "/mpfr-runtime-probe" ]; });
+  interface = p.edit (
+    s:
+    s
+    // {
+      installedInterface = s.installedInterface // {
+        hasPkgConfig = false;
+      };
+    }
+  );
+  features = p.edit (
+    s:
+    s
+    // {
+      buildFeatures = s.buildFeatures // {
+        float128 = false;
+      };
+    }
+  );
   marker = builtins.derivation {
     name = "mpfr-tool-never-build";
     system = "x86_64-linux";
@@ -42,18 +63,34 @@ let
   fullInputs = import ../../bootstrap/source-full-gcc.nix { };
   sameProduction = q: q.artifact.drvPath == p.artifact.drvPath && q.drvPath == p.drvPath;
   results = {
-    allVersionsUseOneOwnedProcedure = builtins.all (
+    allVersionsUseOwnedEraProcedures = builtins.all (
       version:
       let
         q = family.canonical.${"mpfr_" + lib.replaceStrings [ "." ] [ "_" ] version};
       in
       q.specification.base.name == tvp.baseTiers.full.name
+      &&
+        builtins.baseNameOf family.recipes.mpfr.versionTable.${version}.def.builder
+        == (if lib.versionOlder version "4" then "build-2.4.2.nix" else "build-4.0.2.nix")
       && builtins.length (builtins.filter (s: (s.kind or "") == "split") q.buildSteps) == 1
       && !(q ? overrideAttrs)
       && q.tvp.deps.gmp.drvPath == family.recipes.mpfr.versionTable.${version}.def.deps.gmp.drvPath
     ) (builtins.attrNames family.recipes.mpfr.versionTable);
     noopOverride = sameProduction (p.override { });
     noopEdit = sameProduction (p.edit (s: s));
+    legacyInterfaceExceptions =
+      earliest.specification.installedInterface.sonameMajor == "1"
+      && !(earliest.tests ? arithmetic)
+      && legacy.specification.installedInterface.sonameMajor == "4"
+      && legacy.tests ? arithmetic
+      && !(legacy.tests ? float128);
+    legacyScriptExtension =
+      lastLegacy.specification.sourceLayout.scripts
+      == legacy.specification.sourceLayout.scripts ++ [ "test-driver" ];
+    groupedInterfaceReusesArtifact =
+      interface.artifact.drvPath == p.artifact.drvPath && interface.drvPath != p.drvPath;
+    groupedFeatureRebindsBuildAndTests =
+      features.artifact.drvPath != p.artifact.drvPath && !(features.tests ? float128);
     testPolicyReusesProduction = sameProduction withoutCheck && !(withoutCheck.tests ? upstream);
     testFlagsReuseProduction =
       sameProduction checkFlags && checkFlags.tests.upstream.drvPath != p.tests.upstream.drvPath;

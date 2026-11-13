@@ -46,9 +46,9 @@ a claim that every supporting package has been rebuilt or fully qualified.
 A family exposes `.instantiate { version; base; deps ? {}; opts ? {}; }`. It overlays
 base/dependency choices on definition data before constructing the selected package;
 it never overrides an already-created final public package. MPFR uses this route for
-compiler construction, locale inputs and retained MPC inputs, all through its one
-owned procedure. Earlier standard tools come from the construction scope rather than
-from the public base being built.
+compiler construction, locale inputs and retained MPC inputs, selecting the same
+owned older or modern procedure as the public family. Earlier standard tools come
+from the construction scope rather than from the public base being built.
 
 `tvp.builder.forBase base` returns source/output helpers with their tool defaults bound.
 They remain ordinary named steps. Package `.edit` can replace the base and reconstruct
