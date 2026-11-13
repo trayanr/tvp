@@ -20,13 +20,25 @@
   ],
   dlopenDirectories ? [ ],
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libmpfr.so.6.2.2" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    gmp
+    bash
+    coreutils
+    gnumake
+    gnutar
+    xz
+    python
+    binutils
+    patchelf
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "lib/libmpfr.so.6.2.2" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -38,13 +50,21 @@ let
 in
 {
   pname = "mpfr";
-  inherit
+  inherit (args)
     base
     src
     version
+    gmp
     bash
     coreutils
+    gnumake
+    gnutar
+    xz
+    python
+    binutils
+    patchelf
     ;
+  inherit doCheck stripFlags dlopenDirectories;
   environment = {
     tools = [ gnumake ];
     libraries = [ gmp ];
@@ -67,7 +87,10 @@ in
     '')
     (command "mpfr.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (
-      (command "mpfr.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'') // { enabled = doCheck; }
+      (command "mpfr.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+      // {
+        enabled = final.doCheck;
+      }
     )
     (command "mpfr.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
@@ -86,7 +109,7 @@ in
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;
-      flags = stripFlags;
+      flags = final.stripFlags;
     })
     (outputs.libtool {
       inherit python;
@@ -97,10 +120,10 @@ in
         python
         binutils
         patchelf
-        dlopenDirectories
         ;
       base = final.base;
       libraries = final.runtime.libraries;
+      dlopenDirectories = final.dlopenDirectories;
       paths = elfPaths;
     })
     (outputs.development {

@@ -20,8 +20,16 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   elfPaths = [
     "bin/bzip2"
@@ -30,9 +38,6 @@ let
     "bin/bzip2recover"
     "lib/libbz2.so.1.0.8"
   ];
-in
-final:
-let
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -45,7 +50,7 @@ let
 in
 {
   pname = "bzip2";
-  inherit
+  inherit (args)
     base
     src
     version

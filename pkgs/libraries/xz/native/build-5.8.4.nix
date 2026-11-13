@@ -20,8 +20,16 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   elfPaths = [
     "bin/xz"
@@ -30,9 +38,6 @@ let
     "bin/lzmainfo"
     "lib/liblzma.so.5.8.4"
   ];
-in
-final:
-let
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -47,7 +52,7 @@ in
   pname = "xz";
   # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
   artifactName = "${final.pname}-${final.version}";
-  inherit
+  inherit (args)
     base
     src
     version

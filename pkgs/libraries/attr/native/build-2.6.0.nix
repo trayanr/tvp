@@ -21,16 +21,21 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   elfPaths = [
     "bin"
     "lib/libattr.so.1.1.2600"
   ];
-in
-final:
-let
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -42,7 +47,7 @@ let
 in
 {
   pname = "attr";
-  inherit
+  inherit (args)
     base
     src
     version

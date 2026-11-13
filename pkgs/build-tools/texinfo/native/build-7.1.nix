@@ -27,9 +27,16 @@
   patches ? [ ],
   configureFlags ? [ ],
   cStandard ? "gnu17",
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   command =
     name: run:
@@ -44,7 +51,7 @@ in
   pname = "texinfo";
   # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
   artifactName = "${final.pname}-${final.version}";
-  inherit
+  inherit (args)
     base
     src
     version

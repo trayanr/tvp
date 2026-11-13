@@ -128,7 +128,7 @@ in
     libraries = builtins.attrValues final.libraries;
   };
   runtime = {
-    shell = bash;
+    shell = final.bash;
     inherit (final.libraries)
       openssl
       zlib

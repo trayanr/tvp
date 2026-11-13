@@ -57,6 +57,7 @@ in
       diffutils
       ;
   };
+  dependencyProviders = final.tools;
   environment = {
     tools = with final.tools; [
       gnumake

@@ -108,7 +108,7 @@ in
     libraries = [ ];
   };
   runtime = {
-    shell = bash;
+    shell = final.bash;
     libraries = [ ];
   };
   development = {

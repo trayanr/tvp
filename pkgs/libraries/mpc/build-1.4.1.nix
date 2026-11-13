@@ -26,13 +26,31 @@
   ],
   dlopenDirectories ? [ ],
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libmpc.so.3.4.1" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    gmp
+    mpfr
+    bash
+    coreutils
+    gnumake
+    gnutar
+    xz
+    python
+    binutils
+    patchelf
+    sed
+    grep
+    gawk
+    diffutils
+    findutils
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "lib/libmpc.so.3.4.1" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -44,13 +62,27 @@ let
 in
 {
   pname = "mpc";
-  inherit
+  inherit (args)
     base
     src
     version
+    gmp
+    mpfr
     bash
     coreutils
+    gnumake
+    gnutar
+    xz
+    python
+    binutils
+    patchelf
+    sed
+    grep
+    gawk
+    diffutils
+    findutils
     ;
+  inherit doCheck stripFlags dlopenDirectories;
   environment = {
     tools = [
       gnumake
@@ -95,7 +127,12 @@ in
       ./configure --prefix="$out" --disable-static --disable-dependency-tracking --with-gmp=${lib.getDev gmp} --with-mpfr=${lib.getDev mpfr}
     '')
     (command "mpc.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    ((command "mpc.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'') // { enabled = doCheck; })
+    (
+      (command "mpc.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+      // {
+        enabled = final.doCheck;
+      }
+    )
     (command "mpc.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
@@ -113,7 +150,7 @@ in
     (outputs.strip {
       inherit python binutils;
       paths = elfPaths;
-      flags = stripFlags;
+      flags = final.stripFlags;
     })
     (outputs.libtool {
       inherit python;
@@ -154,7 +191,7 @@ in
       gmp
       mpfr
     ];
-    inherit dlopenDirectories;
+    dlopenDirectories = final.dlopenDirectories;
   };
   tvp.features = {
     shared = true;

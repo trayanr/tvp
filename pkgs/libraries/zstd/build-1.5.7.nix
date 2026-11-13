@@ -21,8 +21,28 @@
   zlib,
   xz,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    gnutar
+    findutils
+    gzip
+    gnumake
+    gnused
+    gnugrep
+    diffutils
+    python
+    binutils
+    patchelf
+    zlib
+    xz
+    ;
   inherit (tvp.builder) steps outputs;
   upstreamTests = [
     "basic/help.sh"
@@ -36,9 +56,6 @@ let
     "bin/zstd"
     "lib/libzstd.so.${version}"
   ];
-in
-final:
-let
   environment = final.base.environment final.environment;
   checkEnvironment = final.base.environment (
     final.environment
@@ -65,13 +82,26 @@ let
 in
 {
   pname = "zstd";
-  inherit
+  inherit (args)
     base
     src
     version
     bash
     coreutils
+    gnutar
+    findutils
+    gzip
+    gnumake
+    gnused
+    gnugrep
+    diffutils
+    python
+    binutils
+    patchelf
+    zlib
+    xz
     ;
+  inherit doCheck;
   environment = {
     tools = [
       gnumake
@@ -111,7 +141,7 @@ in
         interpreter = "${bash}/bin/bash";
       })
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
     )
     (command "zstd.build" make)
@@ -121,7 +151,7 @@ in
         ${python}/bin/python3 tests/cli-tests/run.py --zstd "$PWD/programs/zstd" --datagen "$PWD/tests/datagen" ${lib.escapeShellArgs upstreamTests}
       '')
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
         tools = checkEnvironment.tools;
         env = checkEnvironment.env;
       }
@@ -209,7 +239,8 @@ in
     })
   ];
   tvp.features = {
-    inherit doCheck upstreamTests;
+    inherit upstreamTests;
+    doCheck = final.doCheck;
     gzip = true;
     lzma = true;
     lz4 = false;

@@ -20,13 +20,18 @@
   patchelf,
   cxxRuntime,
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "bin/patchelf" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "bin/patchelf" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -38,7 +43,7 @@ let
 in
 {
   pname = "patchelf";
-  inherit
+  inherit (args)
     base
     src
     version
@@ -114,14 +119,14 @@ in
         interpreter = "${bash}/bin/bash";
       })
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
     )
     {
       name = "patchelf.test-loader";
       cwd = "source";
       tools = [ python ];
-      enabled = doCheck;
+      enabled = final.doCheck;
       # This base does not install ldd. Use its actual ELF loader for the two
       # listing calls, retaining the fetched fixture's extraction/assertions.
       run = ''
@@ -178,7 +183,7 @@ in
     ]
   );
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
   };
   meta = {
     description = "Modify ELF interpreters, dependencies and runtime search paths";

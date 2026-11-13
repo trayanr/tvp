@@ -455,6 +455,16 @@ and output projections. Never capture an original provider in a command or test
 whose effective specification can be edited. Use `old: old // { ... }` when editing
 a step and preserving its other fields is intended.
 
+Use `.override` for constructor inputs when writing customizations that must work
+across different versioned procedures. `.edit` changes fields published by the
+selected procedure; adding an arbitrary field does not make it a build input.
+Published editable defaults must be consumed through `final`, including defaults
+for runtime providers. Dependency metadata follows published fields or an explicit
+`dependencyProviders` projection, never an otherwise unused field added by an edit.
+Recipes exposing nested `tools`, `libraries` or provider records must project their
+effective declared dependencies explicitly. Construction and runtime providers may
+remain separate when their roles are declared separately.
+
 These user-facing edits do not authorize recipe inheritance. Another version's
 procedure still needs its own complete version-start file. Readability is part of
 the interface: keep the operation order, selected providers and split visible.

@@ -22,9 +22,16 @@
   binutils,
   patchelf,
   doCheck ? true,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   command =
     name: run:
@@ -43,7 +50,7 @@ let
 in
 {
   pname = "libxml2";
-  inherit
+  inherit (args)
     base
     src
     version

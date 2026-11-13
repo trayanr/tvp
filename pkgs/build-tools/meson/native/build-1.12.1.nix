@@ -47,7 +47,7 @@ in
     libraries = [ ];
   };
   runtime = {
-    shell = bash;
+    shell = final.bash;
     inherit
       python
       ninja

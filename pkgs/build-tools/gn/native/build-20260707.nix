@@ -15,9 +15,20 @@
   hardeningDisable,
   allowWarnings,
   doCheck ? true,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    python
+    revision
+    hardeningDisable
+    allowWarnings
+    ;
   inherit (tvp.builder) steps outputs;
   environment = final.base.environment final.environment;
   command =
@@ -34,7 +45,7 @@ let
 in
 {
   pname = "gn";
-  inherit
+  inherit (args)
     base
     src
     version

@@ -49,6 +49,7 @@ in
       ninja
       ;
   };
+  dependencyProviders = final.tools;
   environment = {
     tools = with final.tools; [
       cmake
@@ -114,7 +115,7 @@ in
   upstreamCheck = (
     (command "check" ''${final.tools.cmake}/bin/ctest --test-dir build --output-on-failure --no-tests=error -j "$NIX_BUILD_CORES"'')
     // {
-      enabled = final.tvp.features.doCheck;
+      enabled = final.doCheck;
     }
   );
   plan = steps.sequence (
@@ -123,7 +124,7 @@ in
       (steps.split "expat.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
       (outputs.relocateText {
-        inherit python;
+        python = final.tools.python;
         paths = [
           "lib/pkgconfig"
           "lib/cmake"
@@ -159,7 +160,7 @@ in
     ]
   );
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
     shared = true;
     static = false;
   };

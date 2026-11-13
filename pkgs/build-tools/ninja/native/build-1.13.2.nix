@@ -86,7 +86,7 @@ in
   ];
   runtime = {
     libraries = environment.libraries;
-    shell = bash;
+    shell = final.bash;
     inherit python;
   };
   upstreamCheck = {

@@ -102,7 +102,7 @@ in
   };
   runtime = {
     libraries = final.environment.libraries or [ ];
-    shell = bash;
+    shell = final.bash;
   };
   upstreamPreparation = [
     (steps.shebangs {

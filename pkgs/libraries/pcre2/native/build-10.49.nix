@@ -23,9 +23,16 @@
   perl,
   doCheck ? true,
   static ? false,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   command =
     name: run:
@@ -38,7 +45,7 @@ let
 in
 {
   pname = "pcre2";
-  inherit
+  inherit (args)
     base
     src
     version

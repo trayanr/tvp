@@ -274,7 +274,7 @@ in
     ]
   );
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
     tls = true;
     http2 = true;
     http3 = false;

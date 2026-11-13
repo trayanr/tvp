@@ -24,6 +24,11 @@ let
     let
       unknown = lib.subtractLists (builtins.attrNames declared) (builtins.attrNames current);
       definition = recipe current;
+      # A field introduced by an arbitrary edit is not automatically a recipe
+      # input. Only published fields or an explicit projection describe providers.
+      published = builtins.attrNames (
+        if builtins.isFunction definition then definition specification else definition
+      );
       specification = lib.fix (
         final:
         builtins.foldl' (spec: edit: edit spec) (
@@ -39,7 +44,12 @@ let
       # projected here; recipes without a projection retain the old behavior.
       dependencyProviders = specification.dependencyProviders or { };
       dependencies =
-        lib.mapAttrs (name: original: dependencyProviders.${name} or specification.${name} or original)
+        lib.mapAttrs
+          (
+            name: original:
+            dependencyProviders.${name}
+              or (if builtins.elem name published then specification.${name} or original else original)
+          )
           (
             builtins.intersectAttrs (lib.genAttrs (
               if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames

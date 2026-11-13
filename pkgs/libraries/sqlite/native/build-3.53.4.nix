@@ -25,9 +25,16 @@
   readline,
   testZlib,
   doCheck ? true,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   command =
     name: run:
@@ -48,7 +55,7 @@ let
 in
 {
   pname = "sqlite";
-  inherit
+  inherit (args)
     base
     src
     version

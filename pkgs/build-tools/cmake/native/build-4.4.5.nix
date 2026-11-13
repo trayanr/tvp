@@ -120,7 +120,7 @@ in
   };
   runtime = {
     libraries = environment.libraries;
-    shell = bash;
+    shell = final.bash;
   };
   plan = steps.sequence [
     (steps.unpack {

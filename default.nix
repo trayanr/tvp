@@ -156,6 +156,9 @@ let
       gcc-target-tools = pkgs.writeText "tvp-gcc-target-tool-contracts" (
         builtins.toJSON (import ./lib/tests/gcc-target-tools.nix { inherit (pkgs) lib; })
       );
+      effective-inputs = pkgs.writeText "tvp-effective-input-contracts" (
+        builtins.toJSON (import ./lib/tests/effective-inputs.nix { inherit pkgs tvp; })
+      );
       legacy-test-factories = import ./lib/tests/legacy-test-factories.nix {
         inherit pkgs tvp;
         inherit (universe) recipes;

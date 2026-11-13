@@ -95,6 +95,7 @@ in
       ;
   };
   inherit configureFlags doCheck;
+  dependencyProviders = final.tools // final.providers // { inherit (final.runtime) perl jdk; };
   environment = {
     tools =
       (builtins.attrValues (

@@ -69,6 +69,7 @@ in
     "--enable-static"
   ];
   development.libraries = [ final.libraries.gmp ];
+  dependencyProviders = final.tools // final.libraries;
   environment = {
     tools = [
       final.tools.gnumake
@@ -136,7 +137,7 @@ in
   upstreamCheck = (
     (command "check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash check || { status=$?; cat test-suite.log >&2; exit "$status"; }'')
     // {
-      enabled = final.tvp.features.doCheck;
+      enabled = final.doCheck;
     }
   );
   plan = steps.sequence (
@@ -145,7 +146,7 @@ in
       (steps.split "isl.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
       (outputs.relocateText {
-        inherit python;
+        python = final.tools.python;
         paths = [
           "lib/pkgconfig"
           "lib/libisl.la"
@@ -180,7 +181,7 @@ in
     ]
   );
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
     shared = true;
     static = true;
     cxx = true;

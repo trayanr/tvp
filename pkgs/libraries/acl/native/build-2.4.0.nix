@@ -22,16 +22,21 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
   inherit (tvp.builder) steps outputs;
   elfPaths = [
     "bin"
     "lib/libacl.so.1.2.2400"
   ];
-in
-final:
-let
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -43,7 +48,7 @@ let
 in
 {
   pname = "acl";
-  inherit
+  inherit (args)
     base
     src
     version

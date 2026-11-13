@@ -20,16 +20,33 @@
   gawk,
   diffutils,
   doCheck ? true,
-}:
+}@args:
+final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    gnumake
+    gnutar
+    xz
+    findutils
+    m4
+    python
+    binutils
+    patchelf
+    sed
+    grep
+    gawk
+    diffutils
+    ;
   inherit (tvp.builder) steps outputs;
   elfPaths = [
     "lib/libgmp.so.10.5.0"
     "lib/libgmpxx.so.4.7.0"
   ];
-in
-final:
-let
   command =
     name: run:
     (final.base.environment final.environment)
@@ -40,13 +57,26 @@ let
 in
 {
   pname = "gmp";
-  inherit
+  inherit (args)
     base
     src
     version
     bash
     coreutils
+    gnumake
+    gnutar
+    xz
+    findutils
+    m4
+    python
+    binutils
+    patchelf
+    sed
+    grep
+    gawk
+    diffutils
     ;
+  inherit doCheck;
   environment = {
     tools = [
       gnumake
@@ -103,7 +133,12 @@ in
         --enable-cxx --enable-shared --enable-static --with-pic --disable-dependency-tracking
     '')
     (command "gmp.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    ((command "gmp.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'') // { enabled = doCheck; })
+    (
+      (command "gmp.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+      // {
+        enabled = final.doCheck;
+      }
+    )
     (command "gmp.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"

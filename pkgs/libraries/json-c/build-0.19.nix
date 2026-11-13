@@ -17,24 +17,48 @@
   binutils,
   patchelf,
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libjson-c.so.5.5.0" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    patches
+    bash
+    coreutils
+    cmake
+    gnumake
+    gnutar
+    gzip
+    patch
+    python
+    binutils
+    patchelf
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "lib/libjson-c.so.5.5.0" ];
   environment = final.base.environment final.environment;
 in
 {
   pname = "json-c";
-  inherit
+  inherit (args)
     base
     src
     version
+    patches
     bash
     coreutils
+    cmake
+    gnumake
+    gnutar
+    gzip
+    patch
+    python
+    binutils
+    patchelf
     ;
+  inherit doCheck;
   environment = {
     tools = [
       cmake
@@ -79,14 +103,15 @@ in
         interpreter = "${bash}/bin/bash";
       })
       // {
-        enabled = doCheck;
+        enabled = final.doCheck;
       }
     )
     (steps.cmake (
       final.cmakeOptions
       // {
         name = "json-c";
-        inherit cmake doCheck;
+        inherit cmake;
+        doCheck = final.doCheck;
         make = gnumake;
         inherit (environment) tools libraries env;
       }
@@ -136,7 +161,7 @@ in
     })
   ];
   tvp.features = {
-    inherit doCheck;
+    doCheck = final.doCheck;
     shared = true;
     static = true;
     jsonPointer = true;

@@ -22,13 +22,18 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libcrypt.so.1.1.0" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "lib/libcrypt.so.1.1.0" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -40,7 +45,7 @@ let
 in
 {
   pname = "libxcrypt";
-  inherit
+  inherit (args)
     base
     src
     version

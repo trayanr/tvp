@@ -12,9 +12,18 @@
   python,
   helperPython,
   unzip,
-}:
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    python
+    helperPython
+    ;
   inherit (tvp.builder) steps outputs;
   environment = final.base.environment final.environment;
   command =
@@ -27,7 +36,7 @@ let
 in
 {
   pname = "gradle";
-  inherit
+  inherit (args)
     base
     src
     version

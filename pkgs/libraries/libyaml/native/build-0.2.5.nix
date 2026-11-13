@@ -56,6 +56,7 @@ in
       findutils
       ;
   };
+  dependencyProviders = final.tools;
   environment = {
     tools = with final.tools; [
       gnumake
@@ -110,7 +111,7 @@ in
   upstreamCheck = (
     (command "libyaml.check" ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
     // {
-      enabled = final.tvp.features.doCheck;
+      enabled = final.doCheck;
     }
   );
   plan = steps.sequence (
@@ -119,7 +120,7 @@ in
       (steps.split "libyaml.finalize")
       (outputs.copyArtifacts { coreutils = final.coreutils; })
       (outputs.relocateText {
-        inherit python;
+        python = final.tools.python;
         paths = [
           "lib/pkgconfig"
           "lib/libyaml.la"
@@ -164,7 +165,7 @@ in
   tvp.features = {
     document = true;
     pkgConfig = true;
-    inherit doCheck;
+    doCheck = final.doCheck;
   };
   meta = {
     description = "C library for parsing and emitting YAML";
