@@ -99,7 +99,10 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "bzip2.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.copyArtifacts {
+      coreutils = final.coreutils;
+      preserveHardlinks = false;
+    })
     {
       name = "bzip2.relocate";
       tools = [ python ];
