@@ -3,48 +3,43 @@ let
   tvpLib = tvp.lib;
   native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   candidate = import ../../../bases/source-gnu { };
-  buildTools = {
-    inherit (candidate.tools)
-      bash
-      coreutils
-      xz
-      python
-      binutils
-      patchelf
-      sed
-      grep
-      gawk
-      diffutils
-      findutils
-      ;
-    gnumake = candidate.tools.make;
-    gnutar = candidate.tools.tar;
-  };
-  common = {
-    constructor = tvp.builder;
-    base = candidate.base;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
-        inherit sha256;
-      };
-    helpers = {
-      inherit tvp;
-    };
-    testContext =
-      package:
-      tvpLib.tests.fromPackage {
-        builder = tvp.builder;
-        inherit package;
-      };
-    # Family-local data consumed by the single test factory below.
-    testProfile = "installed";
-  };
+  # Each public definition states its complete inputs and test profile.
   defs = tvpLib.packages.mkDefs {
-    "2.4.2" = common // {
+    "2.4.2" = {
+      constructor = tvp.builder;
       builder = ./ordinary/build-2.4.2.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvpLib.packages.withConstraint {
           reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
         } tvp.packages.gmp_5_0;
@@ -57,9 +52,41 @@ let
       };
       testProfile = "compatibility";
     };
-    "3.0.1" = common // {
+    "3.0.1" = {
+      constructor = tvp.builder;
       builder = ./ordinary/build-2.4.2.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvpLib.packages.withConstraint {
           reason = "MPFR 2.4.2/3.0.1 public headers use __gmp_const, removed by GMP 5.1. Native compilation fails with newer GMP; 5.0.5 is the working control, selected through the moving 5.0 line.";
         } tvp.packages.gmp_5_0;
@@ -70,9 +97,41 @@ let
       };
       testProfile = "compatibility";
     };
-    "3.1.6" = common // {
+    "3.1.6" = {
+      constructor = tvp.builder;
       builder = ./ordinary/build-2.4.2.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvp.packages.gmp_6;
       };
       opts = {
@@ -81,23 +140,122 @@ let
       };
       testProfile = "compatibility";
     };
-    "4.0.2" = common // {
+    "4.0.2" = {
+      constructor = tvp.builder;
       builder = ./ordinary/build-4.0.2.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvp.packages.gmp_6;
       };
+      testProfile = "installed";
     };
-    "4.2.1" = common // {
+    "4.2.1" = {
+      constructor = tvp.builder;
       builder = ./ordinary/build-4.2.1.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvp.packages.gmp_6;
       };
+      testProfile = "installed";
     };
-    "4.2.2" = common // {
+    "4.2.2" = {
+      constructor = tvp.builder;
       builder = ./build-4.2.2.nix;
-      deps = buildTools // {
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        inherit (candidate.tools)
+          bash
+          coreutils
+          xz
+          python
+          binutils
+          patchelf
+          sed
+          grep
+          gawk
+          diffutils
+          findutils
+          ;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
         gmp = tvp.packages.gmp_6;
       };
+      testProfile = "installed";
     };
   };
   versionTable = tvpLib.packages.mkTable (import ./releases.nix { inherit defs; });
@@ -122,7 +280,7 @@ let
     };
     inherit versionTable packageMeta;
     # Preserve the published family source factory; native definitions select
-    # their explicit source factory in common above.
+    # their own explicit source factory above.
     source = retained.publicFallback.source;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
