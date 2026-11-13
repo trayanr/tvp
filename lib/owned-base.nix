@@ -15,23 +15,26 @@ let
     let
       fail = message: throw "TVP owned base: ${message}";
       package = p: builtins.isAttrs p && p ? outPath;
-      matches =
+      matchesExecution =
         p:
         (p.system or platform.system) == platform.system
-        &&
-          builtins.all
-            (
-              key:
-              !(p ? ${key})
-              || (
-                (p.${key}.system or platform.system) == platform.system
-                && (p.${key}.config or platform.config) == platform.config
-              )
-            )
-            [
-              "hostPlatform"
-              "targetPlatform"
-            ];
+        && (
+          !(p ? hostPlatform)
+          || (
+            (p.hostPlatform.system or platform.system) == platform.system
+            && (p.hostPlatform.config or platform.config) == platform.config
+          )
+        );
+      matches =
+        p:
+        matchesExecution p
+        && (
+          !(p ? targetPlatform)
+          || (
+            (p.targetPlatform.system or platform.system) == platform.system
+            && (p.targetPlatform.config or platform.config) == platform.config
+          )
+        );
       checked =
         if name == "" then
           fail "name must be nonempty"
@@ -51,6 +54,13 @@ let
           )
         then
           fail "compiler must declare Binutils, libc, runtimeDirectories and hardening"
+        else if
+          !(
+            builtins.isList compiler.defaultHardeningFlags
+            && builtins.all builtins.isString compiler.defaultHardeningFlags
+          )
+        then
+          fail "compiler defaultHardeningFlags must be a list of strings"
         else if !(package compiler.bintools && package compiler.libc) then
           fail "compiler Binutils and libc must be selected packages"
         else if
@@ -73,6 +83,8 @@ let
           fail "compiler must declare nonempty runtimeDirectories"
         else if !(package shell && builtins.isList tools && builtins.all package tools) then
           fail "shell and baseline tools must be packages"
+        else if !(builtins.all matchesExecution ([ shell ] ++ tools)) then
+          fail "shell and baseline tools must execute on the native platform"
         else
           true;
       composeEnvironment = import ./build-environment.nix { inherit lib base; };

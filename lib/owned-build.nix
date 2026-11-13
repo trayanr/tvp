@@ -130,26 +130,26 @@ let
           ];
           outputs = outputNames;
         }
-        // lib.optionalAttrs (splitNamed && artifact != null) {
-          # Retain unrelated caller checks, including those for other outputs.
+        // lib.optionalAttrs (artifact != null || (!parts.split && spec ? outputChecks)) {
+          # Caller constraints belong to F (or the unsplit package), never A.
+          # Keep the absent-check case unchanged for existing unsplit producers.
           outputChecks =
-            (spec.outputChecks or { })
-            // lib.genAttrs outputNames (
-              output:
-              let
-                declared = (spec.outputChecks or { }).${output} or { };
-              in
-              declared
-              // {
-                disallowedReferences =
-                  (declared.disallowedReferences or [ ])
-                  ++ map (name: artifact.${name}) outputNames;
-              }
-            );
-        }
-        // lib.optionalAttrs (artifact != null && !splitNamed) {
-          # Native Nix output checks; never introduce a reference merely to test it.
-          outputChecks.out.disallowedReferences = [ artifact ];
+            if artifact == null then
+              spec.outputChecks
+            else
+              (spec.outputChecks or { })
+              // lib.genAttrs outputNames (
+                output:
+                let
+                  declared = (spec.outputChecks or { }).${output} or { };
+                in
+                declared
+                // {
+                  disallowedReferences =
+                    (declared.disallowedReferences or [ ])
+                    ++ (if splitNamed then map (name: artifact.${name}) outputNames else [ artifact ]);
+                }
+              );
         }
       );
     in

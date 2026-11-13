@@ -107,8 +107,10 @@ let
           # CC/CXX remain the resolved, editable base environment bindings.
           export CC_FOR_BUILD="$CC" CXX_FOR_BUILD="$CXX"
           export AR_FOR_BUILD="$AR" AS_FOR_BUILD="$AS" LD_FOR_BUILD="$LD" NM_FOR_BUILD="$NM" RANLIB_FOR_BUILD="$RANLIB"
-          export AR_FOR_TARGET="$AR" AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" NM_FOR_TARGET="$NM" RANLIB_FOR_TARGET="$RANLIB"
-          export OBJDUMP=${binutils}/bin/objdump OBJDUMP_FOR_TARGET=${binutils}/bin/objdump READELF_FOR_TARGET="$READELF"
+          # Build tools follow the construction base; target tools follow the selected provider.
+          export AR_FOR_TARGET="${binutils}/bin/ar" AS_FOR_TARGET="${binutils}/bin/as" LD_FOR_TARGET="${binutils}/bin/ld"
+          export NM_FOR_TARGET="${binutils}/bin/nm" RANLIB_FOR_TARGET="${binutils}/bin/ranlib" READELF_FOR_TARGET="${binutils}/bin/readelf"
+          export OBJDUMP=${binutils}/bin/objdump OBJDUMP_FOR_TARGET=${binutils}/bin/objdump
           # GCC's stage machinery owns CC/CXX/GCC_FOR_TARGET; never inject stage1.
           test -z "''${CC_FOR_TARGET-}''${CXX_FOR_TARGET-}''${GCC_FOR_TARGET-}"
           export CFLAGS="''${CFLAGS:--O2 ${includes}}" CXXFLAGS="''${CXXFLAGS:--O2 ${includes}}"

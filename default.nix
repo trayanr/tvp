@@ -149,6 +149,13 @@ let
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
       split-named-outputs = import ./lib/tests/split-named-outputs.nix { inherit pkgs tvp; };
+      output-checks = import ./lib/tests/output-checks.nix {
+        inherit (pkgs) lib;
+        inherit (tvp.packages) bash coreutils;
+      };
+      gcc-target-tools = pkgs.writeText "tvp-gcc-target-tool-contracts" (
+        builtins.toJSON (import ./lib/tests/gcc-target-tools.nix { inherit (pkgs) lib; })
+      );
       legacy-test-factories = import ./lib/tests/legacy-test-factories.nix {
         inherit pkgs tvp;
         inherit (universe) recipes;
