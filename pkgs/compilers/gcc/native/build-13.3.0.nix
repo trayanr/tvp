@@ -388,9 +388,10 @@ in
       tools = [ coreutils ];
       run = ''
         mkdir -p "$out"
+        # Interpreter repair visits each driver name; copy hardlink aliases independently.
         for directory in bin include lib lib64 libexec share; do
           if test -e "$TVP_ARTIFACT_ROOT/$directory" || test -L "$TVP_ARTIFACT_ROOT/$directory"; then
-            ${coreutils}/bin/cp -a --no-preserve=ownership "$TVP_ARTIFACT_ROOT/$directory" "$out/"
+            ${coreutils}/bin/cp -a --no-preserve=ownership,links "$TVP_ARTIFACT_ROOT/$directory" "$out/"
           fi
         done
         ${coreutils}/bin/chmod -R u+w "$out"
