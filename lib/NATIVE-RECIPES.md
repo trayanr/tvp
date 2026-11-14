@@ -141,7 +141,7 @@ The catalogue binds the ordinary-family context once. Definitions do not repeat:
 - the base/compiler and platform selection;
 - the standard `tvp` and `lib` helper arguments;
 - Bash, Coreutils and Binutils from the selected base;
-- Make, Tar, XZ, text tools, Python and Patchelf from `base.standardTools`;
+- Make, Tar, XZ/Gzip/Bzip2, Patch, text tools, Python and Patchelf from `base.standardTools`;
 - the test context, derived from the effective package.
 
 Only declared constructor arguments receive defaults. Bound helpers and tools come

@@ -1,368 +1,151 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  constructionRecipe = previous.recipes.autoconf;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  host =
-    name: reason:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      inherit reason;
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "2.10" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.10.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
         };
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        opts.modernInit = false;
       };
-      opts.modernInit = false;
-      opts.license = pkgs.lib.licenses.gpl2Plus;
-    };
-    "2.12" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.10.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.10" = "sha256-9PYB1+RVjW3JD+XsxP4VmfFfoOcxfAr7g/dUHPA6Th4=";
+        "2.11" = "sha256-5ofbdqZLWvtcSXrCEROKvEL6xy7/Gwhzi0ir5MrJy6I=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
         };
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
+        opts.modernInit = false;
+        # AC_PROG_CC_WORKS emits implicit-int main(), requiring C89.
+        opts.consumerCStandard = "gnu89";
       };
-      opts.modernInit = false;
-      opts.license = pkgs.lib.licenses.gpl2Plus;
-      # AC_PROG_CC_WORKS emits implicit-int main(), requiring its C89 dialect.
-      opts.consumerCStandard = "gnu89";
-    };
-    "2.50" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.50.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.12" = "sha256-Zv3kdOEk6AyENWAEHNaIIMnc5W5pbziDErowNhqBShY=";
+        "2.13" = "sha256-8GERNr7lBYEenKEcp6wYjvUyOo4u8Zz/0+2zzwj9eR4=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
         };
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
       };
-      opts.license = pkgs.lib.licenses.gpl2Plus;
-    };
-    "2.53" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.50.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.50" = "sha256-JqECa7ZMvsosSJnzUj8lUW9z1390jzrHlSP9ULZAOkM=";
+        "2.52" = "sha256-U06ZthuB55MnttCPGj7bB1WsJG4SSQCbDhv1iHtg16k=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.lib.packages.withConstraint {
+            reason = "autom4te uses do on relative autom4te.cache/requests; Perl 5.26 removes dot from @INC. Native 2.53 passes with 5.24 and fails with 5.28; Autoconf 2.58 replaces this lookup with read/eval.";
+          } tvp.packages.perl_5_24;
         };
-      deps = {
-        m4 = tvp.packages.m4;
-        perl = tvpLib.packages.withConstraint {
-          reason = "autom4te uses do on relative autom4te.cache/requests; Perl 5.26 removes dot from @INC. Native 2.53 passes with 5.24 and fails with 5.28; Autoconf 2.58 replaces this lookup with read/eval.";
-        } tvp.packages.perl_5_24;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
       };
-      opts.license = pkgs.lib.licenses.gpl2Plus;
-    };
-    "2.65" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.65.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.53" = "sha256-PFnFyggnm5n7bbrg7UDFdNQ1tTe2xtLEWVOe7DXYIgk=";
+        "2.54" = "sha256-wCIZ8B9AWm/m5rczBPt1yc9wR0daTSAZhJbQsvw4TLk=";
+        "2.55" = "sha256-yx6n2bfPjcwj/tSKmcE4Xt/bPmOK2pvNUnQWaZQ8Liw=";
+        "2.56" = "sha256-OnOh14jCYE7o0IKEB86Rg/la1GgByqMaDdUyrc2aPSw=";
+        "2.57" = "sha256-BjRjR3kFAJvZD2zHjkUTuVnoS/kpLzX+QIXgCBaljjQ=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
         };
-      deps = {
-        m4 = tvp.packages.m4_1;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
       };
-    };
-    "2.72" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.72.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.58" = "sha256-UixOakPVPy8nj3g3+dpuh7XXhSkMDh7Vh0QqkDAmAiY=";
+        "2.59" = "sha256-nNBcc8X8sfXMrlPdbKw2u4y5x7Ppf/rlp8BccllMiNg=";
+        "2.60" = "sha256-C+911wr/8onQ4f43jWqh15swMstMr0hFeKwqigUwo68=";
+        "2.61" = "sha256-nRTy7Q0bb4GASYpmUX9RHHxJyHDWhzIZo/9LizCCpos=";
+        "2.62" = "sha256-g6p0fmRD3vDr0YglCcU/WiEz9QLd76IbPeFBxDORS90=";
+        "2.63" = "sha256-sFps7oFlfdLbhhlKYjK4lbiyYGowo5nDpWbZJZNmdEs=";
+        "2.64" = "sha256-qERxcz+GrCwSQKbSi3BbBaa3nDzKiDXDcS7734E8XrY=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.65.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
         };
-      deps = {
-        m4 = tvp.packages.m4_1;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
       };
-    };
-    "2.73" = {
-      constructor = tvp.builder;
-      builder = ./native/build-2.73.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        m4 = tvp.packages.m4_1;
-        perl = tvp.packages.perl_5;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-      };
-    };
-  };
-  versionTable = constructionRecipe.versionTable // {
-    "2.10" = constructionRecipe.versionTable."2.10" // {
-      def = if native then defs."2.10" else constructionRecipe.versionTable."2.10".def;
-    };
-    "2.11" = constructionRecipe.versionTable."2.11" // {
-      def = if native then defs."2.10" else constructionRecipe.versionTable."2.11".def;
-    };
-    "2.12" = constructionRecipe.versionTable."2.12" // {
-      def = if native then defs."2.12" else constructionRecipe.versionTable."2.12".def;
-    };
-    "2.13" = constructionRecipe.versionTable."2.13" // {
-      def = if native then defs."2.12" else constructionRecipe.versionTable."2.13".def;
-    };
-    "2.50" = constructionRecipe.versionTable."2.50" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.50".def;
-    };
-    "2.52" = constructionRecipe.versionTable."2.52" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.52".def;
-    };
-    "2.53" = constructionRecipe.versionTable."2.53" // {
-      def = if native then defs."2.53" else constructionRecipe.versionTable."2.53".def;
-    };
-    "2.54" = constructionRecipe.versionTable."2.54" // {
-      def = if native then defs."2.53" else constructionRecipe.versionTable."2.54".def;
-    };
-    "2.55" = constructionRecipe.versionTable."2.55" // {
-      def = if native then defs."2.53" else constructionRecipe.versionTable."2.55".def;
-    };
-    "2.56" = constructionRecipe.versionTable."2.56" // {
-      def = if native then defs."2.53" else constructionRecipe.versionTable."2.56".def;
-    };
-    "2.57" = constructionRecipe.versionTable."2.57" // {
-      def = if native then defs."2.53" else constructionRecipe.versionTable."2.57".def;
-    };
-    "2.58" = constructionRecipe.versionTable."2.58" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.58".def;
-    };
-    "2.59" = constructionRecipe.versionTable."2.59" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.59".def;
-    };
-    "2.60" = constructionRecipe.versionTable."2.60" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.60".def;
-    };
-    "2.61" = constructionRecipe.versionTable."2.61" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.61".def;
-    };
-    "2.62" = constructionRecipe.versionTable."2.62" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.62".def;
-    };
-    "2.63" = constructionRecipe.versionTable."2.63" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.63".def;
-    };
-    "2.64" = constructionRecipe.versionTable."2.64" // {
-      def = if native then defs."2.50" else constructionRecipe.versionTable."2.64".def;
-    };
-    "2.65" = constructionRecipe.versionTable."2.65" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.65".def;
-    };
-    "2.66" = constructionRecipe.versionTable."2.66" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.66".def;
-    };
-    "2.67" = constructionRecipe.versionTable."2.67" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.67".def;
-    };
-    "2.68" = constructionRecipe.versionTable."2.68" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.68".def;
-    };
-    "2.69" = constructionRecipe.versionTable."2.69" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.69".def;
-    };
-    "2.70" = constructionRecipe.versionTable."2.70" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.70".def;
-    };
-    "2.71" = constructionRecipe.versionTable."2.71" // {
-      def = if native then defs."2.65" else constructionRecipe.versionTable."2.71".def;
-    };
-    "2.72" = constructionRecipe.versionTable."2.72" // {
-      def = if native then defs."2.72" else constructionRecipe.versionTable."2.72".def;
-    };
+      releases = {
+        "2.65" = "sha256-87G6O/NyJQnnIiPyCttj957Q0gsBFq4s0ewMH3MI3bU=";
+        "2.66" = "sha256-MCzk/SjvOf2mULnQbP5WiuRrLQtOCkmC3FF1eTfJNbs=";
+        "2.67" = "sha256-JrdSxCdkctOyH6Kmz9+0lX451dYQik9AILEyNP+6ZtE=";
+        "2.68" = "sha256-7/cKKRby4rPtf+ii1+Y9cs86I2hLVkVrMZw+vOBwXZk=";
+        "2.69" = "sha256-lUvWmzke3BLWpKUaLdFHZUPaXGu/BalbWdwN1v1MKWk=";
+        "2.70" = "sha256-8F9BD9p0MjraS9xGENs3+NvVVmArplvIQ+201NShsrc=";
+        "2.71" = "sha256-QxB1rQv1Ke8Ty0HpBCxUI4EQPoABVoYiK4qdSr70Khw=";
 
-    "2.73" = constructionRecipe.versionTable."2.73" // {
-      def = if native then defs."2.73" else constructionRecipe.versionTable."2.73".def;
-    };
-  };
-  publicArgs = constructionRecipe // {
-    inherit versionTable;
+      };
+    }
+    {
+      def = {
+        builder = ./build-2.65.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
+        };
+        # The autoconf frontend switches to Perl; the procedure is unchanged.
+        opts.autoconfFrontend = "perl";
+      };
+      releases = {
+        "2.72" = "sha256-r7GBp24e5ygy9lgcDt343wMrg+LgI573nr7cRGfZLW4=";
+        "2.73" = "sha256-JZ3fo73ceZz7gUicwPF9/fG9bRUF3aU8D0X/YNak+ac=";
+      };
+    }
+  ];
+  pname = "autoconf";
+  retained = import ./retained { inherit pkgs tvp; };
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    inherit (retained) packageMeta;
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/autoconf/autoconf-${version}.tar.gz"
-          "https://ftp.gnu.org/gnu/autoconf/autoconf-${version}.tar.gz"
-        ];
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/autoconf/autoconf-${version}.tar.gz";
         inherit sha256;
       };
+    tests = import ./tests;
     testDeps = {
       automake = tvp.packages.automake_1;
       libtool = tvp.packages.libtool_2;
-      alternatePerl = candidate.tools.perl;
-      alternateM4 = candidate.tools.m4;
-      runtimeShell = candidate.tools.bash;
-      python = candidate.tools.python;
+      alternatePerl = (import ../../../bases/source-gnu { }).tools.perl;
+      alternateM4 = (import ../../../bases/source-gnu { }).tools.m4;
+      runtimeShell = tvp.packages.bash_5;
       sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
       alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
     };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import
-          (
-            if (package.tvp.ordinaryAutotools or false) then
-              ./tests/ordinary-default.nix
-            else
-              ./tests/native-default.nix
-          )
-          {
-            inherit
-              pkgs
-              tvp
-              tvpLib
-              package
-              ;
-          }
-      else
-        constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
-    ) { inherit pkgs; };
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "autoconf";
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.autoconf = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases {
     lines = [ "2_13" ];
     inherit pname versionTable canonical;
   };

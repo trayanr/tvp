@@ -6,6 +6,7 @@
       tar,
       xz ? null,
       gzip ? null,
+      bzip2 ? null,
       findutils ? null,
       compression ? "xz",
     }:
@@ -15,6 +16,8 @@
           if xz == null then throw "Owned xz source requires an xz tool" else xz
         else if compression == "gzip" then
           if gzip == null then throw "Owned gzip source requires a gzip tool" else gzip
+        else if compression == "bzip2" then
+          if bzip2 == null then throw "Owned bzip2 source requires a bzip2 tool" else bzip2
         else
           throw "Unsupported owned source compression: ${compression}";
     in
@@ -27,7 +30,12 @@
       run = ''
         mkdir source
         PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
-          if compression == "xz" then "J" else "z"
+          if compression == "xz" then
+            "J"
+          else if compression == "bzip2" then
+            "j"
+          else
+            "z"
         }f ${src} --strip-components=1 -C source
         chmod -R u+w source
         # Match the source epoch policy: regular files, bounded by build start.

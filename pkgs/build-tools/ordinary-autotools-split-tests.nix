@@ -1,12 +1,13 @@
 # Finalization-specific reuse and effective-input contracts for the ordinary ports.
 {
-  pkgs,
-  tvp,
   package,
+  lib,
+  context,
 }:
 let
   p = package;
-  lib = pkgs.lib;
+  tools = p.specification.base.standardTools;
+  steps = import ../../lib/build-steps.nix;
   t = p.tvp.declaredTestDependencies;
   runtime = p.editRuntime (
     r: r // { shell = t.runtimeShell; } // lib.optionalAttrs (r ? perl) { perl = t.alternatePerl; }
@@ -14,7 +15,7 @@ let
   source = p.edit (s: s // { src = t.alternateSource; });
   compiler = p.edit (s: s // { base = s.base.override { compiler = t.sentinel; }; });
   finalizer = p.editSteps (
-    tvp.builder.steps.replace "${p.pname}.relocate-runtime" (
+    steps.replace "${p.pname}.relocate-runtime" (
       s: s // { run = s.run + "\nprintf finalizer-control > \"$out/finalizer-control\"\n"; }
     )
   );
@@ -30,18 +31,20 @@ let
     versionLayout =
       p.pname != "automake"
       || (api.specification.apiVersion == "1.88" && api.artifact.drvPath != p.artifact.drvPath);
-    factory = ((p.mkTests.override { inherit pkgs; }) p).version.package.outPath == p.outPath;
+    factory =
+      ((p.mkTests.override { tests = import (./. + "/${p.pname}/tests"); }) p).version.package.outPath
+      == p.outPath;
   };
 in
-p.testContext.mkSuite {
+context.mkSuite {
   package = p;
-  tools = [ p.specification.grep ];
+  tools = [ tools.grep ];
   tests =
     {
       helper-confinement-and-frontends = {
         script = ''
-          ${p.specification.python}/bin/python3 -B ${./ordinary-autotools-safety-tests.py} \
-            ${./ordinary-autotools-source.py} ${./automake/ordinary/prepare-api.py} \
+          ${tools.python}/bin/python3 -B ${./ordinary-autotools-safety-tests.py} \
+            ${./ordinary-autotools-source.py} ${./automake/prepare-api.py} \
             ${./ordinary-autotools-output.py}
         '';
         expected = "helper-contracts";
@@ -53,7 +56,10 @@ p.testContext.mkSuite {
         script = ''
           test -s ${finalizer}/finalizer-control
           head -1 ${runtime}/bin/${p.pname} | grep -Fq '${
-            if p.specification ? perl && (p.specification.autoconfFrontend or "perl") == "perl" then
+            if
+              p.specification ? perl
+              && (p.specification.installedInterface.frontends.autoconf or "perl") == "perl"
+            then
               "${runtime.runtime.perl}/bin/perl"
             else
               "${runtime.runtime.shell}/bin/bash"
@@ -63,7 +69,7 @@ p.testContext.mkSuite {
         '';
       };
     }
-    // lib.optionalAttrs (p.pname == "automake") {
+    // lib.optionalAttrs (p.pname == "automake" && (p.tvp.features.configuredApi or false)) {
       effective-version-layout = {
         script = ''
           test -s ${api}/share/automake-1.88/depcomp

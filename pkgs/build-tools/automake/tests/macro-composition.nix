@@ -1,8 +1,13 @@
 # Qualify multiple directory providers and explicit composed-environment replacement.
-{ package, pkgs }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   p = package;
   d = p.tvp.deps;
+  tools = p.specification.base.standardTools;
   provider =
     marker:
     p.edit (
@@ -41,13 +46,13 @@ let
     printf '${marker}'
   '';
 in
-p.testContext.mkSuite {
+context.mkSuite {
   package = p;
   tools = [
     d.autoconf
-    d.grep
-    d.sed
-    d.gawk
+    tools.grep
+    tools.sed
+    tools.gawk
   ];
   libraries = [ ordinary ];
   tests = {

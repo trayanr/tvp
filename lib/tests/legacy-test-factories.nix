@@ -1,5 +1,5 @@
-# A public compatibility factory must keep both its default and caller-selected
-# test builders. These probes evaluate constructors; no legacy package is built.
+# Retained compatibility factories keep their default and caller-selected test
+# builders. Unconverted public fallbacks are checked too; no legacy package builds.
 {
   pkgs,
   tvp,
@@ -21,11 +21,21 @@ let
       attr = tvp.lib.versions.attrName family version;
       recipe = recipes.${family};
       construction = recipe.constructionRecipe;
-      # Ordinary canonical releases may already be owned. Exercise the retained
-      # procedure through the public fallback rather than assume it is canonical.
+      # Ordinary releases use their owned API. This historical observer supplies
+      # a retained package to the retained factory after a family is converted.
       package = (tvp.lib.packages.mkVersions construction).${attr};
       retained = construction.extraArgs.mkTests;
-      publicFactory = recipe.extraArgs.mkTests;
+      publicFactory =
+        if
+          builtins.elem family [
+            "autoconf"
+            "automake"
+            "libtool"
+          ]
+        then
+          construction.extraArgs.mkTests
+        else
+          recipe.extraArgs.mkTests;
       publicSelected = (publicFactory.override { pkgs = selected; }) package;
       retainedSelected = (retained.override { pkgs = selected; }) package;
       variant =

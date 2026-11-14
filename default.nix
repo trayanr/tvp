@@ -210,6 +210,16 @@ let
           }
         )
       );
+      autotools-family = pkgs.writeText "tvp-autotools-family-contracts" (
+        builtins.toJSON (import ./lib/tests/autotools-family.nix { inherit pkgs tvp; })
+      );
+      bzip2-source = import ./lib/tests/bzip2-source.nix { inherit tvp; };
+      automake-family = pkgs.writeText "tvp-automake-family-contracts" (
+        builtins.toJSON (import ./lib/tests/automake-family.nix { inherit pkgs tvp; })
+      );
+      libtool-family = pkgs.writeText "tvp-libtool-family-contracts" (
+        builtins.toJSON (import ./lib/tests/libtool-family.nix { inherit pkgs tvp; })
+      );
       ninja-family = pkgs.writeText "tvp-ninja-family-contracts" (
         builtins.toJSON (import ./lib/tests/ninja-family.nix { inherit pkgs tvp; })
       );

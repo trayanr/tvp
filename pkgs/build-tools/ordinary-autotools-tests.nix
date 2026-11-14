@@ -1,19 +1,24 @@
-# Installed pair qualification. Check-only rebuilds run after both production
-# outputs exist and keep upstream status/failures; no production cycle.
+# Shared installed Autoconf/Automake pair assertions. Upstream execution is
+# supplied separately through the checkpoint test factory.
 {
-  pkgs,
-  tvp,
   package,
+  lib,
+  context,
 }:
 let
-  lib = pkgs.lib;
   p = package;
-  d = p.tvp.deps;
+  s = p.specification;
+  d =
+    s.base.standardTools
+    // {
+      coreutils = s.base.coreutils;
+      bash = s.base.shell;
+    }
+    // p.tvp.deps;
   t = p.tvp.declaredTestDependencies;
   isAutoconf = p.pname == "autoconf";
   ac = if isAutoconf then p else d.autoconf;
   am = if isAutoconf then t.automake else p;
-  context = p.testContext;
   api = am.specification.apiVersion or (lib.versions.majorMinor am.version);
   tools = [
     ac
@@ -26,44 +31,6 @@ let
     d.sed
     d.gawk
   ];
-  upstream = p.editSteps (
-    plan:
-    tvp.builder.steps.insertAfter "${p.pname}.build" [
-      (
-        (builtins.head (builtins.filter (s: s.name == "${p.pname}.build") plan))
-        // {
-          name = "${p.pname}.upstream";
-          tools = (builtins.head (builtins.filter (s: s.name == "${p.pname}.build") plan)).tools ++ [
-            ac
-            am
-            t.libtool
-            d.gnutar
-            ac.tvp.deps.gzip
-            ac.tvp.deps.m4
-          ];
-          run = ''
-            export CONFIG_SHELL=${p.specification.bash}/bin/bash
-            export SHELL=$CONFIG_SHELL
-            # Upstream's diagnostic assertions expect basenames. Bind its
-            # documented test overrides to the declared tools on this PATH.
-            ${lib.optionalString (
-              !isAutoconf
-            ) "export AM_TESTSUITE_AUTOCONF=autoconf AM_TESTSUITE_AUTOHEADER=autoheader"}
-            status=0
-            ${d.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL="$CONFIG_SHELL" ${lib.optionalString isAutoconf ''TESTSUITEFLAGS="-j$NIX_BUILD_CORES 1 2 3 4 5 6 7 8 9 10"''} ${
-              lib.optionalString (!isAutoconf) "TESTS=\"t/depcomp.sh t/depcomp2.sh t/nodepcomp.sh\""
-            } check || status=$?
-            if (( status != 0 )); then
-              find . -name '*suite.log' -exec cat {} \; >&2
-              exit "$status"
-            fi
-            mkdir -p "$out/nix-support/upstream"
-            printf 'bounded upstream checks completed; raw logs retained externally\n' > "$out/nix-support/upstream/result"
-          '';
-        }
-      )
-    ] plan
-  );
   macro = p.edit (
     s:
     s
@@ -88,12 +55,12 @@ let
         {
           name = "alternate.xz";
           tools = [
-            ac.tvp.deps.gzip
+            ac.specification.base.standardTools.gzip
             d.xz
           ];
           run = ''
             mkdir "$out"
-            ${ac.tvp.deps.gzip}/bin/gzip -cd ${t.alternateSource}/source.tar.gz | ${d.xz}/bin/xz -c > "$out/source.tar.xz"
+            ${ac.specification.base.standardTools.gzip}/bin/gzip -cd ${t.alternateSource}/source.tar.gz | ${d.xz}/bin/xz -c > "$out/source.tar.xz"
           '';
         }
       ];
@@ -187,7 +154,11 @@ let
     noOp = (p.override { }).drvPath == p.drvPath && (p.edit (s: s)).drvPath == p.drvPath;
     noLegacy = !(p ? overrideAttrs) && !(p ? stdenv);
     reboundTests = rebound.tests.version.package.outPath == rebound.outPath;
-    factory = ((p.mkTests.override { inherit pkgs; }) p).version.package.outPath == p.outPath;
+    factory =
+      (
+        (p.mkTests.override { tests = import (if isAutoconf then ./autoconf/tests else ./automake/tests); })
+        p
+      ).version.package.outPath == p.outPath;
     projections = builtins.all (
       q: q ? buildEnvironment && q.tests.version.package.outPath == p.outPath
     ) ([ p.out ] ++ p.all);
@@ -319,10 +290,6 @@ context.mkSuite {
         printf qualified
       '';
     };
-    upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
-      expected = "upstream";
-    };
   };
 }
 // {
@@ -355,7 +322,7 @@ context.mkSuite {
       installed-interpreters = {
         script = ''
           for name in ${
-            lib.optionalString (p.specification.autoconfFrontend == "perl") "autoconf"
+            lib.optionalString (p.specification.installedInterface.frontends.autoconf == "perl") "autoconf"
           } autoheader autom4te autoreconf autoscan autoupdate ifnames; do
             read -r interpreter flags < ${p}/bin/$name
             test "$interpreter" = '#!${p.runtime.perl}/bin/perl'
@@ -363,7 +330,7 @@ context.mkSuite {
             env -i PATH=/absent ${p}/bin/$name --version >&2
           done
           head -1 ${p}/bin/autoconf | grep -qx '#!${
-            if p.specification.autoconfFrontend == "perl" then
+            if p.specification.installedInterface.frontends.autoconf == "perl" then
               "${p.runtime.perl}/bin/perl"
             else
               "${p.runtime.shell}/bin/bash"

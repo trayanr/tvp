@@ -6,15 +6,16 @@
 # exercise the whole pipeline — autoconf generates, the generated configure
 # runs, and the substitution lands — rather than only checking a version string.
 {
-  pkgs,
-  tvpLib,
-  autoconf,
+  package,
+  lib,
+  context,
 }:
 let
-  consumerStandard = autoconf.tvp.features.consumerCStandard or null;
+  tools = package.specification.base.standardTools;
+  consumerStandard = package.tvp.features.consumerCStandard or null;
   configureEnv =
-    pkgs.lib.optionalString (consumerStandard != null)
-      "CFLAGS=${pkgs.lib.escapeShellArg ("-std=" + consumerStandard)} ";
+    lib.optionalString (consumerStandard != null)
+      "CFLAGS=${lib.escapeShellArg ("-std=" + consumerStandard)} ";
   project = ''
     cp ${./fixtures/configure.ac} configure.ac
     cp ${./fixtures/greeting.txt.in} greeting.txt.in
@@ -22,9 +23,13 @@ let
     autoconf
   '';
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs;
-  package = autoconf;
+context.mkSuite {
+  inherit package;
+  tools = [
+    tools.grep
+    tools.sed
+    tools.gawk
+  ];
 
   tests =
     {
@@ -32,7 +37,7 @@ tvpLib.tests.mkSuite {
         script = ''
           autoconf --version | head -1 | awk '{ print $NF }'
         '';
-        expected = autoconf.version;
+        expected = package.version;
       };
       legacy = {
         script = ''
@@ -48,10 +53,9 @@ tvpLib.tests.mkSuite {
           ./answer
         '';
         expected = "42";
-        extraInputs = [ autoconf.stdenv.cc ];
       };
     }
-    // pkgs.lib.optionalAttrs autoconf.tvp.features.modernInit {
+    // lib.optionalAttrs package.tvp.features.modernInit {
       generate = {
         script = ''
           ${project}
@@ -82,4 +86,15 @@ tvpLib.tests.mkSuite {
         expected = "1";
       };
     };
+}
+
+// (
+  if package.specification.installedInterface.knownFrontends then
+    (import ../../ordinary-autotools-tests.nix { inherit package lib context; })
+    // (import ../../ordinary-autotools-split-tests.nix { inherit package lib context; })
+  else
+    import ../../historical-autotools-tests.nix { inherit package lib context; }
+)
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = import ../../autotools-upstream.nix { inherit package lib context; };
 }

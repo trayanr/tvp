@@ -1,78 +1,40 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  constructionRecipe = previous.recipes.gnu-config;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   revision = "428664896cf9e92d264976a960c76660938dffce";
-  defs = tvpLib.packages.mkDefs {
-    "2026-05-17" = {
-      constructor = tvp.builder;
-      builder = ./build-2026-05-17.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build.nix;
+        opts = {
+          inherit revision;
         };
-      deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        sed = tvp.packages.gnused_4;
-        gawk = tvp.packages.gawk_5;
-        grep = tvp.packages.gnugrep_3;
       };
-      opts = {
-        inherit revision;
-      };
-    };
-  };
-  versionTable = constructionRecipe.versionTable // {
-    "2026-05-17" = constructionRecipe.versionTable."2026-05-17" // {
-      def = if native then defs."2026-05-17" else constructionRecipe.versionTable."2026-05-17".def;
-    };
-  };
-  publicArgs = constructionRecipe // {
-    inherit versionTable;
+      releases."2026-05-17" = "sha256-QISEaOsldatDEnX+sJQ/y5CLr7hpxADHkIMfbU+TpXk=";
+    }
+  ];
+  pname = "gnu-config";
+  retained = import ./retained { inherit pkgs tvp; };
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    inherit (retained) packageMeta;
     source =
-      { version, sha256 }:
+      { sha256, ... }:
       pkgs.fetchgit {
         url = "https://https.git.savannah.gnu.org/git/config.git";
         rev = revision;
         inherit sha256;
         fetchSubmodules = false;
       };
-    testDeps = {
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      diffutils = tvp.packages.diffutils_3;
-    };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit pkgs tvp package; }
-      else
-        import ./tests {
-          inherit tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
-        }
-    ) { inherit pkgs; };
+    tests = import ./tests;
+    testDeps.sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "gnu-config";
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.gnu-config = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }
