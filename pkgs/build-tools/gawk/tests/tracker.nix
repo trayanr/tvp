@@ -1,20 +1,10 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
+
 let
-  suite = args:
-    if package ? testContext then
-      package.testContext.mkSuite {
-        package = package;
-        tools = package.specification.environment.tools;
-        libraries = [ ];
-        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
-          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
-        }) args.tests;
-      }
-    else tvpLib.tests.mkSuite args;
   u = import ../upstream.nix;
   filenames = [
     "gawk-1.01.tar.gz"
@@ -41,9 +31,7 @@ let
   raw = map (f: ''href="${f}"'') filenames;
   normalized = map u.normalise raw;
   valid = builtins.filter (v: v != null) normalized;
-  html = pkgs.writeText "gawk-index-fixture.html" (
-    pkgs.lib.concatMapStringsSep "\n" (f: ''<a href="${f}">${f}</a>'') filenames
-  );
+  html = lib.concatMapStringsSep "\n" (f: ''<a href="${f}">${f}</a>'') filenames;
 in
 assert
   normalized == [
@@ -54,15 +42,16 @@ assert
   ]
   ++ builtins.genList (_: null) 16;
 assert
-  pkgs.lib.unique valid == [
+  lib.unique valid == [
     "1.01"
     "5.3.0"
   ];
-suite {
-  inherit pkgs package;
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools;
   tests.upstream-fixtures = {
     script = ''
-      grep -oE ${pkgs.lib.escapeShellArg u.pattern} ${html}
+      printf '%s\n' ${lib.escapeShellArg html} | grep -oE ${lib.escapeShellArg u.pattern}
     '';
     expected = builtins.concatStringsSep "\n" raw;
   };

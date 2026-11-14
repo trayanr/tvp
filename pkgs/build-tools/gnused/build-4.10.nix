@@ -1,0 +1,202 @@
+# Native ordinary 4.10 route; serves 4.10 only. Retained older and
+# construction procedures keep their own host generations and feature profiles.
+{
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  acl,
+  doCheck ? true,
+}:
+
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+
+  productionMake =
+    target:
+    lib.concatMapStringsSep "\n"
+      (
+        directory:
+        let
+          noTestRecursion = lib.optionalString (directory == ".") " SUBDIRS=.";
+        in
+        ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" -C ${lib.escapeShellArg directory} SHELL=${final.bash}/bin/bash ${target}${noTestRecursion}''
+      )
+      [
+        "po"
+        "."
+      ];
+  checkpoint = "nix-support/gnused-build-tree";
+  environment = final.base.environment final.environment;
+  command =
+    name: run:
+    environment
+    // {
+      inherit name run;
+      cwd = "source";
+    };
+in
+{
+  pname = "gnused";
+  bash = tools.bash;
+  inherit doCheck;
+  inherit acl;
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
+  inherit
+    base
+    src
+    version
+    ;
+  coreutils = tools.coreutils;
+  dependencyProviders = {
+    acl = final.acl;
+  };
+  environment = {
+    tools = [
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+      tools.perl
+    ];
+    libraries = [ final.acl ];
+  };
+  runtime.libraries = [ final.acl ];
+
+  installedInterface = {
+    ordinaryControls = false;
+    hasNls = true;
+  };
+  upstreamPlan = artifact: [
+    {
+      name = "gnused.restore-build-tree";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
+    }
+
+    {
+      name = "gnused.upstream-frontends";
+      tools = [
+        tools.python
+        tools.perl
+      ];
+      run = ''
+        cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
+        ${tools.python}/bin/python3 -B ${../ordinary-text-upstream-source.py} ${final.bash}/bin/bash ${tools.perl}/bin/perl '${
+          builtins.toJSON [ "testsuite" ]
+        }'
+      '';
+    }
+  ];
+  upstreamCheck =
+    (command "gnused.check" ''
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check
+    '')
+    // {
+      enabled = final.doCheck;
+    };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+
+    })
+    (steps.prepareAutotools {
+      name = "gnused.prepare";
+
+      base = final.base;
+    })
+    (steps.shebangs {
+      name = "gnused.source-shells";
+
+      paths = [ "build-aux" ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "gnused.configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
+      ./configure --prefix="$out" --enable-nls --enable-acl
+      grep '^#define ENABLE_NLS 1' config.h
+    '')
+    (command "gnused.build" (productionMake "all"))
+    (command "gnused.install" ''
+      ${productionMake "install"}
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+      cp config.h "$out/nix-support/config.h"
+      grep -Ex 'gt_cv_func_gnugettext[0-9]+_libc=yes' config.log > "$out/nix-support/gettext-libc"
+    '')
+
+    {
+      name = "gnused.save-build-tree";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/build-checkpoint.py} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"'';
+    }
+    (steps.split "gnused.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gnused.drop-build-tree";
+      tools = [ tools.coreutils ];
+      run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
+    }
+
+    {
+      name = "gnused.relocate";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "output.manuals";
+      tools = [
+        tools.gzip
+        tools.findutils
+      ];
+      run = ''
+        while IFS= read -r -d "" manual; do
+          ${tools.gzip}/bin/gzip -n -9 "$manual"
+        done < <(${tools.findutils}/bin/find "$out/share/man" -type f ! -name '*.gz' -print0)
+        while IFS= read -r -d "" manual; do
+          target=$(readlink "$manual")
+          rm "$manual"
+          ln -s "$target.gz" "$manual.gz"
+        done < <(${tools.findutils}/bin/find "$out/share/man" -type l ! -name '*.gz' -print0)
+      '';
+    }
+    (outputs.strip {
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      base = final.base;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.checkPaths {
+      paths = [ "bin" ];
+      elfKinds = [ "runtime" ];
+    })
+  ];
+  meta = {
+    description = "GNU sed utilities";
+    license = lib.licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
+}

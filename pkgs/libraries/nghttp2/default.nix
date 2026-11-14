@@ -1,91 +1,62 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  testLib = pkgs.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  formerRecipe = previous.recipes.nghttp2;
-  constructionRecipe = formerRecipe;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an independent build-only host generation; ordinary Python/Binutils consume Zstd and cannot construct it.";
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "1.70.0" = {
-      constructor = tvp.builder;
-      builder = ./native/build-1.70.0.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."nghttp2";
+  retained = prior.constructionRecipe or prior;
+  full = tvp.baseTiers.full;
+  earlier = import ../../../bases/source-gnu { };
+  profileBase = full.override {
+    shell = tvp.packages.bash;
+    coreutils = tvp.packages.coreutils;
+    standardTools = {
+      python = earlier.tools.python;
+      patchelf = earlier.tools.patchelf;
+      gnumake = tvp.packages.gnumake;
+      gnutar = tvp.packages.gnutar;
+      xz = tvp.packages.xz;
+      sed = tvp.packages.gnused;
+      grep = tvp.packages.gnugrep;
+      gawk = tvp.packages.gawk;
+      diffutils = tvp.packages.diffutils;
+      findutils = tvp.packages.findutils;
+      pkg-config = tvp.packages.pkg-config;
+    };
+  };
+  pname = "nghttp2";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-1.70.0-native.nix;
+        base = profileBase;
+        deps = {
+          binutils = earlier.tools.binutils;
         };
-      deps = {
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnumake
-          gnutar
-          xz
-          ;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-        gawk = tvp.packages.gawk;
-        diffutils = tvp.packages.diffutils;
-        findutils = tvp.packages.findutils;
-        pkg-config = tvp.packages.pkg-config;
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
       };
-    };
-  };
-  versionTable = formerRecipe.versionTable // {
-    "1.70.0" = formerRecipe.versionTable."1.70.0" // {
-      def = if native then defs."1.70.0" else formerRecipe.versionTable."1.70.0".def;
-    };
-  };
-  publicArgs = formerRecipe // {
-    inherit versionTable;
+      releases = {
+        "1.70.0" = "sha256-4FyxOI6so4MK3tTM8gBEtuGsGmFBHcyhGwQ3xChci8I=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // { };
+  rawFamily = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
+      import <nix/fetchurl.nix> {
         url = "https://github.com/nghttp2/nghttp2/releases/download/v${version}/nghttp2-${version}.tar.xz";
         inherit sha256;
       };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      let
-        testPkgs =
-          if package ? testContext then
-            { lib = testLib; }
-          else
-            tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = package.stdenv;
-            };
-      in
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = testPkgs;
-      }
-    ) { inherit pkgs; };
+    tests = import ./tests;
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "nghttp2";
+  family = rawFamily;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes."nghttp2" = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

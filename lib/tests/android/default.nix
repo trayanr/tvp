@@ -25,7 +25,23 @@ let
       ]
     );
   sourceChange = p: p.override { src = ./platform.zip; };
-  pathChange = p: p.edit (s: s // { sdkPath = "contract/changed"; });
+  setSdkPath =
+    p: path:
+    p.edit (
+      s:
+      s
+      // (
+        if s ? installedInterface then
+          {
+            installedInterface = s.installedInterface // {
+              sdkPath = path;
+            };
+          }
+        else
+          { sdkPath = path; }
+      )
+    );
+  pathChange = p: setSdkPath p "contract/changed";
   contracts = {
     components = lib.mapAttrs (_: p: {
       owned = p ? testContext && (row p).compliant;
@@ -73,7 +89,15 @@ let
       {
         libraries = reuse (p.editRuntime (r: r // { libraries = [ p.specification.runtimeLibc ]; }));
         loaderProvider = reuse (p.override { runtimeLibc = p.specification.runtimeCompiler; });
-        patchTool = reuse (p.override { patchelf = p.specification.coreutils; });
+        patchTool = reuse (
+          p.edit (
+            s:
+            s
+            // {
+              base = s.base.override { standardTools.patchelf = s.coreutils; };
+            }
+          )
+        );
       }
     ) (lib.filterAttrs (n: _: n != "android-platform_37_2_r2") components);
     shell =
@@ -104,7 +128,11 @@ let
     metadataReuse = lib.mapAttrs (
       _: p:
       let
-        q = p.override { packageMetadata = builtins.toFile "android-metadata" "changed"; };
+        q = p.override {
+          sourceLayout = p.specification.sourceLayout // {
+            packageMetadata = builtins.toFile "android-metadata" "changed";
+          };
+        };
       in
       id q.artifact == id p.artifact && id q != id p
     ) (lib.filterAttrs (n: _: n != "android-cli_1_1_16717390") components);
@@ -144,7 +172,7 @@ let
         multipleCLI = rejects {
           components = [
             p
-            (p.edit (s: s // { sdkPath = "cmdline-tools/other"; }))
+            (setSdkPath p "cmdline-tools/other")
           ];
         };
       };
@@ -152,7 +180,9 @@ let
   allTrue = x: if builtins.isAttrs x then lib.all allTrue (builtins.attrValues x) else x == true;
   fixture = components.android-platform_37_2_r2.override { src = ./platform.zip; };
   changed = fixture.override {
-    packageMetadata = builtins.toFile "fixture-package.xml" "edited-metadata";
+    sourceLayout = fixture.specification.sourceLayout // {
+      packageMetadata = builtins.toFile "fixture-package.xml" "edited-metadata";
+    };
   };
   sdk = tvp.android.mkSdk {
     name = "android-tiny-sdk";
@@ -160,16 +190,17 @@ let
   };
   sdkChanged = sdk.editRuntime (r: r // { shell = "${sdk.specification.bash}/bin/sh"; });
   spec = fixture.specification;
+  tools = (tvp.builder.forBase spec.base).tools;
   check = fixture.testContext.mkTest {
     package = fixture;
     name = "android-contracts";
     tools = [
       spec.coreutils
-      spec.diffutils
-      spec.grep
-      spec.python
-      spec.binutils
-      spec.patchelf
+      tools.diffutils
+      tools.grep
+      tools.python
+      tools.binutils
+      tools.patchelf
     ];
     script = ''
       test "$(cat ${fixture}/${fixture.tvp.android.componentPath}/android.jar)" = fixture-jar
@@ -219,7 +250,7 @@ let
         ]
       }
       test "$(cat latest-first)" != "$(cat flutter-first)"
-      ${spec.python}/bin/python3 -B ${./host-elf-test.py} ${../../host-elf.py} ${../../native-output} ${spec.coreutils}/bin/true ${spec.binutils}/bin/readelf ${spec.patchelf}/bin/patchelf '${
+      ${tools.python}/bin/python3 -B ${./host-elf-test.py} ${../../host-elf.py} ${../../native-output} ${spec.coreutils}/bin/true ${tools.binutils}/bin/readelf ${tools.patchelf}/bin/patchelf '${
         builtins.toJSON {
           loader = spec.runtime.loader;
           libraries = map (p: "${lib.getLib p}/lib") spec.runtime.libraries;

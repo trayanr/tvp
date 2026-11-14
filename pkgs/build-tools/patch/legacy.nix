@@ -68,7 +68,7 @@ let
       inherit (pkgs) lib fetchurl;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
+    extraArgs.mkTests = package: import ./tests/retained.nix { inherit pkgs tvpLib package; };
     packageMeta.upstream = {
       type = "directory-index";
       url = "https://mirrors.kernel.org/gnu/patch/";

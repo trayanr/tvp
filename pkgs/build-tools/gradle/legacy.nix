@@ -34,7 +34,7 @@ let
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
-      import ./tests {
+      import ./tests/retained.nix {
         inherit tvpLib package;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;

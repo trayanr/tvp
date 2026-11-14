@@ -34,8 +34,11 @@ mpfr/
 | Package `tests/` | Assertions, fixtures and independent upstream execution/acceptance for the effective package. |
 
 The ordinary family index lists builders and package-specific TVP dependencies.
-It does not repeat the constructor, platform, base selection, standard tools or
-helper/test wiring. Stable facts belong in the appropriate era builder; small
+The constructor, platform, ordinary base, standard tools and helper/test wiring
+are implicit defaults. A table states a different construction generation or real
+provider profile explicitly when required; it must not silently replace one with
+a lighter generation. These exceptions are recorded in MIG-025. Stable facts
+belong in the appropriate era builder; small
 release exceptions belong in the table. Copy complete recipe records and builders
 when a real difference calls for them, rather than hiding choices in a `common`
 overlay or importing one era builder into another.
@@ -43,9 +46,11 @@ overlay or importing one era builder into another.
 Use `build.nix` if the family has one procedure. Add versioned files for coherent
 source/build/install eras, not simply for every release or major version. Extra
 directories need a concrete purpose, such as source patches, package-specific
-helpers or large release data. Construction inputs and public profiles reuse the
-same procedures; they do not need duplicate `ordinary/`, `native/` or retained
-implementations.
+helpers or large release data. Construction inputs and public profiles should
+share a complete procedure when
+their actual requirements match. Captured direct callers still retain distinct
+procedures until their real generations are migrated; their temporary files are
+recorded in [MIG-025](MIGRATION-DECISIONS.md#mig-025--retained-construction-callers-and-test-factory-compatibility).
 
 The builder's `buildFeatures`, `sourceLayout` and `installedInterface` group its
 effective facts. Use descriptive groups where they help; these names are not a
@@ -54,7 +59,8 @@ real local choices. A bundle overridden by every era belongs in separate builder
 
 The artifact contains compiled/installed production state. The final package adds
 output repairs after `steps.split`. Installed tests depend on that final package;
-upstream tests restore the artifact in their own derivations. A test-only edit must
+checkpoint-backed upstream tests restore the artifact in their own derivations.
+Recorded source-reconstruction and pre-split exceptions remain isolation debt. A test-only edit must
 not invalidate either production stage. The shared test machinery supplies the
 runner; package assertions are written once per family and reused across its
 versions, with separate results for different derivations.
@@ -236,11 +242,18 @@ Unused standard providers and disabled steps stay lazy. Distinct providers used 
 one role are retained as numbered metadata entries such as `gnumake#1` and
 `gnumake#2`. Upstream-only plans are collected by their own test derivation, outside
 production metadata.
+Explicit runtime provider projections also apply to these active tool roles,
+including tools supplied implicitly by the base. A projection cannot introduce
+an unused or undeclared name; changing metadata alone preserves A/F identities.
 
 The family test factory is overridable with `tests`; replacing that suite changes
 validation, not package compilation. Retained factories keep their historical
 interfaces. The [test reference](owned-tests.md) distinguishes these factories
 from individual test derivations.
+
+Existing source-reconstructing upstream consumers and pre-split test scaffolding
+remain explicit [isolation debt](MIGRATION-DECISIONS.md#mig-026--remaining-productionupstream-isolation-and-historical-execution).
+Do not infer universal checkpoint reuse from ordinary index adoption.
 
 ## Procedure and split boundaries
 

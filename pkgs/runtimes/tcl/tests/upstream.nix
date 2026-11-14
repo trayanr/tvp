@@ -1,11 +1,15 @@
 # Native upstream validation against F, with a private tcltest executable linked
 # to F's installed core/stubs. No build tree or test receipt enters production.
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   s = package.specification;
-  tools = s.tools;
+  tools = s.base.standardTools;
 in
-package.testContext.mkTest {
+context.mkTest {
   inherit package;
   name = "upstream";
   tools = s.environment.tools ++ [

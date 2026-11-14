@@ -1,71 +1,158 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+
+let
+  p = package;
+  d = p.tvp.deps;
+  c = p.testContext;
+  rebound = p.override { zlib = p.tvp.declaredTestDependencies.alternateZlib; };
+  changed = p.editRuntime (r: r // { dlopenDirectories = [ "${d.zlib}/lib" ]; });
+  sourceProbe =
+    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
+      (
+        s:
+        let
+          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
+        in
+        (removeAttrs s [ "artifactName" ])
+        // {
+          inherit base;
+          plan = [
+            (builtins.head s.plan)
+            (
+              (base.environment s.environment)
+              // {
+                name = "file.source-base";
+                run = ''
+                  test "$(cat source/marker)" = 'alternate source'
+                  printf 'int main(void) { return 0; }\n' > probe.c
+                  "$CC" probe.c -o probe
+                  env -i ./probe
+                  test "$(cat selected-compiler)" = selected
+                  mkdir "$out"; cp source/marker "$out/marker"
+                '';
+              }
+            )
+          ];
+        }
+      );
+  compress = ''
+    printf '#!/bin/sh\necho preserved\n' > sample.sh
+    ${d.bzip2}/bin/bzip2 -c sample.sh > sample.bz2
+    ${d.xz}/bin/xz -c sample.sh > sample.xz
+    ${d.zstd}/bin/zstd -q -c sample.sh > sample.zst
+  '';
+in
+c.mkSuite {
+  inherit package;
+  tools = [
+    d.grep
+    d.sed
+    d.gawk
+  ];
   tests = {
     version = {
-      script = ''
-        ${package}/bin/file --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
-      '';
-      expected = package.version;
+      script = "file --version | head -1 | sed 's/^file-//' ";
+      expected = p.version;
     };
     operation = {
-      script = ''
-        printf '#!/bin/sh\necho preserved\n' > sample.sh
-        ${package}/bin/file --mime-type -b sample.sh
-      '';
+      script = ''printf '#!/bin/sh\necho preserved\n' > sample.sh; file --mime-type -b sample.sh'';
       expected = "text/x-shellscript";
     };
+    libmagic-compression = {
+      libraries = [
+        p
+        d.zlib
+      ];
+      script = ''
+        ${compress}
+        "$CC" -Wall -Wextra -Werror ${./libmagic.c} -lmagic -lz -o consumer
+        env -i ./consumer sample.sh sample.gz sample.bz2 sample.xz sample.zst
+        readelf -d ./consumer > consumer.elf
+        grep -Fq '[libmagic.so.1]' consumer.elf
+        grep -Fq '${p}/lib' consumer.elf
+        readelf -d ${p}/lib/libmagic.so > linkage
+        ${lib.concatMapStringsSep "\n" (dep: "grep -Fq '${dep}/lib' linkage") [
+          d.zlib
+          d.xz
+          d.bzip2
+          d.zstd
+        ]}
+        for lib in libz.so.1 libbz2.so.1.0 liblzma.so.5 libzstd.so.1; do grep -Fq "[$lib]" linkage; done
+        for input in sample.gz sample.bz2 sample.xz sample.zst; do
+          test "$(file -Zb --mime-type "$input")" = text/x-shellscript
+          test "$(file -Zb --mime-type - < "$input")" = text/x-shellscript
+          test "$(cat "$input" | file -Zb --mime-type -)" = text/x-shellscript
+        done
+        printf compression
+      '';
+      expected = "compression";
+    };
+    development = {
+      tools = [
+        d.sed
+        d.grep
+        p.tvp.declaredTestDependencies.pkgconfig
+      ];
+      libraries = [
+        p
+        d.zlib
+        d.xz
+        d.bzip2
+        d.zstd
+      ];
+      script = ''
+        test -f ${p}/lib/libmagic.a
+        test -f ${p}/lib/libmagic.la
+        pkg-config --exists libmagic
+        printf '#!/bin/sh\necho preserved\n' > sample.sh
+        "$CC" ${./libmagic.c} $(pkg-config --cflags libmagic) ${p}/lib/libmagic.a $(pkg-config --libs --static libmagic | sed 's/-lmagic//g') -o static-consumer
+        env -i ./static-consumer sample.sh
+        if readelf -d static-consumer | grep -q libmagic.so; then exit 1; fi
+        printf development
+      '';
+      expected = "development";
+    };
+    magic-override = {
+      script = ''
+        printf '0 string TVP! tvp-custom-magic\n' > custom
+        file -C -m custom
+        printf 'TVP!data' > data
+        test "$(MAGIC="$PWD/custom.mgc" file -b data)" = tvp-custom-magic
+        printf '#!/bin/sh\necho preserved\n' | file -b --mime-type - | grep -qx text/x-shellscript
+        test -s ${p}/share/misc/magic.mgc
+        printf magic
+      '';
+      expected = "magic";
+    };
+    constructor = {
+      expected =
+        assert (p.override { }).drvPath == p.drvPath;
+        assert (p.edit (s: s)).drvPath == p.drvPath;
+        assert rebound.tests.version.package.outPath == rebound.outPath;
+        assert !(p ? stdenv) && !(p ? overrideAttrs);
+        "qualified";
+      libraries = [
+        rebound
+        d.zlib
+      ];
+      script = ''
+        test -s ${sourceProbe}/marker
+        printf '#!/bin/sh\necho preserved\n' > sample.sh
+        "$CC" ${./libmagic.c} -lmagic -lz -o consumer
+        env -i ./consumer sample.sh
+        readelf -d ${rebound}/lib/libmagic.so | grep -Fq '${p.tvp.declaredTestDependencies.alternateZlib}/lib'
+        ${changed}/bin/file -b --mime-type sample.sh | grep -qx text/x-shellscript
+        printf qualified
+      '';
+    };
+
   };
 }
-// tvpLib.tests.mkSuite {
-  inherit package;
-  # New compiled/runtime checks follow each canonical or bootstrap package's base.
-  # Keep the original version/operation leaves above unchanged.
-  pkgs = tvpLib.tests.withBase {
-    inherit pkgs;
-    base.stdenv = package.stdenv;
-  };
-  tests = {
-    stdin = {
-      script = ''
-        printf '#!/bin/sh\necho preserved\n' > sample.sh
-        test "$(${package}/bin/file --mime-type -b - < sample.sh)" = text/x-shellscript
-        test "$(cat sample.sh | ${package}/bin/file --mime-type -b -)" = text/x-shellscript
-        echo stdin-ok
-      '';
-      expected = "stdin-ok";
-    };
-    libmagic-compression = {
-      extraInputs = [ package.tvp.cc ] ++ builtins.attrValues package.tvp.deps;
-      script = ''
-        printf '#!/bin/sh\necho preserved\n' > sample.sh
-        cc -Wall -Wextra -Werror ${./libmagic.c} -lmagic -lz -o consumer
-        ${package.tvp.deps.bzip2}/bin/bzip2 -c sample.sh > sample.bz2
-        ${package.tvp.deps.xz}/bin/xz -c sample.sh > sample.xz
-        ${package.tvp.deps.zstd}/bin/zstd -q -c sample.sh > sample.zst
-        ./consumer sample.sh sample.gz sample.bz2 sample.xz sample.zst
-        readelf -d ./consumer | grep -Fq '[libmagic.so.1]'
-        readelf -d ./consumer | grep -Fq '${package}/lib'
-        readelf -d ${package}/lib/libmagic.so > linkage
-        grep -Fq '[libz.so.1]' linkage
-        grep -Fq '[libbz2.so.1.0]' linkage
-        grep -Fq '[liblzma.so.5]' linkage
-        grep -Fq '[libzstd.so.1]' linkage
-        ${pkgs.lib.concatMapStringsSep "\n" (dep: "grep -Fq '${dep}/lib' linkage") (
-          builtins.attrValues package.tvp.deps
-        )}
-        for input in sample.gz sample.bz2 sample.xz sample.zst; do
-          test "$(${package}/bin/file -Zb --mime-type "$input")" = text/x-shellscript
-          test "$(${package}/bin/file -Zb --mime-type - < "$input")" = text/x-shellscript
-          test "$(cat "$input" | ${package}/bin/file -Zb --mime-type -)" = text/x-shellscript
-        done
-        echo libmagic-compression-ok
-      '';
-      expected = "libmagic-compression-ok";
-    };
-  };
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
 }

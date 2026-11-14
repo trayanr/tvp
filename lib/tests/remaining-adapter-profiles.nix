@@ -44,16 +44,37 @@ let
         ]
       );
       runtime = p.editRuntime (r: r // { libraries = (r.libraries or [ ]) ++ [ d.coreutils ]; });
-      changedTool = p.override {
-        coreutils = d.coreutils // {
-          outPath = "/nix/store/00000000000000000000000000000000-coreutils-control";
-        };
+      effectiveTools = (tvp.builder.forBase d.base).tools;
+      # This observer covers both explicit retained profiles and authored adapters.
+      usesBaseRoles = !(d ? patchelf);
+      changedCoreutils = d.coreutils // {
+        outPath = "/nix/store/00000000000000000000000000000000-coreutils-control";
       };
-      finalTool = p.override {
-        patchelf = d.patchelf // {
-          outPath = "/nix/store/00000000000000000000000000000000-patchelf-control";
-        };
+      changedPatchelf = (if usesBaseRoles then effectiveTools.patchelf else d.patchelf) // {
+        outPath = "/nix/store/00000000000000000000000000000000-patchelf-control";
       };
+      changedTool =
+        if usesBaseRoles then
+          p.edit (
+            s:
+            s
+            // {
+              base = s.base.override { coreutils = changedCoreutils; };
+            }
+          )
+        else
+          p.override { coreutils = changedCoreutils; };
+      finalTool =
+        if usesBaseRoles then
+          p.edit (
+            s:
+            s
+            // {
+              base = s.base.override { standardTools.patchelf = changedPatchelf; };
+            }
+          )
+        else
+          p.override { patchelf = changedPatchelf; };
       construction = p.editSteps (
         steps.insertBefore
           "${p.pname}.install${
@@ -151,7 +172,9 @@ let
       let
         p = packages.android-platform_36_r2;
         changed = p.override {
-          packageMetadata = builtins.toFile "adapter-metadata-control" "changed-metadata";
+          sourceLayout = p.specification.sourceLayout // {
+            packageMetadata = builtins.toFile "adapter-metadata-control" "changed-metadata";
+          };
         };
       in
       changed.artifact.drvPath == p.artifact.drvPath && changed.drvPath != p.drvPath;

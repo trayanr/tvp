@@ -473,3 +473,208 @@ candidate seals, all attempts, source reviews, identity gates and strict failure
   Split counts remain 1,520 compliant and 20 broken exclusions of 1,540 rows.
 - Evidence: `~/.local/state/tvp-next-phase/owned-catalogue-migration/reviews/post-migration/runtime-family-authoring/`.
   CI/NAS remain off; historical, full, hardening and admission holds stay unwaived.
+
+
+## 2026-11-14 — Complete ordinary family index adoption
+
+- Converted the remaining 68 indexes and 232 eligible canonical releases in one
+  assembled source wave. Every ordinary index now uses nameless inline definitions
+  beside literal release hashes: 110/110 indexes and 1,515/1,515 eligible releases.
+  All five real public variants evaluate. Split coverage remains 1,520 compliant
+  rows plus 20 declared-broken exclusions; all-source adoption is not a runtime or
+  strict-admission claim.
+- Evaluated all 1,535 canonical artifact/final descriptions and five variants.
+  The 232 new rows pass seven common interface/edit/split contracts each and
+  register 1,780 existing test derivations. Fifty-five pure family controls,
+  eighteen provider controls, actual Perl runtime-projection probes and four
+  caller-production-patch controls pass. The earlier Perl role equals its pinned
+  construction provider; no public provider is silently substituted.
+- Captured closed/full/native compiler, bootstrap, construction compiler and
+  frozen-tool snapshots remain exact. Readline 2.0/SQLite 3.2.8 still have the same
+  broken records/procedures, but follow changed live dependencies; their derived
+  identities are not frozen proofs. Preserve the exact scope of that distinction.
+- Independent source reviews covered Tcl/Bash, terminal/text, SDKs, JDK support,
+  utilities, frontends/data, final five families and the small shared metadata fix.
+  Preserve the corrected text-tool report: its original blanket Binutils P1 was
+  withdrawn after inspecting active-helper registration. Direct base readers
+  remain an explicit cleanup, not a demonstrated all-version failure.
+- Source gates caught missing moved helper paths, an incompatible Gettext fetcher,
+  missing Readline profile base, stale Curl/Zstd/Tar/Texinfo test wiring and Meson
+  runtime-provider edits. Repairs retain the existing assertions. JSON-C/Patch
+  production patches now run before configure; only exact known fixture patches
+  run after restore. Zstd 1.5.7 U binds CLI test frontends after restore; older Tar
+  prepares its tests only once in U. Host checkpoint controls and Tar source
+  counterexamples pass; no package build is claimed by those probes.
+- Implicit active tool roles now honor accepted runtime-provider projections
+  (MIG-023), with a reproduced failing control before the fix, passing controls
+  after, and independent review. No per-package runtime-PWD argument is added.
+  MIG-024–026 retain bounded checkpoint, compatibility and isolation decisions.
+- New code was parsed/formatted and Python sources AST-checked. Nine explicitly
+  preserved retained Nix copies were restored after formatting so their sealed
+  historical bytes remain intact. Current package/upstream execution is the next
+  assembled validation step, reusing all exact cached producers. CI/NAS stay off;
+  historical failures, isolation debt, hardening and admission holds remain unwaived.
+- Evidence: `reviews/post-migration/remaining-family-authoring/`, including original
+  candidates, failed evaluation attempts, corrections, source reviews and final
+  source/identity/control records. No intermediate public compiler was launched.
+
+
+### Assembled validation attempt 001 and Ncurses repair
+
+The committed 110-index shape launched one existing selected-latest workflow.
+It stopped after 24.379s in Ncurses 6.6's generated production-Makefile guard,
+before GCC compilation. The archive/configure source generates two test-directory
+recursions (common targets and module/library targets), while the helper expected
+one. The repair removes exactly those two recursions and preserves other source
+directories. Four host controls pass, including rejection of one/three matches;
+pinned 5.8–6.6 archives confirm the test-module layout. All 293 previously valid
+selected outputs remain retained; no fresh selected output or success verifier
+was claimed. The original receipt/logs remain under `latest-001`.
+
+The preflight also identifies a separate retained GCC16 required by captured
+SDK/JDK bootstrap providers, alongside the public compiler generation. It is an
+actual production seed dependency, not another replay of the same compiler.
+Keep the preserved providers and realize a required generation once; do not swap
+it merely to obtain a cache hit. Libxcrypt's exact ABI baseline remains unchanged.
+The next workflow explicitly disables remote builders and substituters and keeps
+failed build trees. The first launch inherited host substituter defaults; its
+logs/host binding remain retained rather than rewritten as an explicit local-only
+request. CI/NAS publication stays disabled.
+
+A separate ergonomics audit confirms 396 inline definition sites across all 110
+indexes, with no lookup maps, numeric names, explicit ordinary constructors,
+string tool lists or `tvpLib = tvp.lib` aliases. Documentation now qualifies retained
+and checkpoint exceptions, labels superseded Libxml2 staging material, updates
+the structural tree and repairs three moved links.
+
+
+### Assembled validation attempt 002 and Automake ordering
+
+The explicit Tower-local request stopped after 32.353s in GNU Sed
+4.10, before any compiler recipe started. Direct `all-am` bypassed Automake's
+`all: $(BUILT_SOURCES)` barrier, allowing compilation before generated wrapper
+headers were ready. The corrected normal `all`/`install` calls use `SUBDIRS=.`
+only at the explicitly selected local production recursion boundaries. Existing
+production directory order and Findutils's test-program exclusion are preserved.
+The same pattern was repaired across 16 complete procedures in eight families.
+No C-language downgrade, implicit-declaration allowance, feature cut or test waiver
+is used. Original logs and failed workspace remain preserved; GNU Make dry runs
+used private copies and do not purport to reproduce a parallel race sequentially.
+
+Focused Sed A/F, upstream acceptance and its normal 7-leaf batch pass in
+28.372s. The compiled package and test identities will be reused by the next frozen
+assembled workflow. All 297 partial selected outputs remain retained after the
+failed request; success-only aggregate verification was not run.
+
+
+### Assembled validation attempt 003 and independent consumers
+
+All eleven sequential heavy preparation requests passed, including the current
+compiler/JDK/LLVM/Dart/Flutter/Node producers and the distinct retained SDK seeds.
+The retained GCC16 took 1,520.49s: its logged build phase was 11m39s and its bundled
+DejaGNU check phase 10m53s. That old production/test boundary remains MIG-026 debt;
+it is not another build of the current separate-U compiler. All twenty selected
+heavy production/artifact paths are valid and scoped-rooted.
+
+The normal aggregate stopped at Ninja's jobserver overlap assertion. The fixture
+uses 50ms tasks and observed insufficient overlap under concurrent build load.
+The selected native harness now uses 1s tasks while preserving every exact
+parallel/serial and FIFO assertion. This changes its test derivation only.
+Success-only latest verification was not run. Original failed logs and cancelled
+workspaces remain preserved; no failed result is accepted or relabeled.
+
+A separate five-profile keep-going request completed Fontconfig, Zstd and Readline
+batches, and exposed two independent consumer defects. JSON-C's child upstream
+shell did not inherit its checkpoint-root variable; the existing generic checkpoint
+consumer now exports that readonly variable before launching the child. Ruby's
+manual normalizer imported Python's zlib-backed gzip module even though selected
+Gzip was already supplied. Both the ordinary helper and retained public-profile
+copy now decompress through that same selected executable. Four plain/compressed
+fixtures pass using the exact reduced Python that failed. Heavy and all five
+profile artifact identities remain exact across these repairs.
+
+The post-Makefile snapshot preserves all six captured construction/bootstrap/tool
+identity groups. Its broader public section changes transitively with repaired
+ordinary producers; the initial overly broad equality assertion is retained and
+corrected in evidence. No public-identity preservation claim is inferred from the
+captured-generation comparison. Current runtime results remain pending the repaired
+batches and normal latest verification. CI/NAS remain off.
+
+
+Attempt 004 reused heavy preparation and reached JSON-C's actual upstream patch.
+Its path had been converted with `toString`, dropping sandbox input context. The
+upstream command now interpolates the patch path as an input, matching the existing
+production-patch handling. A targeted context assertion fails before and passes
+after; ordinary/profile JSON-C artifacts stay exact. The first control had an
+independent Nix fixture syntax error; that attempt is preserved separately from the
+corrected before/after proof. Success-only latest verification was not run.
+
+Ninja's repaired normal batch and Ruby's public-profile batch pass. The independent
+GCC batch remains running through this unrelated failure, so its in-flight capture
+is preserved. Existing keep-going behavior is used only for the explicit scoped
+batch request; the normal latest runner and its fail-fast policy remain unchanged.
+
+
+### Final named-batch completion and Libtool test fixture
+
+Attempt 005 stopped at one unexpected Libtool diagnostic; the failed normal run
+remains failed, without success-only verification. Its test helper selected a
+version's first line with `sed 1q`, closing a pipe while Bash's `echo` could still
+be writing. A source-bound, test-only patch uses `sed -n 1p` to drain input and
+preserve the exact same selected line and stderr assertions. It applies with zero
+fuzz to both cached 2.4.7 and 2.6.2 archives. Libtool's A/F stay exact; its existing
+normal batch passes in 255.508s including dependencies. Existing expected failures
+and skips remain reported; no assertion is weakened or failure reclassified.
+
+The six remaining named package batches (Gettext, Go, Libffi, LLVM, Perl and Tcl)
+completed in one independent keep-going request in 789.109s. This request excludes
+the known Libtool failure and does not change or bypass the normal latest runner's
+fail-fast policy. It lets independent results finish once. These timings overlap
+other requests and must not be summed as elapsed user time.
+
+The separately held GCC16 normal batch passed; raw make exited zero, and raw/audit
+outputs are valid and scoped-rooted. Historical nonpasses and broader limits remain
+unwaived. All five public-profile batches pass with exactly 60 expected links and
+75 valid, scoped-rooted artifact/final/batch/leaf paths. Corrected JSON-C ordinary
+and profile batches pass in 12.495s, reusing A. Original failed focused-request
+receipts retain their two old JSON-C failures; matching passing results are adopted
+only from the repaired targets.
+
+LLVM's existing U consumer was observed unpacking/configuring a separate tree and
+recompiling production objects with tests enabled. This is explicit MIG-026
+checkpoint/performance debt; production A/F were retained independently. Do not
+claim all test-only edits reuse every compilation, or count whole request duration
+as exclusive upstream execution. The final normal latest aggregate and its success
+verifier are run separately after these concrete named batches finish. CI/NAS stay
+off; no historical all-version execution or full admission is claimed.
+
+
+### Normal latest verification and completed ordinary authoring scope
+
+Attempt 006 on code commit `524e24c7a5ca9d08ca03ab3b6f327f68a3680d8c`
+passed start/wait/success-verification with exits 0/0/0 in 14.570s. The verifier
+confirmed 1,191 valid selected outputs and 1,071 exact links across 110 families
+and 961 named tests. This final aggregate is availability verification over the
+matching earlier executions, not 961 new executions. All declared siblings are
+valid. The five separately verified public profiles contribute 60 exact test
+links and 75 retained paths; these counts are not added as unique fresh tests.
+
+The actual offline status app passes and reports all 110 ordinary indexes and
+1,515 eligible canonical rows adopted. The 1,540-row split inventory is 1,520
+compliant plus 20 declared-broken legacy exclusions. Runtime qualification and
+construction cleanup remain separately measured; source/index adoption does not
+silently mark them complete.
+
+All 116 artifact outputs of the 110 selected current packages and 54 immediate
+upstream-named execution inputs are explicitly scoped-rooted (170 paths), in
+addition to the workflow/runtime and profile roots. Retaining only F could lose
+reusable compilation checkpoints during later GC. This retention queried/realized
+already valid paths with builds and substituters disabled; it did not compile,
+fetch or copy data to NAS. The raw GCC capture is also retained explicitly.
+
+The final documentation-only receipt update adopts the exact verified package,
+test-batch and public-profile identities, checked again at evaluation scope.
+Historical/unselected releases, retained caller migration, recorded checkpoint
+reconstruction and pre-split checks (especially LLVM and the retained GCC seed),
+known upstream nonpasses, hardening and full/admission gates remain unwaived.
+CI/NAS remain off under the owner-approved migration policy.

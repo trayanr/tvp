@@ -1,10 +1,18 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+
+context.mkSuite {
+  tools = with package.specification; [
+    sed
+    grep
+    gawk
+    diffutils
+    findutils
+  ];
+  inherit package;
   tests = {
     version = {
       script = ''
@@ -22,4 +30,14 @@ tvpLib.tests.mkSuite {
       expected = "after";
     };
   };
+}
+
+// import ./current-owned.nix { inherit package lib context; }
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
+}
+
+// lib.optionalAttrs (package.version != "2.8.1") {
+  split = import ./ordinary-split.nix { inherit package; };
 }

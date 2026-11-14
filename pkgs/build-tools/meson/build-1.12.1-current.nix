@@ -1,0 +1,166 @@
+# Native ordinary 1.12.1: compressed zipapp, full Python and explicit discovery.
+{
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  python,
+  ninja,
+  cmake,
+  pkg-config,
+  patches,
+}:
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs;
+  baseTools = context.tools;
+  bash = baseTools.bash;
+  coreutils = baseTools.coreutils;
+  findutils = baseTools.findutils;
+  gnutar = baseTools.gnutar;
+  gzip = baseTools.gzip;
+  helperPython = baseTools.python;
+  patch = baseTools.patch;
+in
+
+let
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      inherit name run;
+      cwd = "source";
+    };
+in
+{
+  pname = "meson";
+  inherit
+    python
+    patches
+    ninja
+    cmake
+    pkg-config
+    ;
+  bash = baseTools.bash;
+  coreutils = baseTools.coreutils;
+  findutils = baseTools.findutils;
+  gnutar = baseTools.gnutar;
+  gzip = baseTools.gzip;
+  helperPython = baseTools.python;
+  patch = baseTools.patch;
+  inherit
+    base
+    src
+    version
+    ;
+  environment = {
+    tools = [
+      final.python
+      final.patch
+      final.findutils
+    ];
+    libraries = [ ];
+  };
+  runtime = {
+    shell = final.bash;
+    inherit (final)
+      python
+      ninja
+      cmake
+      pkg-config
+      ;
+  };
+  buildEnvironment =
+    context:
+    let
+      pc = (import ../../../lib/pkg-config-environment.nix) (
+        context // { tool = final.runtime.pkg-config; }
+      );
+      cm = final.runtime.cmake.buildEnvironment (context // { tool = final.runtime.cmake; });
+    in
+    {
+      # These providers have disjoint keys. Preserve contribution kinds; global
+      # conflicting scalars remain errors. Rebind Meson with .override when
+      # selecting a different pkgConfig provider alongside it.
+      values = (pc.values or { }) // (cm.values or { });
+      paths = (pc.paths or { }) // (cm.paths or { });
+      flags = (pc.flags or { }) // (cm.flags or { });
+    };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (command "meson.prepare" ''
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") final.patches}
+      ${helperPython}/bin/python3 -B - <<'PYTHON'
+      from pathlib import Path
+      p = Path('mesonbuild/scripts/depfixer.py')
+      text = p.read_text(); assert '@TVP_STORE_DIR@' in text
+      p.write_text(text.replace('@TVP_STORE_DIR@', '${builtins.storeDir}'))
+      PYTHON
+    '')
+    (command "meson.build" ''
+      ${final.python}/bin/python3 packaging/create_zipapp.py . --outfile meson.pyz \
+        --interpreter "" --compress
+    '')
+    (command "meson.install" ''
+      install -Dm755 meson.pyz "$out/libexec/meson.pyz"
+      install -Dm644 ${./setup-hook.sh} "$out/nix-support/setup-hook"
+      install -Dm644 man/meson.1 "$out/share/man/man1/meson.1"
+    '')
+    (steps.split "meson.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "meson.relocate";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            text = [ ];
+            slots = [ ];
+            fixed = [ ];
+          }
+        )
+      } ${../../../lib/installed-tree.py}'';
+    }
+    {
+      name = "meson.launcher";
+      tools = [
+        helperPython
+        gzip
+      ];
+      run = ''
+        ${gzip}/bin/gzip -n -9 "$out/share/man/man1/meson.1"
+        ${helperPython}/bin/python3 -B - "$out" <<'PYTHON'
+        from pathlib import Path
+        import sys
+        out = sys.argv[1]
+        text = Path('${./meson.sh}').read_text()
+        for key, value in {'bash':'${final.runtime.shell}/bin/bash', 'python':'${final.runtime.python}/bin/python3',
+                          'ninja':'${final.runtime.ninja}/bin/ninja', 'cmake':'${final.runtime.cmake}/bin/cmake',
+                          'pkgConfig':'${final.runtime.pkg-config}/bin/pkg-config', 'out':out}.items():
+            assert '@' + key + '@' in text
+            text = text.replace('@' + key + '@', value)
+        p = Path(out) / 'bin/meson'; p.parent.mkdir(); p.write_text(text); p.chmod(0o755)
+        PYTHON
+      '';
+    }
+    {
+      name = "meson.zipapp-interpreter";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${./owned/bind-zipapp.py} "$out" ${lib.escapeShellArg "${final.runtime.python}/bin/python3"}'';
+    }
+
+  ];
+  meta = {
+    description = "Meson compressed zipapp with owned native tools";
+    mainProgram = "meson";
+    platforms = [ "x86_64-linux" ];
+    license = "Apache-2.0";
+  };
+}

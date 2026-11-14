@@ -1,91 +1,64 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  selectedTool =
-    role: provider:
-    if provider ? __tvpSelection then
-      provider
-    else
-      tvpLib.packages.tagSelection {
-        namespace = "source-gnu.inputs";
-        selector = role;
-        kind = "source-base-build-tool";
-        reason = "Explicit retained source-GNU tool for binary provider installation or finalization.";
-      } provider;
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  definition =
-    (tvpLib.packages.mkDefs {
-      "1.97.1" = {
-        constructor = tvp.builder;
-        builder = ./native/build-1.97.1.nix;
-        base = candidate.base;
-        helpers = {
-          inherit tvp;
-        };
-        testContext =
-          package:
-          tvpLib.tests.fromPackage {
-            builder = tvp.builder;
-            inherit package;
-          };
-        source =
-          { version, sha256 }:
-          import <nix/fetchurl.nix> {
-            url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-            name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-            inherit sha256;
-          };
-        deps =
-          (pkgs.lib.mapAttrs selectedTool {
-            # Explicit source-owned tools; tag otherwise unlabelled bootstrap roles.
-            inherit (candidate.tools)
-              bash
-              coreutils
-              python
-              binutils
-              patchelf
-              tar
-              gzip
-              sed
-              grep
-              gawk
-              findutils
-              ;
-          })
-          // {
-            runtimeLibc = tvp.packages.glibc_2;
-            runtimeCompiler = tvp.packages.gcc_16;
-          };
-        blob = retained.versionTable."1.97.1".def.blob;
-      };
-    })."1.97.1";
-  versionTable = retained.versionTable // {
-    "1.97.1" = retained.versionTable."1.97.1" // {
-      def = if native then definition else retained.versionTable."1.97.1".def;
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."cargo-bootstrap";
+  retained = prior.constructionRecipe or prior;
+  earlier = import ../../../bases/source-gnu { };
+  full = tvp.baseTiers.full;
+  profileBase = full.override {
+    shell = earlier.tools.bash;
+    coreutils = earlier.tools.coreutils;
+    standardTools = {
+      python = earlier.tools.python;
+      patchelf = earlier.tools.patchelf;
+      gnutar = earlier.tools.tar;
+      gzip = earlier.tools.gzip;
+      sed = earlier.tools.sed;
+      grep = earlier.tools.grep;
+      gawk = earlier.tools.gawk;
+      findutils = earlier.tools.findutils;
     };
   };
-  publicArgs = retained // {
-    infra = if native then { inherit (pkgs) lib; } else retained.infra;
-    inherit versionTable;
-    testDeps.rustc = tvp.packages.rustc_1;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit package; }
-      else
-        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
   pname = "cargo-bootstrap";
-  canonical = tvpLib.packages.mkVersions publicArgs;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-1.97.1-current.nix;
+        base = profileBase;
+        deps = {
+          binutils = earlier.tools.binutils;
+          runtimeLibc = tvp.packages.glibc_2;
+          runtimeCompiler = tvp.packages.gcc_16;
+        };
+        blob = prior.versionTable."1.97.1".def.blob;
+      };
+      releases = {
+        "1.97.1" = "sha256-tM28fMaw7gomZrGHJ2n9sq2Dk7KLY5UvZJO0tADkgys=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // {
+    rustc = tvp.packages.rustc_1;
+  };
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+        name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests;
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
+  recipes."cargo-bootstrap" = family // {
     constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

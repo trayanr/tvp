@@ -2,7 +2,7 @@
 
 Start with the [owned authoring guide](../../../lib/NATIVE-RECIPES.md) for the
 builder API. The public Ruby 4.0.6 [definition](default.nix) selects
-[owned/build-4.0.6.nix](owned/build-4.0.6.nix). Its build-steps variant uses that
+[build-4.0.nix](build-4.0.nix). Its build-steps variant uses that
 procedure with a separately selected retained base; do not assume the canonical
 and variant specifications have the same base.
 

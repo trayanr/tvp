@@ -172,6 +172,16 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
     }
+    {
+      name = "libtool.prepare-test-version-output";
+      tools = [ tools.patch ];
+      # Drain version output so an early-closing sed cannot add EPIPE diagnostics
+      # to libtoolize's otherwise unchanged stderr assertions.
+      run = ''
+        cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
+        ${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${./tests/version-output.patch}
+      '';
+    }
   ];
   upstreamCheck =
     (command "libtool.check" ''

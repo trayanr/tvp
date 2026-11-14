@@ -13,17 +13,26 @@ let
   lib = pkgs.lib;
   first = tvp.packages.libxext;
   spec = first.specification;
+  toolsFor =
+    p:
+    p.specification.base.standardTools
+    // {
+      bash = p.specification.base.shell;
+      coreutils = p.specification.base.coreutils;
+      binutils = p.specification.base.compiler.bintools;
+    };
+  tools = toolsFor first;
   fixture = import ./prerequisite-fixture.nix {
     inherit tvp;
     package = first;
     tools = [
       spec.bash
-      spec.gnumake
+      tools.gnumake
       spec.base.compiler
-      spec.python
-      spec.gnutar
-      spec.xz
-      spec.sed
+      tools.python
+      tools.gnutar
+      tools.xz
+      tools.sed
     ];
   };
   wrappers = fixture {
@@ -42,7 +51,7 @@ let
       EOF
       cat > "$out/bin/make" <<'EOF'
       #!${spec.bash}/bin/bash
-      ${spec.gnumake}/bin/make "$@"
+      ${tools.gnumake}/bin/make "$@"
       result=$?
       if [[ $result == 0 && " ''${*} " == *' install '* ]]; then
         ${spec.coreutils}/bin/mkdir -p "$out/nix-support"
@@ -80,7 +89,7 @@ let
         ln -s ${spec.libx11}/include "$out/include"
         for f in ${spec.libx11}/lib/lib*; do ln -s "$f" "$out/lib/"; done
         for f in ${spec.libx11}/lib/pkgconfig/*.pc; do
-          ${spec.sed}/bin/sed "s|${spec.libx11}|$out|g" "$f" > "$out/lib/pkgconfig/''${f##*/}"
+          ${tools.sed}/bin/sed "s|${spec.libx11}|$out|g" "$f" > "$out/lib/pkgconfig/''${f##*/}"
         done
       '';
     }).edit
@@ -90,7 +99,7 @@ let
         // {
           plan = s.plan ++ [
             (tvp.builder.outputs.development {
-              python = spec.python;
+              python = tools.python;
               libraries = spec.libx11.development.libraries;
             })
           ];
@@ -126,21 +135,22 @@ let
         name = "${name}-control-source.tar.xz";
         buildCommand = ''
           mkdir source
-          ${spec.gnutar}/bin/tar -xJf ${p.src} --strip-components=1 -C source
+          ${tools.gnutar}/bin/tar -xJf ${p.src} --strip-components=1 -C source
           chmod -R u+w source
           printf '\nsource_control=selected\n' >> source/${pc}.pc.in
           # Compilation, rather than metadata alone, proves selected-base use.
           printf '\n#ifndef X11_BASE_CONTROL\n#error selected base required\n#endif\n' >> source/config.h.in
-          ${spec.gnutar}/bin/tar -cJf "$out" source
+          ${tools.gnutar}/bin/tar -cJf "$out" source
         '';
       };
       args = {
         src = source;
-        inherit base;
-        bash = wrappers;
-        gnumake = wrappers;
+        base = base.override {
+          shell = wrappers;
+          standardTools.gnumake = wrappers;
+        };
         libx11 = library;
-        libraryDirectory = "lib/owned-control";
+        installedInterface.libraryDirectory = "lib/owned-control";
       };
       overridden = p.override args;
       edited = p.edit (s: s // args);
@@ -152,19 +162,18 @@ let
         lib.hasInfix (builtins.unsafeDiscardStringContext needle) (
           builtins.unsafeDiscardStringContext text
         );
-      retained = import (../../pkgs/libraries + "/${name}/legacy.nix") { inherit pkgs tvp; };
-      public =
-        (import (../../pkgs/libraries + "/${name}") { inherit pkgs tvp; })
-        .recipes.${name}.extraArgs.mkTests;
+      retained = import (../../pkgs/libraries + "/${name}/retained.nix") { inherit pkgs tvp; };
+      # The old factory API belongs to the explicit historical caller, not the owned factory.
+      historicalTests = retained.packageArgs.extraArgs.mkTests;
       ids = builtins.mapAttrs (_: t: t.drvPath);
       selectedPkgs = pkgs // {
         runCommandWith = args: script: { selected = true; };
       };
       assertions = {
         owned = builtins.all (t: t.tvp.kind == "owned-test") (builtins.attrValues p.tests);
-        legacyTests = ids (public retained.aliases.${name}) == ids retained.aliases.${name}.tests;
+        legacyTests = ids (historicalTests retained.aliases.${name}) == ids retained.aliases.${name}.tests;
         callerPkgs =
-          ((public.override { pkgs = selectedPkgs; }) retained.aliases.${name}).consumer.selected;
+          ((historicalTests.override { pkgs = selectedPkgs; }) retained.aliases.${name}).consumer.selected;
         bothRoutes = overridden.drvPath == edited.drvPath && overridden.drvPath != p.drvPath;
         sourceCommand = has (toString source) (builtins.head overridden.buildSteps).run;
         baseCommand = (step overridden "build").env.CC == "${wrappers}/bin/cc";
@@ -182,7 +191,7 @@ let
           p.specification.doCheck
           && builtins.any (s: s.name == "${name}.check") p.tests.upstream.buildSteps
           && !(builtins.any (s: s.name == "${name}.check") p.buildSteps);
-        archiveGrepDeclared = builtins.elem p.specification.grep.outPath (
+        archiveGrepDeclared = builtins.elem (toolsFor p).grep.outPath (
           map toString p.tests.archive.buildStepRunner.inputs
         );
         archiveToolsRetained =
@@ -190,8 +199,8 @@ let
             (tool: builtins.elem tool.outPath (map toString p.tests.archive.buildStepRunner.inputs))
             [
               p.specification.pkgConfig
-              p.specification.binutils
-              p.specification.patchelf
+              (toolsFor p).binutils
+              (toolsFor p).patchelf
             ];
       };
       installed = overridden.testContext.mkTest {
@@ -200,8 +209,8 @@ let
         libraries = [ overridden ];
         tools = [
           spec.pkgConfig
-          spec.patchelf
-          spec.grep
+          tools.patchelf
+          tools.grep
         ];
         script = ''
           test "$(cat ${overridden}/nix-support/make-control)" = selected
@@ -211,7 +220,7 @@ let
           test "$(pkg-config --variable=prefix x11)" = ${library}
           test ! -e ${overridden}/lib/${soname}.so
           test -e ${overridden}/lib/owned-control/${soname}.so
-          patchelf --print-rpath ${overridden}/lib/owned-control/${soname}.so | ${spec.grep}/bin/grep -F ${library}/lib > selected-rpath
+          patchelf --print-rpath ${overridden}/lib/owned-control/${soname}.so | ${tools.grep}/bin/grep -F ${library}/lib > selected-rpath
           "$CC" $(pkg-config --cflags ${pc}) -x c ${builtins.toFile "x11-base-consumer.c" ''
             #ifndef X11_BASE_CONTROL
             #error selected base required
@@ -245,7 +254,7 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
   name = "extension-contracts";
   tools = [
     spec.bash
-    spec.grep
+    tools.grep
   ];
   script = ''
     cat > reader <<'EOF'
@@ -278,9 +287,9 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
         exit 1
       fi
     }
-    expect_guard 0 absent ${spec.grep}/bin/grep
-    expect_guard 1 present ${spec.grep}/bin/grep
-    expect_guard 2 error ${spec.grep}/bin/grep
+    expect_guard 0 absent ${tools.grep}/bin/grep
+    expect_guard 1 present ${tools.grep}/bin/grep
+    expect_guard 2 error ${tools.grep}/bin/grep
     export MATCHER_STATUS=2
     expect_guard 2 absent ./matcher-error
     export MATCHER_STATUS=127

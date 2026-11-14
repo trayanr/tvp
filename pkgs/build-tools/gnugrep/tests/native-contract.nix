@@ -4,7 +4,9 @@ let
 in
 package.testContext.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ d.binutils ];
+  tools = package.specification.environment.tools ++ [
+    (d.binutils or package.specification.base.compiler.bintools)
+  ];
   tests.pcre-linkage = {
     script = ''
       LD_DEBUG=libs ${package}/bin/grep --version >/dev/null 2> loaded

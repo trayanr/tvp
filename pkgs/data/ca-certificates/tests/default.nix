@@ -1,25 +1,21 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  openssl,
+  lib,
+  context,
 }:
 let
+  openssl = package.tvp.declaredTestDependencies.openssl;
   mkSuite =
-    if package ? testContext then
-      args:
-      package.testContext.mkSuite {
-        inherit package;
-        tests = builtins.mapAttrs (_: spec: {
-          inherit (spec) script expected;
-          tools = (spec.extraInputs or [ ]) ++ [ package.tvp.declaredTestDependencies.grep ];
-        }) args.tests;
-      }
-    else
-      tvpLib.tests.mkSuite;
+    args:
+    context.mkSuite {
+      inherit package;
+      tests = builtins.mapAttrs (_: spec: {
+        inherit (spec) script expected;
+        tools = (spec.extraInputs or [ ]) ++ [ package.tvp.declaredTestDependencies.grep ];
+      }) args.tests;
+    };
 in
 mkSuite {
-  inherit pkgs package;
   tests =
     {
       certificates = {
@@ -34,7 +30,7 @@ mkSuite {
         extraInputs = [ openssl ];
       };
     }
-    // pkgs.lib.optionalAttrs (package ? testContext) {
+    // lib.optionalAttrs (package ? testContext) {
       data = {
         script = ''
           cmp ${package.src} ${package}/etc/ssl/certs/ca-bundle.crt

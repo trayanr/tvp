@@ -1,100 +1,59 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  retained = previous.recipes.nodejs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      kind = "exact";
-      namespace = "source-gnu.tools";
-      selector = name;
-      reason = "Retained source-GNU ${name} host tool, independent of the ordinary target.";
-    } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "26.13.0" = {
-      constructor = tvp.builder;
-      builder = ./native/build-26.13.0.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        toolPython = constructionTool "python";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        findutils = constructionTool "findutils";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        xz = constructionTool "xz";
-        patch = constructionTool "patch";
-        python = tvp.packages.python_3;
-        ninja = tvp.packages.ninja;
-        # The public 5.2.37 Bash output retains the compiler through bashbug.
-        # This already-built source Bash supplies a compiler-free runtime shell.
-        runtimeBash = constructionTool "bash";
-        # Declared upstream binary build-only exceptions; source bootstrap pending.
-        rustc = tvp.packages.rustc_1;
-        cargo = tvp.packages.cargo-bootstrap_1;
-        openssl = tvp.packages.openssl;
-        zlib = tvp.packages.zlib_1;
-      };
-      patches = [
-        {
-          file = ./patches/store-shell.patch;
-          reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
-        }
-      ];
-    };
-  };
-  versionTable = retained.versionTable // {
-    "26.13.0" = retained.versionTable."26.13.0" // {
-      def = if native then ownedDefs."26.13.0" else retained.versionTable."26.13.0".def;
-    };
-  };
-  publicArgs = retained // {
-    inherit versionTable;
-    testDeps = {
-      shell = tvp.packages.bash_5;
-    };
-
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit pkgs tvpLib package; }
-      else
-        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
+  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.nodejs;
   pname = "nodejs";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-owned-26.13.0.nix;
+        base = (tvp.baseTiers.full.override { standardTools.ninja = tvp.packages.ninja; });
+        deps = {
+          python = tvp.packages.python_3;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.baseTiers.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases."26.13.0" = "sha256-Jj9jns+noXtJQ412zb+a/3MXnjx8t4naabkAcYQn+i4=";
+    }
+  ];
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    packageMeta = retained.packageMeta or { };
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
+        inherit sha256;
+      };
+    tests = (import ./tests/provider-context.nix { inherit pkgs; });
+    testDeps.shell = tvp.packages.bash_5;
+  };
+  # Preserve only the historical named test-factory override, lazily.
+  recipe = family // {
+    extraArgs = family.extraArgs // {
+      mkTests = import ./tests/caller-factory.nix { inherit pkgs tvp; };
+    };
+  };
+  canonical = tvp.lib.packages.mkVersions recipe;
 in
 {
-  recipes.${pname} = publicArgs // {
+  recipes.nodejs = recipe // {
     constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

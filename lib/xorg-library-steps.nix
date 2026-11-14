@@ -1,14 +1,17 @@
 # Shared installed-library finalization; each versioned recipe owns its plan,
 # dependencies and upstream configure/check behavior.
-{ lib }:
+{
+  lib,
+  context ? null,
+}:
 {
   finish =
     {
-      outputs,
-      bash,
-      python,
-      binutils,
-      patchelf,
+      outputs ? context.outputs,
+      bash ? context.tools.bash,
+      python ? context.tools.python,
+      binutils ? context.tools.binutils,
+      patchelf ? context.tools.patchelf,
       base,
       libraryDirectory,
       runtimeLibraries,

@@ -1,22 +1,21 @@
 {
-  pkgs,
-  tvp,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
 let
   spec = package.specification;
   python = spec.tools.python;
   jdk = spec.runtime.jdk;
   locale = import ../../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
+    builder = import ../../../../lib/builder.nix { inherit lib; };
     inherit (spec) base bash coreutils;
     tar = spec.tools.gnutar;
     xz = spec.tools.xz;
     libc = spec.base.compiler.libc;
   };
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
   tests = {
     version = {
@@ -178,4 +177,8 @@ package.testContext.mkSuite {
       expected = "ok";
     };
   };
+}
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = context.mkUpstream { inherit package; };
 }

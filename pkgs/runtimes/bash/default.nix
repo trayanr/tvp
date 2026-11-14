@@ -1,95 +1,33 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  formerRecipe = previous.recipes.bash;
-  constructionRecipe = previous.recipes.bash;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an independent build-only construction generation; ordinary self-building tools must not construct themselves or their compiler.";
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "5.2.37" = {
-      constructor = tvp.builder;
-      builder = ./native/build-5.2.37.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+  retained = (import ./retained.nix { inherit pkgs tvp; }).recipes.bash;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-5.2.37.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
       };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/bash/bash-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      opts.cStandard = "gnu17";
-
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-  };
-  versionTable = formerRecipe.versionTable // {
-    "5.2.37" = formerRecipe.versionTable."5.2.37" // {
-      def = if native then defs."5.2.37" else formerRecipe.versionTable."5.2.37".def;
-    };
-  };
-  installedArgs = formerRecipe // {
-    inherit versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit pkgs tvpLib package; }
-      else
-        formerRecipe.extraArgs.mkTests package
-    ) { inherit pkgs; };
-  };
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../../../pkgs/build-tools/owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
+      releases."5.2.37" = "sha256-lZmyLs0dV4etfTt78MWfMSszltHigRdd0fikAU2mIf8=";
+    }
+  ];
   pname = "bash";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/bash/bash-${version}.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.bash = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

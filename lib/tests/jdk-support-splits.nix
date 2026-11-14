@@ -166,9 +166,9 @@ assert contracts.scopedCompliant && contracts.publicProfileSplit && contracts.pr
 (tvp.canonical.xorgproto_2026_1.testContext.mkTest {
   package = tvp.canonical.xorgproto_2026_1;
   name = "jdk-support-splits";
-  tools = [ tvp.canonical.xorgproto_2026_1.specification.python ];
+  tools = [ tvp.canonical.xorgproto_2026_1.specification.base.standardTools.python ];
   script = ''
-    ${tvp.canonical.xorgproto_2026_1.specification.python}/bin/python3 -B ${./jdk-support-relocate.py} ${../../pkgs/libraries/jdk-support-relocate.py} >&2
+    ${tvp.canonical.xorgproto_2026_1.specification.base.standardTools.python}/bin/python3 -B ${./jdk-support-relocate.py} ${../../pkgs/libraries/jdk-support-relocate.py} >&2
     printf '%s' '${builtins.toJSON contracts}'
   '';
   expected = builtins.toJSON contracts;

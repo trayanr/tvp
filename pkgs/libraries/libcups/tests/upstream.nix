@@ -1,10 +1,18 @@
 # Private upstream validation. No validation producer feeds the installed artifact.
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   d = package.specification;
+  tools = (package.specification.base.standardTools or { }) // {
+    binutils = package.specification.base.compiler.bintools;
+  };
+
   steps = import ../../../../lib/build-steps.nix;
   environment = d.base.environment d.environment;
-  make = ''${d.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${d.bash}/bin/bash'';
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${d.bash}/bin/bash'';
   prefix = (steps.partition package.buildSteps).first;
   production = builtins.filter (
     s:
@@ -19,9 +27,9 @@ let
       // {
         name = "libcups.test-patches";
         cwd = "source";
-        tools = (environment.tools or [ ]) ++ [ d.patch ];
+        tools = (environment.tools or [ ]) ++ [ tools.patch ];
         run = builtins.concatStringsSep "\n" (
-          map (p: "${d.patch}/bin/patch -p1 < '${p}'") (
+          map (p: "${tools.patch}/bin/patch -p1 < '${p}'") (
             builtins.filter (p: builtins.elem p d.testPatches) d.patches
           )
         );
@@ -29,7 +37,7 @@ let
     )
   ];
 in
-(package.testContext.mkTest {
+(context.mkTest {
   inherit package;
   name = "upstream";
   script = "printf upstream-pass";

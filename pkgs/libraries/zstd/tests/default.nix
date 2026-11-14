@@ -1,27 +1,38 @@
 {
-  pkgs,
-  tvpLib,
-  zstd,
-  gzip,
+  package,
+  lib,
+  context,
 }:
 let
+  zstd = package;
+  gzip = package.tvp.declaredTestDependencies.gzip;
+in
+
+let
   mkSuite =
-    if zstd ? testContext then
-      args:
-      zstd.testContext.mkSuite {
-        package = zstd;
-        libraries = [ zstd ];
-        tests = builtins.mapAttrs (_: spec: {
-          inherit (spec) script expected;
-          tools = (spec.extraInputs or [ ]) ++ [ zstd.tvp.deps.gnugrep ];
-        }) args.tests;
-      }
-    else
-      tvpLib.tests.mkSuite;
+    args:
+    context.mkSuite {
+      inherit package;
+      libraries = [ package ];
+      tests = builtins.mapAttrs (
+        _: test:
+        (builtins.removeAttrs test [ "extraInputs" ])
+        // {
+          tools =
+            (test.tools or [ ])
+            ++ (test.extraInputs or [ ])
+            ++ [
+              package.specification.gawk or package.specification.base.standardTools.gawk
+              package.specification.grep or package.specification.base.standardTools.grep
+              package.specification.sed or package.specification.base.standardTools.sed
+            ];
+        }
+      ) args.tests;
+    };
   cc = [ zstd.tvp.cc ];
 in
 mkSuite {
-  inherit pkgs;
+
   package = zstd;
   tests =
     {
@@ -62,7 +73,7 @@ mkSuite {
         expected = "tvp";
       };
     }
-    // pkgs.lib.optionalAttrs (zstd ? testContext) {
+    // lib.optionalAttrs (zstd ? testContext) {
       installed-layout = {
         script = ''
           set -euo pipefail
@@ -79,3 +90,14 @@ mkSuite {
       };
     };
 }
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
+}
+
+// {
+  helpers = import ./current-helpers.nix { inherit package lib context; };
+}
+// lib.optionalAttrs (package.version == "1.5.6") (
+  import ./current-contracts.nix { inherit package lib context; }
+)

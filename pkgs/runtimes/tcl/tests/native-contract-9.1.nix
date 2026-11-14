@@ -1,12 +1,16 @@
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   deps = package.tvp.deps // {
     inherit (package.runtime) zlib libgcc;
   };
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ package.specification.tools.binutils ];
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   libraries = [
     package
     deps.zlib
@@ -32,8 +36,10 @@ package.testContext.mkSuite {
           s:
           s
           // {
-            tools = s.tools // {
-              binutils = inspector;
+            base = s.base.override {
+              compiler = s.base.compiler // {
+                bintools = inspector;
+              };
             };
           }
         );
@@ -45,7 +51,7 @@ package.testContext.mkSuite {
               tool:
               builtins.elem (toString tool) [
                 (toString inspector)
-                (toString package.specification.tools.binutils)
+                (toString package.specification.base.compiler.bintools)
               ]
             ) (builtins.head editedInspector.tests.${name}.buildSteps).tools
           );

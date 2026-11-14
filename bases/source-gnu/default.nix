@@ -27,6 +27,7 @@ let
           inherit (tools)
             cmake
             ninja
+            perl
             xz
             gzip
             python

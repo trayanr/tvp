@@ -1,10 +1,18 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+
+context.mkSuite {
+  tools = with package.specification; [
+    sed
+    grep
+    gawk
+    diffutils
+    findutils
+  ];
+  inherit package;
   tests = {
     version = {
       script = ''which --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' '';
@@ -21,4 +29,10 @@ tvpLib.tests.mkSuite {
       expected = "first/tvp-tool\nsecond/tvp-tool";
     };
   };
+}
+
+// import ./current-owned.nix { inherit package lib context; }
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
 }

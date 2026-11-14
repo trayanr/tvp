@@ -9,6 +9,7 @@
   inherit (tvp.baseTiers.native.standardTools)
     cmake
     ninja
+    perl
     gnumake
     gnutar
     xz

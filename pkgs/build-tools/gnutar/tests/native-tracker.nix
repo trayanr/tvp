@@ -1,4 +1,8 @@
-{ pkgs, package }:
+{
+  package,
+  pkgs ? null,
+  lib ? pkgs.lib,
+}:
 let
   upstream = import ../upstream.nix;
   archives = builtins.fromJSON (builtins.readFile ./upstream-archives.json);
@@ -25,7 +29,7 @@ let
     "tar-1.35.tar.xz?download=1"
     "tar-1.35.tar.xz#fragment"
   ];
-  found = pkgs.lib.unique (map upstream.normalise archives);
+  found = lib.unique (map upstream.normalise archives);
   fixture = builtins.toFile "gnutar-index-fixture.html" ''
     <a href="tar-1.13.tar">tar-1.13.tar</a>
     <a href="tar-1.11.8.tar.gz">tar-1.11.8.tar.gz</a>
@@ -36,7 +40,7 @@ let
 in
 assert builtins.length archives == 67;
 assert builtins.length found == 28;
-assert pkgs.lib.sort builtins.lessThan found == pkgs.lib.sort builtins.lessThan versions;
+assert lib.sort builtins.lessThan found == lib.sort builtins.lessThan versions;
 assert builtins.all (name: upstream.normalise name == null) rejected;
 (import ../../../../lib/tests/recorded.nix) {
   inherit package;
@@ -45,7 +49,7 @@ assert builtins.all (name: upstream.normalise name == null) rejected;
   script = ''
     set -euo pipefail
     mkdir -p "$out"
-    grep -oE ${pkgs.lib.escapeShellArg upstream.pattern} ${fixture} > "$out/tokens"
+    grep -oE ${lib.escapeShellArg upstream.pattern} ${fixture} > "$out/tokens"
     # Complete hrefs and complete visible names, including rejected suffixes.
     for name in tar-1.13.tar tar-1.11.8.tar.gz tar-1.35.tar.xz.sig prefix-tar-1.35.tar.xz tar-1.35-rc1.tar.xz; do
       test "$(grep -cxF "$name" "$out/tokens")" = 2

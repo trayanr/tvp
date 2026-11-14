@@ -21,14 +21,15 @@ let
       xz
     ];
   });
-  disabled = (p.override { doCheck = false; }).editSteps (
-    steps.replace "zstd.check" (_: {
-      name = "zstd.check";
-      enabled = false;
-      tools = throw "disabled tools forced";
-      libraries = throw "disabled libraries forced";
-      run = throw "disabled command forced";
-    })
+  disabled = (p.override { doCheck = false; }).edit (
+    old:
+    old
+    // {
+      upstreamCheck = old.upstreamCheck // {
+        tools = throw "disabled check tools were forced by A/F";
+        run = throw "disabled check body was forced by A/F";
+      };
+    }
   );
   insert = steps.insertAfter "zstd.build" [
     {
@@ -44,7 +45,7 @@ let
       p.drvPath != pilot.drvPath
       && p.artifact.drvPath != pilot.artifact.drvPath
       && p.specification.base.name == "source-gnu-candidate"
-      && pilot.specification.base.name == tvp.bases.default.name;
+      && pilot.specification.base.construction.sourceBase == tvp.bases.default.name;
     pilotReplay =
       (pilot.override { }).drvPath == pilot.drvPath && (pilot.editSteps (x: x)).drvPath == pilot.drvPath;
     split = (steps.partition p.buildSteps).split;
@@ -235,27 +236,35 @@ let
         chmod +x "$out/bin/${binary}"
       '';
     };
-  selected =
-    (p.override {
-      gnused = traceTool "sed" "sed" p.tvp.deps.gnused;
-      gnugrep = traceTool "grep" "grep" p.tvp.deps.gnugrep;
-      diffutils = traceTool "diff" "diff" p.tvp.deps.diffutils;
-      python = traceTool "python" "python3" p.tvp.deps.python;
-    }).editSteps
-      (
-        steps.insertBefore "zstd.finalize" [
-          {
-            name = "fixture.selected-tools";
-            tools = [ tvp.packages.gnugrep ];
-            run = ''
-              for tool in sed grep diff python; do
-                grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"
-              done
-              sort -u "$NIX_BUILD_TOP/selected-tools" > "$out/selected-tools"
-            '';
-          }
-        ]
-      );
+  selectedPackage = p.edit (
+    s:
+    s
+    // {
+      base = s.base.override {
+        standardTools = {
+          sed = traceTool "sed" "sed" s.base.standardTools.sed;
+          grep = traceTool "grep" "grep" s.base.standardTools.grep;
+          diffutils = traceTool "diff" "diff" s.base.standardTools.diffutils;
+          python = traceTool "python" "python3" s.base.standardTools.python;
+        };
+      };
+    }
+  );
+  # Actual CLI cases consume the selected test tools in U, rather than requiring
+  # test execution to happen inside the compilation artifact.
+  selected = selectedPackage.tests.upstream.passthru.upstreamExecution.editSteps (
+    steps.append [
+      {
+        name = "fixture.selected-tools";
+        tools = [ tvp.packages.gnugrep ];
+        run = ''
+          test "$(cat "$out/raw/status")" = 0
+          for tool in sed grep diff python; do grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"; done
+          sort -u "$NIX_BUILD_TOP/selected-tools" > "$out/selected-tools"
+        '';
+      }
+    ]
+  );
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned Zstd contracts: ${lib.concatStringsSep ", " failed}";

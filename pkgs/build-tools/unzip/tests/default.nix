@@ -1,28 +1,31 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  zip,
+  lib,
+  context,
 }:
+let
+  zip = package.tvp.declaredTestDependencies.zip;
+in
+
 let
   d = package.tvp.deps;
   mkSuite =
     args:
-    package.testContext.mkSuite {
+    context.mkSuite {
       inherit package;
       tests = builtins.mapAttrs (_: spec: {
         inherit (spec) script expected;
         tools = (spec.extraInputs or [ ]) ++ [
           d.gawk
-          d.gnugrep
-          d.gnused
+          d.grep
+          d.sed
           d.diffutils
         ];
       }) args.tests;
     };
 in
 mkSuite {
-  inherit pkgs package;
+  inherit package;
   tests = {
     version = {
       script = ''unzip -v | awk 'NR==1 {print $2}' '';

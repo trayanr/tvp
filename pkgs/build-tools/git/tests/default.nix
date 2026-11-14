@@ -1,11 +1,60 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+(context.mkSuite {
+  inherit package;
+  tools = with package.specification; [
+    gawk
+    gnugrep
+  ];
   tests = {
+    rust-link = {
+      script = ''
+        printf '%s\n' 'int answer(void) { return 42; }' > answer.c
+        "$CC" -c answer.c -o answer.o
+        "$AR" crs libanswer.a answer.o
+        printf '%s\n' 'unsafe extern "C" { fn answer() -> i32; }' 'fn main() { assert_eq!(unsafe { answer() }, 42); println!("rust-native-ok"); }' > probe.rs
+        rustc --edition=2024 -C linker="$CC" -L native=. -l static=answer probe.rs -o probe
+        cargo --version > cargo-version.log
+        ${package.tvp.deps.binutils}/bin/readelf -l probe > elf.log
+        ${package.specification.helperPython}/bin/python3 -c "from pathlib import Path; assert '${package.compiler.libc}/lib/ld-linux-x86-64.so.2' in Path('elf.log').read_text()"
+        ./probe
+      '';
+      tools = [
+        package.tvp.deps.rustc
+        package.tvp.deps.cargo
+        package.tvp.deps.binutils
+        package.specification.helperPython
+      ];
+      expected = "rust-native-ok";
+    };
+    interface = {
+      script = ''
+        test "$(git --exec-path)" = ${package}/libexec/git-core
+        test -x ${package}/libexec/git-core/git-remote-http
+        test -x ${package}/libexec/git-core/git-http-backend
+        test -f ${package}/share/git-core/templates/hooks/pre-commit.sample
+        test ${package}/bin/git -ef ${package}/libexec/git-core/git-add
+        ${package.specification.helperPython}/bin/python3 -c "from pathlib import Path; p=Path('${package}/libexec/git-core'); assert (p/'git-submodule').read_text().startswith('#!${package.specification.runtime.shell}/bin/bash'); assert (p/'git-send-email').read_text().startswith('#!${package.specification.runtime.perl}/bin/perl')"
+        printf interfaces-ok
+      '';
+      tools = [ package.specification.helperPython ];
+      expected = "interfaces-ok";
+    };
+    cvsserver-entry-paths = {
+      script = ''
+        unset GIT_EXEC_PATH GITPERLLIB PERL5LIB PERLLIB
+        for entry in ${package}/bin/git-cvsserver ${package}/libexec/git-core/git-cvsserver; do
+          test "$("$entry" --version)" = 'git-cvsserver version ${package.version}'
+        done
+        test "$(GIT_EXEC_PATH=${package}/libexec/git-core ${package}/bin/git-cvsserver --version)" = 'git-cvsserver version ${package.version}'
+        test "$(GITPERLLIB=${package}/share/perl5 ${package}/bin/git-cvsserver --version)" = 'git-cvsserver version ${package.version}'
+        printf cvsserver-entry-paths-ok
+      '';
+      expected = "cvsserver-entry-paths-ok";
+    };
     version = {
       script = ''git --version | awk '{print $3}' '';
       expected = package.version;
@@ -49,7 +98,10 @@ tvpLib.tests.mkSuite {
         cat clone/answer.txt
       '';
       expected = "42";
-      extraInputs = [ package.tvp.deps.python ];
+      tools = [ package.tvp.deps.python ];
     };
   };
+})
+// {
+  upstream = import ./upstream.nix { inherit package; };
 }

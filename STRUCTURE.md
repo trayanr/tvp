@@ -40,16 +40,14 @@ pkgs/
 ├── libraries/                openssl, zlib, libxml2, sqlite …
 │   ├── default.nix           index of packages in this category
 │   └── openssl/
-│       ├── default.nix       definitions, index of version files
-│       ├── 0.nix … 4.nix     releases, grouped by definition
+│       ├── default.nix       inline recipe blocks and literal release hashes
+│       ├── retained/          captured construction inputs still used by callers
 │       └── build-1.1.1.nix   build procedure
 ├── runtimes/                 ruby, php, python, perl, node, jdk …
 │   └── ruby/
-│       ├── default.nix       definitions, index of version files
-│       ├── 2.nix             releases; per major once one file outgrew ~500 lines
-│       ├── 3.nix
-│       ├── 4.nix
-│       ├── build-2.7.nix     build procedure; one file per start version
+│       ├── default.nix       inline recipe blocks and literal release hashes
+│       ├── retained/          earlier tables/procedures until their callers migrate
+│       ├── build-2.7.nix     complete procedure; one file per actual era
 │       ├── build-3.1.nix
 │       ├── build-3.2.nix
 │       ├── build-3.3.nix

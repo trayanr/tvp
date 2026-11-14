@@ -193,6 +193,8 @@ let
         {
           expat = "python";
           libyaml = "python";
+          gn = "python";
+          gradle = "python";
         }
         .${familyName} or null;
       original =
@@ -203,6 +205,7 @@ let
       selected = replacement original;
       standardRole =
         {
+          texinfo = "coreutils";
           xz = "shell";
           bzip2 = "shell";
           gzip = "coreutils";
@@ -225,7 +228,18 @@ let
       );
     in
     {
-      metadata = edited.tvp.deps.${name}.outPath == selected.outPath;
+      metadata =
+        if
+          builtins.elem familyName [
+            "gn"
+            "gradle"
+          ]
+        then
+          edited.specification.base.standardTools.${standardTool}.outPath == selected.outPath
+        else if familyName == "texinfo" then
+          edited.specification.base.${standardRole}.outPath == selected.outPath
+        else
+          edited.tvp.deps.${name}.outPath == selected.outPath;
       command = lib.hasInfix (plain marker.outPath) (plain (commands edited));
       noStaleCommand = !(lib.hasInfix (plain (toString original)) (plain (commands edited)));
     }
@@ -286,6 +300,9 @@ let
               if
                 builtins.elem name [
                   "gnumake_4_4_1"
+                  "cmake_4_4_5"
+                  "meson_1_12_1"
+                  "gradle_9_3_1"
                   "m4_1_4_21"
                   "bzip2_1_0_8"
                   "python-build_3_12_5"

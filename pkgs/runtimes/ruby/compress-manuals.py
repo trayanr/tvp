@@ -1,5 +1,4 @@
 """The two installed Ruby manuals, normalized with selected gzip -c -n."""
-import gzip
 import os
 from pathlib import Path
 import stat
@@ -28,7 +27,8 @@ for name in ("erb.1", "ruby.1"):
         raise ValueError(f"expected unlinked regular manual: {source}")
     data = source.read_bytes()
     if compressed:
-        data = gzip.decompress(data)
+        data = subprocess.run([sys.argv[2], "-d", "-c"], input=data,
+                              check=True, stdout=subprocess.PIPE).stdout
     result = subprocess.run([sys.argv[2], "-c", "-n"], input=data,
                             check=True, stdout=subprocess.PIPE)
     # Tool failure leaves the installed manual untouched.

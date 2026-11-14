@@ -2,7 +2,7 @@
 
 These notes describe the retained [owned procedure](build-4.4.1.nix), which is
 unsplit. The public [definition](../default.nix) selects the split
-[native procedure](../native/build-4.4.1.nix). For new recipes, follow the
+[ordinary procedure](../build.nix). For new recipes, follow the
 [current authoring guide](../../../../lib/NATIVE-RECIPES.md).
 
 The retained procedure keeps its configured installation prefix in one stage.

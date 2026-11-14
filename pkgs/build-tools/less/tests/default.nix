@@ -1,10 +1,15 @@
-{ package, tvp }:
+{
+  package,
+  lib,
+  context,
+}:
+
 let
   p = package;
   d = p.tvp.deps;
 
 in
-(p.testContext.mkSuite {
+(context.mkSuite {
   inherit package;
   tools = [
     d.python
@@ -59,4 +64,7 @@ in
       expected = "declared";
     };
   };
-}) // { upstream = import ./upstream.nix { inherit package; }; }
+})
+// {
+  upstream = import ./upstream.nix { inherit package; };
+}

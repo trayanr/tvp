@@ -257,6 +257,10 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   retaining this test as NOT_RUN and the normal batch incomplete.
 - **Decision needed:** coordinate that historical baseline/compiler realization
   and run the unchanged ABI test; until then ABI qualification remains pending.
+- **Assembled follow-up:** the current end-result graph also needs that retained
+  GCC generation for captured SDK/JDK seed providers. Realizing this real seed
+  dependency once is distinct from launching it only for an authoring count.
+  Preserve the providers; keep ABI qualification pending until its actual receipt.
 
 
 ## MIG-018 — Native upstream profiles still reconstruct their build trees
@@ -334,3 +338,78 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   public compiler generation. Do not replace its runtime provider with a cached
   generation, disable Ruby YJIT, or mistake identity equality for store availability.
   Deferred current/compiler tests remain pending, not accepted or waived.
+
+
+## MIG-023 — Provider projections must include implicit active tool roles
+
+- **Scope:** effective runtime ownership after standard tools moved to bases.
+- **Evidence:** historical Perl's runtime `pwd` could change F while the accepted
+  Coreutils provider projection was ignored because Coreutils was no longer a
+  formal recipe argument. A pure regression failed on the old implementation.
+- **Repair:** apply projections to collected active tool roles before merging
+  explicit dependencies. Unknown names remain errors; unused values stay lazy,
+  multi-provider keys and explicit-dependency precedence remain intact. Eighteen
+  model controls and actual Perl source-level A/F/provider probes pass, with a
+  separate independent source review. No per-package runtime-provider workaround.
+- **Disposition:** resolved at source/metadata scope. This does not claim fresh
+  runtime execution of historical Perl.
+
+## MIG-024 — Concrete multi-directory checkpoint layouts
+
+- **Scope:** JSON-C's separate source/build directories, Zstd's sibling source
+  directory and Binutils's separate build tree.
+- **Decision:** reuse the existing checkpoint/restore behavior through a bounded
+  explicit multi-directory adapter. Record actual original paths and timestamps;
+  validate destinations and complete timestamp coverage before restoration.
+  Existing single-tree helpers remain byte-identical. No new runner, classifier
+  or generic arbitrary-host protocol is introduced.
+- **Evidence:** host-only two-directory roundtrip and destination/parent rejection
+  controls pass. Real upstream restoration remains part of end-result validation;
+  additional host layouts and arbitrary path schemes are not certified.
+
+## MIG-025 — Retained construction callers and test-factory compatibility
+
+- **Scope:** root procedure names, old indexes and test factories still imported
+  directly by earlier compiler/bootstrap generations or real public profiles.
+- **Decision:** preserve actual earlier producers at their original paths. New
+  ordinary root files may temporarily carry `owned`, `native` or `current` names
+  where the old versioned path is still a live input. Ordinary tables use one
+  implicit constructor; retained modules are not another ordinary fallback.
+- **Test boundary:** retain existing named `pkgs`, locale, helpers and counterpart
+  overrides in narrow test-only adapters where a caller exists. The main owned
+  factory stays `{ package, lib, context }`; old test backends and graph-export
+  audits do not enter production. A future caller migration can remove these
+  adapters only after evaluating its real generation identities.
+- **Measured limit:** Readline 2.0 and SQLite 3.2.8 retain their declared broken
+  records and procedures, but their derived producer IDs follow changed live
+  public dependencies. They are not frozen-output proofs. Captured closed/full,
+  bootstrap, construction compiler and frozen-tool snapshots remain exact; this
+  does not certify every unmeasured historical caller or runtime closure.
+
+## MIG-026 — Remaining production/upstream isolation and historical execution
+
+- **Scope:** the authoring pass preserves actual production features and known
+  test profiles; source adoption alone does not complete every isolation task.
+- **Known debt:** native SQLite/OpenSSL reconstruct private upstream trees
+  (MIG-018); several existing Bash/SDK/font/utility/Perl upstream consumers likewise
+  reconstruct source rather than restore a compiled tree. Source Dart still runs
+  its existing selected upstream checks before its artifact split. Python retains
+  required/default build scaffolding (MIG-021); Fontconfig's public profile keeps
+  its tests-enabled construction payload. Zstd 1.5.6's existing combined source
+  helper prepares CLI frontends before A, unlike the corrected 1.5.7 U boundary.
+  The distinct retained GCC16 seed required by captured SDK/JDK providers still
+  runs DejaGNU in its construction `checkPhase`. The current ordinary GCC uses
+  separate upstream consumers; that does not isolate the preserved seed recipe.
+  LLVM's upstream consumer configures a separate source tree with
+  `LLVM_INCLUDE_TESTS=ON` and recompiles production objects. Its independent test
+  derivation does not yet reuse a compiled checkpoint. Keep that performance debt
+  separate from ordinary index adoption and A/F split compliance.
+- **Decision:** keep these visible, without disabling features, inventing coverage
+  or launching historical compilers merely to claim an authoring pass is green.
+  Converge on the existing A/F/U capabilities in a separately reviewed change.
+  Strict historical nonpasses, Libxcrypt's exact ABI baseline, XML conformance and
+  full/hardening/admission limits remain unwaived.
+- **Review correction:** the initial text-tool report inferred all Binutils
+  readers were missing. Active helpers also register tagged tool providers, so
+  that blanket P1 claim was withdrawn. Direct effective-base readers remain a
+  valid cleanup; the original evidence and correction are both preserved.

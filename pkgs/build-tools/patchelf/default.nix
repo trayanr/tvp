@@ -1,94 +1,67 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  testLib = pkgs.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  formerRecipe = previous.publicArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an independently built host generation; Patchelf cannot finalize itself or acquire public Python/Binutils reverse-dependency cycles.";
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "0.19.2" = {
-      constructor = tvp.builder;
-      builder = ./native/build-0.19.2.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnumake
-          gnutar
-          bzip2
-          gzip
-          gnused
-          gnugrep
-          diffutils
-          findutils
-          ;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "Patchelf is a build prerequisite of MPFR; Gawk 5 depends on MPFR. Select the MPFR-free Gawk 4.0 line for the build-only AWK role.";
-        } tvp.packages.gawk_4_0;
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        cxxRuntime = tvpLib.packages.withConstraint {
-          category = "construction";
-          reason = "The selected full source-GNU driver resolves libstdc++ and libgcc_s to this full GCC output, independently of the split runtimes used to construct the compiler.";
-        } candidate.toolchain.runtime;
-      };
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."patchelf";
+  retained = prior.constructionRecipe or prior;
+  full = tvp.baseTiers.full;
+  earlier = import ../../../bases/source-gnu { };
+  profileBase = full.override {
+    shell = tvp.packages.bash;
+    coreutils = tvp.packages.coreutils;
+    standardTools = {
+      python = earlier.tools.python;
+      patchelf = earlier.tools.patchelf;
+      gnumake = tvp.packages.gnumake;
+      gnutar = tvp.packages.gnutar;
+      bzip2 = tvp.packages.bzip2;
+      gzip = tvp.packages.gzip;
+      sed = tvp.packages.gnused;
+      grep = tvp.packages.gnugrep;
+      diffutils = tvp.packages.diffutils;
+      findutils = tvp.packages.findutils;
+      gawk = tvp.lib.packages.withConstraint {
+        reason = "Patchelf precedes MPFR; use the MPFR-free Gawk 4.0 construction role.";
+      } tvp.packages.gawk_4_0;
     };
   };
-  versionTable = formerRecipe.versionTable // {
-    "0.19.2" = formerRecipe.versionTable."0.19.2" // {
-      def = if native then defs."0.19.2" else formerRecipe.versionTable."0.19.2".def;
-    };
-  };
-  publicArgs = formerRecipe // {
-    inherit versionTable;
-    extraArgs.mkTests = testLib.makeOverridable (
-      { pkgs }:
-      package:
-      let
-        testPkgs =
-          if package ? testContext then
-            { lib = testLib; }
-          else
-            tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = package.stdenv;
-            };
-      in
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = testPkgs;
-      }
-      // (if package ? testContext then import ./tests/owned.nix else import ./tests/legacy-owned.nix) {
-        inherit tvp tvpLib package;
-        pkgs = testPkgs;
-      }
-    ) { inherit pkgs; };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "patchelf";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-0.19.2-native.nix;
+        base = profileBase;
+        deps = {
+          cxxRuntime = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact full source-GNU C++ runtime selected by the current driver; the public compiler consumes Patchelf.";
+          } earlier.toolchain.runtime;
+          binutils = earlier.tools.binutils;
+        };
+      };
+      releases = {
+        "0.19.2" = "sha256-1K2aTlxongkRnOLzCpSw6LT5jHhZASPqIWZeNMaSiAE=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // { };
+  rawFamily = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://github.com/NixOS/patchelf/releases/download/${version}/patchelf-${version}.tar.bz2";
+        inherit sha256;
+      };
+    tests = import ./tests;
+  };
+  family = rawFamily;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit (previous.recipes.patchelf) constructionRecipe constructionBuilder;
-  };
+  recipes."patchelf" =
+    family // { constructionRecipe = retained; } // { inherit (prior) constructionBuilder; };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

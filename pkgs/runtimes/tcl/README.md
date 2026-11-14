@@ -1,63 +1,44 @@
-# Tcl ordinary owned procedures
+# Tcl family
 
-On native x86_64 Linux all 82 supported releases select owned installed-artifact
-splits. Releases, hashes, status records and Tcl8 consumer selectors are unchanged.
-This is source coverage: every changed release remains **UNCOMPILED**, and its
-runtime remains **UNQUALIFIED**. It grants no broader admission or default switch.
+All82 supported registered releases use an inline recipe/release table and the
+implicit owned family constructor, effective base tools and shared installed suite.
+Historical source hashes, fallback URLs, patch reasons and Tcl9 degraded status
+are preserved. Tcl9's script image remains disabled; its zipfs command remains
+available. No external database client library is substituted or newly promised.
 
-`legacy.nix` preserves the accepted definitions and construction factory. The
-original `build-8.0.2.nix`, `build-8.6.0.nix`, source-bootstrap procedure under
-`owned/`, and bootstrap test fixtures remain independent and unchanged.
+Four independent complete procedures preserve the actual existing profiles:
+`build-8.0.2.nix` (8.0–8.5, no zlib/packages); `build-8.6.0.nix` (early8.6 and9.0
+bundled packages); `build-8.6.18.nix` (current Tcl8 ABI/private headers/full bundle);
+and `build-9.1.0.nix` (Tcl9 stub ABI/Thread3/explicit ZIP image limit).
+Narrow dialect/unwinder/version/ZIP choices are grouped literal options; the
+old dialect is a stable builder default. Helpers remain at their existing paths.
 
-The complete ordinary procedures preserve the historical construction boundary:
+The zlib dependency is an ordinary TVP package choice. libgcc retains exactly
+the standalone raw full-GCC output selected by the existing full-tier driver,
+through its `compiler.tvp.deps.compiler` metadata. This is a construction/runtime
+role, not a public-GCC dependency. Root must verify its evaluated identity.
 
-- `ordinary/build-8.0.2.nix` serves 8.0.2–8.5.19. It has no zlib dependency or
-  bundled-package target. Original gnu89 options, 8.0p2 reported version, source
-  URL alternatives, and the two historical compatibility patches remain explicit.
-- `ordinary/build-8.6.0.nix` serves 8.6.0–8.6.17 and 9.0.x. It requires zlib and
-  builds binaries, libraries, documentation and bundled packages with the newly
-  built interpreter. Original configure defaults, unwinder options and tcl.pc
-  version exceptions remain selected by the retained definitions.
-- `native/build-8.6.18.nix` retains the current Tcl8 ABI, private headers, stubs
-  and full Itcl/SQLite/TDBC/Thread installation.
-- `native/build-9.1.0.nix` retains its distinct Tcl9 ABI and Thread3 bundle.
+Every procedure installs before its equal-width artifact/final split. Prefix,
+shell, loader, RPATH, archive/header metadata and safety repairs remain in F.
+Tcl9's shipped HTTP cancellation repair stays in F; its offline HTTP/home-shell
+fixture patch remains test-only. Installed API/assertion bodies and whole-test
+guards are shared, with real version-specific ABI/package contracts retained.
 
-Each production plan installs before `steps.split`. Copying, equal-width prefix
-rebasing, installed shebangs, ELF interpreter/RPATH repair, stripping, development
-propagation and path checks follow the split. Compiled Tcl library-path constants
-and their lengths require `artifactName` to match the final name's width. The
-small Tcl relocator changes only that prefix in installed bin/lib/include/data/
-manual/support paths, including static/stub archives and tclConfig.sh. Tcl9 ZIP
-script images remain disabled under the existing degraded status; ZIPFS commands
-are not disabled. No installed build-tree checkpoint is needed.
+Native U still configures a private source tree, builds tcltest/dltest fixtures
+against installed F core/stub libraries, and runs unchanged core/package runners.
+It does not restore A from a checkpoint. Test-source/patch/shell/Python/preparation/
+runner/expectation edits remain independent of A/F. Historical profiles gain no
+new upstream gate. Existing raw failures/skips and external-client limits remain.
 
-`.override` changes declared inputs; `.edit` reads the effective `tools`,
-`libraries`, source, options and base. `.editRuntime` can replace the runtime
-shell, loader, library providers and declared dlopen paths without rebuilding the
-artifact. The dependency projection and tests follow effective providers.
-`tests/default.nix` supplies the shared test bodies and whole-test guards to both
-owned `testContext` and retained caller overrides. Native ABI/package tests remain
-version-specific because their installed interfaces differ.
+Construction callers explicitly use `retained-construction.nix`, byte-identical
+old procedures under `retained/`, original8/9 release tables and original tests.
+The bootstrap-owned Tcl provider remains untouched. Old source-stage context is
+`retained/README.md`; it is historical evidence, not current qualification.
 
-The two current native upstream controls are normal registered tests against the
-final output, separate from production. They unpack a private test source, build
-only the native `tcltest`/dltest fixtures against installed core/stub libraries,
-and use upstream all.tcl runners with installed package providers. The 9.1 offline
-oracle patch is test-only. Source, patch, shell, Python, preparation, runner and
-expectation edits affect validation alone. `doCheck = false` removes the whole
-upstream test while preserving production identities. Raw statuses, summaries,
-fixture errors and the existing external-client classification remain visible.
-These newly separated runners have not been executed or qualified.
+Standard tools are customized through the effective base or selected steps. A
+compiler Binutils edit is a production change. The final-only inspector contract
+therefore edits explicit suffix steps after the split; test-inspector binding
+controls use the selected base. Runtime shell/library edits retain their own role.
 
-Earlier release test guards and nonpasses remain in force. In particular, 8.0 has
-no ARE control; pre-8.5.16 releases have no pkg-config control; pre-8.6 has no zlib
-control. Historical construction failures have not been cured or waived. Tcl9's
-script-image status and external MySQL/ODBC/PostgreSQL client boundaries remain
-explicit limits. Tests newly using installed providers may expose further failures
-at later authorized qualification; source evaluation cannot establish outcomes.
-
-Source-only controls are in `tests/contracts.nix` (all 82 evaluated split plans,
-focused edits and every registered test derivation) and `tests/output-contract.py`
-(tiny byte/layout/Makefile and failure-summary fixtures). They compile and run no
-Tcl, dependency, consumer or upstream test. Full/latest catalogue runs, runtime
-qualification, CI and NAS publication remain outside this draft.
+This candidate has source/syntax/hash checks only. Producer equality, compilation
+and runtime behavior remain unmeasured; all prior failures and gates are unwaived.

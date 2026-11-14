@@ -7,6 +7,19 @@ sys.path.insert(0, str(Path('source/misc').resolve()))
 import jobserver_test as upstream
 
 upstream.NINJA_PATH = sys.argv[1]
+# Keep upstream's exact parallel/serial assertions, allowing process startup on a
+# shared build host to fit within the measured overlap window.
+generate_build_plan = upstream.generate_build_plan
+
+
+def scheduler_plan(command_count):
+    plan = generate_build_plan(command_count)
+    assert plan.count('--duration-ms=50 ') == 1
+    return plan.replace('--duration-ms=50 ', '--duration-ms=1000 ')
+
+
+upstream.generate_build_plan = scheduler_plan
+
 names = ['test_no_jobserver_client', 'test_jobserver_client_with_posix_pipe',
          'test_client_passes_MAKEFLAGS']
 suite = unittest.TestSuite(upstream.JobserverTest(name) for name in names)

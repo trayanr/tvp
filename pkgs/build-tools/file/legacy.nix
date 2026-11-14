@@ -42,7 +42,7 @@ let
         if match == null then null else builtins.head match;
       include = version: builtins.match "[0-9]+[.][0-9]+" version != null;
     };
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
+    extraArgs.mkTests = package: import ./tests/retained.nix { inherit pkgs tvpLib package; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
 

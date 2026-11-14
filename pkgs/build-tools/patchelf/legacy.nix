@@ -22,7 +22,7 @@ let
     inherit pname versionTable;
     extraArgs.mkTests =
       package:
-      import ./tests {
+      import ./tests/retained.nix {
         inherit tvpLib package;
         pkgs = tvpLib.tests.withBase {
           inherit pkgs;

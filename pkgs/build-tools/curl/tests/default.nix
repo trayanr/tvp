@@ -1,28 +1,33 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
+
 let
   mkSuite =
-    if package ? testContext then
-      args:
-      package.testContext.mkSuite {
-        inherit package;
-        libraries = [ package ];
-        tests = builtins.mapAttrs (_: spec: {
-          inherit (spec) script expected;
-          tools = (spec.extraInputs or [ ]) ++ [
-            package.tvp.deps.gawk
-            package.tvp.deps.gnugrep
-          ];
-        }) args.tests;
-      }
-    else
-      tvpLib.tests.mkSuite;
+    args:
+    context.mkSuite {
+      inherit package;
+      libraries = [ package ];
+      tests = builtins.mapAttrs (
+        _: test:
+        (builtins.removeAttrs test [ "extraInputs" ])
+        // {
+          tools =
+            (test.tools or [ ])
+            ++ (test.extraInputs or [ ])
+            ++ [
+              package.specification.gawk or package.specification.base.standardTools.gawk
+              package.specification.grep or package.specification.base.standardTools.grep
+              package.specification.sed or package.specification.base.standardTools.sed
+            ];
+        }
+      ) args.tests;
+    };
 in
 mkSuite {
-  inherit pkgs package;
+  inherit package;
   tests =
     {
       version = {
@@ -79,7 +84,7 @@ mkSuite {
         ];
       };
     }
-    // pkgs.lib.optionalAttrs (package ? testContext) {
+    // lib.optionalAttrs (package ? testContext) {
       compiled-trust = {
         script = ''
           cc -Wall -Wextra -Werror -I${package}/include ${./fixtures/trust.c} -L${package}/lib -lcurl -o trust
@@ -97,7 +102,7 @@ mkSuite {
           test "$(curl-config --prefix)" = ${package}
           test -s ${package}/include/curl/curl.h
           test -s ${package}/lib/libcurl.la
-          grep -Fx ${pkgs.lib.escapeShellArg "dependency_libs='' #pruned"} ${package}/lib/libcurl.la >&2
+          grep -Fx ${lib.escapeShellArg "dependency_libs='' #pruned"} ${package}/lib/libcurl.la >&2
           test ! -e ${package}/lib/libcurl.a
           test "$(readlink ${package}/lib/libcurl.so)" = libcurl.so.4.8.0
           test "$(readlink ${package}/lib/libcurl.so.4)" = libcurl.so.4.8.0
@@ -139,7 +144,7 @@ mkSuite {
       };
     }
     //
-      pkgs.lib.optionalAttrs
+      lib.optionalAttrs
         ((package.tvp.features.doCheck or false) && !(package.specification ? upstreamPlan))
         {
           upstream = {
