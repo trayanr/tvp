@@ -19,18 +19,16 @@ let
     direct.drvPath == function.drvPath
     && direct.artifact.drvPath != package.artifact.drvPath
     && lib.hasInfix (builtins.unsafeDiscardStringContext "${selectedSed}/bin/sed") configure.run
-    &&
-      builtins.all (p: p.tvp.deps.gnused.drvPath == selectedSed.drvPath && p.drvPath == direct.drvPath)
-        (
-          [
-            direct
-            direct.out
-            function
-            function.out
-          ]
-          ++ direct.all
-          ++ function.all
-        );
+    && builtins.all (p: p.tvp.deps.sed.drvPath == selectedSed.drvPath && p.drvPath == direct.drvPath) (
+      [
+        direct
+        direct.out
+        function
+        function.out
+      ]
+      ++ direct.all
+      ++ function.all
+    );
   construction = tvp.canonical.ruby_3_3_12.override { openssl = tvp.packages.openssl_4_0_0; };
   runtime = construction.editRuntime (r: r // { openssl = tvp.packages.openssl_4_0_1; });
   compare = lib.findFirst (s: s.name == "test.compare") null runtime.tests.openssl.buildSteps;

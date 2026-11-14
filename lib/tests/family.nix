@@ -99,6 +99,13 @@ let
     tools = [ (package "second-coreutils") ];
     standardTools.gnumake = package "second-make";
   };
+  definitionBaseFamily = api.mkFamily (withDefinition (defs."1" // { base = replacement; }));
+  definitionBaseCanonical = (api.mkVersions definitionBaseFamily).family-model_1;
+  definitionBaseDefault = definitionBaseFamily.instantiate { version = "1"; };
+  explicitCallerBase = definitionBaseFamily.instantiate {
+    version = "1";
+    inherit base;
+  };
   rebound = p.override { base = replacement; };
   explicit = (p.override { bash = package "explicit-shell"; }).override { base = replacement; };
   runtime = p.editRuntime (_: {
@@ -288,6 +295,14 @@ let
     explicitComposition = family ? versionTable && !(family ? canonical) && !(family ? aliases);
     generatedAliases = aliases.family-model.drvPath == p.drvPath;
     stageLocalInstantiation = constructed.drvPath == p.drvPath;
+    omittedBaseHonorsDefinition =
+      definitionBaseDefault.specification.base.compiler.drvPath == replacement.compiler.drvPath
+      && definitionBaseDefault.drvPath == definitionBaseCanonical.drvPath
+      && definitionBaseDefault.artifact.drvPath == definitionBaseCanonical.artifact.drvPath;
+    explicitCallerBaseStillAuthoritative =
+      explicitCallerBase.specification.base.compiler.drvPath == base.compiler.drvPath
+      && explicitCallerBase.drvPath == p.drvPath
+      && explicitCallerBase.artifact.drvPath == p.artifact.drvPath;
     baseEditRebindsMake =
       edited.specification.gnumake.drvPath == replacement.standardTools.gnumake.drvPath;
     baseEditRebindsShell = edited.specification.bash.drvPath == replacement.shell.drvPath;

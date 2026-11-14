@@ -1,156 +1,925 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  retained = previous.recipes.php;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      kind = "exact";
-      namespace = "source-gnu.tools";
-      selector = name;
-      reason = "Retained source-GNU ${name} host tool, independent of the ordinary target.";
-    } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "8.5.12" = {
-      constructor = tvp.builder;
-      builder = ./native/build-8.5.12.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://www.php.net/distributions/php-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        toolPython = constructionTool "python";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        findutils = constructionTool "findutils";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        gzip = constructionTool "gzip";
-        pkgConfig = tvp.packages.pkg-config;
-        openssl = tvp.packages.openssl;
-        zlib = tvp.packages.zlib_1;
-        libxml2 = tvp.packages.libxml2_2;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-        sqlite = tvp.packages.sqlite_3;
-      };
+  versionTable = tvp.lib.packages.mkTable [
 
-    };
-  };
-  # Retain each historical dependency profile and option set. Only construction
-  # and test-only dependencies are separated; no dependency upgrades are implied.
-  ordinary =
-    def:
-    def
-    // {
-      constructor = tvp.builder;
-      builder = ./ordinary + "/${builtins.baseNameOf def.builder}";
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url =
-            if
-              builtins.elem (builtins.baseNameOf def.builder) [
-                "build-5.0.5.nix"
-                "build-5.1.6.nix"
-                "build-5.2.17.nix"
-              ]
-            then
-              "https://museum.php.net/php5/php-${version}.tar.gz"
-            else
-              "https://www.php.net/distributions/php-${version}.tar.gz";
-          inherit sha256;
+    {
+      def = {
+        builder = ./build-owned-5.0.5.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # Original iconv returns partial output while reporting illegal input.
+        opts.testFeatures.iconvPartialOutputOnError = true;
+        # This configure generation uses implicit-int compiler probes.
+        opts.cStandard = "gnu89";
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses the LHASH type removed in OpenSSL 1.0; native PHP 5.0.5 fails compilation with 1.0.2u. The moving 0.9.8 letter line preserves that public API.";
+            } tvp.packages.openssl_0_9_8
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+            } tvp.packages.libxml2_2_8
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          flex = tvp.packages.flex;
+
         };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+        opts = {
+          parallelBuild = true;
+          testFeatures.passwordApi = false;
+          testFeatures.shortArraySyntax = false;
+          testFeatures.sqlite3Api = false;
+          testFeatures.functionEntryEnd = false;
+          testFeatures.digestApi = false;
+          testFeatures.sqlite2Api = true;
         };
-      deps = builtins.removeAttrs def.deps [ "testAutoconf" ] // {
-        inherit (ownedDefs."8.5.12".deps)
-          bash
-          coreutils
-          toolPython
-          gnumake
-          gnutar
-          findutils
-          sed
-          grep
-          gawk
-          diffutils
-          binutils
-          patchelf
-          gzip
-          ;
       };
-    };
-  versionTable = builtins.mapAttrs (
-    version: entry:
-    entry
-    // {
-      def =
-        if !native then
-          entry.def
-        else if version == "8.5.12" then
-          ownedDefs."8.5.12"
-        else
-          ordinary entry.def;
+      releases."5.0.5" = "sha256-k1LxeKOtXPhYIO6bbnTelrmX71WVjF8DFbbo6xNp1VI=";
     }
-  ) retained.versionTable;
-  publicArgs = retained // {
-    inherit versionTable;
-    testDeps = retained.testDeps // {
-      autoconf = tvp.packages.autoconf_2;
-    };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        if package.tvp.builder == "build-8.5.12.nix" then
-          import ./tests/native.nix { inherit pkgs tvpLib package; }
-        else
-          import ./tests {
-            inherit pkgs tvpLib;
-            php = package;
-          }
-      else
-        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
+    {
+      def = {
+        builder = ./build-owned-5.1.6.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # Original iconv returns partial output while reporting illegal input.
+        opts.testFeatures.iconvPartialOutputOnError = true;
+        # This configure generation uses implicit-int compiler probes.
+        opts.cStandard = "gnu89";
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses the LHASH type removed in OpenSSL 1.0; native PHP 5.0.5 fails compilation with 1.0.2u. The moving 0.9.8 letter line preserves that public API.";
+            } tvp.packages.openssl_0_9_8
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+            } tvp.packages.libxml2_2_8
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+          flex = tvp.packages.flex;
+
+        };
+        opts = {
+          parallelBuild = true;
+          testFeatures.passwordApi = false;
+          testFeatures.shortArraySyntax = false;
+          testFeatures.sqlite3Api = false;
+          testFeatures.functionEntryEnd = false;
+          testFeatures.digestApi = false;
+          testFeatures.sqlite2Api = true;
+        };
+      };
+      releases."5.1.6" = "sha256-XHlj/1kVwVsQq5z6tIl2xV+kWVUWFRmmG8iF74mjNaU=";
+    }
+    {
+      def = {
+        builder = ./build-owned-5.2.17.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # Original iconv returns partial output while reporting illegal input.
+        opts.testFeatures.iconvPartialOutputOnError = true;
+        # This configure generation uses implicit-int compiler probes.
+        opts.cStandard = "gnu89";
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+            } tvp.packages.openssl_1_0
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "DOM documenttype reads xmlOutputBuffer.buffer->content/use directly; libxml2 2.9 changes buffer to opaque xmlBuf. Native PHP 5.0.5/5.1.6/5.2.17 fail against 2.9.7; the 2.8 line retains the public buffer layout.";
+            } tvp.packages.libxml2_2_8
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts = {
+          parallelBuild = true;
+          testFeatures.passwordApi = false;
+          testFeatures.shortArraySyntax = false;
+          testFeatures.sqlite3Api = false;
+          testFeatures.functionEntryEnd = false;
+          testFeatures.digestApi = false;
+          testFeatures.sqlite2Api = true;
+        };
+      };
+      releases."5.2.17" = "sha256-Gr4Hwf3WQYRwijuheavPzKVmKk4NIDfrJ0i3WrxC52c=";
+    }
+    {
+      def = {
+        builder = ./build-owned-5.3.29.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # Original iconv returns partial output while reporting illegal input.
+        opts.testFeatures.iconvPartialOutputOnError = true;
+        # This configure generation uses implicit-int compiler probes.
+        opts.cStandard = "gnu89";
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+            } tvp.packages.openssl_1_0
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts = {
+          parallelBuild = true;
+          testFeatures.passwordApi = false;
+          testFeatures.shortArraySyntax = false;
+          testFeatures.sqlite2Api = true;
+        };
+      };
+      releases."5.3.29" = "sha256-V88JfePWwxUt2jQvYrGy6cmI9M/jAMz+PBHzwgeg4xc=";
+    }
+    {
+      def = {
+        builder = ./build-owned-5.3.29.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        # Preserve execution of the original POSIX readdir_r runtime probe.
+        opts.configureProbeFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+            } tvp.packages.openssl_1_0
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        # The historical typed zlib globals constructor predates this callback API.
+        opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+        opts = {
+          parallelBuild = true;
+          # install-cli and install-pharcmd race in the shipped mkdir helper.
+          # Keep parallel compilation; serialise this release's install targets.
+          parallelInstall = false;
+          testFeatures.passwordApi = false;
+        };
+      };
+      releases."5.4.45" = "sha256-JbxHI5VfTjUpNSWAAq8UoUqYELSRoZQA12/N+p0Eso8=";
+    }
+    {
+      def = {
+        builder = ./build-owned-5.3.29.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        # Preserve execution of the original POSIX readdir_r runtime probe.
+        opts.configureProbeFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+            } tvp.packages.openssl_1_0
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+        # 7.0 adds an explicit cast for the typed zlib globals constructor.
+        opts.compileFlags = [
+          "-Wno-error=incompatible-pointer-types"
+          # libmagic file_replace omits its int return type in this release.
+          "-Wno-error=implicit-int"
+        ];
+      };
+      releases."5.6.40" = "sha256-VvuYeNEv3ZIfagiX6Rn06YDZMBYOFUy94sxtkgaifKw=";
+    }
+    {
+      def = {
+        builder = ./build-owned-5.3.29.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        # Preserve execution of the original POSIX readdir_r runtime probe.
+        opts.configureProbeFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "Consumer reaches OpenSSL structures made opaque in 1.1; use the 1.0 API line.";
+            } tvp.packages.openssl_1_0
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "The existing C dialect/warning policy accepts const callbacks. ext/libxml still uses ATTRIBUTE_UNUSED, removed from public libxml2 headers in 2.14. Complete native suites pass with 2.13.9; 2.15.4 fails compilation.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+        # 7.0 adds an explicit cast for the typed zlib globals constructor.
+        opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
+      };
+      releases."5.5.38" = "sha256-T0WMm1BCaWFXFaYvGCt8L4m7goT0hL78IhtWoVcbUG4=";
+    }
+
+    {
+      def = {
+        builder = ./build-owned-5.3.29.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        # Preserve execution of the original POSIX readdir_r runtime probe.
+        opts.configureProbeFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
+            } tvp.packages.openssl_1_1
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "DOM itemHashScanner requires mutable xmlChar callback names; libxml2 2.9.8 makes xmlHashScan names const. 2.9.7 is the newest working control; 2.9.8 fails native compilation.";
+            } tvp.canonical.libxml2_2_9_7
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          libxcrypt = tvp.packages.libxcrypt_4;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+      };
+      releases."7.0.33" = "sha256-1xpuy2sT3FP+11Mqf4+UnEBEgG8GdQL4+2+frLtARSo=";
+    }
+    {
+      def = {
+        builder = ./build-owned-7.1.33.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        # Preserve execution of the original POSIX readdir_r runtime probe.
+        opts.configureProbeFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
+            } tvp.packages.openssl_1_1
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+      };
+      releases."7.1.33" = "sha256-AFXzaP/v5R1aRIN1W9F0deiOdDAsCLcnlSgxxbJoLqI=";
+      releases."7.2.34" = "sha256-iyd3x0HoPxiNPKbY6Y7OcmSsr+6GeHKY+uV+BdDd3Hg=";
+
+    }
+    {
+      def = {
+        builder = ./build-owned-7.1.33.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
+            } tvp.packages.openssl_1_1
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+        # php_time() has the old unspecified-argument declaration.
+        opts.cStandard = "gnu17";
+        # The runtime probe calls close(DIR*) and ignores that result.
+        opts.configureProbeFlags = [ "-Wno-error=int-conversion" ];
+      };
+      releases."7.3.33" = "sha256-mjacMsb1IDawqJDykDJ/FIoZBO5mqlbiyadUbaZSXsg=";
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        # The old iconv runtime probes include a header below this prefix.
+        opts.iconvFromBase = true;
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        deps = {
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
+            } tvp.packages.openssl_1_1
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+        opts.parallelBuild = true;
+      };
+      releases."7.4.33" = "sha256-WiM3mW8HyKCX4D1GJjtcmNLI41Uid1Y1FCEAO+qPRj4=";
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        # scanf’s original conversion callbacks use pre-C23 unspecified arguments.
+        opts.cStandard = "gnu17";
+        deps = {
+
+          # 8.0 predates PHP's OpenSSL 3 support: ext/openssl uses
+          # RSA_SSLV23_PADDING, which 3.0.0 removed.
+          openssl = (
+            tvp.lib.packages.withConstraint {
+              reason = "ext/openssl uses RSA_SSLV23_PADDING, removed in OpenSSL 3; retain the pre-3 1.1 API line.";
+            } tvp.packages.openssl_1_1
+          );
+          zlib = tvp.packages.zlib_1;
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.0.17" = "sha256-vb15KQHBVsTRcQydJmcy08F/b/Y4UNZmC52NNBEYhCQ=";
+        "8.0.16" = "sha256-zg6jL/nFrxjPtwGXtAyvVYJEANyNW0JYp4PskWi6pbE=";
+        "8.0.15" = "sha256-R/C+YYiwU5C7RX6xlo6hlGOsraeWUK/DXsdjNI1cI3A=";
+        "8.0.14" = "sha256-5n69jEx3JHrR+oiCnluV1RoZ7fPYeBRDTeJh4gpj6iA=";
+        "8.0.13" = "sha256-tMLSfJVOGw2E/Uv+9NJS4VS6R559sRq9iTWPIWTufMg=";
+        "8.0.12" = "sha256-pbePBKidO0AUZf6/RJx+qd5IaB+SgD3Y3Cv5IoEtVys=";
+        "8.0.11" = "sha256-xqRh9XtLy0bNTexEMlOx4ujpgUZvEoAJMyK3hkr+i+c=";
+        "8.0.10" = "sha256-RhLcqa/oFIgBZIg5F1q1iAl6zmZljGhZ6fKD7N6vhLM=";
+        "8.0.9" = "sha256-Hw1y6Qq2rQrhMympaygfcbxZJWPOTjpMgWuNpLWFT7Q=";
+        "8.0.8" = "sha256-CEoegCDob7mbZj0ZX9msmKnzffy57LXBWQVM2484iUU=";
+        "8.0.7" = "sha256-HnRiRVvsgGLvP8fHTx9JZBfLgKo3TOEe2zUBXeJIw8E=";
+        "8.0.6" = "sha256-UaPc6m3rirgq0DXRW6p/U5iYD1dqwZaDE+8Un3zyAQA=";
+        "8.0.5" = "sha256-UK6sb+nCtVd9U0NpOS67icPno0KyDvU4gysd+ZbMyyo=";
+        "8.0.3" = "sha256-5+z+6QHghDN3tkstgSQTLq51vbcaJnW6fFwDjWWSOD0=";
+        "8.0.2" = "sha256-zBejL3a+tfQF2jmlSCGLO2c2cQiE/Ndhg4CYVT3xSdo=";
+        "8.0.1" = "sha256-8f7gQpqizOa8XfXX5lOG4mawqril+teILRDrgz0vU3Y=";
+        "8.0.0" = "sha256-Pte0jWQ1fT6Pqego2+dBYij4QQW4KQwvl3nNZr4x6nE=";
+        "8.0.18" = "sha256-zZgPWi9CI2L4xS0xTtJRQMb0cod8VELE8zBCBfVOGSo=";
+        "8.0.19" = "sha256-SOV2NNNQvKtHRdJdnZT/pHRkm/T36Hn60WMibA0Qe7U=";
+        "8.0.20" = "sha256-fiH9mFlmJkGUzeY1A7V/0PAXCzKjm9evI4TBBxtQ8WQ=";
+        "8.0.21" = "sha256-L1H26Q4ujv06INsI8N1h1/jVqTYvjHMl8a0ozOpb4Kw=";
+        "8.0.22" = "sha256-VvznUpqXmP0IlbyjU50qZbnKxdI/+99jOEGcYu0INRk=";
+        "8.0.23" = "sha256-ot1Q6cSgMo2SG2vJFOi05lcvlPCYZzGPiKzKWsT6dsc=";
+        "8.0.24" = "sha256-YCCEOi8c42dF2Vizyhfz/cQueKQ4mfVSq128UJ/xkjI=";
+        "8.0.25" = "sha256-NJorWgG/zLya+K/fGD5XvtM0lwaghPPEaUqkx/98suk=";
+        "8.0.26" = "sha256-PIOnNVpkCyukNrggLoWX34+dqt7h7JJBcp7OjleNIc0=";
+        "8.0.27" = "sha256-/iN2+q+Rwo6tiaNuEYwXf0qMmnKAoYm5cmXaGvH00wU=";
+        "8.0.28" = "sha256-dDIYTq4B5OjjnwP4Do7AyiyL/rxW6ae5g1QcqIBd8i8=";
+        "8.0.29" = "sha256-227gjfVwY2X2JM3hz/sgrW3h7/5Z1+iGM3IToJ8uJoQ=";
+        "8.0.30" = "sha256-RJ0gSPyyCjFNjCGAl8bRBHqfHFu3KqVNXT66CiekyAw=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.1.0" = "sha256-hIcFBD6kpuAiJGrhKhv/avz1xz6pjGrE0hCNYCjFwSU=";
+        "8.1.1" = "sha256-Tkzz+EOlER9sVc0h3o8mg06jzUpb53yINXy87EotZx0=";
+        "8.1.2" = "sha256-mZJAnAVD4MjomRT3MH4UhaCMBXCRFG5HMVZbWQZfi94=";
+        "8.1.3" = "sha256-ktdPWkr33pDO9s2mW9DDQdyaECezL3DnuIYfb2iji7I=";
+        "8.1.4" = "sha256-qZUcHI/V0u794o3g9kbDROth11ExnSIHE6baJvmGq94=";
+        "8.1.5" = "sha256-RNY3YndGCCOV1dPT1q59ceeAuCqNVaAiiIcVjEMWvxE=";
+        "8.1.6" = "sha256-6Ed0X9ZvyMV/rJk6YJ/vze2T/dzNIl8GIKJrta5XU8M=";
+        "8.1.7" = "sha256-XwtCKhF2M8htSNAok0uNwHgwnUJH51Zeo0smhhiavdg=";
+        "8.1.8" = "sha256-iJ2RBVjSSS9/IjaSG5vN5iBnTItoTsAtEmBg+MpF3I0=";
+        "8.1.9" = "sha256-lUz3f34KcNx2XnY5rN/czRZL5c0bzj2+nRDFjcpjHnY=";
+        "8.1.10" = "sha256-PqTzIxCd+8jSYx0Iqg4IYCwfcTZ46dxsdQ8IHvSeqw8=";
+        "8.1.11" = "sha256-NmDoQIMhFJ9dOCu47rnqexLqjdfqZgadoz9vc4N1CrI=";
+        "8.1.12" = "sha256-4OfII8n5qkwCH140rhp6yvwqnzBWymDrcKivjzPaP98=";
+        "8.1.13" = "sha256-7tGYHOmZnYB8sTmp1GOuVLvtoqV6miitUTut9bmbAHM=";
+        "8.1.14" = "sha256-R1WvJWOtGHzq9KNjI1nFXj875AUOApng9xO7teBTGWU=";
+        "8.1.15" = "sha256-QDUjYYDvrFNf9PItue8xlWcvMePgqoj4nDisBxW+yjs=";
+        "8.1.16" = "sha256-qSn7ntO8Nkpd6k9klU6KqqNAi4ffBNfG90OhkPVZToQ=";
+        "8.1.17" = "sha256-7ycBVikdkKgM6D1o7ugS8wHPXkiDag/2/SkxkT+OJcU=";
+        "8.1.18" = "sha256-i2sSkC59a99oZorMBntNdaPFBHIvdoCYxfgMfXv9JWM=";
+        "8.1.19" = "sha256-DrtrDs9djjVcLxNigH+bc8boA9SWxa0+T7AL6YmYg3I=";
+        "8.1.20" = "sha256-t9PioMW+03uznkYnVQ0O5aSmAAQrg8YwN7D1+EeTy+Y=";
+        "8.1.21" = "sha256-qV+NNZJKpXBa0Hpw3JlL9BtdRRJuzex6qtbt++Xhw38=";
+        "8.1.22" = "sha256-9RQOlLE5tK3sSynDN1N7e28e8CMZfrMr6QnnJOPaFXo=";
+        "8.1.23" = "sha256-7FMws5eO3I/i94gwcgUFv2nRJUJiK1zdzO5jrjoOW1g=";
+        "8.1.24" = "sha256-1gAaXBZ2XNGJdgn8cf8IPjXbmijIh0of8ZHN6+gKZGA=";
+        "8.1.25" = "sha256-GoxZ1rPsy0BMIp6UdVjSvxIgw97AsANmkPrcB/OZNKs=";
+        "8.1.26" = "sha256-2VTOz8PSlML8y+Kxpr73hM4NbF1EqeKPilJ+CSgl8ss=";
+        "8.1.27" = "sha256-mqXXopOJ15mIXZB0CTJpcAbV0PVdHe9nZ44MFParey0=";
+        "8.1.28" = "sha256-oqnYU/Skyf+GMdpdw6bOxasIPvN6IUh3sCQNz8397+o=";
+        "8.1.29" = "sha256-iyYJvx0xc6o4Jpqa8hUyxl9zCq3TBR+argEe6p4kbeU=";
+        "8.1.30" = "sha256-gK3dMCt+lwjg0QZ3nDgnUg7MrxSvEUkXS1HaM9Y+avc=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.1.31" = "sha256-YYkjtAfEV1v+4IXwDEqqFqXMhtSx64k8DzUtYVQbv7E=";
+        "8.1.32" = "sha256-SEaDbR3ifb0o6JGA8HNTEIcCmnfpjo4Bm3su3b2xuv8=";
+        "8.1.33" = "sha256-7jNWig4r4Lcis/mojOzFeDFrZrJckM0KTzsaXNw82CY=";
+        "8.1.34" = "sha256-PFsGDsjg1d0dgjeCPzFhzIvFNCqrPEaJPrqYV3WcS/o=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        # C99 is upstream’s minimum. It selects the existing GNU atomic branch
+        # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
+        opts.cStandard = "gnu99";
+        # Installed atomic headers need the same supported dialect in extensions.
+        opts.testFeatures.consumerCStandard = "gnu99";
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          # Mutable xmlError callbacks require libxml2 before its 2.12 API change.
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Mutable structured-error callbacks predate the const callback API introduced in libxml2 2.12.";
+            } tvp.packages.libxml2_2_11
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.2.0" = "sha256-Q1xMJDnbZIzfNCNvfNRZ+T+UP7eItmcjoDNhDUoFn8Y=";
+        "8.2.1" = "sha256-bXsbj+sU/RxlorydD3LHVYmmGpRlZs+cO/lTalUwtjU=";
+        "8.2.2" = "sha256-2C3aUDVs6/a24U27V2sUvIuF8PRHanh/D1BhHxHrN9I=";
+        "8.2.3" = "sha256-fEdby+YdKLaHhgSxtvOH850aY7XyH6gVb9eqYV1D4lk=";
+        "8.2.4" = "sha256-zud0gBWi3e8XOdRIuYCwldzNCe1YnPG2xu4tFvXnPFA=";
+        "8.2.5" = "sha256-iXTeolBxVUcWYLE6C8vcFlrHeO64Rafb1l1f+5JzjAo=";
+        "8.2.6" = "sha256-G4Rj3x8YDtOUdc/N7R/xBiQsy4I/mcn8GkB8C3avosg=";
+        "8.2.7" = "sha256-cEb5OfDlEWKFNB1VwGrx1QkH4QesLHDe/DLviA+IzeQ=";
+        "8.2.8" = "sha256-ZBm3TptnXI1aGv0niMTXmWoZu+K+QJcWzLIGeJevnfE=";
+        "8.2.9" = "sha256-X6xSBBM1ys+1hFrv8jA/kkA5JTOKAoXy4WD+68uEDwQ=";
+        "8.2.10" = "sha256-fj4nfW6rZSYW+QvHx1mRF5wFEpU5M866J0lvtVFPfng=";
+        "8.2.11" = "sha256-SLG0EnmmeKTUr80LJW7ZIevyqR/rsGNP3ERJuRx1eZ8=";
+        "8.2.12" = "sha256-srdKkfX6wUzhDs4KwhD29dcvQ2ejy2OOgNEX0YN1CiE=";
+        "8.2.13" = "sha256-ahlAOPWp5G2PcKnVnAcsOwjW7b3Y4wQJbiTM8iJbzxs=";
+        "8.3.0" = "sha256-VXrhRlDx0ZhNMhPj/NjZOl8RQYs/gCbTotUCIlEWOVE=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        # C99 is upstream’s minimum. It selects the existing GNU atomic branch
+        # before upstream guarded Clang-only __c11 builtins at 8.2.16/8.3.3.
+        opts.cStandard = "gnu99";
+        # Installed atomic headers need the same supported dialect in extensions.
+        opts.testFeatures.consumerCStandard = "gnu99";
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
+          # still requires libxml2 before 2.14.
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.2.14" = "sha256-TB+7VaEOzn9FMv66nz+IubIRwRMgdCl3WIc4N0wDJV8=";
+        "8.2.15" = "sha256-+TkNI3CMZfQo6GhYPc56tKaeiKtvN3E3pWZDB2+Wa48=";
+        "8.3.1" = "sha256-KxAhi16BkV0XCKtLY1E2LQc1Vuxzp5BVPGH9icEZkk4=";
+        "8.3.2" = "sha256-3s8PUeVBWyH7Y1B1PkW2w75cwIaOTsVh5ciTJsjm7xY=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          # Const callbacks were added at 8.2.14/8.3.1; ATTRIBUTE_UNUSED
+          # still requires libxml2 before 2.14.
+          libxml2 = (
+            tvp.lib.packages.withConstraint {
+              reason = "Callbacks support const, but this definition still uses ATTRIBUTE_UNUSED, removed in libxml2 2.14.";
+            } tvp.packages.libxml2_2_13
+          );
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.2.16" = "sha256-Yqku98LG9EsS5FnY89ZJqo66xeBYRfdHn+VadYDNLdA=";
+        "8.2.17" = "sha256-HYq5jhwJUYxnLFr8vvDmH5ADFzx2OPxoZGGuZw0SdC4=";
+        "8.2.18" = "sha256-uTTKfoyClFxcvwqio/ZnJ+tbUJjlUYGeGwkFctalHq0=";
+        "8.2.19" = "sha256-i/3SBmK0GiOKWs2E+rPgXDamhfy1bm2KwY7rhwV6srw=";
+        "8.2.20" = "sha256-BaQ2X3vGR1rE/vZd3hOIaRPbwANuY4ldNpwfxuggYQc=";
+        "8.2.21" = "sha256-DGMjaZMJpNLnEFfwG8BxsZnyQJc8NJKHtmejqzaklsY=";
+        "8.3.3" = "sha256-YSha4XqT0XLJ8uv+QoAFjQW9oXytq3BcpbUbo+bzpaw=";
+        "8.3.4" = "sha256-DigB5H+xuS0nQyBPz2UM4vytGhPvekT+BXOBAaOD5KI=";
+        "8.3.5" = "sha256-6eqCvb9EtxGYh16v3MHlYFrO517ESKV0MF8Ly+MXsp0=";
+        "8.3.6" = "sha256-OWlfW9EHiS42/S7Ws9OngUD9SwXVVtbGUxqSFjPKy18=";
+        "8.3.7" = "sha256-LhHRC2UUWah2dAHma11w47BI5EZXn83rC2m8unia+MQ=";
+        "8.3.8" = "sha256-Dr7Z8UcYcc8THlBGKfOUfyrNOKZVzDGwNvme/Q49ves=";
+        "8.3.9" = "sha256-9ITexu4AXIP4ma8C/AIeG8Ox17PxQ8oGLvZrD87pZWY=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.2.22" = "sha256-RBlwFsnu7VxQUj4g60StxN2dhKwIvfnkYHfnddRn19A=";
+        "8.2.23" = "sha256-9ctfDgY7zGMsYKjyavY7GdX5JPH8VLRHHYjPqoZdaRc=";
+        "8.2.24" = "sha256-XSZEGWknmllOQEu58uF7b3S7EGBv4FkR5zkTdnOubEw=";
+        "8.2.25" = "sha256-f+e6bj5mzQ5hz6lTQeau/IeQAwp4ZzM/VK71+3iq0Ys=";
+        "8.2.26" = "sha256-BOR7RrNH7WQE3MnpmJSGcQsHXq/ISQUA/Sca7qxdg8s=";
+        "8.2.27" = "sha256-F5zJAXYNR4/9VF0QcC68KhJw2ME0cb3acp0gBVFAgJo=";
+        "8.2.28" = "sha256-MxgwCIjeUCNyDMhO+tXgBeU/MLXwBy+uZadQ2ryvbsM=";
+        "8.2.29" = "sha256-CyfTMHadS8Z7HYhkNHw4dEsolmSpRpGcPdsiNdMms80=";
+        "8.2.30" = "sha256-oPpmc7pLDIM1+6sIr7fC4To3kfK1oJKMetPXrYcu3yY=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.2.31" = "sha256-CDwvYcxfUn6yk8TEaKka9GqWeHhZV+AjsnlqnbKQ2HA=";
+        "8.2.32" = "sha256-VsnWkR2g0zfiwWgfanZ6wFcYIeHxbI/fnCSL8xfZm5Q=";
+        "8.2.33" = "sha256-mlJdTbEjft5AjkVLRvWpO55F2D1xdTWS4/khkD2Rfgc=";
+        "8.2.34" = "sha256-tCpYgXrN8+Zy1Jeo9TFMHugBtMqU665Bh4vSnPd2QQU=";
+        "8.2.35" = "sha256-nbQgTwotGREneugyGF4Hu0w7NVl3J1OnDSloyjRtaRA=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.3.10" = "sha256-0LTdX/RlBTJI/Sjazy/gvted6q72V4kM7La/y3OZbc0=";
+        "8.3.11" = "sha256-uTppr4OhMCVDeJQIGUvRrpgp4RbnhNV4d4IA8g8bctQ=";
+        "8.3.12" = "sha256-cJDlUeBbJjhFRjRdahYscbdFUP6/db39Ft/R8M+oZHw=";
+        "8.3.13" = "sha256-/+NDF9JojtMWGAnJDKQTXITr/f0SpGiAomTX0eHXc5o=";
+        "8.3.14" = "sha256-5O5gLDHi9wHJ8CCaKQLdSAJydDEkapFVv1bdp7z3+0o=";
+        "8.3.15" = "sha256-Zwc8PJxWyGRh4HFdnhgGr13f/o5uLrl4H3kju7W9Z/o=";
+        "8.3.16" = "sha256-YUQWJ9ylDPAXPj8FT/6MT122VSVVxDyrh6jsrP0gHH4=";
+        "8.3.17" = "sha256-4rvspfpi/yfWumJBYZz5KoDlNGVWvhh6qWK5G9DrnfE=";
+        "8.3.18" = "sha256-hm55EyMTKEjZBB2UU2+6zHuwVy1s8/gV7ITr1kUty3M=";
+        "8.3.19" = "sha256-uyHRpeuaiydmiykm+pJ5pYeLtv3uVUUGIfeGXgYtzzo=";
+        "8.3.20" = "sha256-UV7TdSnfa39Wm6aNUFcTvOI6k6WEcd7axOz9F8ROVlA=";
+        "8.3.21" = "sha256-5/F0jB+j0r+O8uAFCL1iMlumjDuDCyU7xWEiWpulRX0=";
+        "8.3.22" = "sha256-j8V8nfRVNUZ55KEn3vtg4a+HGOzkzUgn5QD1x/JEkQM=";
+        "8.3.23" = "sha256-rJ89bpvPHVxNZtLZVPiYUsF/1MXrpYEaOo2wjzjJCMc=";
+        "8.3.24" = "sha256-uCfFErWScMPcfhlhQxT8NFAixCPmRDyWB0YxB5LQ3oI=";
+        "8.3.25" = "sha256-hnEemOzP+2N9wxnwzc3pGIwXEGM5EL6xo8uzrl7MLgU=";
+        "8.3.26" = "sha256-yW2sl0XbkhaimQB9FEtZP05OfZW0YYsqlZHl5VhSANU=";
+        "8.3.27" = "sha256-vxieMPgeEVJmkLHILk+4soa2B816+vS/J6OQA9jzJG8=";
+        "8.3.28" = "sha256-L33aNbvvKELsYVEKrv5Sx4Nhph+c+r2Zp3iSBNY4PZ8=";
+        "8.3.29" = "sha256-hWX6hzPGQLYNpatJRL8tQIH4WZFbOeKbOvJs8jRD7Zc=";
+        "8.3.30" = "sha256-5Yfclft/YnMCmfp7Nrbk+R5nCKrvov/2igCY0yDBY4Y=";
+        "8.4.0" = "sha256-lZeyBUxGmLv95jc4nKHculcNXfKNJuO1Z0tAnE+FeyM=";
+        "8.4.1" = "sha256-w9HOQVdGPqQwBCicARct61TOnFiU2HIvToBUYb+f6uw=";
+        "8.4.2" = "sha256-XTz4Kn9Mr9z8Tz2Y8+PugQd65XxwmlYTy/9YNNeKd0c=";
+        "8.4.3" = "sha256-RbiFVbMUh0AbQsi9NvLEXYSZK8k65MGiPZO7M0eYTss=";
+        "8.4.4" = "sha256-cZVR9QqBlh+AKqkQK/ShoLWjFQdDMKs3vIA1oV9L5xs=";
+        "8.4.5" = "sha256-8FUw01Dx/+J54JfCr3qNeMqwRu+Z2R9rMVGwbwqwXQU=";
+        "8.4.6" = "sha256-Sb4PL0XJsHybkh0CO/KLH8eBcAyCmGlyVoEwDnLj+qg=";
+        "8.4.7" = "sha256-/SvjuTIBhOhWQm4BvRpCgRB3bqjpdsP7a2WAjQP8iGo=";
+        "8.4.8" = "sha256-JtWuAUklt97jph7AJCJ5XwCPuzo2+TVe2u4tnXi4mwc=";
+        "8.4.9" = "sha256-EGjeREjXfNRMwVuWmE8fmsz028iDt5OuptAoRu+LG6E=";
+        "8.4.10" = "sha256-vSXEDs5g0bPIecEfUX0zW41qhyF0wy67CIuUlNi7LPI=";
+        "8.4.11" = "sha256-QiVIzYzxSrAmS6UQ01hkdrDnejJyNWukhryC5wbcbMg=";
+        "8.4.12" = "sha256-SWOw06bKijkTF9G4AwnCz96/QxixMf+OfRnjq3nakQQ=";
+        "8.4.13" = "sha256-ujI2GbMiEl29e/Ce771XKGN5c1nH0Sf5hsWKcchy1TE=";
+        "8.4.14" = "sha256-QDQfPgOjbUj6zbbMLsYA/4h6Gvml5f7gtA9AthSIr64=";
+        "8.4.15" = "sha256-UdI8mAc8HojJjBKxdXNqETFs09R1P40GCTTlPlqZRcM=";
+        "8.4.16" = "sha256-jjXSTxSOp8KpPpubzDKei/eLW7ki83I6cnx0wZ0YTpg=";
+        "8.4.17" = "sha256-qg7+t7R63/MeEL7R/E/81MC1pNQasLrPu1ScWEk57pA=";
+        "8.4.18" = "sha256-eWNvKJCXbnUHEjmIxHUOWSpus1zUB7+n0rs1rRWvOgY=";
+        "8.4.19" = "sha256-noYkNf+1M9xbDrSGFwp05ffICV6OuIGaL/Wq1DApKhg=";
+        "8.4.20" = "sha256-ot711TTVfGoCNvImXedTdgivhxkApPeVXv9GPp44JH0=";
+        "8.4.21" = "sha256-25buCo5e57c6SROirt3BYrou8WzTS5NHtbmmFQ4fjkg=";
+        "8.5.0" = "sha256-3DZRNpybYzIN1OqOJyxqI/GOUPZ8E9EO42jIaWHb0Q8=";
+        "8.5.1" = "sha256-kVSSlYCBQJpePvmd+Wm8+lszvflRe9B3mRdH4X+iwbc=";
+        "8.5.2" = "sha256-N5zMzvzIXygoZETPAbwNsBfHnVE0FyZ/W7HYBLhCjCI=";
+        "8.5.3" = "sha256-QCZU2ZtL7aYC1NrsTxzTmq/az1kj4+lH2oc5KCZmAUY=";
+        "8.5.4" = "sha256-T+9/RO/zwY4ylQTLDT6zC0HPVOLbBctOvot4/DfTjOE=";
+        "8.5.5" = "sha256-J2J59jeodaUUNGszK7ptiwbANs95eahY5cVfcsSHSIQ=";
+        "8.5.6" = "sha256-FpqqIcKDSzjfjjkWn0O8W+qNQFmoFs+8Wb4I/CuuYM0=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.3.31" = "sha256-Tnuq8KaQ6VSiDnztPdYzzoy4CU4ra2EqVecD7Lvcv08=";
+        "8.3.32" = "sha256-jh8D7qCwe8KeH5TTz88FMrBCHsY8F5I0a1jDrY5A/Js=";
+        "8.3.33" = "sha256-9DVm2kgqvrFhSlEtq+2nSWeEfOjhdql3OQ16EV54Ev0=";
+        "8.3.35" = "sha256-5gOWJ2/VfoIQ+IkZ2azUqrmNZfu39DHBMoXKH7BP8gU=";
+        "8.3.36" = "sha256-yT80Qfh/arFWvvRDLbIV1+YcosAYO7OiqijZiGq1n1M=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.4.22" = "sha256-oBLCyXJLryFKcLQbQKfhMJBriFXlQmivpbxK4XvJ2CM=";
+        "8.4.23" = "sha256-9DtpVyyr+5HAIzVvPOGXx4LYolW8CEwaavWMDobPdXM=";
+        "8.4.24" = "sha256-1f5qHXYz5wZF3HV0Ye63t2T/agTQSH8HbdVvH52AWds=";
+        "8.4.25" = "sha256-XN4dqXa3KPoJ5rVJpMivzQwYAzcCjazzT3OxG+UCU9s=";
+        "8.4.26" = "sha256-wkirrrxLt3e4CWjwdg2g2o6YmDbolsn/Y3tnddfTdmI=";
+        "8.4.27" = "sha256-W6/tmZTBpJeWsltfYcIskYO/4Ea2rMezY4QtA8d/ly8=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-7.4.33.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases = {
+        "8.5.7" = "sha256-5eupP9bdMkHQ5h6TLrmaN4O0BWhVP7DlEbZg7NhjoEk=";
+        "8.5.8" = "sha256-brxV5Sr0OWOF5on3rw8olE+7+WaENDO1c+ncHcA99Tk=";
+        "8.5.9" = "sha256-1zVFnCy66wZz1BbDPTctn/Jh1WL2sp2kjz5q6uygg68=";
+        "8.5.10" = "sha256-9cCsmbhbPWd95HXC5PUJ+bT1RmPz7lqE1tlIGlIdQQA=";
+        "8.5.11" = "sha256-M4YwupRQ8Lk4vvjXQBYsYcM79kobQhxjM8Ad+Kn9sKs=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-native-8.5.12.nix;
+
+        deps = {
+
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+          libxml2 = tvp.packages.libxml2_2;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+          sqlite = tvp.packages.sqlite_3;
+
+        };
+      };
+      releases."8.5.12" = "sha256-gaD0UDSehLCOtD+qhfikyDVoTzzBxQRxd10TF6BGxSU=";
+    }
+
+  ];
   pname = "php";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url =
+          if
+            builtins.elem version [
+              "5.0.5"
+              "5.1.6"
+              "5.2.17"
+            ]
+          then
+            "https://museum.php.net/php5/php-${version}.tar.gz"
+          else
+            "https://www.php.net/distributions/php-${version}.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
+    testDeps = {
+      autoconf = tvp.packages.autoconf_2;
+      automake = tvp.packages.automake_1;
+      libtool = tvp.packages.libtool_2;
+    };
+    packageMeta.upstream = {
+      type = "git-tags";
+      url = "https://github.com/php/php-src";
+      normalise =
+        tag:
+        if pkgs.lib.hasPrefix "php-" tag then
+          pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
+        else
+          null;
+      include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
+    };
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    constructionRecipe = retained;
+  recipes.php = family // {
+    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.php;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

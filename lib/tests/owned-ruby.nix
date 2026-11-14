@@ -219,11 +219,19 @@ let
       '';
     };
   selected =
-    (p.override {
-      gnumake = traceTool "make" "make" p.tvp.deps.gnumake;
-      gnused = traceTool "sed" "sed" p.tvp.deps.gnused;
-      python = traceTool "python" "python3" p.tvp.deps.python;
-    }).editSteps
+    (p.edit (
+      s:
+      s
+      // {
+        base = s.base.override {
+          standardTools = {
+            gnumake = traceTool "make" "make" s.base.standardTools.gnumake;
+            sed = traceTool "sed" "sed" s.base.standardTools.sed;
+            python = traceTool "python" "python3" s.base.standardTools.python;
+          };
+        };
+      }
+    )).editSteps
       (
         steps.append [
           {
@@ -285,9 +293,7 @@ let
           s:
           s
           // {
-            tools = s.tools // {
-              gnumake = tvp.packages.gnumake;
-            };
+            base = s.base.override { standardTools.gnumake = tvp.packages.gnumake; };
           }
         );
       in
@@ -311,12 +317,12 @@ let
           (builtins.head (lib.filter (s: s.name == "ruby.configure") q.buildSteps)).run;
     nativeShellRebinding =
       let
-        q = p.override { bash = tvp.packages.bash; };
+        q = p.edit (s: s // { base = s.base.override { shell = tvp.packages.bash; }; });
       in
       q.tests.version.specification.bash.outPath == tvp.packages.bash.outPath;
     nativeCoreutilsEdit =
       let
-        q = p.edit (s: s // { coreutils = tvp.packages.coreutils; });
+        q = p.edit (s: s // { base = s.base.override { coreutils = tvp.packages.coreutils; }; });
         script = lib.concatStringsSep "\n" (map (s: s.run) q.tests.launchers.buildSteps);
       in
       q.specification.coreutils.outPath != p.specification.coreutils.outPath
@@ -368,7 +374,7 @@ let
     noOp = (p.override { }).drvPath == p.drvPath && (p.editSteps (s: s)).drvPath == p.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
     noSetup =
-      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${pilot.stdenv}/setup") (
+      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${tvp.bases.default.stdenv}/setup") (
         lib.concatStrings p.buildStepRunner.childScripts
       );
     unknownRejected = !(builtins.tryEval (p.override { unknown = true; }).drvPath).success;

@@ -1,54 +1,48 @@
-# Bounded customization controls: no second Ruby compilation.
+# Context-bound current installed customization controls.
 {
-  pkgs,
-  tvp,
   package,
+  lib,
+  context,
 }:
 let
-  inherit (pkgs) lib;
   contains = needle: haystack: lib.hasInfix (builtins.unsafeDiscardStringContext needle) haystack;
-  candidate = import ../../../../bases/source-gnu { };
-  inherit (candidate) base;
-  inherit (candidate.tools) bash coreutils;
-  p = tvp.packages;
+  base = package.specification.base;
+  tools = base.standardTools;
+  bash = base.shell;
+  coreutils = base.coreutils;
+  support = package.tvp.declaredTestDependencies;
+  p = {
+    libyaml = support.libyaml;
+    ruby_3 = support.ruby;
+    libyaml_0_2_4 = support.alternateYaml;
+  };
   yaml = p.libyaml;
   ruby = p.ruby_3;
   bundler = package;
   make =
     name: plan: passthru:
-    tvp.builder {
-      recipe =
-        {
-          base,
-          bash,
-          coreutils,
-        }:
-        {
+    (context.mkTest {
+      inherit package;
+      name = name;
+      script = ":";
+      expected = "";
+    }).edit
+      (
+        spec:
+        spec
+        // {
           pname = name;
           version = "1";
           src = null;
-          inherit
-            base
-            bash
-            coreutils
-            plan
-            passthru
-            ;
-        };
-      args = {
-        inherit base bash coreutils;
-      };
-      dependencyNames = [ ];
-      metadata = { };
-      selection.kind = "fixture";
-      mkTests = _: { };
-    };
+          inherit plan passthru;
+        }
+      );
   tinySource = make "ruby-bundler-source-control" [
     {
       name = "fixture.archive";
       tools = [
-        candidate.tools.tar
-        candidate.tools.gzip
+        tools.gnutar
+        tools.gzip
       ];
       run = ''
         mkdir source
@@ -145,21 +139,6 @@ let
   yamlChecksDisabled = yaml.edit (s: s // { doCheck = false; });
   yamlChecksReenabled = (yaml.override { doCheck = false; }).edit (s: s // { doCheck = true; });
   runtime = ruby.editRuntime (r: r // { libyaml = p.libyaml_0_2_4; });
-  legacyFactory =
-    directory: family: attr:
-    let
-      factory = (import directory { inherit pkgs tvp; }).recipes.${family};
-      old = (tvp.lib.packages.mkVersions factory.constructionRecipe).${attr};
-      chosen = pkgs // {
-        runCommand = name: args: script: { selectedPkgs = true; };
-      };
-      # Historical observer uses the explicit retained factory; ordinary callers
-      # customize the shared { package, lib, context } suite through `tests`.
-      selected = if family == "libyaml" then factory.constructionRecipe else factory;
-      public = (selected.extraArgs.mkTests.override { pkgs = chosen; }) old;
-      retained = (factory.constructionRecipe.extraArgs.mkTests.override { pkgs = chosen; }) old;
-    in
-    public.version.selectedPkgs && retained.version.selectedPkgs;
   contracts = {
     libyaml = identities yaml;
     libyamlBoundary = {
@@ -211,15 +190,10 @@ let
         in
         contains "bundler-2.5.20/lib" env.env.RUBYLIB;
     };
-    legacyCallers = {
-      libyaml = legacyFactory ../../../libraries/libyaml "libyaml" "libyaml_0_2_4";
-      ruby = legacyFactory ../../../runtimes/ruby "ruby" "ruby_3_3_12";
-      bundler = legacyFactory ../. "bundler" "bundler_2_5_11";
-    };
     rubyBoundary = {
       disabledRustLazy = off.drvPath != ruby.drvPath && !(off.tvp.deps ? rustc);
       noZjit = !(ruby.tvp.jit ? zjit);
-      sourceCompiler = ruby.tvp.cc.outPath == candidate.toolchain.driver.outPath;
+      sourceCompiler = ruby.tvp.cc.outPath == support.sourceCompiler.outPath;
       sourcePrepare = contains "${tinySource}/source.tar.gz" (step "source.unpack" cheapRuby).run;
       runtimeLookup = contains "${p.libyaml_0_2_4}/lib" (step "ruby.lookup.yaml" runtime).run;
       compileProviderPreserved =
@@ -233,7 +207,7 @@ let
         ];
       bashRebound =
         let
-          q = ruby.edit (s: s // { bash = candidate.tools.bash; });
+          q = ruby.edit (s: s // { base = s.base.override { shell = bash; }; });
         in
         contains "${q.specification.bash}/bin/bash" (step "ruby.prepare" q).run;
       makeRebound =
@@ -242,9 +216,7 @@ let
             s:
             s
             // {
-              tools = s.tools // {
-                gnumake = shim;
-              };
+              base = s.base.override { standardTools.gnumake = shim; };
             }
           );
         in
@@ -256,11 +228,11 @@ in
 assert
   builtins.all (x: x) flat
   || throw "Ruby/Bundler customization contract failure: ${builtins.toJSON contracts}";
-package.testContext.mkTest {
+context.mkTest {
   inherit package;
   name = "owned-customization";
   tools = [
-    candidate.tools.grep
+    tools.grep
     shim
   ];
   script = ''

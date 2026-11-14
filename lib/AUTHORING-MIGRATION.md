@@ -203,6 +203,22 @@ header parsing remains blocked (MIG-019). Native SQLite/OpenSSL upstream source
 reconstruction remains a documented convergence task (MIG-018), not a claimed
 checkpoint speedup. Earlier construction/compiler generations stay exact.
 
+PHP (190 releases), Ruby (144 plus its public build-step variant), Bundler (four),
+Python (eleven plus the two reduced profiles), and the five compiler indexes now
+use inline family authoring: 42/110 indexes and 1,283/1,515 eligible canonical
+rows. Public compiler tables retain explicit earlier full-tier construction bases;
+public target runtimes remain actual dependencies. Omitted `.instantiate` bases
+honor the recipe's chosen base, while explicit caller bases still win.
+
+All thirteen Python production identities, the two native Ruby identities,
+Bundler's latest production identities, GCC13/GCC16 and Rust remain exact across
+their authoring boundaries. Four current PHP/Python normal batches pass 76 leaves.
+Ruby/Bundler and changed compiler qualification are deferred to the assembled
+source shape: Rust really depends on the public GCC runtime, so launching that
+cold compiler before the remaining dependency indexes are adopted would waste a
+build. This is deferred execution, not runtime acceptance. MIG-020–022 record
+observer/role repairs, production scaffolding and the retained-generation boundary.
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL

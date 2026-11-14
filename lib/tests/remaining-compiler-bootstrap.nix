@@ -29,7 +29,7 @@ let
       noop = p.override { };
       edit = p.edit (s: s);
       checked = p.override { doCheck = true; };
-      changed = p.override { coreutils = alternate; };
+      changed = p.edit (s: s // { base = s.base.override { coreutils = alternate; }; });
       suffix = p.editSteps (
         plan:
         plan
@@ -75,7 +75,8 @@ let
       effective =
         changed.drvPath != p.drvPath
         && changed.artifact.drvPath != p.artifact.drvPath
-        && changed.tvp.deps.coreutils.outPath == alternate.outPath;
+        && changed.specification.coreutils.outPath == alternate.outPath
+        && changed.specification.base.coreutils.outPath == alternate.outPath;
       sourceEdit =
         let
           changedSource = p.edit (
@@ -105,7 +106,7 @@ let
         s
         // {
           bootstrap = alternate;
-          helperPython = alternate;
+          base = s.base.override { standardTools.python = alternate; };
         }
       );
       cc = p.edit (

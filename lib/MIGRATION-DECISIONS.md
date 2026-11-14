@@ -288,3 +288,49 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   reduction, known-result waiver or fabricated passing receipt is introduced.
 - **Follow-up:** bind header grammars to their actual source eras and qualify
   the reader independently, keeping earlier corpus/conformance gaps distinct.
+
+
+## MIG-020 — Effective provider roles and scoped authoring observers
+
+- **Scope:** public runtime authoring, implicit base tools and family instantiation.
+- **Repairs:** OpenSSL header-version assertions follow the compile-time provider,
+  while linkage assertions retain the runtime provider. Python's final-inspector
+  probe uses suffix-only step edits; changing construction Binutils legitimately
+  changes A. Replace Python's obsolete global debt-count equality with actual
+  family split admission. Expose the existing earlier Gzip in the raw base fallback.
+  Omitted `.instantiate` bases honor `versionTable.<version>.def.base`; explicit
+  caller bases remain authoritative.
+- **Evidence:** all runtime/compiler source contracts and 55 family-model controls
+  pass; four PHP/Python normal batches pass 76 leaves. Protected compiler and
+  construction snapshots remain exact. Original failed observations are retained.
+- **Disposition:** resolved at these scopes; no production API or test waiver is
+  introduced to preserve an obsolete observer expectation.
+
+## MIG-021 — Python production targets include upstream build scaffolding
+
+- **Scope:** general-purpose and reduced Python production profiles.
+- **Current behavior:** preserve actual `build_all`, install targets and installed
+  features. They include test embedding scaffolding and extension-import checking
+  in newer releases. Full suites remain separate F consumers; profile-specific
+  disabled modules and TLS behavior remain explicit. Production identities match
+  all thirteen pre-authoring profiles.
+- **Follow-up:** decide which generated scaffolding is a required production
+  dependency, and move genuinely test-only work using the existing checkpoint
+  boundary. Do not silently disable extensions or claim all production is test-free.
+
+## MIG-022 — Compiler generations and deferred assembled execution
+
+- **Scope:** public compiler family authoring and Ruby's actual Rust dependency.
+- **Current behavior:** ordinary compiler host bases use the closed earlier full
+  tier; target GCC runtimes remain explicit dependencies. Direct bootstrap,
+  construction and frozen generations retain their exact procedures/providers.
+  Temporary `build-owned-*` root names distinguish ordinary procedures while old
+  direct root callers remain; their removal needs actual caller migration.
+- **Evidence:** public GCC13/GCC16 and Rust A/F stay exact. LLVM/Go selected-shell
+  floors become coherent with their effective bases, changing their production
+  identities. Ruby/Bundler's dry run reaches uncached public GCC16 through Rust,
+  even though the closed earlier full compiler is valid.
+- **Decision:** finish the remaining dependency authoring before realizing this
+  public compiler generation. Do not replace its runtime provider with a cached
+  generation, disable Ruby YJIT, or mistake identity equality for store availability.
+  Deferred current/compiler tests remain pending, not accepted or waived.

@@ -1,14 +1,18 @@
 # Upstream bootstrap runner against F; no compiler, build tree or producer test edge.
-{ tvp, package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   spec = package.specification;
-  inherit (spec) tools;
+  tools = spec.base.standardTools;
 in
 if !spec.tvp.features.doCheck then
   { }
 else
   {
-    upstream-basic = package.testContext.mkTest {
+    upstream-basic = context.mkTest {
       inherit package;
       name = "upstream-basic";
       tools = [

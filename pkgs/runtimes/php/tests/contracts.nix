@@ -29,7 +29,7 @@ let
       depEdit = p.edit (s: s // { openssl = provider; });
       testEdit = p.override { testFeatures.passwordApi = false; };
       binding = p.tests.version;
-      factory = (p.mkTests.override { inherit pkgs; }) p;
+      factory = (p.mkTests.override { tests = import ./installed.nix; }) p;
     in
     {
       split = p.artifact.drvPath != p.drvPath;

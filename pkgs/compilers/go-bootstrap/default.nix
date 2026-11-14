@@ -1,51 +1,27 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
   retained = (import ./legacy.nix { inherit pkgs tvp; }).publicArgs;
-  candidate = import ../../../bases/source-gnu { };
-  tool =
-    role:
-    tvpLib.packages.tagSelection {
-      namespace = "source-gnu.inputs";
-      selector = role;
-      kind = "source-base-build-tool";
-      reason = "Explicit retained owned tool for the C-source Go bootstrap procedure.";
-    } candidate.tools.${role};
-  definition =
-    (tvpLib.packages.mkDefs {
-      "20171003" = {
-        constructor = tvp.builder;
-        builder = ./native/build-20171003.nix;
-        base = candidate.base;
-        helpers = {
-          inherit tvp;
-        };
-        source =
-          { version, sha256 }:
-          pkgs.fetchurl {
-            url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
-            inherit sha256;
-          };
-        testContext =
-          package:
-          tvpLib.tests.fromPackage {
-            builder = tvp.builder;
-            inherit package;
-          };
+  # Explicit earlier closed host, independent of the public compiler indexes.
+  compilerHostBase = tvp.baseTiers.full;
+  pname = "go-bootstrap";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-owned-20171003.nix;
+        base = compilerHostBase;
         deps = {
-          compiler = candidate.base.compiler;
-          bash = tool "bash";
-          coreutils = tool "coreutils";
-          gnutar = tool "tar";
-          gzip = tool "gzip";
-          findutils = tool "findutils";
-          grep = tool "grep";
-          sed = tool "sed";
-          helperPython = tool "python";
-          binutils = tool "binutils";
-          patchelf = tool "patchelf";
-          runtimeShell = tool "bash";
-          runtimeLibc = candidate.toolchain.libc;
+          compiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Existing closed full-tier C compiler for the C-source Go seed; not public canonical GCC.";
+          } compilerHostBase.compiler;
+          runtimeShell = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier Bash launcher provider for the C-source Go seed.";
+          } compilerHostBase.shell;
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier target libc of the closed full-tier compiler for the C-source Go seed.";
+          } compilerHostBase.compiler.libc;
         };
         opts = {
           cStandard = "gnu17";
@@ -56,34 +32,27 @@ let
           cgo = false;
         };
       };
-    })."20171003";
-  versionTable = retained.versionTable // {
-    "20171003" = retained.versionTable."20171003" // {
-      def =
-        if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
-          definition
-        else
-          retained.versionTable."20171003".def;
-    };
+      releases."20171003" = "sha256-9P9bXrOjyuHJk3I/PqtRnFuuGIZrXl+W/hEC8MtcPlI=";
+    }
+  ];
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    packageMeta = retained.packageMeta or { };
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
   };
-  publicArgs = retained // {
-    inherit versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit package; }
-      else
-        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
-  pname = "go-bootstrap";
-  canonical = tvpLib.packages.mkVersions publicArgs;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
+  recipes.go-bootstrap = family // {
     constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

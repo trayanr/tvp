@@ -106,7 +106,7 @@ let
   instantiate =
     {
       version,
-      base ? context.base,
+      base ? (versionTable.${version}.def.base or context.base),
       deps ? { },
       opts ? { },
     }:

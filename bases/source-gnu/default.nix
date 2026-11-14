@@ -28,6 +28,7 @@ let
             cmake
             ninja
             xz
+            gzip
             python
             patchelf
             sed

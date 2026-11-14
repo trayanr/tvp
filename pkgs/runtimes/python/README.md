@@ -1,46 +1,52 @@
-# Public Python source migration
+# Public Python family
 
-All 13 x86_64-linux public rows have independent source-owned procedures and an
-installed-artifact/final split. This is source evidence only: every newly migrated
-row remains **UNCOMPILED / UNQUALIFIED**. Recipe-policy compliance does not prove
-compilation, upstream acceptance, installed behavior or runtime closure purity.
+The 11 general-purpose releases and two reduced public profiles use inline
+nameless definitions and the implicit family constructor/base/helper/test model.
+Tcl/SQLite/OpenSSL and every other actual dependency stay explicit TVP selections.
+Earlier standard tools come from the effective base. The public runtime Bash,
+public pkg-config and installed-helper Grep retain their distinct actual roles.
 
-The full-profile boundaries are:
+Six complete general-purpose procedures preserve real profile boundaries:
+3.5 setup.py exclusions;3.7 Setup.local with setup.py extension detection;
+3.12 configure-selected extensions and crypt;3.13 crypt removal;3.14 Zstd;
+3.15 required external Mpdecimal. Stable facts are grouped in `buildFeatures`,
+`sourceLayout` and `installedInterface`; narrow release exceptions are in the
+table. Upstream module choices are a separate test-only `upstreamPolicy`.
 
-- 3.5–3.6: setup.py module exclusions and extension detection.
-- 3.7–3.11: Setup.local exclusions, setup.py extension detection and explicit
-  include/library prefixes; per-definition configure options stay effective.
-- 3.12: configure-selected extensions, including crypt/libxcrypt.
-- 3.13: crypt and its provider removed upstream.
-- 3.14: Zstd added.
-- 3.15: external Mpdecimal added.
+`python-minimal/build.nix` and `python-build/build.nix` are complete independent
+public reduced-profile procedures. Their pinned old `build-3.12.5.nix` files and
+the direct `python-build/owned` bootstrap provider are deliberately unchanged.
+Their disabled-module sets, no-pip/no-test-extension profile, static embedding
+interfaces, TLS/archive differences and loader/config-helper repairs remain.
 
-The definitions retain OpenSSL 1.1 for 3.5–3.7, OpenSSL 3.3 for 3.8–3.9, and
-Python 3.5's Ncurses 6.4 with identically bound Readline. The public python-build
-3.12.5 profile retains its reduced TLS/archive modules and no pip; python-minimal
-3.12.5 retains no third-party extension libraries. Neither profile inherits the
-full procedure.
+All profiles retain their installed-artifact/final split, equal-width artifact
+name, bytecode/prefix relocation, shell rebinding and target-interpreter cache
+regeneration. Runtime shell/library changes remain distinct from construction
+providers. Standard-tool customization uses the effective base or selected steps.
+Actual module/library/interface facts remain editable through grouped fields.
 
-Installation belongs to the artifact. Copying, equal-width relocation of compiled
-prefixes and bytecode paths, shebang/runtime-shell repair, target-interpreter
-bytecode regeneration, stripping, runtime search paths and development metadata
-belong to finalization. Source, tool, library and disabled-module edits reach the
-effective specification. Final-only edits reuse the installed artifact. Upstream
-and developer-interface fixtures remain independent test derivations. Whole-test
-feature guards retain older embedding interfaces and dependency-specific tests;
-the existing 3.15 measured-payload controls stay specific to that profile.
+`tests/installed.nix` contains one general-purpose suite. The two reduced profiles
+share `tests/build-profiles.nix`, with whole-profile guards for their actual TLS
+and archive assertions. Existing fixtures and expectations are reused.
+Independent upstream checks still run against installed F. TLS closure patches
+still apply only to private copied test/ctypes trees. No new checkpoint, runner,
+classifier, test exclusion or waiver is introduced.
 
-`tests/contracts.nix` is a pure 13-row evaluation covering the split, edits,
-profiles, dependency boundaries and direct/function/public-output test factories.
-`tests/test_output_helpers.py` exercises tiny synthetic installed trees, bytecode
-and linkage parsing without building CPython or a compiler.
+Current default build/install targets also compile test scaffolding and, in newer
+CPython, execute extension-import validation. That source-bound production behavior
+is retained as explicit isolation debt; no claim of test-free compilation is made.
+Broad regression suites remain independent installed tests. Minimal/build keep
+`--disable-test-modules`; full Python keeps its complete existing installed payload.
 
-The frozen construction route is intentionally separate:
-`bases/source-gnu.tools.python` → `bootstrap/source-python-meson.nix` →
-`python-build/owned/build-3.12.5.nix`. That owned file, the legacy procedures and
-test factories, all three constructionRecipe routes, and bootstrap/dependency
-selection are retained. The status-only interpreter selection is unchanged.
+Construction callers use `retained-construction.nix`, six byte-identical
+`retained/build-*.nix` files, the original `3.nix`, and the unchanged old installed
+factory. Direct bootstrap and GCC13 frozen selections are not redirected.
+Original source-stage documentation is `retained/README.md`.
 
-No build/runtime/default-switch gate is waived. Full build and upstream validation,
-including inherited construction failures and hardening, belongs to later root
-review and foundation integration.
+All 13 public production artifact/final identities match the pre-authoring
+producers. Python 3.15.2 and the two public 3.12.5 reduced profiles pass their
+normal batches (27, 14 and 10 leaves respectively). Historical releases are not
+qualified by these results. The observer now checks actual scoped split admission
+instead of a stale global debt count; final-only Binutils probes edit final steps
+without claiming that a construction-base compiler edit can reuse A. Existing
+qualification holds remain unwaived.
