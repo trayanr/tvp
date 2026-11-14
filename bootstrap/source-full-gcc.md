@@ -51,8 +51,8 @@ of the normal validation batch.
 This boundary changes the full compiler, driver, full-base and dependent producer
 identities. Earlier native and seed providers must remain exact. This is a real
 construction change requiring its initial compiler qualification, not an
-identity-preserving file cleanup. Source implementation is in place; qualification
-of this boundary is pending. No historical receipt certifies the new outputs.
+identity-preserving file cleanup. The separated native boundary passed the local
+qualification described below; historical receipts alone do not certify it.
 
 `source-full-gcc-validation.nix` supplies the installed capability endpoint and
 customization/isolation contracts, together with independent upstream acceptance
@@ -71,6 +71,9 @@ the Python profile precedes raw Python tools, keeping validation modules and
 `python3-config` together without putting the profile into private production.
 The driver searches the installed compiler library prefix before libexec so its
 plugin-directory query finds the SDK headers as well as executable plugins.
+The installed plugin `configargs.h` retains the compiler's exact configuration
+stamp. Its configured prefix is identity data, not a runtime path: rebasing that
+stamp makes `plugin_default_version_check` reject otherwise matching plugins.
 
 `libbacktraceChecks` in the validation composition separately executes the matching
 support sources with the installed compiler and retains Automake results. These
@@ -79,17 +82,31 @@ measure the current compiler rather than inheriting an older disabled-LTO result
 TSan, LSan and HWASan have separate compiler/runtime observations; a configured
 runtime need not be usable on every host kernel.
 
-## Historical measurement before separation
+## Local qualification of the separated pipeline
 
-The original full-compiler run retained 19 FAIL and 2 XPASS outcomes, reproduced
-and classified under its recorded construction procedure. Those failures remain
-unwaived; strict upstream conformance was false. Its six completed summaries
-contain 511250 PASS, 4118 XFAIL and 7237 UNSUPPORTED with no ERROR/UNRESOLVED.
+On 2026-11-14 one full compiler build completed configure, bootstrap/comparison,
+installation and checkpoint creation. Finalization and the selected driver passed;
+the driver runtime closure excludes the compiler artifact. The checkpoint occupies
+1,870,499,840 bytes and restores the native sandbox root `/build/workspace`.
+
+The installed capability endpoint passed all eleven capability groups, including
+plugin loading, and libbacktrace recorded 38 PASS results. The normal batch checks
+installed capabilities plus separate GCC and libbacktrace acceptance leaves. An
+initial plugin-stamp finalization defect was repaired using the cached artifact;
+neither that repair nor the test-only corrections rebuilt the compiler.
+
+The independent upstream run reproduced the original full-compiler counts:
+511250 PASS, 4118 XFAIL, 7237 UNSUPPORTED, 19 FAIL and 2 XPASS across six completed
+summaries, with no ERROR/UNRESOLVED. The unchanged known-result classifier passed;
+those failures remain unwaived and strict upstream conformance remains false.
+
+The following interpretation of the historical comparison still applies.
 Compared with the earlier control, genuine SARIF validation adds 109 passing
 records and the native linkage fixture adds one. Three analyzer assembly fixtures
 select only `x86_64-pc-linux-gnu`; the required `unknown` vendor tuple changes their
 35 assertion results to 15 unsupported invocation records. The C++ module result
 also embeds the changed build path. Separate libbacktrace execution passes all
-38 tests, including `btest_lto`. In that run HWASan loaded but the host kernel rejected
-its tagged address ABI; TSan and LSan executed successfully. These observations remain
-historical until the changed construction and validation outputs are qualified.
+38 tests, including `btest_lto`. HWASan loads but the host kernel rejects its tagged
+address ABI; TSan and LSan execute successfully. Qualification is bounded to this
+native construction context. The whole ordinary catalogue, historical origin/runtime
+observers and additional platforms were not qualified by this run.

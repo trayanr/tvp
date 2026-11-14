@@ -158,12 +158,24 @@ def main():
         reject(lambda:gcc_final.finalize(str(gccroot),oldout,'/tvp/gcc',readelf,'/explicit/unused-patchelf',str(ROOT/'pkgs/libraries/libxml2/ordinary/elf.py')))
         assert (gccroot/'lib/metadata.la').read_bytes()==original
         (gccroot/'lib/late').unlink()
+        plugin_config=gccroot/'lib/gcc/x86_64-unknown-linux-gnu/16.2.0/plugin/include/configargs.h'
+        plugin_config.parent.mkdir(parents=True)
+        stamp=b'static const char configuration_arguments[] = "--prefix=/tvp/gcc --libdir=/tvp/gcc/lib";\n'
+        plugin_config.write_bytes(stamp)
         gcc_final.finalize(str(gccroot),oldout,'/tvp/gcc',readelf,'/explicit/unused-patchelf',str(ROOT/'pkgs/libraries/libxml2/ordinary/elf.py'))
         assert (gccroot/'lib/metadata.la').read_text()==str(gccroot)+'/lib '+str(gccroot)+'/lib\n'
+        assert plugin_config.read_bytes()==stamp
+        # An artifact prefix cannot be hidden inside a supposedly stable stamp.
+        plugin_config.write_bytes(stamp.replace(b'/tvp/gcc',oldout.encode()))
+        (gccroot/'lib/metadata.la').write_text('/tvp/gcc/lib\n')
+        reject(lambda:gcc_final.finalize(str(gccroot),oldout,'/tvp/gcc',readelf,'/explicit/unused-patchelf',str(ROOT/'pkgs/libraries/libxml2/ordinary/elf.py')))
+        assert (gccroot/'lib/metadata.la').read_text()=='/tvp/gcc/lib\n'
         # A real selected checkpoint save/restore (small bytes; no make).
         source=work/'checkpoint-source'; source.mkdir()
         for name in ['source/gcc/testsuite/tiny.exp','build/Makefile','build/stage_final','build/gcc/xgcc','build/gcc/cc1','build/gcc/cc1plus','build/stage2-gcc/obsolete.o','build/stage2-start']:
             p=source/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('fixture '+str(source)+'\n')
+        flock=source/'source/libgomp/testsuite/flock';flock.parent.mkdir(parents=True)
+        flock.write_text('#!/usr/bin/perl\nexit 0;\n')
         os.link(source/'build/gcc/cc1',source/'build/gcc/compiler-alias')
         header=source/'source/libstdc++-v3/include/std/algorithm'
         header.parent.mkdir(parents=True);header.write_text('native header fixture\n')

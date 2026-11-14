@@ -60,3 +60,28 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Decision needed:** either require an explicitly supported original-root
   restoration contract or prove a broader relocation policy with real compiler
   evidence. Do not hide the limitation through sandbox exceptions or binary edits.
+
+## MIG-005 — Construction-input activation and frozen baselines
+
+- **Scope:** the next GMP/MPC/ISL construction batch, beyond this compiler split.
+- **Evidence:** `bootstrap/source-consumers.nix` supplies GMP to the reduced native
+  compiler; replacing that producer changes both the reduced and full compiler.
+  `bases/gcc13-owned/inputs/test-tools.nix` and `test-locale.nix` separately retain
+  explicitly frozen GMP test baselines.
+- **Current behavior:** earlier providers remain exact in this change. Do not
+  activate a new compiler input after every ordinary-family rewrite.
+- **Decision needed:** group construction-input activation and qualification into
+  a deliberate batch. Decide explicitly whether frozen test procedures remain
+  historical fixtures or are rebaselined; do not silently delete or replace them.
+
+## MIG-006 — M4's explicit Gawk selection before GMP conversion
+
+- **Scope:** the M4 prerequisite of the next whole-GMP-family conversion.
+- **Evidence:** `pkgs/build-tools/m4/default.nix` explicitly selects Gawk 5.
+  Selecting public M4 for GMP would create GMP → M4 → Gawk 5 → MPFR → GMP.
+  The base's MPFR-free Gawk policy cannot override that explicit selection.
+- **Current behavior:** keep the existing earlier M4 provider while the current
+  compiler boundary is qualified; no new pin or fallback is introduced here.
+- **Decision needed:** convert M4's build-only AWK role to the agreed base policy
+  before GMP selects public M4. Preserve any real M4 requirements and verify the
+  cycle is removed instead of substituting an unexplained provider.

@@ -55,7 +55,8 @@ nix run .#status -- --migration
 
 ## 1. Finish production/test separation beneath the full base
 
-Source implementation is in place; qualification remains pending.
+The retained full-GCC boundary is implemented and locally qualified with its
+recorded native and historical limits.
 [`bootstrap/source-full-gcc.nix`](../bootstrap/source-full-gcc.nix) now imports
 production prerequisites directly and instantiates the same complete
 [GCC16 procedure](../pkgs/compilers/gcc/native/build-16.2.0.nix) used publicly.
@@ -82,8 +83,12 @@ audit, provider-role and checkpoint decisions are recorded separately as MIG-001
 ## 2. Make base composition explicit by role and construction generation
 
 Do not subdivide base files merely to make more files. The existing
-[tier assembly](../bases/tiers/source-gnu.nix) is already short and readable. Finish
-separating these responsibilities:
+[tier assembly](../bases/tiers/source-gnu.nix) is already short and readable.
+
+The native platform facts now live in `bases/source-gnu/platform.nix`, and `mkTier`
+requires that platform explicitly. This extraction preserved the evaluated producer
+identities. Construction-family adoption and retained adapter removal remain work.
+Keep these responsibilities separate:
 
 | Responsibility | Existing home and intended boundary |
 |---|---|
@@ -117,6 +122,11 @@ Start with GMP, MPC and ISL. Together with MPFR they exercise the compiler's rea
 library and bootstrap dependencies. Then convert other libraries, build tools,
 runtimes/profiles, and compiler, SDK and data entrypoints. Construction work can
 move a necessary provider earlier in that order.
+The next-family inspection identifies M4's explicit Gawk 5 selection as a
+prerequisite to GMP's public dependency conversion. Resolve that build-only role
+first, and coordinate construction-input activation so individual family rewrites
+do not each rebuild the compiler chain. MIG-005 and MIG-006 record these boundaries
+and the separate frozen-baseline decision.
 
 For each family:
 

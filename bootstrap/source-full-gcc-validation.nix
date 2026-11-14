@@ -112,8 +112,17 @@ let
     suite = {
       installed = consumer;
       inherit upstream;
-      libbacktrace = libbacktraceChecks;
+      inherit libbacktrace;
     };
+  };
+  libbacktrace = f.compiler.testContext.mkTest {
+    package = libbacktraceChecks;
+    name = "upstream";
+    script = ''
+      test "$(cat ${libbacktraceChecks.evidence}/check.status)" = 0
+      printf checked
+    '';
+    expected = "checked";
   };
   testEdited = f.compiler.edit (s: s // { fonts = s.coreutils; });
   classifierEdited = f.compiler.edit (s: s // { upstreamClassifier = s.upstreamSummarizer; });
@@ -151,6 +160,7 @@ in
     f
     consumer
     libbacktraceChecks
+    libbacktrace
     upstream
     batch
     ;
@@ -188,6 +198,9 @@ in
         ];
     factoryRegistration = upstream.package.drvPath == f.compiler.validation.drvPath;
     batchIncludesUpstream = batch.testSuite.upstream.drvPath == upstream.drvPath;
+    batchChecksLibbacktrace =
+      batch.testSuite.libbacktrace.package.drvPath == libbacktraceChecks.drvPath
+      && batch.testSuite.libbacktrace.tvp.kind == "owned-test";
     driverUsesProductionEvidence = lib.hasInfix "${f.compiler.artifact}/nix-support/production/builtin.specs" (builtins.head f.driver.buildSteps)
     .run;
     driverCustomizationMaintainsInterface =

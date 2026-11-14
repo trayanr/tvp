@@ -7,6 +7,12 @@ import sys
 import tempfile
 
 
+def plugin_configuration_header(name):
+    parts=Path(name).parts
+    return (len(parts)==7 and parts[:2]==('lib','gcc')
+            and parts[-3:]==('plugin','include','configargs.h'))
+
+
 def metadata_paths(data, old, new, elf):
     # GCC's installed libtool/spec metadata also has -I/-L/-B/-R operands.
     start=0
@@ -47,7 +53,14 @@ def finalize(root, artifact, prefix, readelf, patchelf, inspector):
     with tempfile.TemporaryDirectory() as work:
         for i,group in enumerate(groups):
             p=files[group[0]]; data=p.read_bytes(); updated=data; dynamic=None
-            if data.startswith(b'\x7fELF'):
+            if any(plugin_configuration_header(name) for name in group):
+                # plugin_default_version_check compares this configuration stamp
+                # with the compiler's embedded bytes. Its prefix is identity data,
+                # not a runtime search path; relocating it breaks every plugin.
+                elf.text(data, group[0])
+                if old in data or not all(plugin_configuration_header(name) for name in group):
+                    raise ValueError(('nonrelocatable GCC plugin configuration',group))
+            elif data.startswith(b'\x7fELF'):
                 hits=elf.inspect(p,old,readelf)
                 # Built-in compiler prefix strings stay relocatable; runtime lookup
                 # paths must instead name the final self-library directory.
