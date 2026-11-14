@@ -9,9 +9,13 @@
   libc,
   sourceRoot,
 }:
+let
+  # GCC 13 shares this capture helper and retains its single interpreter role.
+  testPython = s.testPython or s.python;
+in
 ''
   # Bind only the restored test helper; immutable production source stays exact.
-  ${s.python}/bin/python3 -B ${../../../../lib/output-tools}/shebangs.py \
+  ${testPython}/bin/python3 -B ${../../../../lib/output-tools}/shebangs.py \
     "${sourceRoot}/source/libgomp/testsuite" \
     ${
       lib.escapeShellArg (
@@ -53,7 +57,7 @@
   head -n 1 "$validation/make-check.log" > "$validation/invocation.txt"
   printf '%s\n' "$check_status" > "$validation/make-check.exit"
   find . -type f \( -name '*.sum' -o -name '*.log' \) -exec cp --parents {} "$validation" \;
-  ${s.python}/bin/python3 -B ${s.upstreamSummarizer} "$validation" > "$validation/outcomes.txt"
+  ${testPython}/bin/python3 -B ${s.upstreamSummarizer} "$validation" > "$validation/outcomes.txt"
   # The qualification endpoint audits complete raw summaries and failures.
   # Retaining make's nonzero status is not an upstream pass assertion.
 ''

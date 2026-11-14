@@ -5,6 +5,10 @@ MPFR implements it. The next work is to simplify construction-base composition,
 then convert complete package families while preserving their actual procedures
 and earlier construction inputs.
 
+[MIGRATION-DECISIONS.md](MIGRATION-DECISIONS.md) records scope exceptions and design
+questions found during implementation. Keep them explicit for later review instead
+of adding a package-specific workaround or silently broadening this rollout.
+
 ## Migration execution policy
 
 On 2026-11-14 the owner approved suspending the required `tvp/full` merge check
@@ -51,23 +55,29 @@ nix run .#status -- --migration
 
 ## 1. Finish production/test separation beneath the full base
 
-The source-owned tiers already select concrete provider generations. However,
-[`bootstrap/source-full-gcc.nix`](../bootstrap/source-full-gcc.nix) still reaches
-production prerequisites through `source-gcc-graphviz-tests.nix`, and passes
-DejaGNU, Expect, flock, Graphviz and fonts into the retained full compiler.
-Its [owned construction procedure](../pkgs/compilers/gcc/owned/build-16.2.0.nix)
-still runs upstream checks between bootstrap and installation.
+Source implementation is in place; qualification remains pending.
+[`bootstrap/source-full-gcc.nix`](../bootstrap/source-full-gcc.nix) now imports
+production prerequisites directly and instantiates the same complete
+[GCC16 procedure](../pkgs/compilers/gcc/native/build-16.2.0.nix) used publicly.
+The duplicate retained compiler procedure has been removed. Production uses raw
+construction Python; the validation profile and upstream harness belong to the
+independent test factory. Existing harness exports stay lazy for caller compatibility.
 
-Separate production prerequisites from test-only composition. Move upstream
-preparation/execution/acceptance to independent test derivations, using the
-existing split and test machinery. Keep bootstrap stage comparison and checks
-needed to construct the compiler in production. Preserve raw outcomes, historical
-failures and required normal test gates.
+Bootstrap comparison remains a production requirement. The artifact retains its
+production provenance and configured-tree checkpoint; finalization repairs the
+installed output. Upstream execution/acceptance is attached through the existing
+test factory and remains a normal validation gate. The driver consumes artifact
+provenance at build time, without making it part of its intended runtime interface.
+See the [construction reference](../bootstrap/source-full-gcc.md) for boundaries
+and historical measurement limits.
 
 Done when a test-tool, test-reader or acceptance-policy edit leaves the compiler's
 artifact/final identities unchanged, and failed upstream acceptance leaves those
 production outputs usable. Changing this graph can require a deliberate compiler
 rebuild; later test-only corrections must reuse it.
+Changing the underlying full compiler can also change full-base and downstream
+identities. Earlier native/seed provider identities must remain unchanged. The open
+audit, provider-role and checkpoint decisions are recorded separately as MIG-001–004.
 
 ## 2. Make base composition explicit by role and construction generation
 

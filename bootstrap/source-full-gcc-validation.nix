@@ -4,6 +4,7 @@
 let
   f = import ./source-full-gcc.nix { inherit bootstrap; };
   previous = import ./source-gcc-graphviz-validation.nix { inherit bootstrap; };
+  upstream = f.compiler.tests.upstream-audit;
   inherit (f.composition)
     lib
     base
@@ -43,7 +44,7 @@ let
                       driver = toString f.driver;
                       libc = toString f.native.profile.libc;
                       binutils = toString f.native.binutils;
-                      evidence = toString f.compiler.evidence;
+                      productionEvidence = "${f.compiler.artifact}/nix-support/production";
                       previousEvidence = toString previous.consumer.evidence;
                       shell = toString bash;
                       coreutils = toString coreutils;
@@ -106,10 +107,89 @@ let
         outPath = "/replacement/compiler";
       };
     }).base;
+  batch = f.compiler.testContext.mkBatch {
+    name = "source-full-gcc";
+    suite = {
+      installed = consumer;
+      inherit upstream;
+      libbacktrace = libbacktraceChecks;
+    };
+  };
+  testEdited = f.compiler.edit (s: s // { fonts = s.coreutils; });
+  classifierEdited = f.compiler.edit (s: s // { upstreamClassifier = s.upstreamSummarizer; });
+  testPythonEdited = f.compiler.override { testPython = f.prerequisites.python; };
+  productionOnly = f.compiler.edit (
+    s:
+    s
+    // {
+      testPython = throw "test Python forced by production";
+      pythonConfig = throw "test config forced by production";
+      dejagnu = throw "DejaGNU forced by production";
+      expect = throw "Expect forced by production";
+      flock = throw "test flock forced by production";
+      graphviz = throw "Graphviz forced by production";
+      fonts = throw "fonts forced by production";
+      upstreamCapture = throw "test capture forced by production";
+      upstreamRestore = throw "test restoration forced by production";
+      upstreamSummarizer = throw "test summary forced by production";
+      upstreamClassifier = throw "test classification forced by production";
+    }
+  );
+  sameProduction =
+    p: p.drvPath == f.compiler.drvPath && p.artifact.drvPath == f.compiler.artifact.drvPath;
+  productionContext =
+    p:
+    builtins.getContext (
+      builtins.toJSON {
+        inherit (p.buildStepRunner) inputs text childScripts;
+      }
+    );
+  plain = builtins.unsafeDiscardStringContext;
 in
 {
-  inherit f consumer libbacktraceChecks;
+  inherit
+    f
+    consumer
+    libbacktraceChecks
+    upstream
+    batch
+    ;
   contracts = {
+    splitProduction =
+      f.compiler.artifact.drvPath != f.compiler.drvPath
+      && builtins.length (builtins.filter (s: (s.kind or "") == "split") f.compiler.buildSteps) == 1;
+    noInlineUpstream = !(builtins.any (s: s.name == "gcc.check") f.compiler.buildSteps);
+    testInputsStayLazy = sameProduction productionOnly;
+    testProviderEditsReuseProduction =
+      sameProduction testEdited && testEdited.validation.drvPath != f.compiler.validation.drvPath;
+    testPythonEditsReuseProduction =
+      sameProduction testPythonEdited
+      && testPythonEdited.validation.drvPath != f.compiler.validation.drvPath;
+    classifierEditsReuseExecution =
+      sameProduction classifierEdited
+      && classifierEdited.validation.drvPath == f.compiler.validation.drvPath
+      && classifierEdited.tests.upstream-audit.drvPath != upstream.drvPath;
+    noTestProviderInputs =
+      builtins.all
+        (
+          p:
+          builtins.all (tool: !(builtins.hasAttr (plain tool.drvPath) (productionContext p))) [
+            f.compiler.specification.testPython
+            f.compiler.specification.dejagnu
+            f.compiler.specification.expect
+            f.compiler.specification.flock
+            f.compiler.specification.graphviz
+            f.compiler.specification.fonts
+          ]
+        )
+        [
+          f.compiler.artifact
+          f.compiler
+        ];
+    factoryRegistration = upstream.package.drvPath == f.compiler.validation.drvPath;
+    batchIncludesUpstream = batch.testSuite.upstream.drvPath == upstream.drvPath;
+    driverUsesProductionEvidence = lib.hasInfix "${f.compiler.artifact}/nix-support/production/builtin.specs" (builtins.head f.driver.buildSteps)
+    .run;
     driverCustomizationMaintainsInterface =
       (f.driver.editSteps (plan: plan)).bintools.drvPath == f.native.binutils.drvPath;
     driverCompilerOverride =
@@ -118,7 +198,7 @@ in
           (f.driver.override {
             compiler = f.compiler // {
               outPath = "/replacement/raw-compiler";
-              evidence = "/replacement/compiler-evidence";
+              artifact = "/replacement/compiler-artifact";
             };
           }).buildSteps
         )).run;
@@ -128,7 +208,7 @@ in
     sourceEdit =
       lib.hasInfix "/replacement/source"
         (builtins.head ((f.compiler.edit (s: s // { src = "/replacement/source"; })).buildSteps)).run;
-    sourceOverride = (f.compiler.override { source = f.native.source; }).drvPath != f.compiler.drvPath;
+    sourceOverride = (f.compiler.override { src = f.native.source; }).drvPath != f.compiler.drvPath;
     dependencyOverride =
       (f.compiler.override { zlib = f.prerequisites.zstd; }).drvPath != f.compiler.drvPath;
     baseEdit =

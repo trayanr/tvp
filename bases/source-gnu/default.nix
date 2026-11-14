@@ -4,14 +4,10 @@
   standardTools ? null,
 }:
 let
-  lib = import ../../bootstrap/owned-lib.nix { system = "x86_64-linux"; };
+  platform = import ./platform.nix;
+  lib = import ../../bootstrap/owned-lib.nix { inherit (platform) system; };
   builder = import ../../lib/builder.nix { inherit lib; };
   inherit (import ./inputs.nix { inherit bootstrap; }) toolchain tools referencePackages;
-  platform = {
-    system = "x86_64-linux";
-    config = "x86_64-unknown-linux-gnu";
-    isMusl = false;
-  };
   base = builder.base {
     name = "source-gnu-candidate";
     inherit platform referencePackages;

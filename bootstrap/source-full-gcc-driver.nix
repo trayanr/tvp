@@ -52,7 +52,7 @@ let
             # startup, library suppression, pthread, PIE, shared and rdynamic semantics.
             ${b.gnused}/bin/sed \
               -e 's|%D|-L${compiler}/lib -L${rt} -L${libc}/lib|g' \
-              ${compiler.evidence}/builtin.specs > rebound.specs
+              ${compiler.artifact}/nix-support/production/builtin.specs > rebound.specs
             ${b.gnused}/bin/sed \
               -e '/^\*link:$/ { n; s|^|--sysroot=${libc} --disable-new-dtags -rpath ${compiler}/lib -rpath ${rt} -rpath ${libc}/lib -rpath-link ${compiler}/lib -rpath-link ${libc}/lib |; }' \
               -e '/^\*cpp:$/ { n; s|$| %{!nostdinc:-nostdinc -idirafter '"$out"'/include -idirafter ${libc}/include}|; }' \

@@ -36,6 +36,7 @@
   which,
   perl,
   python,
+  testPython ? python,
   pythonConfig,
   file,
   dejagnu,
@@ -147,6 +148,8 @@ in
   upstreamCapture = ../tests/capture-16.2.0.nix;
   upstreamSummarizer = ../tests/summarise-upstream.py;
   upstreamClassifier = ../tests/audit-upstream.py;
+  # Validation modules need not become production compiler inputs.
+  testPython = args.testPython or final.python;
   # Argument values are editable specification data.
   inherit (args)
     base

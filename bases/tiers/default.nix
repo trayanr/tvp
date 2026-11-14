@@ -2,11 +2,8 @@
 { lib, builder }:
 let
   fail = message: throw "TVP base tier: ${message}";
-  platform = {
-    system = "x86_64-linux";
-    config = "x86_64-unknown-linux-gnu";
-    isMusl = false;
-  };
+  # Retained callers without platform metadata keep their historical default.
+  legacyPlatformDefault = import ../source-gnu/platform.nix;
   package = value: builtins.isAttrs value && value ? outPath;
   named = value: value.pname or (builtins.parseDrvName value.name).name;
   select =
@@ -59,6 +56,7 @@ rec {
   mkTier =
     {
       name,
+      platform,
       previous ? null,
       compiler,
       shell,
@@ -95,7 +93,7 @@ rec {
     else
       let
         inherit (legacy) stdenv;
-        selectedPlatform = legacy.platform or platform;
+        selectedPlatform = legacy.platform or legacyPlatformDefault;
         floor = stdenv.initialPath;
         shells = select [
           "bash"
