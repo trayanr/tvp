@@ -269,6 +269,8 @@ rec {
       variant ? null,
       rebindTests ? null,
       argumentDefaults ? null,
+      # Origin metadata exported by mkFamily; never a production input.
+      authoring ? null,
       # Method exported by mkFamily; it is not a build input.
       instantiate ? null,
     }:
@@ -553,6 +555,26 @@ rec {
     lib.genAttrs names (profile: merge (lib.mapAttrs (_: profiles: profiles.${profile} or { }) sets));
 
   mergeNamespaces = sets: {
+    # Follow the existing registration tree, without inspecting source tokens or
+    # forcing package producers. A leaf is one registered family entrypoint.
+    familyEntrypoints = lib.concatLists (
+      lib.mapAttrsToList (
+        namespace: entry:
+        if entry ? familyEntrypoints then
+          map (family: family // { namespaces = [ namespace ] ++ family.namespaces; }) entry.familyEntrypoints
+        else
+          [
+            {
+              namespaces = [ namespace ];
+              recipes = lib.mapAttrs (_: recipe: {
+                origin = recipe.authoring or null;
+                versionOrigins = lib.mapAttrs (_: release: release.def.authoring or null) recipe.versionTable;
+                retainedConstructionRecipe = recipe ? constructionRecipe;
+              }) (entry.recipes or { });
+            }
+          ]
+      ) sets
+    );
     recipes = merge (lib.mapAttrs (_: s: s.recipes or { }) sets);
     canonical = merge (lib.mapAttrs (_: s: s.canonical) sets);
     aliases = merge (lib.mapAttrs (_: s: s.aliases) sets);

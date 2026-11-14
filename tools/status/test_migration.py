@@ -100,6 +100,126 @@ class RepositoryTests(unittest.TestCase):
             with self.assertRaises(m.Invalid):m.report(f)
 
 
+class AuthoringTests(unittest.TestCase):
+    def facts(self):
+        f = facts()
+        marker = dict(m.AUTHORING_ORIGIN)
+        def entry(category, name, versions, model=None, retained=False):
+            return dict(category=category, family=name,
+                        entrypoint=f'pkgs/{category}/{name}/default.nix',
+                        recipes={name: dict(origin=model, versionOrigins=versions,
+                                            retainedConstructionRecipe=retained)})
+        f['authoring'] = dict(schema='tvp.family-authoring-facts/v1', scope='Index declarations only', entries=[
+            entry('build-tools', 'x', {'1':None, '2':marker, '3':marker}, marker, True),
+            entry('libraries', 'y', {'1':None}),
+            entry('sdks', 'z', {'1':None}, retained=True)])
+        return f
+
+    def test_old_manifests_have_unknown_authoring(self):
+        a=m.report(facts())['repository']['authoring']
+        self.assertEqual(a['measurement'],'unavailable')
+        self.assertIsNone(a['summary'])
+        self.assertTrue(all(v is None for v in a['verification'].values()))
+        self.assertIn('Index adoption: unknown',m.render(m.report(facts())))
+
+    def test_index_rows_categories_and_verification_are_separate(self):
+        f=self.facts();r=m.report(f);a=r['repository']['authoring']
+        self.assertEqual(r['repository']['summary'],m.summarize(f['rows']))
+        self.assertEqual(a['summary'],dict(familyIndexes=3,adoptedIndexes=1,earlierWiringIndexes=2,
+            partialIndexes=0,unrecognizedIndexes=0,eligibleCanonicalRows=3,
+            markedEligibleCanonicalRows=2,excludedBrokenCanonicalRows=1,
+            indexesWithRetainedConstructionRecipe=2))
+        self.assertEqual(a['categories']['build-tools']['adoptedIndexes'],1)
+        self.assertEqual(a['categories']['libraries']['eligibleCanonicalRows'],0)
+        self.assertTrue(all(v is None for v in a['verification'].values()))
+        text=m.render(r)
+        self.assertIn('Indexes using mkFamily: 1/3',text)
+        self.assertIn('marked definitions: 2/3',text)
+        self.assertIn('this is not a caller count',text)
+        self.assertIn('runtime-qualified rows: unknown',text)
+        self.assertIn('Split compliant: 1/5',text)
+
+    def test_family_filter_covers_authoring_and_preserves_unknowns(self):
+        a=m.report(self.facts(),'x')['repository']['authoring']
+        self.assertEqual(a['summary']['familyIndexes'],1)
+        self.assertEqual(set(a['categories']),{'build-tools'})
+        self.assertEqual(set(a['families']),{'pkgs/build-tools/x/default.nix'})
+        broken=m.report(self.facts(),'z')['repository']['authoring']['summary']
+        self.assertEqual(broken['eligibleCanonicalRows'],0)
+        self.assertEqual(broken['excludedBrokenCanonicalRows'],1)
+        self.assertIn('0/0',m.render(m.report(self.facts(),'z')))
+
+    def test_marker_does_not_count_unmarked_definitions_or_qualification(self):
+        f=self.facts();f['authoring']['entries'][0]['recipes']['x']['versionOrigins']={}
+        a=m.report(f)['repository']['authoring']
+        self.assertEqual(a['summary']['adoptedIndexes'],1)
+        self.assertEqual(a['summary']['markedEligibleCanonicalRows'],0)
+        self.assertIsNone(a['verification']['runtimeQualifiedRows'])
+        self.assertIsNone(a['verification']['builderCleanupVerified'])
+        self.assertIsNone(a['verification']['compatibilityCallersRemaining'])
+
+    def test_unrecognized_model_is_not_adopted_or_earlier_wiring(self):
+        f=self.facts();f['authoring']['entries'][0]['recipes']['x']['origin']['model']='future/v2'
+        a=m.report(f)['repository']['authoring']['summary']
+        self.assertEqual(a['adoptedIndexes'],0)
+        self.assertEqual(a['unrecognizedIndexes'],1)
+        self.assertEqual(a['earlierWiringIndexes'],2)
+        self.assertEqual(a['markedEligibleCanonicalRows'],0)
+
+    def test_multi_recipe_entrypoint_is_counted_once_and_partial(self):
+        f=self.facts();entries=f['authoring']['entries'];entries[0]['recipes']['y']=entries[1]['recipes']['y']
+        del entries[1]
+        a=m.report(f)['repository']['authoring']['summary']
+        self.assertEqual(a['familyIndexes'],2)
+        self.assertEqual(a['partialIndexes'],1)
+        self.assertEqual(a['markedEligibleCanonicalRows'],2)
+
+    def test_invalid_origin_inventory_fails_closed(self):
+        changes=[lambda a:a.update(schema='future'),
+                 lambda a:a['entries'].append(copy.deepcopy(a['entries'][0])),
+                 lambda a:a['entries'][1]['recipes'].update(x=copy.deepcopy(a['entries'][0]['recipes']['x'])),
+                 lambda a:a['entries'][0].update(entrypoint='/unexpected/path'),
+                 lambda a:a['entries'][0]['recipes']['x'].update(origin=True),
+                 lambda a:a['entries'][0]['recipes']['x'].update(retainedConstructionRecipe=1),
+                 lambda a:a['entries'][0]['recipes']['x'].update(versionOrigins=[]),
+                 lambda a:a['entries'].pop(0)]
+        for change in changes:
+            f=self.facts();change(f['authoring'])
+            with self.subTest(f=f),self.assertRaises(m.Invalid):m.report(f)
+
+    def test_cli_reads_baked_facts_without_store_commands(self):
+        import os
+        import shutil
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);commands=root/'bin';commands.mkdir();called=root/'called'
+            for name in ('nix','nix-store','mktemp'):
+                sentinel=commands/name
+                sentinel.write_text(f'#!{sys.executable}\nfrom pathlib import Path\nPath({str(called)!r}).write_text("called")\nraise SystemExit(93)\n')
+                sentinel.chmod(0o755)
+            shutil.copyfile(m.__file__,root/'migration.py')
+            f=self.facts();f['latest']['measurement']='declared-selectors'
+            (root/'manifest.json').write_text(json.dumps(f))
+            env={**os.environ,'PATH':str(commands)}
+            result=subprocess.run([sys.executable,'-B',str(root/'migration.py'),'--migration','--json'],env=env,capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            report=json.loads(result.stdout)
+            self.assertEqual(report['repository']['latest']['measurement'],'declared-selectors')
+            self.assertIsNone(report['repository']['latest']['runtimeQualifiedRows'])
+            self.assertEqual(report['repository']['authoring']['summary']['adoptedIndexes'],1)
+            self.assertFalse(called.exists())
+
+    def test_all_split_does_not_certify_authoring_or_runtime(self):
+        f=self.facts();f['rows']=[f['rows'][2]];f['latest']['skipped']=[];f['splitPolicy']['allSplit']=True
+        r=m.report(f)
+        self.assertEqual(r['repository']['strictSplitAdmission'],'eligible')
+        self.assertEqual(r['repository']['authoring']['summary']['adoptedIndexes'],1)
+        self.assertTrue(all(v is None for v in r['repository']['authoring']['verification'].values()))
+
+
 class WorkflowTests(unittest.TestCase):
     def test_pause_accepted_pending_hold_gate_separation(self):
         r=m.report(facts(),'x',progress()); w=r['workflow']

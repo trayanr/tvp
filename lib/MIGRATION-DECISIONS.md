@@ -210,3 +210,16 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   compilation and its historical shared-link repair stay in independent U.
 - **Disposition:** resolved for this authoring batch. Other historical releases
   remain unqualified here; existing ABI failures and global holds are not waived.
+
+## MIG-015 — Progress reporting must not run unrelated suite assertions
+
+- **Scope:** the status manifest formerly reused full latest-test metadata.
+- **Evidence:** forcing that metadata reaches an inherited Expat customization
+  assertion before producing a source progress report. Its failure is retained in
+  the authoring-status candidate evidence, without an onset claim or waiver.
+- **Current behavior:** status validates declared alias selectors through a narrow
+  lazy projection. Its measurement is explicitly `declared-selectors`, with runtime
+  qualification unknown. The actual latest gate and its suite checks are unchanged.
+- **Decision needed:** repair the Expat customization contract during that family's
+  conversion, then qualify its effective package and tests. Progress metadata does
+  not substitute for acceptance of that unrelated suite.
