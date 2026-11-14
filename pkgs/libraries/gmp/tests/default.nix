@@ -26,5 +26,5 @@
     };
 })
 // lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
-  upstream = import ./upstream.nix { inherit package; };
+  upstream = context.mkUpstream { inherit package; };
 }

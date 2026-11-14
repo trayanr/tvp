@@ -15,6 +15,7 @@ let
     gnumake = bootstrap.gnumake-musl;
     gnutar = bootstrap.gnutar-latest;
     xz = bootstrap.xz;
+    gzip = bootstrap.gzip;
     python = bootstrap.build-python;
     patchelf = outputTools.patchelf;
     sed = bootstrap.gnused;

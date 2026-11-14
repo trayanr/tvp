@@ -210,6 +210,15 @@ let
           }
         )
       );
+      compiler-library-construction = pkgs.writeText "tvp-compiler-library-construction-contracts" (
+        builtins.toJSON (import ./lib/tests/compiler-library-construction.nix { inherit pkgs tvp; })
+      );
+      mpc-family = pkgs.writeText "tvp-mpc-family-contracts" (
+        builtins.toJSON (import ./lib/tests/mpc-family.nix { inherit pkgs tvp; })
+      );
+      isl-family = pkgs.writeText "tvp-isl-family-contracts" (
+        builtins.toJSON (import ./lib/tests/isl-family.nix { inherit pkgs tvp; })
+      );
       gmp-family = pkgs.writeText "tvp-gmp-family-contracts" (
         builtins.toJSON (import ./lib/tests/gmp-family.nix { inherit pkgs tvp; })
       );
@@ -781,16 +790,13 @@ let
         owned-mpc = {
           mpc = tvp.canonical.mpc_1_4_1;
           compatibleMpfr = tvp.packages.mpfr_4_2_1;
-          inherit (tvp.packages)
-            bash
-            coreutils
-            pkg-config
-            ;
+          bash = tvp.canonical.mpc_1_4_1.specification.base.shell;
+          coreutils = tvp.canonical.mpc_1_4_1.specification.base.coreutils;
+          inherit (tvp.packages) pkg-config;
           gnumake = tvp.canonical.mpc_1_4_1.tvp.deps.gnumake;
           patchelf = tvp.canonical.mpc_1_4_1.tvp.deps.patchelf;
           grep = tvp.canonical.mpc_1_4_1.tvp.deps.grep;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          compiler = tvp.canonical.mpc_1_4_1.specification.base.compiler;
         };
         owned-json-c = {
           json = tvp.packages.json-c_0;

@@ -146,7 +146,6 @@ let
     ];
     isl = [
       "canonical.isl_0_28"
-      "libraries"
       "gmp"
     ];
     libyaml = [

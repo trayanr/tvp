@@ -3,7 +3,7 @@ let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
     "0.20" = {
-      builder = ./build-0.20.nix;
+      builder = ./retained/build-0.20.nix;
       base = tvp.bases.default;
       deps = {
         gmp = tvp.packages.gmp_6;
@@ -54,7 +54,7 @@ let
     };
     extraArgs.mkTests =
       isl:
-      import ./tests {
+      import ./tests/retained.nix {
         inherit pkgs tvpLib isl;
         inherit (isl.tvp.declaredTestDependencies) patchelf python3;
       };

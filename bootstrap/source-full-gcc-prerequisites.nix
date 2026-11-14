@@ -128,17 +128,60 @@ let
             old
         ) plan
       );
-  isl = qualify "isl" (
-    make (import ../pkgs/libraries/isl/owned/build-0.28.nix) (
-      common
-      // {
-        src = sources.isl;
-        version = "0.28";
-        inherit (tools) xz;
-        inherit (native) gmp;
-      }
-    )
-  );
+  # The native generation builds its own later ISL with the shared procedure.
+  # Its upstream check is a separate consumer, never evidence embedded in A/F.
+  libraryBase = builder.base {
+    name = "source-native-libraries";
+    inherit (base) platform;
+    compiler = base.stdenv.cc // {
+      inherit (base) runtimeDirectories;
+    };
+    shell = bash;
+    inherit coreutils;
+    tools = lib.unique (base.environment { }).tools;
+    standardTools = {
+      gnumake = tools.make;
+      gnutar = tools.tar;
+      inherit (tools)
+        xz
+        gzip
+        python
+        patchelf
+        sed
+        grep
+        gawk
+        diffutils
+        findutils
+        ;
+    };
+    construction = {
+      kind = "stage";
+      previous = base.name;
+    };
+  };
+  isl = builder {
+    recipe = import ../pkgs/libraries/isl/build-0.26.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit lib;
+      base = libraryBase;
+      src = sources.isl;
+      version = "0.28";
+      inherit (native) gmp;
+    };
+    dependencyNames = [ "gmp" ];
+    metadata = { };
+    selection.kind = "source-full-gcc-prerequisite";
+    testContext =
+      package: (import ../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+        upstream = package.testContext.mkUpstream { inherit package; };
+      };
+  };
   libxcrypt = qualify "libxcrypt" (
     make (import ../pkgs/libraries/libxcrypt/build-4.5.2.nix) (
       common

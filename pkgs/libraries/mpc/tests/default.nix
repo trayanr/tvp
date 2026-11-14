@@ -1,38 +1,23 @@
+# Installed assertions are declared once for every supported MPC release.
 {
-  pkgs,
-  tvpLib,
-  mpc,
+  package,
+  lib,
+  context,
 }:
-if mpc ? testContext then
-  mpc.testContext.mkSuite {
-    package = mpc;
-    libraries = [ mpc ];
-    tests = {
-      version = {
-        script = ''"$CC" ${./fixtures/version.c} -lmpc -lmpfr -lgmp -o version; ./version'';
-        expected = mpc.version;
-      };
-      arithmetic = {
-        script = ''"$CC" ${./fixtures/arithmetic.c} -lmpc -lmpfr -lgmp -o arithmetic; ./arithmetic'';
-        expected = "25";
-      };
+(context.mkSuite {
+  inherit package;
+  libraries = [ package ];
+  tests = {
+    version = {
+      script = ''"$CC" ${./fixtures/version.c} -lmpc -lmpfr -lgmp -o version; ./version'';
+      expected = package.version;
     };
-  }
-else
-  tvpLib.tests.mkSuite {
-    inherit pkgs;
-    package = mpc;
-    tests = {
-      version = {
-        script = ''cc ${./fixtures/version.c} -lmpc -lmpfr -lgmp -o version; ./version'';
-        expected = mpc.version;
-        extraInputs = [ mpc.tvp.cc ];
-      };
-      arithmetic = {
-        script = ''cc ${./fixtures/arithmetic.c} -lmpc -lmpfr -lgmp -o arithmetic; ./arithmetic'';
-        expected = "25";
-        extraInputs = [ mpc.tvp.cc ];
-      };
-
+    arithmetic = {
+      script = ''"$CC" ${./fixtures/arithmetic.c} -lmpc -lmpfr -lgmp -o arithmetic; ./arithmetic'';
+      expected = "25";
     };
-  }
+  };
+})
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = context.mkUpstream { inherit package; };
+}

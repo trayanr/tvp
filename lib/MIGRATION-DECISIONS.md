@@ -68,14 +68,17 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   compiler; replacing that producer changes both the reduced and full compiler.
   `bases/gcc13-owned/inputs/test-tools.nix` and `test-locale.nix` separately retain
   explicitly frozen GMP test baselines.
-- **Current behavior:** the ordinary GMP family now uses the agreed family API.
-  Its historical construction recipe is isolated in `gmp/retained/`, and the two
-  direct `build-steps-6.3.0.nix` callers remain unchanged. Before/after evaluation
-  confirms both compiler generations, their drivers and GCC13/GCC16 GMP inputs
-  remain exact. Do not activate a new compiler input after every family rewrite.
-- **Decision needed:** group construction-input activation and qualification into
-  a deliberate batch. Decide explicitly whether frozen test procedures remain
-  historical fixtures or are rebaselined; do not silently delete or replace them.
+- **Current behavior:** ordinary GMP/MPC/ISL use shared family procedures. The
+  standalone source-consumer and native/full compiler library inputs activate
+  those root procedures together; the duplicate direct `build-steps` and owned ISL
+  procedures are removed. Historical catalogue library selections remain exact.
+  The reduced/full compiler generations change once for this coordinated batch;
+  earlier seed/target compiler and libc providers remain exact.
+- **Remaining work:** standalone activation is grouped; the historical catalogue
+  base conversion remains separate. Its GCC13 `rebuild` still requires legacy
+  stdenv/overrideAttrs calls for six library placements. Convert those actual base
+  stages before removing their retained library procedures. Frozen observer
+  decisions remain MIG-007/MIG-009; do not silently rebaseline them.
 
 ## MIG-006 — Foundational build-tool ordering (prerequisite resolved)
 
@@ -108,3 +111,44 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   when their callers move. Port live checks to effective base/dependency interfaces;
   do not silently rebaseline historical fixtures or keep obsolete production steps
   solely to satisfy old observer assumptions.
+
+## MIG-008 — Standalone family instantiation capability
+
+- **Scope:** the source bootstrap without the catalogue or nixpkgs package set.
+- **Evidence:** its explicit pure library lacks the overridable/version-table API
+  used by `mkFamily`. Importing public TVP would force the full base being built.
+- **Current behavior:** standalone GMP, MPFR, MPC and ISL directly instantiate the
+  same complete root procedures, with explicit earlier owned bases/dependencies
+  and shared test factories. No duplicate implementation or public fallback.
+- **Decision needed:** expose the minimum pure family facade to standalone stages
+  or retain direct shared-procedure calls there. Do not import the final catalogue
+  to satisfy this interface.
+
+## MIG-009 — Frozen locale helpers still follow public tools
+
+- **Scope:** preserving the complete historical locale fixture graph.
+- **Evidence:** before/after producer comparison preserves the six selected
+  historical GMP/MPC/ISL variants and frozen Coreutils, but not the locale fixture.
+  Python-minimal's retained definition selects public Bash; Bison and Linux
+  headers select public Perl. Those helpers follow the changed standalone compiler.
+  Frozen MPC 1.4.1 and ISL 0.28 themselves remain exact too.
+- **Current behavior:** retain original locale identities/evidence and record the
+  changed identities as unresolved drift. No acceptance/rebaseline is claimed and
+  no historical locale build is requested by this activation.
+- **Decision needed:** bind explicit earlier helper generations when converting
+  the historical base/observer graph. Retaining a recipe file alone cannot freeze
+  its transitive public selections.
+
+## MIG-010 — Whole-inventory validation crosses unrelated test scopes
+
+- **Scope:** the broader dependency inventory and untouched Ruby/LibYAML checks.
+- **Evidence:** forcing all support rows for MPC also evaluates Ruby/Bundler's
+  LibYAML check-boundary assertions, which report `editedCheckDisabled=false` and
+  `editedCheckReenabled=false`. Those family implementations are unchanged here.
+- **Current behavior:** the inventory exposes its existing explicit support rows
+  by consumer as well as the complete flattened report. MPC validates its actual
+  registered providers through that scoped view. A throwing unrelated-provider
+  probe verifies laziness; the broader failure is preserved, not waived.
+- **Decision needed:** repair the live LibYAML test-boundary assertions in that
+  family's conversion. Keep full-inventory admission distinct from scoped package
+  checks instead of silently skipping the unrelated nonpass.

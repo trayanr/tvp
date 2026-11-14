@@ -13,6 +13,8 @@ rec {
     ;
   inherit (builtins) concatMap mapAttrs;
   optionalAttrs = condition: value: if condition then value else { };
+  optionals = condition: values: if condition then values else [ ];
+  enableFeature = enabled: feature: "--${if enabled then "enable" else "disable"}-${feature}";
   fix =
     f:
     let
