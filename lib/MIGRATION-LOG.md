@@ -565,3 +565,37 @@ Focused Sed A/F, upstream acceptance and its normal 7-leaf batch pass in
 28.372s. The compiled package and test identities will be reused by the next frozen
 assembled workflow. All 297 partial selected outputs remain retained after the
 failed request; success-only aggregate verification was not run.
+
+
+### Assembled validation attempt 003 and independent consumers
+
+All eleven sequential heavy preparation requests passed, including the current
+compiler/JDK/LLVM/Dart/Flutter/Node producers and the distinct retained SDK seeds.
+The retained GCC16 took 1,520.49s: its logged build phase was 11m39s and its bundled
+DejaGNU check phase 10m53s. That old production/test boundary remains MIG-026 debt;
+it is not another build of the current separate-U compiler. All twenty selected
+heavy production/artifact paths are valid and scoped-rooted.
+
+The normal aggregate stopped at Ninja's jobserver overlap assertion. The fixture
+uses 50ms tasks and observed insufficient overlap under concurrent build load.
+The selected native harness now uses 1s tasks while preserving every exact
+parallel/serial and FIFO assertion. This changes its test derivation only.
+Success-only latest verification was not run. Original failed logs and cancelled
+workspaces remain preserved; no failed result is accepted or relabeled.
+
+A separate five-profile keep-going request completed Fontconfig, Zstd and Readline
+batches, and exposed two independent consumer defects. JSON-C's child upstream
+shell did not inherit its checkpoint-root variable; the existing generic checkpoint
+consumer now exports that readonly variable before launching the child. Ruby's
+manual normalizer imported Python's zlib-backed gzip module even though selected
+Gzip was already supplied. Both the ordinary helper and retained public-profile
+copy now decompress through that same selected executable. Four plain/compressed
+fixtures pass using the exact reduced Python that failed. Heavy and all five
+profile artifact identities remain exact across these repairs.
+
+The post-Makefile snapshot preserves all six captured construction/bootstrap/tool
+identity groups. Its broader public section changes transitively with repaired
+ordinary producers; the initial overly broad equality assertion is retained and
+corrected in evidence. No public-identity preservation claim is inferred from the
+captured-generation comparison. Current runtime results remain pending the repaired
+batches and normal latest verification. CI/NAS remain off.

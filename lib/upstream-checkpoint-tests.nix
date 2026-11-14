@@ -37,6 +37,7 @@ let
                     ${check.run}
                     TVP_UPSTREAM_CHECK
                     status=0
+                    export TVP_SOURCE_ROOT
                     cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
                     ${s.bash}/bin/bash -euo pipefail "$TVP_SOURCE_ROOT/upstream-check.sh" > "$out/raw/log" 2>&1 || status=$?
                     printf '%s\n' "$status" > "$out/raw/status"
