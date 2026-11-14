@@ -92,7 +92,7 @@ in
           buildDirectory=${lib.escapeShellArg final.cmakeOptions.buildDirectory}
           (cd "$sourceDirectory"; ${
             lib.concatMapStringsSep "\n" (
-              p: "${baseTools.patch}/bin/patch -p1 < ${lib.escapeShellArg (toString p)}"
+              p: "${baseTools.patch}/bin/patch -p1 < ${lib.escapeShellArg "${p}"}"
             ) final.testPatches
           })
           ${baseTools.cmake}/bin/cmake -S "$sourceDirectory" -B "$buildDirectory" -G 'Unix Makefiles' \

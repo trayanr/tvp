@@ -599,3 +599,17 @@ ordinary producers; the initial overly broad equality assertion is retained and
 corrected in evidence. No public-identity preservation claim is inferred from the
 captured-generation comparison. Current runtime results remain pending the repaired
 batches and normal latest verification. CI/NAS remain off.
+
+
+Attempt 004 reused heavy preparation and reached JSON-C's actual upstream patch.
+Its path had been converted with `toString`, dropping sandbox input context. The
+upstream command now interpolates the patch path as an input, matching the existing
+production-patch handling. A targeted context assertion fails before and passes
+after; ordinary/profile JSON-C artifacts stay exact. The first control had an
+independent Nix fixture syntax error; that attempt is preserved separately from the
+corrected before/after proof. Success-only latest verification was not run.
+
+Ninja's repaired normal batch and Ruby's public-profile batch pass. The independent
+GCC batch remains running through this unrelated failure, so its in-flight capture
+is preserved. Existing keep-going behavior is used only for the explicit scoped
+batch request; the normal latest runner and its fail-fast policy remain unchanged.
