@@ -1,188 +1,83 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  # Complete former definitions, sources, arguments and test factories. Frozen
-  # construction consumers retain their original route, including Make's 4.3 map.
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  ownedDefaultRecipe = removeAttrs previous.recipes.gnumake [ "constructionRecipe" ];
-  constructionRecipe = previous.recipes.gnumake.constructionRecipe;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  host =
-    name: reason:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      inherit reason;
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "4.4.1" = {
-      constructor = tvp.builder;
-      builder = ./native/build-4.4.1.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
-        gnutar = host "tar" "Independent candidate tar is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gzip = host "gzip" "Independent candidate gzip is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
-        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
-        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
-        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = host "sed" "Independent candidate sed is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        grep = host "grep" "Independent candidate grep is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gawk = host "gawk" "Independent candidate gawk is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        diffutils = host "diffutils" "Independent candidate diffutils is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
-      };
-    };
+  packageRecipes = tvp.lib.packages.mkDefs {
     "4.3" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-4.3.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
-        gnutar = host "tar" "Independent candidate tar is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gzip = host "gzip" "Independent candidate gzip is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
-        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
-        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
-        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = host "sed" "Independent candidate sed is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        grep = host "grep" "Independent candidate grep is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gawk = host "gawk" "Independent candidate gawk is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        diffutils = host "diffutils" "Independent candidate diffutils is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
-      };
+      builder = ./build.nix;
+      deps = { };
+      opts.defaultCxx = "g++";
+      opts.upstreamProfile = "4.3";
     };
     "4.4" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-4.4.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = host "make" "Make must build with an independent retained host Make, never its canonical self.";
-        gnutar = host "tar" "Independent candidate tar is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gzip = host "gzip" "Independent candidate gzip is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
-        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
-        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
-        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = host "sed" "Independent candidate sed is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        grep = host "grep" "Independent candidate grep is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        gawk = host "gawk" "Independent candidate gawk is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        diffutils = host "diffutils" "Independent candidate diffutils is a build-only construction tool for foundational Make; it keeps this procedure separate from ordinary catalogue consumers.";
-        perl = host "perl" "Independent Perl executes the complete shipped Make test harness.";
-      };
+      builder = ./build.nix;
+      deps = { };
+      opts.defaultCxx = "g++";
+      opts.upstreamProfile = "4.4";
+    };
+    "4.4.1" = {
+      builder = ./build.nix;
+      deps = { };
     };
   };
-  versionTable = ownedDefaultRecipe.versionTable // {
-    "4.4.1" = ownedDefaultRecipe.versionTable."4.4.1" // {
-      def = if native then defs."4.4.1" else ownedDefaultRecipe.versionTable."4.4.1".def;
-    };
-    "4.3" = ownedDefaultRecipe.versionTable."4.3" // {
-      def = if native then defs."4.3" else ownedDefaultRecipe.versionTable."4.3".def;
-    };
-    "4.4" = ownedDefaultRecipe.versionTable."4.4" // {
-      def = if native then defs."4.4" else ownedDefaultRecipe.versionTable."4.4".def;
-    };
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = packageRecipes."4.3";
+      releases."4.3" = "sha256-4F/d5HxffKRctpfpc4lP9PXXnhO3UO1X17Ztje/Hjhk=";
+    }
+    {
+      def = packageRecipes."4.4";
+      releases."4.4" = "sha256-WB9NToctp0s5Qch0IViYp9NYAvA3Mr3M7h1KeXkQXRg=";
+    }
+    {
+      def = packageRecipes."4.4.1";
+      releases."4.4.1" = "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=";
+    }
+  ];
+  packageMeta.upstream = {
+    type = "directory-index";
+    url = "https://mirrors.kernel.org/gnu/make/";
+    pattern = "make-[0-9][^\"]*\\.tar\\.gz";
+    normalise =
+      file:
+      if pkgs.lib.hasPrefix "make-" file && pkgs.lib.hasSuffix ".tar.gz" file then
+        pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "make-" file)
+      else
+        null;
+    include = version: builtins.match "[0-9].*" version != null;
   };
-
-  installedArgs = ownedDefaultRecipe // {
-    inherit versionTable;
+  pname = "gnumake";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable packageMeta;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/make/make-${version}.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests;
     testDeps = {
-      grep = host "grep" "Native Make assertions use the same independent grep provider as its procedure.";
-      compiler = candidate.toolchain.driver;
+      perl = tvp.packages.perl_5;
+      alternateShell = tvp.packages.bash_5;
+      # These are used by the shared constructor fixture, never by production.
+      runtimeShell = tvp.packages.bash_5;
+      compiler = tvp.baseTiers.full.compiler;
+      coreutils = tvp.baseTiers.full.coreutils;
+      alternateCoreutils = tvp.packages.coreutils;
+      python = tvp.baseTiers.full.standardTools.python;
+      grep = tvp.baseTiers.full.standardTools.grep;
+      binutils = tvp.baseTiers.full.compiler.bintools;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
-      runtimeShell = candidate.tools.bash;
-      coreutils = candidate.tools.coreutils;
-      alternateCoreutils = tvp.packages.coreutils;
-      python = candidate.tools.python;
-      binutils = candidate.tools.binutils;
       sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
       alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
     };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import
-          (
-            if
-              builtins.elem package.version [
-                "4.3"
-                "4.4"
-              ]
-            then
-              ./tests/ordinary.nix
-            else
-              ./tests/native-default.nix
-          )
-          {
-            inherit
-              pkgs
-              tvp
-              tvpLib
-              package
-              ;
-          }
-      else
-        ownedDefaultRecipe.extraArgs.mkTests package
-    ) { inherit pkgs; };
   };
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "gnumake";
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe ownedDefaultRecipe;
+  recipes.gnumake = family // {
+    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.gnumake.constructionRecipe;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

@@ -210,6 +210,12 @@ let
           }
         )
       );
+      m4-family = pkgs.writeText "tvp-m4-family-contracts" (
+        builtins.toJSON (import ./lib/tests/m4-family.nix { inherit pkgs tvp; })
+      );
+      gnumake-family = pkgs.writeText "tvp-gnumake-family-contracts" (
+        builtins.toJSON (import ./lib/tests/gnumake-family.nix { inherit pkgs tvp; })
+      );
       compiler-library-construction = pkgs.writeText "tvp-compiler-library-construction-contracts" (
         builtins.toJSON (import ./lib/tests/compiler-library-construction.nix { inherit pkgs tvp; })
       );
