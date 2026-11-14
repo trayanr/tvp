@@ -195,11 +195,28 @@ let
     commandCurrentShell = lib.all (
       q:
       let
-        edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
+        edited = q.edit (
+          spec:
+          spec
+          // (
+            if q.pname == "acl" then
+              {
+                base = spec.base.override { shell = tvp.packages.bash; };
+              }
+            else
+              { bash = tvp.packages.bash; }
+          )
+        );
         configure = lib.findFirst (step: lib.hasSuffix ".configure" step.name) null edited.buildSteps;
       in
       lib.hasInfix (builtins.unsafeDiscardStringContext "${tvp.packages.bash}/bin/bash") configure.run
-      && edited.tests.version.specification.bash.drvPath == tvp.packages.bash.drvPath
+      &&
+        (
+          if q.pname == "acl" then
+            edited.tests.version.specification.base.shell.drvPath
+          else
+            edited.tests.version.specification.bash.drvPath
+        ) == tvp.packages.bash.drvPath
       && edited.tests.version.package.drvPath == edited.drvPath
     ) commandTools;
     commandRuntimeEdits = lib.all (
@@ -246,13 +263,13 @@ let
           q:
           let
             helper = tvp.packages.coreutils;
-            edited = q.edit (spec: spec // { coreutils = helper; });
+            edited = q.edit (spec: spec // { base = spec.base.override { coreutils = helper; }; });
             test = edited.tests.isolated-discovery;
           in
           lib.hasInfix (builtins.unsafeDiscardStringContext "${helper}/bin/env") (
             builtins.unsafeDiscardStringContext (builtins.head test.buildSteps).run
           )
-          && test.specification.coreutils.drvPath == helper.drvPath
+          && test.specification.base.coreutils.drvPath == helper.drvPath
           && test.package.drvPath == edited.drvPath
         )
         [
@@ -266,6 +283,8 @@ let
           "bzip2"
           "zlib"
           "xz"
+          "attr"
+          "acl"
         ];
         edited = q.edit (
           spec:

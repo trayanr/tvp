@@ -151,9 +151,11 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   by consumer as well as the complete flattened report. MPC validates its actual
   registered providers through that scoped view. A throwing unrelated-provider
   probe verifies laziness; the broader failure is preserved, not waived.
-- **Decision needed:** repair the live LibYAML test-boundary assertions in that
-  family's conversion. Keep full-inventory admission distinct from scoped package
-  checks instead of silently skipping the unrelated nonpass.
+- **Disposition:** the LibYAML conversion edits authoritative `doCheck` rather
+  than derived feature metadata. The full Ruby/Bundler customization contract
+  evaluates successfully with both original failure cases, and LibYAML's normal
+  current batch passes. The original failure stays recorded; this does not claim
+  a fresh Ruby/Bundler runtime or full-inventory admission pass.
 
 ## MIG-011 — Deferred heavy providers behind a historical frontend
 
@@ -222,9 +224,10 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Current behavior:** status validates declared alias selectors through a narrow
   lazy projection. Its measurement is explicitly `declared-selectors`, with runtime
   qualification unknown. The actual latest gate and its suite checks are unchanged.
-- **Decision needed:** repair the Expat customization contract during that family's
-  conversion, then qualify its effective package and tests. Progress metadata does
-  not substitute for acceptance of that unrelated suite.
+- **Disposition:** Expat's conversion repairs the authoritative input edits and
+  evaluates the original customization contract. Its current package, independent
+  CTest execution and all nine normal leaves pass. The original status failure
+  stays recorded. Progress metadata still does not substitute for suite acceptance.
 
 ## MIG-016 — Standard tool names can collide with recipe options
 
@@ -239,3 +242,18 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Follow-up:** after remaining builders use their base context, review removal of
   implicit standard-argument compatibility rather than growing name exceptions.
   This batch does not change the family API or reinterpret existing option types.
+
+## MIG-017 — Libxcrypt ABI baseline requires uncached historical GCC16
+
+- **Scope:** normal Libxcrypt ABI comparison against its exact retained 4.4.36
+  default-base producer, outside ordinary family-authoring cleanup.
+- **Evidence:** the eight-target dry run reaches the retained baseline through
+  only `libxcrypt_4_5_2.tests.abi`, then the historical GCC16-owned stdenv/compiler.
+  Current source-built compiler generations remain exact; this is a different
+  historical fixture generation, not a required current package compiler rebuild.
+- **Current behavior:** preserve the baseline and ABI test unchanged. Do not
+  substitute another producer, trim the assertion, fake its output or mark the
+  normal Libxcrypt batch passing. Build the current A/F and other leaves while
+  retaining this test as NOT_RUN and the normal batch incomplete.
+- **Decision needed:** coordinate that historical baseline/compiler realization
+  and run the unchanged ABI test; until then ABI qualification remains pending.

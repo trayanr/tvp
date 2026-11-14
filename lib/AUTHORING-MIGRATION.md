@@ -182,6 +182,17 @@ The full retained factory observer now passes; MIG-012 is resolved with its orig
 failure retained. The earlier `pkg-config` base role is lazy and separate from
 same-named recipe feature options (MIG-016).
 
+GDBM (26 releases), LibYAML (13), Expat (one), Attr (four), ACL (four) and
+Libxcrypt (four) raise ordinary index adoption to 28/110 and 369 eligible
+canonical rows. Their independent upstream factories restore compiled checkpoints;
+production LibYAML excludes test programs and Expat enables its test build only
+in U. The existing earlier CMake/Ninja roles are lazy base choices. Current
+packages and two historical harness/base representatives pass their selected
+leaves; Libxcrypt's exact retained ABI fixture remains pending (MIG-017), so its
+normal batch is explicitly incomplete. Retained bootstrap/construction producers
+stay exact. MIG-010 and MIG-015 are resolved at their stated scopes; this is not
+full catalogue admission or historical runtime qualification.
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL

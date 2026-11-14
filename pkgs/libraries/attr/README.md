@@ -1,9 +1,20 @@
 # Attr
 
-Packaged releases: 2.5.0, 2.5.1, 2.5.2 and 2.6.0. The older pair forwards
-to the unchanged 2.5.2 recipe; no source patches or dependency changes are
-needed. Existing consumers remain pinned to 2.5.2. `attr` and `attr_2` select
-2.6.0; `attr_2_5` selects 2.5.2.
+All four public releases use the complete `build.nix` procedure and a literal
+release table in `default.nix`. Library revisions stay explicit: 2.5.0's
+historical 250 spelling is not replaced by 2501. The `.test` versus `.run`
+harness choice belongs only to the independent upstream factory.
+
+Compilation/configuration/installation form A. F copies A, drops the build
+checkpoint and applies runtime/output repair. U restores the compiled source
+checkpoint privately; test-driver/Perl policy and filesystem capability
+wrappers are U inputs, so changing that policy does not invalidate A or F.
+Installed assertions are shared by all four releases.
+
+`retained.nix` preserves the historical construction recipe and its original
+factory closure. Its stdenv builders, frozen fixtures and factory entry points
+remain independent of the public ordinary route. Existing alias and release
+metadata are unchanged; ordinary authoring does not certify runtime behavior.
 
 The Savannah tracker accepts complete `attr-VERSION[.src].tar.gz` filenames.
 Its nine releases include the five still unpackaged 2.4.44–2.4.48 releases.
@@ -38,3 +49,13 @@ The headers omit xattrat syscall numbers: its shipped wrappers return
 succeed. Native openat2 directory lookup and symlink rejection were tested.
 No injected fallback, native xattrat syscall, or older-kernel coverage is
 claimed. No runtime or versioning fixes are backported.
+
+
+## Current authoring validation
+
+The historical observations above retain their original scope. The current
+family-authoring pass qualifies only the selected outputs recorded in
+`lib/MIGRATION-LOG.md`; it does not replay every historical release or waive
+filesystem/platform skips.
+Attr 2.6.0 and the historical 2.5.0 harness representative pass their normal
+batches. The other two releases are evaluation-only in this authoring pass.

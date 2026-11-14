@@ -189,18 +189,34 @@ let
       p = at (builtins.head entry);
       path = builtins.tail entry;
       name = lib.last path;
-      selected = replacement (lib.attrByPath path null p.specification);
+      standardTool =
+        {
+          expat = "python";
+          libyaml = "python";
+        }
+        .${familyName} or null;
+      original =
+        if standardTool == null then
+          lib.attrByPath path null p.specification
+        else
+          p.specification.base.standardTools.${standardTool};
+      selected = replacement original;
       standardRole =
         {
           xz = "shell";
           bzip2 = "shell";
           gzip = "coreutils";
           pcre2 = "coreutils";
+          attr = "shell";
+          acl = "shell";
+          libxcrypt = "shell";
         }
         .${familyName} or null;
       edited = p.edit (
         s:
-        if standardRole == null then
+        if standardTool != null then
+          s // { base = s.base.override { standardTools.${standardTool} = selected; }; }
+        else if standardRole == null then
           set path selected s
         else
           s // { base = s.base.override { ${standardRole} = selected; }; }
@@ -209,10 +225,7 @@ let
     {
       metadata = edited.tvp.deps.${name}.outPath == selected.outPath;
       command = lib.hasInfix (plain marker.outPath) (plain (commands edited));
-      noStaleCommand =
-        !(lib.hasInfix (plain (toString (lib.attrByPath path null p.specification))) (
-          plain (commands edited)
-        ));
+      noStaleCommand = !(lib.hasInfix (plain (toString original)) (plain (commands edited)));
     }
   ) cases;
   checks =

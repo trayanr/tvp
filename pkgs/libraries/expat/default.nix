@@ -1,87 +1,35 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  retained = previous.recipes.expat;
-  candidate = import ../../../bases/source-gnu { };
-  constructionTools = builtins.mapAttrs (
-    _: tool:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU preparation tool; avoids a public prerequisite/toolchain cycle.";
-    } tool
-  ) candidate.tools;
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  definition =
-    (tvpLib.packages.mkDefs {
-      "2.9.0" = {
-        constructor = tvp.builder;
-        base = candidate.base;
-        helpers = {
-          inherit tvp;
-        };
-        testContext =
-          package:
-          tvpLib.tests.fromPackage {
-            builder = tvp.builder;
-            inherit package;
-          };
-        builder = ./native/build-2.9.0.nix;
-        source =
-          { version, sha256 }:
-          import <nix/fetchurl.nix> {
-            url = "https://github.com/libexpat/libexpat/releases/download/R_${
-              pkgs.lib.replaceStrings [ "." ] [ "_" ] version
-            }/expat-${version}.tar.xz";
-            inherit sha256;
-          };
-        deps = {
-          inherit (constructionTools)
-            bash
-            coreutils
-            xz
-            findutils
-            python
-            binutils
-            patchelf
-            cmake
-            ninja
-            ;
-          gnutar = constructionTools.tar;
-        };
-
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build.nix;
       };
-    })."2.9.0";
-  versionTable = retained.versionTable // {
-    "2.9.0" = retained.versionTable."2.9.0" // {
-      def = if native then definition else retained.versionTable."2.9.0".def;
-    };
-  };
-  publicArgs = retained // {
-    inherit versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
-      else
-        (import ./legacy.nix { inherit pkgs tvp; }).recipes.expat.extraArgs.mkTests package
-    ) { inherit pkgs; };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
+      releases = {
+        "2.9.0" = "sha256-HmNxhizDGZmzaMO4m0mZTwZ34bq18bK4WuN0H12AMFE=";
+      };
+    }
+  ];
   pname = "expat";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://github.com/libexpat/libexpat/releases/download/R_${
+          pkgs.lib.replaceStrings [ "." ] [ "_" ] version
+        }/expat-${version}.tar.xz";
+        inherit sha256;
+      };
+    tests = import ./tests;
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    constructionRecipe = retained;
+  recipes.expat = family // {
+    constructionRecipe = (import ./retained { inherit pkgs tvp; }).recipes.expat;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

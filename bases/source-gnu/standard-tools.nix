@@ -7,6 +7,8 @@
 {
   pkg-config = tvp.baseTiers.native.standardTools.pkg-config;
   inherit (tvp.baseTiers.native.standardTools)
+    cmake
+    ninja
     gnumake
     gnutar
     xz

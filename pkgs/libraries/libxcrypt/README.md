@@ -1,8 +1,20 @@
-libxcrypt 4.4.36 and 4.5.0–4.5.2 share the unchanged `build-4.4.36.nix`
-recipe and Perl 5.44.0 definition. Generated configure is shipped; Python and
-Passlib are needed only to regenerate upstream's known-answer tables. Normal
-all-hashes, obsolete ABI, feature defaults and compiler flags are preserved.
-`libxcrypt`/`libxcrypt_4` select 4.5.2; `libxcrypt_4_4` stays at 4.4.36.
+All four public Libxcrypt releases use one complete `build.nix` procedure.
+The release table selects a real TVP Perl dependency: shipped Make rules use
+Perl for production symbol/header generators. Python/Passlib are still not
+needed to regenerate known-answer tables. The 4.4.36-only GCC15+ ascii64
+warning demotion remains explicit; all other Werror and hardening stay enabled.
+Normal all-hashes, obsolete ABI, shared/static and feature defaults are kept.
+
+A configures, compiles, installs and saves its compiled source checkpoint. F
+copies A, drops the checkpoint and performs output/runtime repair. Independent
+U restores that checkpoint and prepares only test frontends before make check.
+One installed suite reuses the existing ABI/API/vector/old-consumer assertions.
+
+`retained.nix` preserves the exact historical 4.4.36 ABI-control constructor and
+lazy test closure. It is intentionally not replaced with the public ordinary
+4.4.36 producer. The direct `build-4.5.2.nix` bootstrap entry point stays in place
+and unchanged. The old `tests/upstream.nix` stdenv validation companion also
+remains for construction callers; ordinary U is `tests/checkpoint-upstream.nix`.
 
 The original `crypt` test remains unchanged. Additional Linux probes check the
 exact loaded library, crypt.h/pkg-config consumers, compatibility links,
@@ -44,3 +56,14 @@ asset digests and embedded versions; tag availability does not authenticate
 all historical archives. 4.4.37/4.4.38 are outside this expansion. A development
 NEWS entry for 4.5.3 is not a verified stable release. No unavailable-release
 claims are inferred from a failed fetch.
+
+
+## Current authoring validation
+
+The historical observations above retain their original scope. The current
+family-authoring pass qualifies only the selected outputs recorded in
+`lib/MIGRATION-LOG.md`; it does not replay every historical release or waive
+filesystem/platform skips.
+The current 4.5.2 artifact/final and ten non-ABI leaves pass. Its exact retained
+4.4.36 ABI comparison is NOT_RUN because that fixture needs an uncached historical
+compiler generation (MIG-017). The normal batch remains incomplete.
