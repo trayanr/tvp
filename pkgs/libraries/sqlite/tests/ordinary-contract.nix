@@ -1,8 +1,12 @@
-{ package }:
-package.testContext.mkSuite {
+{
+  package,
+  lib,
+  context,
+}:
+context.mkSuite {
   inherit package;
   libraries = [ package ];
-  tools = package.specification.environment.tools ++ [ package.tvp.deps.binutils ];
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests =
     {
       shared-consumer = {

@@ -1,41 +1,44 @@
 # Actual validation producers. Only the acceptance test is a registered test.
 {
   package,
-  tvpLib,
-  builder,
   lib,
+  context,
 }:
 let
   s = package.specification;
+  builder = s.upstreamBuilder;
+  tools = (builder.forBase s.base).tools;
   # Use the same explicit production environment and fixture-only additions.
   environment = s.base.environment s.environment;
   protocol = s.upstreamIsolation.protocol;
   modern = protocol == "veryquick";
   fixtureEnv = ''
     export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${
-      builtins.concatStringsSep " " (s.compileFlags ++ s.testCompileFlags)
+      builtins.concatStringsSep " " (s.buildFeatures.compileFlags ++ s.testCompileFlags)
     } -isystem ${s.testZlib}/include -DSQLITE_HAVE_ZLIB=1"
     export NIX_LDFLAGS="$NIX_LDFLAGS -rpath-link ${s.readline.tvp.deps.ncurses}/lib -rpath-link ${s.tcl.tvp.deps.zlib}/lib -L${s.testZlib}/lib -rpath ${s.testZlib}/lib -L${s.tcl}/lib -rpath ${s.tcl}/lib${if modern then "" else " -lz"}"
   '';
   hardening = ''
-    export NIX_HARDENING_ENABLE=${lib.escapeShellArg (builtins.concatStringsSep " " (lib.subtractLists s.hardeningDisable s.base.compiler.defaultHardeningFlags))}
-    export NIX_HARDENING_DISABLE=${lib.escapeShellArg (builtins.concatStringsSep " " s.hardeningDisable)}
+    export NIX_HARDENING_ENABLE=${lib.escapeShellArg (builtins.concatStringsSep " " (lib.subtractLists s.buildFeatures.hardeningDisable s.base.compiler.defaultHardeningFlags))}
+    export NIX_HARDENING_DISABLE=${lib.escapeShellArg (builtins.concatStringsSep " " s.buildFeatures.hardeningDisable)}
   '';
   validation =
     role: plan:
     builder {
-      recipe = { }: _: {
-        pname = "sqlite-${role}";
-        inherit (s)
-          version
-          base
-          bash
-          coreutils
-          ;
-        src = null;
-        inherit plan;
-        validationRole = role;
-      };
+      recipe =
+        { }:
+        _: {
+          pname = "sqlite-${role}";
+          inherit (s)
+            version
+            base
+            bash
+            coreutils
+            ;
+          src = null;
+          inherit plan;
+          validationRole = role;
+        };
       args = { };
       dependencyNames = [ ];
       metadata.kind = "owned-validation";
@@ -44,9 +47,9 @@ let
     };
   restore = from: {
     name = "sqlite.restore-private-tree";
-    tools = [ s.python ];
+    tools = [ tools.python ];
     run = ''
-      ${s.python}/bin/python3 -B ${s.testRestoreScript} ${from} "$TVP_SOURCE_ROOT" ${s.stateScript}
+      ${tools.python}/bin/python3 -B ${s.testRestoreScript} ${from} "$TVP_SOURCE_ROOT" ${s.stateScript}
     '';
   };
   construction = validation "upstream-construction" [
@@ -58,11 +61,11 @@ let
         run = ''
           cd -- "$(cat "$TVP_SOURCE_ROOT/tree-path")"
           ${builtins.concatStringsSep "\n" (
-            map (p: "${s.patch}/bin/patch -p1 < ${p.file}") (
-              tvpLib.packages.checkPatches "sqlite.testPatches" s.testPatches
+            map (p: "${tools.patch}/bin/patch -p1 < ${p.file}") (
+              s.checkPatches "sqlite.testPatches" s.testPatches
             )
           )}
-          ${s.python}/bin/python3 -B ${s.testPrepareScript} "$PWD" ${protocol} ${s.bash}/bin/bash
+          ${tools.python}/bin/python3 -B ${s.testPrepareScript} "$PWD" ${protocol} ${s.bash}/bin/bash
         '';
       }
     )
@@ -77,9 +80,9 @@ let
             cd -- "$(cat "$TVP_SOURCE_ROOT/tree-path")"
             prefix=$(cat "$TVP_SOURCE_ROOT/production-prefix")
             export TCLLIBPATH="$prefix/lib/tcl"
-            ${s.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${s.bash}/bin/bash \
+            ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${s.bash}/bin/bash \
               TCLLIBDIR="$prefix/lib/tcl" testfixture ${if modern then ''LDFLAGS.libsqlite3="-lm -lz"'' else ""}
-            ${s.python}/bin/python3 -B ${s.stateScript} save "$PWD" "$out" \
+            ${tools.python}/bin/python3 -B ${s.stateScript} save "$PWD" "$out" \
               ${s.stateManifest} ${protocol} "$prefix" "$TVP_SOURCE_ROOT/source-date-epoch" fixture
           '';
       }
@@ -103,7 +106,7 @@ let
               ''
                 cp -- ${s.runnerScript} fixture-runner.tcl
                 ${s.bash}/bin/bash ${s.captureScript} "$out/raw" \
-                  ${s.coreutils}/bin/timeout 900 ./testfixture fixture-runner.tcl ${s.reportedVersion}
+                  ${s.coreutils}/bin/timeout 900 ./testfixture fixture-runner.tcl ${s.installedInterface.reportedVersion}
                 # Preserve capture even on missing runner files: strict U rejects them.
                 if [[ -f testrunner.log ]]; then cp -- testrunner.log "$out/raw/runner.log"; fi
                 if [[ -f testrunner.db ]]; then cp -- testrunner.db "$out/raw/runner.db"; fi
@@ -118,12 +121,12 @@ let
     )
   ];
 in
-(package.testContext.mkTest {
+(context.mkTest {
   package = execution;
   name = "upstream";
-  tools = [ s.python ];
+  tools = [ tools.python ];
   script = ''
-    ${s.python}/bin/python3 -B ${s.classifyScript} ${execution}/raw ${
+    ${tools.python}/bin/python3 -B ${s.classifyScript} ${execution}/raw ${
       if modern then "${package}/bin/sqlite3" else ""
     }
   '';

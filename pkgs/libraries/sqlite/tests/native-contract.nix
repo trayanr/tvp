@@ -1,13 +1,20 @@
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   deps = package.tvp.deps;
+  tools = (package.specification.base.standardTools or { }) // {
+    binutils = package.specification.base.compiler.bintools;
+  };
   tcl = deps.tcl;
   sqlite = package;
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
   libraries = [ package ];
-  tools = package.specification.environment.tools ++ [ deps.binutils ];
+  tools = package.specification.environment.tools ++ [ tools.binutils ];
   tests = {
     cli-features = {
       script = ''
@@ -25,12 +32,12 @@ package.testContext.mkSuite {
     };
     readline-terminal = {
       tools = [
-        deps.python
-        deps.grep
+        tools.python
+        tools.grep
       ];
       script = ''
         LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/sqlite3 | grep -F '${deps.readline.tvp.deps.ncurses}/lib/libncursesw.so' >&2
-        ${deps.python}/bin/python3 ${./fixtures/readline.py} ${package}/bin/sqlite3
+        ${tools.python}/bin/python3 ${./fixtures/readline.py} ${package}/bin/sqlite3
       '';
       expected = "readline editing works";
     };

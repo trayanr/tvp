@@ -257,3 +257,34 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   retaining this test as NOT_RUN and the normal batch incomplete.
 - **Decision needed:** coordinate that historical baseline/compiler realization
   and run the unchanged ABI test; until then ABI qualification remains pending.
+
+
+## MIG-018 — Native upstream profiles still reconstruct their build trees
+
+- **Scope:** native SQLite 3.53.4 and OpenSSL 3.6.3/4.0.1 authoring adoption.
+  Their package and independent upstream derivations are already separate, but
+  those native upstream plans reconstruct private trees from source instead of
+  retaining/restoring the compiled tree used by the specialized historical eras.
+- **Current behavior:** preserve those production identities, test bodies and
+  provider generations. Do not remove upstream checks or claim that an unchanged
+  package identity makes the test replay free. The selected OpenSSL 4.0.1 raw
+  test actually recompiles its private tree during this validation.
+- **Follow-up:** converge those real profiles on the existing checkpoint and
+  test factory, coordinating the required production retention change once.
+  This authoring pass does not introduce another execution framework or silently
+  treat source reconstruction as compiled-checkpoint reuse.
+
+
+## MIG-019 — Historical Libxml2 headers exceed the strict reader's grammar
+
+- **Scope:** Libxml2 2.9.14's first checkpoint-era representative validation.
+- **Evidence:** production A/F, all ten installed leaves and raw upstream exit
+  zero pass. Strict acceptance reaches the unchanged source-bound reader, which
+  rejects the real configured header directive `#ifdef __cplusplus` with
+  `SOURCE_OR_REPORT_BINDING_GAP`. The A/header equality checks pass beforehand.
+- **Current behavior:** preserve the reader, raw receipt and failure. The
+  historical normal batch remains red/incomplete; neither installed tests nor
+  a raw zero exit substitutes for strict acceptance. No XML source fix, corpus
+  reduction, known-result waiver or fabricated passing receipt is introduced.
+- **Follow-up:** bind header grammars to their actual source eras and qualify
+  the reader independently, keeping earlier corpus/conformance gaps distinct.

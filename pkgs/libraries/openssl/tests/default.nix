@@ -1,22 +1,27 @@
-# One suite, shared by every OpenSSL version. Never fork it per builder: a test
-# that exists only for newer versions cannot detect drift in an older one.
-# Guards select whole tests; they never edit a test body.
+# One installed suite for every supported OpenSSL profile.
 {
-  pkgs,
-  pkg-config,
-  tvpLib,
-  openssl,
+  package,
+  lib,
+  context,
 }:
 let
+  openssl = package;
+  tools = package.specification.base.standardTools // {
+    binutils = package.specification.base.compiler.bintools;
+  };
   # sha256("tvp") and sha1("tvp"), first 16 hex characters.
   tvpDigest = "f6f6ead0bd85c312";
   tvpSha1 = "52d3d1f5a23c79c8";
 
   features = openssl.passthru.tvp.features or { };
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs;
-  package = openssl;
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [
+    tools.binutils
+    tools.pkg-config
+  ];
+  libraries = [ package ];
 
   tests =
     # Universal: SHA-1 and the legacy enc KDF are the widest common ground,
@@ -55,12 +60,12 @@ tvpLib.tests.mkSuite {
           pkg-config --modversion openssl
         '';
         expected = openssl.version;
-        extraInputs = [ pkg-config ];
+
       };
     }
 
     # SHA-2 landed in 0.9.8, so 0.9.7 and earlier get the universal set only.
-    // pkgs.lib.optionalAttrs (features.sha256 or false) {
+    // lib.optionalAttrs (features.sha256 or false) {
       digest = {
         script = ''
           printf tvp | openssl dgst -sha256 | awk '{ print $NF }' | cut -c1-16
@@ -90,11 +95,11 @@ tvpLib.tests.mkSuite {
           ./digest
         '';
         expected = tvpDigest;
-        extraInputs = [ openssl.tvp.cc ];
+
       };
     }
 
-    // pkgs.lib.optionalAttrs (features.pbkdf2 or false) {
+    // lib.optionalAttrs (features.pbkdf2 or false) {
       enc-pbkdf2 = {
         script = ''
           printf secret \
@@ -105,3 +110,35 @@ tvpLib.tests.mkSuite {
       };
     };
 }
+
+// (
+  if package.specification ? finalHelper then
+    import ./ordinary-contract.nix { inherit package lib context; }
+  else
+    import ./native-contract.nix { inherit package lib context; }
+)
+
+// (
+  if package.specification ? upstreamIsolation && (package.specification.doCheck or true) then
+    {
+      upstream = import ./upstream.nix {
+        inherit package lib context;
+      };
+    }
+  else
+    { }
+)
+
+// (
+  if
+    (package ? specification)
+    && (package.specification ? upstreamPlan)
+    && (package.specification.upstreamCheck.enabled or true)
+  then
+    {
+      # Independent native upstream registration.
+      upstream = import ../native/upstream.nix { package = package; };
+    }
+  else
+    { }
+)

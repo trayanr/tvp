@@ -1,7 +1,16 @@
 # Installed consumers cover the legacy and provider ABIs using public headers.
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
-  deps = package.tvp.deps;
+  tools = package.specification.base.standardTools // {
+    bash = package.specification.base.shell;
+    coreutils = package.specification.base.coreutils;
+    binutils = package.specification.base.compiler.bintools;
+  };
+  testDeps = package.tvp.declaredTestDependencies;
   features = package.tvp.features;
   engineDirectory =
     if features.providers then
@@ -11,30 +20,30 @@ let
     else
       "engines";
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
   tools =
     package.specification.environment.tools
-    ++ [ deps.binutils ]
-    ++ (if features.cmake then [ deps.testCmake ] else [ ]);
+    ++ [ tools.binutils ]
+    ++ (if features.cmake then [ testDeps.cmake ] else [ ]);
   libraries = [ package ];
   tests =
     {
       mutation-guards = {
         script = ''
-          ${deps.python}/bin/python3 -B ${./ordinary-guards.py} '${
+          ${tools.python}/bin/python3 -B ${./ordinary-guards.py} '${
             builtins.toJSON {
-              readelf = "${deps.binutils}/bin/readelf";
-              patchelf = "${deps.patchelf}/bin/patchelf";
+              readelf = "${tools.binutils}/bin/readelf";
+              patchelf = "${tools.patchelf}/bin/patchelf";
               perl = "${package.runtime.perl}/bin/perl";
               shell = "${package.runtime.shell}/bin/bash";
-              coreutils = "${deps.coreutils}";
+              coreutils = "${tools.coreutils}";
             }
           }' ${../ordinary/output.py} ${../ordinary/archive.py} ${../ordinary/elf.py} ${../../../../lib/installed-tree.py} ${../ordinary/source.py} ${../ordinary/manuals.py} ${../ordinary/manual-render.pl}
-          ${deps.python}/bin/python3 -B ${./manual-guards.py} '${
+          ${tools.python}/bin/python3 -B ${./manual-guards.py} '${
             builtins.toJSON {
-              readelf = "${deps.binutils}/bin/readelf";
-              patchelf = "${deps.patchelf}/bin/patchelf";
+              readelf = "${tools.binutils}/bin/readelf";
+              patchelf = "${tools.patchelf}/bin/patchelf";
               perl = "${package.specification.manualPerl}/bin/perl";
               shell = "${package.runtime.shell}/bin/bash";
             }
@@ -197,7 +206,7 @@ package.testContext.mkSuite {
             script = ''
               test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfig.cmake
               test -s ${package}/lib/cmake/OpenSSL/OpenSSLConfigVersion.cmake
-              ${deps.python}/bin/python3 -B - <<'PY'
+              ${tools.python}/bin/python3 -B - <<'PY'
               from pathlib import Path
               for path in Path('${package}/lib/cmake/OpenSSL').glob('*.cmake'):
                   body = path.read_bytes()
