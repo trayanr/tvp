@@ -248,7 +248,23 @@ let
         let
           p = tvp.canonical.${name};
           selected = replacement p.specification.bash;
-          q = p.edit (s: s // { bash = selected; });
+          q = p.edit (
+            s:
+            s
+            // (
+              if
+                builtins.elem name [
+                  "gnumake_4_4_1"
+                  "m4_1_4_21"
+                ]
+              then
+                {
+                  base = s.base.override { shell = selected; };
+                }
+              else
+                { bash = selected; }
+            )
+          );
           r = p.editRuntime (runtime: runtime // { shell = selected; });
         in
         q.runtime.shell.outPath == selected.outPath

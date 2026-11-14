@@ -127,8 +127,15 @@ move a necessary provider earlier in that order.
 The ordinary GMP, MPC and ISL indexes now follow this model across all 21 releases
 (three GMP eras, three MPC eras, two ISL eras). Together with MPFR, four family
 indexes use the authoring API. Standard build tools select the explicit earlier
-native generation, including Gzip for historical source archives. M4's prerequisite
-bindings are repaired; its full authoring conversion remains pending.
+native generation, including Gzip for historical source archives.
+
+M4 and GNU Make also use one complete production builder per family, literal
+release tables and shared installed/constructor assertions. Source-bound upstream
+harness differences stay after the compiled checkpoint. All six supported releases
+use the authoring API; M4's two declared-broken releases and the historical
+construction recipes remain explicit and unchanged. Ordinary authoring adoption
+therefore covers six of the 110 inventoried families. This does not mean all
+historical construction callers have left the compatibility API.
 
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared

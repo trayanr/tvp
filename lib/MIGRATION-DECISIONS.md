@@ -82,8 +82,8 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 
 ## MIG-006 — Foundational build-tool ordering (prerequisite resolved)
 
-- **Scope:** build-only roles preceding GMP/MPFR; full M4 authoring conversion
-  remains later work.
+- **Scope:** build-only roles preceding GMP/MPFR; historical construction callers
+  remain separate from the ordinary M4 family.
 - **Evidence:** selecting public M4 for GMP exposed more than the Gawk5 → MPFR
   edge: public Diffutils, Findutils, Patchelf and build Python reach Coreutils →
   GMP; public Tar's compressor bindings and M4's Gzip do the same. Original
@@ -93,9 +93,11 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   roles and the existing earlier Gzip provider. Package-specific library choices
   remain public TVP selectors. All nine ordinary GMP versions evaluate without
   cycles; no fallback or package-name-based rescue is introduced.
-- **Remaining work:** migrate the complete M4 authoring index and its construction
-  callers in their scope. Do not promote build-only roles to final public aliases
-  without checking the resulting construction graph.
+- **Remaining work:** ordinary M4 now uses the family API; its retained construction
+  recipe still serves historical stdenv callers. Keep those selectors and the
+  bootstrap-pinned Make helper bytes exact until their real callers move. Do not
+  promote build-only roles to final public aliases without checking the resulting
+  construction graph.
 
 ## MIG-007 — Frozen library test and observer interfaces
 

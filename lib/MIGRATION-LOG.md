@@ -97,3 +97,36 @@ Records: `reviews/post-migration/compiler-library-family-authoring` under the sa
 local state root. Raw test reports and compiled checkpoints stay in the Tower store;
 local state retains commands, timings, identities and summaries rather than copies
 of those trees.
+
+## 2026-11-14 — M4 and Make family authoring
+
+All six supported releases now use two complete production builders: one for M4,
+one for Make. Literal recipe tables retain only actual release differences;
+installed and constructor assertions are shared. Build tools come from the effective
+base. Upstream preparation/execution/acceptance remains after the compiled checkpoint;
+Make's Perl provider is test-only.
+
+Validation completed locally in 112.383 seconds: all six normal batches and all
+87 named leaves pass, including runtime-shell/base/tool edits, real C/C++ consumers,
+Make's loadable interface/jobserver controls and final-only artifact reuse. All three
+M4 upstream suites and Make 4.3 return raw exit zero. Make 4.4/4.4.1 retain the exact
+known libc default-PATH echo nonpass, accepted only by their unchanged source-bound
+classification policy; it remains unwaived. Guile/VMS exclusions remain explicit.
+This is bounded qualification, not universal strict upstream conformance.
+
+Both compiler generations, the bootstrap GNU Make floor, retained construction M4
+and Make, frozen Coreutils and both declared-broken M4 releases remain exact. The
+bootstrap-pinned Make helpers were not changed. No compiler rebuilt. Split coverage
+stays 1,520 compliant / 20 declared-broken; ordinary family authoring is six of the
+110 inventoried entrypoints, separate from retained construction conversion.
+
+48 new family contracts and the existing effective-input/17-constructor contracts
+pass. Implementation preflight fixed an incorrect pure-module call, a test assertion
+that eagerly rejected unrelated edited suites, and a reserved test environment key
+before production execution. Formatting preserves all qualified identities. No
+extra execution framework, CI run, NAS copy or admission waiver was introduced.
+
+Commands, timings, exact comparisons, root links and results:
+`reviews/post-migration/m4-make-family-authoring` under the same local state root.
+Completed compiled trees and raw reports stay in the Tower store, with small scoped
+roots and no second state-directory copy.
