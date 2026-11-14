@@ -546,3 +546,22 @@ indexes, with no lookup maps, numeric names, explicit ordinary constructors,
 string tool lists or `tvpLib = tvp.lib` aliases. Documentation now qualifies retained
 and checkpoint exceptions, labels superseded Libxml2 staging material, updates
 the structural tree and repairs three moved links.
+
+
+### Assembled validation attempt 002 and Automake ordering
+
+The explicit Tower-local request stopped after 32.353s in GNU Sed
+4.10, before any compiler recipe started. Direct `all-am` bypassed Automake's
+`all: $(BUILT_SOURCES)` barrier, allowing compilation before generated wrapper
+headers were ready. The corrected normal `all`/`install` calls use `SUBDIRS=.`
+only at the explicitly selected local production recursion boundaries. Existing
+production directory order and Findutils's test-program exclusion are preserved.
+The same pattern was repaired across 16 complete procedures in eight families.
+No C-language downgrade, implicit-declaration allowance, feature cut or test waiver
+is used. Original logs and failed workspace remain preserved; GNU Make dry runs
+used private copies and do not purport to reproduce a parallel race sequentially.
+
+Focused Sed A/F, upstream acceptance and its normal 7-leaf batch pass in
+28.372s. The compiled package and test identities will be reused by the next frozen
+assembled workflow. All 297 partial selected outputs remain retained after the
+failed request; success-only aggregate verification was not run.

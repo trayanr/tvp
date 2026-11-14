@@ -21,21 +21,17 @@ let
       (
         directory:
         let
-          localTarget =
-            if
-              directory == "."
-              || builtins.elem directory [
-                "find"
-                "xargs"
-                "locate"
-              ]
-            then
-              (if target == "all" then "all-am" else "install-am")
-            else
-              target;
+          noTestRecursion = lib.optionalString (
+            directory == "."
+            || builtins.elem directory [
+              "find"
+              "xargs"
+              "locate"
+            ]
+          ) " SUBDIRS=.";
           noTestPrograms = lib.optionalString (directory == "find") " noinst_PROGRAMS=";
         in
-        ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" -C ${lib.escapeShellArg directory} SHELL=${final.bash}/bin/bash${noTestPrograms} ${localTarget}''
+        ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" -C ${lib.escapeShellArg directory} SHELL=${final.bash}/bin/bash${noTestPrograms} ${target}${noTestRecursion}''
       )
       [
         "."

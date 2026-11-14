@@ -41,10 +41,9 @@ let
       (
         directory:
         let
-          localTarget =
-            if directory == "." then (if target == "all" then "all-am" else "install-am") else target;
+          noTestRecursion = lib.optionalString (directory == ".") " SUBDIRS=.";
         in
-        ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" -C ${lib.escapeShellArg directory} SHELL=${final.bash}/bin/bash ${localTarget}''
+        ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" -C ${lib.escapeShellArg directory} SHELL=${final.bash}/bin/bash ${target}${noTestRecursion}''
       )
       [
         "lib"
