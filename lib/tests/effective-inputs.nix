@@ -49,7 +49,7 @@ let
       s = p.specification;
     in
     lib.concatStringsSep "\n" (
-      map (step: step.run or "") p.buildSteps
+      map (step: (step.run or "") + "\n" + builtins.toJSON (step.env or { })) p.buildSteps
       ++ map (step: step.run or "") (
         let
           plan = s.upstreamPlan or [ ];
@@ -70,9 +70,10 @@ let
       "canonical.mpc_1_4_1"
       "mpfr"
     ];
+    # Standard-tool edits are checked through GMP's base in gmp-family.nix.
     gmp = [
       "canonical.gmp_6_3_0"
-      "bash"
+      "m4"
     ];
     json-c = [
       "canonical.json-c_0_19"

@@ -5,6 +5,7 @@ MPFR implements it. The next work is to simplify construction-base composition,
 then convert complete package families while preserving their actual procedures
 and earlier construction inputs.
 
+[MIGRATION-LOG.md](MIGRATION-LOG.md) records completed steps and bounded validation.
 [MIGRATION-DECISIONS.md](MIGRATION-DECISIONS.md) records scope exceptions and design
 questions found during implementation. Keep them explicit for later review instead
 of adding a package-specific workaround or silently broadening this rollout.
@@ -94,7 +95,7 @@ Keep these responsibilities separate:
 |---|---|
 | Generic base/environment contracts | `lib/owned-base.nix`, `lib/build-environment.nix` and `bases/tiers/default.nix`; validate and compose supplied providers. |
 | Native platform/toolchain facts | `bases/source-gnu/default.nix` and `bases/tiers/default.nix`; isolate native GNU/Linux choices from generic contracts and package tables. |
-| Ordinary provider choices | `bases/source-gnu/standard-tools.nix`; explicit named TVP selectors and explained cycle-breaking constraints. |
+| Ordinary build-tool roles | `bases/source-gnu/standard-tools.nix`; explicit named providers from the preceding native tier, independent of public target libraries. |
 | Construction generations | `bases/tiers/source-gnu.nix` and `bootstrap/`; each stage selects its earlier compiler, tools and libraries. |
 | Compatibility adaptation | `bases/tiers/construction.nix` and `fromLegacy`; bounded adapters until their real callers move. |
 | Catalogue registration | Root `default.nix` and `bases/default.nix`; publish selected contexts and retained references. |
@@ -122,11 +123,14 @@ Start with GMP, MPC and ISL. Together with MPFR they exercise the compiler's rea
 library and bootstrap dependencies. Then convert other libraries, build tools,
 runtimes/profiles, and compiler, SDK and data entrypoints. Construction work can
 move a necessary provider earlier in that order.
-The next-family inspection identifies M4's explicit Gawk 5 selection as a
-prerequisite to GMP's public dependency conversion. Resolve that build-only role
-first, and coordinate construction-input activation so individual family rewrites
-do not each rebuild the compiler chain. MIG-005 and MIG-006 record these boundaries
-and the separate frozen-baseline decision.
+The ordinary GMP index now follows this model for all nine releases, using three
+complete era builders and one test factory. Standard build tools now select the
+explicit earlier native generation, resolving M4/Coreutils/MPFR cycles. M4's
+prerequisite provider bindings are repaired; its full authoring conversion remains
+pending. GMP's retained construction definitions and two direct bootstrap/test
+callers stay exact until the coordinated GMP/MPC/ISL activation (MIG-005). The
+ordinary index is cleaned up, but construction adoption is not yet complete.
+MIG-006 records the tool-role boundary; MIG-007 records frozen observer decisions.
 
 For each family:
 

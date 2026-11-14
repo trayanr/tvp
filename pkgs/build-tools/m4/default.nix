@@ -31,17 +31,17 @@ let
       deps = {
         bash = tvp.packages.bash_5;
         coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
+        gnumake = tvp.baseTiers.full.standardTools.gnumake;
+        gnutar = tvp.baseTiers.full.standardTools.gnutar;
+        gzip = host "gzip" "Build-only decompression must precede GMP: public Gzip depends on Coreutils, which depends on GMP.";
         findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
         python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
         binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
         patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
+        sed = tvp.baseTiers.full.standardTools.sed;
+        grep = tvp.baseTiers.full.standardTools.grep;
+        gawk = tvp.baseTiers.full.standardTools.gawk;
+        diffutils = tvp.baseTiers.full.standardTools.diffutils;
       };
     };
     "1.4.19" = {
@@ -61,17 +61,17 @@ let
       deps = {
         bash = tvp.packages.bash_5;
         coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
+        gnumake = tvp.baseTiers.full.standardTools.gnumake;
+        gnutar = tvp.baseTiers.full.standardTools.gnutar;
+        gzip = host "gzip" "Build-only decompression must precede GMP: public Gzip depends on Coreutils, which depends on GMP.";
         findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
         python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
         binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
         patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
+        sed = tvp.baseTiers.full.standardTools.sed;
+        grep = tvp.baseTiers.full.standardTools.grep;
+        gawk = tvp.baseTiers.full.standardTools.gawk;
+        diffutils = tvp.baseTiers.full.standardTools.diffutils;
       };
     };
     "1.4.20" = {
@@ -90,17 +90,17 @@ let
       deps = {
         bash = tvp.packages.bash_5;
         coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
+        gnumake = tvp.baseTiers.full.standardTools.gnumake;
+        gnutar = tvp.baseTiers.full.standardTools.gnutar;
+        gzip = host "gzip" "Build-only decompression must precede GMP: public Gzip depends on Coreutils, which depends on GMP.";
         findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
         python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
         binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
         patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
+        sed = tvp.baseTiers.full.standardTools.sed;
+        grep = tvp.baseTiers.full.standardTools.grep;
+        gawk = tvp.baseTiers.full.standardTools.gawk;
+        diffutils = tvp.baseTiers.full.standardTools.diffutils;
       };
     };
   };
@@ -119,9 +119,9 @@ let
   installedArgs = ownedDefaultRecipe // {
     inherit versionTable;
     testDeps = {
-      grep = tvp.packages.gnugrep_3;
-      gawk = tvp.packages.gawk_5;
-      gnumake = tvp.packages.gnumake_4;
+      grep = tvp.baseTiers.full.standardTools.grep;
+      gawk = tvp.baseTiers.full.standardTools.gawk;
+      gnumake = tvp.baseTiers.full.standardTools.gnumake;
       compiler = candidate.toolchain.driver;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
