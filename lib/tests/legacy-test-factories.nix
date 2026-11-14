@@ -28,6 +28,7 @@ let
       publicFactory =
         if
           builtins.elem family [
+            "zlib"
             "autoconf"
             "automake"
             "libtool"

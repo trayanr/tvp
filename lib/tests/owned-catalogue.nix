@@ -262,9 +262,29 @@ let
     foundationCurrentContext = lib.all (
       q:
       let
-        edited = q.edit (spec: spec // { bash = tvp.packages.bash; });
+        usesFamilyContext = builtins.elem q.pname [
+          "bzip2"
+          "zlib"
+          "xz"
+        ];
+        edited = q.edit (
+          spec:
+          spec
+          // (
+            if usesFamilyContext then
+              {
+                base = spec.base.override { shell = tvp.packages.bash; };
+              }
+            else
+              { bash = tvp.packages.bash; }
+          )
+        );
       in
       edited.tests.version.package.drvPath == edited.drvPath
+      && (
+        !usesFamilyContext
+        || edited.tests.version.specification.base.shell.drvPath == tvp.packages.bash.drvPath
+      )
     ) (lib.take 5 foundation);
     foundationNoPublicBuildLibraries = lib.all (q: q.development.libraries == [ ]) foundation;
     foundationRuntimeDirectories = lib.all (

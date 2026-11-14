@@ -184,13 +184,26 @@ let
   };
   at = id: lib.attrByPath (lib.splitString "." id) null tvp;
   providers = lib.mapAttrs (
-    _: entry:
+    familyName: entry:
     let
       p = at (builtins.head entry);
       path = builtins.tail entry;
       name = lib.last path;
       selected = replacement (lib.attrByPath path null p.specification);
-      edited = p.edit (set path selected);
+      standardRole =
+        {
+          xz = "shell";
+          bzip2 = "shell";
+          gzip = "coreutils";
+        }
+        .${familyName} or null;
+      edited = p.edit (
+        s:
+        if standardRole == null then
+          set path selected s
+        else
+          s // { base = s.base.override { ${standardRole} = selected; }; }
+      );
     in
     {
       metadata = edited.tvp.deps.${name}.outPath == selected.outPath;
@@ -258,6 +271,7 @@ let
                 builtins.elem name [
                   "gnumake_4_4_1"
                   "m4_1_4_21"
+                  "bzip2_1_0_8"
                 ]
               then
                 {

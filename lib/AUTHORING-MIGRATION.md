@@ -162,6 +162,16 @@ Bzip2 archive support is centralized in the existing source helper and earlier
 tool role. Gzip/XZ helper output remains the same; missing Bzip2 providers fail
 closed. One tiny archive fixture verifies the new path.
 
+Zlib (65 eligible releases plus ten unchanged broken exclusions), XZ (39),
+Gzip (three) and Bzip2 (three) also use inline family tables. The six Zlib and two
+XZ builders represent actual procedures; Gzip and Bzip2 each have one. Shared
+production preparation and upstream-script policy are separate files. Production
+Zlib builds only installed libraries; upstream examples compile after restoration.
+Pager/helper profiles remain finalization or upstream choices. Ordinary index
+adoption is sixteen of 110 families; these 110 eligible rows are source-adopted,
+not all runtime-qualified. Earlier compression construction and direct standalone
+providers remain explicit.
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL
