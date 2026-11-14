@@ -1,23 +1,20 @@
-# ctypes' raw-ld discovery test needs the same libc sysroot as the selected CC.
-# A declared test-only tool; production Python/compiler behavior stays unchanged.
-{
-  builder,
-  base,
-  bash,
-  coreutils,
-}:
-builder {
-  recipe =
-    {
-      base,
-      bash,
-      coreutils,
-    }:
-    {
+# Test-only linker support, same sysroot wrapper and plan; no production edge.
+{ package, context }:
+let
+  inherit (package.specification) base bash coreutils;
+in
+(context.mkTest {
+  inherit package;
+  name = "sysroot-linker-support";
+  script = ":";
+  expected = "";
+}).edit
+  (
+    s:
+    s
+    // {
       pname = "python-test-sysroot-linker";
       version = "1";
-      src = null;
-      inherit base bash coreutils;
       plan = [
         {
           name = "linker.install";
@@ -31,15 +28,5 @@ builder {
           '';
         }
       ];
-    };
-  args = {
-    inherit base bash coreutils;
-  };
-  dependencyNames = [
-    "bash"
-    "coreutils"
-  ];
-  metadata.kind = "python-test-support";
-  selection.kind = "python-test-support";
-  mkTests = _: { };
-}
+    }
+  )

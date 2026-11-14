@@ -12,13 +12,23 @@ let
       text = builtins.unsafeDiscardStringContext value;
     in
     builtins.replaceStrings [ (builtins.unsafeDiscardStringContext needle) ] [ "" ] text != text;
-  profileBase = p.override { disabledModules = [ "_crypt" ]; };
-  addedModules = profileBase.edit (s: s // { disabledModules = s.disabledModules ++ [ "math" ]; });
+  profileBase = p.override { buildFeatures.disabledModules = [ "_crypt" ]; };
+  addedModules = profileBase.edit (
+    s:
+    s
+    // {
+      buildFeatures = s.buildFeatures // {
+        disabledModules = s.buildFeatures.disabledModules ++ [ "math" ];
+      };
+    }
+  );
   removedModules = addedModules.edit (
     s:
     s
     // {
-      disabledModules = builtins.filter (name: name != "_crypt") s.disabledModules;
+      buildFeatures = s.buildFeatures // {
+        disabledModules = builtins.filter (name: name != "_crypt") s.buildFeatures.disabledModules;
+      };
     }
   );
   results = [
@@ -45,10 +55,12 @@ let
     (source.drvPath != p.drvPath)
     ((step "source.unpack" source).run != (step "source.unpack" p).run)
     (
-      (p.override { bash = p.specification.coreutils; }).tests.version.drvPath != p.tests.version.drvPath
+      (p.override { base = p.specification.base.override { shell = p.specification.coreutils; }; })
+      .tests.version.drvPath != p.tests.version.drvPath
     )
     (
-      (step "python.prepare" (p.override { disabledModules = [ ]; })).run != (step "python.prepare" p).run
+      (step "python.prepare" (p.override { buildFeatures.disabledModules = [ ]; })).run
+      != (step "python.prepare" p).run
     )
   ];
 in

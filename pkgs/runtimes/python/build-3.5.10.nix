@@ -1,147 +1,292 @@
-# Python 3.5/3.6 predate Setup.local disabled-module declarations. Configure
-# its upstream setup.py exclusion list instead of changing feature detection.
+# Complete CPython3.5.10 profile procedure; installed upstream assertions remain independent.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
-  bash,
+  base,
+  src,
+  version,
+  runtimeBash,
+  pkgConfig,
+  helperGrep,
   openssl,
   zlib,
   bzip2,
   xz,
-  pkg-config,
   libffi,
   sqlite,
   gdbm,
   readline,
   ncurses,
   libxcrypt,
-  pkgConfigRequired ? false,
-  opensslRpath ? true,
-  systemFfi ? false,
-  opensslPrefix ? true,
-  platlibdir ? true,
-  finalizeEx ? true,
-  embedFlag ? true,
-  textSubprocess ? true,
-  linkUnwinder ? false,
-  disabledModules,
-  upstreamModules ? [
-    "test_ssl"
-    "test_hashlib"
-    "test_ctypes"
-    "test_sqlite3"
-    "test_dbm_gnu"
-    "test_dbm_ndbm"
-    "test_bz2"
-    "test_lzma"
-    "test_zlib"
-    "test_readline"
-  ],
-  version,
-  sha256,
-  patches ? [ ],
-  mkTests,
+  patches,
+  buildFeatures ? { },
+  sourceLayout ? { },
+  installedInterface ? { },
+  upstreamPolicy ? { },
 }:
-stdenv.mkDerivation (finalAttrs: {
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  environment = final.base.environment final.environment;
+  # Convert structured native environment contributions to explicit compiler
+  # arguments recorded by configure and published to installed consumers. No
+  # inherited setup-hook flags participate in the target build.
+  compileFlags =
+    environment.environmentContributions.NIX_CFLAGS_COMPILE.value
+    ++ (map (dep: "-I${lib.getDev dep}/include") (builtins.attrValues final.libraries))
+    ++ [
+      "-I${lib.getDev final.libraries.ncurses}/include/ncursesw"
+    ];
+  linkFlags =
+    environment.environmentContributions.NIX_LDFLAGS.value
+    ++ lib.optionals final.buildFeatures.linkUnwinder [
+      "--no-as-needed"
+      "-lgcc_s"
+      "--as-needed"
+    ];
+  command =
+    name: run:
+    environment
+    // {
+      name = "python.${name}";
+      env = environment.env // {
+        NIX_CFLAGS_COMPILE = "";
+        NIX_LDFLAGS = "";
+        CPPFLAGS = environment.env.CPPFLAGS or (lib.concatStringsSep " " compileFlags);
+        LDFLAGS =
+          environment.env.LDFLAGS
+            or (lib.concatMapStringsSep " " (f: if lib.hasPrefix "-L" f then f else "-Wl,${f}") linkFlags);
+      };
+      inherit run;
+    };
+  sourceCommand = name: run: (command name run) // { cwd = "source"; };
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  mutableOutput =
+    record:
+    record
+    // {
+      run = ''${tools.python}/bin/python3 -B ${./native/finalize.py} "$out" ${lib.escapeShellArg record.run} ${final.bash}/bin/bash'';
+    };
+in
+{
   pname = "python";
-  inherit version patches;
-  env = lib.optionalAttrs linkUnwinder {
-    # Native thread shutdown calls pthread_exit. Keep the shared unwinder
-    # available to glibc despite Python having no direct symbol reference.
-    NIX_LDFLAGS = "--no-as-needed -lgcc_s --as-needed";
+  inherit
+    base
+    src
+    version
+    patches
+    pkgConfig
+    helperGrep
+    ;
+  inherit (tools) bash coreutils;
+  artifactName = "${final.pname}-${final.version}";
+  buildFeatures = {
+    linkUnwinder = true;
+    disabledModules = [
+      "_tkinter"
+      "_uuid"
+      "nis"
+    ];
+  } // buildFeatures;
+  sourceLayout = {
+    compression = "xz";
+    pkgConfigRequired = false;
+    opensslRpath = true;
+    systemFfi = false;
+    opensslPrefix = true;
+    platlibdir = true;
+  } // sourceLayout;
+  installedInterface = {
+    finalizeEx = true;
+    embedFlag = true;
+    textSubprocess = true;
+  } // installedInterface;
+  upstreamPolicy = {
+    modules = [
+      "test_ssl"
+      "test_hashlib"
+      "test_ctypes"
+      "test_sqlite3"
+      "test_dbm_gnu"
+      "test_dbm_ndbm"
+      "test_bz2"
+      "test_lzma"
+      "test_zlib"
+      "test_readline"
+    ];
+  } // upstreamPolicy;
+  libraries = {
+    inherit
+      openssl
+      zlib
+      bzip2
+      xz
+      libffi
+      sqlite
+      gdbm
+      readline
+      ncurses
+      libxcrypt
+      ;
   };
-  src = fetchurl {
-    url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
-    inherit sha256;
+  dependencyProviders =
+    {
+      inherit (final) pkgConfig helperGrep;
+    }
+    // final.runtime.providers
+    // {
+      runtimeBash = final.runtime.shell;
+    };
+  environment = {
+    overrides.values.LIBS =
+      "-lm"
+      + " -L${lib.getLib final.libraries.libxcrypt}/lib -Wl,-rpath,${lib.getLib final.libraries.libxcrypt}/lib";
+    tools = [
+      tools.python
+      tools.gnumake
+      tools.findutils
+      tools.patch
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      final.pkgConfig
+    ];
+    libraries = builtins.attrValues final.libraries;
   };
-  nativeBuildInputs = [ pkg-config ];
-  # Curses headers live in the wide-character include directory.
-  NIX_CFLAGS_COMPILE = "-I${lib.getDev ncurses}/include/ncursesw";
-  buildInputs = [
-    openssl
-    zlib
-    bzip2
-    xz
-    libffi
-    sqlite
-    gdbm
-    readline
-    ncurses
-    libxcrypt
+  runtime = {
+    providers = final.libraries;
+    libraries = builtins.attrValues final.runtime.providers;
+    shell = runtimeBash;
+  };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      xz = final.libraries.xz;
+      compression = final.sourceLayout.compression;
+    })
+    (steps.prepareAutotools {
+      name = "python.autotools";
+    })
+    (sourceCommand "prepare" ''
+      ${lib.concatMapStringsSep "\n" (
+        p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
+      ) final.patches}
+      ${tools.python}/bin/python3 -B ${./native/prepare.py} \
+        ${lib.escapeShellArg "${final.bash}/bin/bash"} \
+        ${lib.escapeShellArg "${final.bash}/bin/bash"} \
+        ${lib.escapeShellArg "${final.coreutils}/bin"} ${lib.escapeShellArg "${tools.sed}/bin/sed"}
+      : > Modules/Setup.local
+      ${tools.python}/bin/python3 -B -c 'from pathlib import Path; import sys; p=Path("setup.py"); s=p.read_text(); assert "@TVP_DISABLED_MODULES@" in s; p.write_text(s.replace("@TVP_DISABLED_MODULES@", sys.argv[1]))' ${lib.escapeShellArg (builtins.toJSON final.buildFeatures.disabledModules)}
+    '')
+    (sourceCommand "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash
+      ${final.bash}/bin/bash ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+      # Raw configure evidence belongs in the private build log, never installed.
+      printf '\nTVP_CONFIG_LOG_BEGIN\n' >&2
+      cat config.log >&2
+      printf '\nTVP_CONFIG_LOG_END\n' >&2
+    '')
+    (sourceCommand "build" ''
+      ${make}
+    '')
+    (sourceCommand "install" ''
+      ${make} "COMPILEALL_OPTS=-j$NIX_BUILD_CORES" install
+      mkdir -p "$out/share/licenses/python"
+      cp LICENSE "$out/share/licenses/python/"
+    '')
+    (steps.split "python.finalize")
+    (outputs.copyArtifacts { })
+    (command "relocate-prefix" ''
+      ${tools.python}/bin/python3 -B ${./native/relocate.py} "$out"
+      ${tools.python}/bin/python3 -B ${./native/install.py} "$out" ${final.runtime.shell}/bin/bash \
+        ${
+          lib.escapeShellArg (
+            lib.makeBinPath [
+              final.runtime.shell
+              final.coreutils
+              tools.sed
+              final.helperGrep
+              tools.binutils
+            ]
+          )
+        } \
+        ${lib.escapeShellArg "${final.bash}/bin/bash"} ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"}
+    '')
+    (mutableOutput (
+      outputs.strip {
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      }
+    ))
+    (outputs.stripArchives {
+      paths = [ "lib" ];
+    })
+    (mutableOutput (
+      outputs.rpaths {
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      }
+    ))
+    (outputs.development {
+      libraries = [ final.runtime.providers.libxcrypt ];
+    })
+    (outputs.checkPaths {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    (command "receipt" ''
+      "$out/bin/python3" -I - <<'PYTHON'
+      import json, sysconfig, pathlib
+      p = pathlib.Path(sysconfig.get_config_var('prefix'))
+      receipt = {k: v for k, v in sysconfig.get_config_vars().items()
+                 if (k.startswith('MODULE_') and k.endswith('_STATE')) or
+                 k in ['PY_ENABLE_SHARED', 'PY_SQLITE_ENABLE_LOAD_EXTENSION',
+                       'PY_SQLITE_HAVE_SERIALIZE', 'SOABI', 'EXT_SUFFIX']}
+      (p / 'share/python').mkdir(parents=True)
+      (p / 'share/python/features.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+      PYTHON
+    '')
   ];
-  # Older Python.h exposes crypt.h as part of its public C API.
-  propagatedBuildInputs = [ libxcrypt ];
-  # Setup.local is upstream's supported module-selection interface. Explicit
-  # disabling prevents host probes from changing this build interpreter's API.
-  preConfigure = ''
-    # Set these after stdenv setup: distutils inspects the configured name
-    # to choose GNU linker syntax.
-    export CC="${stdenv.cc}/bin/gcc" CXX="${stdenv.cc}/bin/g++"
-    # python-config exposes LIBS, but omits LDFLAGS from embedding flags.
-    export LIBS="-L${lib.getLib libxcrypt}/lib -Wl,-rpath,${lib.getLib libxcrypt}/lib"
-    export PKG_CONFIG_PATH="${
-      lib.makeSearchPath "lib/pkgconfig" [
-        openssl
-        zlib
-        bzip2
-        xz
-        libffi
-        sqlite
-        gdbm
-        readline
-        ncurses
-        libxcrypt
-      ]
-    }"
-    export CPPFLAGS="${
-      lib.concatMapStringsSep " " (dep: "-I${lib.getDev dep}/include") [
-        openssl
-        zlib
-        bzip2
-        xz
-        libffi
-        sqlite
-        gdbm
-        readline
-        ncurses
-        libxcrypt
-      ]
-    } -I${lib.getDev ncurses}/include/ncursesw"
-    export LDFLAGS="${
-      lib.concatMapStringsSep " " (dep: "-L${lib.getLib dep}/lib") [
-        openssl
-        zlib
-        bzip2
-        xz
-        libffi
-        sqlite
-        gdbm
-        readline
-        ncurses
-        libxcrypt
-      ]
-    }"
-    : > Modules/Setup.local
-    substituteInPlace setup.py --replace-fail '@TVP_DISABLED_MODULES@' ${lib.escapeShellArg (builtins.toJSON disabledModules)}
-    substituteInPlace Lib/subprocess.py \
-      --replace-fail '@TVP_SHELL@' '${bash}/bin/bash'
-  '';
   configureFlags =
     [
       "--with-ensurepip=install"
       "--with-dbmliborder=gdbm"
     ]
-    ++ lib.optional pkgConfigRequired "--with-pkg-config=yes"
-    ++ lib.optional opensslRpath "--with-openssl-rpath=auto"
-    ++ lib.optional platlibdir "--with-platlibdir=lib"
-    ++ lib.optional systemFfi "--with-system-ffi"
-    ++ lib.optional opensslPrefix "--with-openssl=${openssl}";
-  enableParallelBuilding = true;
-  # compileall's default process count ignores Nix's per-build CPU allocation.
-  preInstall = ''
-    installFlagsArray+=("COMPILEALL_OPTS=-j$NIX_BUILD_CORES")
-  '';
+    ++ lib.optional final.sourceLayout.pkgConfigRequired "--with-pkg-config=yes"
+    ++ lib.optional final.sourceLayout.opensslRpath "--with-openssl-rpath=auto"
+    ++ lib.optional final.sourceLayout.platlibdir "--with-platlibdir=lib"
+    ++ lib.optional final.sourceLayout.systemFfi "--with-system-ffi"
+    ++ lib.optional final.sourceLayout.opensslPrefix "--with-openssl=${final.libraries.openssl}";
+  tvp = {
+    profile = "general-purpose";
+    features = {
+      measuredProfile = false;
+      externalModules = true;
+      tls = true;
+      archiveCompression = true;
+      pipInstalled = true;
+      finalizeEx = final.installedInterface.finalizeEx;
+      embedFlag = final.installedInterface.embedFlag;
+      textSubprocess = final.installedInterface.textSubprocess;
+      linkUnwinder = final.buildFeatures.linkUnwinder;
+
+    };
+    disabledModules = final.buildFeatures.disabledModules;
+    upstreamModules = final.upstreamPolicy.modules;
+  };
   meta = {
     description = "General-purpose CPython interpreter with native extension and virtual environment support";
     homepage = "https://www.python.org/";
@@ -149,37 +294,4 @@ stdenv.mkDerivation (finalAttrs: {
     platforms = [ "x86_64-linux" ];
     mainProgram = "python3";
   };
-  passthru = {
-    tvp.deps = {
-      inherit
-        bash
-        openssl
-        zlib
-        bzip2
-        xz
-        pkg-config
-        libffi
-        sqlite
-        gdbm
-        readline
-        ncurses
-        libxcrypt
-        ;
-    };
-    tvp.cc = stdenv.cc;
-    tvp.profile = "general-purpose";
-    tvp.features = {
-      externalModules = true;
-      tls = true;
-      archiveCompression = true;
-      pipInstalled = true;
-    };
-    tvp.features.finalizeEx = finalizeEx;
-    tvp.features.embedFlag = embedFlag;
-    tvp.features.textSubprocess = textSubprocess;
-    tvp.features.linkUnwinder = linkUnwinder;
-    tvp.disabledModules = disabledModules;
-    tvp.upstreamModules = upstreamModules;
-    tests = mkTests finalAttrs.finalPackage;
-  };
-})
+}

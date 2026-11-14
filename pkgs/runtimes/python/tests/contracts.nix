@@ -29,16 +29,31 @@ let
   sourceEdit = p: p.override { src = probe; };
   runtimeEdit = p: p.editRuntime (r: r // { dlopenDirectories = [ "/python-runtime-probe" ]; });
   shellEdit = p: p.editRuntime (r: r // { shell = toolProbe; });
+  # Binutils is also the compiler's construction tool. To exercise a genuinely
+  # final-only inspector edit, replace its explicit suffix commands/tools through
+  # the existing step interface, rather than changing production's base compiler.
   toolsEdit =
     p:
-    p.edit (
-      s:
-      s
-      // {
-        tools = s.tools // {
-          binutils = toolProbe;
+    p.editSteps (
+      plan:
+      let
+        parts = steps.partition plan;
+        marker = builtins.head (builtins.filter (s: (s.kind or "command") == "split") plan);
+        original = p.specification.base.compiler.bintools;
+        selected = toolProbe // {
+          __tvpToolRole = "binutils";
         };
-      }
+        replace =
+          step:
+          step
+          // {
+            tools = map (tool: if toString tool == toString original then selected else tool) (
+              step.tools or [ ]
+            );
+            run = builtins.replaceStrings [ (toString original) ] [ (toString selected) ] step.run;
+          };
+      in
+      parts.first ++ [ marker ] ++ map replace parts.second
     );
   compileToolEdit =
     p:
@@ -46,12 +61,11 @@ let
       s:
       s
       // {
-        tools = s.tools // {
-          gnumake = toolProbe;
-        };
+        base = s.base.override { standardTools.gnumake = toolProbe; };
       }
     );
-  disabledEdit = p: p.override { disabledModules = p.tvp.disabledModules ++ [ "_tvp_probe" ]; };
+  disabledEdit =
+    p: p.override { buildFeatures.disabledModules = p.tvp.disabledModules ++ [ "_tvp_probe" ]; };
   rebound = p: builtins.all (t: t.package.outPath == p.outPath) (builtins.attrValues p.tests);
   finalOnly =
     edit: p:
@@ -72,13 +86,20 @@ let
       f = recipes.${p.pname}.extraArgs.mkTests;
     in
     builtins.attrNames (f p) == builtins.attrNames p.tests
-    && builtins.attrNames ((f.override { inherit pkgs; }) p) == builtins.attrNames p.tests;
+    &&
+      builtins.attrNames (
+        (f.override {
+          tests = if p.pname == "python" then import ./installed.nix else import ./build-profiles.nix;
+        })
+          p
+      ) == builtins.attrNames p.tests;
   full = p: p.pname == "python";
   allFull = f: builtins.all f (builtins.filter full (builtins.attrValues family));
+  inventory = tvp.lib.recipeSplits.inventory { canonical = family; };
   baseline = builtins.fromJSON (builtins.readFile ../../../../audits/split-baseline.json);
 in
 {
-  rows = (tvp.lib.recipeSplits.inventory { canonical = family; }).rows;
+  rows = inventory.rows;
   controls = {
     exactCount = builtins.length names == 13;
     allSplit = every (p: (split p).split && p ? artifact);
@@ -208,7 +229,8 @@ in
       && e.tvp.deps.zlib.drvPath == toolProbe.drvPath
       && rebound e
     );
-    retainedBaselineCount = builtins.length baseline == 181;
+    # Count-independent scope: every selected Python row passes real admission.
+    familySplitAdmission = builtins.all (row: row.compliant) inventory.rows;
     noPythonDebt = builtins.all (r: !(lib.hasPrefix "canonical/python" r.id)) baseline;
     oldOpenSSL =
       builtins.all (n: family.${n}.tvp.deps.openssl.version == tvp.packages.openssl_1_1.version)

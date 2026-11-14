@@ -1,53 +1,23 @@
-# One suite, shared by every bundler version. Never fork it per builder: a test
-# that exists only for newer versions cannot detect drift in an older one.
-# Guards select whole tests; they never edit a test body.
+# Shared assertions for every Bundler release.
 {
-  pkgs,
-  tvpLib,
-  bundler,
+  package,
+  lib,
+  context,
 }:
 let
-  inherit (bundler.passthru.tvp) deps;
-  owned = bundler ? testContext;
-  suite =
-    args:
-    if !owned then
-      tvpLib.tests.mkSuite (args // { inherit pkgs; })
-    else
-      bundler.testContext.mkSuite (
-        args
-        // {
-          tools =
-            bundler.specification.environment.tools
-            ++ (with (import ../../../../bases/source-gnu { }).tools; [
-              make
-              grep
-              sed
-              gawk
-              diffutils
-            ]);
-          libraries = [ bundler ];
-          tests = builtins.mapAttrs (
-            _: test:
-            (builtins.removeAttrs test [ "extraInputs" ])
-            // pkgs.lib.optionalAttrs (test ? extraInputs) {
-              tools =
-                test.extraInputs
-                ++ (with (import ../../../../bases/source-gnu { }).tools; [
-                  make
-                  grep
-                  sed
-                  gawk
-                  diffutils
-                ]);
-            }
-          ) args.tests;
-        }
-      );
+  bundler = package;
+  deps.ruby = package.runtime.ruby;
+  tools = package.specification.base.standardTools;
 in
-suite {
-  package = bundler;
-
+(context.mkSuite {
+  inherit package;
+  tools = [
+    tools.grep
+    tools.sed
+    tools.gawk
+    tools.diffutils
+  ];
+  libraries = [ package ];
   tests = {
     # The version bundler reports, not the version the package claims. Ruby
     # ships bundler as a default gem, so a wrapper that resolves by name rather
@@ -73,4 +43,7 @@ suite {
       expected = "${deps.ruby}/bin/ruby";
     };
   };
-}
+})
+// lib.optionalAttrs package.specification.installedInterface.offlineControls (
+  import ./offline.nix { inherit package lib context; }
+)

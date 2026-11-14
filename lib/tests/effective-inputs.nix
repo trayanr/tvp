@@ -288,6 +288,8 @@ let
                   "gnumake_4_4_1"
                   "m4_1_4_21"
                   "bzip2_1_0_8"
+                  "python-build_3_12_5"
+                  "python-minimal_3_12_5"
                 ]
               then
                 {

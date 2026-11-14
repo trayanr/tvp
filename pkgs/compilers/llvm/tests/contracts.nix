@@ -22,23 +22,46 @@ let
       cxxRuntime = alternate;
       libc = alternate;
       targetBinutils = alternate;
-      helperPython = alternate;
-      patchelf = alternate;
-      cmake = alternate;
-      ninja = alternate;
+      base = s.base.override {
+        shell = alternate;
+        coreutils = alternate;
+        standardTools = {
+          python = alternate;
+          patchelf = alternate;
+          cmake = alternate;
+          ninja = alternate;
+          sed = alternate;
+          grep = alternate;
+          diffutils = alternate;
+        };
+      };
       python = alternate;
       perl = alternate;
       zlib = alternate;
       zstd = alternate;
       libffi = alternate;
       libxml2 = alternate;
-      bash = alternate;
-      coreutils = alternate;
-      sed = alternate;
-      grep = alternate;
-      diffutils = alternate;
     }
   );
+  baseRoles = {
+    helperPython = "python";
+    patchelf = "patchelf";
+    cmake = "cmake";
+    ninja = "ninja";
+    sed = "sed";
+    grep = "grep";
+    diffutils = "diffutils";
+  };
+  provider =
+    p: name:
+    if name == "bash" then
+      p.specification.base.shell
+    else if name == "coreutils" then
+      p.specification.base.coreutils
+    else if baseRoles ? ${name} then
+      p.specification.base.standardTools.${baseRoles.${name}}
+    else
+      p.tvp.deps.${name};
   source = p.override { src = builtins.toFile "llvm-custom-source" "source fixture"; };
   base = p.edit (s: s // { base = s.base.override { name = "llvm-base-contract"; }; });
   runtime = p.editRuntime (r: r // { loader = "${alternate}/custom-loader"; });
@@ -68,7 +91,7 @@ in
   separateBuildCompiler = s.base.compiler.outPath != s.rawGCC.outPath;
   matchingRuntimes =
     s.rawGCC.outPath == s.cxxRuntime.outPath && s.rawGCC.outPath == s.gccRuntime.outPath;
-  providers = lib.all (n: changed.tvp.deps.${n}.outPath == alternate.outPath) [
+  providers = lib.all (n: (provider changed n).outPath == alternate.outPath) [
     "rawGCC"
     "gccRuntime"
     "cxxRuntime"
@@ -117,12 +140,12 @@ in
           tool = lib.overrideDerivation s.${name} (old: {
             name = "${old.name}-llvm-upstream-tool-contract";
           });
-          selected = p.edit (s: s // { ${name} = tool; });
+          selected = p.edit (s: s // { base = s.base.override { standardTools.${name} = tool; }; });
           check = builtins.head (
             builtins.filter (x: x.name == "llvm.check") selected.specification.upstreamPlan
           );
         in
-        selected.tvp.deps.${name}.drvPath == tool.drvPath
+        selected.specification.base.standardTools.${name}.drvPath == tool.drvPath
         && builtins.elem tool.drvPath (map (t: t.drvPath) check.tools)
       )
       [

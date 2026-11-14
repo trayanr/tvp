@@ -1,149 +1,346 @@
-# Serves 2.2–2.5, 2.7 and 3.0; 2.6 adds its MJIT command adaptation.
+# 2.2–2.5, early 2.7 and 3.0: vendored Fiddle/libffi; GDBM and Readline.
+# Complete owned construction; retained procedures remain unchanged.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
-
+  base,
+  src,
   version,
-  sha256,
-  cStandard ? null,
-  mkmfProbeFlags ? [ ],
-  compileFlags ? [ ],
-
   openssl,
   readline,
   zlib,
   gdbm,
-
-  # Ruby's ABI directory, not the package version: every 2.7.x uses "2.7.0".
-  # Overridden per version where upstream disagrees.
   libDir ? "${lib.versions.majorMinor version}.0",
-
+  doCheck ? true,
+  cStandard ? null,
+  mkmfProbeFlags ? [ ],
+  compileFlags ? [ ],
+  extraWarnFlags ? [ ],
   patches ? [ ],
-
-  # 2.5.2 ships tool/config.{sub,guess} as symlinks into a .downloaded-cache
-  # directory its tarball does not contain; upstream normally downloads them at
-  # configure time. The bundled libffi carries usable copies.
   restoreConfigScripts ? false,
-
-  # Supplied by default.nix. A fork that drops this argument fails to evaluate.
-  mkTests,
+  nativeControls ? false,
 }:
-stdenv.mkDerivation (
-  finalAttrs:
-  {
-    pname = "ruby";
-    inherit version;
-
-    src = fetchurl {
-      url = "https://cache.ruby-lang.org/pub/ruby/${lib.versions.majorMinor version}/ruby-${version}.tar.gz";
-      inherit sha256;
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  environment = final.base.environment final.environment;
+  record =
+    name: run:
+    environment
+    // {
+      name = "ruby.${name}";
+      cwd = "../ruby-${final.version}";
+      inherit run;
     };
-
-    buildInputs = [
+  lookup =
+    name: paths: libraries:
+    # Named providers select distinct ELF scopes. Reject edits to their derived
+    # summary rather than silently changing only runtime-expectation metadata.
+    assert
+      map toString final.runtime.libraries == map toString [
+        final.runtime.openssl
+        final.runtime.readline
+        final.runtime.zlib
+        final.runtime.gdbm
+      ]
+      || throw "Ruby runtime.libraries is derived; edit its named providers instead.";
+    (outputs.rpaths {
+      inherit
+        paths
+        libraries
+        ;
+      base = final.base;
+      elfKinds = [ "runtime" ];
+    })
+    // {
+      name = "ruby.lookup.${name}";
+    };
+in
+{
+  pname = "ruby";
+  inherit
+    base
+    src
+    version
+    ;
+  inherit (tools) bash coreutils;
+  inherit doCheck nativeControls;
+  libraries = {
+    inherit
       openssl
+      gdbm
       readline
       zlib
+      ;
+  };
+  inherit
+    libDir
+    cStandard
+    mkmfProbeFlags
+    compileFlags
+    extraWarnFlags
+    patches
+    restoreConfigScripts
+    ;
+  artifactName = "${final.pname}-${final.version}";
+  dependencyProviders = lib.mapAttrs (name: _: final.runtime.${name}) final.libraries;
+  buildFeatures = {
+    shared = true;
+    cStandard = final.cStandard;
+    mkmfProbeFlags = final.mkmfProbeFlags;
+    compileFlags = final.compileFlags;
+    extraWarnFlags = final.extraWarnFlags;
+  };
+  sourceLayout.restoreConfigScripts = final.restoreConfigScripts;
+  installedInterface = {
+    libDir = final.libDir;
+    nativeControls = final.nativeControls;
+    nativeLine = "3";
+  };
+  gemPath = "lib/ruby/gems/${final.libDir}";
+  environment = {
+    tools = [
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+    ];
+    libraries = with final.libraries; [
+      openssl
       gdbm
+      readline
+      zlib
     ];
+    # LC_ALL=C from the base overrides LANG; RDoc needs UTF-8 explicitly.
+    overrides.values =
+      {
+        LANG = "C.UTF-8";
+        LC_ALL = "C.UTF-8";
+        CONFIG_SHELL = "${tools.bash}/bin/bash";
+        lt_cv_deplibs_check_method = "pass_all";
+      }
+      // lib.optionalAttrs
+        (final.cStandard != null || final.mkmfProbeFlags != [ ] || final.compileFlags != [ ])
+        {
+          cflags = lib.concatStringsSep " " (
+            lib.optional (final.cStandard != null) "-std=${final.cStandard}"
+            ++ final.mkmfProbeFlags
+            ++ final.compileFlags
+          );
+        }
+      // lib.optionalAttrs (final.extraWarnFlags != [ ]) {
+        extra_warnflags = lib.concatStringsSep " " final.extraWarnFlags;
+      };
+  };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
 
-    # getDev, not .dev, so a dependency need not be output-split.
-    configureFlags = [
-      "--enable-shared"
-      "--with-openssl-dir=${lib.getDev openssl}"
-      "--with-readline-dir=${lib.getDev readline}"
-      "--with-zlib-dir=${lib.getDev zlib}"
-      "--with-gdbm-dir=${gdbm}"
-    ];
+      compression = "gzip";
+    })
+    {
+      name = "ruby.source-layout";
+      # Match the canonical source placement: Ruby embeds assertion filenames.
+      run = ''mv source "../ruby-${final.version}"'';
+    }
+    (record "patches" ''
+      :
+      ${lib.concatMapStringsSep "\n" (p: "${tools.patch}/bin/patch -p1 < ${p}") final.patches}
+    '')
+    (
+      (record "restore-config-scripts" ''
+        rm -f tool/config.sub tool/config.guess
+        cp ext/fiddle/libffi-*/config.sub ext/fiddle/libffi-*/config.guess tool/
+      '')
+      // {
+        enabled = final.restoreConfigScripts;
+      }
+    )
+    (steps.prepareAutotools {
+      name = "ruby.prepare";
+      bash = tools.bash;
 
-    preInstall = ''
-      # Ruby installs gems here itself now.
-      mkdir -pv "$out/${finalAttrs.passthru.gemPath}"
-      export GEM_HOME="$out/${finalAttrs.passthru.gemPath}"
-    '';
-
-    postInstall =
-      ''
-        # Bundler tries to create this directory
-        mkdir -p $out/nix-support
-        cat > $out/nix-support/setup-hook <<EOF
+      base = final.base;
+      cwd = "../ruby-${final.version}";
+    })
+    (record "configure" ''
+      # Preserve canonical bare tool assignments in installed RbConfig. The
+      # explicit environment supplies precisely these selected tool binaries.
+      test "$LC_ALL" = C.UTF-8
+      test "$(${tools.sed}/bin/sed -n '1p' configure)" = '#!${tools.bash}/bin/bash'
+      ./configure --prefix="$out" --enable-shared \
+        --with-readline-dir=${lib.getDev final.libraries.readline} \
+        --with-gdbm-dir=${lib.getDev final.libraries.gdbm} \
+        --with-openssl-dir=${lib.getDev final.libraries.openssl} --with-zlib-dir=${lib.getDev final.libraries.zlib} \
+        AR=ar AS=as CC=cc CXX=c++ LD=ld NM=nm \
+        OBJCOPY=objcopy RANLIB=ranlib STRIP=strip
+    '')
+    (record "build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    {
+      name = "ruby.gem-home";
+      run = ''mkdir -p "$out/${final.gemPath}"'';
+    }
+    (record "install" ''
+      export GEM_HOME="$out/${final.gemPath}"
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" install
+    '')
+    (steps.split "ruby.finalize")
+    (outputs.copyArtifacts { })
+    (outputs.stripArchives {
+      paths = [ "lib" ];
+    })
+    (outputs.strip {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [
+        "runtime"
+        "relocatable"
+      ];
+    })
+    {
+      name = "ruby.relocate";
+      tools = [
+        tools.python
+        tools.binutils
+        tools.patchelf
+      ];
+      run = ''
+        ${tools.python}/bin/python3 -B ${./owned/finalize.py} \
+                '${
+                  builtins.toJSON {
+                    ar = "${tools.binutils}/bin/ar";
+                    readelf = "${tools.binutils}/bin/readelf";
+                    patchelf = "${tools.patchelf}/bin/patchelf";
+                  }
+                }' \
+                "$out" "$TVP_ARTIFACT_ROOT" ${../perl/ordinary/elf-finalize.py}'';
+    }
+    {
+      name = "ruby.consumer-metadata";
+      # Explicit compatibility metadata: native hostOffset was the empty string.
+      run = ''
+        mkdir -p "$out/nix-support"
+        cat > "$out/nix-support/setup-hook" <<'EOF'
         addGemPath() {
-          addToSearchPath GEM_PATH \$1/${finalAttrs.passthru.gemPath}
+          addToSearchPath GEM_PATH $1/${final.gemPath}
         }
         addRubyLibPath() {
-          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby
-          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}
-          addToSearchPath RUBYLIB \$1/lib/ruby/site_ruby/${libDir}/${stdenv.targetPlatform.system}
+          addToSearchPath RUBYLIB $1/lib/ruby/site_ruby
+          addToSearchPath RUBYLIB $1/lib/ruby/site_ruby/${final.libDir}
+          addToSearchPath RUBYLIB $1/lib/ruby/site_ruby/${final.libDir}/${final.base.platform.system}
         }
 
-        addEnvHooks "$hostOffset" addGemPath
-        addEnvHooks "$hostOffset" addRubyLibPath
+        addEnvHooks "" addGemPath
+        addEnvHooks "" addRubyLibPath
         EOF
-      ''
-      + lib.optionalString (mkmfProbeFlags != [ ]) ''
-        # Reject a partial interpreter whose compiler probes dropped extensions.
-        mkdir -p "$out/nix-support"
-        "$out/bin/ruby" -e '%w[fiddle gdbm openssl readline zlib socket].each { |name| require name; puts name }'         > "$out/nix-support/tvp-required-extensions"
       '';
+    }
+    (outputs.rpaths {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    # Apply only the provider needed by each ELF scope. dlopen users declare
+    # their provider too; base and own-library lookups survive the helper.
+    (lookup "ruby" [
+      "bin/ruby"
+      "lib/libruby.so.${builtins.head (lib.splitString "-p" final.version)}"
+    ] [ final.runtime.zlib ])
+    (lookup "readline" [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ] [
+      final.runtime.readline
+    ])
+    (lookup "gdbm" [ "lib/ruby/${final.libDir}/x86_64-linux/gdbm.so" ] [ final.runtime.gdbm ])
+    (lookup "openssl" [ "lib/ruby/${final.libDir}/x86_64-linux/openssl.so" ] [ final.runtime.openssl ])
+    (lookup "zlib" [ "lib/ruby/${final.libDir}/x86_64-linux/zlib.so" ] [ final.runtime.zlib ])
+    (outputs.shebangs {
+      paths = [
+        "bin"
+        "lib/ruby/gems"
+      ];
+      names = [ "ruby" ];
+      selfInterpreter = "bin/ruby";
+    })
+    {
+      name = "ruby.manuals";
+      tools = [
+        tools.python
+        tools.gzip
+      ];
+      run = ''${tools.python}/bin/python3 -B ${./compress-manuals.py} "$out" ${tools.gzip}/bin/gzip'';
+    }
+    (outputs.development {
+      libraries = [ ];
+    })
+    (outputs.checkSymlinks {
+      paths = [
+        "lib/libruby.so"
+        "lib/libruby.so.${lib.versions.majorMinor final.version}"
+      ];
+    })
+    (outputs.checkPaths {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+  ];
+  runtime = {
+    inherit (final.libraries)
+      openssl
+      gdbm
+      readline
+      zlib
+      ;
+    libraries = [
+      final.runtime.openssl
+      final.runtime.readline
+      final.runtime.zlib
+      final.runtime.gdbm
+    ];
+  };
+  development = output: {
+    libraryDirectories = [ "${output}/lib" ];
+    pkgconfig = [ "${output}/lib/pkgconfig" ];
+    includeDirectories = [
+      "include/ruby-${final.libDir}"
+      "include/ruby-${final.libDir}/x86_64-linux"
+    ];
+  };
+  buildEnvironment = import ./build-environment.nix { inherit lib; };
 
-    meta = {
-      description = "The Ruby programming language";
-      homepage = "https://www.ruby-lang.org/";
-      license = lib.licenses.ruby;
-      platforms = lib.platforms.unix;
-      mainProgram = "ruby";
+  tvp = {
+    features = {
+      consumerCStandard = final.cStandard;
+      enumerableSum = lib.versionAtLeast final.version "2.4";
+      yamlSafeLoad = lib.versionAtLeast final.version "2.1";
+      doCheck = final.doCheck;
     };
-
-    passthru = {
-      tvp.cc = stdenv.cc;
-      inherit version libDir;
-      rubyEngine = "ruby";
-      baseRuby = false;
-
-      # Inlined into build scripts by consumers (buildRubyGem), so these reach
-      # derivations despite living in passthru.
-      libPath = "lib/ruby/${libDir}";
-      gemPath = "lib/ruby/gems/${libDir}";
-
-      majorVersion = lib.versions.major version;
-      minorVersion = lib.versions.minor version;
-      teenyVersion = lib.versions.patch version;
-      patchLevel = null;
-
-      # Language capability has nothing in the dependency graph to read, so the
-      # builder states it and the suite guards on it.
-      tvp.features = {
-        consumerCStandard = cStandard;
-        enumerableSum = lib.versionAtLeast version "2.4";
-        yamlSafeLoad = lib.versionAtLeast version "2.1";
-      };
-
-      tvp.deps = {
-        inherit
-          openssl
-          readline
-          zlib
-          gdbm
-          ;
-      };
-
-      tests = mkTests finalAttrs.finalPackage;
-    };
-  }
-  // lib.optionalAttrs (patches != [ ]) { inherit patches; }
-  // lib.optionalAttrs restoreConfigScripts {
-    # rm first: cp would follow the dangling symlink and write to its target.
-    postPatch = ''
-      rm -f tool/config.sub tool/config.guess
-      cp ext/fiddle/libffi-*/config.sub ext/fiddle/libffi-*/config.guess tool/
-    '';
-  }
-  // lib.optionalAttrs (cStandard != null || mkmfProbeFlags != [ ] || compileFlags != [ ]) {
-    # Ruby appends its normal opt/debug/warning flags to lowercase cflags,
-    # retaining them in RbConfig for native extension consumers as well.
-    env.cflags = lib.concatStringsSep " " (
-      lib.optional (cStandard != null) "-std=${cStandard}" ++ mkmfProbeFlags ++ compileFlags
-    );
-  }
-
-)
+  };
+  passthru = {
+    version = final.version;
+    libDir = final.libDir;
+    gemPath = final.gemPath;
+    libPath = "lib/ruby/${final.libDir}";
+    rubyEngine = "ruby";
+    baseRuby = false;
+    majorVersion = lib.versions.major final.version;
+    minorVersion = lib.versions.minor final.version;
+    teenyVersion = lib.versions.patch final.version;
+    patchLevel = null;
+  };
+  meta = {
+    description = "The Ruby programming language";
+    homepage = "https://www.ruby-lang.org/";
+    license = lib.licenses.ruby;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "ruby";
+  };
+}

@@ -1,73 +1,52 @@
-# One suite, shared by every Ruby version. Never fork it per builder: a test
-# that exists only for newer versions cannot detect drift in an older one.
-# Guards select whole tests; they never edit a test body.
+# Shared installed assertions for every authored Ruby release.
 {
-  pkgs,
-  tvpLib,
-  ruby,
-  consumerCompiler,
+  package,
+  lib,
+  context,
 }:
 let
-  inherit (ruby.passthru.tvp) deps;
-  features = ruby.passthru.tvp.features or { };
+  ruby = package;
+  deps = ruby.tvp.deps;
+  features = ruby.tvp.features;
+  owned = true;
+  linux = lib.hasSuffix "-linux" ruby.specification.base.platform.system;
+  consumerCompiler = ruby.tvp.declaredTestDependencies.consumerCompiler;
   consumerStandard = features.consumerCStandard or null;
-  # Keep the independent consumer compiler, preserving all RbConfig flags.
   consumerFlags =
-    pkgs.lib.optionalString (consumerStandard != null)
+    lib.optionalString (consumerStandard != null)
       ''--with-cflags="$(ruby -rrbconfig -e 'print RbConfig::CONFIG["CFLAGS"]') -std=${consumerStandard}"'';
-
-  # 2.0.0 and older ship a tarball per patchlevel, so the version identifier
-  # carries it and RUBY_VERSION does not. From 2.1 upstream ships one tarball
-  # per version and the p-label is derived.
-  versionParts = pkgs.lib.splitString "-p" ruby.version;
+  versionParts = lib.splitString "-p" ruby.version;
   baseVersion = builtins.head versionParts;
   patchlevel = if builtins.length versionParts > 1 then builtins.elemAt versionParts 1 else null;
-
-  # sha256("tvp"), first 16 hex characters.
+  opensslHeaderVersion = ruby.specification.libraries.openssl.version;
   tvpDigest = "f6f6ead0bd85c312";
-  owned = ruby ? testContext;
-  # OPENSSL_VERSION reports the headers used to construct the extension.
-  opensslHeaderVersion =
-    if owned then ruby.specification.libraries.openssl.version else deps.openssl.version;
+  tools = ruby.specification.base.standardTools;
+  supportTools = [
+    tools.gnumake
+    tools.grep
+    tools.sed
+    tools.gawk
+    tools.diffutils
+  ];
   suite =
     args:
-    if !owned then
-      tvpLib.tests.mkSuite (args // { inherit pkgs; })
-    else
-      ruby.testContext.mkSuite (
-        args
-        // {
-          tools =
-            ruby.specification.environment.tools
-            ++ (with (import ../../../../bases/source-gnu { }).tools; [
-              make
-              grep
-              sed
-              gawk
-              diffutils
-            ]);
-          libraries = [ ruby ];
-          tests = builtins.mapAttrs (
-            _: test:
-            (builtins.removeAttrs test [ "extraInputs" ])
-            // pkgs.lib.optionalAttrs (test ? extraInputs) {
-              tools =
-                test.extraInputs
-                ++ (with (import ../../../../bases/source-gnu { }).tools; [
-                  make
-                  grep
-                  sed
-                  gawk
-                  diffutils
-                ]);
-            }
-          ) args.tests;
-        }
-      );
+    context.mkSuite (
+      args
+      // {
+        tools = supportTools;
+        libraries = [ ruby ];
+        tests = builtins.mapAttrs (
+          _: test:
+          (builtins.removeAttrs test [ "extraInputs" ])
+          // {
+            tools = supportTools ++ (test.extraInputs or [ ]);
+          }
+        ) args.tests;
+      }
+    );
 in
-suite {
-  package = ruby;
-
+(suite {
+  inherit package;
   tests =
     {
       version = {
@@ -113,8 +92,7 @@ suite {
         extraInputs =
           assert consumerCompiler.drvPath != ruby.tvp.cc.drvPath;
           assert consumerCompiler.outPath != ruby.tvp.cc.outPath;
-          assert
-            pkgs.lib.versions.major consumerCompiler.version != pkgs.lib.versions.major ruby.tvp.cc.version;
+          assert lib.versions.major consumerCompiler.version != lib.versions.major ruby.tvp.cc.version;
           [ consumerCompiler ];
       };
 
@@ -158,7 +136,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs owned {
+    // lib.optionalAttrs owned {
       embedding = {
         script = ''
           ${consumerCompiler}/bin/cc ${./fixtures/embed.c} \
@@ -175,7 +153,7 @@ suite {
     # Restored as guarded tests rather than removed from the fixtures: the
     # universal forms above satisfy 2.0, and these keep the coverage that
     # lowering them to the oldest common denominator would have cost everyone.
-    // pkgs.lib.optionalAttrs (features.enumerableSum or false) {
+    // lib.optionalAttrs (features.enumerableSum or false) {
       enumerable-sum = {
         script = ''
           ruby ${./fixtures/enumerable-sum.rb}
@@ -184,7 +162,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (features.yamlSafeLoad or false) {
+    // lib.optionalAttrs (features.yamlSafeLoad or false) {
       # A different code path from YAML.load, and the one consumers should use.
       yaml-safe-load = {
         script = ''
@@ -196,7 +174,7 @@ suite {
 
     # A patchlevel release states its own patchlevel, and only RUBY_PATCHLEVEL
     # carries it — RUBY_VERSION does not.
-    // pkgs.lib.optionalAttrs (patchlevel != null) {
+    // lib.optionalAttrs (patchlevel != null) {
       patchlevel = {
         script = ''
           ruby -e 'print RUBY_PATCHLEVEL'
@@ -207,7 +185,7 @@ suite {
 
     # Upstream retired ext/gdbm at 3.1 and ext/readline at 3.3. The builder for
     # those lines drops the argument, so the declared graph selects the test.
-    // pkgs.lib.optionalAttrs (deps ? gdbm) {
+    // lib.optionalAttrs (deps ? gdbm) {
       # Two processes, so the value is proven to have been written.
       gdbm = {
         script = ''
@@ -218,7 +196,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (deps ? readline) {
+    // lib.optionalAttrs (deps ? readline) {
       readline = {
         script = ''
           ruby -e 'require "readline"; print Readline.respond_to?(:readline) ? "readline-ok" : "MISSING"'
@@ -230,7 +208,7 @@ suite {
     # Upstream turns these on whenever the toolchain allows, so a build that
     # quietly lost the toolchain still installs and still passes every other
     # test. Read from the declared graph, not from a version comparison.
-    // pkgs.lib.optionalAttrs (ruby.passthru.tvp.jit.yjit or false) {
+    // lib.optionalAttrs (ruby.passthru.tvp.jit.yjit or false) {
       yjit = {
         script = ''
           ruby --yjit -e 'print RubyVM::YJIT.enabled?'
@@ -239,7 +217,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (ruby.passthru.tvp.jit.zjit or false) {
+    // lib.optionalAttrs (ruby.passthru.tvp.jit.zjit or false) {
       zjit = {
         script = ''
           ruby --zjit -e 'print RubyVM::ZJIT.enabled?'
@@ -249,7 +227,7 @@ suite {
     }
 
     # ldd is glibc's; Darwin needs otool -L, as a separate test.
-    // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    // lib.optionalAttrs linux {
       # Proves the declared OpenSSL is what is linked, not merely one reporting
       # the same version.
       openssl-linkage = {
@@ -264,7 +242,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && deps ? libyaml) {
+    // lib.optionalAttrs (linux && deps ? libyaml) {
       # yaml and fiddle prove the extension loaded, never which library it
       # loaded — both resolve against whatever the loader reaches first.
       yaml-linkage = {
@@ -279,7 +257,7 @@ suite {
       };
     }
 
-    // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && deps ? libffi) {
+    // lib.optionalAttrs (linux && deps ? libffi) {
       fiddle-linkage = {
         script = ''
           so=$(ruby -e 'require "fiddle"; print $LOADED_FEATURES.grep(/fiddle\.so$/).first')
@@ -291,4 +269,8 @@ suite {
         extraInputs = [ ruby.tvp.cc.libc.bin ];
       };
     };
-}
+})
+// lib.optionalAttrs package.specification.installedInterface.nativeControls (
+  import ./native-controls.nix { inherit package lib context; }
+)
+// import ./upstream.nix { inherit package lib context; }

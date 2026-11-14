@@ -25,8 +25,10 @@ let
         s:
         s
         // {
-          coreutils = candidate.tools.coreutils // {
-            outPath = "/nix/store/00000000000000000000000000000000-coreutils-edit";
+          base = s.base.override {
+            coreutils = s.base.coreutils // {
+              outPath = "/nix/store/00000000000000000000000000000000-coreutils-edit";
+            };
           };
         }
       );
@@ -107,9 +109,30 @@ let
       upstreamConsumesFinal =
         !ruby || contains "${p}/bin/ruby" (builtins.head p.tests.upstream-basic.buildSteps).run;
       preservedFactory =
-        (factory.extraArgs.mkTests.override { pkgs = selected; } retained).version.callerSelected
-        && (factory.constructionRecipe.extraArgs.mkTests.override { pkgs = selected; } retained)
-          .version.callerSelected;
+        (factory.constructionRecipe.extraArgs.mkTests.override { pkgs = selected; } retained)
+        .version.callerSelected;
+      ordinaryFactory =
+        let
+          suite =
+            (p.mkTests.override {
+              tests =
+                {
+                  package,
+                  lib,
+                  context,
+                }:
+                {
+                  selected = context.mkTest {
+                    inherit package;
+                    name = "factory-context";
+                    script = "printf okay";
+                    expected = "okay";
+                  };
+                };
+            })
+              p;
+        in
+        suite.selected.tvp.base == p.tvp.base;
       finalCoreutils = contains "${s.coreutils}/bin/cp" (step "output.copy-artifacts" p).run;
     };
   results = map (p: {
@@ -118,13 +141,15 @@ let
   }) all;
   failed = builtins.filter (r: !(builtins.all (x: x) (builtins.attrValues r.checks))) results;
   reviewContracts = import ./review-contracts.nix { inherit pkgs tvp; };
+  legacyCallers = import ./legacy-callers.nix { inherit pkgs tvp; };
 in
 assert builtins.length inventory.rows == 149;
 assert builtins.all (r: r.compliant) inventory.rows;
 assert failed == [ ] || throw "Ruby/Bundler family source contracts: ${builtins.toJSON failed}";
 assert builtins.all (x: x) (builtins.attrValues reviewContracts);
+assert builtins.all (x: x) (builtins.attrValues legacyCallers);
 {
   count = builtins.length inventory.rows;
-  inherit results reviewContracts;
+  inherit results reviewContracts legacyCallers;
   qualification = "SOURCE_ONLY; all changed releases remain uncompiled and runtime-unqualified";
 }

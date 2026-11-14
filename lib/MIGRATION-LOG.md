@@ -445,3 +445,31 @@ remain explicit and unwaived. CI/NAS remain off.
 
 Records: `reviews/post-migration/xml-crypto-sql-family-authoring`, including
 candidate seals, all attempts, source reviews, identity gates and strict failure.
+
+
+## 2026-11-14 — Runtime and compiler family authoring
+
+- Converted complete PHP/Ruby/Bundler/Python and compiler indexes, with inline
+  nameless definitions, literal source hashes, effective-base standard tools and
+  shared installed factories. Scope: 351 runtime canonical rows plus one Ruby
+  variant and ten compiler canonical rows. Actual compiler/Go bootstrap stages,
+  target runtimes and retained construction callers remain explicit.
+- Independently reviewed runtime and compiler source candidates. All 351 runtime
+  interface rows, ten compiler rows and 55 pure family-model controls pass.
+  `.instantiate` now defaults to the selected definition's base and preserves an
+  explicit caller base. The earlier source-GNU fallback exposes its existing Gzip.
+- Preserved all thirteen Python A/F pairs, native Ruby3/Ruby4, latest Bundler,
+  public GCC13/GCC16/Rust, closed full/native compiler and scoped bootstrap,
+  construction and frozen snapshots. Coherent selected-shell floors change Go
+  and LLVM plans; no cache-only provider substitution is introduced.
+- PHP 8.5.12 and Python full/build/minimal current normal batches pass: 76 leaves,
+  88 valid selected paths, 12 scoped roots, 231.713s combined. No compiler was
+  built. Preserve the original source-only and observer failures alongside these
+  results; the scoped admission and suffix-only inspector repairs are MIG-020.
+- Deferred Ruby/Bundler and changed compiler execution until the remaining source
+  dependencies have their final authoring shape. Dry-run evidence proves Rust's
+  real public GCC16 dependency; no intermediate public compiler was launched.
+  Current source adoption is 42/110 indexes and 1,283/1,515 eligible canonical rows.
+  Split counts remain 1,520 compliant and 20 broken exclusions of 1,540 rows.
+- Evidence: `~/.local/state/tvp-next-phase/owned-catalogue-migration/reviews/post-migration/runtime-family-authoring/`.
+  CI/NAS remain off; historical, full, hardening and admission holds stay unwaived.

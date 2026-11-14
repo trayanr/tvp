@@ -18,11 +18,17 @@ let
     s
     // {
       bootstrap = alternate;
-      helperPython = alternate;
-      binutils = alternate;
-      patchelf = alternate;
-      bash = alternate;
-      coreutils = alternate;
+      base = s.base.override {
+        shell = alternate;
+        coreutils = alternate;
+        compiler = s.base.compiler // {
+          bintools = alternate;
+        };
+        standardTools = {
+          python = alternate;
+          patchelf = alternate;
+        };
+      };
     }
   );
   custom = p.edit (
@@ -78,12 +84,14 @@ in
     );
   metadata =
     changed.tvp.deps.bootstrap.outPath == alternate.outPath
-    && changed.tvp.deps.coreutils.outPath == alternate.outPath;
+    && changed.specification.coreutils.outPath == alternate.outPath
+    && changed.specification.base.coreutils.outPath == alternate.outPath;
   tests =
     builtins.attrNames p.tests == [
       "cgo"
       "compile"
       "compiler-default"
+      "installed-environment"
       "modules"
       "standard-library"
       "toolchain-default"
