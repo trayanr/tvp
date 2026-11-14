@@ -8,7 +8,14 @@ let
     out = {
       inherit outPath;
     };
-    tests.version = "declaration-only";
+    tests.version = rec {
+      drvPath = "/fixture/test-${pname}-${version}.drv";
+      outPath = "/fixture/test-${pname}-${version}";
+      outputs = [ "out" ];
+      out = {
+        inherit outPath;
+      };
+    };
   };
   canonical = {
     widget_1_9 = package "widget" "1.9";
@@ -91,7 +98,10 @@ let
       inherit canonical;
       packages = packageSet;
       variants = { };
-      batches = lib.mapAttrs (name: _: { drvPath = "/fixture/test-${name}.drv"; }) canonical;
+      batches = lib.mapAttrs (name: package: {
+        drvPath = "/fixture/test-${name}.drv";
+        testSuite = package.tests;
+      }) canonical;
       source = ./latest.nix;
       revision = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     };

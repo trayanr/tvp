@@ -38,3 +38,14 @@ Runtime evidence is native x86_64 Linux. Missing XSTC corpora, disabled Python
 bindings, long-running limits tests and sanitizer/fuzz campaigns are not covered.
 Upstream's catalog/thread test has a weak document-existence oracle; its passing
 exit is not evidence that nested entities resolved correctly.
+
+The latest ordinary native procedure selects the source-GNU candidate explicitly.
+It retains the observed shared-only libxml2.so.16.1.4 profile, Zlib and XPath,
+without Python bindings or the removed LZMA feature. Catalogue paths are compiled
+into the library and tools, so install and finalization share one output stage.
+The complete former factory, older procedures and nonnative route remain available.
+
+Native corpus probes use -fPIC so dladdr inspects the library implementation,
+rather than an executable PLT entry under the full driver's non-PIE default.
+The historical fixture and its checks are unchanged. Raw make-check success is
+still separate from the seven strict RNG failures and missing XSTC coverage.

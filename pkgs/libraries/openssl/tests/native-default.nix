@@ -3,6 +3,7 @@
 # Guards select whole tests; they never edit a test body.
 {
   pkgs,
+  builder,
   tvpLib,
   package,
 }:
@@ -109,4 +110,36 @@ package.testContext.mkSuite {
     };
 }
 
-// import ./native-contract.nix { inherit package; }
+// (
+  if package.specification ? finalHelper then
+    import ./ordinary-contract.nix { inherit package; }
+  else
+    import ./native-contract.nix { inherit package; }
+)
+
+// (
+  if package.specification ? upstreamIsolation && (package.specification.doCheck or true) then
+    {
+      upstream = import ./upstream.nix {
+        inherit package tvpLib;
+        inherit (pkgs) lib;
+        inherit builder;
+      };
+    }
+  else
+    { }
+)
+
+// (
+  if
+    (package ? specification)
+    && (package.specification ? upstreamPlan)
+    && (package.specification.upstreamCheck.enabled or true)
+  then
+    {
+      # Independent native upstream registration.
+      upstream = import ../native/upstream.nix { package = package; };
+    }
+  else
+    { }
+)

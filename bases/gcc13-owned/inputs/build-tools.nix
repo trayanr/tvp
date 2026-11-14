@@ -7,7 +7,7 @@
 }:
 tvpLib.packages.mergeVariants {
   gzip = tvpLib.packages.mkVariants (
-    recipes.gzip
+    recipes.gzip.constructionRecipe
     // {
       extraArgs.mkTests =
         package:
@@ -44,7 +44,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   file = tvpLib.packages.mkVariants (
-    recipes.file
+    recipes.file.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -71,7 +71,7 @@ tvpLib.packages.mergeVariants {
           helpers = [
             {
               bin = "gzip";
-              package = (tvpLib.packages.mkVersions recipes.gzip).gzip_1_15;
+              package = (tvpLib.packages.mkVersions recipes.gzip.constructionRecipe).gzip_1_15;
               flag = "-z";
             }
             {
@@ -126,7 +126,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   patch = tvpLib.packages.mkVariants (
-    recipes.patch
+    recipes.patch.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -150,7 +150,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   binutils = tvpLib.packages.mkVariants (
-    recipes.binutils
+    recipes.binutils.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -176,7 +176,7 @@ tvpLib.packages.mergeVariants {
           package:
           import ../../../pkgs/build-tools/gnugrep/tests {
             inherit pkgs tvpLib package;
-            locale = import ./test-locale.nix { inherit tvpLib recipes; };
+            locale = import ./test-locale.nix { inherit tvpLib recipes construction; };
           };
       };
       inherit pkgs;
@@ -211,7 +211,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   autoconf = tvpLib.packages.mkVariants (
-    recipes.autoconf
+    recipes.autoconf.constructionRecipe
     // {
       inherit pkgs;
       profiles = {
@@ -273,7 +273,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   bison = tvpLib.packages.mkVariants (
-    recipes.bison
+    recipes.bison.constructionRecipe
     // {
       inherit pkgs;
       profiles = {

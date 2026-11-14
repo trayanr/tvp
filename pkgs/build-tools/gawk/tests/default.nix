@@ -4,6 +4,17 @@
   package,
 }:
 let
+  suite = args:
+    if package ? testContext then
+      package.testContext.mkSuite {
+        package = package;
+        tools = package.specification.environment.tools;
+        libraries = [ ];
+        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
+          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
+        }) args.tests;
+      }
+    else tvpLib.tests.mkSuite args;
   deps = package.tvp.deps;
   linkage = dependency: soname: program: {
     script = ''
@@ -21,7 +32,7 @@ let
     extraInputs = [ package.tvp.cc.libc.bin ];
   };
 in
-tvpLib.tests.mkSuite {
+suite {
   inherit pkgs package;
   tests =
     {

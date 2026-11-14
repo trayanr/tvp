@@ -18,6 +18,33 @@ Required source-epoch data must be exported explicitly for the fresh workspace.
 Nix rejects final references to the internal artifact output; no arbitrary
 binary relocation is implied.
 
+Pass `outputs = final.outputs` to `copyArtifacts` for either one output or
+several. An explicit list must contain every declared output. Omitting the list
+retains the single-output shorthand. `preserveHardlinks = false` makes private
+file copies when later operations must modify files independently.
+
+Every installed-output helper accepts `output ? "out"`. Select a declared output
+by name; its `paths`, template `@OUTPUT@` values and `selfInterpreter` paths then
+resolve under that output. For example:
+
+```nix
+(outputs.copyArtifacts { inherit coreutils; outputs = final.outputs; })
+(outputs.relocateText { inherit python; output = "bin"; paths = [ "lib/pkgconfig" ]; })
+(outputs.shebangs {
+  inherit python;
+  output = "bin";
+  paths = [ "bin" ];
+  names = [ "sh" ];
+  interpreter = "${bash}/bin/bash";
+})
+```
+
+Text and authoritative RPATH relocation use the matching artifact output's
+prefix. References to other artifact outputs need an explicit recipe operation;
+the helpers do not infer cross-output mappings. Invalid or undeclared output
+names fail during evaluation. Selecting another output leaves the operation's
+step name unchanged; repeated operations still need distinct names as below.
+
 Selectors are output-relative files or directories, without empty, `.` or `..`
 components. Missing selectors fail. Symlink selectors and symlinked parents
 fail; recursive file selection skips discovered symlinks. File operations are
@@ -95,3 +122,17 @@ Use `steps.sequence [ record [ record record ] ]` to compose a visible plan.
 Only one level of groups is accepted; existing name and duplicate validation
 still applies. Disabled payloads stay lazy. To use a helper twice, give its
 returned record a distinct name with `// { name = "output.other-scripts"; }`.
+
+`rpaths` additionally accepts `workspaceRoot ? null` for a shrink-only operation
+before installation. Null retains the existing record and command exactly. A
+non-null selector resolves beneath the runner's immutable `TVP_SOURCE_ROOT`
+(the workspace directory, independent of step `cwd`); `paths` then selects files
+beneath that directory. Both scopes reject empty, absolute, missing, dot/traversal
+and symlinked components. Discovered symlinks are skipped as with output scopes.
+This mode cannot be combined with authoritative `base`/`libraries`/`forceRpath`.
+It also cannot select a nondefault installed `output`.
+It reuses the existing ELF classification and shrink/dlopen/timestamp operations.
+For example, the JDK selects `source/build/tvp-release` with `paths = [ "jdk" ]`
+between `exploded-image` and `images`, before native resources are embedded.
+`checks.owned-jdk-source-stage` uses miniature source and native ELF fixtures;
+it does not build OpenJDK or execute installed JDK controls.

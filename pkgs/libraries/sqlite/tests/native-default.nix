@@ -101,3 +101,17 @@ package.testContext.mkSuite {
 }
 
 // import ./native-contract.nix { inherit package; }
+
+// (
+  if
+    (package ? specification)
+    && (package.specification ? upstreamPlan)
+    && (package.specification.upstreamCheck.enabled or true)
+  then
+    {
+      # Independent native upstream registration.
+      upstream = import ../native/upstream.nix { package = package; };
+    }
+  else
+    { }
+)

@@ -4,7 +4,22 @@
   package,
   pkg-config,
 }:
-tvpLib.tests.mkSuite {
+let
+  mkSuite =
+    if package ? testContext then
+      args:
+      package.testContext.mkSuite {
+        package = package;
+        libraries = [ package ];
+        tests = builtins.mapAttrs (_: spec: {
+          inherit (spec) script expected;
+          tools = (spec.extraInputs or [ ]) ++ [ package.tvp.declaredTestDependencies.grep ];
+        }) args.tests;
+      }
+    else
+      tvpLib.tests.mkSuite;
+in
+mkSuite {
   inherit pkgs package;
   tests = {
     public-api = {

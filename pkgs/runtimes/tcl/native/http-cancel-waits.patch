@@ -1,0 +1,32 @@
+--- a/lib/tcl9/9.0/http-2.10.2.tm
++++ b/lib/tcl9/9.0/http-2.10.2.tm
+@@ -5386,8 +5386,14 @@
+ 
+     set cmd [list ::http::cwaiter::CwaitHelper $varName $coroName $toe]
+     trace add variable $varName write $cmd
++    # The wait owns both the write trace and its deferred resume.  Requests can
++    # be cancelled (and their coroutine names reused) before either fires.
++    set cancel [list ::http::cwaiter::CancelWait $varName $coroName $toe $cmd]
++    trace add command $thisCoro delete $cancel
+     CoLog "Yield $varName $coroName"
+     yield
++    trace remove command $thisCoro delete $cancel
++    CancelWait $varName $coroName $toe $cmd
+     CoLog "Resume $varName $coroName"
+     return
+ }
+@@ -5404,6 +5410,14 @@
+ # - Remove the trace immediately.  We don't want multiple calls.
+ # ------------------------------------------------------------------------------
+ 
++# Release a cancelled wait before a same-named request can be created.  Live
++# coroutine failures are deliberately left to Tcl's normal background handler.
++proc http::cwaiter::CancelWait {varName coroName toe cmd args} {
++    trace remove variable $varName write $cmd
++    after cancel $toe
++    after cancel $coroName
++}
++
+ proc http::cwaiter::CwaitHelper {varName coroName toe args} {
+     CoLog "got $varName for $coroName"
+     set cmd [list ::http::cwaiter::CwaitHelper $varName $coroName $toe]

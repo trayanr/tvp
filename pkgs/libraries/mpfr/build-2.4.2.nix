@@ -1,49 +1,169 @@
-# Serves 2.4.2 onwards.
+# Complete MPFR 2.4/3.x procedure; release exceptions stay in default.nix.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
-  gmp,
+  base,
+  src,
   version,
-  sha256,
-  checkCFlags ? [ ],
-  float128 ? true,
-  mpfrRoundingNames ? true,
-  mkTests,
+  gmp,
+  additionalSourceScripts ? [ ],
+  installedInterface ? { },
+  checkCFlags ? [ "-std=gnu17" ],
+  doCheck ? true,
 }:
-stdenv.mkDerivation (
-  finalAttrs:
-  {
-    pname = "mpfr";
-    inherit version;
-    src = fetchurl {
-      url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
-      inherit sha256;
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  environment = final.base.environment final.environment;
+  command =
+    name: run:
+    environment
+    // {
+      inherit name run;
+      cwd = "source";
     };
-    propagatedBuildInputs = [ gmp ];
-    configureFlags = [
-      "--with-gmp=${lib.getDev gmp}"
-    ] ++ lib.optional (!float128) "--disable-float128";
-    enableParallelBuilding = true;
-    doCheck = true;
-    meta = {
-      description = "Correctly rounded multiple-precision floating-point arithmetic";
-      license = lib.licenses.lgpl3Plus;
-      platforms = lib.platforms.unix;
+  elfPaths = [ "lib" ];
+  checkpoint = "nix-support/mpfr-build-tree";
+in
+{
+  pname = "mpfr";
+  inherit
+    base
+    src
+    version
+    gmp
+    checkCFlags
+    doCheck
+    ;
+  inherit additionalSourceScripts;
+  buildFeatures.float128 = false;
+  sourceLayout.scripts = [
+    "configure"
+    "config.guess"
+    "config.sub"
+    "install-sh"
+    "ltmain.sh"
+    "missing"
+    "depcomp"
+    "compile"
+  ] ++ final.additionalSourceScripts;
+  installedInterface = {
+    hasPkgConfig = false;
+    sonameMajor = "4";
+    mpfrRoundingNames = true;
+  } // installedInterface;
+  stripFlags = [
+    "-S"
+    "-p"
+  ];
+  # The runner and test factory use the effective base's canonical providers.
+  inherit (tools) bash coreutils;
+  environment = {
+    tools = [
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+    ];
+    libraries = [ final.gmp ];
+  };
+  productionPlan = steps.sequence [
+    (steps.unpack { src = final.src; })
+    (steps.prepareAutotools { name = "mpfr.prepare"; })
+    (steps.shebangs {
+      name = "mpfr.source-shells";
+      paths = final.sourceLayout.scripts;
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${tools.bash}/bin/bash";
+    })
+    (command "mpfr.configure" ''
+      export CONFIG_SHELL=${tools.bash}/bin/bash
+      export lt_cv_deplibs_check_method=pass_all
+      ./configure --prefix="$out" --disable-static --disable-dependency-tracking ${
+        lib.optionalString (!final.buildFeatures.float128) "--disable-float128"
+      } --with-gmp=${lib.getDev final.gmp}
+    '')
+    (command "mpfr.build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+    (command "mpfr.install" ''
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" install
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (
+      (command "mpfr.save-build-tree" ''
+        ${tools.python}/bin/python3 -B ${../../../lib/build-checkpoint.py} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"
+      '')
+      // {
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+  ];
+  # Restoring the immutable compiled tree is separate from A/F and test policy.
+  upstreamPlan = artifact: [
+    {
+      name = "mpfr.restore-build-tree";
+      tools = [ tools.python ];
+      run = ''
+        ${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"
+      '';
+    }
+  ];
+  upstreamCheck =
+    (command "mpfr.check" ''
+      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${lib.concatStringsSep " " final.checkCFlags}"
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" check
+    '')
+    // {
+      enabled = final.doCheck;
     };
-    passthru = {
-      tvp.deps = {
-        inherit gmp;
-      };
-      tvp.cc = stdenv.cc;
-      tvp.features.float128 = float128;
-      tvp.features.mpfrRoundingNames = mpfrRoundingNames;
-      tests = mkTests finalAttrs.finalPackage;
-    };
-  }
-  // lib.optionalAttrs (checkCFlags != [ ] && lib.versionAtLeast stdenv.cc.version "15") {
-    preCheck = ''
-      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE ${lib.concatStringsSep " " checkCFlags}"
-    '';
-  }
-)
+  plan = final.productionPlan ++ [
+    (steps.split "mpfr.finalize")
+    (outputs.copyArtifacts { })
+    {
+      name = "mpfr.drop-build-tree";
+      tools = [ tools.coreutils ];
+      run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
+    }
+    (outputs.relocateText {
+      paths = [
+        "lib/libmpfr.la"
+      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
+    })
+    (outputs.strip {
+      paths = elfPaths;
+      flags = final.stripFlags;
+    })
+    (outputs.libtool { paths = [ "lib/libmpfr.la" ]; })
+    (outputs.rpaths {
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      libraries = final.runtime.libraries;
+      paths = elfPaths;
+    })
+    (outputs.development { libraries = [ final.gmp ]; })
+    (outputs.checkSymlinks {
+      paths = [
+        "lib/libmpfr.so"
+        "lib/libmpfr.so.${final.installedInterface.sonameMajor}"
+      ];
+    })
+    (outputs.checkPaths { paths = elfPaths; })
+  ];
+  runtime = {
+    libraries = [ final.gmp ];
+    dlopenDirectories = [ ];
+  };
+  tvp.features = {
+    float128 = final.buildFeatures.float128;
+    mpfrRoundingNames = final.installedInterface.mpfrRoundingNames;
+  };
+  meta = {
+    description = "Correctly rounded multiple-precision floating-point arithmetic";
+    license = lib.licenses.lgpl3Plus;
+  };
+}

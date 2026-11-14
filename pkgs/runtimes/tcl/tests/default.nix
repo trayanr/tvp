@@ -9,9 +9,30 @@
 }:
 let
   deps = tcl.passthru.tvp.deps or { };
+  owned = tcl ? testContext;
+  suite =
+    args:
+    if !owned then
+      tvpLib.tests.mkSuite args
+    else
+      tcl.testContext.mkSuite {
+        inherit (args) package;
+        tools = tcl.specification.environment.tools ++ [ tcl.specification.tools.binutils ];
+        libraries = [ tcl ];
+        tests = builtins.mapAttrs (
+          _: spec:
+          builtins.removeAttrs spec [ "extraInputs" ]
+          // pkgs.lib.optionalAttrs (spec ? extraInputs) {
+            tools =
+              (builtins.filter (p: (p.pname or "") != "pkg-config") tcl.specification.environment.tools)
+              ++ [ tcl.specification.tools.binutils ]
+              ++ spec.extraInputs;
+          }
+        ) args.tests;
+      };
   features = tcl.passthru.tvp.features or { };
 in
-tvpLib.tests.mkSuite {
+suite {
   inherit pkgs;
   package = tcl;
 
@@ -62,7 +83,7 @@ tvpLib.tests.mkSuite {
       pkg-config = {
         script = ''
           export PKG_CONFIG_LIBDIR=${tcl}/lib/pkgconfig:${tcl}/share/pkgconfig
-          pkg-config --modversion tcl
+          ${if owned then "${pkg-config}/bin/" else ""}pkg-config --modversion tcl
         '';
         expected = tcl.passthru.tvp.pkgConfigVersion or tcl.version;
         extraInputs = [ pkg-config ];
@@ -82,10 +103,12 @@ tvpLib.tests.mkSuite {
       zlib-linkage = {
         script = ''
           lib=$(echo ${tcl}/lib/libtcl*.so)
-          ldd "$lib" | awk '/libz\.so/ { print $3 }' | grep -q "^${deps.zlib.out}/" && printf linked
+          ${if owned then "LD_TRACE_LOADED_OBJECTS=1" else "ldd"} ${
+            if owned then "${tcl}/bin/tclsh" else "\"$lib\""
+          } | awk '/libz\.so/ { print $3 }' | grep -q "^${deps.zlib.out}/" && printf linked
         '';
         expected = "linked";
-        extraInputs = [ tcl.tvp.cc.libc.bin ];
+        extraInputs = pkgs.lib.optionals (!owned) [ tcl.tvp.cc.libc.bin ];
       };
     };
 }

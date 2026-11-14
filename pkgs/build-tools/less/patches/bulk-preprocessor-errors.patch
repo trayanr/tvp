@@ -1,0 +1,68 @@
+--- a/main.c
++++ b/main.c
+@@ -13,6 +13,7 @@
+  */
+ 
+ #include "less.h"
++extern int tvp_preprocessor_failed;
+ #if MSDOS_COMPILER==WIN32C
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+@@ -612,6 +613,8 @@
+ 	SetConsoleTitleW(consoleTitle);
+ #endif
+ 	close_getchr();
++	if (status == QUIT_OK && tvp_preprocessor_failed)
++		status = QUIT_ERROR;
+ 	exit(status);
+ } 
+ 	
+--- a/edit.c
++++ b/edit.c
+@@ -259,6 +259,9 @@
+ /*
+  * Close a pipe opened via popen.
+  */
++/* Set only for explicit bulk preprocessor-error reporting. */
++int tvp_preprocessor_failed;
++
+ public void close_pipe(FILE *pipefd)
+ {
+ 	int status;
+@@ -276,6 +279,12 @@
+ 	kill(pipefd->_pid, SIGINT);
+ #endif
+ 	status = pclose(pipefd);
++	if (!is_tty && show_preproc_error && status != 0)
++	{
++		tvp_preprocessor_failed = 1;
++		fprintf(stderr, "less: input preprocessor failed (wait status %d)\n", status);
++		return;
++	}
+ 	if (status == -1)
+ 	{
+ 		/* An internal error in 'less', not a preprocessor error.  */
+--- a/filename.c
++++ b/filename.c
+@@ -14,6 +14,9 @@
+  */
+ 
+ #include "less.h"
++extern int tvp_preprocessor_failed;
++extern int is_tty;
++extern int show_preproc_error;
+ #include "lglob.h"
+ #if MSDOS_COMPILER
+ #include <dos.h>
+@@ -980,6 +983,11 @@
+ 			 * If only one pipe char, just assume no alt file.
+ 			 */
+ 			int status = pclose(fd);
++			if (!is_tty && show_preproc_error && status != 0)
++			{
++				tvp_preprocessor_failed = 1;
++				fprintf(stderr, "less: input preprocessor failed (wait status %d)\n", status);
++			}
+ 			if (returnfd > 1 && status == 0) {
+ 				/* File is empty. */
+ 				*pfd = NULL;

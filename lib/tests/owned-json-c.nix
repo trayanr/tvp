@@ -2,11 +2,20 @@
 let
   inherit (pkgs) lib;
   inherit (tvp.builder) steps;
-  base = tvp.bases.default;
+
   p = tvp.canonical.json-c_0_19;
+  base = p.specification.base;
+  fixture = import ./prerequisite-fixture.nix {
+    inherit tvp;
+    package = p;
+    tools = [
+      tvp.packages.gnugrep
+      tvp.packages.diffutils
+    ];
+  };
   pilot = tvp.variants.build-steps.json-c_0_19;
   inherit (tvp.packages) bash coreutils;
-  lookup = base.stdenv.mkDerivation {
+  lookup = fixture {
     name = "json-c-lookup-directory";
     buildCommand = ''mkdir -p "$out/lib"; touch "$out/lib/lookup-marker"'';
   };
@@ -65,9 +74,9 @@ let
       gnumake
       pkg-config
       ;
-    patchelf = tvp.packages.patchelf_0;
-    environment = base.stdenv;
-    compiler = base.stdenv.cc;
+    patchelf = p.tvp.deps.patchelf;
+    environment = base.compiler;
+    compiler = p.tvp.cc;
   };
   supportRows = builtins.filter (
     row: row.scope == "build-test-support" && row.consumer == "owned-json-c"
@@ -80,7 +89,13 @@ let
         r.resolved.drv == supportInputs.${r.dependency}.drvPath
         && r.resolved.out == supportInputs.${r.dependency}.outPath
       ) supportRows;
-    sameRecipe = p.drvPath == pilot.drvPath && p.artifact.drvPath == pilot.artifact.drvPath;
+    generations =
+      p.drvPath != pilot.drvPath
+      && p.artifact.drvPath != pilot.artifact.drvPath
+      && p.specification.base.name == "source-gnu-candidate"
+      && pilot.specification.base.name == tvp.bases.default.name;
+    pilotReplay =
+      (pilot.override { }).drvPath == pilot.drvPath && (pilot.editSteps (x: x)).drvPath == pilot.drvPath;
     source = p.src.drvPath == pilot.src.drvPath;
     split = (steps.partition p.buildSteps).split;
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
@@ -90,7 +105,7 @@ let
     customRuntime =
       p.artifact.drvPath == customRuntime.artifact.drvPath && p.drvPath != customRuntime.drvPath;
     cmakeDiscovery =
-      provider.env.CMAKE_PREFIX_PATH == "${lib.getDev p}:${lib.getDev base.stdenv.cc.libc}";
+      provider.env.CMAKE_PREFIX_PATH == "${lib.getDev p}:${lib.getDev base.compiler.libc}";
     pkgConfigCompatible =
       pkgProvider.env.PKG_CONFIG_LIBDIR == "${p}/lib/pkgconfig:${p}/share/pkgconfig";
     noOp = (p.override { }).drvPath == p.drvPath && (p.editSteps (x: x)).drvPath == p.drvPath;
@@ -213,6 +228,7 @@ let
         make,
         pkgConfig,
         patchelf,
+        grep,
         version,
         src,
       }:
@@ -233,6 +249,7 @@ let
                 make
                 pkgConfig
                 patchelf
+                grep
               ];
               libraries = [ json ];
             })
@@ -283,6 +300,7 @@ let
       inherit (p.tvp.deps) cmake patchelf;
       make = p.tvp.deps.gnumake;
       pkgConfig = tvp.packages.pkg-config;
+      grep = tvp.packages.gnugrep;
       src = null;
       version = "1";
     };
@@ -290,6 +308,7 @@ let
       "json"
       "cmake"
       "make"
+      "grep"
       "pkgConfig"
       "patchelf"
     ];
@@ -300,7 +319,7 @@ let
   runtimeConsumer = consumer.override { json = runtime; };
   traceTool =
     binary: original:
-    (base.stdenv.mkDerivation {
+    (fixture {
       name = "json-c-selected-${binary}";
       buildCommand =
         ''mkdir -p "$out/bin"''
@@ -336,6 +355,7 @@ let
         steps.insertBefore "json-c.finalize" [
           {
             name = "fixture.selected-tools";
+            tools = [ tvp.packages.gnugrep ];
             run = ''
               test -s selected-build/compile_commands.json
               grep -F 'cmake -S source -B selected-build' "$NIX_BUILD_TOP/selected-tools"
@@ -353,7 +373,7 @@ let
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ", " failed}";
-(base.stdenv.mkDerivation {
+(fixture {
   name = "tvp-owned-json-c-contracts";
   buildCommand = ''
     test -s ${selected}/selected-tools

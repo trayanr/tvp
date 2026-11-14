@@ -2,9 +2,11 @@
 let
   registration = import ./provenance.nix { inherit tvp; };
   latest = import ./latest.nix { inherit tvp lib; };
+  selection = import ../../lib/tests/latest.nix { inherit lib; };
 in
 assert builtins.all (passed: passed) (builtins.attrValues registration);
 assert builtins.all (passed: passed) (builtins.attrValues latest);
+assert builtins.all (passed: passed) (builtins.attrValues selection);
 tvp.bases.default.stdenv.mkDerivation {
   name = "tvp-audit-contracts";
   nativeBuildInputs = [ tvp.packages.python_3 ];

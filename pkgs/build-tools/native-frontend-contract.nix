@@ -25,7 +25,7 @@ let
   flagProbe =
     (p.edit (
       s:
-      s
+      (removeAttrs s [ "artifactName" ])
       // {
         environment = s.environment // {
           tools = s.environment.tools ++ [ tvp.packages.pkg-config ];
@@ -80,7 +80,7 @@ let
     )).edit
       (
         s:
-        s
+        (removeAttrs s [ "artifactName" ])
         // {
           plan = [
             (builtins.head s.plan)

@@ -7,6 +7,17 @@
   gdbm,
 }:
 let
+  suite = args:
+    if gdbm ? testContext then
+      gdbm.testContext.mkSuite {
+        package = gdbm;
+        tools = gdbm.specification.environment.tools;
+        libraries = [ gdbm ];
+        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
+          tools = gdbm.specification.environment.tools ++ (test.extraInputs or [ ]);
+        }) args.tests;
+      }
+    else tvpLib.tests.mkSuite args;
   cc = [ gdbm.tvp.cc ];
   features = gdbm.passthru.tvp.features or { };
 
@@ -14,7 +25,7 @@ let
   # linked into libgdbm itself.
   compatFlag = if (features.compatLib or true) then "-lgdbm_compat " else "";
 in
-tvpLib.tests.mkSuite {
+suite {
   inherit pkgs;
   package = gdbm;
 

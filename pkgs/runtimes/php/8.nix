@@ -241,7 +241,10 @@
       "8.5.9" = "sha256-1zVFnCy66wZz1BbDPTctn/Jh1WL2sp2kjz5q6uygg68=";
       "8.5.10" = "sha256-9cCsmbhbPWd95HXC5PUJ+bT1RmPz7lqE1tlIGlIdQQA=";
       "8.5.11" = "sha256-M4YwupRQ8Lk4vvjXQBYsYcM79kobQhxjM8Ad+Kn9sKs=";
-      "8.5.12" = "sha256-gaD0UDSehLCOtD+qhfikyDVoTzzBxQRxd10TF6BGxSU=";
     };
+  }
+  {
+    def = defs."8.5.12";
+    releases."8.5.12" = "sha256-gaD0UDSehLCOtD+qhfikyDVoTzzBxQRxd10TF6BGxSU=";
   }
 ]

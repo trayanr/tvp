@@ -25,18 +25,17 @@ let
     outputs = map (name: plain p.${name}.outPath) p.outputs;
   };
   grouped = lib.groupBy (name: eligible.${name}.pname) (lib.attrNames eligible);
+  latest = (import ./tests.nix { inherit lib; }).selectLatest {
+    inherit canonical packages batches;
+  };
   families = lib.mapAttrs (
     family: names:
     let
-      selected = packages.${family};
-      job = selected.__tvpSelection.canonical;
+      selected = latest.metadata.families.${family};
+      job = selected.job;
     in
-    assert selected.pname == family && selected.drvPath == eligible.${job}.drvPath;
-    assert lib.all (
-      name: builtins.compareVersions eligible.${name}.version selected.version <= 0
-    ) names;
     {
-      selector = selected.__tvpSelection;
+      selector = selected.selector;
       alias = record job eligible.${job};
       versions = map (name: record name eligible.${name}) names;
     }

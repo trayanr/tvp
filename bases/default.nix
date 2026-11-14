@@ -49,6 +49,13 @@ let
   };
 
   construction = frozen // {
+    ownedBases = lib.mapAttrs (
+      _: base:
+      import ./tiers/construction.nix {
+        inherit lib;
+        builder = tvp.builder;
+      } base
+    ) construction.bases;
     bases = frozen.bases // {
       gcc13-owned-v3 =
         let

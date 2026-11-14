@@ -87,23 +87,48 @@ let
     shell = "${bootstrapBash}/bin/bash";
   };
   boot = rebuild "gcc13-shell-bootstrap";
+  mpfrOn =
+    name: stdenv: gmp:
+    (p.mpfr_4_2_1.override {
+      base =
+        import ../tiers/construction.nix
+          {
+            inherit lib;
+            builder = tvp.builder;
+          }
+          {
+            inherit name stdenv platform;
+            builtBy = builtBy.name;
+          };
+      inherit gmp;
+    }).edit
+      (
+        spec:
+        spec
+        // {
+          tvp = spec.tvp // {
+            canonical = false;
+          };
+        }
+      );
   runtime = rec {
     gmp = boot p.gmp_6_3_0 {
       stdenv = shellStage;
       cxx = false;
     };
-    mpfr =
-      (boot p.mpfr_4_2_1 {
-        stdenv = shellStage;
-        inherit gmp;
-      }).overrideAttrs
-        {
-          # Upstream's test executables link libquadmath. It is a test input from
-          # the bootstrap compiler, not a dependency of installed libmpfr.
-          preCheck = ''
-            export LD_LIBRARY_PATH=${p.gcc_13_3_0}/lib
-          '';
+    mpfr = (mpfrOn "gcc13-shell-bootstrap" shellStage gmp).edit (
+      spec:
+      spec
+      // {
+        upstreamCheck = spec.upstreamCheck // {
+          run =
+            ''
+              export LD_LIBRARY_PATH=${p.gcc_13_3_0}/lib
+            ''
+            + spec.upstreamCheck.run;
         };
+      }
+    );
     mpc = boot p.mpc_1_3_1 {
       stdenv = shellStage;
       inherit gmp mpfr;
@@ -186,10 +211,7 @@ let
       libxcrypt
       ;
     gmp = onCompiler p.gmp_6_3_0 { stdenv = compilerStage; };
-    mpfr = onCompiler p.mpfr_4_2_1 {
-      stdenv = compilerStage;
-      inherit gmp;
-    };
+    mpfr = mpfrOn "gcc13-compiler-bootstrap" compilerStage gmp;
     mpc = onCompiler p.mpc_1_3_1 {
       stdenv = compilerStage;
       inherit gmp mpfr;

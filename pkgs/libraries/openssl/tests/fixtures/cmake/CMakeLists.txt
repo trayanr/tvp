@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.15)
+project(openssl_config_consumer C)
+find_package(OpenSSL CONFIG REQUIRED)
+add_executable(consumer "${TEST_SOURCE}")
+target_link_libraries(consumer PRIVATE OpenSSL::SSL OpenSSL::Crypto)

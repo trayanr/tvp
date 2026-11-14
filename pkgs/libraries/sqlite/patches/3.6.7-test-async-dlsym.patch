@@ -1,0 +1,16 @@
+--- a/src/test_async.c
++++ b/src/test_async.c
+@@ -1305,11 +1305,11 @@
+   sqlite3_vfs *pVfs = (sqlite3_vfs *)pAsyncVfs->pAppData;
+   pVfs->xDlError(pVfs, nByte, zErrMsg);
+ }
+-static void *asyncDlSym(
++static void (*asyncDlSym(
+   sqlite3_vfs *pAsyncVfs, 
+   void *pHandle, 
+   const char *zSymbol
+-){
++))(void){
+   sqlite3_vfs *pVfs = (sqlite3_vfs *)pAsyncVfs->pAppData;
+   return pVfs->xDlSym(pVfs, pHandle, zSymbol);
+ }

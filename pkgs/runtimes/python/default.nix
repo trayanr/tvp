@@ -492,9 +492,8 @@ let
       reason = "Retained source-GNU ${name} host tool is independent of ordinary Python consumers.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
-    "3.15.2" = {
+    "3.5.10" = {
       constructor = tvp.builder;
-      builder = ./native/build-3.15.2.nix;
       base = candidate.base;
       source =
         { version, sha256 }:
@@ -511,6 +510,136 @@ let
       helpers = {
         inherit tvp;
       };
+      builder = ./native/build-3.5.10.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/setup-module-selection.patch;
+          reason = "Store-layout adaptation: configure the upstream module exclusion list explicitly before Setup.local supported disabled modules, preventing host probes from changing the profile.";
+        }
+        {
+          file = ./patches/subprocess-legacy-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+      ];
+      opts.finalizeEx = false;
+      opts.textSubprocess = false;
+      opts.opensslPrefix = false;
+      opts.embedFlag = false;
+      opts.systemFfi = true;
+      opts.opensslRpath = false;
+      opts.platlibdir = false;
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = rec {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvpLib.packages.withConstraint {
+          reason = "Keep the moving Readline 8 line linked to the same Ncurses 6.4 instance required by Python 3.5's public WINDOW field access.";
+          parameters.ncurses = ncurses.__tvpSelection;
+        } (tvp.packages.readline_8.override { inherit ncurses; });
+        ncurses = tvpLib.packages.withConstraint {
+          reason = "Modules/_cursesmodule.c reads WINDOW._flags directly. Native 6.4 header control passes; 6.5/6.6 make WINDOW opaque and reject that expression. The full 6.6 consumer silently drops _curses, caught by stdlib and linkage checks.";
+        } tvp.packages.ncurses_6_4;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.6.15" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.5.10.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/setup-module-selection.patch;
+          reason = "Store-layout adaptation: configure the upstream module exclusion list explicitly before Setup.local supported disabled modules, preventing host probes from changing the profile.";
+        }
+        {
+          file = ./patches/subprocess-legacy-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+      ];
+      opts.textSubprocess = false;
+      opts.opensslPrefix = false;
+      opts.embedFlag = false;
+      opts.systemFfi = true;
+      opts.opensslRpath = false;
+      opts.platlibdir = false;
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
       deps = {
         bash = constructionTool "bash";
         coreutils = constructionTool "coreutils";
@@ -523,23 +652,129 @@ let
         grep = constructionTool "grep";
         gawk = constructionTool "gawk";
         diffutils = constructionTool "diffutils";
-        pkgConfig = tvp.packages.pkg-config;
         helperGrep = tvp.packages.gnugrep;
         binutils = constructionTool "binutils";
         patchelf = constructionTool "patchelf";
+
         runtimeBash = tvp.packages.bash_5;
-        openssl = tvp.packages.openssl;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
         zlib = tvp.packages.zlib_1;
         bzip2 = tvp.packages.bzip2_1;
         xz = tvp.packages.xz_5;
-        zstd = tvp.packages.zstd_1;
-        mpdecimal = tvp.packages.mpdecimal_4;
         libffi = tvp.packages.libffi_3;
         sqlite = tvp.packages.sqlite_3;
         gdbm = tvp.packages.gdbm_1;
         readline = tvp.packages.readline_8;
         ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
       };
+    };
+    "3.7.17" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.7.17.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+      ];
+      opts.embedFlag = false;
+      opts.systemFfi = true;
+      opts.opensslRpath = false;
+      opts.platlibdir = false;
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = (
+          tvp.lib.packages.withConstraint {
+            reason = "The legacy ssl module and upstream TLS tests predate OpenSSL 3 behavior: the 3.7 native upstream control has 14 SSL errors and two failures with 3.6.3; the 1.1 line passes.";
+          } tvp.packages.openssl_1_1
+        );
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.8.20" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.7.17.nix;
       patches = [
         {
           file = ./patches/subprocess-shell.patch;
@@ -547,15 +782,546 @@ let
         }
         {
           file = ./patches/static-embed-pkgconfig.patch;
-          reason = "Static libpython embedding needs libm: pkg-config, CMake and Meson controls all fail with unresolved fmod/floor/pow when the upstream .pc omits LIBM. Export the existing interpreter system libraries for the ordinary static embedding interface.";
+          reason = "Export LIBM for installed static embedding consumers.";
         }
       ];
-      opts = {
-        linkUnwinder = true;
-        disabledModules = [
-          "_tkinter"
-          "_uuid"
-        ];
+      opts.linkUnwinder = true;
+      opts.opensslRpath = false;
+      opts.platlibdir = false;
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.9.25" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.7.17.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.opensslRpath = false;
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvpLib.packages.withConstraint {
+          reason = "_ssl.c treats ASN1_R_HEADER_TOO_LONG as normal DER certificate EOF; OpenSSL 3.4 changes it to ASN1_R_NOT_ENOUGH_DATA. Native 3.8/3.9 upstream test_ssl fails on 3.6; the same DER CA control passes on 3.3.7 and fails on 3.4.6/3.5.7/3.6.3. Keep the moving 3.3 line.";
+        } tvp.packages.openssl_3_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.10.22" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.7.17.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.upstreamModules = [
+        "test_ssl"
+        "test_hashlib"
+        "test_ctypes"
+        "test_sqlite"
+        "test_dbm_gnu"
+        "test_dbm_ndbm"
+        "test_bz2"
+        "test_lzma"
+        "test_zlib"
+        "test_readline"
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.11.18" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.7.17.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.pkgConfigRequired = true;
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.12.16" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.12.16.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+        "nis"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.13.18" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.13.18.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.14.10" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.14.10.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl_3;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        zstd = tvp.packages.zstd_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkgConfig = tvp.packages.pkg-config;
+      };
+    };
+    "3.15.2" = {
+      constructor = tvp.builder;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      builder = ./native/build-3.15.2.nix;
+      opts.linkUnwinder = true;
+
+      patches = [
+        {
+          file = ./patches/subprocess-shell.patch;
+          reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+        }
+        {
+          file = ./patches/static-embed-pkgconfig.patch;
+          reason = "Export LIBM for installed static embedding consumers.";
+        }
+      ];
+      opts.disabledModules = [
+        "_tkinter"
+        "_uuid"
+      ];
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        python = constructionTool "python";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        findutils = constructionTool "findutils";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        helperGrep = tvp.packages.gnugrep;
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+
+        runtimeBash = tvp.packages.bash_5;
+        openssl = tvp.packages.openssl;
+        zlib = tvp.packages.zlib_1;
+        bzip2 = tvp.packages.bzip2_1;
+        mpdecimal = tvp.packages.mpdecimal_4;
+        zstd = tvp.packages.zstd_1;
+        xz = tvp.packages.xz_5;
+        libffi = tvp.packages.libffi_3;
+        sqlite = tvp.packages.sqlite_3;
+        gdbm = tvp.packages.gdbm_1;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+        pkgConfig = tvp.packages.pkg-config;
       };
     };
   };
@@ -568,12 +1334,15 @@ let
       meson = tvp.packages.meson;
       ninja = tvp.packages.ninja;
     };
-    versionTable = versionTable // {
-      "3.15.2" = versionTable."3.15.2" // {
-        def = if native then ownedDefs."3.15.2" else versionTable."3.15.2".def;
-      };
-    };
-    extraArgs.mkTests =
+    versionTable = builtins.mapAttrs (
+      version: row:
+      row
+      // {
+        def = if native then ownedDefs.${version} else row.def;
+      }
+    ) versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       if package ? testContext then
         import ./tests/native-default.nix {
@@ -585,7 +1354,8 @@ let
             ;
         }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 in

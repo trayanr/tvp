@@ -1,0 +1,15 @@
+--- a/test/printf.test
++++ b/test/printf.test
+@@ -38,7 +38,11 @@
+     sqlite3_mprintf_int {Three integers: (% 6d) (% 6x) (% 6o)} $v $v $v
+   }] [format {Three integers: (% 6d) (% 6x) (% 6o)} $v $v32 $v32]
++  set tvpAlternateFormat {Three integers: (%#6d) (%#6x) (%#6o)}
++  if {$v32==0} {
++    set tvpAlternateFormat {Three integers: (%#6d) (%6x) (%#6o)}
++  }
+   do_test printf-1.$n.7 [subst {
+     sqlite3_mprintf_int {Three integers: (%#6d) (%#6x) (%#6o)} $v $v $v
+-  }] [format {Three integers: (%#6d) (%#6x) (%#6o)} $v $v32 $v32]
++  }] [format $tvpAlternateFormat $v $v32 $v32]
+   incr n
+ }

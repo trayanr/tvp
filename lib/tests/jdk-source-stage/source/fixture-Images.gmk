@@ -1,0 +1,13 @@
+include $(SPEC)
+jdk:
+	test "$$(tail -1 $(OUTPUTDIR)/packaging-order)" = java.base
+	mkdir -p $(JDK_IMAGE_DIR)/{bin,lib,jmods}
+	cp -a $(OUTPUTDIR)/jdk/. $(JDK_IMAGE_DIR)/
+	cp $(OUTPUTDIR)/support/modules_cmds/java.base/java $(JDK_IMAGE_DIR)/bin/java
+	cp $(OUTPUTDIR)/support/modules_libs/java.base/libresource.so $(JDK_IMAGE_DIR)/lib/resource
+	cp $(OUTPUTDIR)/support/modules_libs/java.base/libresource.so $(JDK_IMAGE_DIR)/lib/libresource.so
+	cp $(OUTPUTDIR)/support/modules_libs/java.base/libresource.so $(JDK_IMAGE_DIR)/jmods/embedded-library
+	cp $(OUTPUTDIR)/support/modules_cmds/java.base/java $(JDK_IMAGE_DIR)/jmods/embedded-command
+	cp $(OUTPUTDIR)/jdk/modules/jdk.jpackage/jdk/jpackage/internal/resources/jpackageapplauncher $(JDK_IMAGE_DIR)/jmods/embedded-resource
+	cp $(OUTPUTDIR)/jdk/modules/jdk.jpackage/jdk/jpackage/internal/resources/libjpackageapplauncheraux.so $(JDK_IMAGE_DIR)/jmods/embedded-resource-library
+	cp $(OUTPUTDIR)/support/src.zip $(JDK_IMAGE_DIR)/lib/src.zip

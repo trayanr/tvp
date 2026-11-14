@@ -14,16 +14,32 @@
   infrastructure ? { },
   passthru ? { },
   testContext ? null,
+  argumentDefaults ? null,
 }:
 let
   steps = import ./build-steps.nix;
+  toolProviders = import ./tool-providers.nix;
   build = import (if owned then ./owned-build.nix else ./native-build.nix) { inherit lib; };
   declared = builtins.functionArgs recipe;
   call =
     current: edits: customized:
     let
       unknown = lib.subtractLists (builtins.attrNames declared) (builtins.attrNames current);
-      definition = recipe current;
+      resolved =
+        if argumentDefaults == null then
+          current
+        else
+          builtins.intersectAttrs declared (argumentDefaults {
+            arguments = current;
+            inherit specification;
+          })
+          // current;
+      definition = recipe resolved;
+      # A field introduced by an arbitrary edit is not automatically a recipe
+      # input. Only published fields or an explicit projection describe providers.
+      published = builtins.attrNames (
+        if builtins.isFunction definition then definition specification else definition
+      );
       specification = lib.fix (
         final:
         builtins.foldl' (spec: edit: edit spec) (
@@ -32,11 +48,45 @@ let
       );
       plan = specification.plan;
       package = build specification;
-      dependencies = builtins.intersectAttrs (lib.genAttrs (
-        if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
-      ) (_: null)) current;
+      # Edits change the effective providers as well as their build steps.
+      # Older recipes may keep a dependency only in their arguments.
+      # A runtime override may replace a default input without changing the
+      # construction provider. Only explicitly declared dependency names can be
+      # projected here; recipes without a projection retain the old behavior.
+      dependencyProviders = specification.dependencyProviders or { };
+      # Collect only active production providers; upstream plans may depend on A.
+      usedTools =
+        if !owned then
+          { }
+        else
+          let
+            parts = steps.partition plan;
+            active = builtins.filter (step: step.enabled or true) (parts.first ++ parts.second);
+          in
+          toolProviders.collect (
+            [
+              (toolProviders.tag "bash" specification.bash)
+              (toolProviders.tag "coreutils" specification.coreutils)
+            ]
+            ++ builtins.concatMap (step: step.tools or [ ]) active
+          );
+      dependencies =
+        usedTools
+        // (lib.mapAttrs
+          (
+            name: original:
+            dependencyProviders.${name}
+              or (if builtins.elem name published then specification.${name} or original else original)
+          )
+          (
+            builtins.intersectAttrs (lib.genAttrs (
+              if builtins.isFunction dependencyNames then dependencyNames specification else dependencyNames
+            ) (_: null)) resolved
+          )
+        );
       provenance = metadata // {
         base = specification.base.name;
+        baseConstruction = specification.base.construction or null;
         cc =
           if owned && specification.base ? compiler then
             specification.base.compiler
@@ -93,7 +143,7 @@ let
             overrides:
             reselect (
               call (
-                current // (if builtins.isFunction overrides then overrides current else overrides)
+                current // (if builtins.isFunction overrides then overrides resolved else overrides)
               ) edits true
             );
           edit = edit: reselect (call current (edits ++ [ edit ]) true);
@@ -130,6 +180,10 @@ let
     in
     if unknown != [ ] then
       throw "TVP native recipe: unknown arguments: ${lib.concatStringsSep ", " unknown}"
+    else if
+      lib.subtractLists (builtins.attrNames dependencies) (builtins.attrNames dependencyProviders) != [ ]
+    then
+      throw "TVP native recipe: dependency provider projection contains undeclared names"
     else if
       owned
       && builtins.length package.outputs > 1

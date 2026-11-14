@@ -187,16 +187,58 @@ let
       }
     )
   );
-  mpfr = qualify "mpfr" (
-    make (import ../pkgs/libraries/mpfr/build-steps-4.2.2.nix) (
-      common
-      // {
-        src = sources.mpfr;
-        version = "4.2.2";
-        inherit gmp;
-      }
-    )
-  );
+  mpfrBase = builder.base {
+    name = "source-consumer-mpfr";
+    inherit (base) platform;
+    compiler = base.stdenv.cc // {
+      inherit (base) runtimeDirectories;
+    };
+    shell = bash;
+    inherit coreutils;
+    # Preserve the selected linker contribution as well as the baseline providers.
+    tools = lib.unique (base.environment { }).tools;
+    standardTools = {
+      inherit
+        gnumake
+        python
+        patchelf
+        findutils
+        ;
+      gnutar = b.gnutar-latest;
+      xz = b.xz;
+      sed = b.gnused;
+      grep = b.build-grep;
+      gawk = b.gawk;
+      diffutils = b.diffutils;
+    };
+    construction = {
+      kind = "stage";
+      previous = base.name;
+    };
+  };
+  mpfr = builder {
+    recipe = import ../pkgs/libraries/mpfr/build-4.0.2.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit lib gmp;
+      base = mpfrBase;
+      src = sources.mpfr;
+      version = "4.2.2";
+    };
+    dependencyNames = [ "gmp" ];
+    metadata = { };
+    selection.kind = "source-base-consumer";
+    testContext =
+      package: (import ../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      import ../pkgs/libraries/mpfr/tests/default.nix {
+        inherit package lib;
+        context = package.testContext;
+      };
+  };
   mpc = qualify "mpc" (
     make (import ../pkgs/libraries/mpc/build-steps-1.4.1.nix) (
       common
@@ -221,7 +263,22 @@ let
             name = "evidence.collect";
             tools = [ python ];
             run = ''
-              cp -a ${package.artifact}/.tvp-evidence "$out"
+              ${
+                if name == "mpfr" then
+                  let
+                    raw = package.tests.upstream.specification.validation.execution;
+                  in
+                  ''
+                    # Depend on acceptance, then retain its independent raw records.
+                    : ${package.tests.upstream}
+                    mkdir -p "$out"
+                    cp ${raw}/raw/log "$out/check.log"
+                    cp ${raw}/raw/status "$out/check.status"
+                    cp -r ${raw}/raw/records "$out/upstream"
+                  ''
+                else
+                  ''cp -a ${package.artifact}/.tvp-evidence "$out"''
+              }
               chmod -R u+w "$out"
               ${python}/bin/python3 -B ${./source-suite-evidence.py} classify ${name} "$out"
               ${python}/bin/python3 -B ${./source-suite-checks.py} ${name} "$out"
@@ -241,6 +298,7 @@ in
     ;
   evidence = {
     gmp = evidenceFor "gmp" gmp;
+    # Upstream is now independent of the production artifact/final pair.
     mpfr = evidenceFor "mpfr" mpfr;
     mpc = evidenceFor "mpc" mpc;
   };

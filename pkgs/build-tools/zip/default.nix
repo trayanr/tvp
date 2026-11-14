@@ -1,45 +1,96 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  testLib = pkgs.lib;
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  formerRecipe = previous.publicArgs;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   defs = tvpLib.packages.mkDefs {
     "3.0" = {
-      builder = ./build-3.0.nix;
-      base = tvp.bases.default;
-      # The original Unix probes omit function declarations and return types.
+      constructor = tvp.builder;
+      builder = ./native/build-3.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      # Original Unix probes require these historic C assumptions. These are
+      # explicit compiler arguments; no inherited setup hook supplies them.
       opts.cflags = "-Wno-error=implicit-function-declaration -Wno-error=implicit-int";
       opts.hardeningDisable = [ "format" ];
       deps = {
-        bash = tvp.packages.bash_5;
-        bzip2 = tvp.packages.bzip2_1;
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnumake
+          gnutar
+          gzip
+          gnused
+          gnugrep
+          gawk
+          diffutils
+          findutils
+          ;
+        python = tvp.packages.python_3;
         patchelf = tvp.packages.patchelf;
+        bzip2 = tvp.packages.bzip2_1;
+        binutils = tvpLib.packages.withConstraint {
+          category = "construction";
+          reason = "Retained source-GNU Binutils is an independently constructed ELF inspector until ordinary Binutils is ported to the source base.";
+        } candidate.tools.binutils;
       };
     };
   };
-  pname = "zip";
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."3.0";
-      releases."3.0" = "sha256-8Oi7H5t+sLAShUlaJpnfOkt2Z4TBdlqPGu7fY8CAY2k=";
-    }
-  ];
-  canonical = tvpLib.packages.mkVersions {
-    infra = {
-      inherit (pkgs) lib fetchurl;
+  versionTable = formerRecipe.versionTable // {
+    "3.0" = formerRecipe.versionTable."3.0" // {
+      def = if native then defs."3.0" else formerRecipe.versionTable."3.0".def;
     };
-    inherit pname versionTable;
+  };
+  publicArgs = formerRecipe // {
+    inherit versionTable;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
+        inherit sha256;
+      };
+    testDeps.unzip = tvp.packages.unzip;
     extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
+      testLib.makeOverridable
+        (
+          args@{
+            pkgs,
+            unzip ? tvp.packages.unzip,
+          }:
+          package:
+          (if package ? testContext then import ./tests else import ./tests/legacy.nix) {
+            inherit tvpLib package;
+            unzip = if package ? testContext || args ? unzip then unzip else previous.testDeps.unzip;
+            pkgs =
+              if package ? testContext then
+                { lib = testLib; }
+              else
+                tvpLib.tests.withBase {
+                  inherit pkgs;
+                  base.stdenv = package.stdenv;
+                };
+          }
+        )
+        {
           inherit pkgs;
-          base.stdenv = package.stdenv;
         };
-        unzip = tvp.packages.unzip;
-      };
   };
+  canonical = tvpLib.packages.mkVersions publicArgs;
+  pname = "zip";
 in
 {
+  recipes.zip = publicArgs;
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

@@ -21,7 +21,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   linux-headers = tvpLib.packages.mkVariants (
-    recipes.linux-headers
+    recipes.linux-headers.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -49,7 +49,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   mpc = tvpLib.packages.mkVariants (
-    recipes.mpc
+    recipes.mpc.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {
@@ -128,20 +128,34 @@ tvpLib.packages.mergeVariants {
       };
     }
   );
-  mpfr = tvpLib.packages.mkVariants (
-    recipes.mpfr.constructionRecipe
-    // {
-      inherit pkgs;
-      profiles.gcc13 = {
-        base = construction.bases.gcc13;
-        versions."4.2.1" = {
-          deps = {
-            gmp = construction.variants.gcc13.gmp_6_3_0;
-          };
-        };
-      };
-    }
-  );
+  mpfr.gcc13.mpfr_4_2_1 =
+    tvpLib.packages.tagSelection
+      {
+        namespace = "variants.gcc13";
+        selector = "mpfr_4_2_1";
+        kind = "variant";
+        pname = "mpfr";
+        version = "4.2.1";
+        canonical = "mpfr_4_2_1";
+      }
+      (
+        (recipes.mpfr.instantiate {
+          version = "4.2.1";
+          base = construction.ownedBases.gcc13;
+          deps.gmp = construction.variants.gcc13.gmp_6_3_0;
+        }).edit
+          (
+            spec:
+            spec
+            // {
+              tvp = spec.tvp // {
+                canonical = false;
+                variant = "gcc13";
+              };
+            }
+          )
+      );
+
   attr = tvpLib.packages.mkVariants (
     recipes.attr.constructionRecipe
     // {
@@ -178,11 +192,11 @@ tvpLib.packages.mergeVariants {
     }
   );
   isl = tvpLib.packages.mkVariants (
-    recipes.isl
+    recipes.isl.constructionRecipe
     // {
       # The coverage parser is a frozen test input, including its codec graph.
-      testDeps = recipes.isl.testDeps // {
-        python3 = recipes.isl.testDeps.python3.override {
+      testDeps = recipes.isl.constructionRecipe.testDeps // {
+        python3 = recipes.isl.constructionRecipe.testDeps.python3.override {
           zstd = (tvpLib.packages.mkVersions recipes.zstd.constructionRecipe).zstd_1_5_7;
         };
       };
@@ -198,7 +212,7 @@ tvpLib.packages.mergeVariants {
     }
   );
   glibc = tvpLib.packages.mkVariants (
-    recipes.glibc
+    recipes.glibc.constructionRecipe
     // {
       inherit pkgs;
       profiles.gcc13 = {

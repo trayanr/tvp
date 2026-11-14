@@ -51,6 +51,10 @@ broken releases, and borrowed infrastructure have separate scopes.
 
 ## Contributing
 
+Start with the [package authoring model](lib/NATIVE-RECIPES.md) for the agreed
+MPFR layout, version tables, builders, customization and test attachment.
+The [rollout plan](lib/AUTHORING-MIGRATION.md) separates the remaining base and
+family cleanup from split coverage and runtime qualification.
 [STRUCTURE.md](STRUCTURE.md) describes the repository layout and the conventions a change
 is expected to follow — where a package lives, how builders are named and forked, how
 version tables and aliases work, and how tests are written.

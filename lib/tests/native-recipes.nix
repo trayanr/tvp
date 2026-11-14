@@ -2,7 +2,7 @@
 let
   inherit (pkgs) lib;
   steps = import ../build-steps.nix;
-  p = tvp.variants.build-steps.mpfr_4_2_2;
+  p = import ./fixtures/mpfr.nix { inherit pkgs tvp; };
   gmp = tvp.packages.gmp_6_2_1;
   insert = steps.insertAfter "mpfr.build" [
     {
@@ -10,7 +10,7 @@ let
       run = "echo built >&2";
     }
   ];
-  disable = steps.replace "mpfr.check" (
+  disable = steps.replace "mpfr.save-build-tree" (
     old:
     old
     // {
@@ -22,7 +22,7 @@ let
   a = ((p.override { inherit gmp; }).editSteps insert).editSteps disable;
   b = ((p.editSteps insert).editSteps disable).override { inherit gmp; };
   rejects = x: !(builtins.tryEval (builtins.deepSeq x true)).success;
-  otherBase = tvp.bases.gcc13-owned-v3;
+  otherBase = p.specification.base.override { name = "native-recipe-other-base"; };
   other = p.override { base = otherBase; };
   contracts = {
     overrideReplay = a.drvPath == b.drvPath;
@@ -44,18 +44,19 @@ let
     noOpOverride = (p.override { }).drvPath == p.drvPath;
     noOpEdit = (p.editSteps (plan: plan)).drvPath == p.drvPath;
     baseCoherence =
-      other.stdenv.drvPath == otherBase.stdenv.drvPath
-      && other.tvp.cc.drvPath == otherBase.stdenv.cc.drvPath
-      && !lib.hasInfix (builtins.unsafeDiscardStringContext "${otherBase.stdenv}/setup") (
-        lib.concatStrings other.buildStepRunner.childScripts
-      );
+      other.specification.base.name == otherBase.name
+      && other.compiler.drvPath == otherBase.compiler.drvPath
+      && other.tvp.cc.drvPath == otherBase.compiler.drvPath
+      && !(other ? stdenv);
     dependencies =
       a.tvp.declaredDependencies.gmp.outPath == gmp.outPath && a.tvp.deps.gmp.outPath == gmp.outPath;
     selection = a.__tvpSelection.kind == "override" && a.out.__tvpSelection.kind == "override";
     metadataProjection = a.out.tvp.declaredDependencies.gmp.outPath == gmp.outPath;
+    argumentOnlyDependencyFallback = composed.tvp.deps.gmp.outPath == gmp.outPath;
     testsRebound =
       a.tests.version.drvPath != p.tests.version.drvPath
-      && builtins.any (input: input.outPath == a.outPath) a.tests.version.nativeBuildInputs;
+      && a.tests.version.package.outPath == a.outPath
+      && a.tests.version.specification.base.compiler.drvPath == a.compiler.drvPath;
     lazyTests = builtins.all (test: builtins.isString test.drvPath) (builtins.attrValues a.tests);
   };
   # A small real recipe exercises the same seam without rebuilding MPFR merely

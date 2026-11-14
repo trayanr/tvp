@@ -79,8 +79,58 @@ let
       };
     };
   };
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "10.44" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-10.44.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${version}/pcre2-${version}.tar.bz2";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        pkgConfig = candidate.tools.pkgConfig;
+        bzip2 = candidate.tools.bzip2;
+        perl = candidate.tools.perl;
+      };
+    };
+  };
+  ordinaryTable = versionTable // {
+    "10.44" = versionTable."10.44" // {
+      def = if native then ordinaryDefs."10.44" else versionTable."10.44".def;
+    };
+    "10.47" = versionTable."10.47" // {
+      def = if native then ordinaryDefs."10.44" else versionTable."10.47".def;
+    };
+    "10.48" = versionTable."10.48" // {
+      def = if native then ordinaryDefs."10.44" else versionTable."10.48".def;
+    };
+  };
   publicArgs = packageArgs // {
-    versionTable = versionTable // {
+    versionTable = ordinaryTable // {
       "10.49" = versionTable."10.49" // {
         def = if native then ownedDefs."10.49" else versionTable."10.49".def;
       };

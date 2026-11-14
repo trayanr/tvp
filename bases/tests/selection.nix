@@ -48,13 +48,38 @@ let
       &&
         construction.variants.gcc13-owned.patchelf_0_19_2.stdenv.drvPath
         == construction.bases.gcc13-owned.stdenv.drvPath;
-    canonical-tools = lib.all (p: p.tvp.base == bases.default.name) [
-      tvp.packages.gcc_16_2_0
-      tvp.packages.gcc_13_3_0
-      tvp.packages.binutils_2_42
-      tvp.packages.glibc_2_39
-      tvp.packages.patchelf_0_19_2
-    ];
+    source-owned-patchelf =
+      tvp.packages.patchelf_0_19_2.specification.base.compiler.drvPath == (import ../source-gnu { })
+      .base.compiler.drvPath;
+    source-owned-tools =
+      lib.all
+        (
+          p:
+          p.specification.base.compiler.drvPath == (import ../source-gnu { }).base.compiler.drvPath
+          && p.tvp.base == "source-gnu-candidate"
+        )
+        [
+          tvp.packages.bash
+          tvp.packages.binutils
+          tvp.packages.which
+          tvp.packages.patch
+        ];
+    source-owned-gcc16 =
+      tvp.packages.gcc_16_2_0.tvp.base == "source-gnu-candidate"
+      &&
+        tvp.packages.gcc_16_2_0.specification.base.compiler.drvPath == (import ../source-gnu { })
+        .base.compiler.drvPath
+      && tvp.packages.gcc_16_2_0.rawCompiler;
+    source-owned-glibc =
+      tvp.packages.glibc_2_39.tvp.base == "source-gnu-candidate"
+      && tvp.packages.glibc_2_39.specification.gcc.drvPath == tvp.packages.gcc_16_2_0.drvPath
+      &&
+        tvp.packages.glibc_2_39.specification.base.compiler.drvPath == (import ../source-gnu { })
+        .base.compiler.drvPath;
+    canonical-tools =
+      tvp.packages.gcc_13_3_0.tvp.base == "source-gnu-candidate"
+      && tvp.packages.gcc_13_3_0.rawCompiler
+      && tvp.packages.gcc_13_3_0.specification.glibc.drvPath == bases.default.stdenv.cc.libc.drvPath;
   };
   failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) contracts);
 in

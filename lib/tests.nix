@@ -1,5 +1,32 @@
 { lib }:
 rec {
+  selectLatest = import ./latest-tests.nix { inherit lib; };
+
+  mkLatest =
+    {
+      context,
+      selection,
+      name ? "latest",
+    }:
+    (context.mkBatch {
+      inherit name;
+      suite = selection.batches;
+    }).editSteps
+      (
+        plan:
+        plan
+        ++ [
+          {
+            name = "latest.outputs";
+            run = ''
+              for path in ${lib.escapeShellArgs selection.requiredOutputs}; do
+                test -e "$path" || test -L "$path"
+              done
+            '';
+          }
+        ]
+      );
+
   # Opt-in owned construction; catalogue factories must select this explicitly.
   forBase = import ./owned-tests.nix { inherit lib; };
 

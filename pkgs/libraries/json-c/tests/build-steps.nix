@@ -5,6 +5,19 @@
   package,
 }:
 let
+  mkSuite =
+    if package ? testContext then
+      args:
+      package.testContext.mkSuite {
+        package = package;
+        libraries = [ package ];
+        tests = builtins.mapAttrs (_: spec: {
+          inherit (spec) script expected;
+          tools = (spec.extraInputs or [ ]) ++ [ package.tvp.declaredTestDependencies.grep ];
+        }) args.tests;
+      }
+    else
+      tvpLib.tests.mkSuite;
   steps = import ../../../../lib/build-steps.nix;
   edited = (package.override { doCheck = false; }).editSteps (
     plan:
@@ -26,7 +39,9 @@ let
             + "\n"
             + ''
               printf 'install\n' >> edit-order
-              diff -u <(printf 'build\nbetween\ninstall\n') edit-order
+              ${
+                if package ? testContext then "${package.tvp.declaredTestDependencies.diffutils}/bin/" else ""
+              }diff -u <(printf 'build\nbetween\ninstall\n') edit-order
             '';
         }
       ) withoutCheck;
@@ -54,22 +69,32 @@ let
   );
   cmake = package.tvp.declaredTestDependencies.cmake;
   environment =
-    (import ../../../../lib/build-environment.nix {
-      lib = pkgs.lib;
-      base = {
-        name = "consumer";
-        stdenv = package.stdenv;
-      };
-    })
-      {
+    if package ? testContext then
+      package.specification.base.environment {
         tools = [
           cmake
           package.tvp.deps.gnumake
         ];
         libraries = [ package ];
-      };
+      }
+    else
+
+      (import ../../../../lib/build-environment.nix {
+        lib = pkgs.lib;
+        base = {
+          name = "consumer";
+          stdenv = package.stdenv;
+        };
+      })
+        {
+          tools = [
+            cmake
+            package.tvp.deps.gnumake
+          ];
+          libraries = [ package ];
+        };
 in
-tvpLib.tests.mkSuite {
+mkSuite {
   inherit pkgs package;
   tests = {
     cmake-consumer = {

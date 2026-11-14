@@ -1,145 +1,188 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-
-  defs = tvpLib.packages.mkDefs {
-    "1.4.17" = {
-      builder = ./build-1.4.17.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-    "1.4.19" = {
-      builder = ./build-1.4.17.nix;
-      base = tvp.bases.default;
-      deps = { };
-      # Bundled gnulib puts the C23 nodiscard attribute after inline. GNU17
-      # retains its supported GNU attribute form; 1.4.20 fixes the placement.
-      opts.cStandard = "gnu17";
-    };
-    "1.4.21" = {
-      builder = ./build-1.4.17.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-  };
-
-  versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
-
-  pname = "m4";
-
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname;
-    inherit versionTable;
-
-    extraArgs = {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        m4:
-        import ./tests {
-          inherit tvpLib m4;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = m4.stdenv;
-          };
-        }
-      ) { inherit pkgs; };
-    };
-
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://mirrors.kernel.org/gnu/m4/";
-        pattern = "m4-[0-9][^\"]*\\.tar\\.gz";
-
-        normalise =
-          file:
-          if pkgs.lib.hasPrefix "m4-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "m4-" file)
-          else
-            null;
-
-        include = version: builtins.match "[0-9].*" version != null;
-      };
-    };
-  };
-
-  completed = tvp.bases.default;
-  seed =
-    reason:
+  # Complete former definitions, sources, arguments and test factories. Frozen
+  # construction consumers retain their original route, including Make's 4.3 map.
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  ownedDefaultRecipe = removeAttrs previous.recipes.m4 [ "constructionRecipe" ];
+  constructionRecipe = previous.recipes.m4.constructionRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  host =
+    name: reason:
     tvpLib.packages.withConstraint {
       category = "construction";
       inherit reason;
-    };
-  ownedDefs = tvpLib.packages.mkDefs {
+    } candidate.tools.${name};
+  defs = tvpLib.packages.mkDefs {
     "1.4.21" = {
       constructor = tvp.builder;
-      builder = ./owned/build-1.4.21.nix;
-      base = completed;
+      builder = ./native/build-1.4.21.nix;
+      base = candidate.base;
       helpers = {
         inherit tvp;
       };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
         bash = tvp.packages.bash_5;
-        coreutils = seed "Build-only completed Coreutils: selecting canonical Coreutils would close M4 -> Coreutils -> GMP -> M4." completed.components.floor.coreutils;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
         gnumake = tvp.packages.gnumake_4;
         gnutar = tvp.packages.gnutar_1;
         gzip = tvp.packages.gzip_1;
-        python = seed "Build-only completed libc construction interpreter for explicit source and output operations; avoids rebuilding the unported Python helper through this tool wave." completed.components.libc.tvp.deps.python3Minimal;
-        binutils = seed "Build-only completed binutils for ELF finalization: canonical binutils needs Bison, which needs M4." completed.components.binutils;
-        patchelf = tvp.packages.patchelf_0;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+      };
+    };
+    "1.4.19" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.4.19.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      opts.cStandard = "gnu17";
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
+      };
+    };
+    "1.4.20" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.4.20.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = tvp.packages.bash_5;
+        coreutils = host "coreutils" "Independent host Coreutils avoids Coreutils -> GMP -> M4 while constructing this tool.";
+        gnumake = tvp.packages.gnumake_4;
+        gnutar = tvp.packages.gnutar_1;
+        gzip = tvp.packages.gzip_1;
+        findutils = host "findutils" "Independent source unpack/epoch inventory tool.";
+        python = host "python" "Independent source and output helper interpreter; no public Python prerequisite cycle.";
+        binutils = host "binutils" "Independent output inspector avoids Binutils -> Bison -> M4.";
+        patchelf = host "patchelf" "Independent finalizer avoids Patchelf -> ordinary Make -> Patchelf.";
+        sed = tvp.packages.gnused_4;
+        grep = tvp.packages.gnugrep_3;
+        gawk = tvp.packages.gawk_5;
+        diffutils = tvp.packages.diffutils_3;
       };
     };
   };
-  publicVersionTable = versionTable // {
-    "1.4.21" = versionTable."1.4.21" // {
-      def = ownedDefs."1.4.21";
+  versionTable = ownedDefaultRecipe.versionTable // {
+    "1.4.21" = ownedDefaultRecipe.versionTable."1.4.21" // {
+      def = if native then defs."1.4.21" else ownedDefaultRecipe.versionTable."1.4.21".def;
+    };
+    "1.4.19" = ownedDefaultRecipe.versionTable."1.4.19" // {
+      def = if native then defs."1.4.19" else ownedDefaultRecipe.versionTable."1.4.19".def;
+    };
+    "1.4.20" = ownedDefaultRecipe.versionTable."1.4.20" // {
+      def = if native then defs."1.4.20" else ownedDefaultRecipe.versionTable."1.4.20".def;
     };
   };
-  source =
-    { version, sha256 }:
-    pkgs.fetchurl {
-      urls = [
-        "https://mirrors.kernel.org/gnu/m4/m4-${version}.tar.gz"
-        "https://ftp.gnu.org/gnu/m4/m4-${version}.tar.gz"
-      ];
-      inherit sha256;
+
+  installedArgs = ownedDefaultRecipe // {
+    inherit versionTable;
+    testDeps = {
+      grep = tvp.packages.gnugrep_3;
+      gawk = tvp.packages.gawk_5;
+      gnumake = tvp.packages.gnumake_4;
+      compiler = candidate.toolchain.driver;
+      pkgConfig = tvp.packages.pkg-config;
+      mpfr = tvp.packages.mpfr;
+      runtimeShell = candidate.tools.bash;
+      coreutils = candidate.tools.coreutils;
+      alternateCoreutils = tvp.packages.coreutils;
+      python = candidate.tools.python;
+      binutils = candidate.tools.binutils;
+      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
     };
-  publicArgs = packageArgs // {
-    versionTable = publicVersionTable;
-    inherit source;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
       { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests.override { inherit pkgs; } package
-      // pkgs.lib.optionalAttrs (package.version == "1.4.21") (
-        import ./tests/owned.nix {
-          inherit tvp tvpLib package;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = package.stdenv;
-          };
-        }
-      )
+      if package ? testContext then
+        import
+          (
+            if
+              builtins.elem package.version [
+                "1.4.19"
+                "1.4.20"
+              ]
+            then
+              ./tests/ordinary.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
+      else
+        ownedDefaultRecipe.extraArgs.mkTests package
     ) { inherit pkgs; };
   };
-  # Preserve the exact prior definition and test constructor for frozen bases.
-  constructionRecipe = packageArgs;
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
+  };
   canonical = tvpLib.packages.mkVersions publicArgs;
-
+  pname = "m4";
 in
 {
   recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+    inherit constructionRecipe ownedDefaultRecipe;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
-  };
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

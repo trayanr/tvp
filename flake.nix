@@ -37,7 +37,13 @@
               "android-ndk"
             ];
         };
-        tvp = import ./. { inherit pkgs system; };
+        tvp = import ./. {
+          inherit pkgs system;
+          source = {
+            path = self.outPath;
+            revision = self.rev or self.dirtyRev or null;
+          };
+        };
       in
       {
         inherit (tvp) packages checks;
@@ -53,6 +59,13 @@
             graph
             dependencyRoots
             dependencyInventory
+            migrationStatusManifest
+            upstreamIsolationInventory
+            upstreamIsolationReport
+            upstreamIsolationStrict
+            recipeSplitInventory
+            recipeSplitReport
+            recipeSplitStrict
             ;
         };
 
@@ -107,6 +120,7 @@
         # Not a standard flake output; `nix flake check` notes it as unknown.
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;
+        latestTests = tvp.latestTests;
       }
     );
 }

@@ -1,44 +1,86 @@
-# GNU config has dated Git snapshots rather than numbered releases.
+# Dated Git snapshot: install pristine scripts before binding the runtime shell.
+# Shipped test execution is an independent test derivation, never production work.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchgit,
-  bash,
-  revision,
+  base,
+  src,
   version,
-  sha256,
-  mkTests,
+  revision,
+  bash,
+  coreutils,
+  sed,
+  gawk,
+  grep,
 }:
-stdenv.mkDerivation (finalAttrs: {
+final:
+let
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "gnu-config.${name}";
+      inherit run;
+      cwd = "source";
+    };
+in
+{
   pname = "gnu-config";
-  inherit version;
-  src = fetchgit {
-    url = "https://https.git.savannah.gnu.org/git/config.git";
-    rev = revision;
-    inherit sha256;
-    fetchSubmodules = false;
+  inherit
+    base
+    src
+    version
+    bash
+    coreutils
+    sed
+    gawk
+    grep
+    revision
+    ;
+  dependencyProviders = {
+    bash = final.bash;
+    coreutils = final.coreutils;
+    sed = final.sed;
+    gawk = final.gawk;
+    grep = final.grep;
   };
-  dontConfigure = true;
-  dontBuild = true;
-  doCheck = true;
-  checkPhase = ''
-    runHook preCheck
-    ( cd testsuite
-      ${bash}/bin/bash config-sub.sh
-      ${bash}/bin/bash config-guess.sh
-    )
-    runHook postCheck
-  '';
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 config.guess "$out/config.guess"
-    install -Dm755 config.sub "$out/config.sub"
-    substituteInPlace "$out/config.guess" "$out/config.sub" \
-      --replace-fail '#! /bin/sh' '#!${bash}/bin/bash'
-    install -Dm644 ChangeLog-old "$out/share/doc/gnu-config/ChangeLog-old"
-    printf '%s\n' '${revision}' > "$out/share/doc/gnu-config/revision"
-    runHook postInstall
-  '';
+  environment = {
+    tools = [
+      final.bash
+      final.coreutils
+      final.sed
+      final.gawk
+      final.grep
+    ];
+    libraries = [ ];
+  };
+  runtime = {
+    bash = final.bash;
+  };
+  plan = tvp.builder.steps.sequence [
+    {
+      name = "source.copy";
+      run = ''
+        cp -R ${final.src} source
+        chmod -R u+w source
+      '';
+    }
+    (command "install" ''
+      install -Dm755 config.guess "$out/config.guess"
+      install -Dm755 config.sub "$out/config.sub"
+      install -Dm644 ChangeLog-old "$out/share/doc/gnu-config/ChangeLog-old"
+      printf '%s\n' '${final.revision}' > "$out/share/doc/gnu-config/revision"
+    '')
+    (tvp.builder.steps.split "gnu-config.finalize")
+    (tvp.builder.outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "gnu-config.runtime-shell";
+      tools = [ final.sed ];
+      run = ''
+        ${final.sed}/bin/sed -i '1s|^#! /bin/sh$|#!${final.runtime.bash}/bin/bash|' "$out/config.guess" "$out/config.sub"
+      '';
+    }
+  ];
   meta = {
     description = "GNU system type detection and canonicalisation scripts";
     homepage = "https://savannah.gnu.org/projects/config/";
@@ -50,12 +92,7 @@ stdenv.mkDerivation (finalAttrs: {
     };
     platforms = lib.platforms.unix;
   };
-  passthru = {
-    tvp.deps = {
-      inherit bash;
-    };
-    tvp.cc = stdenv.cc;
-    tvp.revision = revision;
-    tests = mkTests finalAttrs.finalPackage;
+  tvp = {
+    revision = final.revision;
   };
-})
+}

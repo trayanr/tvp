@@ -1,0 +1,5 @@
+--- a/src/vdbeaux.c
++++ b/src/vdbeaux.c
+@@ -1521 +1521 @@
+-    u = i<0 ? -i : i;
++    u = i<0 ? -(u64)i : (u64)i;

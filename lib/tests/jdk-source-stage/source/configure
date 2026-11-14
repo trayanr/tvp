@@ -1,0 +1,28 @@
+# Tiny source protocol fixture. This is never OpenJDK compilation.
+set -euo pipefail
+conf= boot= prefix= font= cups=
+for arg in "$@"; do
+  case "$arg" in
+    --with-conf-name=*) conf=${arg#*=};;
+    --with-boot-jdk=*) boot=${arg#*=};;
+    --prefix=*) prefix=${arg#*=};;
+    --with-fontconfig=*) font=${arg#*=};;
+    --with-cups=*) cups=${arg#*=};;
+  esac
+done
+test "$conf" = selected-configuration
+test "$boot/bin/java" -ef "$JDK_CONTROL_BOOT/bin/java"
+"$boot/bin/java" > boot-selected
+printf '%s\n' "$CC" > compiler-selected
+printf '%s\n' "$conf" > conf-selected
+printf '%s\n' "$prefix" > prefix-selected
+printf '%s\n' "$cups" > cups-selected
+# The two patched source tokens must use the selected inputs.
+grep -Fx "shell=$CONFIG_SHELL" src/java.base/unix/native/libjava/childproc.c
+grep -Fx "font=$font/lib/libfontconfig.so" src/java.desktop/unix/native/common/awt/fontpath.c
+
+mkdir -p make/common src/java.base/share/classes "build/$conf"
+cp fixture-CreateJmods.gmk make/CreateJmods.gmk
+cp fixture-Images.gmk make/Images.gmk
+printf module > src/java.base/share/classes/module-info.java
+printf 'TOPDIR:=%s\nOUTPUTDIR:=%s/build/%s\n' "$PWD" "$PWD" "$conf" > "build/$conf/spec.gmk"

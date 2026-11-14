@@ -133,11 +133,188 @@ let
       )
     ) { inherit pkgs; };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  constructionRecipe = packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  reference = import ../../../bootstrap/source-full-gcc.nix { };
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} supplies the independent host generation; public GCC never constructs itself.";
+    } candidate.tools.${name};
+  ownedDefs = tvpLib.packages.mkDefs {
+    "13.3.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-13.3.0.nix;
+      helpers = { inherit tvp; };
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        patch = constructionTool "patch";
+        findutils = constructionTool "findutils";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        perl = constructionTool "perl";
+        texinfo = constructionTool "texinfo";
+        which = tvp.packages.which;
+        binutils = tvp.packages.binutils_2;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        mpc = tvp.packages.mpc_1;
+        isl = tvp.packages.isl;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        glibc = tvpLib.packages.withConstraint {
+          category = "construction";
+          reason = "Completed default base target libc; moving public glibc consumes this raw compiler and would introduce a cycle.";
+        } tvp.bases.default.stdenv.cc.libc;
+        patchelf = constructionTool "patchelf";
+        inherit (reference.harness.previous.harness) dejagnu expect flock;
+        python = reference.harness.previous.profile;
+        pythonConfig = reference.harness.tools.python;
+        graphviz = reference.harness.packages.graphviz;
+        fonts = reference.harness.fonts;
+        inherit (reference) file;
+      };
+      # The three source-layout/tool-selection patches are the GCC 13 patches.
+      patches = defs."13.3.0".patches;
+    };
+    "16.2.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-16.2.0.nix;
+      helpers = { inherit tvp; };
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        patch = constructionTool "patch";
+        findutils = constructionTool "findutils";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        perl = constructionTool "perl";
+        texinfo = constructionTool "texinfo";
+        which = tvp.packages.which;
+        binutils = tvp.packages.binutils_2;
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        mpc = tvp.packages.mpc_1;
+        isl = tvp.packages.isl;
+        zlib = tvp.packages.zlib_1;
+        zstd = tvp.packages.zstd_1;
+        libxcrypt = tvp.packages.libxcrypt_4;
+        glibc = tvpLib.packages.withConstraint {
+          category = "construction";
+          reason = "Explicit candidate target libc; moving public glibc consumes this raw compiler and would introduce a cycle.";
+        } candidate.toolchain.libc;
+        patchelf = constructionTool "patchelf";
+        layoutPatch = reference.native.sources.layout;
+        inherit (reference.harness.previous.harness) dejagnu expect flock;
+        python = reference.harness.previous.profile;
+        pythonConfig = reference.harness.tools.python;
+        graphviz = reference.harness.packages.graphviz;
+        fonts = reference.harness.fonts;
+        inherit (reference) file;
+      };
+      patches = [
+        {
+          file = ./patches/16.2.0-full-libgcc-copyback.patch;
+          reason = "Retain in-tree libgcc copyback after the native layout patch renames libsubdir.";
+        }
+        {
+          file = ./patches/no-system-dirs.patch;
+          reason = "Remove implicit host include and library searches; libc construction supplies its own flags.";
+        }
+        {
+          file = ./patches/16.2.0-program-prefix.patch;
+          reason = "Honor explicit assembler and program -B prefixes before configured fallbacks.";
+        }
+        {
+          file = ./patches/16.2.0-linker-prefix.patch;
+          reason = "Honor explicit collect2 linker -B prefixes before configured fallbacks.";
+        }
+      ];
+    };
+  };
+  publicArgs = packageArgs // {
+    versionTable = versionTable // {
+      "13.3.0" = versionTable."13.3.0" // {
+        def =
+          if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
+            ownedDefs."13.3.0"
+          else
+            versionTable."13.3.0".def;
+      };
+      "16.2.0" = versionTable."16.2.0" // {
+        def =
+          if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
+            ownedDefs."16.2.0"
+          else
+            versionTable."16.2.0".def;
+      };
+    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        if pkgs.lib.versionOlder package.version "16" then
+          import ./tests/native-13.3.0.nix {
+            inherit package tvp;
+            inherit (pkgs) lib;
+          }
+        else
+          import ./tests/native-16.2.0.nix {
+            inherit package tvp;
+            lib = pkgs.lib;
+          }
+      else
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs;
+  recipes.${pname} = publicArgs // {
+    inherit constructionRecipe;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

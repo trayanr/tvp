@@ -1,0 +1,14 @@
+--- a/test/corrupt2.test
++++ b/test/corrupt2.test
+@@ -36 +36 @@
+-  set f [open corrupt.db a]
++  set f [open corrupt.db RDWR]
+@@ -54 +54 @@
+-  set f [open corrupt.db a]
++  set f [open corrupt.db RDWR]
+@@ -73 +73 @@
+-  set f [open corrupt.db a]
++  set f [open corrupt.db RDWR]
+@@ -92 +92 @@
+-  set f [open corrupt.db a]
++  set f [open corrupt.db RDWR]

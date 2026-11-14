@@ -2,7 +2,7 @@
 let
   inherit (pkgs) lib;
   steps = import ../build-steps.nix;
-  p = tvp.variants.build-steps.mpfr_4_2_2;
+  p = import ./fixtures/mpfr.nix { inherit pkgs tvp; };
   names = map (s: s.name) p.buildSteps;
   outputNames = [
     "output.strip"
@@ -18,21 +18,38 @@ let
     python = tvp.packages.python_3;
   };
   # Different tool outputs expose accidental hardcoding, without building them.
-  rebound = p.override {
-    binutils = tools.binutils // {
-      outPath = "/selected/binutils";
-    };
-    patchelf = tools.patchelf // {
-      outPath = "/selected/patchelf";
-    };
-    python = tools.python // {
-      outPath = "/selected/python";
-    };
-    stripFlags = [
-      "--strip-debug"
-      "--preserve-dates"
-    ];
-  };
+  rebound =
+    (p.edit (
+      spec:
+      spec
+      // {
+        base = spec.base.override {
+          compiler = spec.base.compiler // {
+            bintools = tools.binutils // {
+              outPath = "/selected/binutils";
+            };
+          };
+          standardTools = {
+            patchelf = tools.patchelf // {
+              outPath = "/selected/patchelf";
+            };
+            python = tools.python // {
+              outPath = "/selected/python";
+            };
+          };
+        };
+      }
+    )).edit
+      (
+        spec:
+        spec
+        // {
+          stripFlags = [
+            "--strip-debug"
+            "--preserve-dates"
+          ];
+        }
+      );
   text = lib.concatStrings (map (s: s.run or "") rebound.buildSteps);
   edited = (p.editSteps (steps.delete "output.libtool")).editSteps (
     steps.replace "output.strip" (
@@ -54,7 +71,10 @@ let
     ]
   );
   contracts = {
-    ordinaryOrder = lib.drop 9 names == outputNames;
+    ordinaryOrder =
+      builtins.filter (name: builtins.elem name outputNames) (
+        map (step: step.name) (steps.partition p.buildSteps).second
+      ) == outputNames;
     actualArguments = builtins.all (s: lib.hasInfix s text) [
       "/selected/binutils/bin/strip"
       "/selected/binutils/bin/readelf"
@@ -68,7 +88,7 @@ let
       && rebound.tvp.declaredDependencies.patchelf.outPath == "/selected/patchelf";
     testsRebound =
       rebound.tests.arithmetic.drvPath != p.tests.arithmetic.drvPath
-      && builtins.any (v: v.outPath == rebound.outPath) rebound.tests.arithmetic.nativeBuildInputs;
+      && rebound.tests.arithmetic.package.outPath == rebound.outPath;
     independentDeletion =
       builtins.length (
         steps.active (
@@ -76,7 +96,15 @@ let
         )
       ) == builtins.length p.buildSteps - 3
       && builtins.isString edited.drvPath;
-    independentInsertion = lib.elemAt (map (s: s.name) inserted.buildSteps) 12 == "local.between";
+    independentInsertion =
+      let
+        suffix = map (step: step.name) (steps.partition inserted.buildSteps).second;
+      in
+      builtins.any (
+        index:
+        builtins.elemAt suffix index == "output.rpaths"
+        && builtins.elemAt suffix (index + 1) == "local.between"
+      ) (builtins.genList (index: index) (builtins.length suffix - 1));
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in

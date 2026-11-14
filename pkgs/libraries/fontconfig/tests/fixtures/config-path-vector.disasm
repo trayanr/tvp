@@ -1,0 +1,13 @@
+0000000000013ba0 <FcConfigGetFilename>:
+   13d79:	movdqa 0x3110f(%rip),%xmm0        # 44e90 <bin2hex+0x40>
+   13d81:	mov    (%r15),%rbp
+   13d84:	xor    %ebx,%ebx
+   13d86:	movabs $0x73746e6f662f63,%rcx
+   13d90:	mov    %rcx,0x40(%rax)
+   13d94:	movups %xmm0,(%rax)
+   13d97:	movdqa 0x31101(%rip),%xmm0        # 44ea0 <bin2hex+0x50>
+   13d9f:	movups %xmm0,0x10(%rax)
+   13da3:	movdqa 0x31105(%rip),%xmm0        # 44eb0 <bin2hex+0x60>
+   13dab:	movups %xmm0,0x20(%rax)
+   13daf:	movdqa 0x31109(%rip),%xmm0        # 44ec0 <bin2hex+0x70>
+   13db7:	movups %xmm0,0x30(%rax)

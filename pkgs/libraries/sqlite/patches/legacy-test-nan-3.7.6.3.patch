@@ -1,0 +1,73 @@
+--- a/test/nan.test
++++ b/test/nan.test
+@@ -25,4 +25,15 @@
+ source $testdir/tester.tcl
+
++# Numeric display compatibility from upstream 3.7.7; SQL text tests stay exact.
++proc realnum_normalize {r} {
++  # different TCL versions display floating point values differently.
++  string map {1.#INF inf Inf inf .0e e} [regsub -all {(e[+-])0+} $r {\1}]
++}
++proc do_realnum_test {name cmd expected} {
++  uplevel [list do_test $name [
++    subst -nocommands { realnum_normalize [ $cmd ] }
++  ] [realnum_normalize $expected]]
++}
++
+ # Do not use a codec for tests in this file, as the database file is
+ # manipulated directly using tcl scripts (using the [hexio_write] command).
+@@ -43,5 +54,5 @@
+ } {{} null}
+ if {$tcl_platform(platform) != "symbian"} {
+-  do_test nan-1.1.2 {
++  do_realnum_test nan-1.1.2 {
+     sqlite3_bind_double $::STMT 1 +Inf
+     sqlite3_step $::STMT
+@@ -49,5 +60,5 @@
+     db eval {SELECT x, typeof(x) FROM t1}
+   } {{} null inf real}
+-  do_test nan-1.1.3 {
++  do_realnum_test nan-1.1.3 {
+     sqlite3_bind_double $::STMT 1 -Inf
+     sqlite3_step $::STMT
+@@ -55,5 +66,5 @@
+     db eval {SELECT x, typeof(x) FROM t1}
+   } {{} null inf real -inf real}
+-  do_test nan-1.1.4 {
++  do_realnum_test nan-1.1.4 {
+     sqlite3_bind_double $::STMT 1 -NaN
+     sqlite3_step $::STMT
+@@ -61,5 +72,5 @@
+     db eval {SELECT x, typeof(x) FROM t1}
+   } {{} null inf real -inf real {} null}
+-  do_test nan-1.1.5 {
++  do_realnum_test nan-1.1.5 {
+     sqlite3_bind_double $::STMT 1 NaN0
+     sqlite3_step $::STMT
+@@ -67,5 +78,5 @@
+     db eval {SELECT x, typeof(x) FROM t1}
+   } {{} null inf real -inf real {} null {} null}
+-  do_test nan-1.1.6 {
++  do_realnum_test nan-1.1.6 {
+     sqlite3_bind_double $::STMT 1 -NaN0
+     sqlite3_step $::STMT
+@@ -232,10 +243,10 @@
+   # convert from floating point value "-inf" to a string.
+   #
+-  do_test nan-4.7 {
++  do_realnum_test nan-4.7 {
+     db eval {DELETE FROM t1}
+     db eval "INSERT INTO t1 VALUES([string repeat 9 309].0)"
+     db eval {SELECT x, typeof(x) FROM t1}
+   } {inf real}
+-  do_test nan-4.8 {
++  do_realnum_test nan-4.8 {
+     db eval {DELETE FROM t1}
+     db eval "INSERT INTO t1 VALUES(-[string repeat 9 309].0)"
+@@ -314,5 +325,5 @@
+ } {-9.88131291682493e-324 real}
+
+-do_test nan-4.20 {
++do_realnum_test nan-4.20 {
+   db eval {DELETE FROM t1}
+   set big [string repeat 9 10000].0e-9000

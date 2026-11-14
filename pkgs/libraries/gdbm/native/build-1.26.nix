@@ -58,7 +58,7 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       tar = gnutar;
@@ -77,7 +77,6 @@ in
       ./configure --prefix="$out" --enable-shared --disable-static --enable-libgdbm-compat
     '')
     (command "build" make)
-    ((command "check" ''${make} check'') // { enabled = doCheck; })
     (command "install" ''
       ${make} install
       mkdir -p "$out/include/gdbm"
@@ -87,50 +86,127 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
-    (outputs.shebangs {
-      inherit python;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      names = [
-        "sh"
-        "bash"
-      ];
-      interpreter = "${final.bash}/bin/bash";
-    })
-    (outputs.strip {
-      inherit python binutils;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
-      base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = [
-        "bin"
-        "lib"
-      ];
-      elfKinds = [ "runtime" ];
-    })
   ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit gzip findutils;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools {
+      name = "gdbm.prepare";
+      bash = final.bash;
+      inherit python;
+      base = final.base;
+      cwd = "source";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      ./configure --prefix="$out" --enable-shared --disable-static --enable-libgdbm-compat
+    '')
+    (command "build" make)
+  ];
+  upstreamCheck = ((command "check" ''${make} check'') // { enabled = final.doCheck; });
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "gdbm.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      {
+        name = "gdbm.relocate";
+        tools = [
+          python
+          binutils
+          patchelf
+        ];
+        # 1.26 installs libtool metadata, not pkg-config files. Reuse the family
+        # finalizer to rebase both that metadata and the compiled locale paths.
+        run = ''${python}/bin/python3 -B ${../ordinary/output.py} "$out" "$TVP_ARTIFACT_ROOT" ${patchelf}/bin/patchelf ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              readelf = "${binutils}/bin/readelf";
+              shell = "${final.bash}/bin/bash";
+              buildShell = "${final.bash}/bin/bash";
+              paths = [ ];
+              requiredDirectories = [
+                "bin"
+                "lib"
+                "include"
+                "share/man"
+                "nix-support"
+              ];
+              requiredFiles = [
+                "bin/gdbmtool"
+                "bin/gdbm_dump"
+                "bin/gdbm_load"
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+                "include/gdbm.h"
+                "include/dbm.h"
+                "include/ndbm.h"
+              ];
+              libtoolData = [
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+              ];
+              requiredRegular = [
+                "lib/libgdbm.la"
+                "lib/libgdbm_compat.la"
+                "include/gdbm.h"
+                "include/dbm.h"
+                "include/ndbm.h"
+              ];
+            }
+          )
+        }'';
+      }
+      (outputs.shebangs {
+        inherit python;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        names = [
+          "sh"
+          "bash"
+        ];
+        interpreter = "${final.bash}/bin/bash";
+      })
+      (outputs.strip {
+        inherit python binutils;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = [
+          "bin"
+          "lib"
+        ];
+        elfKinds = [ "runtime" ];
+      })
+    ]
+  );
   tvp.features = {
     compatLib = true;
     shared = true;

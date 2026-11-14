@@ -1,69 +1,92 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-
-  defs = tvpLib.packages.mkDefs {
-    "1.97.1" = {
-      builder = ./build-1.97.nix;
-      base = tvp.bases.default;
-      deps = { };
-      blob = {
-        reason = "Upstream's binary distribution. rustc is self-hosting and TVP has no Rust chain, so there is nothing in the catalogue that could compile it.";
-        needs = "A from-source chain: mrustc (C++, reaches ~1.54) and then a walk forward, or a period rustc able to build this one. Until then this package exists only for the platforms upstream publishes a binary for, which is what bounds the architectures TVP can serve.";
-        blocked = {
-          package = "rustc-from-source";
+  retained = (import ./legacy.nix { inherit pkgs tvp; }).packageArgs;
+  candidate = import ../../../bases/source-gnu { };
+  selectedTool =
+    role: provider:
+    if provider ? __tvpSelection then
+      provider
+    else
+      tvpLib.packages.tagSelection {
+        namespace = "source-gnu.inputs";
+        selector = role;
+        kind = "source-base-build-tool";
+        reason = "Explicit retained source-GNU tool for binary provider installation or finalization.";
+      } provider;
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  definition =
+    (tvpLib.packages.mkDefs {
+      "1.97.1" = {
+        constructor = tvp.builder;
+        builder = ./native/build-1.97.1.nix;
+        base = candidate.base;
+        helpers = {
+          inherit tvp;
         };
+        testContext =
+          package:
+          tvpLib.tests.fromPackage {
+            builder = tvp.builder;
+            inherit package;
+          };
+        source =
+          { version, sha256 }:
+          import <nix/fetchurl.nix> {
+            url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+            name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+            inherit sha256;
+          };
+        deps =
+          (pkgs.lib.mapAttrs selectedTool {
+            # Explicit source-owned tools; tag otherwise unlabelled bootstrap roles.
+            inherit (candidate.tools)
+              bash
+              coreutils
+              python
+              binutils
+              patchelf
+              tar
+              gzip
+              sed
+              grep
+              gawk
+              findutils
+              ;
+          })
+          // {
+            runtimeLibc = tvp.packages.glibc_2;
+            runtimeCompiler = tvp.packages.gcc_16;
+            zlib = tvp.packages.zlib_1;
+          };
+        blob = retained.versionTable."1.97.1".def.blob;
       };
+    })."1.97.1";
+  versionTable = retained.versionTable // {
+    "1.97.1" = retained.versionTable."1.97.1" // {
+      def = if native then definition else retained.versionTable."1.97.1".def;
     };
   };
-
-  versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
-
-  pname = "rustc";
-
-  canonical = tvpLib.packages.mkVersions {
-    infra = {
-      inherit (pkgs)
-        lib
-        fetchurl
-        autoPatchelfHook
-        patchelf
-        zlib
-        ;
-    };
-    inherit pname;
+  publicArgs = retained // {
+    infra = if native then { inherit (pkgs) lib; } else retained.infra;
     inherit versionTable;
 
-    extraArgs = {
-      mkTests =
-        rustc:
-        import ./tests {
-          inherit pkgs tvpLib rustc;
-        };
-    };
-
-    packageMeta = {
-      upstream = {
-        # static.rust-lang.org/dist/ is an S3 bucket with no listing (416), so
-        # releases are read from the repository's tags instead.
-        type = "git-tags";
-        url = "https://github.com/rust-lang/rust";
-
-        normalise = tag: tag;
-
-        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
-      };
-    };
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native.nix { inherit package; }
+      else
+        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
-
+  pname = "rustc";
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
-  inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
+  recipes.${pname} = publicArgs // {
+    constructionRecipe = retained;
   };
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

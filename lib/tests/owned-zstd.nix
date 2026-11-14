@@ -3,6 +3,15 @@ let
   inherit (pkgs) lib;
   inherit (tvp.builder) steps;
   p = tvp.canonical.zstd_1_5_7;
+  base = p.specification.base;
+  fixture = import ./prerequisite-fixture.nix {
+    inherit tvp;
+    package = p;
+    tools = [
+      tvp.packages.gnugrep
+      tvp.packages.diffutils
+    ];
+  };
   pilot = tvp.variants.build-steps.zstd_1_5_7;
   zlib = tvp.packages.zlib_1_3_1;
   xz = tvp.packages.xz_5_6_4;
@@ -31,7 +40,13 @@ let
   tagged = tvp.lib.packages.withConstraint { reason = "Zstd contract fixture."; } tvp.packages.zstd_1;
   taggedEdit = tagged.editRuntime (r: r);
   contracts = {
-    sameRecipe = p.drvPath == pilot.drvPath && p.artifact.drvPath == pilot.artifact.drvPath;
+    generations =
+      p.drvPath != pilot.drvPath
+      && p.artifact.drvPath != pilot.artifact.drvPath
+      && p.specification.base.name == "source-gnu-candidate"
+      && pilot.specification.base.name == tvp.bases.default.name;
+    pilotReplay =
+      (pilot.override { }).drvPath == pilot.drvPath && (pilot.editSteps (x: x)).drvPath == pilot.drvPath;
     split = (steps.partition p.buildSteps).split;
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
     compileInputsPreserved = p.specification.environment == runtime.specification.environment;
@@ -116,6 +131,8 @@ let
         coreutils,
         zstd,
         pkgConfig,
+        grep,
+        diffutils,
         version,
         src,
       }:
@@ -131,7 +148,11 @@ let
         plan = [
           (
             base.environment {
-              tools = [ pkgConfig ];
+              tools = [
+                pkgConfig
+                grep
+                diffutils
+              ];
               libraries = [ zstd ];
             }
             // {
@@ -180,15 +201,19 @@ let
         ];
       };
     args = {
-      base = tvp.bases.default;
+      inherit base;
       inherit (tvp.packages) bash coreutils;
       zstd = p;
       pkgConfig = tvp.packages.pkg-config;
+      grep = tvp.packages.gnugrep;
+      diffutils = tvp.packages.diffutils;
       src = null;
       version = "1";
     };
     dependencyNames = [
       "zstd"
+      "grep"
+      "diffutils"
       "pkgConfig"
     ];
     metadata = { };
@@ -198,7 +223,7 @@ let
   runtimeConsumer = consumer.override { zstd = runtime; };
   traceTool =
     name: binary: original:
-    tvp.bases.default.stdenv.mkDerivation {
+    fixture {
       name = "zstd-selected-${name}";
       buildCommand = ''
         mkdir -p "$out/bin"
@@ -221,6 +246,7 @@ let
         steps.insertBefore "zstd.finalize" [
           {
             name = "fixture.selected-tools";
+            tools = [ tvp.packages.gnugrep ];
             run = ''
               for tool in sed grep diff python; do
                 grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"
@@ -233,7 +259,7 @@ let
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned Zstd contracts: ${lib.concatStringsSep ", " failed}";
-(tvp.bases.default.stdenv.mkDerivation {
+(fixture {
   name = "tvp-owned-zstd-contracts";
   buildCommand = ''
     test -e ${selected}/selected-tools

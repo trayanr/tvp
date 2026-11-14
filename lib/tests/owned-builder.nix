@@ -3,7 +3,7 @@ let
   inherit (pkgs) lib;
   inherit (tvp.builder) steps outputs;
   base = tvp.bases.default;
-  p = tvp.variants.build-steps.mpfr_4_2_2;
+  p = import ./fixtures/mpfr.nix { inherit pkgs tvp; };
   inherit (tvp.packages) bash coreutils;
   python = tvp.packages.python_3;
   binutils = tvp.packages.binutils_2;
@@ -218,7 +218,7 @@ let
         (base.environment { overrides.flags.NIX_CFLAGS_COMPILE = [ "a\nb" ]; }).env;
     emptyRejected = rejects (base.environment { overrides.flags.NIX_CFLAGS_COMPILE = [ "" ]; }).env;
     protected = rejects (merge [ (tool "bad" { values.TVP_ARTIFACT_ROOT = "bad"; }) ] { });
-    publicRequirements = map toString p.development.libraries == [ (toString tvp.packages.gmp_6) ];
+    publicRequirements = map toString p.development.libraries == [ (toString p.specification.gmp) ];
     disabledExport =
       (p.editSteps (
         steps.replace "output.development" (
@@ -514,7 +514,7 @@ assert linked.artifact.drvPath == changed.artifact.drvPath;
     [[ "$rpath" == *"${b}/lib64"* ]]
     [[ "$rpath" != *"${a}/lib"* ]]
     [[ "$rpath" == *"${tvp.packages.zlib}/lib"* ]]
-    test "$(cat ${p}/nix-support/propagated-build-inputs)" = '${toString tvp.packages.gmp_6} '
+    test "$(cat ${p}/nix-support/propagated-build-inputs)" = '${toString p.tvp.deps.gmp} '
     printf '%s\n' '${builtins.toJSON contracts}' > "$out"
   '';
 })

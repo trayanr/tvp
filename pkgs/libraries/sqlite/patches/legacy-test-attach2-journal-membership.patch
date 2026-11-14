@@ -1,0 +1,16 @@
+--- a/test/attach2.test
++++ b/test/attach2.test
+@@ -327,3 +327,3 @@
+-do_test attach2-5.3 {
+-  glob test.db*
+-} {test.db test.db2}
++do_test attach2-5.3 {
++  lsort [glob test.db*]
++} {test.db test.db2}
+@@ -338,3 +338,3 @@
+-do_test attach2-5.5 {
+-  glob test.db*
+-} {test.db test.db2}
++do_test attach2-5.5 {
++  lsort [glob test.db*]
++} {test.db test.db2}

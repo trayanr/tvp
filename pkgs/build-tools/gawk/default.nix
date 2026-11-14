@@ -133,6 +133,14 @@ let
       category = "construction";
       reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
     } candidate.tools.${name};
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+  };
   ownedDefs = tvpLib.packages.mkDefs {
     "5.4.1" = {
       constructor = tvp.builder;
@@ -201,21 +209,129 @@ let
       ;
     libc = candidate.toolchain.libc;
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
+      "5.3.1" = versionTable."5.3.1" // {
+        def = if native then ordinaryDefs."5.3.1" else versionTable."5.3.1".def;
+      };
+      "5.3.2" = versionTable."5.3.2" // {
+        def = if native then ordinaryDefs."5.3.1" else versionTable."5.3.2".def;
+      };
+      "5.4.0" = versionTable."5.4.0" // {
+        def = if native then ordinaryDefs."5.3.1" else versionTable."5.4.0".def;
+      };
+      "5.1.1" = versionTable."5.1.1" // {
+        def = if native then ordinaryDefs."5.1.1" else versionTable."5.1.1".def;
+      };
+      "5.2.2" = versionTable."5.2.2" // {
+        def = if native then ordinaryDefs."5.1.1" else versionTable."5.2.2".def;
+      };
+      "5.3.0" = versionTable."5.3.0" // {
+        def = if native then ordinaryDefs."5.1.1" else versionTable."5.3.0".def;
+      };
+      "4.1.4" = versionTable."4.1.4" // {
+        def = if native then ordinaryDefs."4.1.4" else versionTable."4.1.4".def;
+      };
+      "4.2.1" = versionTable."4.2.1" // {
+        def = if native then ordinaryDefs."4.1.4" else versionTable."4.2.1".def;
+      };
+      "5.0.1" = versionTable."5.0.1" // {
+        def = if native then ordinaryDefs."4.1.4" else versionTable."5.0.1".def;
+      };
+      "4.0.2" = versionTable."4.0.2" // {
+        def = if native then ordinaryDefs."4.0.2" else versionTable."4.0.2".def;
+      };
       "5.4.1" = versionTable."5.4.1" // {
         def = if native then ownedDefs."5.4.1" else versionTable."5.4.1".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit pkgs tvpLib package;
-          inherit locale;
-        }
-      else
-        constructionRecipe.extraArgs.mkTests package;
+      (
+        if package ? testContext then
+          import
+            (
+              if
+                builtins.hasAttr package.version {
+                  "4.0.2" = true;
+                  "4.1.4" = true;
+                  "4.2.1" = true;
+                  "5.0.1" = true;
+                  "5.1.1" = true;
+                  "5.2.2" = true;
+                  "5.3.0" = true;
+                  "5.3.1" = true;
+                  "5.3.2" = true;
+                  "5.4.0" = true;
+                }
+              then
+                ./tests/ordinary.nix
+              else
+                ./tests/native-default.nix
+            )
+            {
+              inherit pkgs tvpLib package;
+              inherit locale;
+            }
+        else
+          import ./tests {
+            inherit tvpLib package;
+            pkgs = tvpLib.tests.withBase {
+              inherit pkgs;
+              base.stdenv = package.stdenv;
+            };
+          }
+      )
+      // pkgs.lib.optionalAttrs (
+        package ? testContext
+        && builtins.elem package.version [
+          "4.0.2"
+          "4.1.4"
+          "4.2.1"
+          "5.0.1"
+          "5.1.1"
+          "5.2.2"
+          "5.3.0"
+          "5.3.1"
+          "5.3.2"
+          "5.4.0"
+        ]
+      ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
+    ) { inherit pkgs; };
+  };
+  previousPublicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "3.0.6" "3.1.8" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          import ./tests { inherit pkgs tvpLib package; }
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../../libraries/acl/native/upstream.nix { inherit package; };
+          }
+          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

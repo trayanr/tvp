@@ -1,54 +1,91 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
-  platform = tvpLib.platforms.forStdenv tvp.bases.default.stdenv;
-  defs = tvpLib.packages.mkDefs {
-    "37.0.1" = {
-      builder = ./build-37.0.1.nix;
-      base = tvp.bases.default;
-      deps = {
-        unzip = tvp.packages.unzip;
-        patchelf = tvp.packages.patchelf;
-        bash = tvp.packages.bash_5;
+  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.android-platform-tools;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  definition =
+    (tvpLib.packages.mkDefs {
+      "37.0.1" = {
+        constructor = tvp.builder;
+        builder = ./native/build-37.0.1.nix;
+        base = candidate.base;
+        helpers = {
+          inherit tvp;
+        };
+        testContext =
+          package:
+          tvpLib.tests.fromPackage {
+            builder = tvp.builder;
+            inherit package;
+          };
+        source =
+          { version, sha256 }:
+          import <nix/fetchurl.nix> {
+            url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip";
+            inherit sha256;
+          };
+        deps =
+          pkgs.lib.mapAttrs
+            (
+              role: provider:
+              if provider ? __tvpSelection then
+                provider
+              else
+                tvpLib.packages.tagSelection {
+                  namespace = "source-gnu.inputs";
+                  selector = role;
+                  kind = "source-base-build-tool";
+                  reason = "Explicit candidate-base provider for Android payload installation, host finalization or owned tests; preserve its construction generation.";
+                } provider
+            )
+            {
+              inherit (candidate.tools)
+                bash
+                coreutils
+                python
+                binutils
+                patchelf
+                sed
+                grep
+                diffutils
+                findutils
+                ;
+              runtimeLibc = candidate.toolchain.libc;
+              runtimeCompiler = candidate.toolchain.runtime;
+              unzip = tvp.packages.unzip;
+            };
+        opts = {
+          sdkPath = "platform-tools";
+          archiveRoot = "platform-tools";
+          packageMetadata = ./metadata-37.0.1.xml;
+        };
+        blob = retained.versionTable."37.0.1".def.blob;
       };
-      opts = {
-        url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip";
-        sdkPath = "platform-tools";
-        packageMetadata = ./metadata-37.0.1.xml;
-        inherit (platform) dynamicLinker;
-      };
-      blob = {
-        reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
-        needs = "A source Android toolchain and component build graph.";
-        blocked.package = "android-sdk-from-source";
-      };
+    })."37.0.1";
+  versionTable = retained.versionTable // {
+    "37.0.1" = retained.versionTable."37.0.1" // {
+      def = if native then definition else retained.versionTable."37.0.1".def;
     };
+  };
+  publicArgs = retained // {
+    inherit versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
+      if package ? testContext then
+        import ./tests/native.nix { inherit pkgs tvpLib package; }
+      else
+        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   pname = "android-platform-tools";
-  versionTable = tvpLib.packages.mkTable [
-    {
-      def = defs."37.0.1";
-      releases."37.0.1" = "sha256-0jDxOEL2D3gqhkX5yBP4+EW/NgiepyifKMSPF5eTE/E=";
-    }
-  ];
-  canonical = tvpLib.packages.mkVersions {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-
-      };
-  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 in
 {
+  recipes.${pname} = publicArgs // {
+    constructionRecipe = retained;
+  };
   inherit canonical;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

@@ -10,20 +10,61 @@ let
     coreutils
     plan
     ;
+  declaredPassthru = spec.passthru or { };
+  validatePassthru =
+    names: metadata:
+    if names != [ "out" ] && lib.intersectLists names (builtins.attrNames metadata) != [ ] then
+      throw "TVP named outputs: output name collides with passthru metadata"
+    else
+      metadata;
   outputNames =
     let
       names = import ./named-outputs.nix { inherit lib; } (spec.outputs or [ "out" ]);
-      collisions = lib.intersectLists names (builtins.attrNames (spec.passthru or { }));
     in
-    if names != [ "out" ] && collisions != [ ] then
-      throw "TVP named outputs: output name collides with passthru metadata"
+    # A callback needs the raw outputs; output construction must not depend on it.
+    if names == [ "out" ] || builtins.isFunction declaredPassthru then
+      names
     else
-      names;
+      builtins.seq (validatePassthru names declaredPassthru) names;
   compiler = if base ? compiler then base.compiler else base.stdenv.cc;
+  # Retained Nixpkgs wrappers need an explicit native role to consume flags.
+  # Their declared suffix is provider protocol data; no setup hook is sourced.
+  nativeWrapperRole =
+    prefix: wrapper:
+    if !(base ? compiler && wrapper ? suffixSalt) then
+      ""
+    else if builtins.match "[A-Za-z0-9_]+" wrapper.suffixSalt == null then
+      throw "TVP owned build: invalid compiler wrapper role suffix"
+    else
+      "export ${prefix}_${wrapper.suffixSalt}=1\n";
+  # Opt-in consumers must not silently discard an unknown recipe exception.
+  # The legacy branch is exactly the earlier rendering and compiler protocol.
+  hardeningValidation =
+    if compiler ? hardeningPolicy then
+      builtins.deepSeq (import ./hardening-policy.nix {
+        defaults = compiler.defaultHardeningFlags;
+        disable = spec.hardeningDisable or [ ];
+      }) true
+    else
+      true;
   baselineTools = if base ? compiler then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
   multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
+  splitNamed = multiOutput && parts.split;
+  artifactName =
+    if !(spec ? artifactName) then
+      "${pname}-${version}-artifacts"
+    else if !parts.split then
+      throw "TVP artifact name: an explicit name requires a split"
+    else if
+      builtins.isString spec.artifactName
+      && !(builtins.hasContext spec.artifactName)
+      && builtins.match "[a-zA-Z0-9][a-zA-Z0-9+._?=-]*" spec.artifactName != null
+    then
+      spec.artifactName
+    else
+      throw "TVP artifact name: expected a nonempty context-free store basename";
   stage =
     name: commands: artifact:
     let
@@ -45,7 +86,9 @@ let
               // {
                 tools = lib.unique (step.tools ++ baselineTools);
                 run =
-                  ''
+                  nativeWrapperRole "NIX_CC_WRAPPER_TARGET_HOST" compiler
+                  + nativeWrapperRole "NIX_BINTOOLS_WRAPPER_TARGET_HOST" compiler.bintools
+                  + ''
                     export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " compiler.defaultHardeningFlags)}
                     export SOURCE_DATE_EPOCH=315532800
                     if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
@@ -55,6 +98,15 @@ let
                       ''readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT''
                     }
                   ''
+                  + lib.optionalString (splitNamed && artifact != null) (
+                    # Explicit contextual bindings in every fresh suffix step.
+                    # No output discovery and no final paths in the prefix.
+                    "readonly -A TVP_ARTIFACT_OUTPUTS=(\n"
+                    + lib.concatMapStringsSep "\n" (
+                      output: "[${output}]=${lib.escapeShellArg (toString artifact.${output})}"
+                    ) outputNames
+                    + "\n)\n"
+                  )
                   + step.run;
               }
             ) selected;
@@ -81,31 +133,52 @@ let
               }
               export NIX_BUILD_TOP="$PWD"
               ${coreutils}/bin/mkdir workspace
-              ${bash}/bin/bash ${runner.script} "$PWD/workspace"
+              ${bash}/bin/bash ${runner.script} "$PWD/workspace"${
+                lib.optionalString splitNamed (
+                  "\n" + lib.concatMapStringsSep "\n" (output: ''test -d "''${outputs[${output}]}"'') outputNames
+                )
+              }
             ''
           ];
           outputs = outputNames;
         }
-        // lib.optionalAttrs (artifact != null) {
-          # Native Nix output checks; never introduce a reference merely to test it.
-          outputChecks.out.disallowedReferences = [ artifact ];
+        // lib.optionalAttrs (artifact != null || (!parts.split && spec ? outputChecks)) {
+          # Caller constraints belong to F (or the unsplit package), never A.
+          # Keep the absent-check case unchanged for existing unsplit producers.
+          outputChecks =
+            if artifact == null then
+              spec.outputChecks
+            else
+              (spec.outputChecks or { })
+              // lib.genAttrs outputNames (
+                output:
+                let
+                  declared = (spec.outputChecks or { }).${output} or { };
+                in
+                declared
+                // {
+                  disallowedReferences =
+                    (declared.disallowedReferences or [ ])
+                    ++ (if splitNamed then map (name: artifact.${name}) outputNames else [ artifact ]);
+                }
+              );
         }
       );
     in
     drv // { buildStepRunner = runner; };
-  artifact = stage "${pname}-${version}-artifacts" parts.first null;
-  package =
-    if parts.split then
-      stage "${pname}-${version}" parts.second artifact
-    else
-      stage "${pname}-${version}" parts.first null;
+  artifact = stage artifactName parts.first null;
+  package = builtins.seq hardeningValidation (
+    builtins.seq artifactName (
+      if parts.split then
+        stage "${pname}-${version}" parts.second artifact
+      else
+        stage "${pname}-${version}" parts.first null
+    )
+  );
   exports = lib.concatMap (s: s.developmentLibraries or [ ]) (
     steps.active (parts.first ++ parts.second)
   );
 in
-assert
-  !(multiOutput && parts.split)
-  || throw "TVP named outputs: split with multiple outputs is not supported";
 package
 // {
   inherit pname version;
@@ -113,11 +186,21 @@ package
   meta = spec.meta or { };
   tvp = spec.tvp or { };
   runtime = spec.runtime or { };
-  development = (spec.development or { }) // {
-    libraries = lib.unique exports;
-  };
+  development =
+    (
+      let
+        declared = spec.development or { };
+      in
+      if builtins.isFunction declared then declared package else declared
+    )
+    // {
+      libraries = lib.unique exports;
+    };
   buildEnvironment = spec.buildEnvironment or (_: { });
-  passthru = spec.passthru or { };
+  # Like development, output-relative public data may depend on the raw output.
+  passthru = validatePassthru outputNames (
+    if builtins.isFunction declaredPassthru then declaredPassthru package else declaredPassthru
+  );
 }
 // (if base ? compiler then { inherit compiler; } else { stdenv = base.stdenv; })
 // lib.optionalAttrs parts.split { artifact = artifact; }

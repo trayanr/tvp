@@ -3,7 +3,21 @@
   tvpLib,
   package,
 }:
-tvpLib.tests.mkSuite {
+let
+  mkSuite =
+    if package ? testContext then
+      args:
+      package.testContext.mkSuite {
+        inherit package;
+        tests = builtins.mapAttrs (_: spec: {
+          inherit (spec) script expected;
+          tools = (spec.extraInputs or [ ]) ++ [ package.tvp.deps.gawk ];
+        }) args.tests;
+      }
+    else
+      tvpLib.tests.mkSuite;
+in
+mkSuite {
   inherit pkgs package;
   tests = {
     version = {

@@ -1,11 +1,53 @@
 { pkgs, tvp }:
 let
   tvpLib = tvp.lib;
+  testLib = pkgs.lib;
+  previous = import ./legacy.nix { inherit pkgs tvp; };
+  formerRecipe = previous.publicArgs;
+  constructionRecipe = previous.recipes.zstd.constructionRecipe;
+  candidate = import ../../../bases/source-gnu { };
+  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is an independent build-only host generation; ordinary Python/Binutils consume Zstd and cannot construct it.";
+    } candidate.tools.${name};
   defs = tvpLib.packages.mkDefs {
     "1.5.6" = {
-      builder = ./build-1.5.6.nix;
-      base = tvp.bases.default;
+      constructor = tvp.builder;
+      builder = ./ordinary/build-1.5.6.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
+        inherit (tvp.packages)
+          bash
+          coreutils
+          gnutar
+          gzip
+          gnumake
+          gnused
+          gnugrep
+          diffutils
+          findutils
+          ;
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
         zlib = tvp.packages.zlib_1;
         xz = tvp.packages.xz_5;
       };
@@ -13,10 +55,16 @@ let
     "1.5.7" = {
       constructor = tvp.builder;
       builder = ./build-1.5.7.nix;
+      base = candidate.base;
       helpers = {
         inherit tvp;
       };
-      base = tvp.bases.default;
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
       deps = {
         inherit (tvp.packages)
           bash
@@ -27,157 +75,54 @@ let
           gnused
           gnugrep
           diffutils
+          findutils
           ;
-        python = tvp.packages.python-build_3;
-        # Use the selected base toolchain: public Binutils itself consumes Zstd.
-        binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
-        patchelf = tvp.packages.patchelf_0;
+        python = constructionTool "python";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
         zlib = tvp.packages.zlib_1;
         xz = tvp.packages.xz_5;
       };
     };
   };
-  versionTable = tvpLib.packages.mkTable [
-    {
+  versionTable = formerRecipe.versionTable // {
+    "1.5.6" = formerRecipe.versionTable."1.5.6" // {
       def = defs."1.5.6";
-      releases = {
-        "1.5.6" = "sha256-jCngbPQqrMHq/EB3ri7Gxvy5amJhV+BZPV6Co0/UA8E=";
-
-      };
-    }
-    {
-      def = defs."1.5.7";
-      releases."1.5.7" = "sha256-6zPlH0mhXgI5UM14Jcp0pKK0Pbg1SCWsJPwbfuCeb6M=";
-    }
-  ];
-  source =
-    { version, sha256 }:
-    pkgs.fetchurl {
-      url = "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
-      inherit sha256;
     };
-  pname = "zstd";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
+    "1.5.7" = formerRecipe.versionTable."1.5.7" // {
+      def = if native then defs."1.5.7" else formerRecipe.versionTable."1.5.7".def;
     };
-    inherit pname versionTable;
-    testDeps = {
-      gzip = tvp.packages.gzip;
-    };
-
-    extraArgs.mkTests =
-      zstd:
+  };
+  publicArgs = formerRecipe // {
+    inherit versionTable;
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
+      package:
       import ./tests {
-        inherit pkgs tvpLib zstd;
-        inherit (zstd.tvp.declaredTestDependencies) gzip;
+        inherit tvpLib;
+        pkgs = if package ? testContext then { lib = testLib; } else pkgs;
+        zstd = package;
+        inherit (package.tvp.declaredTestDependencies) gzip;
       }
-      // pkgs.lib.optionalAttrs (zstd ? edit) {
+      // testLib.optionalAttrs (package ? edit) {
         helpers = import ./tests/helpers.nix {
-          package = zstd;
-          inherit (zstd.tvp.deps) bash coreutils gnugrep;
+          inherit package;
+          inherit (package.tvp.deps) bash coreutils gnugrep;
         };
-      };
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/facebook/zstd";
-      normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
-      include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
-    };
-  };
-  publicArgs = packageArgs // {
-    inherit source;
-  };
-  # Retain the complete pre-migration recipe for historical test construction.
-  constructionRecipe = packageArgs // {
-    versionTable = versionTable // {
-      "1.5.7" = versionTable."1.5.7" // {
-        def = defs."1.5.6";
-      };
-    };
+      }
+      // testLib.optionalAttrs (package ? artifact && package.version == "1.5.6") (
+        import ./tests/ordinary-contracts.nix { inherit pkgs package; }
+      )
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
-
+  pname = "zstd";
 in
 {
   recipes.${pname} = publicArgs // {
     inherit constructionRecipe;
   };
   inherit canonical;
-  variants.build-steps = pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-    zstd_1_5_7 = tvp.builder {
-      recipe = import ./build-steps-1.5.7.nix;
-      args = {
-        inherit (pkgs) lib;
-        inherit tvp;
-        base = tvp.bases.default;
-        version = "1.5.7";
-        src = source {
-          version = "1.5.7";
-          inherit (versionTable."1.5.7") sha256;
-        };
-        inherit (tvp.packages)
-          bash
-          coreutils
-          gnutar
-          gzip
-          gnumake
-          gnused
-          gnugrep
-          diffutils
-          ;
-        python = tvp.packages.python-build_3;
-      } // defs."1.5.7".deps;
-      dependencyNames = [
-        "bash"
-        "coreutils"
-        "gnutar"
-        "gzip"
-        "gnumake"
-        "gnused"
-        "gnugrep"
-        "diffutils"
-        "python"
-        "binutils"
-        "patchelf"
-        "zlib"
-        "xz"
-      ];
-      infrastructure = packageArgs.infra;
-      metadata = {
-        status.level = "ok";
-        canonical = false;
-        variant = "build-steps";
-        builder = "build-steps-1.5.7.nix";
-        definition = "1.5.7";
-        declaredTestDependencies = {
-          inherit (tvp.packages) gzip gnugrep;
-          python = tvp.packages.python_3;
-        };
-      };
-      selection = {
-        namespace = "variants.build-steps";
-        selector = "zstd_1_5_7";
-        kind = "variant";
-        pname = "zstd";
-        version = "1.5.7";
-        canonical = "zstd_1_5_7";
-      };
-      mkTests =
-        zstd:
-        packageArgs.extraArgs.mkTests zstd
-        // {
-          helpers = import ./tests/helpers.nix {
-            package = zstd;
-            inherit (zstd.tvp.deps) bash coreutils gnugrep;
-          };
-          runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
-            package = zstd;
-            stdenv = zstd.stdenv;
-            python = tvp.packages.python_3;
-          };
-        };
-    };
-  };
+  inherit (previous) variants;
   aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
 }

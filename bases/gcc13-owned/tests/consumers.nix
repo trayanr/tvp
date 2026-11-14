@@ -10,8 +10,12 @@ let
   inherit (pkgs) lib;
   historical = import ./construction-tools.nix { inherit pkgs tvp; };
   p = tvp.packages // {
+    # This frozen fixture deliberately exercises the historical stdenv adapter.
+    # Ordinary libxml2 releases use the owned builder's separate interface.
+    libxml2_2_15_3 =
+      (import ../../../pkgs/libraries/libxml2/legacy.nix { inherit pkgs tvp; }).canonical.libxml2_2_15_3;
     php_8_5_12 =
-      (import ../../../pkgs/runtimes/php {
+      (import ../../../pkgs/runtimes/php/legacy.nix {
         inherit pkgs;
         tvp = tvp // {
           packages = tvp.packages // {

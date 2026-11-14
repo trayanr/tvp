@@ -1,0 +1,213 @@
+"""Adversarial all-before-write source/output contracts for ordinary Libffi/Mpdecimal."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import signal
+import shutil
+
+source_helper, output_helper, shell, perl, readelf, patchelf = sys.argv[1:7]
+copy_script, suffix_script, artifact = sys.argv[7:]
+def bounded(args, **kwargs):
+    timeout = kwargs.pop('timeout', 10)
+    capture = kwargs.pop('capture_output', False)
+    p = subprocess.Popen(args, start_new_session=True,
+                         stdout=subprocess.PIPE if capture else None,
+                         stderr=subprocess.PIPE if capture else None, **kwargs)
+    try:
+        out, err = p.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+        p.communicate()
+        raise AssertionError(('deadline exceeded; descendants reaped', args))
+    return subprocess.CompletedProcess(args, p.returncode, out, err)
+base = Path.cwd()
+
+def digest(root):
+    rows = []
+    for directory, dirs, files in os.walk(root, followlinks=False):
+        for name in sorted(dirs + files):
+            p = Path(directory) / name
+            st = p.lstat()
+            value = os.readlink(p) if p.is_symlink() else hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else str(st.st_mode)
+            rows.append((str(p.relative_to(root)), value, st.st_mode, st.st_ino, st.st_nlink))
+    return rows
+
+cases = ['output-library64-collision', 'output-library64-alias', 'source-alias', 'source-directory', 'source-hardlink', 'source-fifo',
+         'source-collision', 'source-unknown', 'source-renamed-unknown', 'source-anchor',
+         'source-nul-header', 'source-nul-body', 'source-configure-nul',
+         'output-readelf-exit', 'output-readelf-stderr', 'output-readelf-malformed', 'output-patchelf-exit', 'output-patchelf-stderr', 'output-patchelf-malformed', 'output-alias', 'output-directory', 'output-hardlink', 'output-fifo',
+         'output-collision', 'output-unknown', 'output-renamed-unknown', 'output-nested-fifo-alias',
+         'output-manual-collision', 'output-malformed-elf', 'output-directory-as-file', 'output-nul-frontend']
+cases += ['output-alias-' + area + '-' + kind for area in ('bin', 'lib', 'libexec')
+          for kind in ('shell', 'unknown', 'nul', 'chain')]
+cases += ['output-library64-alias-' + kind for kind in ('shell', 'unknown', 'nul', 'chain', 'fifo')]
+cases += ['output-library64-regular-' + kind for kind in ('unknown', 'nul', 'no-shebang')]
+for case in cases:
+    root = base / case
+    root.mkdir()
+    external = base / (case + '-external')
+    external.write_text('unchanged')
+    if case.startswith('source'):
+        (root/'configure').write_text('#!/bin/sh\n/usr/bin/file\n')
+        (root/'build-aux').mkdir()
+        (root/'test').mkdir()
+        (root/'build-aux/ltmain.sh').write_text("#!/bin/sh\neval sys_lib_search_path=foo\n")
+        target = root/'test/helper'
+        target.write_text('#!/bin/sh\necho original\n')
+        if case == 'source-alias': target.unlink(); target.symlink_to(external)
+        if case == 'source-directory': (root/'test').rename(root/'fixtures'); (root/'test').symlink_to('fixtures')
+        if case == 'source-hardlink': target.unlink(); os.link(external, target)
+        if case == 'source-fifo': target.unlink(); os.mkfifo(target)
+        if case == 'source-collision': (root/'configure.tvp-prepare').symlink_to(external)
+        if case in ('source-unknown','source-renamed-unknown'): target.write_text('#!/usr/bin/python3\npass\n')
+        if case == 'source-renamed-unknown': target.rename(root/'test/unexpected.dat')
+        if case == 'source-anchor': (root/'build-aux/ltmain.sh').write_text('#!/bin/sh\nmissing anchor\n')
+        if case == 'source-nul-header': target.write_bytes(b'#!/bin/sh\0\necho original\n')
+        if case == 'source-nul-body': target.write_bytes(b'#!/bin/sh\necho\0 original\n'); target.rename(root/'test/renamed.dat')
+        if case == 'source-configure-nul': (root/'configure').write_bytes(b'#!/bin/sh\n: \0\n')
+        args=[sys.executable,'-B',source_helper,shell,json.dumps({'selections':['configure','build-aux','test'],'libtoolAnchors':{'build-aux/ltmain.sh':1}})]
+    else:
+        (root/'bin').mkdir(); (root/'lib').mkdir(); (root/'share/man/man1').mkdir(parents=True)
+        target=root/'bin/helper'; target.write_text('#!/bin/sh\necho original\n'); target.chmod(0o755)
+        if case == 'output-alias': (root/'lib/archive.a').symlink_to('../bin/helper')
+        if case == 'output-directory': (root/'bin').rename(root/'commands'); (root/'bin').symlink_to('commands')
+        if case == 'output-hardlink': os.link(external,root/'lib/escape')
+        if case == 'output-fifo': os.mkfifo(root/'lib/pipe')
+        if case == 'output-nested-fifo-alias':
+            (root/'lib/nested').mkdir()
+            os.mkfifo(root/'lib/nested/pipe')
+            (root/'bin/alias').symlink_to('../lib/nested/pipe')
+        if case == 'output-collision': (root/'bin/helper.tvp-relocating').symlink_to(external)
+        if case in ('output-unknown','output-renamed-unknown'): target.write_text('#!/usr/bin/python3\npass\n')
+        if case == 'output-renamed-unknown': target.rename(root/'bin/unexpected.dat')
+        if case == 'output-manual-collision': (root/'share/man/man1/a.1').write_text('one'); (root/'share/man/man1/a.1.gz').write_text('two')
+        if case == 'output-directory-as-file': target.unlink(); (root/'bin').rmdir(); (root/'bin').symlink_to('../'+external.name)
+        if case == 'output-nul-frontend': target.write_bytes(b'#!/usr/bin/python3\n\0pass\n')
+        if case == 'output-malformed-elf': target.write_bytes(b'\x7fELF'+b'\0'*60)
+        if case.startswith('output-alias-'):
+            _, _, area, kind = case.split('-')
+            (root / area).mkdir(exist_ok=True)
+            script = root / 'share/hidden'
+            script.write_bytes(b'#!/usr/bin/python3\npass\n' if kind == 'unknown' else
+                               b'#!/bin/sh\necho\0 original\n' if kind == 'nul' else b'#!/bin/sh\n: ${SHELL:=/bin/sh}\n')
+            script.chmod(0o755)
+            if kind == 'chain':
+                (root/'share/indirect').symlink_to('hidden')
+            (root / area / 'alias').symlink_to('../share/indirect' if kind == 'chain' else '../share/hidden')
+        config={'readelf':readelf,'shell':shell,'buildShell':'/bin/sh','paths':[], 'requiredDirectories':['bin','lib','share/man'],'requiredFiles':[], 'requiredRegular':['lib/archive.a'],'libtoolData':[]}
+        if case.startswith('output-library64-'):
+            (root/'lib64').mkdir()
+            (root/'lib64/libffi.a').write_text('archive-data')
+            config['library64'] = True
+            if case == 'output-library64-collision':
+                (root/'lib/libffi.a').write_text('existing-library')
+            elif case == 'output-library64-alias':
+                (root/'lib64').rename(root/'libraries')
+                (root/'lib64').symlink_to('libraries')
+            elif case.startswith('output-library64-alias-'):
+                kind = case.rsplit('-', 1)[1]
+                hidden = root/'share/hidden'
+                if kind == 'fifo':
+                    os.mkfifo(hidden)
+                else:
+                    hidden.write_bytes(b'#!/usr/bin/python3\npass\n' if kind == 'unknown' else
+                                       b'#!/bin/sh\necho\0 original\n' if kind == 'nul' else
+                                       b'#!/bin/sh\n: ${SHELL:=/bin/sh}\n')
+                    hidden.chmod(0o755)
+                if kind == 'chain': (root/'share/indirect').symlink_to('hidden')
+                (root/'lib64/libffi.so').symlink_to('../share/indirect' if kind == 'chain' else '../share/hidden')
+            else:
+                kind = case[len('output-library64-regular-'):]
+                frontend = root/'lib64/libffi.so'
+                frontend.write_bytes(b'#!/usr/bin/python3\npass\n' if kind == 'unknown' else
+                                     b'#!/bin/sh\necho\0 original\n' if kind == 'nul' else b'unknown executable\n')
+                frontend.chmod(0o755)
+        if case.startswith(('output-readelf-', 'output-patchelf-')):
+            target.write_bytes(next(Path(artifact).rglob('lib*.so')).read_bytes())
+            tool = base / (case + '-tool')
+            kind = case.rsplit('-', 1)[1]
+            tool.write_text('#!' + shell + '\n' + ('exit 1\n' if kind == 'exit' else 'echo warning >&2\n' if kind == 'stderr' else 'printf \"malformed\\nextra\\n\"\n'))
+            tool.chmod(0o755)
+            if 'readelf' in case: config['readelf'] = str(tool)
+            else: selected_patchelf = str(tool)
+        else: selected_patchelf = patchelf
+        if case.startswith('output-readelf-'): selected_patchelf = patchelf
+        args=[sys.executable,'-B',output_helper,str(root),'/nix/store/'+'x'*32+'-a-long-artifact-output',selected_patchelf,json.dumps(config)]
+    before=digest(root); outside=external.read_bytes()
+    p=bounded(args,cwd=root,capture_output=True,timeout=10)
+    assert p.returncode and before==digest(root) and external.read_bytes()==outside, (case,p.stdout,p.stderr)
+    print('PASS',case, file=sys.stderr)
+
+# Prospective lib frontends must also adapt correctly, while real ELF aliases
+# remain supported through the same lib64 merge.
+for kind in ('shell', 'elf'):
+    root = base / ('output-library64-valid-' + kind)
+    (root/'lib').mkdir(parents=True); (root/'lib64').mkdir(); (root/'share').mkdir()
+    (root/'lib64/libffi.a').write_text('archive-data')
+    config={'library64':True,'readelf':readelf,'shell':shell,'buildShell':'/bin/sh','paths':[],
+            'requiredDirectories':['lib','lib64'],'requiredFiles':['lib/libffi.a'],
+            'requiredRegular':['lib/libffi.a'],'libtoolData':[]}
+    if kind == 'shell':
+        tools = base/'library64-tools'; tools.mkdir()
+        selected = tools/'selected-shell'
+        selected.write_text('#!' + shell + '\n'
+                            'printf "selected\\n" >> "$TVP_PROVIDER_LOG"\n'
+                            'exec ' + shell + ' "$@"\n')
+        selected.chmod(0o755)
+        probe = tools/'probe-provider'
+        probe.write_text('#!' + shell + '\necho selected-tool\n'); probe.chmod(0o755)
+        (root/'lib64/libffi.so').write_text('#!/bin/sh\n/bin/sh -c "probe-provider"\n')
+        (root/'lib64/libffi.so').chmod(0o755)
+        config.update(shell=str(selected),paths=[str(tools)])
+    else:
+        shutil.copyfile(next(Path(artifact).rglob('lib*.so')), root/'lib64/libffi.so.1')
+        (root/'lib64/libffi.so').symlink_to('libffi.so.1')
+    p=bounded([sys.executable,'-B',output_helper,str(root),'/nix/store/'+'x'*32+'-a-long-artifact-output',
+               patchelf,json.dumps(config)],capture_output=True,timeout=10)
+    assert p.returncode == 0, (kind,p.stdout,p.stderr)
+    assert (root/'lib64').is_symlink() and os.readlink(root/'lib64') == 'lib'
+    if kind == 'shell':
+        log=base/'library64-selected.log'
+        p=bounded([str(root/'lib/libffi.so')],env={'TVP_PROVIDER_LOG':str(log)},capture_output=True,timeout=10)
+        assert p.returncode == 0 and p.stdout == b'selected-tool\n', (p.stdout,p.stderr)
+        assert log.read_text().splitlines() == ['selected','selected']
+    else:
+        assert os.readlink(root/'lib/libffi.so') == 'libffi.so.1'
+        assert (root/'lib/libffi.so').read_bytes() == (root/'lib/libffi.so.1').read_bytes()
+    print('PASS output-library64-valid-' + kind, file=sys.stderr)
+
+# Run the actual copy record, then all remaining finalization records against a
+# public alias fixture. Copying legitimately writes; relocation must reject the
+# copied tree before any further changes, regardless of later audit behavior.
+root = base / 'complete-suffix-alias'
+env = {**os.environ, 'out': str(root), 'TVP_ARTIFACT_ROOT': artifact,
+       'TVP_SOURCE_ROOT': str(base)}
+subprocess.run([shell, '-euo', 'pipefail', copy_script], env=env, check=True)
+(root/'bin').mkdir(exist_ok=True)
+(root/'share').mkdir(exist_ok=True)
+(root/'share/hidden').write_text('#!/bin/sh\n: ${SHELL:=/bin/sh}\n')
+(root/'share/hidden').chmod(0o755)
+(root/'bin/alias').symlink_to('../share/hidden')
+before = digest(root)
+p = bounded([shell, '-euo', 'pipefail', suffix_script], env=env, capture_output=True, timeout=10)
+assert p.returncode and b'selected executable alias' in p.stderr and before == digest(root), (p.stdout, p.stderr)
+print('PASS complete-suffix-alias', file=sys.stderr)
+
+if (Path(artifact)/'lib64').is_dir() and not (Path(artifact)/'lib64').is_symlink():
+    root = base/'complete-suffix-library64-alias'
+    env = {**env, 'out':str(root)}
+    subprocess.run([shell, '-euo', 'pipefail', copy_script], env=env, check=True)
+    (root/'share').mkdir(exist_ok=True)
+    (root/'share/hidden').write_text('#!/usr/bin/python3\n# never executed\n')
+    (root/'share/hidden').chmod(0o755)
+    (root/'lib64/libffi.so').unlink()
+    (root/'lib64/libffi.so').symlink_to('../share/hidden')
+    before = digest(root)
+    p = bounded([shell, '-euo', 'pipefail', suffix_script], env=env, capture_output=True, timeout=10)
+    assert p.returncode and b'selected executable alias' in p.stderr and before == digest(root), (p.stdout, p.stderr)
+    print('PASS complete-suffix-library64-alias', file=sys.stderr)
+
+print('ok')

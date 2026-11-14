@@ -1,0 +1,12 @@
+%{
+#include <string.h>
+%}
+%%
+alpha
+beta
+gamma
+%%
+int main() {
+  return !(Keywords::in_word_set("ALPHA",5) && Keywords::in_word_set("beta",4)
+    && !Keywords::in_word_set("alphx",5) && !Keywords::in_word_set("absent",6));
+}

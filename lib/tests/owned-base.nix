@@ -106,6 +106,69 @@ let
       )
     );
     missing = rejects (base.override { compiler = null; });
+    foreignShellSystem = rejects (
+      base.override {
+        shell = args.shell // {
+          system = "aarch64-linux";
+        };
+      }
+    );
+    foreignShellHost = rejects (
+      base.override {
+        shell = args.shell // {
+          hostPlatform.system = "aarch64-linux";
+        };
+      }
+    );
+    foreignToolSystem = rejects (
+      base.override { tools = [ ((package "foreign") // { system = "aarch64-linux"; }) ]; }
+    );
+    foreignToolHost = rejects (
+      base.override {
+        tools = [ ((package "foreign") // { hostPlatform.config = "aarch64-unknown-linux-gnu"; }) ];
+      }
+    );
+    toolTargetIsNotExecutionPlatform =
+      (base.override {
+        tools = [ ((package "cross-tool") // { targetPlatform.system = "aarch64-linux"; }) ];
+      }).name == base.name;
+    buildPlatformIsProvenance =
+      (base.override {
+        compiler = a // {
+          buildPlatform.system = "aarch64-linux";
+        };
+      }).name == base.name;
+    invalidHardening =
+      builtins.all
+        (
+          flags:
+          rejects (
+            base.override {
+              compiler = a // {
+                defaultHardeningFlags = flags;
+              };
+            }
+          )
+        )
+        [
+          null
+          "fortify"
+          [
+            "fortify"
+            null
+          ]
+          1
+          { }
+        ];
+    validHardening =
+      (base.override {
+        compiler = a // {
+          defaultHardeningFlags = [
+            "fortify"
+            "pic"
+          ];
+        };
+      }).name == base.name;
     platform = rejects (
       base.override {
         platform = args.platform // {

@@ -42,7 +42,11 @@ let
     bison = p.bison_3_8_2;
     texinfo = p.texinfo_7_1;
     which = p.which_2_21;
-    python-minimal = p."python-minimal_3_12_5";
+    python-minimal =
+      (tvp.lib.packages.mkVersions
+        (import ../../../pkgs/runtimes/python-minimal { inherit pkgs tvp; })
+        .recipes.python-minimal.constructionRecipe
+      ).python-minimal_3_12_5;
   };
   # Ordinary tools now select normal canonical dependencies, rather than
   # reaching into this base's private assembly stages for Perl, Bash or file.

@@ -22,13 +22,18 @@
   diffutils,
   findutils,
   doCheck ? true,
-}:
-let
-  inherit (tvp.builder) steps outputs;
-  elfPaths = [ "lib/libcrypt.so.1.1.0" ];
-in
+}@args:
 final:
 let
+  inherit (final)
+    base
+    src
+    version
+    bash
+    coreutils
+    ;
+  inherit (tvp.builder) steps outputs;
+  elfPaths = [ "lib/libcrypt.so.1.1.0" ];
   environment = final.base.environment final.environment;
   command =
     name: run:
@@ -40,7 +45,7 @@ let
 in
 {
   pname = "libxcrypt";
-  inherit
+  inherit (args)
     base
     src
     version
@@ -60,7 +65,7 @@ in
     libraries = [ ];
   };
   runtime.libraries = [ ];
-  plan = steps.sequence [
+  artifactPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
       inherit xz findutils;
@@ -89,63 +94,108 @@ in
       ./configure --prefix="$out" --enable-shared --enable-static
     '')
     (command "libxcrypt.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    (
-      (command "libxcrypt.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
-      // {
-        enabled = doCheck;
-      }
-    )
     (command "libxcrypt.install" ''
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
-    {
-      name = "output.manuals";
-      tools = [
-        gzip
-        findutils
-      ];
-      run = ''find "$out/share/man" -type f -exec ${gzip}/bin/gzip -n -9 '{}' +'';
-    }
-    (outputs.strip {
-      inherit python binutils;
-      paths = elfPaths;
+  ];
+  inherit doCheck;
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      inherit xz findutils;
+      tar = gnutar;
     })
-    (outputs.stripArchives {
-      inherit python binutils;
-      paths = [ "lib/libcrypt.a" ];
-    })
-    (outputs.libtool {
-      inherit python;
-      paths = [ "lib/libcrypt.la" ];
-    })
-    (outputs.rpaths {
-      inherit python binutils patchelf;
+    (steps.prepareAutotools {
+      name = "libxcrypt.prepare";
+      inherit bash python;
       base = final.base;
-      libraries = final.runtime.libraries;
-      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = elfPaths;
     })
-    (outputs.development {
-      inherit python;
-      libraries = [ ];
-    })
-    (outputs.checkSymlinks {
+    (steps.shebangs {
+      name = "libxcrypt.source-shells";
       inherit python;
       paths = [
-        "lib/libcrypt.so"
-        "lib/libcrypt.so.1"
-        "lib/libxcrypt.so"
-        "lib/libowcrypt.so"
-        "lib/libowcrypt.so.1"
+        "configure"
+        "build-aux"
       ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${bash}/bin/bash";
     })
-    (outputs.checkPaths {
-      inherit python binutils patchelf;
-      paths = elfPaths;
-    })
+    (command "libxcrypt.configure" ''
+      export CONFIG_SHELL=${bash}/bin/bash
+      ./configure --prefix="$out" --enable-shared --enable-static
+    '')
+    (command "libxcrypt.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
   ];
+  upstreamCheck = (
+    (command "libxcrypt.check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" check'')
+    // {
+      enabled = final.doCheck;
+    }
+  );
+  plan = steps.sequence (
+    final.artifactPlan
+    ++ [
+      (steps.split "libxcrypt.finalize")
+      (outputs.copyArtifacts { coreutils = final.coreutils; })
+      (outputs.relocateText {
+        inherit python;
+        paths = [
+          "lib/pkgconfig"
+          "lib/libcrypt.la"
+        ];
+      })
+      {
+        name = "output.manuals";
+        tools = [
+          gzip
+          findutils
+        ];
+        run = ''find "$out/share/man" -type f -exec ${gzip}/bin/gzip -n -9 '{}' +'';
+      }
+      (outputs.strip {
+        inherit python binutils;
+        paths = elfPaths;
+      })
+      (outputs.stripArchives {
+        inherit python binutils;
+        paths = [ "lib/libcrypt.a" ];
+      })
+      (outputs.libtool {
+        inherit python;
+        paths = [ "lib/libcrypt.la" ];
+      })
+      (outputs.rpaths {
+        inherit python binutils patchelf;
+        base = final.base;
+        libraries = final.runtime.libraries;
+        dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+        paths = elfPaths;
+      })
+      (outputs.development {
+        inherit python;
+        libraries = [ ];
+      })
+      (outputs.checkSymlinks {
+        inherit python;
+        paths = [
+          "lib/libcrypt.so"
+          "lib/libcrypt.so.1"
+          "lib/libxcrypt.so"
+          "lib/libowcrypt.so"
+          "lib/libowcrypt.so.1"
+        ];
+      })
+      (outputs.checkPaths {
+        inherit python binutils patchelf;
+        paths = elfPaths;
+      })
+    ]
+  );
   tvp.features = {
     shared = true;
     static = true;

@@ -18,6 +18,7 @@ tvp.lib.packages.mergeNamespaces {
   gawk = import ./gawk { inherit pkgs tvp; };
   gnutar = import ./gnutar { inherit pkgs tvp; };
   gzip = import ./gzip { inherit pkgs tvp; };
+  less = import ./less { inherit pkgs tvp; };
   bzip2 = import ./bzip2 { inherit pkgs tvp; };
   gnumake = import ./gnumake { inherit pkgs tvp; };
   patch = import ./patch { inherit pkgs tvp; };

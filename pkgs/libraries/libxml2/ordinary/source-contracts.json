@@ -1,0 +1,2066 @@
+{
+  "bodies": {
+    "parser21503": "I/O warning : failed to load \"http://example.invalid/imported.xsd\": No such file or directory\ntest/schemas/v012-reader-schema-main.xsd:4: element import: Schemas parser warning : Element '{http://www.w3.org/2001/XMLSchema}import': Failed to locate a schema at location 'http://example.invalid/imported.xsd'. Skipping the import.\ntest/schemas/v012-reader-schema-main.xsd:5: element element: Schemas parser error : element decl. 'doc', attribute 'type': The QName value '{urn:remote}RemoteType' does not resolve to a(n) type definition.\ndoc.xml:2: Schemas validity error : Element 'e': 'not-an-intnot-an-int' is not a valid value of the atomic type 'xs:integer'.\nI/O warning : failed to load \"http://example.invalid/imported.rng\": No such file or directory\ntest/relaxng/v012-reader-main.rng:2: element include: Relax-NG parser error : xmlRelaxNG: could not load http://example.invalid/imported.rng\ntest/relaxng/v012-reader-main.rng:2: element include: Relax-NG parser error : Failed to load include http://example.invalid/imported.rng\ntest/relaxng/v012-reader-main.rng:3: element ref: Relax-NG parser error : Reference docdef has no matching definition\ntest/relaxng/v012-reader-main.rng:3: element ref: Relax-NG parser error : Internal found no define for ref docdef\n",
+    "testchar": "testing char range: 1 2 3 4 done\ntesting 1 byte char in document: 1 2 3 4 done\ntesting 2 byte char in document: 1 2 3 4 done\n"
+  },
+  "captureCommandSha256": "8c5de8599d27e18c1b488a151330bb9ed97dc93e74000f09719f320dfa0cf53f",
+  "groups": [
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "testThreads",
+          ""
+        ],
+        [
+          "runxmlconf",
+          ""
+        ]
+      ],
+      "id": "protocol-1",
+      "runsuiteSourceExpectedXsdErrors": null,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "dictionary tests succeeded 20000 strings\\n",
+      "unwrappedRootChecks": [],
+      "versions": [
+        "2.10.0",
+        "2.10.1",
+        "2.10.2",
+        "2.10.3",
+        "2.10.4"
+      ],
+      "w3cSourceExpectedErrors": 15
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "testThreads",
+          ""
+        ],
+        [
+          "runxmlconf",
+          ""
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-2",
+      "runsuiteSourceExpectedXsdErrors": 10,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "dictionary tests succeeded 20000 strings\\n",
+      "unwrappedRootChecks": [],
+      "versions": [
+        "2.11.0",
+        "2.11.1",
+        "2.11.2",
+        "2.11.3",
+        "2.11.4",
+        "2.11.5",
+        "2.11.6",
+        "2.11.7",
+        "2.11.8",
+        "2.11.9"
+      ],
+      "w3cSourceExpectedErrors": 15
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testparser",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "testThreads",
+          ""
+        ],
+        [
+          "runxmlconf",
+          ""
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-3",
+      "runsuiteSourceExpectedXsdErrors": 10,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "silent",
+      "unwrappedRootChecks": [],
+      "versions": [
+        "2.12.0",
+        "2.12.1",
+        "2.12.10",
+        "2.12.2",
+        "2.12.3",
+        "2.12.4",
+        "2.12.5",
+        "2.12.6",
+        "2.12.7",
+        "2.12.8",
+        "2.12.9"
+      ],
+      "w3cSourceExpectedErrors": 15
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testparser",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "testThreads",
+          ""
+        ],
+        [
+          "runxmlconf",
+          ""
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-4",
+      "runsuiteSourceExpectedXsdErrors": 3,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "silent",
+      "unwrappedRootChecks": [],
+      "versions": [
+        "2.13.0",
+        "2.13.1",
+        "2.13.2",
+        "2.13.3",
+        "2.13.4",
+        "2.13.5",
+        "2.13.6",
+        "2.13.7",
+        "2.13.8",
+        "2.13.9"
+      ],
+      "w3cSourceExpectedErrors": 15
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testparser",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "runxmlconf",
+          "-d <srcdir>/xmlconf"
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-5",
+      "runsuiteSourceExpectedXsdErrors": 3,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "silent",
+      "unwrappedRootChecks": [
+        "test/scripts/test.sh ./xmllint$(EXEEXT)",
+        "test/catalogs/test.sh ./xmlcatalog$(EXEEXT)"
+      ],
+      "versions": [
+        "2.14.0",
+        "2.14.1",
+        "2.14.2",
+        "2.14.3",
+        "2.14.4",
+        "2.14.5",
+        "2.14.6"
+      ],
+      "w3cSourceExpectedErrors": 15
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testparser",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "runxmlconf",
+          "-d <srcdir>/xmlconf"
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-6",
+      "runsuiteSourceExpectedXsdErrors": 3,
+      "testapiProtocol": "silent",
+      "testdictProtocol": "silent",
+      "unwrappedRootChecks": [
+        "test/scripts/test.sh ./xmllint$(EXEEXT)",
+        "test/catalogs/test.sh ./xmlcatalog$(EXEEXT)",
+        "test/catalogs/test_sgml.sh ./xmlcatalog$(EXEEXT)"
+      ],
+      "versions": [
+        "2.15.0",
+        "2.15.1"
+      ],
+      "w3cSourceExpectedErrors": 5
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testcatalog",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "testparser",
+          ""
+        ],
+        [
+          "testModule",
+          ""
+        ],
+        [
+          "runxmlconf",
+          "-d <srcdir>/xmlconf"
+        ],
+        [
+          "runsuite",
+          ""
+        ]
+      ],
+      "id": "protocol-7",
+      "runsuiteSourceExpectedXsdErrors": 3,
+      "testapiProtocol": "silent",
+      "testdictProtocol": "silent",
+      "unwrappedRootChecks": [
+        "test/scripts/test.sh ./xmllint$(EXEEXT)",
+        "test/catalogs/test.sh ./xmlcatalog$(EXEEXT)",
+        "test/catalogs/test_sgml.sh ./xmlcatalog$(EXEEXT)"
+      ],
+      "versions": [
+        "2.15.2",
+        "2.15.3"
+      ],
+      "w3cSourceExpectedErrors": 5
+    },
+    {
+      "checkerInventory": [
+        [
+          "runtest",
+          ""
+        ],
+        [
+          "testrecurse",
+          ""
+        ],
+        [
+          "testapi",
+          ""
+        ],
+        [
+          "testchar",
+          ""
+        ],
+        [
+          "testdict",
+          ""
+        ],
+        [
+          "runxmlconf",
+          ""
+        ]
+      ],
+      "id": "protocol-8",
+      "runsuiteSourceExpectedXsdErrors": null,
+      "testapiProtocol": "module-progress-and-total",
+      "testdictProtocol": "dictionary tests succeeded 20000 strings\\n",
+      "unwrappedRootChecks": [],
+      "versions": [
+        "2.7.4",
+        "2.7.5",
+        "2.7.6",
+        "2.7.7",
+        "2.7.8",
+        "2.8.0",
+        "2.9.0",
+        "2.9.1",
+        "2.9.10",
+        "2.9.11",
+        "2.9.12",
+        "2.9.13",
+        "2.9.14",
+        "2.9.2",
+        "2.9.3",
+        "2.9.4",
+        "2.9.5",
+        "2.9.6",
+        "2.9.7",
+        "2.9.8",
+        "2.9.9"
+      ],
+      "w3cSourceExpectedErrors": 15
+    }
+  ],
+  "meaning": "Source facts and parser hypotheses only; no runtime qualification or failure waivers.",
+  "schema": 1,
+  "sources": {
+    "2.10.0": {
+      "archiveSha256": "2dd33110ea778676de14bea4999ee1173c4ca55d5ff1452bca224e06f0152595",
+      "corpusInventorySha256": "c6f0141c4a4cfbbc6530e3898f29d3a357a867be572dda2ae700f7f12166ae73",
+      "corpusMembers": 3267,
+      "fuzz": true,
+      "protocol": "protocol-1",
+      "roles": {
+        "Makefile.am": "f4e775f5ad63236042d7be35f910af01d10363f65415c4f2e514091d7df26ab2",
+        "configure.ac": "c0c72e99d5f51a2cb2266b7f41f6b8565144a90bb024792071cb4e0cdf797767",
+        "fuzz/Makefile.am": "688cda1f211a068b627d11307ef7143ab4c3b89cd996e93ca0f3036b19c04512",
+        "include/libxml/xmlversion.h.in": "9312b7badaa4a916af1b457955589167a4bc3fdfa14a387339872b4a8397c8d5",
+        "runtest.c": "61353260af4c5b7d4b495ffd1e83d522016bc3fc3aeac4ce4a4edeb8c8042248",
+        "runxmlconf.c": "a6aabef31e0c5f2dfb15c8bdd759e58a82d7755dc02853e542207507c8a98d22",
+        "testModule.c": "64756ccdf8666a0653609f50af9fae49bff233567ab381b93caeaecc8a0faa67",
+        "testThreads.c": "232bd210e2f2e24a4145015fa57869bc4c10ca1f28dc5665b651506774826de6",
+        "testapi.c": "4d047b6ad14c209f2ac11b5762d256c98f14b05df6a8e939efd5513e6bf10fd0",
+        "testchar.c": "21e533cce7b7e95874d0ffd737cd6f31b7105d49b65bf3e273c5e54f59dff939",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "64971e948326907d503adacbaf523d324b1d668305661adb3d1218017f7ca20e"
+      },
+      "runtimeQualified": false
+    },
+    "2.10.1": {
+      "archiveSha256": "21a9e13cc7c4717a6c36268d0924f92c3f67a1ece6b7ff9d588958a6db9fb9d8",
+      "corpusInventorySha256": "c6f0141c4a4cfbbc6530e3898f29d3a357a867be572dda2ae700f7f12166ae73",
+      "corpusMembers": 3267,
+      "fuzz": true,
+      "protocol": "protocol-1",
+      "roles": {
+        "Makefile.am": "ce4d55b7e552cba2101e7dad36bc7478341c8220ccdb4a5602875d3b68789654",
+        "configure.ac": "a506ca6082d9d6bf1b46b06a7d045b5a9cea418db4410881f72f619cd8ea9f36",
+        "fuzz/Makefile.am": "688cda1f211a068b627d11307ef7143ab4c3b89cd996e93ca0f3036b19c04512",
+        "include/libxml/xmlversion.h.in": "9312b7badaa4a916af1b457955589167a4bc3fdfa14a387339872b4a8397c8d5",
+        "runtest.c": "61353260af4c5b7d4b495ffd1e83d522016bc3fc3aeac4ce4a4edeb8c8042248",
+        "runxmlconf.c": "a6aabef31e0c5f2dfb15c8bdd759e58a82d7755dc02853e542207507c8a98d22",
+        "testModule.c": "64756ccdf8666a0653609f50af9fae49bff233567ab381b93caeaecc8a0faa67",
+        "testThreads.c": "232bd210e2f2e24a4145015fa57869bc4c10ca1f28dc5665b651506774826de6",
+        "testapi.c": "4d047b6ad14c209f2ac11b5762d256c98f14b05df6a8e939efd5513e6bf10fd0",
+        "testchar.c": "21e533cce7b7e95874d0ffd737cd6f31b7105d49b65bf3e273c5e54f59dff939",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "64971e948326907d503adacbaf523d324b1d668305661adb3d1218017f7ca20e"
+      },
+      "runtimeQualified": false
+    },
+    "2.10.2": {
+      "archiveSha256": "d240abe6da9c65cb1900dd9bf3a3501ccf88b3c2a1cb98317d03f272dda5b265",
+      "corpusInventorySha256": "c6f0141c4a4cfbbc6530e3898f29d3a357a867be572dda2ae700f7f12166ae73",
+      "corpusMembers": 3267,
+      "fuzz": true,
+      "protocol": "protocol-1",
+      "roles": {
+        "Makefile.am": "10275d38cc2abc30f55e6a3223245f4aab431df967105c578c6cc3f76ad73b77",
+        "configure.ac": "e32b46b5c455c0079104a08e0e95bd4d1670b871ff1bce022ec475a811b454d4",
+        "fuzz/Makefile.am": "688cda1f211a068b627d11307ef7143ab4c3b89cd996e93ca0f3036b19c04512",
+        "include/libxml/xmlversion.h.in": "9312b7badaa4a916af1b457955589167a4bc3fdfa14a387339872b4a8397c8d5",
+        "runtest.c": "61353260af4c5b7d4b495ffd1e83d522016bc3fc3aeac4ce4a4edeb8c8042248",
+        "runxmlconf.c": "a6aabef31e0c5f2dfb15c8bdd759e58a82d7755dc02853e542207507c8a98d22",
+        "testModule.c": "64756ccdf8666a0653609f50af9fae49bff233567ab381b93caeaecc8a0faa67",
+        "testThreads.c": "232bd210e2f2e24a4145015fa57869bc4c10ca1f28dc5665b651506774826de6",
+        "testapi.c": "9f4b4685394b91af037991afc6a6d2b9a85459414b15465e193d956005d80be9",
+        "testchar.c": "21e533cce7b7e95874d0ffd737cd6f31b7105d49b65bf3e273c5e54f59dff939",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "64971e948326907d503adacbaf523d324b1d668305661adb3d1218017f7ca20e"
+      },
+      "runtimeQualified": false
+    },
+    "2.10.3": {
+      "archiveSha256": "5d2cc3d78bec3dbe212a9d7fa629ada25a7da928af432c93060ff5c17ee28a9c",
+      "corpusInventorySha256": "c6f0141c4a4cfbbc6530e3898f29d3a357a867be572dda2ae700f7f12166ae73",
+      "corpusMembers": 3267,
+      "fuzz": true,
+      "protocol": "protocol-1",
+      "roles": {
+        "Makefile.am": "10275d38cc2abc30f55e6a3223245f4aab431df967105c578c6cc3f76ad73b77",
+        "configure.ac": "6175ab7407ca23e98f30c6692b12869d520f85b96773a56bd6c9b8720265b578",
+        "fuzz/Makefile.am": "688cda1f211a068b627d11307ef7143ab4c3b89cd996e93ca0f3036b19c04512",
+        "include/libxml/xmlversion.h.in": "9312b7badaa4a916af1b457955589167a4bc3fdfa14a387339872b4a8397c8d5",
+        "runtest.c": "61353260af4c5b7d4b495ffd1e83d522016bc3fc3aeac4ce4a4edeb8c8042248",
+        "runxmlconf.c": "a6aabef31e0c5f2dfb15c8bdd759e58a82d7755dc02853e542207507c8a98d22",
+        "testModule.c": "64756ccdf8666a0653609f50af9fae49bff233567ab381b93caeaecc8a0faa67",
+        "testThreads.c": "232bd210e2f2e24a4145015fa57869bc4c10ca1f28dc5665b651506774826de6",
+        "testapi.c": "9f4b4685394b91af037991afc6a6d2b9a85459414b15465e193d956005d80be9",
+        "testchar.c": "21e533cce7b7e95874d0ffd737cd6f31b7105d49b65bf3e273c5e54f59dff939",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "64971e948326907d503adacbaf523d324b1d668305661adb3d1218017f7ca20e"
+      },
+      "runtimeQualified": false
+    },
+    "2.10.4": {
+      "archiveSha256": "ed0c91c5845008f1936739e4eee2035531c1c94742c6541f44ee66d885948d45",
+      "corpusInventorySha256": "0bef9421b332b73e759038b405dec66b17d0501500144f1466e2e136d79aef10",
+      "corpusMembers": 3274,
+      "fuzz": true,
+      "protocol": "protocol-1",
+      "roles": {
+        "Makefile.am": "10275d38cc2abc30f55e6a3223245f4aab431df967105c578c6cc3f76ad73b77",
+        "configure.ac": "e40b9239f4a2e9a413840177d0492724d1258600e91bd1f9df2e0e80628ec570",
+        "fuzz/Makefile.am": "688cda1f211a068b627d11307ef7143ab4c3b89cd996e93ca0f3036b19c04512",
+        "include/libxml/xmlversion.h.in": "9312b7badaa4a916af1b457955589167a4bc3fdfa14a387339872b4a8397c8d5",
+        "runtest.c": "61353260af4c5b7d4b495ffd1e83d522016bc3fc3aeac4ce4a4edeb8c8042248",
+        "runxmlconf.c": "a6aabef31e0c5f2dfb15c8bdd759e58a82d7755dc02853e542207507c8a98d22",
+        "testModule.c": "64756ccdf8666a0653609f50af9fae49bff233567ab381b93caeaecc8a0faa67",
+        "testThreads.c": "232bd210e2f2e24a4145015fa57869bc4c10ca1f28dc5665b651506774826de6",
+        "testapi.c": "9f4b4685394b91af037991afc6a6d2b9a85459414b15465e193d956005d80be9",
+        "testchar.c": "21e533cce7b7e95874d0ffd737cd6f31b7105d49b65bf3e273c5e54f59dff939",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "64971e948326907d503adacbaf523d324b1d668305661adb3d1218017f7ca20e"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.0": {
+      "archiveSha256": "b1a2fca3f7722d6c35a4f24974a1b5800e4d84ec5cb756bc61ef2b8c75a19e36",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "845a1f36a0a25ebefdb7c524624f2e5c215922a089bde884d833e7cf6d082bd5",
+        "configure.ac": "d407fa3810eea11be8c22d3cf48db27f60bc0449829abda70fff6fbfc4415165",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "6b3df3ec80bd9e500626e58e5ce2291b3454db72ad913c7fa4dd7fa1c34a6f16",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.1": {
+      "archiveSha256": "3d39b294b856bfe3bafd5fb126e1f8487004261e78eabb8df9513e927915a995",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "845a1f36a0a25ebefdb7c524624f2e5c215922a089bde884d833e7cf6d082bd5",
+        "configure.ac": "a32f9c86b346ae88665b5ccdc093f31e355a206e674f0afe8c54fb5296b7a628",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "6b3df3ec80bd9e500626e58e5ce2291b3454db72ad913c7fa4dd7fa1c34a6f16",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.2": {
+      "archiveSha256": "ac11e8b66176d49514bd4fa17c3fbdb3414aef64518ff9db536862e4682e2a64",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "845a1f36a0a25ebefdb7c524624f2e5c215922a089bde884d833e7cf6d082bd5",
+        "configure.ac": "85683467c6473166c46c6404f47b864662149ba3c6ad13ed0943c4a99758f719",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "6b3df3ec80bd9e500626e58e5ce2291b3454db72ad913c7fa4dd7fa1c34a6f16",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.3": {
+      "archiveSha256": "f1acae1664bda006cd81bfc238238217043d586d06659d5c0e3d1bcebe040870",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "013cae6d8d43c2453f15d21e6c5f18f09c676ecf07fbddfe452251a0694b986a",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "6b3df3ec80bd9e500626e58e5ce2291b3454db72ad913c7fa4dd7fa1c34a6f16",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.4": {
+      "archiveSha256": "737e1d7f8ab3f139729ca13a2494fd17bf30ddb4b7a427cf336252cab57f57f7",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "eedbc7d092f49920a217286d1ca5f46be4246e680ef9c0fb4b5492d5db86b387",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "6b3df3ec80bd9e500626e58e5ce2291b3454db72ad913c7fa4dd7fa1c34a6f16",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.5": {
+      "archiveSha256": "3727b078c360ec69fa869de14bd6f75d7ee8d36987b071e6928d4720a28df3a6",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "031ca2ce0334bb51e8c1a0434638141f643d9f11646c7f5cac8a8bfefd1cb203",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "2a28c3d60c888e39ed87675e579213d4b4c114e878d6ec3dd45cebdb78381056",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.6": {
+      "archiveSha256": "c90eee7506764abbe07bb616b82da452529609815aefef423d66ef080eb0c300",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "751028130b044a2ef56c9f76be659642e3d8c8aa0a33781217d1453cf59441f5",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "eeab1bc1569ca79928c247da56680c40c743bb2c13643ba69aca09150f09fb56",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.7": {
+      "archiveSha256": "fb27720e25eaf457f94fd3d7189bcf2626c6dccf4201553bc8874d50e3560162",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "4fac5f4db6b827afad429ffd849adfcd0346b683443dfc2c81995293cb682572",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "eeab1bc1569ca79928c247da56680c40c743bb2c13643ba69aca09150f09fb56",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.8": {
+      "archiveSha256": "53961af1721b72246180cd844b7ddae36ea8e1e4e27b683567990a1ee78b02c1",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "8c0f88f5a79674d0450c407c421eff8d6542a6a30e7206781414a8c06007b268",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "eeab1bc1569ca79928c247da56680c40c743bb2c13643ba69aca09150f09fb56",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.11.9": {
+      "archiveSha256": "780157a1efdb57188ec474dca87acaee67a3a839c2525b2214d318228451809f",
+      "corpusInventorySha256": "96ca7e9ed83ffe530cbe7ff50116bc5c0e40e167f4fbd5e29e3c5e4369342a56",
+      "corpusMembers": 3337,
+      "fuzz": true,
+      "protocol": "protocol-2",
+      "roles": {
+        "Makefile.am": "4d1dd96d91fbed52adb9ae5335fad64bb65876f93739f421c69f9b0072aa0929",
+        "configure.ac": "e566167a3abf9c6c393e7041c98ff384118d8fabf868bd67660a0824ddf6357a",
+        "fuzz/Makefile.am": "fe9087592c6d55d7ac4028ec952bb003b018ecf035c1fae9af0eb55cf8acdcec",
+        "include/libxml/xmlversion.h.in": "4d26159fbabfaebd80b9355277017e524f8683e258199faec0958295686ad486",
+        "runsuite.c": "e4156d81c254e28b2a41ccf038b753170b31e6ff86641d150baf36e482926be1",
+        "runtest.c": "eeab1bc1569ca79928c247da56680c40c743bb2c13643ba69aca09150f09fb56",
+        "runxmlconf.c": "96ab6c3cf4bf8fbb59a4e4243c0bdafa8371c0b2b670f76771f4cf5afabc9156",
+        "testModule.c": "898d47c63560ed0982270ebfb0be7fbbc0a73dcf974aea856d9e44e31ce1a032",
+        "testThreads.c": "e24bbe8aec8e411783e1c24d24ffbe3905c31904cab6f7a54827cf9b65afed12",
+        "testapi.c": "600e520e7bb0730031e4868cea4cf5fc29b1a1c4a7de9c915684f0dc885ae65c",
+        "testchar.c": "d75d9a3274c8b9bd48fd88faf56da5adb13255985ce945d5b4afc6c21c64e9da",
+        "testdict.c": "8b5482136a0b6c372db7b60a4b9473a8b47201b589213e79dac66d77d6c7db63",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "6aef0067762acaf82d8f2517dea84f51a19082fd6bc70c7c8d396bb81e12fa66"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.0": {
+      "archiveSha256": "431521c8e19ca396af4fa97743b5a6bfcccddbba90e16426a15e5374cd64fe0d",
+      "corpusInventorySha256": "dd01d524d5cb733b5500c67a56b9840307c4e11ff1461e82026cedecd44b80d2",
+      "corpusMembers": 3399,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "1419c4bd6e5f7b12e195bf8cfb039eee5fb4241366ecbdb8c35af75d8d49e30e",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "32204d4953b8245332e8636c8ab2011f6aac96e9961a54afedb261351855c6ad",
+        "runsuite.c": "62d5195d2023ff3981a85336cb8e5f301c83f2507bed1716746dc42e72944e7d",
+        "runtest.c": "fe02031a8ec66496a62b1a484d959e5618c4de468079045c852a371f792a7bf3",
+        "runxmlconf.c": "74662ecfd4f825d2e11f3b3baeb43c40bde66a05456e832ba0d8720717b5f208",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "6937a756bdf49f7f8c36799c1c26320d814509b9b84e595bbc4cfef69845d7fe",
+        "testchar.c": "f381395d145c6827c3237046cb830a5e8af2ddc1733874ac16afc97fa3e295e4",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "93dc3b3e57013e1c5926485ebd68ed6e78ae72e7e0290ad57dc7cf874c3f1b23",
+        "testrecurse.c": "0c6537e53f8bd042f4c7a29a36cac3bd97d4dc2a2f8151b27642ceb2d8081668"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.1": {
+      "archiveSha256": "8982b9ccdf7f456e30d8f7012d50858c6623e495333b6191def455c7e95427eb",
+      "corpusInventorySha256": "473a6b0a397c7df10401c96993a7ef8092e26cef5d20f564622955a61781e280",
+      "corpusMembers": 3407,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "ca7c15e3f22908197d9ab136a9e9998b3d624aeb47fee5b15d01a2287d6c696a",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "32204d4953b8245332e8636c8ab2011f6aac96e9961a54afedb261351855c6ad",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "bddc88db6fc4bac4ef7a00b828291310000d69cb0631fcb6e6ece0552d68e421",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "f381395d145c6827c3237046cb830a5e8af2ddc1733874ac16afc97fa3e295e4",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "93dc3b3e57013e1c5926485ebd68ed6e78ae72e7e0290ad57dc7cf874c3f1b23",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.10": {
+      "archiveSha256": "c3d8c0c34aa39098f66576fe51969db12a5100b956233dc56506f7a8679be995",
+      "corpusInventorySha256": "0860998d9dc1739212aeef9936919a0966c9cfc24a99125958245638de79c1ef",
+      "corpusMembers": 3429,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "88f0b648c869eeb4f0b071a1669bc10ce0f98a9d881f3002a29247517db600df",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "d7d7d6a773757a615954e9b6fb960a3c265765977d504edc5d03b89cf4c9ec65",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.2": {
+      "archiveSha256": "3f2e6464fa15073eb8f3d18602d54fafc489b7715171064615a40490c6be9f4f",
+      "corpusInventorySha256": "3b72d55f3f76935d131816a564c9d694904eb1bb7164557981c073563021c598",
+      "corpusMembers": 3414,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "b5a04ce780a3e7c9ccc8b25f38e845a56280a2f2e0735f7b5c9f4a45e6fa5356",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "32204d4953b8245332e8636c8ab2011f6aac96e9961a54afedb261351855c6ad",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "f381395d145c6827c3237046cb830a5e8af2ddc1733874ac16afc97fa3e295e4",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "93dc3b3e57013e1c5926485ebd68ed6e78ae72e7e0290ad57dc7cf874c3f1b23",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.3": {
+      "archiveSha256": "8c8f1092340a89ff32bc44ad5c9693aff9bc8a7a3e161bb239666e5d15ac9aaa",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "72f5ec835744939343b033bd5a997461f512672bf8b837f7382e36ea94e2953e",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "f381395d145c6827c3237046cb830a5e8af2ddc1733874ac16afc97fa3e295e4",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "93dc3b3e57013e1c5926485ebd68ed6e78ae72e7e0290ad57dc7cf874c3f1b23",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.4": {
+      "archiveSha256": "497360e423cf0bd99eacdb7c6215dea92e6d6e89ee940393c2bae0e77cb9b7d0",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "880ffe62ee7bbb7228d654037f871e969a0bf533775d24b16908b78fea54d789",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "2e4240e587b592dccbf91aad22c1a1009d00f11664b4d563ccbedbb77b9be42a",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.5": {
+      "archiveSha256": "a972796696afd38073e0f59c283c3a2f5a560b5268b4babc391b286166526b21",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "e48dacd93b8abca9104ba4303f819ab2561008700413c96b8fff274386afd2fc",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "2e4240e587b592dccbf91aad22c1a1009d00f11664b4d563ccbedbb77b9be42a",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.6": {
+      "archiveSha256": "889c593a881a3db5fdd96cc9318c87df34eb648edfc458272ad46fd607353fbb",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "23c19c4e46def8c90446114ed3c6e0288326f818c6bb3c88fccd324ed59ce653",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "d7d7d6a773757a615954e9b6fb960a3c265765977d504edc5d03b89cf4c9ec65",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.7": {
+      "archiveSha256": "24ae78ff1363a973e6d8beba941a7945da2ac056e19b53956aeb6927fd6cfb56",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "cadc5482d5dd41cc772661debeaf99cd97b20a5f13974ec8048c2be3d4450ee7",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "d7d7d6a773757a615954e9b6fb960a3c265765977d504edc5d03b89cf4c9ec65",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.8": {
+      "archiveSha256": "43ad877b018bc63deb2468d71f95219c2fac196876ef36d1bee51d226173ec93",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "886be147d73f6330c6637c309f3279ac91e3b1ea6ff1749c7e450cbe68fcc0f2",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "d7d7d6a773757a615954e9b6fb960a3c265765977d504edc5d03b89cf4c9ec65",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.12.9": {
+      "archiveSha256": "59912db536ab56a3996489ea0299768c7bcffe57169f0235e7f962a91f483590",
+      "corpusInventorySha256": "2a609b01ee13011c63c00a7cf6aba901670fc28e5fb568112d790abf8d1ffde4",
+      "corpusMembers": 3422,
+      "fuzz": true,
+      "protocol": "protocol-3",
+      "roles": {
+        "Makefile.am": "73dd9e658aeebc67ac1b668b0ea46f9205a9222b04d254d702135b919f5dea7b",
+        "configure.ac": "ba788f0516d828a2297bb6d840aaca574554c52bb9ab2e8acc73e9f0822ed691",
+        "fuzz/Makefile.am": "b441f58aca761a105c139bac86d822c8a01886faf087d072bf5d4dce1bc4cb29",
+        "include/libxml/xmlversion.h.in": "b29198c3f85598cfb115226b039ebdb5af301f87be65167461c64c45f61660a2",
+        "runsuite.c": "f4b228cdbbcef0d20bba4aed9375c80b89648373256f44f69e651637fa0d97ea",
+        "runtest.c": "5672464f34a230636391c010832c854d4a9f5458306fd031c70bb7d5895472c2",
+        "runxmlconf.c": "f7f75346ad3e2739a3781e749b489c7c25b2fdf22d3a0f001529704bb578e22a",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "d8822b9c6662ecdd4cdf72b0db852b74815489f2b96362670c665be0f2dfb8bc",
+        "testchar.c": "4bc62aa88ca34c22f07c0f9d8b095de0bde2bd37e7fd37c8b356da287bd08c75",
+        "testdict.c": "c9ecd5f69a29b99823c9e9f3ccf37526694c7db3c68f45c9fd14f968c202aac7",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "d7d7d6a773757a615954e9b6fb960a3c265765977d504edc5d03b89cf4c9ec65",
+        "testrecurse.c": "60aecb830adb7fb5ae5b974da1fccb01df78fbfa6b694e231fbd75a84ff84a21"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.0": {
+      "archiveSha256": "d5a2f36bea96e1fb8297c6046fb02016c152d81ed58e65f3d20477de85291bc9",
+      "corpusInventorySha256": "883b1cd8b94e7df2f8c4774a246f7150c389c4dbdcb9d84161a00325e0854855",
+      "corpusMembers": 3460,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "5a3a0c936450312bafdb6a82dc2ff28e2457f5872b6e06e72a8f0a42ba7e25c4",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "b3dfecd162440e9d66cdbadb76db44131dd20fddac79a1088c68f99e218b3b21",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.1": {
+      "archiveSha256": "25239263dc37f5f55a5393eff27b35f0b7d9ea4b2a7653310598ea8299e3b741",
+      "corpusInventorySha256": "d54362a21913728bc162b820b0031cb68e47b108f7ccf04bf9159b266e555887",
+      "corpusMembers": 3466,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "de20050c4f2b0a5898e9101d130f59f497a07a33048da68c435bfb03653e41f8",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "b3dfecd162440e9d66cdbadb76db44131dd20fddac79a1088c68f99e218b3b21",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.2": {
+      "archiveSha256": "e7c8f5e0b5542159e0ddc409c22c9164304b581eaa9930653a76fb845b169263",
+      "corpusInventorySha256": "d54362a21913728bc162b820b0031cb68e47b108f7ccf04bf9159b266e555887",
+      "corpusMembers": 3466,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "ff404d42915b2cddcba746eb992611e875650aced35a6a17389f51ff072b461d",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "3ed67bce67db3bfa891aba0b068d3b8c8ea78fc8c1b8de455062869944ac5611",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.3": {
+      "archiveSha256": "0805d7c180cf09caad71666c7a458a74f041561a532902454da5047d83948138",
+      "corpusInventorySha256": "1a347663eaaadf55460b166da28b5a4123864d0060f785a153aa430576c8bc02",
+      "corpusMembers": 3470,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "270df1fe27dee19bacfae2f1bd4e45ca7f553ff3242571ff74c15a93018d378a",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "57d5be6bfbf9eb6570f760683ffd40cf717b0bb96a85a63e81ea5181e01de97a",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.4": {
+      "archiveSha256": "65d042e1c8010243e617efb02afda20b85c2160acdbfbcb5b26b80cec6515650",
+      "corpusInventorySha256": "cc5135d0a84af872a21c0cfdb1462d714648484122d9ec80d66db52a0b9e4ae3",
+      "corpusMembers": 3474,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "248e5094c7d26b9ebb839bd2a0f29ebfcf7a3dcdabb7ac84d571872df83ddc9f",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "57d5be6bfbf9eb6570f760683ffd40cf717b0bb96a85a63e81ea5181e01de97a",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.5": {
+      "archiveSha256": "74fc163217a3964257d3be39af943e08861263c4231f9ef5b496b6f6d4c7b2b6",
+      "corpusInventorySha256": "b03fc571ac7eea36285537e64f154bdbb7f8b8e39be7bbb88aeb7930a2d522e1",
+      "corpusMembers": 3481,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "a5203fcc283c00d14394d6c18eeb8dec3c0e700fc2dae5a30f7d4bfab86eea79",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "e369476bd154454347c33cd3fea504af03f154a86275c34b1299720ffc55152c",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "db1050e07142622e818405d8e2a1e279baf45da8eefc08cb7d75e1369ab49e98",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.6": {
+      "archiveSha256": "f453480307524968f7a04ec65e64f2a83a825973bcd260a2e7691be82ae70c96",
+      "corpusInventorySha256": "b03fc571ac7eea36285537e64f154bdbb7f8b8e39be7bbb88aeb7930a2d522e1",
+      "corpusMembers": 3481,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "d08f4c68903a603594a8f79384939963a510e138d5dc692f21e6be71bd36d8e0",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "2a91ba3cc29e010555ffa9cfa7d49f0326de0984637d11e3bcab90eb72b7988e",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.7": {
+      "archiveSha256": "14796d24402108e99d8de4e974d539bed62e23af8c4233317274ce073ceff93b",
+      "corpusInventorySha256": "4a38451d882f86c8511a9f7f76b8c5b79643bd707622ff72406e2bb5ccc2281d",
+      "corpusMembers": 3485,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "aa2fd757bb7b4e34618419de3a717d52bde095a90012e3d18a21881636b77950",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "2a91ba3cc29e010555ffa9cfa7d49f0326de0984637d11e3bcab90eb72b7988e",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.8": {
+      "archiveSha256": "277294cb33119ab71b2bc81f2f445e9bc9435b893ad15bb2cd2b0e859a0ee84a",
+      "corpusInventorySha256": "4a38451d882f86c8511a9f7f76b8c5b79643bd707622ff72406e2bb5ccc2281d",
+      "corpusMembers": 3485,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "3c032a07a94f7a34dd029884873ab23800ee7b5224acd796cf3e6c031e5319f4",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "2a91ba3cc29e010555ffa9cfa7d49f0326de0984637d11e3bcab90eb72b7988e",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.13.9": {
+      "archiveSha256": "a2c9ae7b770da34860050c309f903221c67830c86e4a7e760692b803df95143a",
+      "corpusInventorySha256": "f9b154e11a4b550ad5a3514d729cca4595ab5d02245485e331e01bd4829efd73",
+      "corpusMembers": 3497,
+      "fuzz": true,
+      "protocol": "protocol-4",
+      "roles": {
+        "Makefile.am": "486f54ab2a7e839e9668335be42138f899e8d5861bdc259a19247ccedb8f07d1",
+        "configure.ac": "ede2bc6aa4275f21547eb03601e8f3fa800bdc506b6462b49ad80e56bda5858a",
+        "fuzz/Makefile.am": "0100d1e7772ba257277d9605ee105293d0257eef9ce8cf64ffb6ae0db94f6f3b",
+        "include/libxml/xmlversion.h.in": "55043c78dd7bfaf0573a51dcd63562dadfe2ab4f8c248927ced1ae28ba64455d",
+        "runsuite.c": "8da145b22d35159d3441f278cbddef9687a12ca1e13f6732146f5445e2a1f1eb",
+        "runtest.c": "cb3e4a572f771731e26628becb0eb563f115e9effb4bed528eb249628d6120ac",
+        "runxmlconf.c": "ff54df75fe87f10a0e6372fa70bbe49d55fffbea6d22080c1082d729d02f79ed",
+        "testModule.c": "e50e9b9b0c5d6637d4ff601bf8a2168f944d4e0e094b7f4d38ed2ad55ed210bc",
+        "testThreads.c": "5cb94e121c21e6c2b434e489b91223dcae59282165241742301dbfc60fffef51",
+        "testapi.c": "8773c8c73ac24ed7ec7266610ef386e208528475b151de3b996b8899564d191e",
+        "testchar.c": "93a7424de5e0528e77db1f88fb23d77a219a48cf3b2af6ae81d207746a1f148a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "b2651e3069c31cbbb53aad83b792549fdf887d9be69f33c5c90563554b62fdac",
+        "testrecurse.c": "d1d83255e78e15826ec8ee71f8cfd62803c05f3296c28d0aa6d9d38e04cc2d4f"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.0": {
+      "archiveSha256": "3e2ed89d81d210322d70b35460166d4ea285e5bb017576972a1d76a09631985c",
+      "corpusInventorySha256": "a188fea4f6010372e845a4eee295a4b68a26e7174f95ecd57d27686e024ade5b",
+      "corpusMembers": 3403,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "a75b88f934be9e38b73a1ba545905db99ab824117fb6dd36d0053b823ad9000e",
+        "configure.ac": "57d139f2e4958a71c6e94c66fd04b48f299c2bc31ed597cc97a8148c6afba790",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "1ffb571c7fbf68431698d7beeeea02bd948ae6314bba0566b93702285fe62c5c",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "cf2288987174dcd5d107fe0ad9fa61d80011a8d0b89545d39fa9a7d120754e13",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.1": {
+      "archiveSha256": "310df85878b65fa717e5e28e0d9e8f6205fd29d883929303a70a4f2fc4f6f1f2",
+      "corpusInventorySha256": "a188fea4f6010372e845a4eee295a4b68a26e7174f95ecd57d27686e024ade5b",
+      "corpusMembers": 3403,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "57d139f2e4958a71c6e94c66fd04b48f299c2bc31ed597cc97a8148c6afba790",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "1ffb571c7fbf68431698d7beeeea02bd948ae6314bba0566b93702285fe62c5c",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "178bb073eadb999862b0c3a7f351830429576803d3c334f4bf597e1e6802ebc7",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.2": {
+      "archiveSha256": "353f3c83535d4224a4e5f1e88c90b5d4563ea8fec11f6407df640fd28fc8b8c6",
+      "corpusInventorySha256": "a188fea4f6010372e845a4eee295a4b68a26e7174f95ecd57d27686e024ade5b",
+      "corpusMembers": 3403,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "57d139f2e4958a71c6e94c66fd04b48f299c2bc31ed597cc97a8148c6afba790",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "1ffb571c7fbf68431698d7beeeea02bd948ae6314bba0566b93702285fe62c5c",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "178bb073eadb999862b0c3a7f351830429576803d3c334f4bf597e1e6802ebc7",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.3": {
+      "archiveSha256": "6de55cacc8c2bc758f2ef6f93c313cb30e4dd5d84ac5d3c7ccbd9344d8cc6833",
+      "corpusInventorySha256": "a188fea4f6010372e845a4eee295a4b68a26e7174f95ecd57d27686e024ade5b",
+      "corpusMembers": 3403,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "fc40ba60abced787f1ae5744dbd4f0f5b15e732188ecdd9eed6647035b657819",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "9438fda0118f2b7d6e72a83f28aab67341bc46a9cdc137275f36b00bc1c6c6b0",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "83843b08daa5134c56d5d20c6a4531110c3a8371835b72503f6b629e5f1edc38",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.4": {
+      "archiveSha256": "24175ec30a97cfa86bdf9befb7ccf4613f8f4b2713c5103e0dd0bc9c711a2773",
+      "corpusInventorySha256": "a188fea4f6010372e845a4eee295a4b68a26e7174f95ecd57d27686e024ade5b",
+      "corpusMembers": 3403,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "b3fd9a39600f1f9e39026f7cdba4ee019e4ddaf3cade3eace0fc260888b1bc52",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "9438fda0118f2b7d6e72a83f28aab67341bc46a9cdc137275f36b00bc1c6c6b0",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "83843b08daa5134c56d5d20c6a4531110c3a8371835b72503f6b629e5f1edc38",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.5": {
+      "archiveSha256": "03d006f3537616833c16c53addcdc32a0eb20e55443cba4038307e3fa7d8d44b",
+      "corpusInventorySha256": "e2d060d84451c3bcf1f551d8f21809ec565aab6f69314beaf95a4c534893b191",
+      "corpusMembers": 3419,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "b3fd9a39600f1f9e39026f7cdba4ee019e4ddaf3cade3eace0fc260888b1bc52",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "66c0f5615e4daa92ab2cbef0d94d55576d139b4b77471a097d7b458573ede017",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "50602b8baa6e3de699b72cb1974fbc66938c614bff8254401da28de356f0019a",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.14.6": {
+      "archiveSha256": "7ce458a0affeb83f0b55f1f4f9e0e55735dbfc1a9de124ee86fb4a66b597203a",
+      "corpusInventorySha256": "e2d060d84451c3bcf1f551d8f21809ec565aab6f69314beaf95a4c534893b191",
+      "corpusMembers": 3419,
+      "fuzz": true,
+      "protocol": "protocol-5",
+      "roles": {
+        "Makefile.am": "6fcc3886742b4653fbcb803fd00ad89c9e3a01be65502b87a2bd6850f248bd25",
+        "configure.ac": "b3fd9a39600f1f9e39026f7cdba4ee019e4ddaf3cade3eace0fc260888b1bc52",
+        "fuzz/Makefile.am": "a1e5089366da8004d742e03bd5d6eff3416c316c87e587897909bcf494158cbe",
+        "include/libxml/xmlversion.h.in": "eaa06d25fe57e2bba71576f49be71075ff8cde110d3714a88b1246b4783a064d",
+        "runsuite.c": "be54c56cc953ef0e35eb32ce2201e54aab3687ee791a1ba4e3d281e83aa29335",
+        "runtest.c": "66c0f5615e4daa92ab2cbef0d94d55576d139b4b77471a097d7b458573ede017",
+        "runxmlconf.c": "da690430e934090ad7590d0142ba9c1b3b8b7b640898213ec288fb1b4ac88999",
+        "test/catalogs/test.sh": "c61f3d8ed392bf886289b9582ad3101c1f897fc09b7d6093d60970fed2157e99",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "186fabbf192411e96521db99e683ec6496ce97913b33de4aebfa3b7ee6a88a0f",
+        "testapi.c": "bc2b3514efda5638fb3769b30db544d2cce3478eca54daa52760eab1afb6cf1e",
+        "testchar.c": "2f50397be8a16a138c484922cee23ddba551d9b96947583cbe852398db71dc6a",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "f4f13a7b94428a22a21a9a8f227c9af3c523c163c257c26d9dc4200daa80bf6b",
+        "testrecurse.c": "926892a87006e1301e647b33e7272b9a58e209fb463772f977530b6c90c28145"
+      },
+      "runtimeQualified": false
+    },
+    "2.15.0": {
+      "archiveSha256": "5abc766497c5b1d6d99231f662e30c99402a90d03b06c67b62d6c1179dedd561",
+      "corpusInventorySha256": "38e58cb4c6c685649a11ad371d971cb37f3d91a220d3fb3fc27abf7a262e7a69",
+      "corpusMembers": 3428,
+      "fuzz": true,
+      "protocol": "protocol-6",
+      "roles": {
+        "Makefile.am": "5b5c510c3fae745e72fc281b22f52eaa32ee1a124e7ab6bf60e9f690ff0dfc58",
+        "configure.ac": "96e975456f6ba48ffbc5184b5adf15dfff053fa4c1bd91b2ea73deacc96ec856",
+        "fuzz/Makefile.am": "5d875937ebd9e6d98fd8aa3d629845a6387ec5a1a7153f2b210871a57f19258d",
+        "include/libxml/xmlversion.h.in": "d04e84d0b26bded0e033d17758ba7bcadbfe13721eeb2c94e5cbd9f1c8ad2ec7",
+        "runsuite.c": "36b6e168cddcb2ad56aba71a1b525a5dd529dde338dafdddbd0f74601dc87f86",
+        "runtest.c": "a1bbe4c60e5afbf2f629ba067154c4fe2207be25d31b84b7df61fb3da32b13a6",
+        "runxmlconf.c": "11ad9ee328e17182b762ac31602db3f66f1395153bc12696264b310f4be2d021",
+        "test/catalogs/test.sh": "74e48184dc19d572d784feb80f5d27b529b52c73f34d48ee88aa9571887f73e4",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "88b9867b758152bd1729cc0d831ca57fff65b44615eee302f62228d53d83d7ae",
+        "testapi.c": "d1757834551b367623e8f123e1f885e9a492d9c23637293c2fc5757aa9494daf",
+        "testchar.c": "9bc0e15a9c3f41e2d1d1fe6d8e4d2b05ed6816492291266954c1f7341f745623",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "a7f4ad8860502f7a874c6c3e4c4d11d1795d16b277a086d3d3155e2ebf107530",
+        "testrecurse.c": "9416455de231d538d22781eee28d3277869f7d79f4124a70a0d088f87732853d"
+      },
+      "runtimeQualified": false
+    },
+    "2.15.1": {
+      "archiveSha256": "c008bac08fd5c7b4a87f7b8a71f283fa581d80d80ff8d2efd3b26224c39bc54c",
+      "corpusInventorySha256": "38e58cb4c6c685649a11ad371d971cb37f3d91a220d3fb3fc27abf7a262e7a69",
+      "corpusMembers": 3428,
+      "fuzz": true,
+      "protocol": "protocol-6",
+      "roles": {
+        "Makefile.am": "5b5c510c3fae745e72fc281b22f52eaa32ee1a124e7ab6bf60e9f690ff0dfc58",
+        "configure.ac": "96e975456f6ba48ffbc5184b5adf15dfff053fa4c1bd91b2ea73deacc96ec856",
+        "fuzz/Makefile.am": "5d875937ebd9e6d98fd8aa3d629845a6387ec5a1a7153f2b210871a57f19258d",
+        "include/libxml/xmlversion.h.in": "d04e84d0b26bded0e033d17758ba7bcadbfe13721eeb2c94e5cbd9f1c8ad2ec7",
+        "runsuite.c": "36b6e168cddcb2ad56aba71a1b525a5dd529dde338dafdddbd0f74601dc87f86",
+        "runtest.c": "a1bbe4c60e5afbf2f629ba067154c4fe2207be25d31b84b7df61fb3da32b13a6",
+        "runxmlconf.c": "11ad9ee328e17182b762ac31602db3f66f1395153bc12696264b310f4be2d021",
+        "test/catalogs/test.sh": "74e48184dc19d572d784feb80f5d27b529b52c73f34d48ee88aa9571887f73e4",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "88b9867b758152bd1729cc0d831ca57fff65b44615eee302f62228d53d83d7ae",
+        "testapi.c": "d1757834551b367623e8f123e1f885e9a492d9c23637293c2fc5757aa9494daf",
+        "testchar.c": "9bc0e15a9c3f41e2d1d1fe6d8e4d2b05ed6816492291266954c1f7341f745623",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "a7f4ad8860502f7a874c6c3e4c4d11d1795d16b277a086d3d3155e2ebf107530",
+        "testrecurse.c": "9416455de231d538d22781eee28d3277869f7d79f4124a70a0d088f87732853d"
+      },
+      "runtimeQualified": false
+    },
+    "2.15.2": {
+      "archiveSha256": "c8b9bc81f8b590c33af8cc6c336dbff2f53409973588a351c95f1c621b13d09d",
+      "corpusInventorySha256": "009b6f3eb7f8a1c33c1a2a82fcb203709c866932b3501fe435dbe75ce14f1f9b",
+      "corpusMembers": 3437,
+      "fuzz": true,
+      "protocol": "protocol-7",
+      "roles": {
+        "Makefile.am": "558230946b26a4520324b35638b98329c5294861b2e526329aeae6adcb25fd2f",
+        "configure.ac": "8fa435f8f0614976d2c95799da09566d1b8e99a79aa49c9ccaa3a11ae0f66f89",
+        "fuzz/Makefile.am": "5d875937ebd9e6d98fd8aa3d629845a6387ec5a1a7153f2b210871a57f19258d",
+        "include/libxml/xmlversion.h.in": "d04e84d0b26bded0e033d17758ba7bcadbfe13721eeb2c94e5cbd9f1c8ad2ec7",
+        "runsuite.c": "36b6e168cddcb2ad56aba71a1b525a5dd529dde338dafdddbd0f74601dc87f86",
+        "runtest.c": "39f8cb4607f7569ccdf10f58e2c2c6998718d92fc71a62aac274059a82bc2301",
+        "runxmlconf.c": "11ad9ee328e17182b762ac31602db3f66f1395153bc12696264b310f4be2d021",
+        "test/catalogs/test.sh": "65c5ca40fe8cddbec9cb3875131fd0c5cf5f0475f0906c558a8b39424db27fe9",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "88b9867b758152bd1729cc0d831ca57fff65b44615eee302f62228d53d83d7ae",
+        "testapi.c": "d1757834551b367623e8f123e1f885e9a492d9c23637293c2fc5757aa9494daf",
+        "testcatalog.c": "1b236f8500d5308bf2a83ff2d846ed3763c7e34d8fe548d177b4c80a2b1c2c17",
+        "testchar.c": "9bc0e15a9c3f41e2d1d1fe6d8e4d2b05ed6816492291266954c1f7341f745623",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "93b43a7bb6721cb822e0dcef0ff1f33d4da42426012285abcf02b8e261e4031b",
+        "testrecurse.c": "9416455de231d538d22781eee28d3277869f7d79f4124a70a0d088f87732853d"
+      },
+      "runtimeQualified": false
+    },
+    "2.15.3": {
+      "archiveSha256": "78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07",
+      "corpusInventorySha256": "157d0d19142be79802a149670a076c0778d662096b51890251c7a3512da46d34",
+      "corpusMembers": 3439,
+      "fuzz": true,
+      "protocol": "protocol-7",
+      "roles": {
+        "Makefile.am": "6f0a8905373401624e14987534927c15fc9e1a26f723b8fb84f21c5a3aa81c4d",
+        "configure.ac": "8fa435f8f0614976d2c95799da09566d1b8e99a79aa49c9ccaa3a11ae0f66f89",
+        "fuzz/Makefile.am": "5d875937ebd9e6d98fd8aa3d629845a6387ec5a1a7153f2b210871a57f19258d",
+        "include/libxml/xmlversion.h.in": "d04e84d0b26bded0e033d17758ba7bcadbfe13721eeb2c94e5cbd9f1c8ad2ec7",
+        "runsuite.c": "36b6e168cddcb2ad56aba71a1b525a5dd529dde338dafdddbd0f74601dc87f86",
+        "runtest.c": "72c2b22db64e310ab6e9bf8fd8efa3fa2302b274f616281c80deaa3bcc448385",
+        "runxmlconf.c": "11ad9ee328e17182b762ac31602db3f66f1395153bc12696264b310f4be2d021",
+        "test/catalogs/test.sh": "65c5ca40fe8cddbec9cb3875131fd0c5cf5f0475f0906c558a8b39424db27fe9",
+        "test/relaxng/v012-reader-main.rng": "f6170431e5f5478e99b3e3e23dcafbc0b6ff1087da4f2e3a547399175ab2b0da",
+        "test/schemas/v012-reader-schema-main.xsd": "e8332841acce21eb66ad7dfafd6a7dd071172085102cb2bb3a1d983ad39ff195",
+        "test/scripts/test.sh": "513de2688e7b794e28933a7e7aa7dd2acd53310a1b942c4bc8829fab61bea74b",
+        "testModule.c": "88b9867b758152bd1729cc0d831ca57fff65b44615eee302f62228d53d83d7ae",
+        "testapi.c": "d1757834551b367623e8f123e1f885e9a492d9c23637293c2fc5757aa9494daf",
+        "testcatalog.c": "1b236f8500d5308bf2a83ff2d846ed3763c7e34d8fe548d177b4c80a2b1c2c17",
+        "testchar.c": "9bc0e15a9c3f41e2d1d1fe6d8e4d2b05ed6816492291266954c1f7341f745623",
+        "testdict.c": "450ccb5794d5017ee9f84156d98314eb88d615645ddec16934eac010bbce093b",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testparser.c": "5c9468374004b5d0c677e4003c1675c81b98f84f668eb573b4b7f17d21215328",
+        "testrecurse.c": "9416455de231d538d22781eee28d3277869f7d79f4124a70a0d088f87732853d"
+      },
+      "runtimeQualified": false
+    },
+    "2.7.4": {
+      "archiveSha256": "b2aa5061d4f591004331c1ab220d0e1b41d01e09f248efeb3543b970e2fc1268",
+      "corpusInventorySha256": "3aeac517e61704a71660c491b1be4d21d1876f900130f5859aa45f2874c4b554",
+      "corpusMembers": 3354,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "995d3c4e796b229c0839dcfc30e270439b4f60250f7365d63c8a1fd44ea39663",
+        "configure.in": "b59751d41128ee5d6284e7d780de33bdafd7a6f18127ebe09c3ba2b66af7104a",
+        "include/libxml/xmlversion.h.in": "16fcf3039aab922b05c4d2772faa02b10127c98320f34c9e974428305475ff2d",
+        "runtest.c": "f5c496e8d88cfa8ea26274f76e229b79c174c6d5e1bf523e564726d805c5bb02",
+        "runxmlconf.c": "130dcf8d47c697ae90a975e9631c947a28f69bbd683c1c6de8496d4953ca9921",
+        "testapi.c": "0f0f9fee878b4338bc21234cc1d8626bb5465b6b5149e38429247af18d578564",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "93117d6e96a7ace199aebd0e83ac225269daf66e1094bbce43bc1a00fbabf023"
+      },
+      "runtimeQualified": false
+    },
+    "2.7.5": {
+      "archiveSha256": "99c5f22d1811bba19a91e3d2aae73d09002616580c0a29d1b595085d9201157b",
+      "corpusInventorySha256": "5df36ec17b2211e0ec09fee49ece8c57224bac316403677ced84cd2c21d72210",
+      "corpusMembers": 3367,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "995d3c4e796b229c0839dcfc30e270439b4f60250f7365d63c8a1fd44ea39663",
+        "configure.in": "76d144d9e8539ca6154c21e7ec55aa4a3a07eb485c1ec5d733bfbc46edb76569",
+        "include/libxml/xmlversion.h.in": "16fcf3039aab922b05c4d2772faa02b10127c98320f34c9e974428305475ff2d",
+        "runtest.c": "f5c496e8d88cfa8ea26274f76e229b79c174c6d5e1bf523e564726d805c5bb02",
+        "runxmlconf.c": "130dcf8d47c697ae90a975e9631c947a28f69bbd683c1c6de8496d4953ca9921",
+        "testapi.c": "0f0f9fee878b4338bc21234cc1d8626bb5465b6b5149e38429247af18d578564",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "93117d6e96a7ace199aebd0e83ac225269daf66e1094bbce43bc1a00fbabf023"
+      },
+      "runtimeQualified": false
+    },
+    "2.7.6": {
+      "archiveSha256": "f8880b8bdd30d903a5f4e5ecdd7588b3b6e4660eb7a14f5aba7f516b1f45b33a",
+      "corpusInventorySha256": "5df36ec17b2211e0ec09fee49ece8c57224bac316403677ced84cd2c21d72210",
+      "corpusMembers": 3367,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "995d3c4e796b229c0839dcfc30e270439b4f60250f7365d63c8a1fd44ea39663",
+        "configure.in": "5b781dda1d8e7b4b96204d29e098f4f1249ef746e5adad12ec7177bad33c1531",
+        "include/libxml/xmlversion.h.in": "16fcf3039aab922b05c4d2772faa02b10127c98320f34c9e974428305475ff2d",
+        "runtest.c": "f5c496e8d88cfa8ea26274f76e229b79c174c6d5e1bf523e564726d805c5bb02",
+        "runxmlconf.c": "130dcf8d47c697ae90a975e9631c947a28f69bbd683c1c6de8496d4953ca9921",
+        "testapi.c": "0f0f9fee878b4338bc21234cc1d8626bb5465b6b5149e38429247af18d578564",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "93117d6e96a7ace199aebd0e83ac225269daf66e1094bbce43bc1a00fbabf023"
+      },
+      "runtimeQualified": false
+    },
+    "2.7.7": {
+      "archiveSha256": "a9659134c32690ce333611a5fc9675580a5dbbab333f06e68ad275eb6d0521ef",
+      "corpusInventorySha256": "5df36ec17b2211e0ec09fee49ece8c57224bac316403677ced84cd2c21d72210",
+      "corpusMembers": 3367,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "49e7fcba5f2eeb98bb32a1d7798293be7c4c9b83cdf8bf577d023af93cb412a6",
+        "configure.in": "887018074af082eb785cd76af8260d497086c265025791f33beb83fd7bc2d034",
+        "include/libxml/xmlversion.h.in": "16fcf3039aab922b05c4d2772faa02b10127c98320f34c9e974428305475ff2d",
+        "runtest.c": "f909928ba34f92dfb289432d818233f0271a9c0122467fed08fcf93bf42c731b",
+        "runxmlconf.c": "130dcf8d47c697ae90a975e9631c947a28f69bbd683c1c6de8496d4953ca9921",
+        "testapi.c": "0f0f9fee878b4338bc21234cc1d8626bb5465b6b5149e38429247af18d578564",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "93117d6e96a7ace199aebd0e83ac225269daf66e1094bbce43bc1a00fbabf023"
+      },
+      "runtimeQualified": false
+    },
+    "2.7.8": {
+      "archiveSha256": "7d7e03ba5f1d985d15f75e04c674babcb18e70a4d41cc8686523fdd21f43ce36",
+      "corpusInventorySha256": "5df36ec17b2211e0ec09fee49ece8c57224bac316403677ced84cd2c21d72210",
+      "corpusMembers": 3367,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "e2be0bb92ace6242b3d87c51167929a7d20a210d878a182a1deabc27aedd0322",
+        "configure.in": "07cc00c6aebe68210b603e926187aa4662afffbeb7b027891995473b8577179a",
+        "include/libxml/xmlversion.h.in": "bc2ea2df2ab1e05c881297dbe9749b1acd9761b5909d05ce1cd12008f9cad4aa",
+        "runtest.c": "f909928ba34f92dfb289432d818233f0271a9c0122467fed08fcf93bf42c731b",
+        "runxmlconf.c": "130dcf8d47c697ae90a975e9631c947a28f69bbd683c1c6de8496d4953ca9921",
+        "testapi.c": "7336c7505418a95aa5471bb1ea0646929b653ef61c7d10c1b42630d9bb16c7a9",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "93117d6e96a7ace199aebd0e83ac225269daf66e1094bbce43bc1a00fbabf023"
+      },
+      "runtimeQualified": false
+    },
+    "2.8.0": {
+      "archiveSha256": "7e1425c8fc1e7514771447574d380014b69f1d62e42f83ce252c3eb4c7d3fa54",
+      "corpusInventorySha256": "6967537eca82ce7e7b026ae4bed994e2a5fe28800f57aa940bc1533f1ffed9f5",
+      "corpusMembers": 3379,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "448610f0e4c58f5b3df744832e038afdf939d6116a67455fd13a1cf827d67ccd",
+        "configure.in": "e5a3a478ad00998bc95ee9cd5d762e599c0d398db7ed204cf78d2c2fbdf83b6a",
+        "include/libxml/xmlversion.h.in": "34c3d4b7aeffb34604879ff1656b8bf3c37cbfad037f268570e7e5639d49d941",
+        "runtest.c": "6e15b1d6eaf90f5311ca2e718032728b5e1be6d83a9d78bebaac8c8a1fc59cc1",
+        "runxmlconf.c": "2c30214397ec329ed353eaa30df8ecf1b50856eccbe39b130e9544e7b2437688",
+        "testapi.c": "04322e323659e97eeb963f671346c553e87d6deb569cd7823ff3325800830613",
+        "testchar.c": "cd0b51919e53935e27b9af5c8db622f799c57ebd9bc6a3772f605f0e2c264b26",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "9674529d139614790f0476104c80e3af901c87dbd404863f0f76ec39e59a9d3e"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.0": {
+      "archiveSha256": "97d3d9abce2da0eda9b7a58b3fd6b4a6de012d322355151e7693b0d7ed98c634",
+      "corpusInventorySha256": "8d7d45f1e8408ba3c7ddc02709be20e7d0b83403b3ee6d560a0008039775b02f",
+      "corpusMembers": 3383,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "bff60b4d088d293ecdc833a3ec2465d151d9f52f0929eda2b8e1d641349f52af",
+        "configure.in": "5d28bdb778e7a291c0d2420099a6ea0c582af097f6416cbfe5ab31bef5c81bae",
+        "include/libxml/xmlversion.h.in": "85919577925ac6097d1f75ae702a769d6f612d3f310dae6345c66ea7143c6177",
+        "runtest.c": "1c72c108079dc46954c34808c58aed18849f9d8cfe6bc63486339e097c93eb54",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "f6abd7a9d78eb9862237951e4323ef6151e3bd362b174401dc5d994bb5c895eb",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.1": {
+      "archiveSha256": "0228dfae26647541533813f2d58d9138c3910f2ba57e9e683d81c8804b8fae7c",
+      "corpusInventorySha256": "6065a54cf25fb788394a8dc907e864b83b4a070a43ae37dd21e608a41ce10e90",
+      "corpusMembers": 3438,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "bff60b4d088d293ecdc833a3ec2465d151d9f52f0929eda2b8e1d641349f52af",
+        "configure.in": "13f69ae6164df2b6a798b79890b7257943b0c655436591734eccbd125f9b8a3b",
+        "include/libxml/xmlversion.h.in": "839daa21db74174edc687b28a5e0ea4bdc5834ab319c6bc10a124c462b2f7080",
+        "runtest.c": "3e2891fc6cc33cb3f0be0684197673b736c0aa6c0c1bebc8c865274988a144b2",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "6e2094002cde1935340f8919d64c29e594c91d8c69d1e327650f42f8f972045d",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.10": {
+      "archiveSha256": "593b7b751dd18c2d6abcd0c4bcb29efc203d0b4373a6df98e3a455ea74ae2813",
+      "corpusInventorySha256": "8b2a642a5622d153c77ac8991e86f945f8295a3bf6e050d518a931f04add5735",
+      "corpusMembers": 3749,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "7678d25fae3764df50a39bd84f4d18da7457d8e7f17901b8c0eca370b5340032",
+        "configure.ac": "1bb4a5bcbd2cbb8ed30ed7cdce82fc866966d0235603c004cc957cd95bca8d99",
+        "include/libxml/xmlversion.h.in": "ae1403152ad050a26bc54942874f758bfa329f852d5cefb2f8d5cb542072a7bf",
+        "runtest.c": "fa70727c0938e8c67df8821f28fb91222214bee7b0ef9e589c605ffafb030487",
+        "runxmlconf.c": "fc0ffbcab7205e644a761e0bb9f823043328bfa67dcccacdb4ff1700a8d07bad",
+        "testapi.c": "6c01bb5b206f0c1316677f23fa0e9cdccb8cab4459528fc092aab7b1fe48a58f",
+        "testchar.c": "22f4a6d38a54fe829162780831e9d2d97a0df68a86c92f18ec0f89c4d154d23d",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "a7d85bfc2a417a924d4ca9bfc3c843da1056283236ddc11f18fbe3fbe6136564"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.11": {
+      "archiveSha256": "a4a59441c8dc1dd82ca6857fa2d640aff2e1ab65ee480caa0d30e3626167a204",
+      "corpusInventorySha256": "0b70cd685972e7b98dc14e593a40421ab33b2402c35da8eee7969f0e50cd9d80",
+      "corpusMembers": 3817,
+      "fuzz": true,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "5b48afd6232b2171fe48956852f487721da4f1202fff2b81e959f2b5f211a5fa",
+        "configure.ac": "5019a79ccd5f5a9c8215d32b5380bb61c38d63a3a8439889a2c1f26bd5d77276",
+        "fuzz/Makefile.am": "9c4428283d1af11c42af06be77b00766ff17557da51639c35beb3aca2d20d0d7",
+        "include/libxml/xmlversion.h.in": "f2ee0883002b9cd80046cda1ac72fa9ab49c92e00f98d850641ba4a1ccaa46b4",
+        "runtest.c": "af142d774b0a8d1c8edf30f3c0ef7d4ca9a82d37d5e4fdabbd5e52e23ae96037",
+        "runxmlconf.c": "96f20b9eed679dd5e48a53000d801bf05833315ed19174f14c6c5c34951a21bc",
+        "testapi.c": "519d8695006a5509b4c8a9fd5ef14c87871e1ffe4ec89ed1a7ec06d8beaecd08",
+        "testchar.c": "22f4a6d38a54fe829162780831e9d2d97a0df68a86c92f18ec0f89c4d154d23d",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "a7d85bfc2a417a924d4ca9bfc3c843da1056283236ddc11f18fbe3fbe6136564"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.12": {
+      "archiveSha256": "28a92f6ab1f311acf5e478564c49088ef0ac77090d9c719bbc5d518f1fe62eb9",
+      "corpusInventorySha256": "0b70cd685972e7b98dc14e593a40421ab33b2402c35da8eee7969f0e50cd9d80",
+      "corpusMembers": 3817,
+      "fuzz": true,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "5b48afd6232b2171fe48956852f487721da4f1202fff2b81e959f2b5f211a5fa",
+        "configure.ac": "fe8645b8795bf3fdf9e4c311d7ef147b1d1831aa3a5bcf269156b610ac51153d",
+        "fuzz/Makefile.am": "e9797e8debdcec37d4c07f7cd3474845eb44a8a0540af6cd2f0877fe94d63904",
+        "include/libxml/xmlversion.h.in": "f2ee0883002b9cd80046cda1ac72fa9ab49c92e00f98d850641ba4a1ccaa46b4",
+        "runtest.c": "af142d774b0a8d1c8edf30f3c0ef7d4ca9a82d37d5e4fdabbd5e52e23ae96037",
+        "runxmlconf.c": "96f20b9eed679dd5e48a53000d801bf05833315ed19174f14c6c5c34951a21bc",
+        "testapi.c": "519d8695006a5509b4c8a9fd5ef14c87871e1ffe4ec89ed1a7ec06d8beaecd08",
+        "testchar.c": "22f4a6d38a54fe829162780831e9d2d97a0df68a86c92f18ec0f89c4d154d23d",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "a7d85bfc2a417a924d4ca9bfc3c843da1056283236ddc11f18fbe3fbe6136564"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.13": {
+      "archiveSha256": "276130602d12fe484ecc03447ee5e759d0465558fbc9d6bd144e3745306ebf0e",
+      "corpusInventorySha256": "027431232189796ba0de59da5a8be87ea0bf0c0f5b7da803e19710eee605e7b8",
+      "corpusMembers": 3872,
+      "fuzz": true,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "1b2b0d5da79cbf00702764672f3c02bc65db7c41446e4063f3c2b100d62d2faf",
+        "configure.ac": "78e7c9a6ff1fe2c90cb2b986960e2eeb1c9c9eb545618404edec950afecdbb58",
+        "fuzz/Makefile.am": "aeb60ffa0c2212130cedb146488d5777e61363c408aa41818fef28545623a2c8",
+        "include/libxml/xmlversion.h.in": "d56ed41d54c0cd07dfeafe865a5e00a1c23831c00580802a6107286a43fd657e",
+        "runtest.c": "44fd60c3396abeb3d66c1cf5fe42776476c4d23522820835b3536e596f6c22e3",
+        "runxmlconf.c": "96f20b9eed679dd5e48a53000d801bf05833315ed19174f14c6c5c34951a21bc",
+        "testapi.c": "ae5affa58170d385ecd7a589a09fe59577892c0dac336b016906b886c641016b",
+        "testchar.c": "87215ad47b9db0c2b8a5fb001156d982372876b7db7b63801b0d3e9a4fac1d05",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "a7d85bfc2a417a924d4ca9bfc3c843da1056283236ddc11f18fbe3fbe6136564"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.14": {
+      "archiveSha256": "60d74a257d1ccec0475e749cba2f21559e48139efba6ff28224357c7c798dfee",
+      "corpusInventorySha256": "e94c41f68dd147dbf698fe213ac5c8d5b00fc195a9aefd16aea64491cf53dd86",
+      "corpusMembers": 3881,
+      "fuzz": true,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "1b2b0d5da79cbf00702764672f3c02bc65db7c41446e4063f3c2b100d62d2faf",
+        "configure.ac": "123876dd6f6ff4f8bcb5c0f9aa086045ff86c19a1a2ae250ecdaf378c3663165",
+        "fuzz/Makefile.am": "aeb60ffa0c2212130cedb146488d5777e61363c408aa41818fef28545623a2c8",
+        "include/libxml/xmlversion.h.in": "d56ed41d54c0cd07dfeafe865a5e00a1c23831c00580802a6107286a43fd657e",
+        "runtest.c": "43e830572877ba067e7fa5849c7262dd503c529a431d40be8286d1b6b15c020c",
+        "runxmlconf.c": "96f20b9eed679dd5e48a53000d801bf05833315ed19174f14c6c5c34951a21bc",
+        "testapi.c": "ae5affa58170d385ecd7a589a09fe59577892c0dac336b016906b886c641016b",
+        "testchar.c": "87215ad47b9db0c2b8a5fb001156d982372876b7db7b63801b0d3e9a4fac1d05",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "a7d85bfc2a417a924d4ca9bfc3c843da1056283236ddc11f18fbe3fbe6136564"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.2": {
+      "archiveSha256": "edd7a2fed2eb832a094992aec61f1c41167a095dd8ce7f3e29db42c539eb4ff2",
+      "corpusInventorySha256": "8d2ad0a90b81c7be2450b64e498b5a3819e23c712ca1ca56ab53e68d463e7567",
+      "corpusMembers": 3452,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "faad18a67eff2152a8ab149ae15b4eea8cb3b2f287637b52c7ad354bb9e1023c",
+        "configure.ac": "d0fee6f78b3710bfa3e8db5b4863e9d4bfeee4999a153c30ed266baed73b16ed",
+        "include/libxml/xmlversion.h.in": "839daa21db74174edc687b28a5e0ea4bdc5834ab319c6bc10a124c462b2f7080",
+        "runtest.c": "3ef5da75d7c181862fbe28a88572fa19f10c1eb1f2a234471659b3163aa7b3b8",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "1c583ba492c917bdec8068a15d955c6c58cb2ce9a94488acd890f8c5fb6b8c21",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "bb01b9f20a16e901dffd46965b7efef7ee7f64d105cd382f1cc1aa7bbd59bd48",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.3": {
+      "archiveSha256": "879062af262692afdee563e351f6e725e771d57c185e7ddc6247eb3328af4d20",
+      "corpusInventorySha256": "8263072976f71727123840e8879fe9a13f2d3d73edff73f758b68bd6c7c235a5",
+      "corpusMembers": 3486,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "faad18a67eff2152a8ab149ae15b4eea8cb3b2f287637b52c7ad354bb9e1023c",
+        "configure.ac": "f391fbba9889048ccc8fedb562c4a6eb6c2c7a5f54d519088fb2a03748d1dd54",
+        "include/libxml/xmlversion.h.in": "1700c670709c4952dd2a65691be22dd88a151cb8e33953a0dd14579c12318a33",
+        "runtest.c": "3ef5da75d7c181862fbe28a88572fa19f10c1eb1f2a234471659b3163aa7b3b8",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "4c348879cbe6e728c250a31cffa34843d65a9006115c2e40d6ef10d3cf6b5425",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.4": {
+      "archiveSha256": "21b2824f9ce56a72296f678103eed5a8446417c07e904e61748affa230ec9072",
+      "corpusInventorySha256": "25d6c0694a549efe81d7cbb4f883993576425ef86feb4aab06d93f2a99b3732f",
+      "corpusMembers": 3548,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "62698702650218fef44b144c18470e1de04fc27239fcbb725e4c2dc7ba7bb116",
+        "configure.ac": "5a9332b47572d03d36083d59da6428bad2cfc6df49f70501e0136c982ad24a3b",
+        "include/libxml/xmlversion.h.in": "1700c670709c4952dd2a65691be22dd88a151cb8e33953a0dd14579c12318a33",
+        "runtest.c": "0678211abb83cf983bea757e926889e62390f785b16ff3cfa3542457e59d72eb",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "72f4704a8b846d08ea47bbf36cf83d40f1c4d8f35c39b053ce575d26b7df1495",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.5": {
+      "archiveSha256": "a919df778f5e529f861cc48fb1bb8c5b265f9261713b6c6e6954bc39f4e6cbea",
+      "corpusInventorySha256": "a0c8f812f601221d9a8ecb06354414c6f3489b1beee5bc58fb4c6c358145bb34",
+      "corpusMembers": 3696,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "0f7eced3051552c7a9bf74487b374776d01d0a8e04a61a78bde1ffff2e096194",
+        "configure.ac": "e8c832fc78bf114e6bdc441f26ad029e99050ae006922f8ca204859320e8bca5",
+        "include/libxml/xmlversion.h.in": "1700c670709c4952dd2a65691be22dd88a151cb8e33953a0dd14579c12318a33",
+        "runtest.c": "270577a372e98f4e11b1b7f2b9869f6e478163dec10d87eb7230124fb4cb17dd",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "6fb435ae39a28dbee00b99773d82abf066e125f37fd060f7f5d0ae44f5cc8b21",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.6": {
+      "archiveSha256": "ac1c3e11ca2371b84fa3b84c45215a5de2bef949156cd7b16732cb33913cd44d",
+      "corpusInventorySha256": "a0c8f812f601221d9a8ecb06354414c6f3489b1beee5bc58fb4c6c358145bb34",
+      "corpusMembers": 3696,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "0f7eced3051552c7a9bf74487b374776d01d0a8e04a61a78bde1ffff2e096194",
+        "configure.ac": "5774266297b6df8e21ef15ef9bd4862c5669d3c431791fdf35fc0a53497e73b3",
+        "include/libxml/xmlversion.h.in": "1700c670709c4952dd2a65691be22dd88a151cb8e33953a0dd14579c12318a33",
+        "runtest.c": "270577a372e98f4e11b1b7f2b9869f6e478163dec10d87eb7230124fb4cb17dd",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "6fb435ae39a28dbee00b99773d82abf066e125f37fd060f7f5d0ae44f5cc8b21",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "b29b4cd7c4e365dc5d8eb0a6f48001791d940a6b0317861a111802c30ca9b7b4"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.7": {
+      "archiveSha256": "6437855f3332fcc0fc25323c5f06901e02277e1232a662b621dc88fde37259ac",
+      "corpusInventorySha256": "2e825f8b4df3056dadfb6bfd6f48cc796ca558c77168db039f16b72a74386e7f",
+      "corpusMembers": 3698,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "0f7eced3051552c7a9bf74487b374776d01d0a8e04a61a78bde1ffff2e096194",
+        "configure.ac": "59a8f2a5dc864fa6798c7f2ac825f47e0d7aaf7525a66d1c7937c022ad90ffab",
+        "include/libxml/xmlversion.h.in": "1700c670709c4952dd2a65691be22dd88a151cb8e33953a0dd14579c12318a33",
+        "runtest.c": "0f04abd9b87129cfc4ec7fc0a80f5149c34c862be140ccb51286e51c78ccd71f",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "6fb435ae39a28dbee00b99773d82abf066e125f37fd060f7f5d0ae44f5cc8b21",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "971b5ccdfec4df31eb1d0b82ea9604ced9d430011b5919c85bba7b98da822de5"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.8": {
+      "archiveSha256": "dcca21d624bbbe094fcc104e1f15f2eacfb65aecd0e38ed220aeca56b62c81e2",
+      "corpusInventorySha256": "d8fc43d7d1aa60345725333b01033111a5dcdfae2ede44579b7f30482a637ebb",
+      "corpusMembers": 3706,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "eaf63d2a16ddd9ee3994336a6bf7ab64b5e4ba603b6783107dc740fab7f40253",
+        "configure.ac": "56461d319ed34792672f7405f712fb44dc9e67ab46ff8f71ae3fb96c01a10ba1",
+        "include/libxml/xmlversion.h.in": "0eb2465aff0d3e16566cbff2c6e818ed3990ccc6a517b93eb49f58e800d81f97",
+        "runtest.c": "6007eaf33258e0dee728491a15afd7e4c14f014711a6e87164b8944564cb1a7f",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "01a037bc683718cadc2dddf4519dbbc88fc7e189cac37a80d1eb9b1fda3c22c3",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "971b5ccdfec4df31eb1d0b82ea9604ced9d430011b5919c85bba7b98da822de5"
+      },
+      "runtimeQualified": false
+    },
+    "2.9.9": {
+      "archiveSha256": "58a5c05a2951f8b47656b676ce1017921a29f6b1419c45e3baed0d6435ba03f5",
+      "corpusInventorySha256": "b29a9964605beb7231d6808a631964fe9dde109c2f6c67260b5aa54f95cc30de",
+      "corpusMembers": 3727,
+      "fuzz": false,
+      "protocol": "protocol-8",
+      "roles": {
+        "Makefile.am": "eaf63d2a16ddd9ee3994336a6bf7ab64b5e4ba603b6783107dc740fab7f40253",
+        "configure.ac": "055fa3812be9a66cab539cf8ca1a1fb9b4334743fa5c3ab2beac7437dd6a2892",
+        "include/libxml/xmlversion.h.in": "0eb2465aff0d3e16566cbff2c6e818ed3990ccc6a517b93eb49f58e800d81f97",
+        "runtest.c": "e8a16b06f6daa5b19701c3133fb25f8357b435312dd2069690b956e45f7beb89",
+        "runxmlconf.c": "965751674829007139d567d4e9d1c2001caea963a00fb5b76886d4802e5e1cde",
+        "testapi.c": "9483e4117290a18b9a860bb6833fef7229ce00ded867f0589f3b8e6df4fcbdf9",
+        "testchar.c": "c6e48dd7854ad418b860ccb4eb6ab3e3056d6481d3de2aab971c33ff7427d3e0",
+        "testdict.c": "cf7a2e1aa582c0f13676651d1dc1ed3337e1616db076fac0d408a55d2bf8e8ab",
+        "testdso.c": "081394d3a4df71e770c27bec223d843325b6838c4a3e63f55e4c867bbd59dedd",
+        "testrecurse.c": "971b5ccdfec4df31eb1d0b82ea9604ced9d430011b5919c85bba7b98da822de5"
+      },
+      "runtimeQualified": false
+    }
+  }
+}

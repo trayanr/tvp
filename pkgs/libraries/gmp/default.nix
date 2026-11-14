@@ -167,11 +167,123 @@ let
       };
     };
   };
-  canonical = tvpLib.packages.mkVersions packageArgs;
+  ordinaryDefs = tvpLib.packages.mkDefs {
+    "6.1.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-6.1.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        m4 = candidate.tools.m4;
+      };
+    };
+    "6.2.0" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-6.2.0.nix;
+      base = candidate.base;
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
+          inherit sha256;
+        };
+      deps = {
+        bash = candidate.tools.bash;
+        coreutils = candidate.tools.coreutils;
+        gnumake = candidate.tools.make;
+        gnutar = candidate.tools.tar;
+        xz = candidate.tools.xz;
+        python = candidate.tools.python;
+        binutils = candidate.tools.binutils;
+        patchelf = candidate.tools.patchelf;
+        sed = candidate.tools.sed;
+        grep = candidate.tools.grep;
+        gawk = candidate.tools.gawk;
+        diffutils = candidate.tools.diffutils;
+        findutils = candidate.tools.findutils;
+        m4 = candidate.tools.m4;
+      };
+    };
+  };
+  ordinaryTable = versionTable // {
+    "6.1.0" = versionTable."6.1.0" // {
+      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.0".def;
+    };
+    "6.1.1" = versionTable."6.1.1" // {
+      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.1".def;
+    };
+    "6.1.2" = versionTable."6.1.2" // {
+      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.2".def;
+    };
+    "6.2.0" = versionTable."6.2.0" // {
+      def = if native then ordinaryDefs."6.2.0" else versionTable."6.2.0".def;
+    };
+    "6.2.1" = versionTable."6.2.1" // {
+      def = if native then ordinaryDefs."6.2.0" else versionTable."6.2.1".def;
+    };
+  };
+  previousPublicArgs = packageArgs // {
+    versionTable = ordinaryTable;
+  };
+  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
+  compatibilityVersions = [ "5.0.5" "5.1.3" "6.0.0a" ];
+  publicArgs = previousPublicArgs // {
+    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
+      name = version;
+      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
+    }) compatibilityVersions);
+    extraArgs = previousPublicArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
+        if package ? testContext && builtins.elem package.version compatibilityVersions then
+          packageArgs.extraArgs.mkTests package
+          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+            upstream = import ../acl/native/upstream.nix { inherit package; };
+          }
+          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+      ) { inherit pkgs; };
+    };
+  };
+  canonical = tvpLib.packages.mkVersions publicArgs;
 
 in
 {
-  recipes.${pname} = packageArgs // {
+  recipes.${pname} = publicArgs // {
     inherit constructionRecipe;
   };
   inherit canonical;

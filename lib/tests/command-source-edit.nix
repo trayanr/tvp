@@ -57,16 +57,18 @@ let
     selection.kind = "owned-test-support";
     mkTests = _: { };
   };
-  edited = (package.edit (s: s // { src = "${fixture}/archive"; })).editSteps (plan: [
-    (builtins.head plan)
-    {
-      name = "source.marker-proof";
-      run = ''
-        test "$(cat source/.tvp-source-marker)" = edited-source
-        cp source/.tvp-source-marker "$out"
-      '';
-    }
-  ]);
+  edited =
+    (package.edit (s: (removeAttrs s [ "artifactName" ]) // { src = "${fixture}/archive"; })).editSteps
+      (plan: [
+        (builtins.head plan)
+        {
+          name = "source.marker-proof";
+          run = ''
+            test "$(cat source/.tvp-source-marker)" = edited-source
+            cp source/.tvp-source-marker "$out"
+          '';
+        }
+      ]);
 in
 package.testContext.mkSuite {
   inherit package;

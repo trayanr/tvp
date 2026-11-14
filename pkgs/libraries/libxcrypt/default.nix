@@ -40,10 +40,13 @@ let
   testDeps.pkg-config = tvp.packages.pkg-config;
   testDeps.gnused = tvp.packages.gnused;
   testDeps.coreutils = tvp.packages.coreutils;
+  # Keep the original default-base constructor as the ABI control. Its lazy
+  # tests close over this same retained control, never the ordinary canonical
+  # 4.4.36 route. Frozen GCC13/GCC16 suites inherit this exact producer.
   testDeps.baseline = tvp.lib.packages.withConstraint {
     category = "artifact";
     reason = "Historical libxcrypt 4.4.36 crypt-format compatibility baseline; newer releases are compared against this exact release.";
-  } tvp.canonical.libxcrypt_4_4_36;
+  } ((tvpLib.packages.mkVersions packageArgs).libxcrypt_4_4_36);
   packageArgs = {
     inherit testDeps;
     infra = {
@@ -141,8 +144,32 @@ let
       };
     };
   };
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar/Perl consume these target libraries.";
+    } candidate.tools.${name};
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "4.4.36" = versionTable."4.4.36" // {
+        def = if native then ordinaryDefs."4.4.36" else versionTable."4.4.36".def;
+      };
+      "4.5.0" = versionTable."4.5.0" // {
+        def = if native then ordinaryDefs."4.5.0" else versionTable."4.5.0".def;
+      };
+      "4.5.1" = versionTable."4.5.1" // {
+        def = if native then ordinaryDefs."4.5.1" else versionTable."4.5.1".def;
+      };
+
       "4.5.2" = versionTable."4.5.2" // {
         def = if native then ownedDefs."4.5.2" else legacy;
       };
@@ -153,22 +180,54 @@ let
         url = "https://github.com/besser82/libxcrypt/releases/download/v${version}/libxcrypt-${version}.tar.xz";
         inherit sha256;
       };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests package
-      // pkgs.lib.optionalAttrs (package.version == "4.5.2") (
-        import ./tests/owned.nix {
-          inherit tvp tvpLib package;
-          pkgs =
-            if package ? testContext then
-              pkgs
-            else
-              tvpLib.tests.withBase {
-                inherit pkgs;
-                base.stdenv = package.stdenv;
-              };
-        }
-      );
+      (
+        (
+          package:
+          (import ./tests {
+            inherit pkgs tvpLib package;
+            pkg-config = package.tvp.declaredTestDependencies.pkg-config;
+            inherit (package.tvp.declaredTestDependencies) baseline gnused coreutils;
+          })
+          // pkgs.lib.optionalAttrs (package.version == "4.5.2") (
+            import ./tests/owned.nix {
+              inherit tvp tvpLib package;
+              pkgs =
+                if package ? testContext then
+                  pkgs
+                else
+                  tvpLib.tests.withBase {
+                    inherit pkgs;
+                    base.stdenv = package.stdenv;
+                  };
+            }
+          )
+        )
+        package
+      )
+      //
+        pkgs.lib.optionalAttrs
+          (
+            package ? testContext
+            && builtins.elem package.version [
+              "4.4.36"
+              "4.5.0"
+              "4.5.1"
+            ]
+          )
+          (
+            import ./tests/ordinary.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                tvp
+                ;
+            }
+          )
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

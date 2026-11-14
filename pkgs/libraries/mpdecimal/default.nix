@@ -103,18 +103,50 @@ let
       };
     };
   };
+  defaultTestPkgs = pkgs;
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    inherit (pkgs) fetchurl;
+  };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "4.0.0" = versionTable."4.0.0" // {
+        def = if native then ordinaryDefs."4.0.0" else versionTable."4.0.0".def;
+      };
+
       "4.0.1" = versionTable."4.0.1" // {
         def = if native then ownedDefs."4.0.1" else versionTable."4.0.1".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      args@{
+        pkgs ? defaultTestPkgs,
+      }:
       package:
-      if package ? testContext then
+      if args ? pkgs then
+        import ./tests {
+          inherit pkgs tvpLib;
+          inherit package;
+        }
+      else if package ? testContext && package.specification ? features then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvp
+            tvpLib
+            package
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        constructionRecipe.extraArgs.mkTests package
+    ) { };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

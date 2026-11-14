@@ -82,7 +82,7 @@ let
         inherit base bash coreutils;
         message = "first";
       };
-      dependencyNames = [ ];
+      dependencyNames = [ "coreutils" ];
       metadata.definition = "named-output-fixture";
       selection.kind = "fixture";
       mkTests = package: {
@@ -99,6 +99,7 @@ let
   binary = fixture "bin";
   edit = package: package.editRuntime (r: r // { message = r.message + "-edited"; });
   changed = (edit validation.validation).override { message = "second"; };
+  dependencyEdit = validation.validation.edit (s: s // { coreutils = binary; });
   binChanged = (edit binary.bin).override (args: {
     message = args.message + "-second";
   });
@@ -127,7 +128,162 @@ let
       run = "touch forbidden";
     }
   ]);
+  attrset = validation.edit (
+    s:
+    s
+    // {
+      development = {
+        marker = "attrset";
+        libraries = [ binary ];
+      };
+    }
+  );
+  functional = validation.edit (
+    s:
+    s
+    // {
+      development = raw: {
+        marker = "function";
+        rawIsUndecorated = !(raw ? development) && !(raw ? edit) && !(raw ? tvp);
+        aclocalDirectories = [
+          "${raw}/first"
+          "${raw}/second"
+        ];
+      };
+    }
+  );
+  metadataChanged = functional.editSteps (_: [
+    {
+      name = "metadata.changed";
+      run = ":";
+    }
+  ]);
+  multi = functional.edit (
+    s:
+    s
+    // {
+      plan = [
+        {
+          name = "metadata.exports";
+          run = ":";
+          developmentLibraries = [
+            binary
+            binary
+          ];
+        }
+      ];
+      development = raw: {
+        aclocalDirectories = [ "${raw.validation}/macros" ];
+        libraries = [ validation ];
+      };
+    }
+  );
+  multiChanged = multi.validation.editSteps (_: [
+    {
+      name = "metadata.second";
+      run = ": second";
+      developmentLibraries = [ binary ];
+    }
+  ]);
+  metadataRebound = functional.override { message = "metadata-rebound"; };
+  passthruFunctional = validation.edit (
+    s:
+    s
+    // {
+      passthru = raw: {
+        marker = "${raw.validation}/marker";
+        rawIsUndecorated = !(raw ? passthru) && !(raw ? edit) && !(raw ? tvp);
+      };
+    }
+  );
+  passthruChanged = passthruFunctional.validation.editSteps (_: [
+    {
+      name = "passthru.changed";
+      run = ":";
+    }
+  ]);
+  passthruRebound = passthruFunctional.override { message = "passthru-rebound"; };
   contracts = {
+    dependencyEditUsesEffectiveProvider =
+      dependencyEdit.tvp.deps.coreutils.outPath == binary.outPath
+      && dependencyEdit.tvp.declaredDependencies.coreutils.outPath == binary.outPath;
+    dependencyEditNamedOutputProjection =
+      dependencyEdit.outputName == "validation"
+      && dependencyEdit.out.tvp.deps.coreutils.outPath == binary.outPath
+      && dependencyEdit.passthru.tvp.deps.coreutils.outPath == binary.outPath;
+    singleOutputUnusedMetadataStaysLazy =
+      builtins.isString
+        ((import ../owned-build.nix { inherit lib; }) (
+          validation.specification
+          // {
+            outputs = [ "out" ];
+            passthru = throw "unused metadata must stay lazy";
+            plan = [
+              {
+                name = "metadata.lazy";
+                run = ":";
+              }
+            ];
+          }
+        )).drvPath;
+    passthruCallbackNoProcedureChange = passthruFunctional.drvPath == validation.drvPath;
+    passthruCallbackRawOutputOnly = passthruFunctional.rawIsUndecorated;
+    passthruCallbackNamedOutput =
+      passthruFunctional.marker == "${passthruFunctional.validation}/marker";
+    passthruCallbackProjection = passthruFunctional.validation.marker == passthruFunctional.marker;
+    passthruCallbackEditedProjection =
+      passthruChanged.outputName == "validation"
+      && passthruChanged.outPath != passthruFunctional.validation.outPath
+      && passthruChanged.marker == "${passthruChanged}/marker";
+    passthruCallbackOverride =
+      passthruRebound.drvPath != passthruFunctional.drvPath
+      && passthruRebound.marker == "${passthruRebound.validation}/marker";
+    passthruCallbackStringContext =
+      (builtins.getContext passthruFunctional.marker)
+      .${builtins.unsafeDiscardStringContext passthruFunctional.drvPath}.outputs == [ "validation" ];
+    passthruCallbackSecondaryCollision =
+      rejects
+        (validation.edit (s: s // { passthru = raw: { validation = "${raw.validation}"; }; })).drvPath;
+    passthruCallbackPrimaryCollision =
+      rejects
+        (validation.edit (s: s // { passthru = _: { out = "collision"; }; })).drvPath;
+    developmentDefault = validation.development.libraries == [ ];
+    attrsetDerivationUnchanged = attrset.drvPath == validation.drvPath;
+    attrsetFieldsUnchanged = attrset.development.marker == "attrset";
+    attrsetExportsPreservePrecedence = attrset.development.libraries == [ ];
+    callbackNoProcedureChange = functional.drvPath == validation.drvPath;
+    callbackRawOutputOnly = functional.development.rawIsUndecorated;
+    callbackTwoDirectories =
+      functional.development.aclocalDirectories == [
+        "${functional}/first"
+        "${functional}/second"
+      ];
+    editsRefreshMetadata =
+      metadataChanged.outPath != functional.outPath
+      &&
+        metadataChanged.development.aclocalDirectories == [
+          "${metadataChanged}/first"
+          "${metadataChanged}/second"
+        ];
+    overrideRefreshesMetadata =
+      metadataRebound.outPath != functional.outPath
+      &&
+        metadataRebound.development.aclocalDirectories == [
+          "${metadataRebound}/first"
+          "${metadataRebound}/second"
+        ];
+    namedMetadataLookup = multi.development.aclocalDirectories == [ "${multi.validation}/macros" ];
+    namedProjectionMetadata =
+      multi.validation.development.aclocalDirectories == multi.development.aclocalDirectories;
+    selectedOutputMetadataEdit =
+      multiChanged.outputName == "validation"
+      && multiChanged.outPath != multi.validation.outPath
+      && multiChanged.development.aclocalDirectories == [ "${multiChanged}/macros" ];
+    exportsMergeDeduplicate = multi.development.libraries == [ binary ];
+    callbackStringContext =
+      (builtins.getContext (builtins.head multi.development.aclocalDirectories))
+      .${builtins.unsafeDiscardStringContext multi.drvPath}.outputs == [ "validation" ];
+
     separate =
       validation.outPath != validation.validation.outPath && binary.outPath != binary.bin.outPath;
     getOutput = (lib.getOutput "validation" validation).outPath == validation.validation.outPath;
@@ -237,10 +393,9 @@ let
             }
           ]
         )).drvPath;
-    splitRejected =
-      rejects
-        (validation.editSteps (steps.insertAfter "fixture.write" [ (steps.split "fixture.split") ]))
-        .drvPath;
+    splitSupported =
+      (validation.editSteps (steps.insertAfter "fixture.write" [ (steps.split "fixture.split") ]))
+      .artifact.outputs == validation.outputs;
     invalidBeforePayload =
       !(builtins.tryEval (
         builtins.seq (validation.edit (

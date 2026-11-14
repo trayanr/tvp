@@ -1,0 +1,12 @@
+--- a/tests/output.at
++++ b/tests/output.at
+@@ -276,3 +276,3 @@
+ AT_CHECK([ls "AS_ESCAPE([$1.c])" "AS_ESCAPE([$1.h])"], [], [ignore])
+-AT_COMPILE([glr.o], [-c "AS_ESCAPE([$1.c])"])
++AT_COMPILE([glr.o], [-c "./AS_ESCAPE([$1.c])"])
+ $2
+@@ -287,3 +287,3 @@
+ AT_CHECK([ls "AS_ESCAPE([$1.cc])" "AS_ESCAPE([$1.hh])"], [], [ignore])
+-AT_COMPILE_CXX([cxx.o], [-c "AS_ESCAPE([$1.cc])"])
++AT_COMPILE_CXX([cxx.o], [-c "./AS_ESCAPE([$1.cc])"])
+ $2

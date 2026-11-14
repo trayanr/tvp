@@ -1,0 +1,20 @@
+--- a/Modules/_ssl.c
++++ b/Modules/_ssl.c
+@@ -666,8 +666,17 @@
+                     ERR_GET_REASON(e) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
+                 type = state->PySSLCertVerificationErrorObject;
+             }
+ #if defined(SSL_R_UNEXPECTED_EOF_WHILE_READING)
++            /* Sending the fatal EOF alert can append a system error after
++             * the causal protocol error. Preserve the existing EOF mapping. */
++            if (ERR_GET_LIB(e) == ERR_LIB_SYS) {
++                unsigned long first_error = ERR_peek_error();
++                if (ERR_GET_LIB(first_error) == ERR_LIB_SSL &&
++                        ERR_GET_REASON(first_error) == SSL_R_UNEXPECTED_EOF_WHILE_READING) {
++                    e = first_error;
++                }
++            }
+             /* OpenSSL 3.0 changed transport EOF from SSL_ERROR_SYSCALL with
+              * zero return value to SSL_ERROR_SSL with a special error code. */
+             if (ERR_GET_LIB(e) == ERR_LIB_SSL &&
+                     ERR_GET_REASON(e) == SSL_R_UNEXPECTED_EOF_WHILE_READING) {

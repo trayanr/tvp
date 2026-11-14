@@ -5,14 +5,13 @@
   coreutils,
   gnugrep,
 }:
-package.stdenv.mkDerivation {
-  name = "zstd-${package.version}-helper-boundary";
-  dontUnpack = true;
-  dontFixup = true;
-  buildCommand = ''
+let
+  native = package ? testContext;
+  interpreter = if native then "${bash}/bin/bash" else "${builtins.dirOf package.stdenv.shell}/sh";
+  script = ''
     mkdir -p "$out" empty supplied
-    test "$(head -n1 ${package}/bin/zstdgrep)" = '#!${builtins.dirOf package.stdenv.shell}/sh'
-    test "$(head -n1 ${package}/bin/zstdless)" = '#!${builtins.dirOf package.stdenv.shell}/sh'
+    test "$(head -n1 ${package}/bin/zstdgrep)" = '#!${interpreter}'
+    test "$(head -n1 ${package}/bin/zstdless)" = '#!${interpreter}'
     printf 'haystack\nneedle preserved\n' | ${package}/bin/zstd -qc > sample.zst
     # Their owned interpreter works, but empty PATH supplies neither command.
     if ${coreutils}/bin/env -i PATH="$PWD/empty" ${package}/bin/zstdgrep needle sample.zst > empty-grep.out 2> empty-grep.err; then
@@ -43,7 +42,32 @@ package.stdenv.mkDerivation {
     test "$(head -n1 "$out/less-dispatch-explicit")" = '|-${package}/bin/zstd -cdfq %s'
     cp empty-*.err "$out/"
   '';
-  passthru = {
+in
+if native then
+  package.testContext.mkTest {
     inherit package;
-  };
-}
+    name = "helper-boundary";
+    tools = [
+      bash
+      coreutils
+      gnugrep
+      package.tvp.deps.diffutils
+    ];
+    script = ''
+      ( export out="$PWD/helper-results"
+        ${script}
+      ) >&2
+      echo ok
+    '';
+    expected = "ok";
+  }
+else
+  package.stdenv.mkDerivation {
+    name = "zstd-${package.version}-helper-boundary";
+    dontUnpack = true;
+    dontFixup = true;
+    buildCommand = script;
+    passthru = {
+      inherit package;
+    };
+  }

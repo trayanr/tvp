@@ -50,7 +50,7 @@ let
         "6"
       ]
     && value.patchLevel == null;
-  bound = value: builtins.any (i: i.outPath == value.outPath) value.tests.gems.nativeBuildInputs;
+  bound = value: value.tests.gems.package.outPath == value.outPath;
   authority = import ../native-build.nix { inherit lib; } {
     pname = "passthru-authority-probe";
     version = "1";
@@ -100,7 +100,14 @@ let
       && builtins.all (i: !(lib.hasPrefix "rustc" (i.pname or ""))) off.buildStepRunner.inputs;
     noJitTests = !(off.tests ? yjit) && !(off.tests ? zjit);
     activeToolsLazy = builtins.isString (
-      lib.concatStrings (map (s: s.run) (steps.active off.buildSteps))
+      lib.concatStrings (
+        map (s: s.run) (
+          let
+            parts = steps.partition off.buildSteps;
+          in
+          steps.active (parts.first ++ parts.second)
+        )
+      )
     );
     rootOutAll = builtins.all coherent (
       [
@@ -137,9 +144,11 @@ let
           ]
         )).drvPath;
     noArchive = !(builtins.elem "output.strip-archives" (map (s: s.name) p.buildSteps));
-    sixteenSharedTests =
-      builtins.all (n: builtins.hasAttr n p.tests) (builtins.attrNames tvp.canonical.ruby_4_0_6.tests)
-      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 19;
+    retainedPilotTests = builtins.length (builtins.attrNames p.tests) == 25;
+    canonicalPreservesPilotBehaviors =
+      builtins.all (n: builtins.hasAttr n tvp.canonical.ruby_4_0_6.tests) (builtins.attrNames p.tests)
+      && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 25;
+    distinctConstructions = p.drvPath != tvp.canonical.ruby_4_0_6.drvPath;
     independentConsumer = p.tvp.declaredTestDependencies.consumerCompiler.drvPath != p.tvp.cc.drvPath;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

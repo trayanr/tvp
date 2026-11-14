@@ -64,6 +64,49 @@ let
       reason = "Retained source-GNU ${name} host tool is independent of ordinary frontend consumers.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
+    "1.13.0" = {
+      constructor = tvp.builder;
+      builder = ./native/build-1.13.0.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          name = "ninja-${version}.tar.gz";
+          url = "https://github.com/ninja-build/ninja/archive/refs/tags/v${version}.tar.gz";
+          inherit sha256;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      deps = {
+        buildShell = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnutar = constructionTool "tar";
+        gzip = constructionTool "gzip";
+        findutils = constructionTool "findutils";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        helperPython = constructionTool "python";
+        patch = constructionTool "patch";
+        sed = constructionTool "sed";
+        python = tvp.packages.python_3;
+        bash = tvp.packages.bash_5;
+      };
+      patches = [
+        {
+          file = ./patches/runtime-binding.patch;
+          reason = "Require explicit shell/Python environment bindings so bootstrap and final runtime providers are independent; preserve browse.";
+        }
+      ];
+
+    };
+
     "1.13.2" = {
       constructor = tvp.builder;
       builder = ./native/build-1.13.2.nix;
@@ -105,8 +148,14 @@ let
 
     };
   };
-  publicArgs = packageArgs // {
+  installedArgs = packageArgs // {
     versionTable = versionTable // {
+      "1.13.0" = versionTable."1.13.0" // {
+        def = if native then ownedDefs."1.13.0" else versionTable."1.13.0".def;
+      };
+      "1.13.1" = versionTable."1.13.1" // {
+        def = if native then ownedDefs."1.13.0" else versionTable."1.13.1".def;
+      };
       "1.13.2" = versionTable."1.13.2" // {
         def = if native then ownedDefs."1.13.2" else versionTable."1.13.2".def;
       };
@@ -115,17 +164,39 @@ let
       { pkgs }:
       package:
       if package ? testContext then
-        import ./tests/native-default.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
+        import
+          (
+            if package ? artifact && !(package.specification ? upstreamCheck) then
+              ./tests/older-native-default.nix
+            else
+              ./tests/native-default.nix
+          )
+          {
+            inherit
+              pkgs
+              tvp
+              tvpLib
+              package
+              ;
+          }
       else
-        constructionRecipe.extraArgs.mkTests package
+        constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
     ) { inherit pkgs; };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
+    };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
 

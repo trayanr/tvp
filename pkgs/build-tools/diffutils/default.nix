@@ -52,6 +52,44 @@ let
       reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
+    "3.10" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-3.10.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/diffutils/diffutils-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        buildCoreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        coreutils = tvp.packages.coreutils;
+      };
+    };
     "3.12" = {
       constructor = tvp.builder;
       builder = ./native/build-3.12.nix;
@@ -102,46 +140,78 @@ let
       ;
     libc = candidate.toolchain.libc;
   };
-  publicArgs = packageArgs // {
-    extraArgs.mkTests =
+  installedArgs = packageArgs // {
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       (
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvpLib
-              package
-              locale
-              ;
+        (
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                locale
+                ;
+            }
+          else
+            import ./tests { inherit pkgs tvpLib package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-helper.nix {
+            inherit tvp package;
+            helperName = "pr";
+            invocation = q: ''
+              printf 'before\n' > before
+              printf 'after\n' > after
+              for mode in -l -ly; do
+                rc=0
+                ${q}/bin/diff "$mode" before after > paginated || rc=$?
+                test "$rc" = 1
+                grep -q before paginated
+                grep -q after paginated
+              done
+            '';
           }
-        else
-          packageArgs.extraArgs.mkTests package
+        )
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-      )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-helper.nix {
-          inherit tvp package;
-          helperName = "pr";
-          invocation = q: ''
-            printf 'before\n' > before
-            printf 'after\n' > after
-            for mode in -l -ly; do
-              rc=0
-              ${q}/bin/diff "$mode" before after > paginated || rc=$?
-              test "$rc" = 1
-              grep -q before paginated
-              grep -q after paginated
-            done
-          '';
-        }
-      );
+      // pkgs.lib.optionalAttrs (
+        package ? testContext
+        && builtins.elem package.version [
+          "3.10"
+          "3.11"
+        ]
+      ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
+    ) { inherit pkgs; };
     versionTable = versionTable // {
+      "3.10" = versionTable."3.10" // {
+        def = if native then ownedDefs."3.10" else versionTable."3.10".def;
+      };
+      "3.11" = versionTable."3.11" // {
+        def = if native then ownedDefs."3.10" else versionTable."3.11".def;
+      };
       "3.12" = versionTable."3.12" // {
         def = if native then ownedDefs."3.12" else versionTable."3.12".def;
       };
+    };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

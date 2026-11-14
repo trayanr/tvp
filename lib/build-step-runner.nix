@@ -55,7 +55,13 @@ let
       builder = "${bash}/bin/bash";
       args = [
         "-euc"
-        ''${coreutils}/bin/cp "$textPath" "$out"''
+        # Keep Bash holding the log descriptors until cp has terminated. GNU
+        # coreutils closes them before exiting; a tail-exec races Nix's EOF kill.
+        # -e retains copy failures, while the builtin prevents that tail-exec.
+        ''
+          ${coreutils}/bin/cp "$textPath" "$out"
+          exit 0
+        ''
       ];
       passAsFile = [ "text" ];
       preferLocalBuild = false;
@@ -117,6 +123,22 @@ let
     in
     if bad != [ ] then
       throw "TVP step ${step.name}: reserved or malformed env key: ${lib.concatStringsSep ", " bad}"
+    else if
+      step ? outputSelection
+      && !(
+        builtins.isString step.outputSelection
+        && !(builtins.hasContext step.outputSelection)
+        && builtins.elem step.outputSelection outputNames
+      )
+    then
+      throw "TVP step ${step.name}: output selector must name a declared output (${lib.concatStringsSep ", " outputNames})"
+    else if
+      step ? artifactOutputSelection
+      &&
+        builtins.sort builtins.lessThan step.artifactOutputSelection
+        != builtins.sort builtins.lessThan outputNames
+    then
+      throw "TVP step ${step.name}: artifact outputs must match the complete declared output list"
     else
       {
         inherit (step) name;

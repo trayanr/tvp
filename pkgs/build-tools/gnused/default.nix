@@ -52,6 +52,44 @@ let
       reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
     } candidate.tools.${name};
   ownedDefs = tvpLib.packages.mkDefs {
+    "4.9" = {
+      constructor = tvp.builder;
+      builder = ./ordinary/build-4.9.nix;
+      base = candidate.base;
+      source =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
+          inherit sha256;
+        };
+      testContext =
+        package:
+        tvpLib.tests.fromPackage {
+          builder = tvp.builder;
+          inherit package;
+        };
+      helpers = {
+        inherit tvp;
+      };
+      deps = {
+        bash = constructionTool "bash";
+        coreutils = constructionTool "coreutils";
+        gnumake = constructionTool "make";
+        gnutar = constructionTool "tar";
+        xz = constructionTool "xz";
+        gzip = constructionTool "gzip";
+        python = constructionTool "python";
+        perl = constructionTool "perl";
+        binutils = constructionTool "binutils";
+        patchelf = constructionTool "patchelf";
+        sed = constructionTool "sed";
+        grep = constructionTool "grep";
+        gawk = constructionTool "gawk";
+        diffutils = constructionTool "diffutils";
+        findutils = constructionTool "findutils";
+        acl = tvp.packages.acl_2;
+      };
+    };
     "4.10" = {
       constructor = tvp.builder;
       builder = ./native/build-4.10.nix;
@@ -102,29 +140,54 @@ let
       ;
     libc = candidate.toolchain.libc;
   };
-  publicArgs = packageArgs // {
-    extraArgs.mkTests =
+  installedArgs = packageArgs // {
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
       (
-        if package ? testContext then
-          import ./tests/native-default.nix {
-            inherit
-              pkgs
-              tvpLib
-              package
-              locale
-              ;
-          }
-        else
-          packageArgs.extraArgs.mkTests package
+        (
+          if package ? testContext then
+            import ./tests/native-default.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                locale
+                ;
+            }
+          else
+            import ./tests { inherit pkgs tvpLib package; }
+        )
+        // pkgs.lib.optionalAttrs (package ? testContext) (
+          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
+        )
       )
-      // pkgs.lib.optionalAttrs (package ? testContext) (
-        import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-      );
+      // pkgs.lib.optionalAttrs (package ? testContext && builtins.elem package.version [ "4.9" ]) (
+        import ../ordinary-text-contracts.nix { inherit tvp package; }
+      )
+    ) { inherit pkgs; };
     versionTable = versionTable // {
+      "4.9" = versionTable."4.9" // {
+        def = if native then ownedDefs."4.9" else versionTable."4.9".def;
+      };
       "4.10" = versionTable."4.10" // {
         def = if native then ownedDefs."4.10" else versionTable."4.10".def;
       };
+    };
+  };
+  publicArgs = installedArgs // {
+    extraArgs = installedArgs.extraArgs // {
+      mkTests = pkgs.lib.makeOverridable (
+        { pkgs }:
+        package:
+        (
+          if installedArgs.extraArgs.mkTests ? override then
+            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+          else
+            installedArgs.extraArgs.mkTests package
+        )
+        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
+      ) { inherit pkgs; };
     };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;

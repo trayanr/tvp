@@ -2,6 +2,11 @@
 
 How TVP is laid out and why, so a change lands where the next person expects to find it.
 
+New and migrated recipes follow the owned-builder contract below. Retained stdenv
+procedures document compatibility and frozen construction; they do not define the
+authoring pattern for new packages. The source-owned candidate base remains explicit
+until the default-switch validation gate is complete.
+
 ## The tree
 
 ```
@@ -9,11 +14,19 @@ bases/                        the ground packages are built on; `tvp.bases`
 ├── default.nix               default and compatibility bases, pinned bootstrap inputs
 ├── stdenv/                   vendored build protocol and native constructor
 ├── wrappers/                 native compiler and linker wrappers
-├── gcc13-owned/              explicit bootstrap stages and consumer graphs
+├── tiers/                    seed, target, native, full and retained construction contexts
+├── source-gnu/               source-owned candidate base and explicit toolchain/tool inputs
+├── gcc13-owned/              retained bootstrap stages and consumer graphs
 │   └── tests/                checks explicitly attached by this base
 └── tests/                    shared behavior and generic ownership checks
 
-lib/                          shared evaluation logic; the flake's `lib` output
+bootstrap/                    explicit source-bootstrap ladder and retained seeds
+
+lib/                          shared evaluation and builder protocols
+├── builder.nix               public `tvp.builder` constructor, steps, outputs and base
+├── owned-build.nix           artifact/final stages lowered to `builtins.derivation`
+├── build-environment.nix     explicit compiler, tool and library contributions
+├── native-output-steps.nix   reusable, explicitly selected output operations
 ├── versions.nix              version parsing, predicates, attribute naming
 ├── bases.nix                 mkBase, base tests and runtime ownership audits
 ├── platforms.nix             native platform contract and architecture settings
@@ -75,9 +88,14 @@ default.nix → pkgs/ → <category>/ → <package>/ → build-VERSION.nix
 Indexes merge with a duplicate-name check rather than `//`, because `//` resolves a clash
 silently in favour of whichever set came last.
 
-## Builders are named for the version they start at
+## Builders describe complete procedures
 
-`build-VERSION.nix` serves every version from `VERSION` until the next builder file.
+Use `build.nix` when one procedure serves the family. Use independent
+`build-VERSION.nix` files for stable upstream eras with different source layout,
+build features or installed interfaces, even when their step order is the same.
+Each serves versions from `VERSION` until the next builder file. MPFR uses
+`build-2.4.2.nix` for its older layout and `build-4.0.2.nix` for its modern layout.
+Small release exceptions stay in the definition table.
 
 ```
 build-2.0.nix      serves 2.0 … 2.2
@@ -90,10 +108,15 @@ version.
 
 Rules:
 
-- **A divergence creates a file, not a guard.** When a version needs the recipe changed,
-  copy the current builder to a file named for that version and change it there.
+- **A procedure divergence creates a file, not a guard.** When a version needs a new
+  procedure or starts a coherent source/build/install era, copy the current builder
+  to a file named for that version and change it there.
 - **Files stay guard-free.** A guard is permitted only when it is a single, obviously
   local line. Anything structural forks a file.
+- **A coherent era belongs in its builder.** Do not repeat a bundle of source-layout,
+  build-feature and installed-interface switches in every definition just to share one
+  procedure. Keep those stable facts in complete independent builders. An extra source
+  script or a test-only compiler flag is a local exception, not a new era.
 - **An optional *dependency* forks a builder; an optional *option* does not.** The test is
   which way the mistake fails: a forgotten dependency fails **silently** — the package
   builds, installs, exits 0 and quietly lacks a capability — while a forgotten option or
@@ -105,10 +128,18 @@ Rules:
   answers that exactly.
 - **Keep forked files structurally identical** — same attribute order, same shape — so
   `diff build-2.0.nix build-2.3.nix` is meaningful.
-- **Every meaningful dependency is a function argument.** That is the seam `.override`
-  needs.
-- **Fixed-point form** (`stdenv.mkDerivation (finalAttrs: …)`) so tests and overrides
-  compose.
+- **Every procedure is complete and independent.** A versioned build file never imports
+  another versioned build file, filters its argument set, or overrides its result to
+  manufacture a different procedure. Copy the procedure at a real compatibility
+  boundary and keep adjacent files diffable.
+- **Package-specific dependencies are function arguments.** That is the seam `.override`
+  needs. Standard construction tools belong to the base, where they can also be
+  overridden. `tvp.builder.forBase final.base` binds generic step/output helpers to
+  those providers; the package's ordered procedure stays visible.
+- **Use an effective fixed-point specification.** Owned procedures have the shape
+  `{ explicit arguments }: final: { ... }`. Build commands, metadata and tests read the
+  effective `final` fields so edits propagate. Retained stdenv procedures keep their
+  original fixed-point constructor until they are ported.
 
 Why not per-major: across 254 Ruby versions the only build-affecting divergences are at
 1.9, 2.0, 3.1, 3.2 and 4.0 — none of them a major boundary. Start-version files put the
@@ -127,59 +158,70 @@ is what the shared test suite is for; see below.
 ## Definitions and releases
 
 Version data is split in two. A **definition** is a whole build recipe; a **release** is a
-version and its hash. Definitions live in the package's `default.nix`, releases in version
-files beside it.
+version and its hash. Definitions live in the package's `default.nix`. Small families
+keep their version/hash table there too; large families use version files beside it.
+
+The ordinary `mkFamily` entry point supplies the selected build context. Each
+definition contains its procedure, package-specific TVP dependencies and real
+compatibility options or patches. Common build tools are selected once in the base. Source resolution and the test suite are declared once per family.
+Copy definitions in full rather than hiding their inputs behind a `common` overlay.
 
 ```nix
-# pkgs/runtimes/ruby/default.nix
-defs = {
-  "2.7.0" = {
-    builder = ./build-2.7.nix;
-    base = tvp.bases.default;
-    deps = {
-      openssl = tvp.packages.openssl_1_1_1w;
-      readline = pkgs.readline;
-      zlib = pkgs.zlib;
-      gdbm = pkgs.gdbm;
-    };
+# pkgs/libraries/mpfr/default.nix — one complete recipe record
+packageRecipes = tvp.lib.packages.mkDefs {
+  "4.2.1" = {
+    builder = ./build-4.0.2.nix;
+    deps.gmp = tvp.packages.gmp_6;
   };
-  …
-};
-
-versionTable = merge {
-  "2" = mkTable (import ./2.nix { inherit defs; });
-  "3" = mkTable (import ./3.nix { inherit defs; });
 };
 ```
 
 ```nix
-# pkgs/runtimes/ruby/3.nix
-{ defs }:
-[
+versionTable = tvp.lib.packages.mkTable [
   {
-    def = defs."2.7.0";                    # 3.0 needs no recipe of its own
+    def = packageRecipes."4.2.1";
     releases = {
-      "3.0.0" = "sha256-oT7RQaHBjrlnqsHjP01q1fIb4axUPDRODW/u7lSvjig=";
-      …
+      "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
+      "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
     };
   }
-
-  {
-    def = defs."3.4.0";                    # one release; upstream shipped it oddly
-    releases = {
-      "3.4.0" = "sha256-BoyFI0QhdL00AOeG9KaVI1LIKxufYhD9F/tIIwhtM3k=";
-    };
-  }
-
-  {
-    def = defs."3.3.0";                    # and back again
-    releases = { "3.4.1" = "sha256-PTheXSLTaLBkyBehPtjjzD9xp3BdftG654ATwzqnyH8="; … };
-  }
-]
+];
+pname = "mpfr";
+family = tvp.lib.packages.mkFamily {
+  inherit pname versionTable packageMeta;
+  source = { version, sha256 }: import <nix/fetchurl.nix> {
+    url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
+    inherit sha256;
+  };
+  tests = import ./tests;
+};
+canonical = tvp.lib.packages.mkVersions family;
+in {
+  recipes.mpfr = family;
+  inherit canonical;
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
+}
 ```
 
-Many releases share a definition; a compatibility boundary adds one definition,
-without duplicating the build procedure.
+```nix
+# Version and hash table inside MPFR default.nix — excerpt
+versionTable = tvp.lib.packages.mkTable [
+  {
+    def = packageRecipes."4.0.2";
+    releases = {
+      "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
+      "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
+      "4.1.1" = "sha256-/9GVvVZ9uv/DuYsj/QCq0FN2gMmJYXHkT+P/eeKKwz0=";
+      "4.2.0" = "sha256-BqN43xNQEkjBsttaqXeiyBJq6Emp2be+JUb7Spwm2ZM=";
+    };
+  }
+];
+```
+
+Many releases share a definition. A local compatibility exception adds a definition;
+a coherent source/build/install era adds a complete builder. MPFR 4.2.1 and 4.2.2
+share one definition because their builder, dependencies and options are identical.
 
 ### Rules
 
@@ -199,31 +241,33 @@ without duplicating the build procedure.
   for the same reason — **and to the release when the release does**, as OpenSSL 3.0.4 is
   alone among its 64. Declaring both for one release is a contradiction, not a merge, and
   throws.
-- **Every definition declares `base`.** There is no per-package default: a definition that
-  silently landed on the wrong ground would be invisible, while a missing one fails to
-  evaluate. `null` says the builder takes no stdenv because it delegates to a nixpkgs
-  helper — a fact worth declaring rather than inferring.
+- **The ordinary family context supplies the base and owned constructor.** Version
+  tables do not repeat platform selection, helpers or the standard Bash/Coreutils/
+  Binutils inputs or `base.standardTools` (Make, Tar, XZ, text tools, Python and
+  Patchelf). Package-specific providers come from `tvp.packages`. A genuine construction
+  or compatibility exception may explicitly replace the base. Retained low-level
+  `mkVersions` callers still declare their own base; `null` records a legacy boundary.
 - **`deps` holds derivations; `opts` holds everything else.** `libDir`, `pbkdf2`, `yjit` and
   `hardeningDisable` are builder arguments but not dependencies, and `deps` is what the
   canonical-graph contract is written about. `checkDeps` throws on a non-derivation.
 - **A patch is version data, so it belongs to a definition and never forks a builder.**
   `patches = [ { file; reason; } ]`; both fields are required and `checkPatches` throws
-  otherwise. The builder receives bare paths, so it stays a plain `mkDerivation` argument,
-  while `passthru.tvp.patches` keeps the reasons for the catalogue. A builder holds
+  otherwise. The procedure receives explicit patch paths and applies them through its
+  visible preparation steps; catalogue metadata keeps their reasons. A builder holds
   *procedure*; patching a source is a fact about one run of releases, not a procedure. Patch
   files live in the package directory, under `patches/`.
-- **Nothing is supplied that is not named.** `mkVersions` calls the builder through
-  `lib.makeOverridable` with an explicit `infra` set rather than `callPackage`, so an
-  argument that is neither infrastructure nor version data fails to evaluate. `infra` is
-  what a package still borrows from nixpkgs, and it shrinks to nothing once TVP owns
-  its own substrate.
+- **Nothing is supplied that is not named.** `mkVersions` supplies resolved source,
+  version, base, dependencies, options and declared helpers to the selected constructor.
+  An unknown procedure argument fails. Owned definitions choose `constructor =
+  tvp.builder`; retained procedures keep their explicit `infra` call. Neither route
+  discovers missing package dependencies through `callPackage`.
 - **A version file receives `defs` and nothing else.** It cannot reach `pkgs` or
   `tvp.packages`, so a release cannot acquire a dependency its neighbours lack. That class
   of defect was real: two packages had versions silently using nixpkgs' dependency while
   their siblings pinned TVP's.
-- **A changed *value* is a definition; a changed *procedure* is a builder.** Ruby 3.4.0 sets
-  `libDir = "3.4.0+1"` because upstream shipped that tarball with `RUBY_PATCHLEVEL -1` —
-  a definition, not a builder fork.
+- **An isolated changed *value* is a definition; a changed procedure or coherent era
+  is a builder.** Ruby 3.4.0 sets `libDir = "3.4.0+1"` because upstream shipped that
+  tarball with `RUBY_PATCHLEVEL -1` — a definition, not a builder fork.
 - **Source URLs are derived from the version**, not stored per release.
 - **A release that exists upstream but cannot be packaged is declared.** `unavailable` on the
   package's upstream metadata is a list of `{ versions; reason; }`, and the delta report
@@ -248,6 +292,257 @@ that patches a shared base: no `line_2_7 // { … }`, and no computed
 
 Measured on the catalogue, the old form spent 3194 lines to say what 1239 now say, and
 roughly three quarters of those lines were exact duplicates of a neighbour.
+
+## Owned recipes
+
+For a short starting point and a complete evaluable example, see
+[Writing an ordinary package family](lib/NATIVE-RECIPES.md). This section defines the
+catalogue-wide contracts and migration limits.
+The [authoring rollout plan](lib/AUTHORING-MIGRATION.md) records the remaining
+construction-base and family cleanup; earlier split coverage does not certify
+adoption of this authoring interface.
+
+`tvp.builder` owns the execution protocol and lowers prepared commands directly to
+`builtins.derivation`. A package supplies the complete procedure. It does not inherit
+configure, install or fixup hooks from a shared package builder.
+
+The ordinary package index prepares shared context with `tvp.lib.packages.mkFamily`.
+Definitions select a complete `builder` file, package-specific `deps` and optional
+`opts`/patches. `versionTable`, canonical construction and alias generation stay explicit. The
+catalogue binds the constructor, base/platform, standard tools and helper arguments
+once. The family's `source` factory receives `{ version, sha256 }`; its shared `tests`
+function receives `{ package, lib, context }`. Each test context follows the effective
+package. See [MPFR's recipe table](pkgs/libraries/mpfr/default.nix),
+[older procedure](pkgs/libraries/mpfr/build-2.4.2.nix) and
+[modern procedure](pkgs/libraries/mpfr/build-4.0.2.nix). This is the new authoring
+interface; other families retain their prior wiring until reimplemented.
+
+A specification keeps `environment`, `runtime` and `plan` at the same level. Bind
+`context = tvp.builder.forBase final.base;`, then use
+`inherit (context) steps outputs tools;` and a readable ordered `steps.sequence`.
+Helpers return ordinary records. Names identify steps for edits and diagnostics;
+they do not dispatch hidden phases. Source preparation and installed-output repair
+remain explicit, separate operations.
+
+The MPFR exemplar keeps a flat package directory: `default.nix` contains its
+independent `packageRecipes` records, versions and hashes; `build-2.4.2.nix` and
+`build-4.0.2.nix` are complete older and modern procedures; `tests/` holds the shared
+installed assertions and upstream restoration/acceptance. The older builder owns
+its source layout, disabled Float128 and lack of pkg-config metadata. The modern
+builder owns its source layout, Float128, pkg-config metadata and SONAME 6. Small
+exceptions such as 3.1.6's extra `test-driver`, older SONAMEs and test-only C17 flags
+remain recipe data. There are no retained/ordinary/variant copies of these
+procedures. Generic checks instantiate the selected recipe in their own construction
+context.
+
+`tvp.builder.forBase final.base` binds standard source/output helpers once. They still
+produce named step records, and helper arguments can replace defaults explicitly.
+Base edits rebind implicit providers and helpers from the effective base. The builder
+collects provider metadata from active steps and the runner. Helpers retain the roles
+of their actual tool arguments, including replacements. Unused base providers remain
+lazy; package authors do not repeat a metadata-only provider list.
+
+`family.instantiate { version; base; deps; opts ? {}; }` selects a construction call
+before forcing public packages. `tvp.baseTiers` exposes the source-owned seed, target,
+native and full contexts, plus retained construction-input adapters. The tier selects
+provider generations; it does not select an earlier package builder implementation.
+
+### Artifact and finalization boundary
+
+Every next migrated package must have an explicit artifact/finalization split.
+The normal boundary is after configure, compilation and installation have produced
+an installed artifact, before output repair. Compilation/install and final packaging
+must not depend on upstream-test construction, execution, acceptance, or test-only
+preparation, patches or tools. Upstream tests are separate derivations registered
+through the required test factory and remain normal suite/batch admission gates.
+Final packaging must remain realizable when upstream acceptance fails:
+
+```nix
+(command "package.install" installCommand)
+(steps.split "package.finalize")
+(outputs.copyArtifacts { inherit coreutils; })
+# Relocate installed paths, strip, repair RPATHs/shebangs, wrap, check final output.
+```
+
+The prefix produces `package.artifact`. The suffix produces the public package in a
+fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact and
+relocating its installed paths are recipe steps. Stripping, runtime search paths,
+interpreters, launchers and final output checks belong after the boundary.
+
+Raw JDK installation remains in A. Reassembly of JMODs and images over retained
+compiled classes and native products is F packaging: native JMOD hash generation,
+jlink, image metadata and image-only CDS generation may run there. Native or Java
+compilation, generated source and compile-dependent optimization remain in A. F
+must retain the complete packaging inputs and invoke packaging makefiles directly,
+never a top-level build target that can dispatch compilation. This clarifies the
+normal installed-artifact boundary; it does not waive qualification.
+
+
+Upstream test construction, execution and result classification belong in separate
+validation derivations. A failed upstream test must not prevent compilation artifacts,
+final outputs or installed-result tests from being realized. The normal test batch
+still includes the strict upstream result and fails when that result fails.
+
+During migration, a recipe may retain a raw upstream capture in its artifact.
+Classify that immutable capture in an independent test, never in finalization.
+Preserve the original output and exit status, and remove the copied operational
+reports from the final package. Classifier edits must reuse compilation and final
+outputs. Capture execution before the split remains explicit isolation debt until
+it moves into separate validation derivations; a valid final output does not waive
+an upstream nonpass.
+
+An installed program can embed both its prefix and its length, as shared Perl does.
+Its specification may set `artifactName = "${final.pname}-${final.version}";` to
+give the artifact and final output equally long store prefixes. They remain separate
+derivations with different hashes. The optional value must be a context-free store
+basename and requires a split; the default remains `pname-version-artifacts`.
+This chooses only the artifact name, without passing the final output path into
+compilation. The recipe must still prove relocation, installed behavior and artifact
+reference exclusion.
+
+Ordinary shared Perl 5.24.4–5.42.3 uses that equal-width capability with
+three independent version-start procedures. Its source mutator and installed
+finalizer are separate inputs. The finalizer validates the complete namespace,
+text metadata and ELF string locations before writes, preserves compiled widths
+and internal hardlinks, and checks every final byte/link for artifact references.
+Installed tests build fresh XS and shared embedding consumers. See
+[the ordinary Perl contract](pkgs/runtimes/perl/ordinary/README.md).
+
+Named-output recipes declare the complete output list and pass it to the copy step:
+
+```nix
+outputs = [ "out" "evidence" ];
+# ...install both outputs before the boundary...
+(steps.split "package.finalize")
+(tvp.builder.outputs.copyArtifacts {
+  coreutils = final.coreutils;
+  outputs = final.outputs;
+})
+```
+
+Each finalization command receives readonly `TVP_ARTIFACT_OUTPUTS`, mapping every
+declared name to its artifact output. `TVP_ARTIFACT_ROOT` remains the primary `out`
+artifact. Copy and relocate each output explicitly.
+
+**Every final output must contain no reference to any artifact output path.** This
+includes text metadata, receipts, symlinks, ELF paths and embedded self locations;
+the owned constructor enforces the exclusion, including sibling artifacts.
+`package.artifact` remains available
+as an evaluation/build handle, not as a path to embed in the final package.
+
+Runtime is specification data, not a phase or a split marker. Final-only runtime
+choices must be consumed only after the split. Actual build inputs still belong
+before it: source, compiler, headers, linked libraries and configure options.
+A compiler used to build cgo remains a build input even if its field is under
+`runtime`. Field names alone never establish cache independence.
+
+Prove the separation: a finalization-only edit must preserve `artifact.drvPath`
+and update the final producer when its commands change. A real build-input edit
+must affect the artifact as appropriate. Installed tests must exercise the final
+output, including self-library loading and relocated public metadata.
+
+The runner supports one split and requires active commands in both stages.
+Single-output and named-output recipes use the same boundary. All named artifact
+outputs share one artifact derivation, and all named final outputs share one final
+derivation; named outputs do not create independent finalization derivations.
+`outputs.copyArtifacts { inherit coreutils; outputs = final.outputs; }` handles one or several
+outputs uniformly. Installed repair helpers accept `output = "bin"` (default
+`"out"`); relative selectors and self paths then belong to that declared output.
+Text and RPATH rebasing use its matching artifact prefix. Sibling artifact
+references still require explicit recipe policy. Selecting an output does not
+rename the step; repeated helper calls need distinct record names.
+Caller output checks run on the final stage.
+Existing unsplit recipes remain migration work. After the remaining ports, audit
+the whole package set, repair applicable boundaries and run the full applicable
+catalogue before default-switch admission. The repository split check must inspect
+evaluated plans and artifact derivations; finding a string in a file is insufficient.
+It must reject new unsplit recipes and malformed/empty stage boundaries. Existing
+legacy or unsplit rows are listed explicitly during migration, with their failure
+classification and required work; that list must shrink as ports become compliant.
+A legacy-to-owned port cannot keep an old legacy exception to omit its split.
+The final audit/full-validation gate requires the outstanding list to be resolved.
+
+### Inputs, discovery and runtime roles
+
+`base.environment specification.environment` derives compiler commands and baseline
+tools from the selected base. For ordinary families, declared Bash, Coreutils and
+Binutils arguments default to that base's canonical fields. Other common build-tool
+arguments resolve from `base.standardTools`, selected once in
+[bases/source-gnu/standard-tools.nix](bases/source-gnu/standard-tools.nix).
+Default resolution is lazy and only supplies arguments declared by each procedure;
+step tool lists still state their actual execution inputs. Resolved providers remain
+visible in `tvp.declaredDependencies`, including when a definition customizes its
+metadata projection. Replacing the base with `.override` recomputes these defaults;
+explicit procedure arguments win. Partial `standardTools` overrides preserve the
+other roles. Every package-specific tool and library is named explicitly,
+including commands used only by configure or upstream checks. Tools contribute their
+discovery conventions; libraries expose their development layout. Do not add a tool
+to the base merely to make one package's undeclared command work.
+
+Build linkage, public development dependencies and runtime configuration are separate.
+For example, GMP headers required by MPFR's public headers belong in its development
+interface. `outputs.development` records exported libraries. `runtime.libraries`
+does not imply public header requirements or discover dependencies automatically;
+the recipe explicitly passes runtime providers to RPATH/wrapper/output steps.
+
+A compiler package may use one compiler to build its tools and expose a different
+compiler/libc/runtime target to its consumers. Keep those roles explicit. A build
+closure never grants permission for all of its paths to appear at runtime.
+
+### Bootstrap inputs and retained generations
+
+A bootstrap provider has an explicit origin and its own complete procedure. Selecting
+the owned constructor does not change that origin: Rustc, Cargo bootstrap and Temurin
+JDK bootstrap remain pinned upstream binary distributions. Their native procedures
+install a pristine artifact, then adapt declared host executables and libraries after
+the split. Rust target archives, metadata, shared standard library and compiler
+resources retain their upstream bytes. JDK module data is preserved. Host loaders,
+runtime providers and output-relative library directories are selected explicitly;
+output directories cannot contain the ELF search-path separator.
+
+The C-source Go bootstrap needs no earlier Go compiler. It builds against a stable
+non-store GOROOT and binds the installed root in both public and nested launchers
+after the split. Those launchers replace an outer next-stage GOROOT. Separately
+launched Go 1.4 programs querying `runtime.GOROOT` need the GOROOT reported by
+`go env GOROOT`; the compiled fallback is not automatically relocated.
+
+Public provider promotion and bootstrap-ladder migration are separate changes.
+Indexes bind retained construction and historical callers to their prior complete
+provider generations; current ordinary consumers follow the promoted provider.
+For example, the retained Go 1.17 → 1.20 → 1.22 → 1.24 ladder still starts from its
+original C-built seed. Preserve these producer and test identities explicitly when
+promoting a public provider. Constructor ownership alone establishes neither a
+source-built Rust/Java bootstrap nor migration of every historical recipe.
+
+### Package customization
+
+| Interface | Changes |
+|---|---|
+| `.override attrsOrFunction` | Explicit procedure arguments; preserves existing specification edits |
+| `.edit (spec: ...)` | Effective fixed-point specification |
+| `.editSteps (plan: ...)` | `spec.plan` through named step edits |
+| `.editRuntime (runtime: ...)` | `spec.runtime`, consumed explicitly by that recipe |
+| `.specification` / `.buildSteps` | Effective specification / complete ordered plan |
+
+Each customization re-enters construction and reattaches tests, dependency metadata
+and output projections. Never capture an original provider in a command or test
+whose effective specification can be edited. Use `old: old // { ... }` when editing
+a step and preserving its other fields is intended.
+
+Use `.override` for constructor inputs when writing customizations that must work
+across different versioned procedures. `.edit` changes fields published by the
+selected procedure; adding an arbitrary field does not make it a build input.
+Published editable defaults must be consumed through `final`, including defaults
+for runtime providers. Dependency metadata follows published fields or an explicit
+`dependencyProviders` projection, never an otherwise unused field added by an edit.
+Recipes exposing nested `tools`, `libraries` or provider records must project their
+effective declared dependencies explicitly. Construction and runtime providers may
+remain separate when their roles are declared separately.
+
+These user-facing edits do not authorize recipe inheritance. Another version's
+procedure still needs its own complete version-start file. Readability is part of
+the interface: keep the operation order, selected providers and split visible.
+
 ## Package status
 
 A version says what TVP claims about it, in the version table:
@@ -301,9 +596,9 @@ libxml2 = tvp.lib.packages.withConstraint {
 An exact exception needs source evidence and a newest-working/failing consumer
 control. Use `canonical` for strict exact selections, since public full names can
 be shadowed by aliases. `dependency-policy` rejects unexplained ordinary exact
-choices. A constraint belongs in the definition; fork a builder only when the
-build procedure changes. Explicit bootstrap/base inputs stay pinned. Matched SDK
-payloads and historical test baselines declare their artifact identity separately
+choices. A constraint belongs in the definition; fork a builder for a changed
+procedure or coherent source/build/install era. Explicit bootstrap/base inputs stay
+pinned. Matched SDK payloads and historical test baselines declare their artifact identity separately
 with `withConstraint { category = "artifact"; reason = …; }`.
 
 Adding a packaged release advances matching aliases and rebuilds consumers. The
@@ -428,23 +723,25 @@ fails where an old builder is missing something. Fork the tests and that stops w
 - **Test what a failed build would not tell you.** An extension whose `extconf.rb` fails is
   usually skipped rather than fatal, so the package still builds and still installs, just
   without that extension. Only a test that actually `require`s it notices.
-- **Tests are attached centrally**, via a required `mkTests` builder argument supplied by
-  `default.nix`. A forked builder that drops the argument fails to evaluate, so test
-  coverage cannot be silently lost in a copy.
+- **Tests are attached centrally** by the package index's required factory. The owned
+  constructor reattaches it to the effective package after every edit; procedures do
+  not need an execution argument just to carry tests. Retained procedures keep their
+  required `mkTests` argument until ported. Coverage must survive a procedure fork.
 - **Packages own their test wiring.** A package can make its `mkTests` factory
   overridable with `lib.makeOverridable ({ pkgs }: package: …) { inherit pkgs; }`.
   `mkVersions` exposes that factory as `package.mkTests`, outside serializable TVP
-  metadata. A port supplies `mkTests = package.mkTests.override { pkgs = testPkgs; };`
-  alongside its new stdenv and dependencies; it does not import package test files
-  from the base assembler.
+  metadata. Retained stdenv ports can supply `mkTests =
+  package.mkTests.override { pkgs = testPkgs; };`. Owned suites derive their tools/base
+  from the effective package and its `testContext`; a base assembler does not own
+  the package's test files.
 - **Test-only tools follow the same dependency policy.** PHP requires `testAutoconf` in
   `defs.deps` and exposes it under `tvp.testDeps` for its phpize consumer tests. It is
   absent from the interpreter's build inputs, so choosing a compatible test tool does
   not rebuild the interpreter. The suite still uses owned tools and the package's base.
-- **A test context can run on a selected base.** `tvpLib.tests.withBase { inherit pkgs base; }`
-  binds both the compiler context and `runCommand` to that base's stdenv. Merely replacing
-  `pkgs.stdenv` leaves `pkgs.runCommand` closed over its original builder. New packages
-  on the owned base use this context for their package suites.
+- **Tests use the package's actual base.** Owned packages use
+  `tvpLib.tests.fromPackage { builder = tvp.builder; inherit package; }` and the owned
+  test/suite/batch constructors. `withBase` remains the stdenv compatibility route;
+  replacing `pkgs.stdenv` alone does not rebind a captured `pkgs.runCommand`.
 - **Tests assert, they do not merely exit 0.** `cmd > $out` passes for anything that exits
   cleanly with no output. `mkTest` requires an `expected` value.
 - **Every declared dependency gets a test proving it is genuinely linked.** An untested
@@ -462,67 +759,52 @@ nix build .#packages.x86_64-linux.ruby_2_7_0.tests.openssl
 
 ## Bases
 
-A definition declares two different things: the **graph** it depends on (`deps`) and the
-**ground** it is built on (`base`). Bases live in `bases/default.nix` and are reached from
-a version table as `tvp.bases`, exactly as packages are reached as `tvp.packages`.
+A definition selects its dependency graph through `deps` and its build environment
+through `base`. New owned recipes take that base as an argument; they never import
+a concrete compiler generation inside the procedure.
 
-The seam is `stdenv`, and it already existed. Every builder takes `stdenv` as an argument
-and calls `stdenv.mkDerivation`; a base is simply TVP supplying that argument instead of
-letting `callPackage` fill it from nixpkgs.
+`tvp.builder.base` constructs explicit native base data: `name`, `platform`,
+`compiler`, `shell` and baseline `tools`. The compiler driver declares Binutils,
+libc, runtime directories and its hardening interface. Replacing a compiler
+rebuilds environment composition, so CC/CXX and discovery cannot capture the old
+driver. Current owned support is native x86_64 GNU/Linux; other targets require
+explicit capability work and validation.
 
-```nix
-# pkgs/libraries/openssl/default.nix — one of six definitions serving 221 releases
-"1.1.0" = {
-  builder = ./build-1.1.1.nix;
-  base = tvp.bases.default;                    # older bases need measured controls
-  deps = { perl = tvp.packages.perl_5_28_3; };  # derivations — the canonical graph
-  opts = { pbkdf2 = false; };                   # build options
-};
-```
+[The source-GNU candidate](bases/source-gnu/default.nix) composes the source-owned
+compiler and tools from explicit [inputs](bases/source-gnu/inputs.nix). Its source
+bootstrap ladder lives under `bootstrap/`. Bootstrap construction inputs stay pinned
+and independent of the ordinary catalogue they help construct. Necessary seed and
+binary boundaries remain declared, with their provenance and required follow-up.
 
-- **No builder mentions a base.** Swapping one is a substitution rather than an edit.
-- **A base is what a build gets without asking.** The test is mechanical: *if a package can
-  name it, it should name it; the base holds only what cannot be named.* That closes the
-  list at 17 — the 14 in stdenv's `initialPath` plus gcc, binutils and glibc — and stops it
-  growing with the catalogue. perl, m4, pkg-config and rustc are all nameable, so they are
-  version data, never base content.
-- **Only the toolchain is era-pinned.** gcc, glibc and binutils reach the artifact; the
-  floor (`sed`, `grep`, `make`, `tar`, …) runs during the build and vanishes, so it merely
-  has to work. A base is not a collection of era-blessed package versions.
-- **A base is a record** (`{ name; stdenv; }`), not a bare stdenv, so it can carry what a
-  toolchain pin cannot express — beginning with `builtBy`, because the bootstrap parent
-  and a base's chain are part of its identity.
-- **A named base identifies an environment generation.** Its identity includes the exact
-  compiler, libc, binutils, wrappers, hooks, floor tools and bootstrap inputs. Toolchain
-  versions are asserted by `mkBase`; a replacement environment gets a new generation.
-- **Use `base = tvp.bases.default` normally.** Advance the default to newer validated
-  toolchains. Pin a package to an older base only when compatibility requires it, and
-  record the reason. `passthru.tvp.base` records the resolved base name.
-- **Public bases are the default and older bases with actual consumers.**
-  Retire a superseded public base once its consumers have moved. Older TVP commits
-  retain its definition; bootstrap recipes may still need it internally.
-  GCC9 and GCC4.9 currently remain for broken Readline 2.0 and ten broken zlib
-  releases, respectively, and their frozen construction graph labels. Their 36
-  formerly buildable consumers now use the owned default. Public API removal and
-  internal label relocation are deferred; no construction identity changes.
-- **`builtBy` is required**, naming the reviewed parent used to construct the base.
-  Construction inputs stay pinned and must not follow the default they are building.
-  `null` means nixpkgs bootstrapped it.
-- **Bases follow the package patterns**: `mkBase` in `lib/bases.nix` beside `mkVersions`,
-  one shared suite in `bases/tests/` instantiated per base, and `checks.every-base-tested`
-  mirroring `every-package-tested`. A base test is built by that base's own stdenv, or it
-  would test the default substrate whichever base it claimed to cover.
-- **Ownership declares only an ownership audit.** A base's `ownership` record supplies
-  `roots` and `allowedRuntimePaths`; it implies no particular compiler, optional tool,
-  component layout or consumer suite. Additional checks are attached explicitly through
-  `mkExtraTests = base: …`. The runner merges shared, ownership and extra checks with
-  duplicate-name rejection so an extra test cannot replace a shared assertion.
-- **Every definition declares `base`** — there is no per-package default. A definition that
-  silently landed on the wrong ground would be invisible; a missing one fails to evaluate.
-- **`base = null` declares a definition is not on a base at all**, because its builder
-  delegates to a nixpkgs helper rather than calling `stdenv.mkDerivation`. Declared, never
-  inferred — bundler is the only one.
-- **`passthru.tvp.base` records the name**, not the record.
+The ordinary `mkFamily` context selects source-GNU once in the catalogue entry point;
+version definitions do not repeat that choice. Families awaiting the authoring migration
+keep their existing selections. The public `tvp.bases.default` alias remains the retained
+GCC16 environment until the migration/default-switch gates pass. Selecting a packaged GCC release is separate from promoting a base.
+
+- Ordinary families resolve their base from the selected build context. Specialized
+  construction and retained low-level callers declare their base explicitly.
+- The base supplies the compiler, shell and minimal explicit baseline. Additional
+  tools and libraries belong to recipe arguments and environment contributions.
+- Compatibility choices need measured reasons. Ordinary dependency aliases may move
+  within supported interfaces; bootstrap construction remains pinned.
+- Ownership registration, source provenance, runtime permission and compiler
+  conformance are separate claims. Record and test each at its actual scope.
+- Base and package tests bind to the base they claim to exercise. A different base's
+  successful test does not certify this one.
+
+### Retained stdenv generations
+
+The following generations retain their stdenv protocol, hooks and construction
+identities during migration. Historical helper-based definitions can declare
+`base = null`; this is a recorded legacy route, not the new authoring pattern.
+Older procedures continue to call their original constructor until explicitly
+ported and validated.
+
+During migration, indexes may route ordinary releases to complete procedures under
+`ordinary/` while retaining the original complete construction recipe for pinned
+bootstrap/base variants. Selection belongs in the index; ordinary procedures never
+inherit another versioned procedure. Preserve compatibility boundaries and validate
+representative releases on both sides.
 
 Promote a new default through a full-catalogue PR. Report graph changes, run the full
 validation and pin packages needing older environments before merging. Most packages
@@ -550,8 +832,9 @@ The GCC13-v3 compatibility selection remains for measured ACL 2.3.0/2.3.1
 consumers: their nested zero-length string member trips GCC16 fortified copies.
 Hardening and regression tests remain enabled; ACL 2.3.2/2.4.0 use GCC16. The borrowed
 GCC13 seed, original owned generation and v2 remain internal. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
-there is no `tvp.bootstrap` API. Ordinary package definitions select the default
-base and canonical dependencies. GCC 9 and GCC 4.9 compatibility bases remain.
+there is no `tvp.bootstrap` API. Retained definitions select this default; migrated
+definitions explicitly select the source-GNU candidate until promotion. GCC 9 and
+GCC 4.9 compatibility bases remain.
 
 Historical releases can declare an older C dialect, a compatible dependency or a
 scoped diagnostic exception in their version definitions. Procedure fixes belong
@@ -615,8 +898,9 @@ recipes keep their own tested support lists. Tool versions, bootstrap parents an
 minimum kernel version remain choices of their base or recipe. The
 `checks.native-platform-interface` contract checks rejection and base wiring.
 
-An ordinary definition selects `base = tvp.bases.default`. When porting a package, its
-dependency graph must be ported too: changing only its compiler can leave libraries on
+The ordinary family context supplies the native platform and base. Select a different
+context centrally when adding supported platforms; keep genuine per-procedure
+restrictions explicit. When porting a package, its dependency graph must be ported too: changing only its compiler can leave libraries on
 the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
 libraries. The assembler's rebuilt variants are explicitly marked noncanonical and remain
 separate from the ordinary compiler and libc packages in the catalogue.
@@ -654,8 +938,9 @@ downstream consumers of a changed tool.
 Ordinary tools select canonical Perl, Bash, ncurses and file as named dependencies;
 they do not depend on the base assembler's private build stages. The locale program
 comes from the selected base's libc tools, matching its ABI.
-Canonical tool suites bind their builder and compiler to each package's actual stdenv.
-The same test factories serve bootstrap variants without selecting the canonical base.
+Retained tool suites bind to each package's actual stdenv; owned suites derive their
+constructor and compiler from the effective package/base. Test factories also serve
+bootstrap variants without silently selecting the canonical base.
 Minimal Python is a build interpreter with a declared list of disabled third-party
 extension modules, not the full Python developer runtime. Its core standard library and
 C embedding API are tested.
@@ -740,9 +1025,58 @@ The same helper can be either, depending on use: `majorMinor` building the attri
 build commands. Moving existing values behind its interface is neutral; changing those
 values changes the builds which consume them.
 
-**There is no `mkTvpDerivation`.** A shared wrapper around `stdenv.mkDerivation` is the
-most tempting thing to put here, and it is exactly the shared builder that start-version
-files exist to avoid — hidden one level up. Builders call `stdenv.mkDerivation` directly.
+**The shared constructor owns protocol, not package procedure.** `tvp.builder`
+provides fixed-point customization, explicit environments, stage execution and
+lowering to `builtins.derivation`. Its reusable steps/output helpers remain visible
+calls in each recipe. It must not hide a package-specific configure/build/install
+procedure or make one versioned procedure inherit another.
+
+Retained stdenv files keep their original constructor; new owned recipes use the
+public builder API. Internal implementation imports stay in the shared library,
+rather than becoming the dependency interface of every package file.
+
+### Evaluated split policy and migration list
+
+`tvp.lib.recipeSplits.inventory` inspects canonical releases (including broken
+releases with their declared reasons) and public named variants. Exact
+`canonical/NAME` and `variants.PROFILE/NAME` IDs keep alias selectors from hiding
+or double-counting releases. The context-free `recipeSplitReport` lists every
+row, partition counts, producer identities and remaining gaps. It also enumerates
+historical bootstrap/base/composition producer IDs and validation roles outside
+ordinary admission; their adapters still require the later whole-repository audit.
+
+`checks.recipe-splits` enforces the evaluated plan, active commands on both sides,
+and real, distinct artifact/final producers matching a fresh owned-constructor
+lowering. Complete output sets and producer bindings are checked on every named
+projection and `.all` entry. `audits/split-baseline.json` is an exact migration list, not a claim that
+all recipes are split. Every entry binds an ID to its constructor, failure class
+and actionable reason. Keep one compact, sorted-key JSON record per line, inside
+the outer array; the loader enforces this encoding because Nix's JSON parser would
+otherwise silently accept duplicate object members. New failures, classification drift, duplicate/wildcard IDs,
+malformed reasons and stale exceptions fail. Remove an entry when that row becomes
+compliant. Never regenerate the list to accept a new unsplit port. Named-output
+support does not make an unsplit recipe compliant. Existing named-output recipes
+remain explicit `owned-unsplit` debt until their installation boundary, per-output
+relocation and exclusion checks are qualified.
+
+```sh
+nix eval .#recipeSplitReport --json
+nix build .#checks.x86_64-linux.recipe-splits --no-link
+nix build .#checks.x86_64-linux.recipe-split-contracts --no-link
+# Final admission: expected to fail while any ordinary debt remains.
+nix eval .#recipeSplitStrict --json
+```
+
+The normal report says `PASS_WITH_EXISTING_DEBT` while the exact list remains;
+`ALL_SPLIT` requires zero debt. The pure validator also accepts `strict = true`
+and/or an omitted baseline for final admission. The tiny constructor regression
+proves final-only artifact reuse and build-edit invalidation, and builds the final
+fixtures. Its separate negative control intentionally writes an artifact reference:
+
+```sh
+# Expected failure from Nix outputChecks: forbidden artifact reference.
+nix build .#checks.x86_64-linux.recipe-split-contracts.passthru.leaking --no-link
+```
 
 ## `checks` vs `testBatches`
 
@@ -853,13 +1187,17 @@ definition in `default.nix` to one named for that version, change it there, and 
 block pointing at it. If later versions go back to the old recipe, open another block
 naming the old definition; that return is a fact, not a duplicate.
 
-**Add a version that needs a different build procedure** — copy the current builder to
-`build-<that version>.nix`, change it there, record in the header what forced the fork and
-the range it serves, and point a new definition at it. Add a test covering what you fixed:
-that is how the same gap gets detected in older builders.
+**Add a version that needs a different build procedure or starts a coherent era** —
+copy the current builder to `build-<that version>.nix`, change it there, record in the
+header what forced the fork and the range it serves, and point a new definition at it.
+Add a test covering what you fixed: that is how the same gap gets detected in older
+builders.
 
 **Add a package** — create `pkgs/<category>/<name>/` with a `default.nix` and one
-`build-<earliest version>.nix`, then name it in the category's `default.nix`.
+complete `build-<earliest version>.nix`, then name it in the category's `default.nix`.
+Select `tvp.builder`, explicit base/dependencies/test context, and an installed-artifact
+split with finalization afterwards. Validate the final package and artifact reuse.
+Resolve an unsupported split shape before treating the port as complete.
 
 **Verify a refactor changed nothing**
 
@@ -867,8 +1205,11 @@ that is how the same gap gets detected in older builders.
 nix eval .#packages.x86_64-linux.ruby_2_7_0.drvPath   # before and after
 ```
 
-Moving files, splitting them, adding `passthru`, and reformatting are all *supposed* to be
-derivation-neutral. The only way to know is to look.
+Moving source files, adding metadata and changing runtime derivation boundaries are
+different operations. Moving files should preserve producers; adding an execution
+split intentionally creates artifact/final producers. Compare the expected identities
+and installed behavior, and prove finalizer-only edits reuse the artifact. Formatting
+can also change command bytes; measure rather than assume.
 
 **Note:** `git add` new files before evaluating. The flake source is the git tree, so an
 untracked file is invisible to Nix.
@@ -936,7 +1277,10 @@ profile selects API 37.2 r2, Build Tools 37.0.0 and NDK 30.0.16248370. Each prof
 contain multiple platform, Build Tools and NDK versions; duplicate component paths and
 multiple command-line tools versions are rejected. Component selection adds links and
 keeps each component's canonical build graph intact. The lower-level constructor is
-`tvp.lib.android.mkSdk { stdenv = ...; components = ...; }`.
+`tvp.lib.android.mkSdk { tvp = ...; base = ...; bash = ...;
+coreutils = ...; sed = ...; components = ...; }`. It uses the owned constructor,
+with component links installed before the split and wrappers/cache setup afterward.
+`mkLegacySdk` is the explicitly selected retained non-native adapter.
 
 Profiles provide `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `android`, `sdkmanager`, `adb`,
 `fastboot` and `tvp-android-sdk`. The latter prints the writable SDK directory. SDK locks
@@ -1054,3 +1398,101 @@ Retired bootstrap generations retain full validation under
 `testBatches.x86_64-linux.base-gcc16-owned`. All are included in the full plan.
 Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
 `bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.
+
+### Staged stable Dart/Flutter owned procedures
+
+Native stable Dart bootstrap 3.13.7, source Dart 3.13.7 and Flutter 3.47.8
+select the source-GNU candidate and independent owned procedures. Their legacy
+construction recipes retain the original stable DevTools SDK and source Dart
+providers. The beta 3.13.0-103.1.beta compiler seed remains unchanged. Non-native
+selection retains the earlier constructor.
+
+The stable binary SDK splits after pristine installation. Source Dart splits
+after GN/Ninja, upstream checks and raw SDK installation. GN receives an explicit
+LLVM environment with no compiler-library contributions from the GNU base;
+its loader and final libraries come from LLVM's selected target. Finalization
+uses `outputs.interpreters` and `outputs.rpaths` with explicit libraries and no
+base. Directory symlink audits use `outputs.checkSymlinkTree`; selectors name
+real directories, and every discovered symlink must be relative, non-dangling and
+resolve inside the output without escaping through an intermediate link. The
+walker never descends through symlinks. `outputs.checkSymlinks` retains its
+individual-link selector contract.
+Omitting `base` in this libraries mode retains no implicit base directories;
+existing callers that supply a base keep their previous commands. The source
+DevTools and mutable CIPD stamp profiles are unsupported and fail explicitly.
+Configuration, test and pub caches use workspace directories across steps.
+Source fetching selects `fetchCertificates` independently of the installed Dart
+wrapper's runtime CA bundle, so a runtime CA edit does not change the source prefix.
+
+Flutter splits after installing pristine framework sources and pinned assets,
+removing the bundled Dart SDK and tool snapshot. Binding the selected Dart SDK,
+offline pub cache preload/lock resolution, package configuration and tool snapshot
+generation happen at the final prefix. This is output-specific tool generation:
+the previous 45.8 MB snapshot contains its prefix 4678 times and its package
+configuration contains it 103 times. The binary snapshot is never relocated by
+byte replacement. Host ELF repair selects only the Linux host tool directories;
+Android target and Web payloads remain pinned assets. Nix's final artifact
+reference exclusion applies to all three recipes without exceptions.
+
+`tvp.lib.sources.fetchArchive` is a root-preserving recursive fixed-output source
+primitive, using explicit shell, downloader, CA, tar/gzip, Coreutils and validation
+Python. It preserves the `source` name and unpacked hashes of the retained DEPS
+fetches. It accepts HTTPS or contextual store-file fixtures, rejects unsupported
+tar members and escaping namespaces before extraction, and never strips a top
+root. It is immutable input fetching, separate from package construction.
+
+Focused staging controls live in `lib/tests/sdk-source-stage.nix` and
+`lib/tests/sdk-source-safety.py`. Their pure contracts inspect effective plans and
+edits; their buildable fixtures exercise a tiny LLVM ELF, final loader/library
+changes, artifact reuse/exclusion and local archive hashes. They do not realize
+canonical source Dart or Flutter. Those packages' nine and four installed controls
+remain deferred until independent source review authorizes compilation. The
+stable bootstrap's two installed controls can run during staging. Full validation,
+source DevTools/engine/bootstrap work and default promotion remain separate gates.
+
+
+Runtime provider defaults read exposed specification inputs through the effective
+fixed point. A direct dependency `.edit` therefore changes the commands that use
+that default; `.editRuntime` can still replace it explicitly. When that effective
+runtime provider differs from its construction default, an optional specification
+`dependencyProviders` map projects it into `tvp.deps` and `declaredDependencies`.
+The map may contain only already-declared dependency names. It neither adds
+undeclared dependencies nor changes construction inputs. Recipes without the map
+retain the existing metadata behavior. Inputs used during construction, such as
+Dart's Bash, remain construction providers; `tvp.runtimeProviders` records an
+independently edited runtime shell.
+
+### Upstream-test isolation policy
+
+Artifact/final compliance and upstream isolation are distinct measures. A meaningful
+artifact/final split remains required; moving only acceptance past the split does
+not isolate fixture construction or execution. Test-only fields must be consumed
+only by validation. Shared production generators, installed bindings and libraries
+remain production inputs even when tests also use them.
+
+The evaluated upstream-isolation inventory checks actual effective specifications,
+active commands, fresh producer/projection identities and dependency contexts.
+Inspected ordinary families use A (installed artifact plus bounded retained
+build state), F (repaired final outputs), T (private fixture construction), R (raw
+execution evidence) and U (registered owned acceptance test). F drops retained
+state before output repair. Installed tests consume F; SQLite veryquick U also explicitly
+consumes F's CLI for runner-database reconciliation. No validation producer may
+feed A/F. R preserving a failing raw status does not pass U or its batch.
+
+Retained-state manifests define the production checkpoint, layout, generated
+metadata and safe private restoration. Only private copies may receive test
+patches, metadata rebasing or instrumented engine compilation. Test-only edits
+must preserve A/F, expectation edits preserve T/R, runner edits preserve T, and
+finalizer edits preserve A/T/R. Production source/compiler edits invalidate A.
+Meaningful positive, invalidation and negative contracts accompany the policy.
+
+Unaudited recipes (including retained/native SQLite and OpenSSL procedures) are
+UNAUDITED, never compliant by default. Broken/disabled coverage retains its explicit
+disposition. Scoped checks admit only the inspected scope; strict exposure rejects
+all remaining isolation debt and is not an unconditional failing full-suite check.
+This does not change audits/split-baseline.json, frozen construction identities or
+any full-validation/default admission hold. Source inspection and tiny controls
+are not canonical runtime qualification. Ordinary Libxml2 retains raw upstream
+capture before A as transition debt; separating its final-package acceptance does
+not establish execution isolation or strict conformance. Its upstream test remains
+in the normal batch, and known upstream/schema nonpasses remain unwaived.

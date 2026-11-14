@@ -133,31 +133,83 @@ let
       def = if native then ownedDefs."2.6.0" else legacyDefs."2.6.0";
     };
   };
+  constructionTool =
+    name:
+    tvpLib.packages.withConstraint {
+      category = "construction";
+      reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar/Perl consume these target libraries.";
+    } candidate.tools.${name};
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+  };
   publicArgs = packageArgs // {
     testDeps.pkg-config = tvp.packages.pkg-config;
-    versionTable = publicVersionTable;
+    versionTable = publicVersionTable // {
+      "2.5.0" = versionTable."2.5.0" // {
+        def = if native then ordinaryDefs."2.5.0" else versionTable."2.5.0".def;
+      };
+      "2.5.1" = versionTable."2.5.1" // {
+        def = if native then ordinaryDefs."2.5.1" else versionTable."2.5.1".def;
+      };
+      "2.5.2" = versionTable."2.5.2" // {
+        def = if native then ordinaryDefs."2.5.2" else versionTable."2.5.2".def;
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
         url = "https://download.savannah.nongnu.org/releases/attr/attr-${version}.tar.gz";
         inherit sha256;
       };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      packageArgs.extraArgs.mkTests package
-      // pkgs.lib.optionalAttrs (package.version == "2.6.0") (
-        import ./tests/owned.nix {
-          inherit tvpLib package;
-          pkgs =
-            if package ? testContext then
-              pkgs
-            else
-              tvpLib.tests.withBase {
-                inherit pkgs;
-                base.stdenv = package.stdenv;
-              };
-        }
-      );
+      (
+        (
+          package:
+          (import ./tests { inherit pkgs tvpLib package; })
+          // pkgs.lib.optionalAttrs (package.version == "2.6.0") (
+            import ./tests/owned.nix {
+              inherit tvpLib package;
+              pkgs =
+                if package ? testContext then
+                  pkgs
+                else
+                  tvpLib.tests.withBase {
+                    inherit pkgs;
+                    base.stdenv = package.stdenv;
+                  };
+            }
+          )
+        )
+        package
+      )
+      //
+        pkgs.lib.optionalAttrs
+          (
+            package ? testContext
+            && builtins.elem package.version [
+              "2.5.0"
+              "2.5.1"
+              "2.5.2"
+            ]
+          )
+          (
+            import ./tests/ordinary.nix {
+              inherit
+                pkgs
+                tvpLib
+                package
+                tvp
+                ;
+            }
+          )
+    ) { inherit pkgs; };
   };
   constructionRecipe = packageArgs;
   canonical = tvpLib.packages.mkVersions publicArgs;

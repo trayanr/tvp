@@ -1,5 +1,5 @@
 # Construction never follows the public default it is building. These exact
-# selections reproduce the reviewed GCC16 native three-stage producer on v3.
+# selections keep the GCC16 construction on v3; MPFR uses the shared owned recipe.
 {
   pkgs,
   tvpLib,
@@ -43,7 +43,7 @@ let
     );
 in
 tvpLib.packages.mergeVariants {
-  gcc = select (frozenTests recipes.gcc) {
+  gcc = select (frozenTests recipes.gcc.constructionRecipe) {
     "16.2.0" = {
       deps = {
         binutils = inputs.binutils_2_42;
@@ -61,7 +61,7 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  binutils = select recipes.binutils {
+  binutils = select recipes.binutils.constructionRecipe {
     "2.42" = {
       deps = {
         bison = inputs.bison_3_8_2;
@@ -80,19 +80,48 @@ tvpLib.packages.mergeVariants {
       };
     };
   };
-  mpfr = select recipes.mpfr.constructionRecipe {
-    "4.2.1" = {
-      deps = {
-        gmp = inputs.gmp_6_3_0;
-      };
-    };
-    "4.2.2" = {
-      deps = {
-        gmp = inputs.gmp_6_3_0;
-      };
-    };
-  };
-  mpc = select recipes.mpc {
+  mpfr.gcc16 = builtins.listToAttrs (
+    map
+      (
+        version:
+        let
+          name = tvpLib.versions.attrName "mpfr" version;
+          package =
+            (recipes.mpfr.instantiate {
+              inherit version;
+              base = construction.ownedBases.gcc13-owned-v3;
+              deps.gmp = inputs.gmp_6_3_0;
+            }).edit
+              (
+                spec:
+                spec
+                // {
+                  tvp = spec.tvp // {
+                    canonical = false;
+                    variant = "gcc16";
+                  };
+                }
+              );
+        in
+        {
+          inherit name;
+          value = tvpLib.packages.tagSelection {
+            namespace = "variants.gcc16";
+            selector = name;
+            kind = "variant";
+            pname = "mpfr";
+            inherit version;
+            canonical = name;
+          } package;
+        }
+      )
+      [
+        "4.2.1"
+        "4.2.2"
+      ]
+  );
+
+  mpc = select recipes.mpc.constructionRecipe {
     "1.3.1" = {
       deps = {
         gmp = inputs.gmp_6_3_0;
@@ -103,9 +132,9 @@ tvpLib.packages.mergeVariants {
   isl =
     select
       (frozenTests (
-        recipes.isl
+        recipes.isl.constructionRecipe
         // {
-          testDeps = recipes.isl.testDeps // {
+          testDeps = recipes.isl.constructionRecipe.testDeps // {
             # This is the identical old public helper computation, not a gcc13-profile tool.
             patchelf = construction.variants.gcc13.isl_0_20.tvp.declaredTestDependencies.patchelf;
           };
@@ -193,7 +222,7 @@ tvpLib.packages.mergeVariants {
   pkg-config = select recipes.pkg-config.constructionRecipe {
     "0.29.2" = { };
   };
-  bison = select recipes.bison {
+  bison = select recipes.bison.constructionRecipe {
     "3.8.2" = {
       deps = {
         m4 = inputs.m4_1_4_21;

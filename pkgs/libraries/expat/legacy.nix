@@ -1,0 +1,44 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+  defs = tvpLib.packages.mkDefs {
+    "2.9.0" = {
+      builder = ./build-2.9.0.nix;
+      base = tvp.bases.default;
+      deps = {
+        cmake = tvp.packages.cmake;
+        ninja = tvp.packages.ninja;
+        patchelf = tvp.packages.patchelf;
+      };
+    };
+  };
+  pname = "expat";
+  versionTable = tvpLib.packages.mkTable [
+    {
+      def = defs."2.9.0";
+      releases."2.9.0" = "sha256-HmNxhizDGZmzaMO4m0mZTwZ34bq18bK4WuN0H12AMFE=";
+    }
+  ];
+  packageArgs = {
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
+    inherit pname versionTable;
+    extraArgs.mkTests =
+      package:
+      import ./tests {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+
+      };
+  };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+in
+{
+  recipes.${pname} = packageArgs;
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+}

@@ -1,20 +1,42 @@
 {
   system ? "x86_64-linux", # currently unused?
   config ? { },
+  source ? {
+    path = toString ./.;
+    revision = null;
+  },
   pkgs, # TODO: nixpkgs check and abort if not or auto import channel
 }:
 let
-  tvpLib = import ./lib { inherit (pkgs) lib; };
+  tvpLib = import ./lib {
+    inherit (pkgs) lib;
+    familyContext = {
+      base = baseTiers.full;
+      builder = tvp.builder;
+      helpers = {
+        inherit tvp;
+        inherit (pkgs) lib;
+      };
+    };
+  };
 
-  # The ground packages are built on. Defined before `packages` because every
-  # version table names one, and exposed on `tvp` so a version table can reach
-  # it the same way it reaches `tvp.packages`.
+  # Retained and specialized construction bases remain available independently
+  # of the ordinary family context selected above.
   baseSet = import ./bases {
     inherit pkgs tvpLib tvp;
     inherit (universe) recipes;
   };
   bases = baseSet.bases;
   construction = baseSet.construction;
+  baseTiers =
+    (import ./bases/tiers/source-gnu.nix {
+      inherit (pkgs) lib;
+      builder = tvp.builder;
+      standardTools = import ./bases/source-gnu/standard-tools.nix { inherit tvp; };
+    })
+    // {
+      retained = construction.ownedBases;
+    };
 
   universe = import ./pkgs { inherit pkgs tvp; };
 
@@ -72,6 +94,19 @@ let
       registry = runtimeRegistry;
     })
     // {
+      recipe-splits = pkgs.writeText "tvp-recipe-splits.json" (
+        builtins.toJSON (tvpLib.recipeSplits.enforce tvp.recipeSplitReport)
+      );
+      upstream-test-isolation = pkgs.writeText "tvp-upstream-test-isolation.json" (
+        builtins.toJSON (tvpLib.upstreamTestIsolation.enforce tvp.upstreamIsolationReport)
+      );
+      upstream-test-isolation-contracts = import ./lib/tests/upstream-test-isolation.nix {
+        inherit pkgs tvp;
+      };
+      openssl-upstream-isolation-contracts = import ./lib/tests/openssl-upstream-isolation.nix {
+        inherit pkgs tvp;
+      };
+      recipe-split-contracts = import ./lib/tests/recipe-splits.nix { inherit pkgs tvp; };
       upstream-tracking = import ./tools/upstream/tests {
         inherit pkgs tvp ownedCLI;
         testDeps = {
@@ -131,6 +166,27 @@ let
         pkgs.writeText "tvp-build-step-contracts" (builtins.toJSON contracts);
       build-step-runner = import ./lib/tests/build-step-runner { inherit pkgs tvp; };
       named-outputs = import ./lib/tests/named-outputs.nix { inherit pkgs tvp; };
+      ordinary-family = pkgs.writeText "tvp-ordinary-family-contracts" (
+        builtins.toJSON (import ./lib/tests/family.nix { inherit (pkgs) lib; })
+      );
+      tool-providers = pkgs.writeText "tvp-tool-provider-contracts" (
+        builtins.toJSON (import ./lib/tests/tool-providers.nix { inherit (pkgs) lib; })
+      );
+      split-named-outputs = import ./lib/tests/split-named-outputs.nix { inherit pkgs tvp; };
+      output-checks = import ./lib/tests/output-checks.nix {
+        inherit (pkgs) lib;
+        inherit (tvp.packages) bash coreutils;
+      };
+      gcc-target-tools = pkgs.writeText "tvp-gcc-target-tool-contracts" (
+        builtins.toJSON (import ./lib/tests/gcc-target-tools.nix { inherit (pkgs) lib; })
+      );
+      effective-inputs = pkgs.writeText "tvp-effective-input-contracts" (
+        builtins.toJSON (import ./lib/tests/effective-inputs.nix { inherit pkgs tvp; })
+      );
+      legacy-test-factories = import ./lib/tests/legacy-test-factories.nix {
+        inherit pkgs tvp;
+        inherit (universe) recipes;
+      };
       # Keep fixture outputs individually visible to plan/output publication.
       named-outputs-validation = tvp.checks.named-outputs.passthru.validation;
       named-outputs-bin = tvp.checks.named-outputs.passthru.binary;
@@ -146,22 +202,43 @@ let
           }
         )
       );
+      base-tiers = pkgs.writeText "tvp-base-tier-contracts" (
+        builtins.toJSON (
+          import ./lib/tests/base-tiers.nix {
+            inherit (pkgs) lib;
+            inherit (tvp) builder;
+          }
+        )
+      );
+      mpfr-family = pkgs.writeText "tvp-mpfr-family-contracts" (
+        builtins.toJSON (import ./lib/tests/mpfr-family.nix { inherit pkgs tvp; })
+      );
+      source-gnu-hardening = import ./bases/source-gnu/hardening/check.nix { inherit tvp; };
       owned-builder = import ./lib/tests/owned-builder.nix { inherit pkgs tvp; };
       owned-tests = (import ./lib/tests/owned-tests-native.nix { }).check;
       owned-mpc = import ./lib/tests/owned-mpc.nix { inherit pkgs tvp; };
       owned-json-c = import ./lib/tests/owned-json-c.nix { inherit pkgs tvp; };
       owned-ruby = import ./lib/tests/owned-ruby.nix { inherit pkgs tvp; };
       owned-zstd = import ./lib/tests/owned-zstd.nix { inherit pkgs tvp; };
+      remaining-adapter-profiles = pkgs.writeText "tvp-remaining-adapter-profile-contracts" (
+        builtins.toJSON (import ./lib/tests/remaining-adapter-profiles.nix { inherit pkgs tvp; })
+      );
       owned-fontconfig = import ./lib/tests/owned-fontconfig.nix { inherit pkgs tvp; };
+      owned-x11 = import ./lib/tests/owned-x11.nix { inherit pkgs tvp; };
+      jdk-support-splits = import ./lib/tests/jdk-support-splits.nix { inherit pkgs tvp; };
+      owned-jdk-source-stage = import ./lib/tests/jdk-source-stage { inherit pkgs tvp; };
+      owned-x11-extensions = import ./lib/tests/owned-x11-extensions.nix { inherit pkgs tvp; };
       owned-catalogue = import ./lib/tests/owned-catalogue.nix { inherit pkgs tvp; };
       native-recipes = import ./lib/tests/native-recipes.nix { inherit pkgs tvp; };
       native-output = import ./lib/tests/native-output.nix { inherit pkgs tvp; };
       reusable-output = import ./lib/tests/reusable-output.nix { inherit pkgs tvp; };
+      output-selection = (import ./lib/tests/output-selection.nix { }).check;
       ruby-build-steps = import ./lib/tests/ruby-build-steps.nix { inherit pkgs tvp; };
       native-meson = import ./lib/tests/native-meson.nix { inherit pkgs tvp; };
       native-make = import ./lib/tests/native-make.nix { inherit pkgs tvp; };
       step-temporary-cleanup = import ./lib/tests/step-temporary-cleanup.nix { inherit pkgs tvp; };
       base-selection = import ./bases/tests/selection.nix { inherit pkgs tvp construction; };
+      owned-android = import ./lib/tests/android { inherit pkgs tvp; };
       android-sdk-composition = import ./sdks/tests/android.nix { inherit tvp; };
       bootstrap-independent = import ./bases/tests/bootstrap.nix {
         inherit pkgs;
@@ -409,27 +486,30 @@ let
         '';
     };
 
+  # Keep this mapping lazy: latest selection must not enumerate historical suites
+  # just to find the selected batch. Full coverage retains its existing filter.
+  packageTestBatches = builtins.mapAttrs (
+    name: pkg:
+    (
+      if pkg ? testContext then
+        pkg.testContext.mkBatch
+      else
+        args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
+    )
+      {
+        inherit name;
+        suite = pkg.tests;
+      }
+  ) canonical;
+
   testBatchEntries = tvpLib.packages.merge {
-    packages =
-      builtins.mapAttrs
-        (
-          name: pkg:
-          (
-            if pkg ? testContext then
-              pkg.testContext.mkBatch
-            else
-              args: tvpLib.tests.mkBatch (args // { inherit pkgs; })
-          )
-            {
-              inherit name;
-              suite = pkg.tests;
-            }
-        )
-        (
-          pkgs.lib.filterAttrs (
-            _: pkg: pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
-          ) canonical
-        );
+    packages = pkgs.lib.filterAttrs (
+      name: _:
+      let
+        pkg = canonical.${name};
+      in
+      pkg ? tests && pkg.tests != { } && (pkg.tvp.status.level or "ok") != "broken"
+    ) packageTestBatches;
     bases = pkgs.lib.mapAttrs' (
       name: base:
       pkgs.lib.nameValuePair "base-${name}" (
@@ -469,6 +549,22 @@ let
     all = tvpLib.tests.mkAll {
       inherit pkgs checks;
       batches = testBatchEntries;
+    };
+  };
+
+  # Separate from testBatches: the full plan enumerates every entry but `all`.
+  # Reuse each package's existing testContext batch without reconstructing it.
+  latestSelection = tvpLib.tests.selectLatest {
+    inherit canonical packages;
+    batches = packageTestBatches;
+  };
+  latestTests = latestSelection // {
+    all = tvpLib.tests.mkLatest {
+      context = tvpLib.tests.fromPackage {
+        builder = tvp.builder;
+        package = packages.coreutils;
+      };
+      selection = latestSelection;
     };
   };
 
@@ -517,17 +613,86 @@ let
       inherit tvpLib;
       graph = tvp.graph;
     };
-    status = pkgs.callPackage ./tools/status.nix {
-      inherit ownedCLI;
-      coreutils = tvp.packages.coreutils;
-      gnugrep = tvp.packages.gnugrep;
-      gnused = tvp.packages.gnused;
-      packages = canonical;
-      inherit bases tvpLib;
-    };
+    status =
+      let
+        # Keep progress reporting available while public package outputs change.
+        tooling = (import ./bases/source-gnu { }).tools;
+      in
+      pkgs.callPackage ./tools/status.nix {
+        ownedCLI = import ./tools/lib/owned-cli.nix {
+          inherit (pkgs) lib;
+          inherit (tooling) bash coreutils;
+          shellcheck = pkgs.shellcheck-minimal;
+          platform = bases.default.platform;
+        };
+        python3 = tooling.python;
+        migrationFacts = tvp.migrationStatusManifest;
+        coreutils = tooling.coreutils;
+        gnugrep = tooling.grep;
+        gnused = tooling.sed;
+        packages = canonical;
+        inherit bases tvpLib;
+      };
   };
 
   tvp = {
+    migrationStatusManifest = import ./tools/status/manifest.nix {
+      inherit (pkgs) lib;
+      inherit
+        canonical
+        variants
+        source
+        system
+        ;
+      splitReport = tvp.recipeSplitReport;
+      latest = latestSelection.metadata;
+    };
+    upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
+    upstreamIsolationReport =
+      (tvpLib.upstreamTestIsolation.validate {
+        inventory = tvp.upstreamIsolationInventory;
+      })
+      // {
+        artifactFinalizationDebt = tvp.recipeSplitReport.counts.remainingDebt;
+      };
+    upstreamIsolationStrict = tvpLib.upstreamTestIsolation.enforce (
+      tvpLib.upstreamTestIsolation.validate {
+        inventory = tvp.upstreamIsolationInventory;
+        strict = true;
+      }
+    );
+    recipeSplitInventory = tvpLib.recipeSplits.inventory { inherit canonical variants; };
+    recipeSplitReport =
+      (tvpLib.recipeSplits.validate {
+        inventory = tvp.recipeSplitInventory;
+        baseline = tvpLib.recipeSplits.baselineFromJSON (builtins.readFile ./audits/split-baseline.json);
+      })
+      // {
+        outsideOrdinaryScope = {
+          producers =
+            pkgs.lib.mapAttrs
+              (id: producer: {
+                inherit producer;
+                validation = "OUTSIDE_ORDINARY_POLICY_REQUIRES_ADAPTER_AUDIT";
+                role = builtins.head (pkgs.lib.splitString "." id);
+                disposition = "Separate historical/base/bootstrap/composition adapter audit required.";
+              })
+              (
+                pkgs.lib.filterAttrs (
+                  id: _: !(pkgs.lib.hasPrefix "packages." id || pkgs.lib.hasPrefix "variants." id)
+                ) tvp.graph.entries
+              );
+          repositoryChecks = builtins.attrNames checks;
+          testBatches = builtins.attrNames testBatchEntries;
+          testDisposition = "Test/check harnesses and base suites are validation roles, not ordinary production recipes; constructor adapters require separate audit.";
+        };
+      };
+    recipeSplitStrict = tvpLib.recipeSplits.enforce (
+      tvpLib.recipeSplits.validate {
+        inventory = tvp.recipeSplitInventory;
+        strict = true;
+      }
+    );
     dependencyRoots = import ./lib/dependency-roots.nix {
       inherit (pkgs) lib;
       inherit tools checks;
@@ -557,6 +722,17 @@ let
         ;
       compositions = tvp.android.profiles;
       buildTestSupport = {
+        owned-jdk-source-stage = tvp.checks.owned-jdk-source-stage.support;
+        owned-x11-extensions = tvp.checks.owned-x11-extensions.support // {
+          package = tvp.packages.libxext;
+          bash = tvp.packages.libxext.specification.bash;
+          coreutils = tvp.packages.libxext.specification.coreutils;
+        };
+        owned-x11 = {
+          package = tvp.packages.xorgproto;
+          bash = tvp.packages.xorgproto.specification.bash;
+          coreutils = tvp.packages.xorgproto.specification.coreutils;
+        };
         build-step-runner = {
           inherit (tvp.packages)
             bash
@@ -622,9 +798,9 @@ let
             gnumake
             pkg-config
             ;
-          patchelf = tvp.packages.patchelf_0;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          patchelf = tvp.canonical.json-c_0_19.tvp.deps.patchelf;
+          environment = tvp.canonical.json-c_0_19.compiler;
+          compiler = tvp.canonical.json-c_0_19.tvp.cc;
         };
         owned-ruby = {
           ruby = tvp.canonical.ruby_4_0_6;
@@ -643,16 +819,17 @@ let
           zstd = tvp.packages.zstd_1;
           compatibleZlib = tvp.packages.zlib_1_3_1;
           compatibleXz = tvp.packages.xz_5_6_4;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          environment = tvp.canonical.zstd_1_5_7.compiler;
+          compiler = tvp.canonical.zstd_1_5_7.tvp.cc;
         };
         owned-fontconfig = {
-          inherit (tvp.packages) bash coreutils;
-          pkgConfig = tvp.packages.pkg-config;
+          inherit (tvp.canonical.fontconfig_2_18_3.specification) bash coreutils grep;
+          pkgConfig = tvp.canonical.fontconfig_2_18_3.specification.pkg-config;
           fontconfig = tvp.packages.fontconfig_2;
           compatibleExpat = pkgs.expat;
-          environment = bases.default.stdenv;
-          compiler = bases.default.stdenv.cc;
+          compiler = tvp.canonical.fontconfig_2_18_3.compiler;
+          binutils = tvp.canonical.fontconfig_2_18_3.compiler.bintools;
+          libc = tvp.canonical.fontconfig_2_18_3.compiler.libc;
         };
         native-meson = {
           fontconfig = tvp.packages.fontconfig_2;
@@ -713,14 +890,16 @@ let
         ;
       compositions = tvp.android.profiles;
     };
-    android = import ./sdks/android.nix { inherit tvp; };
+    android = import ./sdks/android.nix { inherit tvp pkgs; };
     inherit
       bases
+      baseTiers
       canonical
       packages
       variants
       checks
       testBatches
+      latestTests
       tools
       ;
     builder = import ./lib/builder.nix { inherit (pkgs) lib; };

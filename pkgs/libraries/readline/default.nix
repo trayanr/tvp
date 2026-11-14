@@ -154,68 +154,136 @@ let
       category = "construction";
       reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
     } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "8.3" = {
-      constructor = tvp.builder;
-      builder = ./native/build-8.3.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
+  ordinaryDefs = import ./ordinary {
+    inherit
+      tvp
+      tvpLib
+      candidate
+      constructionTool
+      ;
+    inherit (pkgs) fetchurl;
+    ncurses = tvp.packages.ncurses_6;
   };
   publicArgs = packageArgs // {
     versionTable = versionTable // {
+      "2.1" = versionTable."2.1" // {
+        def = if native then ordinaryDefs."2.1" else versionTable."2.1".def;
+      };
+      "2.2" = versionTable."2.2" // {
+        def = if native then ordinaryDefs."2.2" else versionTable."2.2".def;
+      };
+      "2.2.1" = versionTable."2.2.1" // {
+        def = if native then ordinaryDefs."2.2.1" else versionTable."2.2.1".def;
+      };
+      "4.0" = versionTable."4.0" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.0".def;
+      };
+      "4.1" = versionTable."4.1" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.1".def;
+      };
+      "4.2" = versionTable."4.2" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.2".def;
+      };
+      "4.2a" = versionTable."4.2a" // {
+        def = if native then ordinaryDefs."4.0" else versionTable."4.2a".def;
+      };
+      "4.3" = versionTable."4.3" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."4.3".def;
+      };
+      "5.0" = versionTable."5.0" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.0".def;
+      };
+      "5.1" = versionTable."5.1" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.1".def;
+      };
+      "5.2" = versionTable."5.2" // {
+        def = if native then ordinaryDefs."4.3" else versionTable."5.2".def;
+      };
+
+      "6.0" = versionTable."6.0" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.0".def;
+      };
+      "6.1" = versionTable."6.1" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.1".def;
+      };
+      "6.2" = versionTable."6.2" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.2".def;
+      };
+      "6.3" = versionTable."6.3" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."6.3".def;
+      };
+      "7.0" = versionTable."7.0" // {
+        def = if native then ordinaryDefs."6.0" else versionTable."7.0".def;
+      };
+      "8.0" = versionTable."8.0" // {
+        def = if native then ordinaryDefs."8.0" else versionTable."8.0".def;
+      };
+      "8.1" = versionTable."8.1" // {
+        def = if native then ordinaryDefs."8.0" else versionTable."8.1".def;
+      };
+      "8.1.2" = versionTable."8.1.2" // {
+        def = if native then ordinaryDefs."8.0" else versionTable."8.1.2".def;
+      };
+      "8.2" = versionTable."8.2" // {
+        def = if native then ordinaryDefs."8.2" else versionTable."8.2".def;
+      };
+      "8.2.13" = versionTable."8.2.13" // {
+        def = if native then ordinaryDefs."8.2" else versionTable."8.2.13".def;
+      };
+
       "8.3" = versionTable."8.3" // {
-        def = if native then ownedDefs."8.3" else versionTable."8.3".def;
+        def = if native then ordinaryDefs."8.3" else versionTable."8.3".def;
       };
     };
-    extraArgs.mkTests =
+    extraArgs.mkTests = pkgs.lib.makeOverridable (
+      { pkgs }:
       package:
-      if package ? testContext then
+      if package ? specification && package.specification ? cStandard then
+        import ./tests/ordinary.nix {
+          inherit
+            pkgs
+            tvpLib
+            package
+            tvp
+            ;
+        }
+      else if package ? testContext then
         import ./tests/native-default.nix { inherit pkgs tvpLib package; }
       else
-        constructionRecipe.extraArgs.mkTests package;
+        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
+    ) { inherit pkgs; };
   };
   canonical = tvpLib.packages.mkVersions publicArgs;
   variants = tvpLib.packages.mkVariants (
-    constructionRecipe
+    (
+      publicArgs
+      // {
+        versionTable = {
+          "8.3" = versionTable."8.3" // {
+            def =
+              if native then
+                ordinaryDefs."8.3"
+                // {
+                  builder = ./ordinary/build-8.3-ncurses64.nix;
+                }
+              else
+                versionTable."8.3".def;
+          };
+        };
+      }
+    )
     // {
       inherit pkgs;
       profiles.ncurses64 = {
-        base = tvp.bases.default;
-        versions."8.3".deps.ncurses = tvp.lib.packages.withConstraint {
-          reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
-        } tvp.packages.ncurses_6_4;
+        base = if native then candidate.base else tvp.bases.default;
+        versions."8.3".deps.ncurses =
+          tvp.lib.packages.withConstraint
+            {
+              reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
+            }
+            (tvpLib.packages.mkVersions
+              (import ../ncurses { inherit pkgs tvp; }).recipes.ncurses.constructionRecipe
+            ).ncurses_6_4;
       };
     }
   );

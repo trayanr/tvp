@@ -32,6 +32,14 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
+  # Fixed-width valid paths preserve C++ string lengths, including CMake's
+  # generated Makefile fragments. The selected build shell runs during bootstrap.
+  padded =
+    path:
+    assert builtins.stringLength path <= 256;
+    lib.concatStrings (lib.replicate (256 - builtins.stringLength path) "/") + path;
+  buildShell = padded "${final.bash}/bin/bash";
+  runtimeShell = padded "${final.runtime.shell}/bin/bash";
   environment = final.base.environment final.environment;
   # The selected compiler wrapper is an explicit tool interface. Keep required
   # transitive development paths when callers replace upstream scalar flags or
@@ -80,6 +88,8 @@ let
 in
 {
   pname = "cmake";
+  # Equal-width compiled-prefix ABI; the artifact remains a distinct producer.
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
@@ -110,7 +120,7 @@ in
   };
   runtime = {
     libraries = environment.libraries;
-    shell = bash;
+    shell = final.bash;
   };
   plan = steps.sequence [
     (steps.unpack {
@@ -120,8 +130,8 @@ in
       compression = "gzip";
     })
     (command "cmake.prepare" ''
-      ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
-      ${helperPython}/bin/python3 -B - ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"} <<'PY'
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
+      ${helperPython}/bin/python3 -B - ${lib.escapeShellArg buildShell} <<'PY'
       from pathlib import Path
       import sys
       shell = sys.argv[1]
@@ -133,7 +143,7 @@ in
       p = Path('bootstrap')
       text = p.read_text()
       assert text.startswith('#!/bin/sh\n')
-      p.write_text('#!' + shell + '\n' + text.split('\n', 1)[1])
+      p.write_text('#!${final.bash}/bin/bash\n' + text.split('\n', 1)[1])
       PY
     '')
     # Auxiliary module scripts/templates retain their contents and explicit shell.
@@ -152,7 +162,7 @@ in
         "sh"
         "bash"
       ];
-      interpreter = "${final.runtime.shell}/bin/bash";
+      interpreter = "${final.bash}/bin/bash";
     })
     (command "cmake.configure" ''
       # 4.4.5's bootstrap forces the cache options from its selectors. Keep
@@ -189,6 +199,30 @@ in
       done
       install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
     '')
+    (steps.split "cmake.finalize")
+    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    {
+      name = "cmake.relocate";
+      tools = [ helperPython ];
+      run = ''${helperPython}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            fixed = [
+              [
+                buildShell
+                runtimeShell
+              ]
+            ];
+            text = [
+              [
+                "${final.bash}/bin/bash"
+                "${final.runtime.shell}/bin/bash"
+              ]
+            ];
+          }
+        )
+      } ${../../../../lib/installed-tree.py}'';
+    }
     (outputs.strip {
       python = helperPython;
       inherit binutils;

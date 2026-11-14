@@ -4,6 +4,17 @@
   package,
 }:
 let
+  suite = args:
+    if package ? testContext then
+      package.testContext.mkSuite {
+        package = package;
+        tools = package.specification.environment.tools;
+        libraries = [ ];
+        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
+          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
+        }) args.tests;
+      }
+    else tvpLib.tests.mkSuite args;
   u = import ../upstream.nix;
   filenames = [
     "gawk-1.01.tar.gz"
@@ -47,7 +58,7 @@ assert
     "1.01"
     "5.3.0"
   ];
-tvpLib.tests.mkSuite {
+suite {
   inherit pkgs package;
   tests.upstream-fixtures = {
     script = ''
