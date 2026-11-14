@@ -173,6 +173,15 @@ adoption is sixteen of 110 families; these 110 eligible rows are source-adopted,
 not all runtime-qualified. Earlier compression construction and direct standalone
 providers remain explicit.
 
+Bison (eleven releases), Flex (four), Gperf (four), PCRE2 (four), Libffi (23) and
+Mpdecimal (two) now use the same family model: 22 of 110 indexes and 317 eligible
+canonical rows in marked definitions. Actual Bison skeleton and FFI installation
+profiles stay in complete independent builders. Test-discovered parser counterparts
+and FFI's exact earlier DejaGnu harness stay in U. Runtime/helper edits reuse A.
+The full retained factory observer now passes; MIG-012 is resolved with its original
+failure retained. The earlier `pkg-config` base role is lazy and separate from
+same-named recipe feature options (MIG-016).
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL

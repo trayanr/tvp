@@ -3,7 +3,7 @@ let
   tvpLib = tvp.lib;
   defs = tvpLib.packages.mkDefs {
     "3.1" = {
-      builder = ./build-3.1.nix;
+      builder = ./retained/build-3.1.nix;
       base = tvp.bases.default;
       deps = {
         patchelf = tvp.packages.patchelf;

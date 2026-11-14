@@ -181,9 +181,11 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Current behavior:** preserve the full observer's failure and captured diagnostic.
   Scoped Autotools source checks use the three actual retained factories; the full
   check stays red. No public fallback adapter or silent assertion removal is added.
-- **Decision needed:** when Flex moves to the agreed family API, separate its owned
-  factory from this historical observer and preserve the actual selected earlier
-  base. Repair/retire the old fallback explicitly, with its own identity evidence.
+- **Resolved 2026-11-14:** Bison/Flex now use the ordinary family API. The historical
+  observer explicitly calls their retained factories with the actual earlier
+  packages. All six controls for each, and the complete eleven-family observer,
+  pass. The original failure remains recorded; no public fallback adapter or
+  assertion removal was introduced.
 
 ## MIG-013 — GNU Config remains a live historical Ncurses provider
 
@@ -223,3 +225,17 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Decision needed:** repair the Expat customization contract during that family's
   conversion, then qualify its effective package and tests. Progress metadata does
   not substitute for acceptance of that unrelated suite.
+
+## MIG-016 — Standard tool names can collide with recipe options
+
+- **Scope:** implicit family argument defaults when adding a standard base role.
+- **Evidence:** adding a camel-case `pkgConfig` provider also filled historical
+  Zlib's same-named boolean feature option, making batch evaluation fail. This was
+  caught before the six-family build; no package was accepted with that value.
+- **Current behavior:** expose the earlier tool as canonical `pkg-config`, consumed
+  through `context.tools.pkg-config`; keep Zlib's existing boolean option intact.
+  No unrelated production environment receives the tool. Earlier provider and
+  compression producer identities are compared explicitly.
+- **Follow-up:** after remaining builders use their base context, review removal of
+  implicit standard-argument compatibility rather than growing name exceptions.
+  This batch does not change the family API or reinterpret existing option types.

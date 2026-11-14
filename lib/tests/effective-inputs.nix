@@ -195,6 +195,7 @@ let
           xz = "shell";
           bzip2 = "shell";
           gzip = "coreutils";
+          pcre2 = "coreutils";
         }
         .${familyName} or null;
       edited = p.edit (

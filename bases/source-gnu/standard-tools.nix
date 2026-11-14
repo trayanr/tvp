@@ -5,6 +5,7 @@
 # build themselves. These are lazy defaults, not a global PATH/tool list.
 { tvp }:
 {
+  pkg-config = tvp.baseTiers.native.standardTools.pkg-config;
   inherit (tvp.baseTiers.native.standardTools)
     gnumake
     gnutar

@@ -1,13 +1,17 @@
-PCRE2 10.49 selects the complete native `native/build-10.49.nix` procedure
-on x86_64 Linux. Older releases and other platform routes retain the 10.44
-Autoconf procedure. Frozen compiler construction explicitly selects the complete
-captured recipe. Ordinary Grep uses moving `pcre2_10` and its retained 3.11
-consumer keeps its historical behavior tests.
+All four ordinary PCRE2 releases use the complete root `build.nix` procedure.
+The captured stdenv procedure remains under `retained/`, with its original test
+factory and consumer expectations unchanged. Ordinary Grep still uses moving
+`pcre2_10`; its frozen 3.11 consumer keeps the captured construction recipe.
+
+This source proposal has not been compiled or executed. The historical validation
+observations below describe retained evidence, not qualification of this new
+A/F/U arrangement. Upstream runner preparation and the four echo callouts now
+belong only to independent U after compiled-tree restoration.
 
 The canonical native output remains shared-only: 8/16/32-bit engines, Unicode,
 JIT and the POSIX wrapper, plus pcre2grep/pcre2-config and four pkg-config modules.
 The declared `static` option builds a separate static companion for installed
-API consumers. Native checks bind upstream's four `/bin/echo` callouts to the
+API consumers. Independent upstream checks bind the four `/bin/echo` callouts to the
 explicit Coreutils provider; historical procedures and fixtures remain intact.
 
 [10.47](https://github.com/PCRE2Project/pcre2/releases/tag/pcre2-10.47) adds

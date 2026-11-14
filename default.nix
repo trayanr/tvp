@@ -94,6 +94,25 @@ let
       registry = runtimeRegistry;
     })
     // {
+      parser-families = pkgs.writeText "tvp-parser-family-contracts" (
+        builtins.toJSON (
+          import ./pkgs/build-tools/parser-family-contracts.nix {
+            inherit tvp;
+            inherit (pkgs) lib;
+          }
+        )
+      );
+      regex-hash-families = pkgs.writeText "tvp-regex-hash-family-contracts" (
+        builtins.toJSON (import ./lib/tests/regex-hash-families.nix { inherit pkgs tvp; })
+      );
+      ffi-decimal-families = pkgs.writeText "tvp-ffi-decimal-family-contracts" (
+        builtins.toJSON (
+          import ./pkgs/libraries/ffi-decimal-family-contracts.nix {
+            inherit tvp;
+            inherit (pkgs) lib;
+          }
+        )
+      );
       recipe-splits = pkgs.writeText "tvp-recipe-splits.json" (
         builtins.toJSON (tvpLib.recipeSplits.enforce tvp.recipeSplitReport)
       );
