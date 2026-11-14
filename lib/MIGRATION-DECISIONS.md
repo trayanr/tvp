@@ -400,6 +400,10 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   The distinct retained GCC16 seed required by captured SDK/JDK providers still
   runs DejaGNU in its construction `checkPhase`. The current ordinary GCC uses
   separate upstream consumers; that does not isolate the preserved seed recipe.
+  LLVM's upstream consumer configures a separate source tree with
+  `LLVM_INCLUDE_TESTS=ON` and recompiles production objects. Its independent test
+  derivation does not yet reuse a compiled checkpoint. Keep that performance debt
+  separate from ordinary index adoption and A/F split compliance.
 - **Decision:** keep these visible, without disabling features, inventing coverage
   or launching historical compilers merely to claim an authoring pass is green.
   Converge on the existing A/F/U capabilities in a separately reviewed change.

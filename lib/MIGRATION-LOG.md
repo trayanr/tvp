@@ -613,3 +613,37 @@ Ninja's repaired normal batch and Ruby's public-profile batch pass. The independ
 GCC batch remains running through this unrelated failure, so its in-flight capture
 is preserved. Existing keep-going behavior is used only for the explicit scoped
 batch request; the normal latest runner and its fail-fast policy remain unchanged.
+
+
+### Final named-batch completion and Libtool test fixture
+
+Attempt 005 stopped at one unexpected Libtool diagnostic; the failed normal run
+remains failed, without success-only verification. Its test helper selected a
+version's first line with `sed 1q`, closing a pipe while Bash's `echo` could still
+be writing. A source-bound, test-only patch uses `sed -n 1p` to drain input and
+preserve the exact same selected line and stderr assertions. It applies with zero
+fuzz to both cached 2.4.7 and 2.6.2 archives. Libtool's A/F stay exact; its existing
+normal batch passes in 255.508s including dependencies. Existing expected failures
+and skips remain reported; no assertion is weakened or failure reclassified.
+
+The six remaining named package batches (Gettext, Go, Libffi, LLVM, Perl and Tcl)
+completed in one independent keep-going request in 789.109s. This request excludes
+the known Libtool failure and does not change or bypass the normal latest runner's
+fail-fast policy. It lets independent results finish once. These timings overlap
+other requests and must not be summed as elapsed user time.
+
+The separately held GCC16 normal batch passed; raw make exited zero, and raw/audit
+outputs are valid and scoped-rooted. Historical nonpasses and broader limits remain
+unwaived. All five public-profile batches pass with exactly 60 expected links and
+75 valid, scoped-rooted artifact/final/batch/leaf paths. Corrected JSON-C ordinary
+and profile batches pass in 12.495s, reusing A. Original failed focused-request
+receipts retain their two old JSON-C failures; matching passing results are adopted
+only from the repaired targets.
+
+LLVM's existing U consumer was observed unpacking/configuring a separate tree and
+recompiling production objects with tests enabled. This is explicit MIG-026
+checkpoint/performance debt; production A/F were retained independently. Do not
+claim all test-only edits reuse every compilation, or count whole request duration
+as exclusive upstream execution. The final normal latest aggregate and its success
+verifier are run separately after these concrete named batches finish. CI/NAS stay
+off; no historical all-version execution or full admission is claimed.
