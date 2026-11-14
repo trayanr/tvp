@@ -122,6 +122,26 @@ let
       })
     ]
   );
+  bzip2 = package "helper-only-bzip2";
+  bzipContext = builder.forBase (
+    base.override {
+      standardTools = {
+        inherit bzip2;
+        gnutar = tar;
+      };
+    }
+  );
+  bzipUnpack = bzipContext.steps.unpack {
+    src = p.src;
+    compression = "bzip2";
+    findutils = null;
+  };
+  missingBzip = context.steps.unpack {
+    src = p.src;
+    inherit tar;
+    compression = "bzip2";
+    findutils = null;
+  };
   forRole =
     role: package:
     map (name: package.tvp.deps.${name}.drvPath) (
@@ -131,6 +151,9 @@ let
     );
   sorted = builtins.sort builtins.lessThan;
   results = {
+    bzip2SelectedFromBase = (builtins.elemAt bzipUnpack.tools 1).drvPath == bzip2.drvPath;
+    bzip2UsesExplicitTarMode = lib.hasInfix "-xjf" bzipUnpack.run;
+    bzip2MissingProviderRejected = !(builtins.tryEval (builtins.deepSeq missingBzip true)).success;
     noManualProviderRecord = !(p.specification ? toolProviders);
     inferredOnlyUsedRoles =
       builtins.attrNames p.tvp.deps == [

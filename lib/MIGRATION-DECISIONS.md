@@ -169,3 +169,31 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Decision needed:** coordinate the public compiler/toolchain and Gettext feature
   activation, then qualify the exact ordinary 0.27 recipe. Historical construction
   and its measured Gettext/JDK override remain separate and retained.
+
+## MIG-012 — Flex's historical public test-factory fallback
+
+- **Scope:** the retained factory observer outside the Autotools family conversion.
+- **Evidence:** `lib/tests/legacy-test-factories.nix` reports
+  `flex.defaultIdentities=false`; selected-builder, retained-control and variant/base
+  checks remain true. The converted Autoconf/Automake/Libtool retained factories
+  pass all six controls each. Flex's public factory still overrides its historical
+  default with a different `pkgs` context. Exact onset has not been established.
+- **Current behavior:** preserve the full observer's failure and captured diagnostic.
+  Scoped Autotools source checks use the three actual retained factories; the full
+  check stays red. No public fallback adapter or silent assertion removal is added.
+- **Decision needed:** when Flex moves to the agreed family API, separate its owned
+  factory from this historical observer and preserve the actual selected earlier
+  base. Repair/retire the old fallback explicitly, with its own identity evidence.
+
+## MIG-013 — GNU Config remains a live historical Ncurses provider
+
+- **Scope:** construction/frozen observer adoption after ordinary GNU Config moves.
+- **Evidence:** `bases/gcc13-owned/inputs/test-public.nix` captures Autoconf,
+  Automake and Libtool, but not GNU Config. Old Ncurses still selects the ordinary
+  GNU Config alias.
+- **Current behavior:** preserve GNU Config's installed layout and revision/shell
+  interface; keep its old recipe explicit. Do not retroactively add it to a captured
+  historical package set and call that preservation. Historical Ncurses consumers
+  of the new provider are not newly qualified here.
+- **Decision needed:** choose explicit historical provider generations when those
+  construction callers move, retaining their prior identities and observations.

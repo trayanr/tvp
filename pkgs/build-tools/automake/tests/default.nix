@@ -1,13 +1,15 @@
+# One installed Automake consumer suite across the complete family.
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
 let
+  tools = package.specification.base.standardTools;
   consumerStandard = package.tvp.deps.autoconf.tvp.features.consumerCStandard or null;
   configureEnv =
-    pkgs.lib.optionalString (consumerStandard != null)
-      "CFLAGS=${pkgs.lib.escapeShellArg ("-std=" + consumerStandard)} ";
+    lib.optionalString (consumerStandard != null)
+      "CFLAGS=${lib.escapeShellArg ("-std=" + consumerStandard)} ";
   # 1.0 ships macros as a single file; the aclocal command and AM_INIT_AUTOMAKE
   # arrived later. Exercise its documented interface with the same C projects.
   hasAclocal = package.tvp.features.aclocal or true;
@@ -17,9 +19,7 @@ let
     script = ''
       mkdir project
       cd project
-      ${pkgs.lib.concatMapStringsSep "\n" (
-        file: ''cp ${file} ${pkgs.lib.escapeShellArg (baseNameOf file)}''
-      ) files}
+      ${lib.concatMapStringsSep "\n" (file: ''cp ${file} ${lib.escapeShellArg (baseNameOf file)}'') files}
       ${bootstrap}
       mkdir build
       cd build
@@ -29,11 +29,17 @@ let
       ./install/bin/answer
     '';
     expected = "42";
-    extraInputs = [ package.tvp.cc ];
   };
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+context.mkSuite {
+  inherit package;
+  tools = [
+    package.tvp.deps.autoconf
+    tools.gnumake
+    tools.grep
+    tools.sed
+    tools.gawk
+  ];
   tests =
     {
       version = {
@@ -54,13 +60,13 @@ tvpLib.tests.mkSuite {
             ${if hasAclocal then "autoreconf" else "autoreconf --force"} >&2
           '';
     }
-    // pkgs.lib.optionalAttrs hasAclocal {
+    // lib.optionalAttrs hasAclocal {
       aclocal = {
         script = ''aclocal --version | head -1 | awk '{print $NF}' '';
         expected = package.version;
       };
     }
-    // pkgs.lib.optionalAttrs package.tvp.features.automaticCcCo {
+    // lib.optionalAttrs package.tvp.features.automaticCcCo {
       project =
         project
           [
@@ -72,7 +78,7 @@ tvpLib.tests.mkSuite {
             autoreconf --install --force >&2
           '';
     }
-    // pkgs.lib.optionalAttrs (package.tvp.headerMacro == "AC_CONFIG_HEADERS") {
+    // lib.optionalAttrs (package.tvp.headerMacro == "AC_CONFIG_HEADERS") {
       headers =
         project
           [
@@ -87,7 +93,7 @@ tvpLib.tests.mkSuite {
             automake --add-missing >&2
           '';
     }
-    // pkgs.lib.optionalAttrs (package.tvp.headerMacro == "AM_CONFIG_HEADER") {
+    // lib.optionalAttrs (package.tvp.headerMacro == "AM_CONFIG_HEADER") {
       legacy-headers =
         project
           [
@@ -103,7 +109,7 @@ tvpLib.tests.mkSuite {
             automake --add-missing >&2
           '';
     }
-    // pkgs.lib.optionalAttrs (package.tvp.headerMacro == "AC_CONFIG_HEADER") {
+    // lib.optionalAttrs (package.tvp.headerMacro == "AC_CONFIG_HEADER") {
       headers =
         project
           [
@@ -120,4 +126,16 @@ tvpLib.tests.mkSuite {
             automake --add-missing >&2
           '';
     };
+}
+
+// (
+  if package.tvp.features.configuredApi or false then
+    (import ../../ordinary-autotools-tests.nix { inherit package lib context; })
+    // (import ../../ordinary-autotools-split-tests.nix { inherit package lib context; })
+  else
+    import ../../historical-autotools-tests.nix { inherit package lib context; }
+)
+// lib.optionalAttrs hasAclocal (import ./macro-composition.nix { inherit package lib context; })
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = import ../../autotools-upstream.nix { inherit package lib context; };
 }

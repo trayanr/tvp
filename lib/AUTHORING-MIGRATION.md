@@ -150,6 +150,18 @@ releases. `mkTable` infers the internal label from the earliest release and supp
 empty dependencies when omitted. Existing named maps remain compatible. This
 presentation change preserves the same current artifact/final/test producers.
 
+Autoconf (27 releases), Automake (75), Libtool (11) and GNU Config (one) now use
+inline family tables, complete actual-era builders, shared installed controls and
+independent checkpoint upstream tests. Ordinary authoring adoption is twelve of
+110 entrypoints. All 114 rows evaluate; execution covers only the four latest
+packages. Earlier construction factories remain explicitly retained and their
+three historical override probes use those factories. The broader Flex observer
+nonpass is MIG-012; GNU Config's live edge to old Ncurses is MIG-013.
+
+Bzip2 archive support is centralized in the existing source helper and earlier
+tool role. Gzip/XZ helper output remains the same; missing Bzip2 providers fail
+closed. One tiny archive fixture verifies the new path.
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL

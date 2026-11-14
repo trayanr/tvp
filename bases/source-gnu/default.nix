@@ -19,6 +19,7 @@ let
         standardTools
       else
         {
+          bzip2 = tools.bzip2;
           patch = tools.patch;
           gnumake = tools.make;
           gnutar = tools.tar;

@@ -1,345 +1,153 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  constructionRecipe = previous.recipes.libtool;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  host =
-    name: reason:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      inherit reason;
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "1.0" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-1.0.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-1.0.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          platformAutomake = tvp.packages.automake_1;
+          automake = tvp.lib.packages.withConstraint {
+            reason = "Libtool 1.0 cannot parse Automake 1.5 depcomp's .deps/answer.TPlo library-object argument; current 1.19 also fails on compile -o handling. Retain the independently qualified Automake 1.4 line for this consumer.";
+          } tvp.packages.automake_1_4;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        platformAutomake = tvp.packages.automake_1;
-        automake = (
-          tvp.lib.packages.withConstraint {
-            reason = "Libtool 1.0 cannot parse Automake 1.5 depcomp's .deps/answer.TPlo library-object argument; current 1.19 also fails on compile -o handling. Native shared/static project passes with Automake 1.4-p6 and fails with 1.5 and 1.19; retain the moving 1.4 line.";
-          } tvp.packages.automake_1_4
-        );
-        m4 = tvp.packages.m4;
-        file = tvp.packages.file;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
       };
-      # Shipped configure and ltconfig probes use implicit-int main().
-      opts.cStandard = "gnu89";
-      opts = {
-        testFeatures = {
-          acLibtool = false;
-          ltdl = false;
+      releases = {
+        "1.0" = "sha256-89w7P05pCqRis340DsdQLnpdJl0UAqlcwCQPPVrqeiw=";
+        "1.1" = "sha256-UsM9vsvUzcTl2Ki0DufHEB4iR8sttkoDqAMZKf4Sx68=";
+        "1.2" = "sha256-HW1uP/Ai050M8t/b+Os73fNZKC6Ij1CP38FtlsJS+HU=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.3.5.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          platformAutomake = tvp.packages.automake_1;
+          automake = tvp.packages.automake_1;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-        license = pkgs.lib.licenses.gpl2Plus;
       };
-    };
-    "1.3.5" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-1.3.5.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "1.3.5" = "sha256-AuKHumIaoB7lgbD4iFTesiL6Yefg/FXtdoUDg1TwJZ8=";
+        "1.4.3" = "sha256-vR7b9k9XBHjvj2h1mslcxlPx2M+C7lSUiUd1E4t2VNc=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-1.5.26.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          automake = tvp.packages.automake_1;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        platformAutomake = tvp.packages.automake_1;
-        automake = tvp.packages.automake_1;
-        m4 = tvp.packages.m4;
-        file = tvp.packages.file;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
       };
-      # Shipped configure and ltconfig probes use implicit-int main().
-      opts.cStandard = "gnu89";
-    };
-    "1.5.26" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-1.5.26.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "1.5.26" = "sha256-HDWuNP6FqhZ716tLyfR3/gGROOGvYmeNlS/EPAt+Lwk=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.2.10.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          automake = tvp.packages.automake_1;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        automake = tvp.packages.automake_1;
-        m4 = tvp.packages.m4;
-        file = tvp.packages.file;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
       };
-    };
-    "2.2.10" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.2.10.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.2.10" = "sha256-3n0dAo+jvhWgWz4A/mT4Ds5iY2kjzJ74Lci5ovPF130=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.4.7.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          automake = tvp.packages.automake_1;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        automake = tvp.packages.automake_1;
-        m4 = tvp.packages.m4_1;
-        file = tvp.packages.file_5;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
+        patches = [
+          {
+            file = ./patches/declared-tools.patch;
+            reason = "Store-layout adaptation: bind declared Autoconf/Automake defaults while preserving upstream environment overrides.";
+          }
+        ];
       };
-    };
-    "2.4.7" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-2.4.7.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.4.7" = "sha256-T38hfwV85lX/IlWa0iGg/Y74StH8X8tpkM7MMzqhY10=";
+        "2.5.3" = "sha256-iYARIyzFm2s7u+Mhtgq6nbGsEVeKth7Q3wKZRYFGri4=";
+        "2.5.4" = "sha256-+B9YYGZrC8fYS63e+mDRy5+m/OsjmMw7rKavqmAmZnU=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
+    }
+    {
+      def = {
+        builder = ./build-2.4.7.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          automake = tvp.packages.automake_1;
+          m4 = tvp.packages.m4;
+          file = tvp.packages.file;
         };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        automake = tvp.packages.automake_1;
-        m4 = tvp.packages.m4_1;
-        file = tvp.packages.file_5;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        xz = tvp.packages.xz_5;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
+        patches = [
+          {
+            file = ./patches/declared-tools.patch;
+            reason = "Store-layout adaptation: bind declared Autoconf/Automake defaults while preserving upstream environment overrides.";
+          }
+        ];
+        # One additional shipped template, without a different production procedure.
+        opts.additionalTemplates = [ "libtool-next-version.in" ];
+        # Preserve this release's existing complete upstream scope (older 2.x uses groups 1–10).
+        opts.testGroups = [ ];
       };
-      patches = [
-        {
-          file = ./patches/declared-tools.patch;
-          reason = "Store-layout adaptation: declared Autoconf/Automake defaults preserve user overrides.";
-        }
-      ];
-    };
-    "2.6.2" = {
-      constructor = tvp.builder;
-      builder = ./native/build-2.6.2.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+      releases = {
+        "2.6.2" = "sha256-LvEGfBbJfbkw/XQMybw9O6mlg4BK5axCzD6HGeSeGR4=";
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        autoconf = tvp.packages.autoconf_2;
-        automake = tvp.packages.automake_1;
-        m4 = tvp.packages.m4_1;
-        file = tvp.packages.file_5;
-        patch = tvp.packages.patch_2;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        xz = tvp.packages.xz_5;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
-      };
-      patches = [
-        {
-          file = ./patches/declared-tools.patch;
-          reason = "Store-layout adaptation: declared Autoconf/Automake defaults preserve user overrides.";
-        }
-      ];
-    };
+    }
+  ];
+  packageMeta.upstream = {
+    type = "directory-index";
+    url = "https://mirrors.kernel.org/gnu/libtool/";
+    pattern = "libtool-[0-9][^\"]*\\.tar\\.(gz|xz)";
+    normalise =
+      file:
+      let
+        match = builtins.match "libtool-(.*)\\.tar\\.(gz|xz)" file;
+      in
+      if match == null then null else builtins.head match;
+    include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
   };
-  versionTable = constructionRecipe.versionTable // {
-    "1.0" = constructionRecipe.versionTable."1.0" // {
-      def = if native then defs."1.0" else constructionRecipe.versionTable."1.0".def;
-    };
-    "1.1" = constructionRecipe.versionTable."1.1" // {
-      def = if native then defs."1.0" else constructionRecipe.versionTable."1.1".def;
-    };
-    "1.2" = constructionRecipe.versionTable."1.2" // {
-      def = if native then defs."1.0" else constructionRecipe.versionTable."1.2".def;
-    };
-    "1.3.5" = constructionRecipe.versionTable."1.3.5" // {
-      def = if native then defs."1.3.5" else constructionRecipe.versionTable."1.3.5".def;
-    };
-    "1.4.3" = constructionRecipe.versionTable."1.4.3" // {
-      def = if native then defs."1.3.5" else constructionRecipe.versionTable."1.4.3".def;
-    };
-    "1.5.26" = constructionRecipe.versionTable."1.5.26" // {
-      def = if native then defs."1.5.26" else constructionRecipe.versionTable."1.5.26".def;
-    };
-    "2.2.10" = constructionRecipe.versionTable."2.2.10" // {
-      def = if native then defs."2.2.10" else constructionRecipe.versionTable."2.2.10".def;
-    };
-    "2.4.7" = constructionRecipe.versionTable."2.4.7" // {
-      def = if native then defs."2.4.7" else constructionRecipe.versionTable."2.4.7".def;
-    };
-    "2.5.3" = constructionRecipe.versionTable."2.5.3" // {
-      def = if native then defs."2.4.7" else constructionRecipe.versionTable."2.5.3".def;
-    };
-    "2.5.4" = constructionRecipe.versionTable."2.5.4" // {
-      def = if native then defs."2.4.7" else constructionRecipe.versionTable."2.5.4".def;
-    };
-
-    "2.6.2" = constructionRecipe.versionTable."2.6.2" // {
-      def = if native then defs."2.6.2" else constructionRecipe.versionTable."2.6.2".def;
-    };
-  };
-  publicArgs = constructionRecipe // {
-    inherit versionTable;
+  pname = "libtool";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable packageMeta;
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.${
-            if pkgs.lib.versionOlder version "2.4.7" then "tar.gz" else "tar.xz"
-          }"
-        ];
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.tar.${
+          if builtins.compareVersions version "2.4.7" < 0 then "gz" else "xz"
+        }";
         inherit sha256;
       };
+    tests = import ./tests;
     testDeps = {
-      runtimeShell = candidate.tools.bash;
-      gzip = tvp.packages.gzip_1;
-      python = candidate.tools.python;
+      runtimeShell = tvp.packages.bash_5;
       sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
       alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
-
     };
-    extraArgs.mkTests =
-      pkgs.lib.makeOverridable
-        (
-          { pkgs }:
-          package:
-          if package ? testContext then
-            import
-              (
-                if (package.tvp.ordinaryAutotools or false) then
-                  ./tests/ordinary-default.nix
-                else
-                  ./tests/native-default.nix
-              )
-              {
-                inherit
-                  pkgs
-                  tvp
-                  tvpLib
-                  package
-                  ;
-              }
-          else
-            constructionRecipe.extraArgs.mkTests.override { inherit pkgs; } package
-        )
-        {
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base = tvp.bases.default;
-          };
-        };
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "libtool";
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.libtool = family // {
+    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.libtool;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

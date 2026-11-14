@@ -1,11 +1,12 @@
 {
-  pkgs,
-  tvp,
   package,
+  lib,
+  context,
 }:
 let
   p = package;
   d = p.tvp.deps;
+  tools = p.specification.base.standardTools;
   shellProvider = p.edit (
     s:
     (builtins.removeAttrs s [ "artifactName" ])
@@ -16,11 +17,11 @@ let
           run = ''
             mkdir -p "$out/bin"
             cat > "$out/bin/bash" <<'SCRIPT'
-            #!${p.specification.bash}/bin/bash
+            #!${p.specification.base.shell}/bin/bash
             if [[ -n "''${TVP_RUNTIME_SHELL_LOG-}" ]]; then
               printf '%s\n' "$*" >> "$TVP_RUNTIME_SHELL_LOG"
             fi
-            exec ${p.specification.bash}/bin/bash "$@"
+            exec ${p.specification.base.shell}/bin/bash "$@"
             SCRIPT
             chmod +x "$out/bin/bash"
           '';
@@ -29,36 +30,6 @@ let
     }
   );
   runtimeShell = p.editRuntime (r: r // { shell = shellProvider; });
-  upstream = p.editSteps (
-    plan:
-    tvp.builder.steps.insertAfter "libtool.build" [
-      (
-        (p.specification.base.environment (
-          p.specification.environment
-          // {
-            tools = p.specification.environment.tools ++ [
-              d.gnutar
-              (d.xz or p.tvp.declaredTestDependencies.gzip)
-              p.tvp.declaredTestDependencies.gzip
-            ];
-          }
-        ))
-        // {
-          name = "libtool.upstream";
-          cwd = "source";
-          run = ''
-            export CONFIG_SHELL=${p.specification.bash}/bin/bash SHELL=${p.specification.bash}/bin/bash
-            status=0
-            ${d.gnumake}/bin/make -j"$NIX_BUILD_CORES" TESTSUITEFLAGS="-j$NIX_BUILD_CORES 1 2 3 4 5 6 7 8 9 10" check || status=$?
-            find . -name '*suite.log' -exec cat {} \; >&2
-            if (( status != 0 )); then exit "$status"; fi
-            mkdir -p "$out/nix-support/upstream"
-            printf 'bounded upstream checks completed; raw logs retained externally\n' > "$out/nix-support/upstream/result"
-          '';
-        }
-      )
-    ] plan
-  );
   macroProvider = d.m4.edit (
     s:
     (builtins.removeAttrs s [ "artifactName" ])
@@ -69,7 +40,7 @@ let
           run = ''
             mkdir -p "$out/bin"
             cat > "$out/bin/m4" <<'SCRIPT'
-            #!${p.specification.bash}/bin/bash
+            #!${p.specification.base.shell}/bin/bash
             if [[ -n "''${TVP_PROVIDER_LOG-}" ]]; then printf 'selected-m4\n' >> "$TVP_PROVIDER_LOG"; fi
             exec ${d.m4}/bin/m4 "$@"
             SCRIPT
@@ -91,14 +62,12 @@ let
         {
           name = "alternate.source";
           tools = [
-            p.tvp.declaredTestDependencies.gzip
-            (d.xz or p.tvp.declaredTestDependencies.gzip)
+            tools.gzip
+            tools.xz
           ];
           run = ''
             mkdir "$out"
-            ${p.tvp.declaredTestDependencies.gzip}/bin/gzip -cd ${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz | ${
-              (d.xz or p.tvp.declaredTestDependencies.gzip)
-            }/bin/xz -c > "$out/source.tar.xz"
+            ${tools.gzip}/bin/gzip -cd ${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz | ${tools.xz}/bin/xz -c > "$out/source.tar.xz"
           '';
         }
       ];
@@ -107,7 +76,7 @@ let
   sourceProbe =
     (p.override {
       src =
-        if d ? gzip then
+        if p.specification.sourceLayout != "build-aux-regenerated-ltmain" then
           "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"
         else
           "${alternateXZ}/source.tar.xz";
@@ -140,18 +109,18 @@ let
         }
       );
 in
-p.testContext.mkSuite {
+context.mkSuite {
   package = p;
   tools = [
     d.autoconf
     d.automake
     d.m4
     d.file
-    d.gnumake
-    d.grep
-    d.sed
-    d.gawk
-    d.findutils
+    tools.gnumake
+    tools.grep
+    tools.sed
+    tools.gawk
+    tools.findutils
   ];
   libraries = [ p ];
   tests = {
@@ -175,16 +144,12 @@ p.testContext.mkSuite {
         env -i PATH="$PATH" TVP_RUNTIME_SHELL_LOG="$PWD/wrapper.log" ./consumer > answer
         test "$(cat answer)" = 42
         grep -F consumer wrapper.log >&2
-        "$LT" --mode=install ${p.specification.coreutils}/bin/install -c libdep.la "$PWD/installed/lib" >&2
+        "$LT" --mode=install ${p.specification.base.coreutils}/bin/install -c libdep.la "$PWD/installed/lib" >&2
         export TVP_RUNTIME_SHELL_LOG="$PWD/relink.log"
-        "$LT" --mode=install ${p.specification.coreutils}/bin/install -c libanswer.la "$PWD/installed/lib" >&2
+        "$LT" --mode=install ${p.specification.base.coreutils}/bin/install -c libanswer.la "$PWD/installed/lib" >&2
         grep -F -- '--mode=relink' relink.log >&2
         printf runtime-shell
       '';
-    };
-    upstream = {
-      script = ''test -d ${upstream}/nix-support/upstream; printf upstream'';
-      expected = "upstream";
     };
     installed-consumer = {
       script = ''
@@ -240,7 +205,7 @@ p.testContext.mkSuite {
         mkdir wrappers
         for name in autoconf automake m4; do
           real=$(command -v "$name")
-          printf '#!%s/bin/bash\nprintf "%%s\\n" %s >> "%s/calls"\nexec %s "$@"\n' ${p.specification.bash} "$name" "$PWD" "$real" > wrappers/$name
+          printf '#!%s/bin/bash\nprintf "%%s\\n" %s >> "%s/calls"\nexec %s "$@"\n' ${p.specification.base.shell} "$name" "$PWD" "$real" > wrappers/$name
           chmod +x wrappers/$name
         done
         export AUTOCONF="$PWD/wrappers/autoconf" AUTOMAKE="$PWD/wrappers/automake"
@@ -252,7 +217,7 @@ p.testContext.mkSuite {
         cp ${./fixtures/main.c} main.c
         libtoolize --help >&2
         libtoolize --copy --force >&2
-        ${pkgs.lib.optionalString p.tvp.features.toolDefaults ''
+        ${lib.optionalString p.tvp.features.toolDefaults ''
           grep -qx autoconf calls
           grep -qx automake calls
           grep -qx m4 calls
@@ -282,6 +247,7 @@ p.testContext.mkSuite {
         ${rebound}/bin/libtoolize --version >&2
         printf 'AC_INIT([provider], [1])\nLT_INIT\nAC_OUTPUT\n' > configure.ac
         env -u M4 TVP_PROVIDER_LOG="$PWD/provider-calls" ${rebound}/bin/libtoolize --copy --force >&2
+        ${lib.optionalString p.tvp.features.toolDefaults ''grep -qx selected-m4 provider-calls''}
         env M4=${rebound.specification.m4}/bin/m4 TVP_PROVIDER_LOG="$PWD/provider-calls" ${d.autoconf}/bin/autoconf >&2
         grep -qx selected-m4 provider-calls
 

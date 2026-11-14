@@ -4,7 +4,7 @@ let
   base = tvp.bases.default;
   defs = tvpLib.packages.mkDefs {
     "1.0" = {
-      builder = ./build-1.0.nix;
+      builder = ./retained/build-1.0.nix;
       inherit base;
       # Shipped configure and ltconfig probes use implicit-int main().
       opts.cStandard = "gnu89";
@@ -28,7 +28,7 @@ let
       };
     };
     "1.3.5" = {
-      builder = ./build-1.0.nix;
+      builder = ./retained/build-1.0.nix;
       inherit base;
       # Shipped configure and ltconfig probes use implicit-int main().
       opts.cStandard = "gnu89";
@@ -41,7 +41,7 @@ let
       };
     };
     "1.5.26" = {
-      builder = ./build-1.5.26.nix;
+      builder = ./retained/build-1.5.26.nix;
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2;
@@ -51,7 +51,7 @@ let
       };
     };
     "2.2.10" = {
-      builder = ./build-2.2.10.nix;
+      builder = ./retained/build-2.2.10.nix;
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2;
@@ -61,7 +61,7 @@ let
       };
     };
     "2.4.7" = {
-      builder = ./build-2.4.7.nix;
+      builder = ./retained/build-2.4.7.nix;
       inherit base;
       deps = {
         autoconf = tvp.packages.autoconf_2;
@@ -112,7 +112,7 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: package: import ./tests { inherit pkgs tvpLib package; }
+      { pkgs }: package: import ./tests/retained.nix { inherit pkgs tvpLib package; }
     ) { pkgs = tvpLib.tests.withBase { inherit pkgs base; }; };
     packageMeta.upstream = {
       type = "directory-index";

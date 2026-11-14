@@ -10,6 +10,7 @@
     gnutar
     xz
     gzip
+    bzip2
     patch
     python
     patchelf

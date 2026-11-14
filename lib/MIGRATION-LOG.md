@@ -179,3 +179,42 @@ scope; no dependency was suppressed. Ordinary authoring adoption is eight of the
 Records: `reviews/post-migration/build-frontends-family-authoring` under the same
 local state root, including commands, producer comparisons, timings and scoped
 store roots. Compiled checkpoints/raw reports stay in Tower's store.
+
+## 2026-11-14 — Complete Autotools family authoring
+
+Autoconf's 27 releases use two complete procedures; Automake's 75 use three;
+Libtool's 11 use five; GNU Config's pinned snapshot uses one. Inline release tables
+preserve actual constraints and patch reasons. Stable feature/layout/interface
+facts live in the builders. Shared installed pair, historical and split controls
+use effective bases; independent U restores checkpoints. The old helper that
+replayed compilation for checks is removed. Earlier construction indexes and
+factories remain explicit; no old `pkgs` facade is added to ordinary factories.
+
+All 114 rows evaluate with exactly one production split and independent upstream
+acceptance. Disabling checks preserves A/F. The existing provider model adds three
+Bzip2 controls, and one real tiny tar.bz2 fixture passes. The source helper uses the
+same bytes for existing Gzip/XZ commands. Named Bzip2 and Patch roles remain lazy.
+
+Latest GNU Config, Autoconf 2.73, Automake 1.19 and Libtool 2.6.2 pass all 54 named
+leaves, independent U and normal batches in 97.685 seconds total, alongside the
+small codec fixture. Autoconf groups 1–10 and Automake's three depcomp scripts stay
+bounded; this does not certify unexecuted/full upstream coverage. The other 110
+releases are evaluation-only in this batch. Both compiler generations, selected
+retained Autoconf, earlier frontends, bootstrap Make and frozen tools remain exact;
+no compiler rebuilt. CI/NAS and broader admission stay off/unwaived.
+
+The three converted historical factory probes pass all 18 controls. The complete
+legacy observer remains red for `flex.defaultIdentities`; its other five Flex
+controls pass. MIG-012 preserves that observation without claiming its onset or
+silently weakening the full check. MIG-013 records GNU Config's still-live public
+edge into historical Ncurses; no retrospective frozen-universe change is made.
+
+Implementation preflight corrected no-op alternate-shell probes and two proposed
+Automake contracts: structured flags use the compiler's native channels, and Patch
+is checked on a release that actually has a patch. These were evaluation/control
+assumptions, not reasons to add flag boilerplate or force unused tools into builds.
+
+Ordinary authoring coverage is twelve of 110 inventoried families, independent of
+split coverage and runtime qualification. Records live at
+`reviews/post-migration/autotools-family-authoring` under the same local state root;
+compiled trees/raw reports remain in Tower's store with scoped roots.
