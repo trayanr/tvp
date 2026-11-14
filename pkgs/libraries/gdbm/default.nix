@@ -1,262 +1,234 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-
-  defs = tvpLib.packages.mkDefs {
-    "1.19" = {
-      builder = ./build-1.9.nix;
-      base = tvp.bases.default;
-      deps = { };
-      # src/var.c uses bool as a field name; upstream 1.25 renamed it.
-      opts.cStandard = "gnu17";
-    };
-
-    "1.25" = {
-      builder = ./build-1.9.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-
-    # libgdbmapp uses common symbols; its old C declarations also predate C23.
-    "1.11" = {
-      builder = ./build-1.9.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts = {
-        cStandard = "gnu89";
-        commonSymbols = true;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-1.7.3.nix;
+        deps.file = tvp.packages.file;
+        patches = [
+          {
+            file = ./patches/1.7.3-install-compat-unbalanced-paren.patch;
+            reason = "install-compat writes 100 1 26 57 100 131 989 991srcdir/ndbm.h — an unbalanced paren make expands to nothing, so the target installs no ndbm.h at all.";
+          }
+        ];
       };
-    };
-
-    "1.10" = {
-      builder = ./build-1.9.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-
-    "1.9" = {
-      builder = ./build-1.9.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts = {
-        touchTestsuite = true;
+      status = {
+        level = "degraded";
+        capability = "shared";
+        reason = "Static library only. This release predates libtool in gdbm; `all` builds libgdbm.a and there is no shared-library rule to install.";
+        needs = "The libtool build upstream first shipped at 1.8.0.";
       };
-    };
-
-    "1.8.0" = {
-      builder = ./build-1.7.3.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts.cStandard = "gnu89";
-      patches = [
-        {
-          file = ./patches/1.8.0-config-sub-x86_64.patch;
-          reason = "The shipped config.sub predates x86_64; accept its native CPU spelling without changing libtool's Linux rules.";
-        }
-      ];
-    };
-
-    "1.8.1" = {
-      builder = ./build-1.7.3.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts.cStandard = "gnu89";
-    };
-
-    "1.7.3" = {
-      builder = ./build-1.7.3.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts.cStandard = "gnu89";
-      patches = [
-        {
-          file = ./patches/1.7.3-install-compat-unbalanced-paren.patch;
-          reason = "install-compat writes 100 1 26 57 100 131 989 991srcdir/ndbm.h — an unbalanced paren make expands to nothing, so the target installs no ndbm.h at all.";
-        }
-      ];
-    };
-  };
-
-  versionTable = tvpLib.packages.mkTable (import ./1.nix { inherit defs; });
-
+      releases = {
+        "1.7.3" = "sha256-gcBuiEc9aw/SI7nCf+c7u8yB3NT5OLmtzfX/K5m73no=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.8.0.nix;
+        deps.file = tvp.packages.file;
+        patches = [
+          {
+            file = ./patches/1.8.0-config-sub-x86_64.patch;
+            reason = "The shipped config.sub predates x86_64; accept its native CPU spelling without changing libtool's Linux rules.";
+          }
+        ];
+      };
+      releases = {
+        "1.8.0" = "sha256-S8jhb/4n+nF7Y1LPr0eiZbIG36nhhhZlZKcotzOP9xk=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.8.2.nix;
+        deps.file = tvp.packages.file;
+        opts = {
+          configureHost = true;
+          roundtrip = false;
+          finalizerControls = false;
+          sourceLayout = {
+            selections = [
+              "configure"
+              "config.sub"
+              "config.guess"
+              "install-sh"
+              "mkinstalldirs"
+              "ltmain.sh"
+            ];
+            libtoolAnchors = {
+              "ltmain.sh" = 1;
+            };
+            edits = [
+              {
+                path = "Makefile.in";
+                before = " -o $(BINOWN) -g $(BINGRP)";
+                after = "";
+                count = 5;
+              }
+            ];
+          };
+        };
+      };
+      releases = {
+        "1.8.1" = {
+          sha256 = "sha256-VqMk/7VJSuFqKwoEqAa4IWk3E4ZcPbHjIAmzbdB2WBE=";
+          status = {
+            level = "degraded";
+            knownTestFailures = [
+              "store"
+              "ndbm"
+            ];
+            reason = "gdbm_open returns a handle in reader mode whatever mode is asked for, so every write fails with GDBM_READER_CANT_STORE. Measured against GDBM_NEWDB and GDBM_WRCREAT; 1.8.0 and 1.8.2 both write.";
+            needs = "Nothing TVP can supply. Upstream shipped 1.8.2 the following day.";
+          };
+        };
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.8.2.nix;
+        deps.file = tvp.packages.file;
+      };
+      releases = {
+        "1.8.2" = "sha256-DVr8LcDBTLo5Y2PMFeHKeFOoXV2Z6rW2tKnq95llImk=";
+        "1.8.3" = "sha256-zDQDOKLii0AFirnrU1SiHVP4ihWC6iG6C7GFw3ooHck=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.9.nix;
+        deps.file = tvp.packages.file;
+        opts = {
+          touchTestsuite = true;
+        };
+      };
+      releases = {
+        "1.9" = "sha256-+FMk1943d9sWdYH9XTST0tqj6F4ZWorpr8BbNFUbblc=";
+        "1.9.1" = "sha256-YCWFJjd3KwaZ8ilLXxT9SghLyjyBYdKdZNHzDW0amu0=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.9.nix;
+        deps.file = tvp.packages.file;
+      };
+      releases = {
+        "1.10" = "sha256-I/gTTFuUu/sG11amt48HT7puYCjPL+ATQdQLJtt3NEE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.9.nix;
+        deps.file = tvp.packages.file;
+        opts = {
+          cStandard = "gnu89";
+          commonSymbols = true;
+          sourceLayout = {
+            selections = [
+              "configure"
+              "build-aux"
+            ];
+            shellFragments = {
+              "build-aux/ltmain.sh" = [ "" ];
+            };
+            libtoolAnchors = {
+              "build-aux/ltmain.sh" = 1;
+            };
+          };
+        };
+      };
+      releases = {
+        "1.11" = "sha256-jZEvRPBdCxWkpdlqdvhS6QXQUbuIAi/N/Zi0O+CT48M=";
+        "1.12" = "sha256-2XshZu6Gf9bKXAIu/ugHAtbzDdZq8OA+0JIoXDr5vOo=";
+        "1.13" = "sha256-nSUsvX15P3sSvM6t3amNJXwU9NGJDYUcOGw3IHAAolM=";
+        "1.14" = "sha256-raFDekFlpwez6fN7W3Tbvnwvi95jO4wsfbyPhPObqgk=";
+        "1.14.1" = "sha256-zc7/AP/gFElb7TrtcceRCqiL8pN595WrwPRtTuX4vF8=";
+        "1.15" = "sha256-+f3jIH9n7YpaXd2K1ees97J8LPDyDfvd6Hbc1uPS3A4=";
+        "1.16" = "sha256-yKGLxiWdoMPu/vsBj4qimP3cb4bG/A8N7HMnCJarUS8=";
+        "1.17" = "sha256-fNjMLjWxqu3mCE6lfMlEd1L0mNquqFQQCkutVnYUl30=";
+        "1.18" = "sha256-uIIstHaeLXWcgowG8ZZhSTbIjBQcMTKxglL+JcK2Nc4=";
+        "1.18.1" = "sha256-huYTUn5dulROcyCPQreLfAItT6Wm1UmL8YyNb3Rbkdw=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.9.nix;
+        deps.file = tvp.packages.file;
+        opts = {
+          cStandard = "gnu17";
+          sourceLayout = {
+            selections = [
+              "configure"
+              "build-aux"
+            ];
+            shellFragments = { };
+            libtoolAnchors = {
+              "build-aux/ltmain.sh" = 1;
+            };
+          };
+        };
+      };
+      releases = {
+        "1.19" = "sha256-N+0SIUEiuXLhig2UmVA55XdIGRk573QRWx1B2IETZLw=";
+        "1.20" = "sha256-OurAVkizSCoQotqYa586OAoprWUL6AuYF6Q1+4EUopI=";
+        "1.21" = "sha256-sLfb3v15jefdzN2O32aTowSU93iXd4OAQpke8QcznMI=";
+        "1.22" = "sha256-82bII6ZySvMTtrvpdbKAn5oVfl9qQ2EqcpSRONFh12I=";
+        "1.23" = "sha256-dLEIHSH/8TrkvXwW5dblBKTCb3zeHcoNljpIQXS7ys0=";
+        "1.24" = "sha256-aV6YJ/33Y1E/EzkQvH5s/bkYeUOk/slD5XRJcj0rjb8=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.9.nix;
+        deps.file = tvp.packages.file;
+        opts = {
+          sourceLayout = {
+            selections = [
+              "configure"
+              "build-aux"
+            ];
+            shellFragments = { };
+            libtoolAnchors = {
+              "build-aux/ltmain.sh" = 1;
+            };
+          };
+        };
+      };
+      releases = {
+        "1.25" = "sha256-0C2zxZJu2Hf4gXuBzR+S9T73TKjG21Q/u6AnGzTzk+w=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.26.nix;
+      };
+      releases = {
+        "1.26" = "sha256-aiRQShTeSnRBA9y5Nr6Xbfb76IzP8mBl5UwcR5RvSl4=";
+      };
+    }
+  ];
   pname = "gdbm";
-
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname;
-    inherit versionTable;
-
-    extraArgs = {
-      mkTests =
-        gdbm:
-        import ./tests {
-          inherit pkgs tvpLib gdbm;
-        };
-    };
-
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://mirrors.kernel.org/gnu/gdbm/";
-        pattern = "gdbm-[0-9][^\"]*\\.tar\\.gz";
-
-        normalise =
-          file:
-          if pkgs.lib.hasPrefix "gdbm-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "gdbm-" file)
-          else
-            null;
-
-        include =
-          version:
-          builtins.match "[0-9].*" version != null
-          && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
+  retained = import ./retained { inherit pkgs tvp; };
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    inherit (retained) packageMeta;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        urls = [
+          "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
+          "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
+        ];
+        inherit sha256;
       };
-    };
+    tests = import ./tests;
   };
-
-  # Preserve the complete pre-promotion factory/table and its historical callers.
-  constructionRecipe = packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is the explicit host generation, independent of the ordinary target being built.";
-    } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "1.26" = {
-      constructor = tvp.builder;
-      builder = ./native/build-1.26.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-    };
-  };
-  ordinaryDefs = import ./ordinary {
-    inherit
-      tvp
-      tvpLib
-      candidate
-      constructionTool
-      ;
-    fetchurl = pkgs.fetchurl;
-  };
-  ordinaryRoutes = {
-    "1.8.0" = "1.8.0";
-    "1.8.2" = "1.8.2";
-    "1.8.3" = "1.8.2";
-    "1.9" = "1.9";
-    "1.9.1" = "1.9";
-    "1.10" = "1.10";
-    "1.11" = "1.11";
-    "1.12" = "1.11";
-    "1.13" = "1.11";
-    "1.14" = "1.11";
-    "1.14.1" = "1.11";
-    "1.15" = "1.11";
-    "1.16" = "1.11";
-    "1.17" = "1.11";
-    "1.18" = "1.11";
-    "1.18.1" = "1.11";
-    "1.19" = "1.19";
-    "1.20" = "1.19";
-    "1.21" = "1.19";
-    "1.22" = "1.19";
-    "1.23" = "1.19";
-    "1.24" = "1.19";
-    "1.25" = "1.25";
-  };
-  previousPublicArgs = packageArgs // {
-    versionTable =
-      versionTable
-      // (builtins.mapAttrs (
-        version: start:
-        versionTable.${version}
-        // {
-          def = if native then ordinaryDefs.${start} else versionTable.${version}.def;
-        }
-      ) ordinaryRoutes)
-      // {
-        "1.26" = versionTable."1.26" // {
-          def = if native then ownedDefs."1.26" else versionTable."1.26".def;
-        };
-      };
-    extraArgs.mkTests =
-      package:
-      if package ? testContext && builtins.hasAttr package.version ordinaryRoutes then
-        import ./tests/ordinary.nix {
-          inherit
-            pkgs
-            tvp
-            tvpLib
-            package
-            ;
-        }
-      else if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
-      else
-        constructionRecipe.extraArgs.mkTests package;
-  };
-  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
-  compatibilityVersions = [ "1.7.3" "1.8.1" ];
-  publicArgs = previousPublicArgs // {
-    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
-      name = version;
-      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
-    }) compatibilityVersions);
-    extraArgs = previousPublicArgs.extraArgs // {
-      mkTests = package:
-        if package ? testContext && builtins.elem package.version compatibilityVersions then
-          import ./tests { inherit pkgs tvpLib; gdbm = package; }
-          else previousPublicArgs.extraArgs.mkTests package;
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.gdbm = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
-  };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

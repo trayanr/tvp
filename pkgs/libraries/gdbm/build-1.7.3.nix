@@ -1,94 +1,215 @@
-# Serves 1.7.3 to 1.8.3 — the generation before gdbm moved to automake. The
-# Makefile installs into directories it never creates, hardcodes the install
-# ownership, ships no check target, and knows nothing of
-# --enable-libgdbm-compat: dbm and ndbm are either inside libgdbm or in a
-# libgdbm_compat that `all` builds unconditionally.
+# gdbm 1.7.3: complete production procedure; upstream checks consume its saved checkpoint.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
-
+  base,
+  src,
   version,
-  sha256,
+  file,
+  doCheck ? true,
+  cStandard ? "gnu89",
+  commonSymbols ? false,
   patches ? [ ],
-  cStandard ? null,
-
-  # Supplied by default.nix. A fork that drops this argument fails to evaluate.
-  mkTests,
+  sourceLayout ? {
+    selections = [ "configure" ];
+    libtoolAnchors = { };
+    edits = [ ];
+  },
 }:
+final:
 let
-  # dbm and ndbm are split into libgdbm_compat at 1.8.1; below that they are
-  # linked into libgdbm itself.
-  compatLib = lib.versionAtLeast version "1.8.1";
-
-  # libtool, and with it a shared library, arrives at 1.8.0.
-  shared = lib.versionAtLeast version "1.8.0";
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  environment = final.base.environment final.environment;
+  command =
+    name: run:
+    environment
+    // {
+      name = "gdbm.${name}";
+      cwd = "source";
+      inherit run;
+    };
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash CFLAGS="-O2${
+    lib.optionalString (final.cStandard != null) " -std=${final.cStandard}"
+  }${lib.optionalString final.commonSymbols " -fcommon"}"'';
+  checkpoint = "nix-support/gdbm-build-tree";
 in
-stdenv.mkDerivation (
-  finalAttrs:
-  {
-    pname = "gdbm";
-    inherit version patches;
+{
+  pname = "gdbm";
+  artifactName = "${final.pname}-${final.version}";
+  inherit
+    base
+    src
+    version
+    file
+    doCheck
+    cStandard
+    commonSymbols
+    patches
+    sourceLayout
+    ;
+  inherit (tools) bash coreutils;
+  buildFeatures = {
+    shared = false;
+    static = true;
+    compatLib = false;
+  };
+  installedInterface = {
+    roundtrip = false;
+    cli = false;
+    finalizerControls = false;
+  };
+  features = final.buildFeatures // final.installedInterface;
+  configureFlags = [
+    (if final.buildFeatures.shared then "--enable-shared" else "--disable-shared")
+    (if final.buildFeatures.static then "--enable-static" else "--disable-static")
+  ];
+  environment = {
+    tools = [
+      tools.pkg-config
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+      final.file
+    ];
+    libraries = [ ];
+  };
+  runtime = {
+    shell = tools.bash;
+    tools = [
+      tools.coreutils
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+    ];
+    libraries = [ ];
+    dlopenDirectories = [ ];
+  };
+  productionPlan = steps.sequence [
 
-    src = fetchurl {
-      urls = [
-        "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
-        "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
-      ];
-      inherit sha256;
-    };
-
-    # `install -o bin -g bin` needs a user the sandbox does not have. Unpacking
-    # gives every file one mtime, so make also regenerates the gdbm.info the
-    # tarball already ships, which would need makeinfo.
-    postPatch = ''
-      sed -i 's| -o $(BINOWN) -g $(BINGRP)||g' Makefile.in
+    (steps.unpack {
+      src = final.src;
+      tar = tools.gnutar;
+      inherit (tools) gzip findutils;
+      compression = "gzip";
+    })
+    (
+      (command "prepare" ''
+        ${tools.python}/bin/python3 -B ${../dbm-yaml-source.py} ${tools.bash}/bin/bash ${
+          lib.escapeShellArg (
+            builtins.toJSON (
+              final.sourceLayout
+              // {
+                patches = map (p: "${p}") final.patches;
+              }
+            )
+          )
+        }
+      '')
+      // {
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+    (command "configure" ''
+      export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
+      export CFLAGS="-O2${
+        lib.optionalString (final.cStandard != null) " -std=${final.cStandard}"
+      }${lib.optionalString final.commonSymbols " -fcommon"}"
       touch gdbm.info
-    '';
-
-    enableParallelBuilding = true;
-
-    preInstall = ''
+      ./configure --host=${final.base.platform.config} --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+    '')
+    (command "build" make)
+    (command "install" ''
       mkdir -p "$out/lib" "$out/include" "$out/share/man/man3" "$out/share/info"
-    '';
-
-    installTargets = [
-      "install"
-      "install-compat"
-    ];
-
-    installFlags = [
-      "prefix=${placeholder "out"}"
-      "libdir=${placeholder "out"}/lib"
-      "includedir=${placeholder "out"}/include"
-      "man3dir=${placeholder "out"}/share/man/man3"
-      "infodir=${placeholder "out"}/share/info"
-    ];
-
-    # Consumers written against the traditional layout include <gdbm/ndbm.h>.
-    postInstall = ''
-      install -dm755 "$out/include/gdbm"
+      ${make} install install-compat prefix="$out" libdir="$out/lib" includedir="$out/include" man3dir="$out/share/man/man3" infodir="$out/share/info"
+      mkdir -p "$out/include/gdbm"
       ln -s ../dbm.h ../gdbm.h ../ndbm.h "$out/include/gdbm/"
-    '';
-
-    meta = {
-      description = "GNU dbm key/value database library";
-      homepage = "https://www.gnu.org/software/gdbm/";
-      license = lib.licenses.gpl3Plus;
-      platforms = lib.platforms.unix;
-    };
-
-    passthru = {
-      tvp.cc = stdenv.cc;
-      inherit version;
-      tvp.deps = { };
-
-      tvp.features = {
-        inherit compatLib shared;
-      };
-
-      tests = mkTests finalAttrs.finalPackage;
-    };
-  }
-  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
-)
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+  ];
+  upstreamUnavailable = "These pre-Automake releases have no check target; installed store/ndbm controls remain registered, including known failures.";
+  plan = final.productionPlan ++ [
+    (steps.split "gdbm.finalize")
+    (outputs.copyArtifacts { })
+    (outputs.relocateText {
+      python = tools.python;
+      paths =
+        if final.features.shared then
+          [
+            "lib/libgdbm.la"
+            "lib/libgdbm_compat.la"
+          ]
+        else
+          [ ];
+    })
+    {
+      name = "gdbm.manuals";
+      tools = [
+        tools.gzip
+        tools.findutils
+        final.file
+      ];
+      run = ''
+        while IFS= read -r -d "" p; do
+          ${tools.gzip}/bin/gzip -n -9 "$p"
+        done < <(${tools.findutils}/bin/find "$out/share/man" -type f ! -name '*.gz' -print0)
+        while IFS= read -r -d "" p; do
+          target=$(readlink "$p"); rm "$p"; ln -s "$target.gz" "$p.gz"
+        done < <(${tools.findutils}/bin/find "$out/share/man" -type l ! -name '*.gz' -print0)
+      '';
+    }
+    (outputs.strip {
+      inherit (tools) python binutils;
+      paths = [ "lib" ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.stripArchives {
+      inherit (tools) python binutils;
+      paths = [ "lib/libgdbm.a" ] ++ lib.optional final.features.compatLib "lib/libgdbm_compat.a";
+    })
+    (outputs.libtool {
+      inherit (tools) python;
+      paths =
+        if final.features.shared then
+          [
+            "lib/libgdbm.la"
+            "lib/libgdbm_compat.la"
+          ]
+        else
+          [ ];
+    })
+    ((import ./ordinary/rpaths.nix { inherit lib; }) {
+      inherit (tools) python binutils patchelf;
+      inherit (final) base;
+      paths = [ "lib" ];
+      elfKinds = [ "runtime" ];
+      selfLibraryDirectory = true;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+    })
+    (outputs.development {
+      inherit (tools) python;
+      libraries = [ ];
+    })
+    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+      inherit (tools) python binutils patchelf;
+      paths = [ "lib" ];
+      elfKinds = [ "runtime" ];
+    })
+  ];
+  tvp.features = final.features // {
+    doCheck = final.doCheck;
+  };
+  meta = {
+    description = "GNU dbm key/value database library";
+    homepage = "https://www.gnu.org/software/gdbm/";
+    license = lib.licenses.gpl3Plus;
+    platforms = lib.platforms.unix;
+  };
+}

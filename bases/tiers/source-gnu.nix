@@ -64,6 +64,8 @@ let
       python = nativeInputs.prior.python;
       gnumake = nativeInputs.tools.make;
       pkg-config = frontendTools.tools.pkgConfig;
+      cmake = (import ../../bootstrap/source-cmake.nix { inherit bootstrap; }).cmake;
+      ninja = frontendTools.tools.ninja;
     };
     tools = [ nativeInputs.binutils ];
   };

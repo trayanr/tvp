@@ -25,6 +25,8 @@ let
           gnumake = tools.make;
           gnutar = tools.tar;
           inherit (tools)
+            cmake
+            ninja
             xz
             python
             patchelf

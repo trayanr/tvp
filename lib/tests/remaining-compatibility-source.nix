@@ -58,7 +58,9 @@ let
       runtime = p.editRuntime (r: r // { libraries = (r.libraries or [ ]) ++ [ s.coreutils ]; });
       changedTools = p.edit (
         x:
-        if x ? tools then
+        if p.pname == "gdbm" then
+          x // { base = x.base.override { standardTools.gnumake = x.coreutils; }; }
+        else if x ? tools then
           x
           // {
             tools = x.tools // {
@@ -96,11 +98,9 @@ let
       );
       family = p.pname;
       unfilteredGdbm = import ../../pkgs/libraries/gdbm/tests {
-        pkgs = {
-          inherit lib;
-        };
-        tvpLib = tvp.lib;
-        gdbm = p;
+        package = p;
+        inherit lib;
+        context = p.testContext;
       };
       checks =
         {
@@ -129,7 +129,13 @@ let
           checkReuse = unchecked.drvPath == p.drvPath && unchecked.artifact.drvPath == p.artifact.drvPath;
           effectiveTool =
             changedTools.artifact.drvPath != p.artifact.drvPath
-            && changedTools.tvp.deps.gnumake.drvPath == s.coreutils.drvPath;
+            &&
+              (
+                if family == "gdbm" then
+                  changedTools.specification.base.standardTools.gnumake.drvPath
+                else
+                  changedTools.tvp.deps.gnumake.drvPath
+              ) == s.coreutils.drvPath;
           testsRebound = suffix.tests.version.passthru.package.drvPath == suffix.drvPath;
           testFactory = p.tests.version.tvp.kind == "owned-test";
           outputs = p.outputs == [ "out" ] && p.out.artifact.drvPath == p.artifact.drvPath;

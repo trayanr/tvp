@@ -335,3 +335,59 @@ broader admission remain unwaived; CI/NAS stay off.
 
 Records: `reviews/post-migration/parser-ffi-regex-family-authoring`, including
 source-review findings, all attempts, provider comparisons and scoped Tower roots.
+
+
+## 2026-11-14 — Database, XML and access-control family authoring
+
+All 52 supported releases now use inline definitions: GDBM 26, LibYAML 13,
+Expat one, Attr four, ACL four and Libxcrypt four. GDBM retains five actual
+procedure eras; the other families each use one complete procedure. Expat's
+CMake/Ninja roles come lazily from the existing earlier bootstrap providers.
+Historical GCC13 ACL selection, exact library revisions, retained Libxcrypt
+4.4.36 ABI fixture, direct bootstrap entry points and frozen construction
+providers remain explicit and unchanged.
+
+Production saves the configured/compiled tree; independent upstream execution
+restores it. LibYAML's production targets exclude noinst test programs. Expat's
+production tests are disabled, with test reconfiguration/build and CTest in U;
+that test-parser compilation is real work, not a claimed free checkpoint replay.
+GDBM eras without an upstream target report it unavailable. Current installed,
+ABI/API, closure, output-reuse and filesystem assertions keep their prior scope.
+
+The first bounded request took 766.386s and failed only four Attr/ACL upstream
+preparations and LibYAML's confinement fixture. The former scanned a restored
+production tree as a pristine archive and rejected generated include aliases;
+the repair validates only the actual upstream frontend subtree. The latter
+snapshotted the payload before intentional checkpoint removal. Corrected tests
+and seven normal batches passed in 14.356s, reusing production outputs and the
+already-passing Libxcrypt raw result. Ninety-four named leaves pass across the
+six current packages plus Attr 2.5.0 and ACL 2.3.0 representatives; every selected
+raw upstream status is zero. These counts include fixture/constructor controls,
+not just upstream cases. Forty-one scoped roots protect 125 valid paths.
+
+Libxcrypt's ABI comparison remains NOT_RUN and its normal batch incomplete:
+the exact historical 4.4.36 fixture would realize an uncached GCC16 stdenv
+generation. MIG-017 records this separately; the baseline/test is not replaced,
+trimmed or marked passed. The other ten current Libxcrypt leaves, including
+independent upstream, pass. No compiler rebuild was launched.
+
+Source review additionally found that six LibYAML archives carry test-driver
+in config/, which production prepared too broadly. Production now names only
+its actual helper scripts; the added compile helper is a literal table profile.
+The shared U factory binds test-driver only after restoration. All 13 cached
+archives pass production preparation with their test-driver bytes untouched.
+The repaired normal request passes in 14.308s, rebuilding only LibYAML while
+reusing all other qualified paths. Independent source review has no remaining
+material finding.
+
+MIG-010's Ruby/Bundler LibYAML customization assertions and MIG-015's Expat
+customization now pass at their stated scopes. Original failures stay retained.
+Both compiler generations, historical construction selections, frozen tools,
+bootstrap Make/frontends and compression prerequisites compare exact. Authoring
+adoption measures 28/110 indexes and 369/1,515 eligible canonical rows; split
+coverage remains 1,520/1,540 with 20 broken exclusions. The other 44 family
+releases remain evaluation-only in this batch. Broader holds stay unwaived;
+CI/NAS remain off.
+
+Records: `reviews/post-migration/dbm-expat-access-family-authoring`, including
+both attempts, exact selected paths, source contracts and preserved ABI debt.

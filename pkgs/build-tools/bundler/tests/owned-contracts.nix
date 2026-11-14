@@ -141,21 +141,9 @@ let
     yjit = false;
     rustc = throw "disabled YJIT forced binary Rust";
   };
-  checkFeature =
-    enabled: q:
-    q.edit (
-      s:
-      s
-      // {
-        tvp = s.tvp // {
-          features = s.tvp.features // {
-            doCheck = enabled;
-          };
-        };
-      }
-    );
-  yamlChecksDisabled = checkFeature false yaml;
-  yamlChecksReenabled = checkFeature true (yaml.override { doCheck = false; });
+  # doCheck is the input; tvp.features.doCheck is its derived public report.
+  yamlChecksDisabled = yaml.edit (s: s // { doCheck = false; });
+  yamlChecksReenabled = (yaml.override { doCheck = false; }).edit (s: s // { doCheck = true; });
   runtime = ruby.editRuntime (r: r // { libyaml = p.libyaml_0_2_4; });
   legacyFactory =
     directory: family: attr:
@@ -165,7 +153,10 @@ let
       chosen = pkgs // {
         runCommand = name: args: script: { selectedPkgs = true; };
       };
-      public = (factory.extraArgs.mkTests.override { pkgs = chosen; }) old;
+      # Historical observer uses the explicit retained factory; ordinary callers
+      # customize the shared { package, lib, context } suite through `tests`.
+      selected = if family == "libyaml" then factory.constructionRecipe else factory;
+      public = (selected.extraArgs.mkTests.override { pkgs = chosen; }) old;
       retained = (factory.constructionRecipe.extraArgs.mkTests.override { pkgs = chosen; }) old;
     in
     public.version.selectedPkgs && retained.version.selectedPkgs;
@@ -181,7 +172,31 @@ let
         yamlChecksReenabled.specification.tvp.features.doCheck
         && yamlChecksReenabled.specification.upstreamCheck.enabled
         && yamlChecksReenabled.tests ? upstream;
-      overrideEditEquivalent = yamlChecksDisabled.drvPath == (yaml.override { doCheck = false; }).drvPath;
+      overrideEditEquivalent =
+        yamlChecksDisabled.drvPath == (yaml.override { doCheck = false; }).drvPath
+        && yamlChecksDisabled.artifact.drvPath == (yaml.override { doCheck = false; }).artifact.drvPath;
+      ordinaryFactoryContext =
+        let
+          suite =
+            (yaml.mkTests.override {
+              tests =
+                {
+                  package,
+                  lib,
+                  context,
+                }:
+                {
+                  selected = context.mkTest {
+                    inherit package;
+                    name = "factory-context";
+                    script = "printf okay";
+                    expected = "okay";
+                  };
+                };
+            })
+              yaml;
+        in
+        suite.selected.tvp.base == yaml.tvp.base;
       disabledCheckReusesProducer =
         yamlChecksDisabled.artifact.drvPath == yaml.artifact.drvPath
         && yamlChecksDisabled.drvPath == yaml.drvPath;

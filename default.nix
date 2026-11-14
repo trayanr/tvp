@@ -94,6 +94,25 @@ let
       registry = runtimeRegistry;
     })
     // {
+      expat-family = pkgs.writeText "tvp-expat-family-contracts" (
+        builtins.toJSON (import ./lib/tests/expat-family.nix { inherit pkgs tvp; })
+      );
+      dbm-yaml-families = pkgs.writeText "tvp-dbm-yaml-family-contracts" (
+        builtins.toJSON (
+          import ./pkgs/libraries/dbm-yaml-family-contracts.nix {
+            inherit tvp;
+            inherit (pkgs) lib;
+          }
+        )
+      );
+      acl-family = pkgs.writeText "tvp-acl-family-contracts" (
+        builtins.toJSON (
+          import ./lib/tests/acl-family.nix {
+            inherit tvp;
+            inherit (pkgs) lib;
+          }
+        )
+      );
       parser-families = pkgs.writeText "tvp-parser-family-contracts" (
         builtins.toJSON (
           import ./pkgs/build-tools/parser-family-contracts.nix {

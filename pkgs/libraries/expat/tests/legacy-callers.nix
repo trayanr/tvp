@@ -1,4 +1,4 @@
-# A public factory must pass caller-selected test tools into its retained route.
+# Historical factories retain caller-selected test tools; ordinary factories use their effective context.
 { pkgs, tvp }:
 let
   selected = pkgs // {
@@ -8,9 +8,13 @@ let
   check =
     directory: family: name: testName:
     let
-      factory = (import directory { inherit pkgs tvp; }).recipes.${family};
-      package = (tvp.lib.packages.mkVersions factory.constructionRecipe).${name};
-      tests = (factory.extraArgs.mkTests.override { pkgs = selected; }) package;
+      factory =
+        (import directory {
+          pkgs = selected;
+          inherit tvp;
+        }).recipes.${family}.constructionRecipe;
+      package = (tvp.lib.packages.mkVersions factory).${name};
+      tests = factory.extraArgs.mkTests package;
     in
     tests.${testName}.selectedPkgs or false;
   contracts = {

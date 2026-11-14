@@ -167,12 +167,37 @@ let
       copyCommand =
         (builtins.head (
           builtins.filter (step: step.name == "output.copy-artifacts")
-            (p.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; }).buildSteps
+            (
+              if
+                builtins.elem name [
+                  "acl_2_3_2"
+                  "acl_2_4_0"
+                  "attr_2_6_0"
+                  "expat_2_9_0"
+                  "gdbm_1_26"
+                  "libxcrypt_4_5_2"
+                  "libyaml_0_2_5"
+                ]
+              then
+                p.edit (
+                  spec:
+                  spec
+                  // {
+                    base = spec.base.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; };
+                  }
+                )
+              else
+                p.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; }
+            ).buildSteps
         )).run;
       commands =
         map (step: { inherit (step) name run; }) (tvp.builder.steps.active (parts.first ++ parts.second))
         ++ lib.optionals (s ? upstreamPlan) (
-          map (step: { inherit (step) name run; }) (tvp.builder.steps.active s.upstreamPlan)
+          map (step: { inherit (step) name run; }) (
+            tvp.builder.steps.active (
+              if builtins.isFunction s.upstreamPlan then s.upstreamPlan p.artifact else s.upstreamPlan
+            )
+          )
           ++ [ { inherit (s.upstreamCheck) name run; } ]
         );
       fixtureCopyProvider = toString tvp.canonical.acl_2_3_2.specification.coreutils;
