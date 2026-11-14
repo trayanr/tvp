@@ -72,14 +72,17 @@ Completed bounded validation:
   versions and four construction packages; no replay for that extraction.
 - Split inventory stays 1,520 compliant / 20 declared-broken, with no new gaps.
 
-Full GCC upstream capture/acceptance is still running at this checkpoint; its
-normal validation batch is not yet qualified. CI and NAS remain off. The final
-qualification report will record its terminal result before this batch lands.
+Full GCC upstream acceptance and its normal batch passed. The six complete suite
+summaries retain 511,250 PASS, 4,118 XFAIL and 7,237 UNSUPPORTED, with the exact
+historical 19 FAIL / 2 XPASS still unwaived; ERROR/UNRESOLVED are zero. The scoped
+replacement package/compiler request completed in 1,319.517 seconds. That timing
+includes parallel dependencies and is not an isolated GCC benchmark. CI and NAS
+remain off; no broader catalogue or strict upstream admission is claimed.
 
 Two scope corrections are retained in the execution record. The first validation
 request pulled an obsolete historical GCC13 build through MPC's stdenv-based test
 support. That support now uses the effective owned test context, and its dependency
-graph excludes the drifted GCC13 producer. Replacing the broad request restarted
+graph excludes that historical GCC13 producer. Replacing the broad request restarted
 GCC's upstream capture: another Nix client did not preserve the running execution,
 contrary to the initial assumption. Compilation artifacts/finals stayed cached;
 completed dependency and test outputs were reused. The interrupted capture is not
