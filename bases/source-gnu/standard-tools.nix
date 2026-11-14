@@ -9,6 +9,7 @@
     gnumake
     gnutar
     xz
+    gzip
     python
     patchelf
     sed

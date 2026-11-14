@@ -152,16 +152,31 @@ let
           }
         ] logged
       );
-  gmp = qualify "gmp" (
-    make (import ../../../pkgs/libraries/gmp/build-steps-6.3.0.nix) (
-      common
-      // {
-        src = sources.gmp;
-        version = "6.3.0";
-        inherit (tools) xz findutils m4;
-      }
-    )
-  );
+  # The shared procedures already prepare their sources and retain a compiled
+  # checkpoint. Their upstream suites run independently of production A/F.
+  gmp = builder {
+    recipe = import ../../../pkgs/libraries/gmp/build-6.2.0.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit lib base;
+      src = sources.gmp;
+      version = "6.3.0";
+      m4 = tools.m4;
+    };
+    dependencyNames = [ "m4" ];
+    metadata = { };
+    selection.kind = "source-gnu-candidate-test";
+    testContext =
+      package: (import ../../../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      import ../../../pkgs/libraries/gmp/tests/default.nix {
+        inherit package lib;
+        context = package.testContext;
+      };
+  };
   mpfr = builder {
     recipe = import ../../../pkgs/libraries/mpfr/build-4.0.2.nix;
     args = {
@@ -184,17 +199,36 @@ let
         context = package.testContext;
       };
   };
-  mpc = qualify "mpc" (
-    make (import ../../../pkgs/libraries/mpc/build-steps-1.4.1.nix) (
-      common
-      // {
-        src = sources.mpc;
-        version = "1.4.1";
-        inherit gmp mpfr;
-        inherit (tools) xz;
-      }
-    )
-  );
+  mpc = builder {
+    recipe = import ../../../pkgs/libraries/mpc/build-1.4.0.nix;
+    args = {
+      tvp = {
+        inherit builder;
+      };
+      inherit
+        lib
+        base
+        gmp
+        mpfr
+        ;
+      src = sources.mpc;
+      version = "1.4.1";
+    };
+    dependencyNames = [
+      "gmp"
+      "mpfr"
+    ];
+    metadata = { };
+    selection.kind = "source-gnu-candidate-test";
+    testContext =
+      package: (import ../../../lib/tests.nix { inherit lib; }).fromPackage { inherit builder package; };
+    mkTests =
+      package:
+      import ../../../pkgs/libraries/mpc/tests/default.nix {
+        inherit package lib;
+        context = package.testContext;
+      };
+  };
   jsonC = qualify "json-c" (
     make (import ../../../pkgs/libraries/json-c/build-0.19.nix) (
       common

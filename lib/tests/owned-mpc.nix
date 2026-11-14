@@ -2,16 +2,43 @@
 let
   inherit (pkgs) lib;
   inherit (tvp.builder) steps;
-  base = tvp.bases.default;
   p = tvp.canonical.mpc_1_4_1;
+  base = p.specification.base;
+  context = p.testContext;
   compatibleMpfr = tvp.packages.mpfr_4_2_1;
-  inherit (tvp.packages) bash coreutils pkg-config;
+  bash = base.shell;
+  coreutils = base.coreutils;
+  inherit (tvp.packages) pkg-config;
   family = (import ../../pkgs/libraries/mpc { inherit pkgs tvp; }).recipes.mpc;
   legacy = (tvp.lib.packages.mkVersions family.constructionRecipe).mpc_1_4_1;
-  lookup = base.stdenv.mkDerivation {
-    name = "mpc-lookup-directory";
-    buildCommand = ''mkdir -p "$out/lib" "$out/plugins"; touch "$out/lib/lookup-marker"'';
-  };
+  fixture =
+    name: run:
+    (context.mkTest {
+      package = p;
+      inherit name;
+      script = '':'';
+      expected = "";
+    }).edit
+      (
+        s:
+        s
+        // {
+          validationRole = "test-support";
+          plan = [
+            (
+              (base.environment { tools = [ coreutils ]; })
+              // {
+                name = "fixture.${name}";
+                inherit run;
+              }
+            )
+          ];
+        }
+      );
+  lookup = fixture "lookup-directory" ''
+    mkdir -p "$out/lib" "$out/plugins"
+    touch "$out/lib/lookup-marker"
+  '';
   runtime = p.editRuntime (
     r:
     r
@@ -42,17 +69,17 @@ let
       ];
     }
   );
-  disabled = (p.override { doCheck = false; }).editSteps (
-    steps.replace "mpc.check" (
-      old:
-      old
-      // {
+  disabled = (p.override { doCheck = false; }).edit (
+    s:
+    s
+    // {
+      upstreamCheck = s.upstreamCheck // {
         tools = throw "disabled check tools";
         libraries = throw "disabled check libraries";
         env = throw "disabled check environment";
         run = throw "disabled check command";
-      }
-    )
+      };
+    }
   );
   insert = steps.insertAfter "mpc.build" [
     {
@@ -81,12 +108,9 @@ let
     gnumake = p.tvp.deps.gnumake;
     patchelf = p.tvp.deps.patchelf;
     grep = p.tvp.deps.grep;
-    environment = base.stdenv;
-    compiler = base.stdenv.cc;
+    compiler = base.compiler;
   };
-  supportRows = builtins.filter (
-    r: r.scope == "build-test-support" && r.consumer == "owned-mpc"
-  ) tvp.dependencyInventory.support;
+  supportRows = tvp.dependencyInventory.buildTestSupport.owned-mpc;
   contracts = {
     inventorySupport =
       builtins.length supportRows == builtins.length (builtins.attrNames supportInputs)
@@ -98,7 +122,7 @@ let
     split = (steps.partition p.buildSteps).split;
     sourceArchiveHash = p.src.outputHash == legacy.src.outputHash;
     sourceProducer = p.src.drvPath != legacy.src.drvPath;
-    legacy = legacy ? overrideAttrs && !(legacy ? edit) && tvp.canonical.mpc_1_4_0 ? overrideAttrs;
+    legacy = legacy ? overrideAttrs && !(legacy ? edit) && !(tvp.canonical.mpc_1_4_0 ? overrideAttrs);
     oldConstraint = tvp.canonical.mpc_1_0_3.tvp.deps.mpfr.version == "3.1.6";
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
     runtimeReplacement =
@@ -190,7 +214,7 @@ let
     testFactory =
       p.mkTests ? override
       &&
-        ((p.mkTests.override { inherit pkgs; }) runtime).arithmetic.drvPath
+        ((p.mkTests.override { tests = import ../../pkgs/libraries/mpc/tests; }) runtime).arithmetic.drvPath
         == runtime.tests.arithmetic.drvPath;
     provenance = runtime.tvp.customization.customized && runtime.__tvpSelection.kind == "override";
     tags =
@@ -214,6 +238,7 @@ let
         mpc,
         pkgConfig,
         patchelf,
+        grep,
         version,
         src,
       }:
@@ -232,6 +257,7 @@ let
               tools = [
                 pkgConfig
                 patchelf
+                grep
               ];
               libraries = [ mpc ];
             })
@@ -281,6 +307,7 @@ let
       mpc = p;
       pkgConfig = pkg-config;
       patchelf = p.tvp.deps.patchelf;
+      grep = p.tvp.deps.grep;
       version = "1";
       src = null;
     };
@@ -288,52 +315,59 @@ let
       "mpc"
       "pkgConfig"
       "patchelf"
+      "grep"
     ];
     metadata = { };
     selection.kind = "fixture";
     mkTests = _: { };
   };
   runtimeConsumer = consumer.override { mpc = runtime; };
-  selectedMake = base.stdenv.mkDerivation {
-    name = "mpc-selected-make";
-    buildCommand = ''
-      mkdir -p "$out/bin"
-      cat > "$out/bin/make" <<'SCRIPT'
-      #!${bash}/bin/bash
-      printf '%s\n' "$*" >> "$NIX_BUILD_TOP/selected-make"
-      exec ${p.tvp.deps.gnumake}/bin/make "$@"
-      SCRIPT
-      chmod +x "$out/bin/make"
-    '';
-  };
-  selected = (p.override { gnumake = selectedMake; }).editSteps (
-    steps.insertBefore "mpc.finalize" [
-      {
-        name = "fixture.selected-tools";
-        tools = [ p.tvp.deps.grep ];
-        run = ''
-          grep -E -- '^-j[0-9]+ check$' "$NIX_BUILD_TOP/selected-make"
-          grep -E -- '^-j[0-9]+ install$' "$NIX_BUILD_TOP/selected-make"
-          grep -F '${p.compiler}/bin/cc' source/config.log
-          printf '%s\n' compiler make-build make-check make-install > "$out/selected-tools"
-        '';
-      }
-    ]
-  );
+  selectedMake = fixture "selected-make" ''
+    mkdir -p "$out/bin"
+    cat > "$out/bin/make" <<'SCRIPT'
+    #!${bash}/bin/bash
+    printf '%s\n' "$*" >> "$PWD/selected-make.log"
+    exec ${p.tvp.deps.gnumake}/bin/make "$@"
+    SCRIPT
+    chmod +x "$out/bin/make"
+  '';
+  selected =
+    (p.edit (s: s // { base = s.base.override { standardTools.gnumake = selectedMake; }; })).editSteps
+      (
+        steps.insertBefore "mpc.finalize" [
+          {
+            name = "fixture.selected-tools";
+            tools = [ p.tvp.deps.grep ];
+            run = ''
+              grep -E -- '^-j[0-9]+ install$' "$TVP_SOURCE_ROOT/source/selected-make.log"
+              grep -F '${p.compiler}/bin/cc' source/config.log
+              printf '%s\n' compiler make-build make-install > "$out/selected-tools"
+            '';
+          }
+        ]
+      );
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned MPC contracts: ${lib.concatStringsSep ", " failed}";
-(base.stdenv.mkDerivation {
-  name = "tvp-owned-mpc-contracts";
-  buildCommand = ''
+(context.mkTest {
+  package = p;
+  name = "owned-contracts";
+  tools = [
+    p.tvp.deps.patchelf
+    p.tvp.deps.grep
+  ];
+  expected = builtins.toJSON contracts;
+  script = ''
     test -x ${consumer}/numeric
     test -x ${runtimeConsumer}/numeric
     test -s ${selected}/selected-tools
+    : ${selected.tests.upstream}
+    grep -qE -- '^-j[0-9]+ check$' ${selected.tests.upstream.specification.validation.execution}/raw/records/selected-make.log
     test -e ${disabled}/lib/libmpc.so
-    ${p.tvp.deps.patchelf}/bin/patchelf --print-rpath ${extended}/lib/libmpc.so.3 | grep -F '${lookup}/lib'
-    ${p.tvp.deps.patchelf}/bin/patchelf --print-rpath ${extended}/lib/libmpc.so.3 | grep -F '${lookup}/plugins'
+    ${p.tvp.deps.patchelf}/bin/patchelf --print-rpath ${extended}/lib/libmpc.so.3 | grep -Fq '${lookup}/lib'
+    ${p.tvp.deps.patchelf}/bin/patchelf --print-rpath ${extended}/lib/libmpc.so.3 | grep -Fq '${lookup}/plugins'
     test "$(cat ${customRuntime}/runtime-message)" = selected
-    printf '%s\n' '${builtins.toJSON contracts}' > "$out"
+    printf '%s' '${builtins.toJSON contracts}'
   '';
 })
 // {

@@ -95,6 +95,8 @@ rec {
         "libraries"
       ];
 
+  mkUpstream = import ./upstream-checkpoint-tests.nix;
+
   mkSuite =
     {
       package,

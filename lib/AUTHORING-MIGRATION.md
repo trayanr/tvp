@@ -27,7 +27,8 @@ documented for use afterward.
 ## What is already done
 
 - The owned constructor, artifact/final split, generic helpers and shared test
-  factory exist.
+  factory exist. `context.mkUpstream` executes/accepts independent checkpoint
+  tests once for all four converted library families; assertions remain local.
 - `mkFamily` supplies implicit ordinary context, source/test wiring and stage-local
   `.instantiate { version; base; deps; opts; }`.
 - Base tiers expose `seed`, `target`, `native`, `full` and retained input adapters.
@@ -123,14 +124,25 @@ Start with GMP, MPC and ISL. Together with MPFR they exercise the compiler's rea
 library and bootstrap dependencies. Then convert other libraries, build tools,
 runtimes/profiles, and compiler, SDK and data entrypoints. Construction work can
 move a necessary provider earlier in that order.
-The ordinary GMP index now follows this model for all nine releases, using three
-complete era builders and one test factory. Standard build tools now select the
-explicit earlier native generation, resolving M4/Coreutils/MPFR cycles. M4's
-prerequisite provider bindings are repaired; its full authoring conversion remains
-pending. GMP's retained construction definitions and two direct bootstrap/test
-callers stay exact until the coordinated GMP/MPC/ISL activation (MIG-005). The
-ordinary index is cleaned up, but construction adoption is not yet complete.
-MIG-006 records the tool-role boundary; MIG-007 records frozen observer decisions.
+The ordinary GMP, MPC and ISL indexes now follow this model across all 21 releases
+(three GMP eras, three MPC eras, two ISL eras). Together with MPFR, four family
+indexes use the authoring API. Standard build tools select the explicit earlier
+native generation, including Gzip for historical source archives. M4's prerequisite
+bindings are repaired; its full authoring conversion remains pending.
+
+The standalone GMP/MPC/ISL construction calls now share the same complete root
+procedures as ordinary packages, with explicit earlier owned bases and shared
+independent upstream factories. The duplicate direct `build-steps`/owned ISL
+implementations are removed. The intentionally small standalone pure library does
+not yet expose the full family facade (MIG-008); importing the final catalogue there
+would create a cycle.
+
+Historical GCC13/GCC16 catalogue library selections remain retained until their
+actual legacy `rebuild`/stdenv callers are converted. Six library producer identities
+and frozen Coreutils remain exact. The locale fixture's public Bash/Perl helper
+edges still drift with the standalone compiler; their original evidence is retained
+without rebaseline or acceptance (MIG-009). MIG-005–007 record construction and
+observer boundaries, and MIG-010 records a separate whole-inventory failure.
 
 For each family:
 

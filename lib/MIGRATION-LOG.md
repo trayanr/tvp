@@ -49,3 +49,48 @@ Commands, timing, source-review findings, exact identities and build outputs liv
 `reviews/post-migration/m4-gmp-family-authoring` under the same local state root.
 Completed test outputs retain the relevant store closures; there is no second copy
 of the compiled trees in the state directory.
+
+## 2026-11-14 — MPC/ISL and grouped compiler-library activation
+
+The complete MPC family (eight releases/three eras) and ISL family (four
+releases/two eras) now use the authoring model. Shared root procedures also replace
+the standalone GMP/MPC/ISL implementations used by the native/full compiler chain.
+The old direct `build-steps` and standalone owned ISL copies are removed.
+
+Completed bounded validation:
+
+- Grouped construction build and all four standalone library upstream gates:
+  PASS, 1,015.526 seconds. Both compiler stages were built once.
+- Nine public batches: GMP 6.3.0, MPFR 4.2.2, MPC 1.0.3/1.1.0/1.2.0/1.4.1,
+  ISL 0.20/0.26/0.28. All 60 named leaves and batches pass. Capability skips remain
+  explicit; this does not qualify the other historical releases.
+- Native compiler probe, full compiler installed consumer and libbacktrace: PASS.
+- Corrected owned MPC runtime/discovery/tool-edit consumer: PASS, 9.518 seconds.
+- 240 pure contracts and a separate scoped-inventory laziness probe: PASS.
+- Shared `context.mkUpstream` replaces four identical wrappers. All artifact,
+  final, raw-execution and acceptance identities remain exact for 30 public
+  versions and four construction packages; no replay for that extraction.
+- Split inventory stays 1,520 compliant / 20 declared-broken, with no new gaps.
+
+Full GCC upstream capture/acceptance is still running at this checkpoint; its
+normal validation batch is not yet qualified. CI and NAS remain off. The final
+qualification report will record its terminal result before this batch lands.
+
+Two scope corrections are retained in the execution record. The first validation
+request pulled an obsolete historical GCC13 build through MPC's stdenv-based test
+support. That support now uses the effective owned test context, and its dependency
+graph excludes the drifted GCC13 producer. Replacing the broad request restarted
+GCC's upstream capture: another Nix client did not preserve the running execution,
+contrary to the initial assumption. Compilation artifacts/finals stayed cached;
+completed dependency and test outputs were reused. The interrupted capture is not
+qualification evidence. The replacement capture is left running to completion.
+
+Six historical catalogue library producers and frozen Coreutils remain exact.
+The frozen locale fixture's public Bash/Perl helper edges drift; original identities
+and evidence remain preserved without rebaseline. MIG-008–010 record remaining
+capability, historical-helper and whole-inventory boundaries.
+
+Records: `reviews/post-migration/compiler-library-family-authoring` under the same
+local state root. Raw test reports and compiled checkpoints stay in the Tower store;
+local state retains commands, timings, identities and summaries rather than copies
+of those trees.

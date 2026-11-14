@@ -309,10 +309,24 @@ let
         )
       ) entries
     );
+  # Scoped checks must not force every unrelated package test just to inspect
+  # their own explicitly registered support providers.
+  buildTestSupportRows = lib.mapAttrs (
+    consumer: dependencies:
+    lib.mapAttrsToList (dependency: value: {
+      inherit consumer dependency;
+      scope = "build-test-support";
+      selection = value.__tvpSelection or null;
+      resolved = resolved value;
+      reason = value.__tvpSelection.reason or null;
+      details = "Explicit repository check or CLI runtime input.";
+    }) dependencies
+  ) buildTestSupport;
 
 in
 {
   schema = 1;
+  buildTestSupport = buildTestSupportRows;
   consumers =
     owners "ordinary" canonical
     ++ profileOwners "public-variant" variants
@@ -351,19 +365,7 @@ in
       ) compositions
     );
   support =
-    lib.concatLists (
-      lib.mapAttrsToList (
-        consumer: dependencies:
-        lib.mapAttrsToList (dependency: value: {
-          inherit consumer dependency;
-          scope = "build-test-support";
-          selection = value.__tvpSelection or null;
-          resolved = resolved value;
-          reason = value.__tvpSelection.reason or null;
-          details = "Explicit repository check or CLI runtime input.";
-        }) dependencies
-      ) buildTestSupport
-    )
+    lib.concatLists (builtins.attrValues buildTestSupportRows)
     ++ supportRows "ordinary" canonical
     ++ profileSupport "public-variant" variants
     ++ profileSupport "construction" construction.variants

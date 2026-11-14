@@ -21,7 +21,6 @@ mpfr/
   build-4.0.2.nix
   tests/
     default.nix
-    upstream.nix
     restore.py
     fixtures/
 ```
@@ -129,7 +128,8 @@ output. Writing the suite once does not reuse another version's test result.
 
 The test runner is shared globally. MPFR's version, arithmetic and optional
 Float128 assertions are declared once in [its suite](../pkgs/libraries/mpfr/tests/default.nix).
-Independent upstream acceptance stays a normal test leaf. Diagnostics go to
+Independent upstream acceptance stays a normal test leaf, built through the shared
+`context.mkUpstream { inherit package; }` checkpoint consumer. Diagnostics go to
 stderr; stdout is compared exactly with the declared `expected` string. Failed
 commands and pipelines stay failures. Expected trailing newlines are not supported.
 
