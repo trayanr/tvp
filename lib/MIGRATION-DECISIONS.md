@@ -197,3 +197,16 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   of the new provider are not newly qualified here.
 - **Decision needed:** choose explicit historical provider generations when those
   construction callers move, retaining their prior identities and observations.
+
+## MIG-014 — Zlib procedures follow actual eras, not exception releases
+
+- **Scope:** the earlier demand for a separate complete 1.2.5.1 procedure.
+- **Decision:** use the complete 1.2.3.3-era procedure with the exact source-bound
+  version-map parent repair. No builder imports or overrides another builder.
+  A source exception does not by itself create a new procedure era.
+- **Evidence:** all 65 eligible definitions evaluate; 1.2.5.1 receives an actual
+  library build, upstream examples and installed symbol-version/consumer tests.
+  Default Make targets are replaced with library targets in production. Example
+  compilation and its historical shared-link repair stay in independent U.
+- **Disposition:** resolved for this authoring batch. Other historical releases
+  remain unqualified here; existing ABI failures and global holds are not waived.

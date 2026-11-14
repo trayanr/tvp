@@ -218,3 +218,46 @@ Ordinary authoring coverage is twelve of 110 inventoried families, independent o
 split coverage and runtime qualification. Records live at
 `reviews/post-migration/autotools-family-authoring` under the same local state root;
 compiled trees/raw reports remain in Tower's store with scoped roots.
+
+## 2026-11-14 — Complete ordinary compression-family authoring
+
+Zlib's 65 eligible releases use six complete procedure eras; XZ's 39 use two;
+Gzip's three and Bzip2's three each use one. Definitions are inline beside their
+literal releases with implicit labels and base tools. The ten broken Zlib producer
+and status records stay exact. One shared installed suite per family reuses the
+existing ABI, symbol-version, format, CLI, helper and customization assertions.
+Earlier compression recipes, both compiler generations, standalone CMake inputs,
+bootstrap tools and frozen tools remain exact. No compiler rebuilt.
+
+Production and upstream source preparation are physically separate. Zlib A asks
+Make only for installed libraries; examples compile in U after checkpoint restore,
+then execute sequentially because upstream variants share foo.gz. XZ's test-driver
+shell policy also lives in U. Gzip explicitly enables its installed zless frontend
+without adding the runtime pager to A; F binds that provider. Bzip2 keeps its actual
+installed helper profiles. Twelve tiny source-scope methods pass.
+
+Latest Zlib 1.3.2, XZ 5.8.4, Gzip 1.15 and Bzip2 1.0.8 normal batches pass, plus
+Zlib 1.2.5.1 to check the consolidated procedure and repaired version map. That is
+71 named leaves and five independent raw upstream exits of zero. The final request
+passed in 22.973s. Both Zlib artifacts contain no compiled example/minigzip tests.
+The other 105 eligible releases remain evaluation-only here; XZ 5.0.8 is additionally
+compiled by the existing format oracle, without its full suite qualification.
+
+Retained attempts are explicit: the first request failed on Gzip's optional zless
+installation and an invalid synthetic Zlib shell-frontend assumption; a second
+probe still assumed that nonexistent frontend API. The replacement checks the
+actual runtime library search path and linked consumer. Historical confinement
+fixtures then needed their payload snapshot after deliberate checkpoint removal.
+A passing request was followed by source-review findings about Zlib default Make
+targets and XZ's build-aux/test-driver. Those were repaired and the affected current
+batches rerun. No test failure was converted into a pass by weakening production
+validation or rewriting arbitrary unowned script bodies.
+
+The ten broken rows' Gzip consumer-test identities follow the new public Gzip
+provider, while their producers, status and other tests remain exact. They were not
+executed or retroactively pinned. Source adoption is sixteen of 110 family indexes;
+split coverage remains 1,520 compliant / 20 declared-broken. Broader historical and
+admission holds remain unwaived; CI/NAS stay off.
+
+Records: `reviews/post-migration/compression-family-authoring` under the same local
+state root, including all attempts, identity comparisons and scoped Tower roots.

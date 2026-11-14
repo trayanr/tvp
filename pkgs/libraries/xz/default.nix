@@ -1,479 +1,112 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  candidate = import ../../../bases/source-gnu { };
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-5.0.0.nix;
+        deps.less = tvp.packages.less;
+      };
+      releases = {
+        "5.0.0" = "sha256-66khGZCmQvwsNeoCYYtxDH+omNeMzKSLVGoHvd4DxE0=";
+        "5.0.1" = "sha256-N3C4hypDIrlQKTe0eB1SMwO/GTlixIIomf06IQh4/IA=";
+        "5.0.2" = "sha256-V+l5uqpAFH3eG7soTjYY+PGLZTLJMmSL1Xta7mdLmKc=";
+        "5.0.3" = "sha256-EOtN9y3/svsUw9LYK0UOcigv/LnuOQio5bOSuPCWgb8=";
+        "5.0.4" = "sha256-1nQFeY2tZFll/lHPTkDCPRIB+yNDeNPET1o3hxQrg7Y=";
+        "5.0.5" = "sha256-Xc/+ajcm0j0XEaZSiN4uIVtJYNpQkiSM5jyZ1QCTuTo=";
+        "5.0.6" = "sha256-ts9M3BMTVWoAhI5yJiW85A0s1VLAUrBGV5HGTJICw/E=";
+        "5.0.7" = "sha256-9NIWVVO50Ngv0IvC6s3etI6+uGKlaGpgP4wESi5SyT8=";
+        "5.0.8" = "sha256-yscbMe0yKkh/HaHxDfz0f4hV+X/ywjuSaAx6575Yurs=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-5.2.0.nix;
+      };
+      releases = {
+        "5.2.0" = "sha256-Ix7zaZgiQLsg7Xz/pSuxKkopfOaHH0gKuF6Ke6mL89Y=";
+        "5.2.1" = "sha256-uRi2ZIB250+NeuGdte5mPfgABJ4Ycln69euZenuXRoE=";
+        "5.2.2" = "sha256-c99NXTTwRovVfQny2K82PpXtbMOkqGEp0vLDZiWZAqI=";
+        "5.2.3" = "sha256-cZKLNX0KCaEqS0xfr8qMMcGbDn07jrsZYi6W8m2/KMs=";
+        "5.2.4" = "sha256-tRLztybTs3ttxMhXDhN7kxHnVS6My6tNOdR85fQXcUU=";
+        "5.2.5" = "sha256-9vSRD9AzB4c4vYK/uk9JIZ0DsX6weU65HvuuQZ9KuhA=";
+        "5.2.6" = "sha256-ohBavuF7zS69Fc7TG09e2m4X79axD5IaAc2kpEyRs6A=";
+        "5.2.7" = "sha256-BjJ8LdyB4Sam2aeLC+UBS5dqLAgy9JLc/EdV1/rPbTM=";
+        "5.2.8" = "sha256-7FzanwuRM2qxuIHT0UToID/MpgTmB8rKiuZ43bwpIH0=";
+        "5.2.9" = "sha256-6YLqMbgVQ9fuK2+jTCrRF2DhxQxvRHWt2LoPLwBfB7Q=";
+        "5.2.10" = "sha256-63o7JiPJ0BNdpwyhKAiiFL6cAZEyuqphyeHRmNHZ3tM=";
+        "5.2.11" = "sha256-AInUe5Zr2atI8dAbr3zhRqO1kXFsdHeGa4BwEN49lqs=";
+        "5.2.12" = "sha256-Yb2pMHZ9yxcKUyiolex0yrD1qsRVjN2lYcg1WdtYKhM=";
+        "5.2.13" = "sha256-KUKhqDl803aI9535WElH1ITdZY2wiNUbeQMX6zGEgns=";
+        "5.4.0" = "sha256-dHHvWZH2kCaKjyvgGazsLgVkt7IzykADXzOf6aB/gws=";
+        "5.4.1" = "sha256-5LD4FYLvoVXM8nu4gnUlSkKdRJaOSI/JS4BvKmHNPiI=";
+        "5.4.2" = "sha256-h5R2eavPd8xQnY0bR0IY/Ra3IoHieXNg6QneruGsnQU=";
+        "5.4.3" = "sha256-HDguC8Lk4K9YOYqQPdYv/35RAXHS3keh6+BtFSjpt+k=";
+        "5.4.4" = "sha256-quOVROJUz9J+lC01oEjVkpWb16efmmJK+wSYu1YTvfg=";
+        "5.4.5" = "sha256-E1yQuTSu6PvA1Gfeh6Bctw1ifaNqvlGMNXqHNwnlt9Y=";
+        "5.4.6" = "sha256-rro+A7+BQN3t9ioKNnFYNAUg9rOE91ymBFzMbA1D/Vw=";
+        "5.4.7" = "sha256-jbZmTEjKB5CLkrrtz+fzuiP0nvJHaGRRirXbZyODbnE=";
+        "5.6.2" = "sha256-i/0gwOHYbwQC8kl8+nHGq2LUzTX9cEJ24xQL+3FBRRk=";
+        "5.6.3" = "sha256-sdRSldP3HyWkyRAb18jRbLVjSLvvO7xzjaA1HhfHMxc=";
+        "5.6.4" = "sha256-Jp4/LlEsvTMUhJmCAU3BmaeyFIz1yRztxttims314Js=";
+        "5.8.0" = "sha256-tSPF5H0UkDOMUSG98qbsyivPDc4FqDrUCoMAKcvmZ5s=";
+        "5.8.1" = "sha256-UHgltZk1bBDcoc1yDJ0NDJ1UALneMArwDk0eoVB5VUM=";
+        "5.8.2" = "sha256-zgnFCllieGuD5do4nJDdLBXs0JgKJY3QH3D5585YqPE=";
+        "5.8.3" = "sha256-PToblzryGBFPT4ibuqL0wDfequDI6BXuw4HD1Ua5dKA=";
+        "5.8.4" = "sha256-ABTHiGkwRU/ovUIoZltRr1XurlYOoTXJxM0z9Vslkdk=";
+      };
+    }
+  ];
+  packageMeta = {
+    upstream = {
+      type = "git-tags";
+      url = "https://github.com/tukaani-project/xz";
 
-  defs = tvpLib.packages.mkDefs {
-    "5.8.4" = {
-      builder = ./build-5.8.4.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
+      normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
 
-    "5.0.0" = {
-      builder = ./build-5.0.0.nix;
-      base = tvp.bases.default;
-      deps = { };
+      include =
+        version:
+        builtins.match "[0-9].*" version != null
+        && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
+
+      unavailable = [
+        {
+          versions = [
+            "5.6.0"
+            "5.6.1"
+          ];
+          reason = "Withdrawn by upstream following CVE-2024-3094: the release tarballs carried a build-time backdoor absent from the git tree. Both are 404 on tukaani.org and on GitHub releases, so there is nothing to package and nothing TVP would put in a signed cache.";
+        }
+      ];
     };
   };
-
-  versionTable = tvpLib.packages.mkTable (import ./5.nix { inherit defs; });
-
   pname = "xz";
-
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname;
-    inherit versionTable;
-    testDeps = {
-      pkg-config = tvp.packages.pkg-config;
-      # Frozen construction keeps the exact retained format oracle. The public
-      # ordinary factory below deliberately follows the moving xz_5_0 selector.
-      referenceOlder = (tvpLib.packages.mkVersions packageArgs).xz_5_0_8;
-      referenceNewer = tvp.packages.xz_5_8;
-    };
-
-    extraArgs = {
-      mkTests =
-        xz:
-        import ./tests {
-          inherit pkgs tvpLib xz;
-          inherit (xz.tvp.declaredTestDependencies) pkg-config referenceOlder referenceNewer;
-        };
-    };
-
-    packageMeta = {
-      upstream = {
-        type = "git-tags";
-        url = "https://github.com/tukaani-project/xz";
-
-        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
-
-        include =
-          version:
-          builtins.match "[0-9].*" version != null
-          && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
-
-        unavailable = [
-          {
-            versions = [
-              "5.6.0"
-              "5.6.1"
-            ];
-            reason = "Withdrawn by upstream following CVE-2024-3094: the release tarballs carried a build-time backdoor absent from the git tree. Both are 404 on tukaani.org and on GitHub releases, so there is nothing to package and nothing TVP would put in a signed cache.";
-          }
-        ];
-      };
-    };
-  };
-
-  completed = tvp.bases.default;
-  seed =
-    reason:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      inherit reason;
-    };
-  legacyDefs = tvpLib.packages.mkDefs {
-    "5.8.4" = {
-      constructor = tvp.builder;
-      builder = ./owned/build-5.8.4.nix;
-      base = completed;
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = tvp.packages.bash_5;
-        coreutils = seed "Completed Coreutils for build/output operations: canonical Coreutils depends on GMP and would recurse through archive and finalization prerequisites." completed.components.floor.coreutils;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = seed "Completed Tar for source extraction: canonical Tar depends on ACL, which shares this prerequisite library wave." completed.components.floor.gnutar;
-        gzip = seed "Completed gzip for extraction and manual compression, before rebuilding archive-tool reverse dependencies." completed.components.floor.gzip;
-        python = seed "Completed libc construction Python is build-only for explicit source and output operations." completed.components.libc.tvp.deps.python3Minimal;
-        binutils = seed "Completed Binutils is build-only for ELF/archive inspection and stripping, without following the canonical compiler graph." completed.components.binutils;
-        patchelf = seed "Completed Patchelf is build-only for ELF finalization; canonical Patchelf can require this wave's archive libraries." completed.fixupTools.patchelf;
-      };
-    };
-  };
-  ownedDefs = tvpLib.packages.mkDefs {
-    "5.8.4" = {
-      constructor = tvp.builder;
-      builder = ./native/build-5.8.4.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
-      deps = {
-        inherit (candidate.tools)
-          bash
-          coreutils
-          gzip
-          python
-          binutils
-          patchelf
-          sed
-          grep
-          gawk
-          diffutils
-          findutils
-          ;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
-      };
-    };
-  };
-  ordinaryDefs = tvpLib.packages.mkDefs {
-    "5.0.0" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.0.0.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://tukaani.org/xz/xz-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      # These source-owned construction tools avoid Coreutils/GMP, Tar/ACL and
-      # archive-tool cycles. Python/Binutils/Patchelf inspect and finalize only;
-      # Bash plus the small text tools also provide installed helper runtimes.
-      deps = {
-        inherit (candidate.tools)
-          bash
-          coreutils
-          gzip
-          python
-          binutils
-          patchelf
-          sed
-          grep
-          gawk
-          diffutils
-          findutils
-          ;
-        less = tvp.packages.less;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
-      };
-    };
-    "5.2.0" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.2.0.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://tukaani.org/xz/xz-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      # Retained source-built host tools avoid Coreutils/Tar/Perl/archive cycles.
-      deps = {
-        inherit (candidate.tools)
-          bash
-          coreutils
-          gzip
-          python
-          binutils
-          patchelf
-          sed
-          grep
-          gawk
-          diffutils
-          findutils
-          ;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
-      };
-    };
-  };
-  installedArgs = packageArgs // {
-    testDeps = packageArgs.testDeps // {
-      referenceOlder = tvp.packages.xz_5_0;
-    };
-    versionTable = versionTable // {
-      "5.0.0" = versionTable."5.0.0" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.1" = versionTable."5.0.1" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.2" = versionTable."5.0.2" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.3" = versionTable."5.0.3" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.4" = versionTable."5.0.4" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.5" = versionTable."5.0.5" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.6" = versionTable."5.0.6" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.7" = versionTable."5.0.7" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.0.8" = versionTable."5.0.8" // {
-        def = ordinaryDefs."5.0.0";
-      };
-      "5.2.0" = versionTable."5.2.0" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.1" = versionTable."5.2.1" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.2" = versionTable."5.2.2" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.3" = versionTable."5.2.3" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.4" = versionTable."5.2.4" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.5" = versionTable."5.2.5" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.6" = versionTable."5.2.6" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.7" = versionTable."5.2.7" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.8" = versionTable."5.2.8" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.9" = versionTable."5.2.9" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.10" = versionTable."5.2.10" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.11" = versionTable."5.2.11" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.12" = versionTable."5.2.12" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.2.13" = versionTable."5.2.13" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.0" = versionTable."5.4.0" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.1" = versionTable."5.4.1" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.2" = versionTable."5.4.2" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.3" = versionTable."5.4.3" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.4" = versionTable."5.4.4" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.5" = versionTable."5.4.5" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.6" = versionTable."5.4.6" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.4.7" = versionTable."5.4.7" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.6.2" = versionTable."5.6.2" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.6.3" = versionTable."5.6.3" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.6.4" = versionTable."5.6.4" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.8.0" = versionTable."5.8.0" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.8.1" = versionTable."5.8.1" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.8.2" = versionTable."5.8.2" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.8.3" = versionTable."5.8.3" // {
-        def = ordinaryDefs."5.2.0";
-      };
-      "5.8.4" = versionTable."5.8.4" // {
-        def = if native then ownedDefs."5.8.4" else legacyDefs."5.8.4";
-      };
-    };
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable packageMeta;
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
-        url = "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz";
+      import <nix/fetchurl.nix> {
+        url =
+          if pkgs.lib.versionAtLeast version "5.8.4" then
+            "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz"
+          else
+            "https://tukaani.org/xz/xz-${version}.tar.gz";
         inherit sha256;
       };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      {
-        pkgs,
-        pkg-config ? null,
-        referenceOlder ? null,
-        referenceNewer ? null,
-      }:
-      package:
-      let
-        dependencies =
-          package.tvp.declaredTestDependencies
-          // pkgs.lib.filterAttrs (_: value: value != null) {
-            inherit pkg-config referenceOlder referenceNewer;
-          };
-      in
-      (
-        if
-          package ? artifact
-          && builtins.elem package.version [
-            "5.0.0"
-            "5.0.1"
-            "5.0.2"
-            "5.0.3"
-            "5.0.4"
-            "5.0.5"
-            "5.0.6"
-            "5.0.7"
-            "5.0.8"
-          ]
-        then
-          import ./tests/older-default.nix {
-            inherit pkgs tvpLib;
-            xz = package;
-            inherit (dependencies) pkg-config referenceOlder referenceNewer;
-          }
-        else if
-          package ? artifact
-          && builtins.elem package.version [
-            "5.2.0"
-            "5.2.1"
-            "5.2.2"
-            "5.2.3"
-            "5.2.4"
-            "5.2.5"
-            "5.2.6"
-            "5.2.7"
-            "5.2.8"
-            "5.2.9"
-            "5.2.10"
-            "5.2.11"
-            "5.2.12"
-            "5.2.13"
-            "5.4.0"
-            "5.4.1"
-            "5.4.2"
-            "5.4.3"
-            "5.4.4"
-            "5.4.5"
-            "5.4.6"
-            "5.4.7"
-            "5.6.2"
-            "5.6.3"
-            "5.6.4"
-            "5.8.0"
-            "5.8.1"
-            "5.8.2"
-            "5.8.3"
-          ]
-        then
-          import ./tests/ordinary-default.nix {
-            inherit pkgs tvpLib;
-            xz = package;
-            inherit (dependencies) pkg-config referenceOlder referenceNewer;
-          }
-        else
-          import ./tests {
-            inherit pkgs tvpLib;
-            xz = package;
-            inherit (dependencies) pkg-config referenceOlder referenceNewer;
-          }
-      )
-      // pkgs.lib.optionalAttrs (package.version == "5.8.4") (
-        import ./tests/owned.nix {
-          inherit tvp tvpLib package;
-          pkgs =
-            if package ? testContext then
-              pkgs
-            else
-              tvpLib.tests.withBase {
-                inherit pkgs;
-                base.stdenv = package.stdenv;
-              };
-          inherit (dependencies) pkg-config;
-        }
-      )
-    ) { inherit pkgs; };
-  };
-  # Frozen construction selects the complete retained call and test factory.
-  constructionRecipe = packageArgs;
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../../build-tools/owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
+    testDeps = {
+      pkgConfig = tvp.packages.pkg-config;
+      referenceOlder = tvp.packages.xz_5_0;
+      referenceNewer = tvp.packages.xz_5_8;
+      runtimeShell = tvp.packages.bash_5;
     };
+    tests = import ./tests;
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.xz = family // {
+    constructionRecipe = import ./retained { inherit pkgs tvp; };
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
-  };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }
