@@ -24,6 +24,12 @@ def main(cli):
         result=json.loads(run(['--migration','--json']).stdout)
         assert result['schema']=='tvp.migration-status/v1'
         assert result['workflow'] is None
+        authoring=result['repository']['authoring']
+        assert all(value is None for value in authoring['verification'].values())
+        if authoring['summary'] is not None:
+            assert authoring['measurement']=='evaluated-index-origin'
+            assert authoring['summary']['adoptedIndexes'] <= authoring['summary']['familyIndexes']
+            assert authoring['summary']['markedEligibleCanonicalRows'] <= authoring['summary']['eligibleCanonicalRows']
         assert json.loads(run(['--json','--migration']).stdout)==result
         family=next(iter(result['repository']['families']))
         selected=json.loads(run(['--migration','--family',family,'--json']).stdout)

@@ -152,7 +152,113 @@ let
       };
     }
   ];
+  withoutOrigin = api.mkVersions (
+    (builtins.removeAttrs family [ "authoring" ])
+    // {
+      versionTable = lib.mapAttrs (
+        _: entry:
+        entry
+        // {
+          def = builtins.removeAttrs entry.def [ "authoring" ];
+        }
+      ) family.versionTable;
+    }
+  );
+  registration = api.mergeNamespaces {
+    libraries = api.mergeNamespaces {
+      family-model = {
+        recipes.family-model = family;
+        inherit canonical aliases;
+      };
+    };
+  };
+  lazyRegistration = api.mergeNamespaces {
+    family-model = {
+      recipes.family-model = family;
+      canonical = throw "origin inventory forced production";
+      aliases = throw "origin inventory forced aliases";
+    };
+  };
+  statusCanonical.family-model_1 = p // {
+    tests = throw "status forced a package test assertion";
+    artifact = throw "status forced an artifact";
+    drvPath = throw "status forced a producer";
+    outPath = throw "status forced a producer output";
+  };
+  statusSelectors = import ../../tools/status/selectors.nix {
+    inherit lib;
+    canonical = statusCanonical;
+    packages.family-model = aliases.family-model // {
+      tests = throw "status forced alias tests";
+      drvPath = throw "status forced alias producer";
+      outPath = throw "status forced alias output";
+    };
+  };
+  statusFacts = import ../../tools/status/manifest.nix {
+    inherit lib;
+    canonical = statusCanonical;
+    variants = { };
+    familyEntrypoints = registration.familyEntrypoints;
+    latest = statusSelectors;
+    source = {
+      path = "/status-model";
+      revision = null;
+    };
+    system = "x86_64-linux";
+    splitReport = {
+      scope = "fixture";
+      status = "PASS";
+      success = true;
+      allSplit = true;
+      errors = [ ];
+      rows = [
+        {
+          id = "canonical/family-model_1";
+          namespace = "canonical";
+          name = "family-model_1";
+          constructor = "owned";
+          compliant = true;
+          failure = null;
+          status.level = "ok";
+        }
+      ];
+      outsideOrdinaryScope.producers = { };
+    };
+  };
   results = {
+    statusSelectorDoesNotForceSuites = statusSelectors.families.family-model.job == "family-model_1";
+    statusManifestDoesNotForceSuites =
+      statusFacts.latest.measurement == "declared-selectors"
+      && statusFacts.latest.runtimeQualifiedRows == null
+      && builtins.length statusFacts.authoring.entries == 1;
+    evaluatedOrigin =
+      family.authoring == {
+        origin = "tvp.lib.packages.mkFamily";
+        model = "ordinary-family/v1";
+      };
+    definitionOrigin = family.versionTable."1".def.authoring == family.authoring;
+    originIsNotProductionInput =
+      p.drvPath == withoutOrigin.family-model_1.drvPath
+      && p.artifact.drvPath == withoutOrigin.family-model_1.artifact.drvPath
+      && p.tests.message.drvPath == withoutOrigin.family-model_1.tests.message.drvPath;
+    registeredEntrypointOrigin =
+      registration.familyEntrypoints == [
+        {
+          namespaces = [
+            "libraries"
+            "family-model"
+          ];
+          recipes.family-model = {
+            origin = family.authoring;
+            versionOrigins."1" = family.authoring;
+            retainedConstructionRecipe = false;
+          };
+        }
+      ];
+    inventoryDoesNotForceProduction =
+      builtins.length (
+        builtins.deepSeq lazyRegistration.familyEntrypoints lazyRegistration.familyEntrypoints
+      ) == 1;
     inlineDefinition = inlineTable."1".def == defs."1";
     inlinePreservesProduction =
       inline.artifact.drvPath == p.artifact.drvPath && inline.drvPath == p.drvPath;

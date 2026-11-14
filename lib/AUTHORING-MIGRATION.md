@@ -46,8 +46,9 @@ found 110 family entrypoints: 46 libraries, 38 build tools, 13 runtimes, seven S
 five compilers and one data family. Only MPFR used `mkFamily`; the other 109 still
 used earlier wiring. This count inspects tracked files matching
 `pkgs/<category>/<family>/default.nix`; it is not an evaluation or build result.
-The current `status --migration` report measures split coverage, not completion of
-this authoring cleanup.
+The current `status --migration` report measures ordinary index adoption and
+split coverage separately. It does not certify builder/caller cleanup or runtime
+qualification; those fields remain unknown until separately measured.
 
 From the implementation checkout:
 
@@ -218,10 +219,17 @@ use tiny fixtures for generic helper changes. Avoid rerunning the full catalogue
 for an identity-preserving authoring rewrite. Keep failures and untested versions
 visible rather than counting source cleanup as runtime qualification.
 
-Extend migration status with a separate family-authoring view as this rollout
-proceeds. Report adoption, construction callers still using compatibility paths,
-split coverage and qualification independently. A `mkFamily` token alone is not
-proof that a family's callers, builders or tests have been cleaned up.
+Migration status includes a separate evaluated family-authoring view. It follows
+registered index/definition origin metadata, reports category and eligible canonical
+row counts, and keeps split coverage separate. Retained-recipe availability is not
+a remaining-caller count. Compatibility-caller completion, builder verification and
+runtime qualification stay unknown until bound measurements exist. A `mkFamily`
+marker alone is not proof that callers, builders or tests have been cleaned up.
+
+Status observes declared latest selectors without forcing their test suites. The
+actual latest gate still validates producer, suite and batch identities; the
+progress command does not imply that gate passed. Text, JSON and `--family` modes
+use the same baked facts and perform no store scan in migration mode.
 
 Remove remaining adapters and old registration paths after the final caller moves.
 Do not erase required seed providers, historical broken records, patches or real

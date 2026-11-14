@@ -15,6 +15,11 @@
 }:
 assert context != null || throw "TVP family: a selected build context is required";
 let
+  # Evaluation-only index origin. It certifies no builder/caller/runtime behavior.
+  authoring = {
+    origin = "tvp.lib.packages.mkFamily";
+    model = "ordinary-family/v1";
+  };
   constructor = context.builder;
   standardProviders =
     base:
@@ -50,6 +55,7 @@ let
     in
     def
     // {
+      inherit authoring;
       constructor = definitionConstructor;
       base = def.base or context.base;
       helpers = def.helpers or { };
@@ -75,6 +81,7 @@ let
     };
   prepareEntry = entry: entry // { def = prepareDefinition entry.def; };
   family = {
+    inherit authoring;
     inherit
       pname
       source

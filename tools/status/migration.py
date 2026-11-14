@@ -84,6 +84,106 @@ def summarize(rows):
     }
 
 
+
+AUTHORING_ORIGIN = {"origin": "tvp.lib.packages.mkFamily", "model": "ordinary-family/v1"}
+
+
+def authoring(facts, rows, family=None):
+    """Index declarations only: never infer builder/caller/runtime completion."""
+    unknown = {
+        "compatibilityCallersRemaining": None,
+        "builderCleanupVerified": None,
+        "runtimeQualifiedRows": None,
+    }
+    if facts is None:
+        return {"measurement": "unavailable", "scope": "No evaluated family-origin facts supplied.",
+                "summary": None, "categories": None, "families": None,
+                "verification": unknown}
+    obj(facts, "authoring")
+    if facts.get("schema") != "tvp.family-authoring-facts/v1":
+        raise Invalid("unsupported family-authoring facts schema")
+    scope = string(facts.get("scope"), "authoring.scope")
+
+    def origin(value):
+        if value is None:
+            return None
+        obj(value, "authoring origin")
+        return {key: string(value.get(key), f"authoring origin.{key}")
+                for key in ("origin", "model")}
+
+    def component(value, where):
+        value = string(value, where)
+        if "/" in value or value in (".", ".."):
+            raise Invalid(f"{where}: expected a registration path component")
+        return value
+
+    entries, paths, owners = [], set(), {}
+    for raw in array(facts.get("entries"), "authoring.entries"):
+        obj(raw, "authoring entry")
+        category = component(raw.get("category"), "authoring category")
+        name = component(raw.get("family"), "authoring family")
+        path = string(raw.get("entrypoint"), "authoring entrypoint")
+        if path != f"pkgs/{category}/{name}/default.nix" or path in paths:
+            raise Invalid("inconsistent or duplicate family entrypoint")
+        paths.add(path)
+        recipes = obj(raw.get("recipes"), "authoring recipes")
+        if not recipes:
+            raise Invalid("family entrypoint has no registered recipes")
+        selected, models, retained = [], {}, False
+        for recipe, metadata in recipes.items():
+            string(recipe, "authoring recipe")
+            if recipe in owners:
+                raise Invalid("recipe belongs to multiple family entrypoints")
+            owners[recipe] = path
+            obj(metadata, "authoring recipe metadata")
+            model = origin(metadata.get("origin"))
+            models[recipe] = model
+            versions = obj(metadata.get("versionOrigins"), "authoring version origins")
+            version_origins = {}
+            for version, value in versions.items():
+                string(version, "authoring version")
+                version_origins[version] = origin(value)
+            retained = boolean(metadata.get("retainedConstructionRecipe"),
+                               "authoring retained construction recipe") or retained
+            for row in rows:
+                if row["namespace"] == "canonical" and row["family"] == recipe:
+                    selected.append({"broken": row["status"] == "broken",
+                                     "marked": model == AUTHORING_ORIGIN
+                                     and version_origins.get(row["version"]) == AUTHORING_ORIGIN})
+        states = list(models.values())
+        state = ("adopted" if all(value == AUTHORING_ORIGIN for value in states) else
+                 "earlier-wiring" if all(value is None for value in states) else
+                 "unrecognized" if any(value not in (None, AUTHORING_ORIGIN) for value in states) else
+                 "partial")
+        entries.append({"family": name, "category": category, "entrypoint": path,
+                        "indexState": state, "origins": models,
+                        "eligibleCanonicalRows": sum(not r["broken"] for r in selected),
+                        "markedEligibleCanonicalRows": sum(not r["broken"] and r["marked"] for r in selected),
+                        "excludedBrokenCanonicalRows": sum(r["broken"] for r in selected),
+                        "retainedConstructionRecipe": retained,
+                        "recipes": sorted(recipes)})
+    if {r["family"] for r in rows if r["namespace"] == "canonical"} - set(owners):
+        raise Invalid("family-origin inventory does not cover canonical families")
+    selected = [entry for entry in entries if family is None or family in entry["recipes"]]
+
+    def summary(values):
+        return {"familyIndexes": len(values),
+                "adoptedIndexes": sum(e["indexState"] == "adopted" for e in values),
+                "earlierWiringIndexes": sum(e["indexState"] == "earlier-wiring" for e in values),
+                "partialIndexes": sum(e["indexState"] == "partial" for e in values),
+                "unrecognizedIndexes": sum(e["indexState"] == "unrecognized" for e in values),
+                "eligibleCanonicalRows": sum(e["eligibleCanonicalRows"] for e in values),
+                "markedEligibleCanonicalRows": sum(e["markedEligibleCanonicalRows"] for e in values),
+                "excludedBrokenCanonicalRows": sum(e["excludedBrokenCanonicalRows"] for e in values),
+                "indexesWithRetainedConstructionRecipe": sum(e["retainedConstructionRecipe"] for e in values)}
+
+    return {"measurement": "evaluated-index-origin", "scope": scope,
+            "summary": summary(selected),
+            "categories": {category: summary([e for e in selected if e["category"] == category])
+                           for category in sorted({e["category"] for e in selected})},
+            "families": {entry["entrypoint"]: entry for entry in selected},
+            "verification": unknown}
+
 def repository(facts, family=None):
     obj(facts, "facts")
     if facts.get("schema") != "tvp.migration-facts/v1":
@@ -164,12 +264,15 @@ def repository(facts, family=None):
         "families": {name: summarize([r for r in selected if r["family"] == name])
                      for name in families if family is None or family == name},
         "latest": {"summary": summarize(selected_latest),
+                   "measurement": string(latest.get("measurement", "unspecified"), "latest.measurement"),
+                   "runtimeQualifiedRows": None,
                    "selected": [{"family": r["family"], "job": r["name"], "version": r["version"],
                                  "constructor": r["constructor"], "selectedBase": r["selectedBase"]}
                                 for r in selected_latest],
                    "skipped": [s for s in skipped if family is None or s["family"] == family]},
         "rows": selected,
         "outsideOrdinaryScope": outside,
+        "authoring": authoring(facts.get("authoring"), rows, family),
     }
 
 
@@ -291,7 +394,8 @@ def report(facts, family=None, external=None):
             "workflow": None if external is None else workflow(external, source),
             "limitations": ["Evaluated metadata only: source selection is not realization, test execution, review acceptance or admission.",
                             "Selected base metadata does not prove source-built bootstrap inputs or conformance.",
-                            "Strict split eligibility is only one gate; full validation, hardening and default switch remain separate."]}
+                            "Strict split eligibility is only one gate; full validation, hardening and default switch remain separate.",
+                            "A mkFamily origin marks ordinary index adoption only; builder cleanup, construction callers and runtime qualification are separate and unmeasured here."]}
 
 
 def render(result):
@@ -307,8 +411,27 @@ def render(result):
              f'Strict split admission (whole inventory): {repo["strictSplitAdmission"]}; policy {repo["splitPolicy"]["status"]}',
              f'Latest applicable selectors: {latest["total"]} families; owned {latest["constructors"]["owned"]}/{latest["total"]}; selected candidate base {latest["sourceCandidateSelected"]}/{latest["total"]}; skipped {len(repo["latest"]["skipped"])}',
              'Outside ordinary policy: ' + repo["outsideOrdinaryScope"]["disposition"]]
+    lines.append(f'Latest view: {repo["latest"]["measurement"]}; test-suite and runtime qualification unknown.')
+    adoption = repo["authoring"]
+    lines.extend(["", "AUTHORING — ordinary family index adoption"])
+    if adoption["summary"] is None:
+        lines.append("Index adoption: unknown; this manifest has no evaluated family-origin inventory.")
+    else:
+        a = adoption["summary"]
+        lines.extend([
+            f'Indexes using mkFamily: {a["adoptedIndexes"]}/{a["familyIndexes"]}; earlier wiring {a["earlierWiringIndexes"]}; partial {a["partialIndexes"]}; unrecognized {a["unrecognizedIndexes"]}',
+            f'Eligible canonical rows in marked definitions: {a["markedEligibleCanonicalRows"]}/{a["eligibleCanonicalRows"]}; declared-broken excluded {a["excludedBrokenCanonicalRows"]}',
+            "By category (indexes; eligible canonical rows):",
+        ])
+        for category, value in adoption["categories"].items():
+            lines.append(f'  {category}: {value["adoptedIndexes"]}/{value["familyIndexes"]}; {value["markedEligibleCanonicalRows"]}/{value["eligibleCanonicalRows"]}')
+        lines.append(f'Retained construction recipe definitions present in {a["indexesWithRetainedConstructionRecipe"]}/{a["familyIndexes"]} indexes; this is not a caller count.')
+    lines.append("Builder cleanup verified: unknown; compatibility callers remaining: unknown; runtime-qualified rows: unknown.")
+    lines.append("Index adoption is separate from split coverage and full migration completion.")
     if repo["filter"]:
         lines.append(f'Family {repo["filter"]} (workflow and outside-scope remain global):')
+        for entry in (adoption["families"] or {}).values():
+            lines.append(f'  {entry["entrypoint"]}: index {entry["indexState"]}; retained construction recipe {show(entry["retainedConstructionRecipe"])}')
         lines.extend(f'  {r["id"]} {r["version"]}: {r["constructor"]}; base {show(r["selectedBase"])}; {r["failure"] or "split-compliant"}; {r["status"]}' for r in repo["rows"])
     w = result["workflow"]
     lines.extend(["", "WORKFLOW — optional external reported claims"])

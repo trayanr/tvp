@@ -7,6 +7,7 @@
   latest,
   source,
   system,
+  familyEntrypoints ? null,
 }:
 let
   packageFor =
@@ -19,6 +20,20 @@ let
     schema = "tvp.migration-facts/v1";
     inherit source system;
     scope = splitReport.scope;
+    authoring =
+      if familyEntrypoints == null then
+        null
+      else
+        {
+          schema = "tvp.family-authoring-facts/v1";
+          scope = "Registered ordinary family indexes; canonical non-broken releases only for row counts. Public variants are not additional indexes.";
+          entries = map (entry: {
+            category = builtins.head entry.namespaces;
+            family = lib.last entry.namespaces;
+            entrypoint = "pkgs/${lib.concatStringsSep "/" entry.namespaces}/default.nix";
+            inherit (entry) recipes;
+          }) familyEntrypoints;
+        };
     rows = map (
       row:
       let
@@ -40,6 +55,8 @@ let
       }
     ) splitReport.rows;
     latest = {
+      measurement = latest.measurement or "unspecified";
+      runtimeQualifiedRows = null;
       families = lib.mapAttrs (_: entry: {
         inherit (entry) job version;
       }) latest.families;

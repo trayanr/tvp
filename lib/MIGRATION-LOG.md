@@ -261,3 +261,34 @@ admission holds remain unwaived; CI/NAS stay off.
 
 Records: `reviews/post-migration/compression-family-authoring` under the same local
 state root, including all attempts, identity comparisons and scoped Tower roots.
+
+## 2026-11-14 — Report the authoring phase through migration status
+
+The existing `nix run .#status -- --migration` now reports evaluated family-index
+adoption, marked eligible canonical rows and categories alongside split coverage.
+`--json` and `--family` retain their meanings. The counts are derived from the
+registered namespace tree and explicit mkFamily origin metadata, not source-token
+searches or hardcoded totals. Metadata does not enter production construction.
+
+At this point the measured ordinary authoring view is 16/110 family indexes and
+269/1,515 eligible canonical rows; split coverage is separately 1,520/1,540 ordinary
+rows including five variants and twenty broken exclusions. Retained construction
+recipe availability is shown as availability, not as remaining caller counts.
+Builder cleanup, compatibility-caller completion and runtime qualification remain
+unknown rather than being inferred from origin or split markers.
+
+Status used to force full latest suites and fail on an unrelated Expat assertion.
+The new status-only projection validates declared latest selectors without reading
+suite/artifact/producer fields. A throwing-field fixture checks that boundary.
+Normal latest validation is unchanged; MIG-015 preserves the unrelated nonpass.
+Missing facts in old manifests stay unknown and unfamiliar future origin markers
+are not counted as adopted. Existing manifest/status JSON fields remain compatible.
+
+The candidate's 53 pure model/origin contracts, 25 Python tests and all 1,520 eligible
+ordinary A/F identity comparisons passed without package builds. The actual packaged shell command also passes migration/help/error sentinels and
+legacy text/JSON at a mocked closure boundary. Only two CLI installers build
+(28.627s including evaluation); the installed migration report takes 0.044s.
+CI/NAS and all broader admission holds remain unchanged.
+
+Records: `reviews/post-migration/authoring-migration-status` and the preceding
+Autotools `next-authoring-status-candidate` evidence under the same local state root.
