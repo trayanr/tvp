@@ -210,6 +210,9 @@ let
           }
         )
       );
+      gmp-family = pkgs.writeText "tvp-gmp-family-contracts" (
+        builtins.toJSON (import ./lib/tests/gmp-family.nix { inherit pkgs tvp; })
+      );
       mpfr-family = pkgs.writeText "tvp-mpfr-family-contracts" (
         builtins.toJSON (import ./lib/tests/mpfr-family.nix { inherit pkgs tvp; })
       );

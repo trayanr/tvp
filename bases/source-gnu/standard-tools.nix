@@ -1,20 +1,20 @@
-# Ordinary build-tool roles, selected once for every family using this base.
-# These are lazy argument defaults, not additions to every step's PATH.
-# Tools building themselves still select earlier construction providers explicitly.
+# Build-only roles come from the explicit preceding native generation. Ordinary
+# libraries/runtime dependencies still use TVP package selectors in their tables.
+# Public tools can depend on GMP (Coreutils, then Gzip/Diffutils/Findutils) or MPFR
+# (Gawk5), so using their final aliases here would make the foundational families
+# build themselves. These are lazy defaults, not a global PATH/tool list.
 { tvp }:
 {
-  inherit (tvp.packages)
+  inherit (tvp.baseTiers.native.standardTools)
     gnumake
     gnutar
     xz
+    python
+    patchelf
+    sed
+    grep
+    gawk
     diffutils
     findutils
     ;
-  python = tvp.packages.python-build_3_12_5;
-  patchelf = tvp.packages.patchelf_0;
-  sed = tvp.packages.gnused;
-  grep = tvp.packages.gnugrep;
-  gawk = tvp.lib.packages.withConstraint {
-    reason = "The standard build tools must precede MPFR; Gawk 5 depends on MPFR. Use the MPFR-free Gawk 4.0 line for the build-only AWK role.";
-  } tvp.packages.gawk_4_0;
 }

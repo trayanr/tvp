@@ -68,20 +68,43 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   compiler; replacing that producer changes both the reduced and full compiler.
   `bases/gcc13-owned/inputs/test-tools.nix` and `test-locale.nix` separately retain
   explicitly frozen GMP test baselines.
-- **Current behavior:** earlier providers remain exact in this change. Do not
-  activate a new compiler input after every ordinary-family rewrite.
+- **Current behavior:** the ordinary GMP family now uses the agreed family API.
+  Its historical construction recipe is isolated in `gmp/retained/`, and the two
+  direct `build-steps-6.3.0.nix` callers remain unchanged. Before/after evaluation
+  confirms both compiler generations, their drivers and GCC13/GCC16 GMP inputs
+  remain exact. Do not activate a new compiler input after every family rewrite.
 - **Decision needed:** group construction-input activation and qualification into
   a deliberate batch. Decide explicitly whether frozen test procedures remain
   historical fixtures or are rebaselined; do not silently delete or replace them.
 
-## MIG-006 — M4's explicit Gawk selection before GMP conversion
+## MIG-006 — Foundational build-tool ordering (prerequisite resolved)
 
-- **Scope:** the M4 prerequisite of the next whole-GMP-family conversion.
-- **Evidence:** `pkgs/build-tools/m4/default.nix` explicitly selects Gawk 5.
-  Selecting public M4 for GMP would create GMP → M4 → Gawk 5 → MPFR → GMP.
-  The base's MPFR-free Gawk policy cannot override that explicit selection.
-- **Current behavior:** keep the existing earlier M4 provider while the current
-  compiler boundary is qualified; no new pin or fallback is introduced here.
-- **Decision needed:** convert M4's build-only AWK role to the agreed base policy
-  before GMP selects public M4. Preserve any real M4 requirements and verify the
-  cycle is removed instead of substituting an unexplained provider.
+- **Scope:** build-only roles preceding GMP/MPFR; full M4 authoring conversion
+  remains later work.
+- **Evidence:** selecting public M4 for GMP exposed more than the Gawk5 → MPFR
+  edge: public Diffutils, Findutils, Patchelf and build Python reach Coreutils →
+  GMP; public Tar's compressor bindings and M4's Gzip do the same. Original
+  evaluation traces are retained in the local `m4-gmp-family-authoring` logs.
+- **Current behavior:** `bases/source-gnu/standard-tools.nix` explicitly selects
+  the preceding native generation's named build roles. M4 selects those base
+  roles and the existing earlier Gzip provider. Package-specific library choices
+  remain public TVP selectors. All nine ordinary GMP versions evaluate without
+  cycles; no fallback or package-name-based rescue is introduced.
+- **Remaining work:** migrate the complete M4 authoring index and its construction
+  callers in their scope. Do not promote build-only roles to final public aliases
+  without checking the resulting construction graph.
+
+## MIG-007 — Frozen library test and observer interfaces
+
+- **Scope:** MPC/ISL conversion and coordinated construction activation.
+- **Evidence:** GCC13/GCC16 and `test-locale.nix` retain coverage-parser providers
+  and codec graphs; their historical test factories still expect the old tooling
+  and step names. The GMP frozen test factory likewise remains explicitly retained.
+- **Current behavior:** preserve these bindings and their evidence. Ordinary GMP
+  uses one installed suite and independent upstream acceptance; frozen construction
+  retains its own historical factory. A source cleanup does not certify unbuilt
+  releases or waive any old upstream failure.
+- **Decision needed:** distinguish frozen historical observers from live acceptance
+  when their callers move. Port live checks to effective base/dependency interfaces;
+  do not silently rebaseline historical fixtures or keep obsolete production steps
+  solely to satisfy old observer assumptions.

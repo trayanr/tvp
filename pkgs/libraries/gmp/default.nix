@@ -1,57 +1,10 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  candidate = import ../../../bases/source-gnu { };
-  owned = {
-    constructor = tvp.builder;
-    builder = ./build-6.3.0.nix;
-    base = candidate.base;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
-        inherit sha256;
-      };
-    testContext =
-      package:
-      tvpLib.tests.fromPackage {
-        builder = tvp.builder;
-        inherit package;
-      };
-    helpers = {
-      inherit tvp;
-    };
-    deps = {
-      inherit (candidate.tools)
-        bash
-        coreutils
-        xz
-        python
-        binutils
-        patchelf
-        sed
-        grep
-        gawk
-        diffutils
-        findutils
-        ;
-      gnumake = candidate.tools.make;
-      gnutar = candidate.tools.tar;
-      m4 = candidate.tools.m4;
-    };
-  };
-  defs = tvpLib.packages.mkDefs {
+  packageRecipes = tvp.lib.packages.mkDefs {
     "5.0.5" = {
       builder = ./build-5.0.5.nix;
-      base = tvp.bases.default;
       deps.m4 = tvp.packages.m4;
-      # The long-long configure probe defines g() then calls it with arguments.
-      # C23 interprets () as (void); retain the intended pre-C23 semantics.
-      # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu17";
-      # Old h(){} / g(){} configure probes omit types/declarations.
-      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
+      # Pre-C99 configure probes omit declarations and use non-prototype ().
       opts.configureCFlags = [
         "-Wno-error=implicit-int"
         "-Wno-error=implicit-function-declaration"
@@ -59,233 +12,96 @@ let
     };
     "6.0.0a" = {
       builder = ./build-5.0.5.nix;
-      base = tvp.bases.default;
       deps.m4 = tvp.packages.m4;
-      # The long-long configure probe defines g() then calls it with arguments.
-      # C23 interprets () as (void); retain the intended pre-C23 semantics.
-      # The procedure leaves earlier compiler construction byte-identical.
-      opts.cStandard = "gnu17";
-      # Old h(){} / g(){} configure probes omit types/declarations.
-      # Keep C99-guarded upstream arithmetic tests enabled during the build/check.
       opts.configureCFlags = [
         "-Wno-error=implicit-int"
         "-Wno-error=implicit-function-declaration"
       ];
       opts.reportedVersion = "6.0.0";
-      # t-scanf.c tests HAVE_UNISTD_H before including config.h, so unlink's
-      # declaration is missed. 6.1.0 includes config.h first. Keep the warning
-      # and original upstream test, demoting only this check-time diagnostic.
+      # t-scanf.c checks HAVE_UNISTD_H before config.h supplies its definition.
       opts.checkCFlags = [ "-Wno-error=implicit-function-declaration" ];
     };
     "6.1.0" = {
-      builder = ./build-5.0.5.nix;
-      base = tvp.bases.default;
+      builder = ./build-6.1.0.nix;
       deps.m4 = tvp.packages.m4;
-      # Newer probes have explicit return types but still require pre-C23 ().
-      opts.cStandard = "gnu17";
+    };
+    "6.2.0" = {
+      builder = ./build-6.2.0.nix;
+      deps.m4 = tvp.packages.m4;
     };
 
-    "6.3.0" =
-      if native then
-        owned
-      else
-        {
-          builder = ./build-5.0.5.nix;
-          base = tvp.bases.default;
-          deps.m4 = tvp.packages.m4;
-          opts.cStandard = "gnu17";
-        };
   };
-  versionTable = tvpLib.packages.mkTable [
+  versionTable = tvp.lib.packages.mkTable [
     {
-      def = defs."5.0.5";
+      def = packageRecipes."5.0.5";
       releases = {
         "5.0.5" = "sha256-6HAVqCWiRF4WmTHuJ4SdUldqLZ4zjROD3LNv7WjQAG8=";
         "5.1.3" = "sha256-3uLto39P9UHzABmTLbDDf293owujYJI0kzsYGPmwcHE=";
       };
     }
     {
-      def = defs."6.0.0a";
+      def = packageRecipes."6.0.0a";
       releases = {
         "6.0.0a" = "sha256-kVbTLtrGlVvFOwIY9fN2P6y4kLc6g11eG5Adz464t2Q=";
       };
     }
     {
-      def = defs."6.1.0";
+      def = packageRecipes."6.1.0";
       releases = {
         "6.1.0" = "sha256-aNrazOUVsPilT1EO3wfBtjZJK8246NVMVushYiXRaYk=";
         "6.1.1" = "sha256-026cBd9IitYw//F+21AFHWQyNX+c4E40oJs9gYgl6DE=";
         "6.1.2" = "sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=";
-        "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
-        "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
 
       };
     }
     {
-      def = defs."6.3.0";
-      releases."6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
+      def = packageRecipes."6.2.0";
+      releases = {
+        "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
+        "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
+        "6.3.0" = "sha256-o8K4AgG4nmhhb0rTC8Zq7kknw85Q4zkpyoGdXENTiJg=";
+      };
     }
-  ];
-  pname = "gmp";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      gmp:
-      import ./tests {
-        inherit tvpLib gmp;
-        pkgs =
-          if gmp ? testContext then
-            pkgs
-          else
-            tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = gmp.stdenv;
-            };
-      }
-    ) { inherit pkgs; };
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://mirrors.kernel.org/gnu/gmp/";
-      pattern = "gmp-[0-9][^\"]*\\.tar\\.(gz|bz2|xz)";
-      normalise =
-        file:
-        let
-          match = builtins.match "gmp-([0-9]+(\\.[0-9]+)*[a-z]?)\\.tar\\.(gz|bz2|xz)" file;
-        in
-        if match == null then null else builtins.head match;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
-    };
-  };
-  constructionRecipe = packageArgs // {
-    versionTable = versionTable // {
-      "6.3.0" = versionTable."6.3.0" // {
-        def = defs."6.1.0";
-      };
-    };
-  };
-  ordinaryDefs = tvpLib.packages.mkDefs {
-    "6.1.0" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-6.1.0.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
-          inherit sha256;
-        };
-      deps = {
-        bash = candidate.tools.bash;
-        coreutils = candidate.tools.coreutils;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
-        xz = candidate.tools.xz;
-        python = candidate.tools.python;
-        binutils = candidate.tools.binutils;
-        patchelf = candidate.tools.patchelf;
-        sed = candidate.tools.sed;
-        grep = candidate.tools.grep;
-        gawk = candidate.tools.gawk;
-        diffutils = candidate.tools.diffutils;
-        findutils = candidate.tools.findutils;
-        m4 = candidate.tools.m4;
-      };
-    };
-    "6.2.0" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-6.2.0.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
-          inherit sha256;
-        };
-      deps = {
-        bash = candidate.tools.bash;
-        coreutils = candidate.tools.coreutils;
-        gnumake = candidate.tools.make;
-        gnutar = candidate.tools.tar;
-        xz = candidate.tools.xz;
-        python = candidate.tools.python;
-        binutils = candidate.tools.binutils;
-        patchelf = candidate.tools.patchelf;
-        sed = candidate.tools.sed;
-        grep = candidate.tools.grep;
-        gawk = candidate.tools.gawk;
-        diffutils = candidate.tools.diffutils;
-        findutils = candidate.tools.findutils;
-        m4 = candidate.tools.m4;
-      };
-    };
-  };
-  ordinaryTable = versionTable // {
-    "6.1.0" = versionTable."6.1.0" // {
-      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.0".def;
-    };
-    "6.1.1" = versionTable."6.1.1" // {
-      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.1".def;
-    };
-    "6.1.2" = versionTable."6.1.2" // {
-      def = if native then ordinaryDefs."6.1.0" else versionTable."6.1.2".def;
-    };
-    "6.2.0" = versionTable."6.2.0" // {
-      def = if native then ordinaryDefs."6.2.0" else versionTable."6.2.0".def;
-    };
-    "6.2.1" = versionTable."6.2.1" // {
-      def = if native then ordinaryDefs."6.2.0" else versionTable."6.2.1".def;
-    };
-  };
-  previousPublicArgs = packageArgs // {
-    versionTable = ordinaryTable;
-  };
-  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
-  compatibilityVersions = [ "5.0.5" "5.1.3" "6.0.0a" ];
-  publicArgs = previousPublicArgs // {
-    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
-      name = version;
-      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
-    }) compatibilityVersions);
-    extraArgs = previousPublicArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
-        if package ? testContext && builtins.elem package.version compatibilityVersions then
-          packageArgs.extraArgs.mkTests package
-          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
-            upstream = import ../acl/native/upstream.nix { inherit package; };
-          }
-          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
 
+  ];
+  packageMeta.upstream = {
+    type = "directory-index";
+    url = "https://mirrors.kernel.org/gnu/gmp/";
+    pattern = "gmp-[0-9][^\"]*\\.tar\\.(gz|bz2|xz)";
+    normalise =
+      file:
+      let
+        match = builtins.match "gmp-([0-9]+(\\.[0-9]+)*[a-z]?)\\.tar\\.(gz|bz2|xz)" file;
+      in
+      if match == null then null else builtins.head match;
+    include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
+  };
+  pname = "gmp";
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable packageMeta;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
+        inherit sha256;
+      };
+    tests = import ./tests;
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.gmp = family // {
+    # Historical/frozen construction stays exact until coordinated activation.
+    constructionRecipe = import ./retained {
+      inherit
+        pkgs
+        tvp
+        versionTable
+        packageMeta
+        ;
+    };
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }
