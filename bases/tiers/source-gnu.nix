@@ -6,6 +6,7 @@
   standardTools ? null,
 }:
 let
+  platform = import ../source-gnu/platform.nix;
   tiers = import ./. { inherit lib builder; };
   initial = import ../../bootstrap/gnu-environment.nix { inherit bootstrap; };
   nativeInputs = import ../../bootstrap/source-native-compiler.nix { inherit bootstrap; };
@@ -24,6 +25,7 @@ let
   };
   seed = tiers.mkTier {
     name = "source-gnu-seed";
+    inherit platform;
     compiler = initial.cc // {
       runtimeDirectories = [
         "${bootstrap.gnu-libc}/lib"
@@ -39,6 +41,7 @@ let
   targetInputs = nativeInputs.prior.composition;
   target = tiers.mkTier {
     name = "source-gnu-target";
+    inherit platform;
     previous = seed;
     compiler = targetInputs.cc;
     shell = targetInputs.bash;
@@ -48,6 +51,7 @@ let
   };
   native = tiers.mkTier {
     name = "source-gnu-native";
+    inherit platform;
     previous = target;
     compiler = nativeInputs.driver;
     shell = seed.shell;

@@ -56,6 +56,9 @@ exclusive dynamic RPATHs (including A/lib), and repairs ELF interpreters. It nev
 copies checkpoint or provenance. Native executable-relative GCC search remains
 responsible for self discovery; no consumer wrapper or stage-evidence protocol
 is introduced. The ordinary raw -B/static-PIE/libc-construction API remains intact.
+The plugin SDK's `configargs.h` retains its exact configuration stamp so it agrees
+with the compiler's embedded plugin-version identity. Its prefix is not a runtime
+path to relocate.
 
 Field classification:
 
@@ -65,7 +68,7 @@ Field classification:
   These are genuine compile inputs; no runtime alias promises their independence.
 * F: finalizerScript, patchelf and final copy/interpreter/check steps. Final step
   edits reuse A; direct shared tools still retain their A effects where used.
-* R: dejagnu/expect/flock/graphviz/fonts/pythonConfig and upstreamCapture/
+* R: dejagnu/expect/flock/graphviz/fonts/pythonConfig/testPython and upstreamCapture/
   upstreamSummarizer/upstreamRestore; edits reuse both A and F.
 * U: upstreamClassifier and unchanged known-result data; classifier edits reuse R
   as well as A/F. The existing independent test factory registers U.

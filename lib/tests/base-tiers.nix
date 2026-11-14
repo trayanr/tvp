@@ -55,6 +55,7 @@ let
   inputs = tiers.fromLegacy legacy;
   seed = tiers.mkTier {
     name = "seed";
+    inherit (legacy) platform;
     compiler = inputs.compiler;
     inherit shell coreutils;
     standardTools = {
@@ -68,6 +69,7 @@ let
   };
   next = tiers.mkTier {
     name = "next";
+    inherit (legacy) platform;
     previous = seed // {
       compiler = throw "tier lineage forces prior providers";
     };
@@ -137,6 +139,13 @@ let
         standardTools.gnumake = package "other-make";
       }).standardTools.gnutar.drvPath == tar.drvPath;
     adaptedIdempotent = (tiers.fromLegacy inputs).name == inputs.name;
+    legacyDefaultPlatform =
+      (tiers.fromLegacy (builtins.removeAttrs legacy [ "platform" ])).platform == legacy.platform;
+    explicitPlatformArgument =
+      let
+        args = builtins.functionArgs tiers.mkTier;
+      in
+      args ? platform && !args.platform;
     invalidLegacy = rejects (tiers.fromLegacy { name = "missing"; });
     missingFloor = rejects (
       tiers.fromLegacy (
@@ -152,6 +161,7 @@ let
     selfLineage = rejects (
       tiers.mkTier {
         name = "seed";
+        inherit (legacy) platform;
         previous = seed;
         compiler = inputs.compiler;
         inherit shell coreutils;

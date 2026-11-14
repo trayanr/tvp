@@ -5,15 +5,20 @@ A tier selects a compiler, shell, standard tools and runtime providers. An earli
 tier constructs the next toolchain; the package recipe and owned constructor can
 remain the same. `construction` records only the earlier tier's name.
 
-`mkTier { name; previous ? null; compiler; shell; coreutils; ...; }` creates a native
-x86_64 GNU/Linux owned context. A null previous tier declares an explicit seed
-boundary. Other tiers name the earlier construction context.
+`mkTier { name; platform; previous ? null; compiler; shell; coreutils; ...; }`
+requires an explicit provider-context platform. The source-GNU assembly selects its
+native x86_64 GNU/Linux facts once in [platform.nix](../source-gnu/platform.nix) and
+passes them to its tiers. A null previous tier declares an explicit seed boundary.
+Other tiers name the earlier construction context. This separation does not add
+support for another architecture or cross compilation.
 
 `fromLegacy existingBase` adapts the exact selected compiler wrapper, libc and
 floor to the owned execution interface. It creates no new derivations and exposes
 no `stdenv` or `mkDerivation`. `construction.kind = "legacy-inputs"` records that
 the selected input generations retain their original construction provenance.
 This is not a claim that those providers were built by the owned protocol.
+Retained inputs without platform metadata keep the historical native GNU/Linux
+default; removing that compatibility inference is separate migration work.
 
 Retained Nixpkgs compiler/linker wrappers declare `suffixSalt`; the owned environment
 selects their native host role so they consume the explicit include, link and hardening

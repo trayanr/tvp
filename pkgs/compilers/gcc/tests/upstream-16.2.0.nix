@@ -29,19 +29,23 @@ let
             (s.base.environment (
               s.environment
               // {
-                tools = s.environment.tools ++ [
-                  s.dejagnu
-                  s.expect
-                  s.flock
-                  s.graphviz
-                  s.pythonConfig
-                ];
+                tools =
+                  map (
+                    provider: if toString provider == toString s.python then s.testPython else provider
+                  ) s.environment.tools
+                  ++ [
+                    s.dejagnu
+                    s.expect
+                    s.flock
+                    s.graphviz
+                    s.pythonConfig
+                  ];
               }
             ))
             // {
               name = "gcc.restore-and-capture";
               run = ''
-                ${s.python}/bin/python3 -B ${s.upstreamRestore} ${package.artifact}/nix-support/upstream-build-tree "$TVP_SOURCE_ROOT" ${s.checkpointScript}
+                ${s.testPython}/bin/python3 -B ${s.upstreamRestore} ${package.artifact}/nix-support/upstream-build-tree "$TVP_SOURCE_ROOT" ${s.checkpointScript}
                 checkpoint="$(cat tree-path)"
                 cd "$checkpoint/build"
                 validation="$out"
@@ -77,13 +81,13 @@ let
     package = execution;
     name = "upstream-audit";
     tools = [
-      s.python
+      s.testPython
       s.grep
     ];
     script = ''
       test "$(cat ${execution}/make-check.exit)" = 0
       grep -Fx 'Comparison successful.' ${execution}/bootstrap-compare.log >/dev/null
-      ${s.python}/bin/python3 -B ${s.upstreamClassifier} ${execution}/upstream.json \
+      ${s.testPython}/bin/python3 -B ${s.upstreamClassifier} ${execution}/upstream.json \
         ${./upstream-known-16.2.0.json} ${s.version} ${s.base.platform.system} ${execution} > audit.json
       printf classified
     '';
