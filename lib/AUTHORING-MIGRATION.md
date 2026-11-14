@@ -134,8 +134,21 @@ release tables and shared installed/constructor assertions. Source-bound upstrea
 harness differences stay after the compiled checkpoint. All six supported releases
 use the authoring API; M4's two declared-broken releases and the historical
 construction recipes remain explicit and unchanged. Ordinary authoring adoption
-therefore covers six of the 110 inventoried families. This does not mean all
+therefore covered six of the 110 inventoried families at that step. This does not mean all
 historical construction callers have left the compatibility API.
+
+Pkg-config and Ninja now follow the same model across their complete six- and
+three-release families. Ordinary authoring adoption is eight of 110 entrypoints.
+Both use the shared constructor test factory; Ninja keeps its explicit runtime
+shell/browser-Python roles separate from build/helper tools. The named Patch role
+comes from the preceding bootstrap generation. Historical/direct bootstrap
+procedures remain explicit. Pkg-config 0.27's uncached Gettext/JDK/compiler graph is
+MIG-011 scope; source adoption does not qualify that release.
+
+The converted indexes now put complete `def` records directly beside their
+releases. `mkTable` infers the internal label from the earliest release and supplies
+empty dependencies when omitted. Existing named maps remain compatible. This
+presentation change preserves the same current artifact/final/test producers.
 
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
@@ -153,7 +166,7 @@ observer boundaries, and MIG-010 records a separate whole-inventory failure.
 
 For each family:
 
-1. Replace layered/remapped definitions with complete `packageRecipes` records and
+1. Replace layered/remapped definitions with complete inline recipe records in
    a literal release table. Keep genuine compatibility constraints and patches.
 2. Supply ordinary defaults with `mkFamily`; remove repeated constructor, platform,
    standard-tool, helper and test-context declarations.

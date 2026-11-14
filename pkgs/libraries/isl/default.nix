@@ -1,22 +1,18 @@
 { pkgs, tvp }:
 let
-  packageRecipes = tvp.lib.packages.mkDefs {
-    "0.20" = {
-      builder = ./build-0.20.nix;
-      deps.gmp = tvp.packages.gmp_6;
-    };
-    "0.26" = {
-      builder = ./build-0.26.nix;
-      deps.gmp = tvp.packages.gmp_6;
-    };
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
-      def = packageRecipes."0.20";
+      def = {
+        builder = ./build-0.20.nix;
+        deps.gmp = tvp.packages.gmp_6;
+      };
       releases."0.20" = "sha256-pVlqn7ils2XLYS5LlihzXW5n6RePrhNKgWrhlQF+d6o=";
     }
     {
-      def = packageRecipes."0.26";
+      def = {
+        builder = ./build-0.26.nix;
+        deps.gmp = tvp.packages.gmp_6;
+      };
       releases = {
         "0.26" = "sha256-oLXLBtJPn6nne1X6u+mjyUozYZA0XCVV+ZFbs46XZQQ=";
         "0.27" = "sha256-bYurtZ57Zy6Mt4cOh08/e4E7bgDmrz+LBPdXmWVkPVw=";

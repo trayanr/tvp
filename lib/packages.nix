@@ -96,10 +96,8 @@ rec {
     "broken"
   ];
 
-  # A definition is named for the version where it first appears, and that name
-  # has to reach the version table for `definition-names` to check it. Tagging
-  # here rather than at each use is what makes it unforgeable: a definition that
-  # never went through mkDefs has no name and fails to evaluate.
+  # Compatibility for named definition maps. Ordinary inline definitions receive
+  # their first-release label from mkTable, without repeating a version here.
   mkDefs = lib.mapAttrs (name: def: def // { inherit name; });
 
   checkDeps =
@@ -129,6 +127,21 @@ rec {
     let
       entries = lib.concatMap (
         block:
+        let
+          definition =
+            if block.def ? name then
+              block.def
+            else
+              {
+                deps = { };
+              }
+              // block.def
+              // {
+                name = builtins.head (
+                  builtins.sort (a: b: builtins.compareVersions a b < 0) (builtins.attrNames block.releases)
+                );
+              };
+        in
         lib.mapAttrsToList (
           version: raw:
           let
@@ -141,7 +154,7 @@ rec {
           else
             lib.nameValuePair version (
               {
-                inherit (block) def;
+                def = definition;
               }
               // lib.optionalAttrs (block ? status) { inherit (block) status; }
               // release

@@ -27,7 +27,7 @@ mpfr/
 
 | Location | Responsibility |
 |---|---|
-| `default.nix` | Complete `packageRecipes` records, literal versions/hashes, one source factory, one test factory, canonical packages and generated aliases. |
+| `default.nix` | Inline complete recipe records, literal versions/hashes, one source factory, one test factory, canonical packages and generated aliases. |
 | `build[-VERSION].nix` | A complete ordered procedure, its stable feature/layout/interface facts, package-specific inputs and small customization arguments. |
 | Selected base | Compiler, libc/runtime, platform, Bash/Coreutils, standard tool choices and environment contributions. |
 | Shared `lib/` | Execution, step/output helpers, provider tracking and test construction. |
@@ -66,17 +66,11 @@ these records where needed so each can be read independently. Avoid a shared
 `common` definition or a version-switching procedure merely to reduce repetition.
 Use `tvp.lib` directly; do not introduce `tvpLib = tvp.lib;` just to shorten access.
 
-```nix
-packageRecipes = tvp.lib.packages.mkDefs {
-  "4.2.1" = {
-    builder = ./build-4.0.2.nix;
-    deps.gmp = tvp.packages.gmp_6;
-  };
-};
-```
 
-Real compatibility options or patches stay beside their definition, with their
-reasons. Release blocks select a definition and supply versions and source hashes.
+Put each complete definition directly in its release block. Real compatibility
+options or patches stay with it, including their reasons. The block supplies the
+versions and source hashes; no separate definition map or repeated version name
+is required.
 See [MPFR's definitions](../pkgs/libraries/mpfr/default.nix) and
 [version and hash table](../pkgs/libraries/mpfr/default.nix).
 
@@ -87,7 +81,10 @@ Keep the version/hash table literal and construct the public sets explicitly:
 ```nix
 versionTable = tvp.lib.packages.mkTable [
   {
-    def = packageRecipes."4.2.1";
+    def = {
+      builder = ./build-4.0.2.nix;
+      deps.gmp = tvp.packages.gmp_6;
+    };
     releases = {
       "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
       "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
@@ -115,8 +112,11 @@ in {
 }
 ```
 
-`mkDefs` names complete definitions; `mkTable` associates each release/hash with
-one of them. `mkFamily` supplies context and shared test wiring, returning recipe
+`mkTable` associates each inline definition with its releases. It derives the
+internal definition label from the earliest release using version ordering and
+defaults omitted `deps` to `{ }`. There is no singular naming wrapper. Existing
+`mkDefs` maps remain supported for retained callers. `mkFamily` supplies context
+and shared test wiring, returning recipe
 arguments for `mkVersions` plus stage-local `instantiate`. Canonical construction
 and alias generation remain visible in the package file. There is no releases
 callback or second version list.

@@ -10,6 +10,7 @@
     gnutar
     xz
     gzip
+    patch
     python
     patchelf
     sed

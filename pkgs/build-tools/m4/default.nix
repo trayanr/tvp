@@ -1,24 +1,18 @@
 { pkgs, tvp }:
 let
-  packageRecipes = tvp.lib.packages.mkDefs {
-    "1.4.19" = {
-      builder = ./build.nix;
-      deps = { };
-      # Bundled gnulib's C23 attribute placement is fixed in 1.4.20.
-      opts.cStandard = "gnu17";
-    };
-    "1.4.20" = {
-      builder = ./build.nix;
-      deps = { };
-    };
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
-      def = packageRecipes."1.4.19";
+      def = {
+        builder = ./build.nix;
+        # Bundled gnulib's C23 attribute placement is fixed in 1.4.20.
+        opts.cStandard = "gnu17";
+      };
       releases."1.4.19" = "sha256-O+SibYJf/f2lKlb8QyRkVpiaNjAJPM7T+930dx7linA=";
     }
     {
-      def = packageRecipes."1.4.20";
+      def = {
+        builder = ./build.nix;
+      };
       releases = {
         "1.4.20" = "sha256-asT8Mc5EDevmOYfC67+de2Y05np8Mnklfcc2Hei9s+8=";
         "1.4.21" = "sha256-OK5Z96ML+cEIGTzFwl+7BgFPIeIwx+3i7/YU97fDftg=";

@@ -247,7 +247,9 @@ let
         name:
         let
           p = tvp.canonical.${name};
-          selected = replacement p.specification.bash;
+          selected = replacement (
+            if name == "ninja_1_13_2" then p.specification.runtimeShell else p.specification.bash
+          );
           q = p.edit (
             s:
             s
@@ -261,6 +263,8 @@ let
                 {
                   base = s.base.override { shell = selected; };
                 }
+              else if name == "ninja_1_13_2" then
+                { runtimeShell = selected; }
               else
                 { bash = selected; }
             )

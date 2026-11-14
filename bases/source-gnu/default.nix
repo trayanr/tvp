@@ -19,6 +19,7 @@ let
         standardTools
       else
         {
+          patch = tools.patch;
           gnumake = tools.make;
           gnutar = tools.tar;
           inherit (tools)

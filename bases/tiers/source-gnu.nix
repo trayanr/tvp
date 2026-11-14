@@ -16,6 +16,7 @@ let
     gnutar = bootstrap.gnutar-latest;
     xz = bootstrap.xz;
     gzip = bootstrap.gzip;
+    patch = bootstrap.gnupatch;
     python = bootstrap.build-python;
     patchelf = outputTools.patchelf;
     sed = bootstrap.gnused;

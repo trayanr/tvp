@@ -36,7 +36,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
   postInstall = ''
     mkdir -p "$out/nix-support"
-    cp ${./setup-hook.sh} "$out/nix-support/setup-hook"
+    cp ${../setup-hook.sh} "$out/nix-support/setup-hook"
   '';
   meta = {
     description = "Small build system focused on speed";

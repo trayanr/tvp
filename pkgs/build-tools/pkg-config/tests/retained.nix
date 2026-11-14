@@ -7,11 +7,9 @@
 {
   pkgs,
   tvpLib,
-  package,
-  tvp,
+  pkgConfig,
 }:
 let
-  pkgConfig = package;
   # Copied rather than pointed at, so PKG_CONFIG_PATH is a directory containing
   # only these two files.
   fixtures = ''
@@ -21,61 +19,11 @@ let
     export PKG_CONFIG_PATH=$PWD/pc
   '';
 in
-package.testContext.mkSuite {
-  tools = [ package.tvp.deps.sed ];
-  inherit package;
+tvpLib.tests.mkSuite {
+  inherit pkgs;
+  package = pkgConfig;
 
   tests = {
-    static = {
-      script = ''
-        mkdir pc
-        cat > pc/public.pc <<EOF
-        Name: public
-        Description: public fixture
-        Version: 2
-        Libs: -lpublic
-        Libs.private: -lm
-        Requires.private: private >= 1
-        EOF
-        cat > pc/private.pc <<EOF
-        Name: private
-        Description: private fixture
-        Version: 1
-        Libs: -lprivate
-        EOF
-        export PKG_CONFIG_LIBDIR="$PWD/pc"
-        test "$(pkg-config --libs public)" = '-lpublic'
-        test "$(pkg-config --static --libs public)" = '-lpublic -lm -lprivate'
-        if pkg-config --exists 'public >= 3' 2> diagnostic; then exit 1; fi
-        if pkg-config --print-errors --exists missing > diagnostic 2>&1; then exit 1; fi
-        ${package.tvp.deps.python}/bin/python3 -c 'assert "missing" in open("diagnostic").read(); print("static-private")'
-      '';
-      expected = "static-private";
-    };
-    precedence = {
-      script = ''
-        mkdir provider user
-        printf 'Name: choice\nDescription: provider\nVersion: 1\n' > provider/choice.pc
-        printf 'Name: choice\nDescription: user\nVersion: 2\n' > user/choice.pc
-        export PKG_CONFIG_LIBDIR="$PWD/provider" PKG_CONFIG_PATH="$PWD/user"
-        test "$(pkg-config --modversion choice)" = 2
-        export PKG_CONFIG_PATH=
-        test "$(pkg-config --modversion choice)" = 1
-        export PKG_CONFIG_LIBDIR=
-        if pkg-config --exists choice; then exit 1; fi
-        printf isolated
-      '';
-      expected = "isolated";
-    };
-    public-development = {
-      libraries = [ tvp.packages.mpfr ];
-      script = ''
-        test "$($PKG_CONFIG --modversion mpfr)" = '${tvp.packages.mpfr.version}'
-        "$CC" $($PKG_CONFIG --cflags mpfr) ${../../../libraries/mpfr/tests/fixtures/arithmetic.c} $($PKG_CONFIG --libs mpfr) -o arithmetic
-        ./arithmetic
-      '';
-      expected = "12";
-    };
     version = {
       script = ''
         pkg-config --version
@@ -132,8 +80,4 @@ package.testContext.mkSuite {
       expected = "yes\nno";
     };
   };
-}
-
-// {
-  constructor = import ../../native-frontend-contract.nix { inherit pkgs tvp package; };
 }

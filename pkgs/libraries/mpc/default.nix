@@ -1,53 +1,40 @@
 { pkgs, tvp }:
 let
-  packageRecipes = tvp.lib.packages.mkDefs {
-    "1.0.3" = {
-      builder = ./build-1.0.3.nix;
-      archiveExtension = "tar.gz";
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.lib.packages.withConstraint {
-          reason = "MPC 1.0.3 mul.c defines its own seven-argument mpfr_fmma; MPFR 4 adds a six-argument public function with that name. Native compilation fails with 4.2.2; use the working MPFR 3 line.";
-        } tvp.packages.mpfr_3;
-      };
-      opts.additionalSourceScripts = [ "compile" ];
-    };
-    "1.1.0" = {
-      builder = ./build-1.0.3.nix;
-      archiveExtension = "tar.gz";
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-      };
-    };
-    "1.2.0" = {
-      builder = ./build-1.2.0.nix;
-      archiveExtension = "tar.gz";
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-      };
-    };
-    "1.4.0" = {
-      builder = ./build-1.4.0.nix;
-      archiveExtension = "tar.xz";
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-      };
-    };
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
-      def = packageRecipes."1.0.3";
+      def = {
+        builder = ./build-1.0.3.nix;
+        archiveExtension = "tar.gz";
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.lib.packages.withConstraint {
+            reason = "MPC 1.0.3 mul.c defines its own seven-argument mpfr_fmma; MPFR 4 adds a six-argument public function with that name. Native compilation fails with 4.2.2; use the working MPFR 3 line.";
+          } tvp.packages.mpfr_3;
+        };
+        opts.additionalSourceScripts = [ "compile" ];
+      };
       releases."1.0.3" = "sha256-YX3sxuoJiJ+wjt4zCRegCxaAm424jCnDG/u0nL+I7MM=";
     }
     {
-      def = packageRecipes."1.1.0";
+      def = {
+        builder = ./build-1.0.3.nix;
+        archiveExtension = "tar.gz";
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+        };
+      };
       releases."1.1.0" = "sha256-aYXFOBQ8EgjcsaxCztrW/1LiZ7R+X5cBg6PnUSW0PC4=";
     }
     {
-      def = packageRecipes."1.2.0";
+      def = {
+        builder = ./build-1.2.0.nix;
+        archiveExtension = "tar.gz";
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+        };
+      };
       releases = {
         "1.2.0" = "sha256-6Q8tmVU6nBmRGr20MFv4IXEGqVfjmUQ2QoVyyN/o/aY=";
         "1.2.1" = "sha256-F1A9LDld/PEGtiLcFCaDwRmUMdCVNnxqrLpu7DA0BFk=";
@@ -56,7 +43,14 @@ let
       };
     }
     {
-      def = packageRecipes."1.4.0";
+      def = {
+        builder = ./build-1.4.0.nix;
+        archiveExtension = "tar.xz";
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+        };
+      };
       releases = {
         "1.4.0" = "sha256-MhCzpUaxywDClso2CJHXdA7m/wbesCono1sgzTwLsaU=";
         "1.4.1" = "sha256-kSBM0y8WS9O3yZLUpqjOZRlRGq2rMPeLaYLQv41z6TE=";

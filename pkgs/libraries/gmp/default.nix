@@ -1,52 +1,42 @@
 { pkgs, tvp }:
 let
-  packageRecipes = tvp.lib.packages.mkDefs {
-    "5.0.5" = {
-      builder = ./build-5.0.5.nix;
-      deps.m4 = tvp.packages.m4;
-      # Pre-C99 configure probes omit declarations and use non-prototype ().
-      opts.configureCFlags = [
-        "-Wno-error=implicit-int"
-        "-Wno-error=implicit-function-declaration"
-      ];
-    };
-    "6.0.0a" = {
-      builder = ./build-5.0.5.nix;
-      deps.m4 = tvp.packages.m4;
-      opts.configureCFlags = [
-        "-Wno-error=implicit-int"
-        "-Wno-error=implicit-function-declaration"
-      ];
-      opts.reportedVersion = "6.0.0";
-      # t-scanf.c checks HAVE_UNISTD_H before config.h supplies its definition.
-      opts.checkCFlags = [ "-Wno-error=implicit-function-declaration" ];
-    };
-    "6.1.0" = {
-      builder = ./build-6.1.0.nix;
-      deps.m4 = tvp.packages.m4;
-    };
-    "6.2.0" = {
-      builder = ./build-6.2.0.nix;
-      deps.m4 = tvp.packages.m4;
-    };
-
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
-      def = packageRecipes."5.0.5";
+      def = {
+        builder = ./build-5.0.5.nix;
+        deps.m4 = tvp.packages.m4;
+        # Pre-C99 configure probes omit declarations and use non-prototype ().
+        opts.configureCFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+      };
       releases = {
         "5.0.5" = "sha256-6HAVqCWiRF4WmTHuJ4SdUldqLZ4zjROD3LNv7WjQAG8=";
         "5.1.3" = "sha256-3uLto39P9UHzABmTLbDDf293owujYJI0kzsYGPmwcHE=";
       };
     }
     {
-      def = packageRecipes."6.0.0a";
+      def = {
+        builder = ./build-5.0.5.nix;
+        deps.m4 = tvp.packages.m4;
+        opts.configureCFlags = [
+          "-Wno-error=implicit-int"
+          "-Wno-error=implicit-function-declaration"
+        ];
+        opts.reportedVersion = "6.0.0";
+        # t-scanf.c checks HAVE_UNISTD_H before config.h supplies its definition.
+        opts.checkCFlags = [ "-Wno-error=implicit-function-declaration" ];
+      };
       releases = {
         "6.0.0a" = "sha256-kVbTLtrGlVvFOwIY9fN2P6y4kLc6g11eG5Adz464t2Q=";
       };
     }
     {
-      def = packageRecipes."6.1.0";
+      def = {
+        builder = ./build-6.1.0.nix;
+        deps.m4 = tvp.packages.m4;
+      };
       releases = {
         "6.1.0" = "sha256-aNrazOUVsPilT1EO3wfBtjZJK8246NVMVushYiXRaYk=";
         "6.1.1" = "sha256-026cBd9IitYw//F+21AFHWQyNX+c4E40oJs9gYgl6DE=";
@@ -55,7 +45,10 @@ let
       };
     }
     {
-      def = packageRecipes."6.2.0";
+      def = {
+        builder = ./build-6.2.0.nix;
+        deps.m4 = tvp.packages.m4;
+      };
       releases = {
         "6.2.0" = "sha256-JY5s1Rs/vfwYXHFtVfgsCK/1ffDG+9FDz27VYSZ6FSY=";
         "6.2.1" = "sha256-/UgpkSzd0S+EGBw0Ucx1K+IkZD6H+sSXtp7d2txJtPI=";
