@@ -51,8 +51,8 @@ let
       # Edits change the effective providers as well as their build steps.
       # Older recipes may keep a dependency only in their arguments.
       # A runtime override may replace a default input without changing the
-      # construction provider. Only explicitly declared dependency names can be
-      # projected here; recipes without a projection retain the old behavior.
+      # construction provider. Projections may target declared dependencies or
+      # registered active tool roles; unknown names remain errors below.
       dependencyProviders = specification.dependencyProviders or { };
       # Collect only active production providers; upstream plans may depend on A.
       usedTools =
@@ -71,7 +71,7 @@ let
             ++ builtins.concatMap (step: step.tools or [ ]) active
           );
       dependencies =
-        usedTools
+        (lib.mapAttrs (name: provider: dependencyProviders.${name} or provider) usedTools)
         // (lib.mapAttrs
           (
             name: original:

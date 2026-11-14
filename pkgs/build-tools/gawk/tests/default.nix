@@ -1,39 +1,34 @@
+# One installed-suite factory for the whole ordinary family.
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
 let
-  suite = args:
-    if package ? testContext then
-      package.testContext.mkSuite {
-        package = package;
-        tools = package.specification.environment.tools;
-        libraries = [ ];
-        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
-          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
-        }) args.tests;
-      }
-    else tvpLib.tests.mkSuite args;
+  locale = package.tvp.declaredTestDependencies.locale;
+in
+
+let
   deps = package.tvp.deps;
   linkage = dependency: soname: program: {
     script = ''
-      paths=$(ldd ${package}/bin/${program} | awk '/${soname}/ { print $3 }')
+      paths=$(LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/${program} | awk '/${soname}/ { print $3 }')
       test -n "$paths"
       while IFS= read -r path; do
         case "$path" in
-          ${pkgs.lib.escapeShellArg "${pkgs.lib.getLib dependency}/"}*) ;;
+          ${lib.escapeShellArg "${lib.getLib dependency}/"}*) ;;
           *) echo "Unexpected library path: $path" >&2; exit 1 ;;
         esac
       done <<< "$paths"
       printf linked
     '';
     expected = "linked";
-    extraInputs = [ package.tvp.cc.libc.bin ];
+    tools = package.specification.environment.tools;
   };
 in
-suite {
-  inherit pkgs package;
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests =
     {
       version = {
@@ -49,7 +44,7 @@ suite {
         expected = "7 3";
       };
     }
-    // pkgs.lib.optionalAttrs package.tvp.features.bignum {
+    // lib.optionalAttrs package.tvp.features.bignum {
       operation = {
         script = ''
           ${package}/bin/gawk -M 'BEGIN { printf "%d\n", 2^128 }'
@@ -57,19 +52,31 @@ suite {
         expected = "340282366920938463463374607431768211456";
       };
     }
-    // pkgs.lib.optionalAttrs (deps ? gmp) {
+    // lib.optionalAttrs (deps ? gmp) {
       gmp-linkage = linkage deps.gmp "libgmp\\.so" "gawk";
     }
-    // pkgs.lib.optionalAttrs (deps ? mpfr) {
+    // lib.optionalAttrs (deps ? mpfr) {
       mpfr-linkage = linkage deps.mpfr "libmpfr\\.so" "gawk";
     }
-    // pkgs.lib.optionalAttrs (deps ? readline) {
+    // lib.optionalAttrs (deps ? readline) {
       readline-linkage = linkage deps.readline "libreadline\\.so" package.tvp.readlineProgram;
     }
-    // pkgs.lib.optionalAttrs (deps ? ncurses) {
+    // lib.optionalAttrs (deps ? ncurses) {
       ncurses-linkage = linkage deps.ncurses "lib(tinfow?|ncursesw?)\\.so" package.tvp.readlineProgram;
     };
 }
-// import ./behavior.nix { inherit pkgs tvpLib package; }
+// import ./behavior.nix { inherit package lib context; }
 
-// import ./tracker.nix { inherit pkgs tvpLib package; }
+// import ./tracker.nix { inherit package lib context; }
+
+// lib.optionalAttrs package.specification.installedInterface.hasNls (
+  import ./native-nls.nix { inherit package locale; }
+)
+// lib.optionalAttrs (deps ? readline) {
+  debugger-line-edit = import (
+    if package.tvp.readlineProgram == "dgawk" then ./ordinary-debugger.nix else ./native-debugger.nix
+  ) { inherit package; };
+}
+
+// import ../../ordinary-text-contracts.nix { inherit package lib context; }
+// import ../../text-tool-upstream.nix { inherit package lib context; }

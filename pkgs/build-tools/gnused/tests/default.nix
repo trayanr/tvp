@@ -1,15 +1,22 @@
+# One installed-suite factory for the whole ordinary family.
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  locale = package.tvp.declaredTestDependencies.locale;
+in
+
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests = {
     acl = {
+      tools = package.specification.environment.tools ++ [ package.tvp.deps.acl ];
       script = ''
         LD_DEBUG=libs ${package}/bin/sed --version >/dev/null 2> loader
-        grep -F 'calling init: ${pkgs.lib.getLib package.tvp.deps.acl}/lib/libacl.so.1' loader >/dev/null
+        grep -F 'calling init: ${lib.getLib package.tvp.deps.acl}/lib/libacl.so.1' loader >/dev/null
 
         printf 'old\n' > sample
         chmod 640 sample
@@ -40,3 +47,19 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package locale;
+  command = "sed";
+}
+
+// import ../../../../lib/tests/command-acl.nix {
+  inherit package;
+  operation = ''
+    ${package}/bin/sed -i s/old/new/ sample
+    test "$(cat sample)" = new
+  '';
+}
+
+// import ../../ordinary-text-contracts.nix { inherit package lib context; }
+// import ../../text-tool-upstream.nix { inherit package lib context; }

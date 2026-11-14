@@ -473,3 +473,47 @@ candidate seals, all attempts, source reviews, identity gates and strict failure
   Split counts remain 1,520 compliant and 20 broken exclusions of 1,540 rows.
 - Evidence: `~/.local/state/tvp-next-phase/owned-catalogue-migration/reviews/post-migration/runtime-family-authoring/`.
   CI/NAS remain off; historical, full, hardening and admission holds stay unwaived.
+
+
+## 2026-11-14 — Complete ordinary family index adoption
+
+- Converted the remaining 68 indexes and 232 eligible canonical releases in one
+  assembled source wave. Every ordinary index now uses nameless inline definitions
+  beside literal release hashes: 110/110 indexes and 1,515/1,515 eligible releases.
+  All five real public variants evaluate. Split coverage remains 1,520 compliant
+  rows plus 20 declared-broken exclusions; all-source adoption is not a runtime or
+  strict-admission claim.
+- Evaluated all 1,535 canonical artifact/final descriptions and five variants.
+  The 232 new rows pass seven common interface/edit/split contracts each and
+  register 1,780 existing test derivations. Fifty-five pure family controls,
+  eighteen provider controls, actual Perl runtime-projection probes and four
+  caller-production-patch controls pass. The earlier Perl role equals its pinned
+  construction provider; no public provider is silently substituted.
+- Captured closed/full/native compiler, bootstrap, construction compiler and
+  frozen-tool snapshots remain exact. Readline 2.0/SQLite 3.2.8 still have the same
+  broken records/procedures, but follow changed live dependencies; their derived
+  identities are not frozen proofs. Preserve the exact scope of that distinction.
+- Independent source reviews covered Tcl/Bash, terminal/text, SDKs, JDK support,
+  utilities, frontends/data, final five families and the small shared metadata fix.
+  Preserve the corrected text-tool report: its original blanket Binutils P1 was
+  withdrawn after inspecting active-helper registration. Direct base readers
+  remain an explicit cleanup, not a demonstrated all-version failure.
+- Source gates caught missing moved helper paths, an incompatible Gettext fetcher,
+  missing Readline profile base, stale Curl/Zstd/Tar/Texinfo test wiring and Meson
+  runtime-provider edits. Repairs retain the existing assertions. JSON-C/Patch
+  production patches now run before configure; only exact known fixture patches
+  run after restore. Zstd 1.5.7 U binds CLI test frontends after restore; older Tar
+  prepares its tests only once in U. Host checkpoint controls and Tar source
+  counterexamples pass; no package build is claimed by those probes.
+- Implicit active tool roles now honor accepted runtime-provider projections
+  (MIG-023), with a reproduced failing control before the fix, passing controls
+  after, and independent review. No per-package runtime-PWD argument is added.
+  MIG-024–026 retain bounded checkpoint, compatibility and isolation decisions.
+- New code was parsed/formatted and Python sources AST-checked. Nine explicitly
+  preserved retained Nix copies were restored after formatting so their sealed
+  historical bytes remain intact. Current package/upstream execution is the next
+  assembled validation step, reusing all exact cached producers. CI/NAS stay off;
+  historical failures, isolation debt, hardening and admission holds remain unwaived.
+- Evidence: `reviews/post-migration/remaining-family-authoring/`, including original
+  candidates, failed evaluation attempts, corrections, source reviews and final
+  source/identity/control records. No intermediate public compiler was launched.

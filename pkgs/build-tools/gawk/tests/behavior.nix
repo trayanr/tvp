@@ -1,48 +1,28 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
+
 let
-  suite = args:
-    if package ? testContext then
-      package.testContext.mkSuite {
-        package = package;
-        tools = package.specification.environment.tools;
-        libraries = [ ];
-        tests = builtins.mapAttrs (_: test: builtins.removeAttrs test [ "extraInputs" ] // {
-          tools = package.specification.environment.tools ++ (test.extraInputs or [ ]);
-        }) args.tests;
-      }
-    else tvpLib.tests.mkSuite args;
-  inherit (pkgs) lib;
   atLeast = lib.versionAtLeast package.version;
   awk = "${package}/bin/gawk";
   utf8 = ''
-    export LOCPATH=${package.stdenv.cc.libc}/lib/locale LC_ALL=C.utf8
+    export LOCPATH=${package.compiler.libc}/lib/locale LC_ALL=C.UTF-8
     test "$(${awk} 'BEGIN {print length("σςΣ")}')" = 3
   '';
   # Unlike mkTest's scalar output, these results retain conditional coverage and logs.
   recorded =
     name: script:
-    pkgs.runCommand "gawk-${package.version}-${name}"
-      {
-        nativeBuildInputs = [ package ];
-        passthru = {
-          inherit package;
-          testName = name;
-        };
-      }
-      ''
-        set -euo pipefail
-        mkdir "$out"
-        (
-          ${script}
-        ) 2>&1 | tee "$out/log"
-      '';
+    import ../../../../lib/tests/recorded.nix {
+      inherit package name;
+      tools = package.specification.environment.tools;
+      script = "mkdir \"$out\"\n" + "(\n" + script + "\n) 2>&1 | tee \"$out/log\"";
+    };
 in
-(suite {
-  inherit pkgs package;
+(context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools;
   tests =
     {
       printf = {
@@ -76,7 +56,7 @@ in
     }
     // lib.optionalAttrs (atLeast "4.1") {
       extension-api = {
-        extraInputs = [ package.tvp.cc ];
+        tools = package.specification.environment.tools;
         script = ''
           cc -Wall -Werror=incompatible-pointer-types -shared -fPIC -I${package}/include ${./extension.c} -o probe.so
           ${awk} -l "$PWD/probe.so" 'BEGIN {print tvp_api()}'

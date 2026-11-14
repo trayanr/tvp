@@ -66,6 +66,8 @@ let
       pkg-config = frontendTools.tools.pkgConfig;
       cmake = (import ../../bootstrap/source-cmake.nix { inherit bootstrap; }).cmake;
       ninja = frontendTools.tools.ninja;
+      # Exact retained build-host Perl; public Perl may depend on these libraries.
+      perl = (import ../../bootstrap/source-cmake-prerequisites.nix { inherit bootstrap; }).perl;
     };
     tools = [ nativeInputs.binutils ];
   };

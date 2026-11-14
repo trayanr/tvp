@@ -61,7 +61,7 @@ let
           base.stdenv = package.stdenv;
         };
       in
-      import ./tests {
+      import ./tests/retained.nix {
         inherit tvpLib package;
         pkgs = testPkgs;
         pkg-config = package.tvp.declaredTestDependencies.pkg-config;

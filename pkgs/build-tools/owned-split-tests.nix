@@ -2,14 +2,16 @@
 # private check variant, following the reviewed Autotools pattern. Its source,
 # fixture construction, execution and acceptance are never production inputs.
 {
-  pkgs,
-  tvp,
   package,
+  pkgs ? null,
+  tvp ? null,
+  lib ? pkgs.lib,
+  context ? package.testContext,
 }:
 let
   p = package;
   u = p.specification.upstreamCheck or null;
-  steps = tvp.builder.steps;
+  steps = if tvp != null then tvp.builder.steps else import ../../lib/build-steps.nix;
   checked = p.editSteps (
     plan:
     let
@@ -22,8 +24,8 @@ let
     steps.insertBefore u.before [ (u.command // { enabled = true; }) ] prepared
   );
 in
-pkgs.lib.optionalAttrs (u != null && u.enabled) {
-  upstream = p.testContext.mkTest {
+lib.optionalAttrs (u != null && u.enabled) {
+  upstream = context.mkTest {
     package = p;
     name = "upstream";
     script = "test -d ${checked}; printf upstream";

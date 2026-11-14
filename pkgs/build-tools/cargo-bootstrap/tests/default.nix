@@ -1,14 +1,17 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  rustc,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  s = package.specification;
+  rustc = package.tvp.declaredTestDependencies.rustc;
+in
+context.mkSuite {
+  inherit package;
   tests = {
     version = {
-      script = ''cargo --version | awk '{print $2}' '';
+      script = ''cargo --version | ${s.gawk}/bin/awk '{print $2}' '';
       expected = package.version;
     };
     offline = {
@@ -19,7 +22,7 @@ tvpLib.tests.mkSuite {
         cargo run --offline --quiet
       '';
       expected = "Hello, world!";
-      extraInputs = [ rustc ];
+      tools = [ rustc ];
     };
   };
 }

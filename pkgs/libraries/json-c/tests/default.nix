@@ -1,26 +1,36 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  pkg-config,
+  lib,
+  context,
 }:
 let
+  pkg-config = package.tvp.declaredTestDependencies.pkg-config;
+in
+
+let
   mkSuite =
-    if package ? testContext then
-      args:
-      package.testContext.mkSuite {
-        package = package;
-        libraries = [ package ];
-        tests = builtins.mapAttrs (_: spec: {
-          inherit (spec) script expected;
-          tools = (spec.extraInputs or [ ]) ++ [ package.tvp.declaredTestDependencies.grep ];
-        }) args.tests;
-      }
-    else
-      tvpLib.tests.mkSuite;
+    args:
+    context.mkSuite {
+      inherit package;
+      libraries = [ package ];
+      tests = builtins.mapAttrs (
+        _: test:
+        (builtins.removeAttrs test [ "extraInputs" ])
+        // {
+          tools =
+            (test.tools or [ ])
+            ++ (test.extraInputs or [ ])
+            ++ [
+              package.specification.gawk or package.specification.base.standardTools.gawk
+              package.specification.grep or package.specification.base.standardTools.grep
+              package.specification.sed or package.specification.base.standardTools.sed
+            ];
+        }
+      ) args.tests;
+    };
 in
 mkSuite {
-  inherit pkgs package;
+  inherit package;
   tests = {
     public-api = {
       script = ''
@@ -45,7 +55,7 @@ mkSuite {
         set -euo pipefail
         export PKG_CONFIG_LIBDIR=${package}/lib/pkgconfig
         actualVersion=$(pkg-config --modversion json-c) || exit 1
-        test "$actualVersion" = ${pkgs.lib.escapeShellArg package.version}
+        test "$actualVersion" = ${lib.escapeShellArg package.version}
         flags=$(pkg-config --cflags --libs json-c) || exit 1
         cc -Wall -Wextra -Werror ${./fixtures/api.c} $flags -o api
         ./api
@@ -87,3 +97,9 @@ mkSuite {
     };
   };
 }
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
+}
+
+// import ./current-build-steps.nix { inherit package lib context; }

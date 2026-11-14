@@ -66,7 +66,7 @@ tvpLib.packages.mergeVariants {
       # Preserve the exact historical helper selections in this frozen suite.
       extraArgs.mkTests =
         package:
-        import ../../../pkgs/build-tools/gnutar/tests {
+        import ../../../pkgs/build-tools/gnutar/tests/retained.nix {
           inherit pkgs package tvpLib;
           helpers = [
             {
@@ -174,7 +174,7 @@ tvpLib.packages.mergeVariants {
       extraArgs = recipes.gnugrep.constructionRecipe.extraArgs // {
         mkTests =
           package:
-          import ../../../pkgs/build-tools/gnugrep/tests {
+          import ../../../pkgs/build-tools/gnugrep/tests/retained.nix {
             inherit pkgs tvpLib package;
             locale = import ./test-locale.nix { inherit tvpLib recipes construction; };
           };

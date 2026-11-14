@@ -1,10 +1,16 @@
+# One installed-suite factory for the whole ordinary family.
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  locale = package.tvp.declaredTestDependencies.locale;
+in
+
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests = {
     version = {
       script = ''
@@ -36,11 +42,11 @@ tvpLib.tests.mkSuite {
     pagination-helper = {
       script = ''
         mkdir helpers
-        printf '#!${pkgs.runtimeShell}\nexit 99\n' > helpers/pr
+        printf '#!${package.specification.bash}/bin/bash\nexit 99\n' > helpers/pr
         chmod +x helpers/pr
         export PATH="$PWD/helpers:$PATH"
         # configure must retain the declared pr even when PATH offers another.
-        grep -aFq '${package.tvp.deps.coreutils}/bin/pr' ${package}/bin/diff
+        grep -aFq '${package.specification.helperCoreutils}/bin/pr' ${package}/bin/diff
         printf 'before\n' > before
         printf 'after\n' > after
         for mode in -l -ly; do
@@ -58,7 +64,7 @@ tvpLib.tests.mkSuite {
       script = ''
         mkdir helpers
         cat > helpers/diff <<'EOF'
-        #!${pkgs.runtimeShell}
+        #!${package.specification.bash}/bin/bash
         echo called >> "$DIFF_HELPER_LOG"
         exec ${package}/bin/diff "$@"
         EOF
@@ -87,3 +93,11 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package locale;
+  command = "diff";
+}
+
+// import ../../ordinary-text-contracts.nix { inherit package lib context; }
+// import ../../text-tool-upstream.nix { inherit package lib context; }

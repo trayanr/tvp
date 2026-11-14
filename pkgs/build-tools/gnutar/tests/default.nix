@@ -1,12 +1,48 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  helpers,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  locale = (package.testConfiguration or { }).locale or package.tvp.declaredTestDependencies.locale;
+  helpers =
+    if ((package.testConfiguration or { }).helpers or null) != null then
+      package.testConfiguration.helpers
+    else
+      [
+        {
+          bin = "gzip";
+          package = package.tvp.declaredTestDependencies.gzip;
+          flag = "-z";
+        }
+        {
+          bin = "bzip2";
+          package = package.tvp.declaredTestDependencies.bzip2;
+          flag = "-j";
+        }
+        {
+          bin = "xz";
+          package = package.tvp.declaredTestDependencies.xz;
+          flag = "-J";
+        }
+        {
+          bin = "zstd";
+          package = package.tvp.declaredTestDependencies.zstd;
+          flag = "--zstd";
+        }
+      ];
+in
+
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools;
   tests = {
+    remote-helper = {
+      script = ''
+        ${package}/libexec/rmt --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
+      '';
+      expected = package.version;
+    };
     version = {
       script = ''
         ${package}/bin/tar --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
@@ -24,12 +60,27 @@ tvpLib.tests.mkSuite {
     };
   };
 }
-// builtins.mapAttrs (
-  name: test:
-  test.overrideAttrs (old: {
-    passthru = (old.passthru or { }) // {
-      inherit package;
-      testName = name;
-    };
-  })
-) (import ./extended.nix { inherit pkgs package helpers; })
+// import ./current-extended.nix {
+  inherit
+    lib
+    context
+    package
+    helpers
+    ;
+}
+
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package locale;
+  command = "tar";
+}
+
+// lib.optionalAttrs (package.specification ? features) (
+  import ./current-contracts.nix { inherit package lib context; }
+)
+// lib.optionalAttrs (package.specification ? features) (
+  import ./ordinary-consumers.nix { inherit package; }
+)
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or false) {
+  upstream = context.mkUpstream { inherit package; };
+}

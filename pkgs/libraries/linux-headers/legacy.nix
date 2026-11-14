@@ -21,7 +21,7 @@ let
       inherit (tvpLib) platforms;
     };
     inherit pname versionTable;
-    extraArgs.mkTests = headers: import ./tests { inherit pkgs tvpLib headers; };
+    extraArgs.mkTests = headers: import ./tests/retained.nix { inherit pkgs tvpLib headers; };
   };
   canonical = tvpLib.packages.mkVersions packageArgs;
 

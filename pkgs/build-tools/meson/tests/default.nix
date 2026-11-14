@@ -1,58 +1,69 @@
 {
-  pkgs,
-  tvpLib,
   package,
-  zlib,
+  lib,
+  context,
 }:
 let
-  source =
-    root: files:
-    pkgs.lib.fileset.toSource {
-      inherit root;
-      fileset = pkgs.lib.fileset.unions files;
-    };
-  standalone = source ./fixtures/standalone [
-    ./fixtures/standalone/meson.build
-    ./fixtures/standalone/main.c
-  ];
-  wrap = source ./fixtures/wrap [
-    ./fixtures/wrap/meson.build
-    ./fixtures/wrap/main.c
-    ./fixtures/wrap/child/meson.build
-    ./fixtures/wrap/child/answer.c
-  ];
-  consumer = pkgs.stdenv.mkDerivation {
-    name = "meson-consumer";
-    src = source ./fixtures [
-      ./fixtures/meson.build
-      ./fixtures/answer.c
-      ./fixtures/main.cc
-    ];
-    nativeBuildInputs = [ package ];
-    buildInputs = [ zlib ];
-    doCheck = true;
-    postInstall = ''"$out/bin/answer" > "$out/result"'';
-  };
+  deps = package.tvp.deps;
+  zlib = package.tvp.declaredTestDependencies.zlib;
+  standalone = ./fixtures/standalone;
+  wrap = ./fixtures/wrap;
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+context.mkSuite {
+  inherit package;
+  tools = [
+    package.specification.ninja
+    package.specification.cmake
+    package.specification.pkg-config
+    package.specification.gnutar
+    (deps.python.specification.xz or deps.python.specification.base.standardTools.xz)
+  ];
+  libraries = [ zlib ];
   tests = {
+    profile = {
+      script = ''test -s ${
+        (import
+          (
+            if package.version == "1.12.1" then
+              ./current-native-profile.nix
+            else
+              ./current-older-native-profile.nix
+          )
+          {
+            inherit package lib context;
+          }
+        ).evidence
+      }/summary.json; printf qualified'';
+      expected = "qualified";
+    };
     version = {
       script = "meson --version";
       expected = package.version;
     };
     phases = {
-      script = ''cat ${consumer}/result'';
+      script = ''
+        cp -R ${./fixtures} project
+        chmod -R u+w project
+        ${package.specification.helperPython}/bin/python3 - <<'PYTHON'
+        from pathlib import Path
+        p = Path('project/meson.build')
+        p.write_text(p.read_text().replace('install_rpath:', "build_rpath: join_paths(get_option('prefix'), get_option('libdir')), install_rpath:"))
+        PYTHON
+        meson setup build project --prefix="$PWD/installed" --libdir=lib >&2
+        meson compile -C build >&2
+        meson test -C build --print-errorlogs >&2
+        meson install -C build --no-rebuild >&2
+        env -i installed/bin/answer
+      '';
       expected = "42";
     };
     introspection = {
       script = ''
         meson setup build ${standalone} >&2
         meson introspect --targets build > info.json
-        ${package.tvp.deps.python}/bin/python3 -c 'import json; d=json.load(open("info.json")); assert any(t["name"] == "answer" and t["type"] == "executable" for t in d); print(42)'
+        ${package.runtime.python}/bin/python3 -c 'import json; d=json.load(open("info.json")); assert any(t["name"] == "answer" and t["type"] == "executable" for t in d); print(42)'
       '';
       expected = "42";
-      extraInputs = [ package.tvp.cc ];
     };
     standalone = {
       script = ''
@@ -64,20 +75,19 @@ tvpLib.tests.mkSuite {
         ./build/answer
       '';
       expected = "42";
-      extraInputs = [ package.tvp.cc ];
     };
     wrap-archive = {
       script = ''
         cp -R ${wrap} project
         chmod -R u+w project
         mkdir -p project/subprojects/packagecache
-        tar -cJf project/subprojects/packagecache/child.tar.xz -C project child
-        digest=$(sha256sum project/subprojects/packagecache/child.tar.xz | cut -d' ' -f1)
+        tar -cJf project/subprojects/packagecache/chilpackage.specification.tar.xz -C project child
+        digest=$(sha256sum project/subprojects/packagecache/chilpackage.specification.tar.xz); digest=''${digest%% *}
         cat > project/subprojects/child.wrap <<EOF
         [wrap-file]
         directory = child
-        source_filename = child.tar.xz
-        source_url = https://invalid.example/child.tar.xz
+        source_filename = chilpackage.specification.tar.xz
+        source_url = https://invalid.example/chilpackage.specification.tar.xz
         source_hash = $digest
         EOF
         rm -rf project/child
@@ -87,10 +97,16 @@ tvpLib.tests.mkSuite {
         ./build/answer
       '';
       expected = "42";
-      extraInputs = [
-        package.tvp.cc
-        package.tvp.deps.python.tvp.deps.xz
-      ];
+    };
+    zipapp = {
+      script = ''
+        ${package.runtime.python}/bin/python3 -I -c 'import zipfile; z=zipfile.ZipFile("${package}/libexec/meson.pyz"); assert len(z.infolist())>100; assert all(i.compress_type==zipfile.ZIP_DEFLATED for i in z.infolist() if not i.is_dir()); print("compressed")'
+      '';
+      expected = "compressed";
     };
   };
+}
+
+// {
+  constructor = import ../../current-frontend-contract.nix { inherit package lib context; };
 }

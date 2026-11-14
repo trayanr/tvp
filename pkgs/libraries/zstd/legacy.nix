@@ -68,7 +68,7 @@ let
 
     extraArgs.mkTests =
       zstd:
-      import ./tests {
+      import ./tests/retained.nix {
         inherit pkgs tvpLib zstd;
         inherit (zstd.tvp.declaredTestDependencies) gzip;
       }

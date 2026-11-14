@@ -1,5 +1,9 @@
 # Raw upstream execution and its acceptance are independent of production A/F.
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   d = package.specification;
   steps = import ../../../../lib/build-steps.nix;
@@ -40,7 +44,7 @@ let
           )
         ]
       );
-  accepted = package.testContext.mkTest {
+  accepted = context.mkTest {
     inherit package;
     name = "upstream";
     tools = [ d.coreutils ];

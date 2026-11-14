@@ -2,6 +2,7 @@
 # dependencies and libc may remain dynamic. No full-static closure claim.
 {
   package,
+  context ? package.testContext,
   pc,
   apiPc,
   archive,
@@ -10,14 +11,17 @@
 }:
 let
   spec = package.specification;
-  directory = "${package}/${spec.libraryDirectory}";
+  providers = spec.base.standardTools // {
+    binutils = spec.base.compiler.bintools;
+  };
+  directory = "${package}/${(spec.installedInterface.libraryDirectory or spec.libraryDirectory)}";
   tools = [
     spec.pkgConfig
-    spec.binutils
-    spec.patchelf
+    providers.binutils
+    providers.patchelf
   ];
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
   libraries = [ package ];
   inherit tools;
@@ -37,7 +41,7 @@ package.testContext.mkSuite {
       expected = "api-ok";
     };
     archive = {
-      tools = tools ++ [ spec.grep ];
+      tools = tools ++ [ providers.grep ];
       script = ''
         read -r -a discovered <<< "$(pkg-config --static --libs ${apiPc})"
         dependencies=()
@@ -47,7 +51,7 @@ package.testContext.mkSuite {
         "$CC" $(pkg-config --cflags ${apiPc}) ${api} ${directory}/${archive}.a "''${dependencies[@]}" -o consumer
         # Reject an accidentally shared selection of the target library.
         ${spec.bash}/bin/bash ${./check-archive-dependency.sh} \
-          ${spec.binutils}/bin/readelf ${spec.grep}/bin/grep consumer ${archive}.so
+          ${providers.binutils}/bin/readelf ${providers.grep}/bin/grep consumer ${archive}.so
         timeout 15 ./consumer
       '';
       expected = "api-ok";

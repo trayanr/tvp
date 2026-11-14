@@ -236,6 +236,9 @@ Unused standard providers and disabled steps stay lazy. Distinct providers used 
 one role are retained as numbered metadata entries such as `gnumake#1` and
 `gnumake#2`. Upstream-only plans are collected by their own test derivation, outside
 production metadata.
+Explicit runtime provider projections also apply to these active tool roles,
+including tools supplied implicitly by the base. A projection cannot introduce
+an unused or undeclared name; changing metadata alone preserves A/F identities.
 
 The family test factory is overridable with `tests`; replacing that suite changes
 validation, not package compilation. Retained factories keep their historical

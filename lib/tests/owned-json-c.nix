@@ -33,17 +33,15 @@ let
       ];
     }
   );
-  disabled = (p.override { doCheck = false; }).editSteps (
-    steps.replace "json-c.check" (
-      old:
-      old
-      // {
-        tools = throw "disabled check tools";
-        libraries = throw "disabled check libraries";
-        env = throw "disabled check environment";
-        run = throw "disabled check command";
-      }
-    )
+  disabled = (p.override { doCheck = false; }).edit (
+    old:
+    old
+    // {
+      upstreamCheck = old.upstreamCheck // {
+        tools = throw "disabled check tools were forced by A/F";
+        run = throw "disabled check body was forced by A/F";
+      };
+    }
   );
   insert = steps.insertAfter "json-c.build" [
     {
@@ -187,7 +185,10 @@ let
     testFactory =
       p ? mkTests
       && p.mkTests ? override
-      && builtins.isString ((p.mkTests.override { inherit pkgs; }) runtime).public-api.drvPath;
+      &&
+        builtins.isString
+          ((p.mkTests.override { tests = import ../../pkgs/libraries/json-c/tests; }) runtime)
+          .public-api.drvPath;
     provenance = runtime.tvp.customization.customized && runtime.__tvpSelection.kind == "override";
     tags =
       lib.all

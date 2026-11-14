@@ -149,6 +149,20 @@ let
         builtins.attrNames package.tvp.deps
       )
     );
+  projected = p.edit (
+    s:
+    s
+    // {
+      dependencyProviders.coreutils = otherCoreutils;
+    }
+  );
+  invalidProjection = p.edit (
+    s:
+    s
+    // {
+      dependencyProviders.notAUsedRole = otherCoreutils;
+    }
+  );
   sorted = builtins.sort builtins.lessThan;
   results = {
     bzip2SelectedFromBase = (builtins.elemAt bzipUnpack.tools 1).drvPath == bzip2.drvPath;
@@ -163,6 +177,11 @@ let
         "gnumake"
       ];
     makeProvider = p.tvp.deps.gnumake.drvPath == make.drvPath;
+    projectionAppliesToImplicitUsedRole =
+      projected.tvp.deps.coreutils.drvPath == otherCoreutils.drvPath;
+    providerProjectionLeavesProductionExact =
+      projected.drvPath == p.drvPath && projected.artifact.drvPath == p.artifact.drvPath;
+    unknownProjectionRejected = !(builtins.tryEval invalidProjection.drvPath).success;
     explicitDependencyPreserved = p.tvp.deps.dependency.drvPath == defs."1".deps.dependency.drvPath;
     unusedBaseAndUpstreamStayLazy = builtins.isString p.drvPath;
     disabledInputsStayLazy =

@@ -1,0 +1,131 @@
+{ pkgs, tvp }:
+let
+  tvpLib = tvp.lib;
+  defs = tvpLib.packages.mkDefs {
+    "3.0.6" = {
+      builder = ./build-3.0.6.nix;
+      base = tvp.bases.default;
+      deps = { };
+      opts = {
+        hardeningDisable = [ "format" ];
+        # K&R probes and empty parameter lists predate modern C semantics.
+        cStandard = "gnu89";
+        archiveExt = "tar.gz";
+        license = pkgs.lib.licenses.gpl2Plus;
+      };
+    };
+    "3.1.8" = {
+      # Retain pre-C23 non-prototype semantics (GCC porting guidance).
+      opts = {
+        hardeningDisable = [ "format" ];
+        cStandard = "gnu89";
+      };
+      builder = ./build-3.0.6.nix;
+      base = tvp.bases.default;
+      deps = { };
+    };
+    "4.0.2" = {
+      builder = ./build-4.0.2.nix;
+      base = tvp.bases.default;
+      # Empty read/math callback prototypes require pre-C23 semantics.
+      opts.cStandard = "gnu17";
+      deps = {
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+    "4.1.4" = {
+      builder = ./build-4.1.4.nix;
+      base = tvp.bases.default;
+      # Empty read/math callback prototypes require pre-C23 semantics.
+      opts.cStandard = "gnu17";
+      # The readline sanity probe calls open/close/dup without their headers.
+      # Keep the real runtime probe, demoting this diagnostic only in configure.
+      opts.configureCFlags = [ "-Wno-error=implicit-function-declaration" ];
+      deps = {
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+    "5.1.1" = {
+      builder = ./build-4.1.4.nix;
+      base = tvp.bases.default;
+      opts.cStandard = "gnu17";
+      deps = {
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+    "5.3.1" = {
+      builder = ./build-4.1.4.nix;
+      base = tvp.bases.default;
+      deps = {
+        gmp = tvp.packages.gmp_6;
+        mpfr = tvp.packages.mpfr_4;
+        readline = tvp.packages.readline_8;
+        ncurses = tvp.packages.ncurses_6;
+      };
+    };
+
+  };
+  versionTable = tvpLib.packages.mkTable [
+    {
+      def = defs."3.0.6";
+      releases."3.0.6" = "sha256-q/J24Qx7hxMy0HvytlITOidBlnfRVzgwl7vRU+WKi/w=";
+    }
+    {
+      def = defs."3.1.8";
+      releases."3.1.8" = "sha256-Xbx7LEwyhxEzfCqs0JoSLHMTEiJi4/8DRZDwFAZ0ErQ=";
+    }
+
+    {
+      def = defs."4.0.2";
+      releases."4.0.2" = "sha256-IeHyjFG1Fg8KS/GnNcYQm0ajvWpD3oCOq8IcF7sCbRM=";
+    }
+    {
+      def = defs."4.1.4";
+      releases."5.0.1" = "sha256-jk6G8E7XiWSLZvdXMpdDoNbftSlMO5G3VqR08c4Fp5Q=";
+      releases."4.2.1" = "sha256-0RGXhedG1GqCCdKLLeQEpX+YOqSGcPTiJVMdO9wXVVE=";
+      releases."4.1.4" = "sha256-U+GE4tD5De+SB4YFMYAkVjIr4JHHtI8j/cec2mWtwmY=";
+    }
+    {
+      def = defs."5.3.1";
+      releases."5.3.1" = "sha256-aU23ZIEqYjZCPU/0DOt7bExEEwG3KtUCu1wn4AzVb3g=";
+      releases."5.3.2" = "sha256-+MNIZQnecFGSE4sA7ywAu73Q6Eww1cB9I/xzqdxMycw=";
+      releases."5.4.0" = "sha256-PdQw8M07RCjGw/avwCG5zTwfjJP3pojcJoykKKkLSsE=";
+      releases."5.4.1" = "sha256-B/b3NCt/6+QxP8LCVCrZPWT+IK2HFyABCfEFqCb1/Tc=";
+    }
+    {
+      def = defs."5.1.1";
+      releases."5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
+      releases."5.2.2" = "sha256-PB/OFEa0y+4c0nO9fsZLyH2J9hU3RxzT4F4zqWWiUOk=";
+      releases."5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
+    }
+  ];
+  pname = "gawk";
+  packageArgs = {
+    infra = {
+      inherit (pkgs) lib fetchurl;
+    };
+    inherit pname versionTable;
+    packageMeta.upstream = import ../upstream.nix;
+    extraArgs.mkTests =
+      package:
+      import ../tests/retained.nix {
+        inherit tvpLib package;
+        pkgs = tvpLib.tests.withBase {
+          inherit pkgs;
+          base.stdenv = package.stdenv;
+        };
+      };
+  };
+  canonical = tvpLib.packages.mkVersions packageArgs;
+in {
+  recipes.${pname} = packageArgs;
+  inherit canonical;
+  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+}

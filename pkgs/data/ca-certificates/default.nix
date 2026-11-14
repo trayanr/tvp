@@ -1,73 +1,56 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  testLib = pkgs.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  formerRecipe = previous.publicArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  defs = tvpLib.packages.mkDefs {
-    "2026-10-20" = {
-      constructor = tvp.builder;
-      builder = ./native/build-2026-10-20.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."ca-certificates";
+  retained = prior.constructionRecipe or prior;
+  earlier = import ../../../bases/source-gnu { };
+  full = tvp.baseTiers.full;
+  profileBase = full.override {
+    shell = tvp.packages.bash;
+    coreutils = tvp.packages.coreutils;
+    standardTools =
+      {
       };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        inherit (tvp.packages) bash coreutils;
+  };
+  pname = "ca-certificates";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-2026-10-20-current.nix;
+        base = profileBase;
+        deps =
+          {
+          };
       };
-    };
+      releases = {
+        "2026-10-20" = "sha256-eW8Tib/qE8DtePZjt2W6r/VKUI5Ug3hr1uznPF4+PL4=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // {
+    diffutils = tvp.packages.diffutils;
+    openssl = tvp.packages.openssl_4;
+    grep = tvp.packages.gnugrep;
+    findutils = tvp.packages.findutils;
   };
-  versionTable = formerRecipe.versionTable // {
-    "2026-10-20" = formerRecipe.versionTable."2026-10-20" // {
-      def = if native then defs."2026-10-20" else formerRecipe.versionTable."2026-10-20".def;
-    };
-  };
-  publicArgs = formerRecipe // {
-    inherit versionTable;
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
+      import <nix/fetchurl.nix> {
         url = "https://curl.se/ca/cacert-${version}.pem";
         inherit sha256;
       };
-    testDeps = {
-      diffutils = tvp.packages.diffutils;
-      openssl = tvp.packages.openssl_4;
-      grep = tvp.packages.gnugrep;
-      findutils = tvp.packages.findutils;
-    };
-    extraArgs.mkTests = testLib.makeOverridable (
-      { pkgs }:
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        openssl = package.tvp.declaredTestDependencies.openssl;
-        pkgs =
-          if package ? testContext then
-            { lib = testLib; }
-          else
-            tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = package.stdenv;
-            };
-      }
-    ) { inherit pkgs; };
+    tests = import ./tests;
   };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "ca-certificates";
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    constructionRecipe = formerRecipe;
+  recipes."ca-certificates" = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

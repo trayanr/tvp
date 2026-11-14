@@ -1,169 +1,95 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  constructionRecipe = previous.recipes.file;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  host =
-    name: reason:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      inherit reason;
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "5.48" = {
-      constructor = tvp.builder;
-      builder = ./native/build-5.48.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        zlib = tvp.packages.zlib_1;
-        xz = tvp.packages.xz_5;
-        bzip2 = tvp.packages.bzip2_1;
-        zstd = tvp.packages.zstd_1;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvpLib.packages.withConstraint {
-          reason = "File is used by MPFR's Python build tool; Gawk 5 depends on MPFR. Select the MPFR-free Gawk 4.0 line for the build-only AWK role.";
-        } tvp.packages.gawk_4_0;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
-      };
-    };
-    "5.45" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.45.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      deps = {
-        zlib = tvp.packages.zlib_1;
-        xz = tvp.packages.xz_5;
-        bzip2 = tvp.packages.bzip2_1;
-        zstd = tvp.packages.zstd_1;
-        bash = tvp.packages.bash_5;
-        coreutils = tvp.packages.coreutils_9;
-        gnumake = tvp.packages.gnumake_4;
-        gnutar = tvp.packages.gnutar_1;
-        gzip = tvp.packages.gzip_1;
-        findutils = tvp.packages.findutils_4;
-        sed = tvp.packages.gnused_4;
-        grep = tvp.packages.gnugrep_3;
-        gawk = tvp.packages.gawk_5;
-        diffutils = tvp.packages.diffutils_3;
-        python = host "python" "Independent source/output helper avoids public Python -> pkg-config -> Autoconf.";
-        binutils = host "linker" "Owned ELF output tools selected independently of catalogue consumers.";
-        patchelf = host "patchelf" "Owned output RPATH tool independent of catalogue consumers.";
-      };
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."file";
+  retained = prior.constructionRecipe or prior;
+  full = tvp.baseTiers.full;
+  earlier = import ../../../bases/source-gnu { };
+  profileBase = full.override {
+    shell = tvp.packages.bash_5;
+    coreutils = tvp.packages.coreutils_9;
+    standardTools = {
+      python = earlier.tools.python;
+      patchelf = earlier.tools.patchelf;
+      gnumake = tvp.packages.gnumake_4;
+      gnutar = tvp.packages.gnutar_1;
+      gzip = tvp.packages.gzip_1;
+      findutils = tvp.packages.findutils_4;
+      sed = tvp.packages.gnused_4;
+      grep = tvp.packages.gnugrep_3;
+      gawk = tvp.packages.gawk_5;
+      diffutils = tvp.packages.diffutils_3;
     };
   };
-  versionTable = constructionRecipe.versionTable // {
-    "5.48" = constructionRecipe.versionTable."5.48" // {
-      def = if native then defs."5.48" else constructionRecipe.versionTable."5.48".def;
-    };
-    "5.45" = constructionRecipe.versionTable."5.45" // {
-      def = if native then defs."5.45" else constructionRecipe.versionTable."5.45".def;
-    };
-    "5.46" = constructionRecipe.versionTable."5.46" // {
-      def = if native then defs."5.45" else constructionRecipe.versionTable."5.46".def;
-    };
-    "5.47" = constructionRecipe.versionTable."5.47" // {
-      def = if native then defs."5.45" else constructionRecipe.versionTable."5.47".def;
-    };
+  pname = "file";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-5.45-native.nix;
+        base = profileBase;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          xz = tvp.packages.xz_5;
+          bzip2 = tvp.packages.bzip2_1;
+          zstd = tvp.packages.zstd_1;
+          binutils = earlier.tools.linker;
+        };
+      };
+      releases = {
+        "5.45" = "sha256-/Jf1ECm7DiyfTjv/79r2ePDgOe6HK53lwAKm0Jx4TYI=";
+        "5.46" = "sha256-ycx3x8VgxUMTXtxVWvYJ1WGdvvARmX6YjOQKPXXYYIg=";
+        "5.47" = "sha256-RWcv7BZctMwTWKLXa11X0ih23Ll6sWlCesOFy+HVWXo=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-5.48-native.nix;
+        base = (
+          profileBase.override {
+            standardTools.gawk = tvp.lib.packages.withConstraint {
+              reason = "File is used before the MPFR-dependent Python; retain the MPFR-free Gawk 4.0 build role.";
+            } tvp.packages.gawk_4_0;
+          }
+        );
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          xz = tvp.packages.xz_5;
+          bzip2 = tvp.packages.bzip2_1;
+          zstd = tvp.packages.zstd_1;
+          binutils = earlier.tools.linker;
+        };
+      };
+      releases = {
+        "5.48" = "sha256-7RRlaIOyOjZLQFfAVZXZMlLam8Rz0wEGUZUZ0NoUEoM=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // {
+    python = earlier.tools.python;
+    sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+    alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+    alternateZlib = (import ../../../bootstrap/source-full-gcc-prerequisites.nix { }).zlib;
+    pkgconfig = tvp.packages.pkg-config;
   };
-
-  installedArgs = constructionRecipe // {
-    inherit versionTable;
+  rawFamily = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://astron.com/pub/file/file-${version}.tar.gz"
-        ];
+      import <nix/fetchurl.nix> {
+        url = "https://astron.com/pub/file/file-${version}.tar.gz";
         inherit sha256;
       };
-    testDeps = {
-      python = candidate.tools.python;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
-      alternateZlib = (import ../../../bootstrap/source-full-gcc-prerequisites.nix { }).zlib;
-      pkgconfig = tvp.packages.pkg-config;
-    };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import
-          (
-            if
-              builtins.elem package.version [
-                "5.45"
-                "5.46"
-                "5.47"
-              ]
-            then
-              ./tests/ordinary.nix
-            else
-              ./tests/native-default.nix
-          )
-          {
-            inherit
-              pkgs
-              tvp
-              tvpLib
-              package
-              ;
-          }
-      else
-        constructionRecipe.extraArgs.mkTests package
-    ) { inherit pkgs; };
+    tests = import ./tests;
   };
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  pname = "file";
+  family = rawFamily;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes."file" = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

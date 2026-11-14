@@ -1,345 +1,182 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  defs = tvpLib.packages.mkDefs {
-    "3.0.6" = {
-      builder = ./build-3.0.6.nix;
-      base = tvp.bases.default;
-      deps = { };
-      opts = {
-        hardeningDisable = [ "format" ];
-        # K&R probes and empty parameter lists predate modern C semantics.
-        cStandard = "gnu89";
-        archiveExt = "tar.gz";
-        license = pkgs.lib.licenses.gpl2Plus;
-      };
-    };
-    "3.1.8" = {
-      # Retain pre-C23 non-prototype semantics (GCC porting guidance).
-      opts = {
-        hardeningDisable = [ "format" ];
-        cStandard = "gnu89";
-      };
-      builder = ./build-3.0.6.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-    "4.0.2" = {
-      builder = ./build-4.0.2.nix;
-      base = tvp.bases.default;
-      # Empty read/math callback prototypes require pre-C23 semantics.
-      opts.cStandard = "gnu17";
-      deps = {
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-    "4.1.4" = {
-      builder = ./build-4.1.4.nix;
-      base = tvp.bases.default;
-      # Empty read/math callback prototypes require pre-C23 semantics.
-      opts.cStandard = "gnu17";
-      # The readline sanity probe calls open/close/dup without their headers.
-      # Keep the real runtime probe, demoting this diagnostic only in configure.
-      opts.configureCFlags = [ "-Wno-error=implicit-function-declaration" ];
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-    "5.1.1" = {
-      builder = ./build-4.1.4.nix;
-      base = tvp.bases.default;
-      opts.cStandard = "gnu17";
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-    "5.3.1" = {
-      builder = ./build-4.1.4.nix;
-      base = tvp.bases.default;
-      deps = {
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-
+  retained = (import ./retained { inherit pkgs tvp; }).recipes.gawk;
+  testBase = tvp.baseTiers.full;
+  testTools = testBase.standardTools;
+  locale = import ../../../lib/tests/gnu-locale.nix {
+    builder = tvp.builder;
+    base = testBase;
+    bash = testBase.shell;
+    coreutils = testBase.coreutils;
+    tar = testTools.gnutar;
+    xz = testTools.xz;
+    libc = testBase.compiler.libc;
   };
-  versionTable = tvpLib.packages.mkTable [
+  versionTable = tvp.lib.packages.mkTable [
     {
-      def = defs."3.0.6";
-      releases."3.0.6" = "sha256-q/J24Qx7hxMy0HvytlITOidBlnfRVzgwl7vRU+WKi/w=";
+      def = {
+        builder = ./build-3.0.6.nix;
+        deps = { };
+        opts = {
+          archiveExt = "tar.gz";
+          license = pkgs.lib.licenses.gpl2Plus;
+        };
+      };
+      releases = {
+        "3.0.6" = "sha256-q/J24Qx7hxMy0HvytlITOidBlnfRVzgwl7vRU+WKi/w=";
+      };
     }
     {
-      def = defs."3.1.8";
-      releases."3.1.8" = "sha256-Xbx7LEwyhxEzfCqs0JoSLHMTEiJi4/8DRZDwFAZ0ErQ=";
-    }
-
-    {
-      def = defs."4.0.2";
-      releases."4.0.2" = "sha256-IeHyjFG1Fg8KS/GnNcYQm0ajvWpD3oCOq8IcF7sCbRM=";
-    }
-    {
-      def = defs."4.1.4";
-      releases."5.0.1" = "sha256-jk6G8E7XiWSLZvdXMpdDoNbftSlMO5G3VqR08c4Fp5Q=";
-      releases."4.2.1" = "sha256-0RGXhedG1GqCCdKLLeQEpX+YOqSGcPTiJVMdO9wXVVE=";
-      releases."4.1.4" = "sha256-U+GE4tD5De+SB4YFMYAkVjIr4JHHtI8j/cec2mWtwmY=";
+      def = {
+        builder = ./build-3.0.6.nix;
+        deps = { };
+      };
+      releases = {
+        "3.1.8" = "sha256-Xbx7LEwyhxEzfCqs0JoSLHMTEiJi4/8DRZDwFAZ0ErQ=";
+      };
     }
     {
-      def = defs."5.3.1";
-      releases."5.3.1" = "sha256-aU23ZIEqYjZCPU/0DOt7bExEEwG3KtUCu1wn4AzVb3g=";
-      releases."5.3.2" = "sha256-+MNIZQnecFGSE4sA7ywAu73Q6Eww1cB9I/xzqdxMycw=";
-      releases."5.4.0" = "sha256-PdQw8M07RCjGw/avwCG5zTwfjJP3pojcJoykKKkLSsE=";
-      releases."5.4.1" = "sha256-B/b3NCt/6+QxP8LCVCrZPWT+IK2HFyABCfEFqCb1/Tc=";
+      def = {
+        builder = ./build-4.0.2.nix;
+        deps = {
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+        };
+      };
+      releases = {
+        "4.0.2" = "sha256-IeHyjFG1Fg8KS/GnNcYQm0ajvWpD3oCOq8IcF7sCbRM=";
+      };
     }
     {
-      def = defs."5.1.1";
-      releases."5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
-      releases."5.2.2" = "sha256-PB/OFEa0y+4c0nO9fsZLyH2J9hU3RxzT4F4zqWWiUOk=";
-      releases."5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
+      def = {
+        builder = ./build-4.1.4.nix;
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+        };
+      };
+      releases = {
+        "4.1.4" = "sha256-U+GE4tD5De+SB4YFMYAkVjIr4JHHtI8j/cec2mWtwmY=";
+        "4.2.1" = "sha256-0RGXhedG1GqCCdKLLeQEpX+YOqSGcPTiJVMdO9wXVVE=";
+        "5.0.1" = "sha256-jk6G8E7XiWSLZvdXMpdDoNbftSlMO5G3VqR08c4Fp5Q=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-4.1.4.nix;
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+        };
+        opts = {
+          buildFeatures = {
+            cStandard = "gnu17";
+            configureCFlags = [ ];
+          };
+          sourceLayout = {
+            productionFrontends = [
+              "awklib"
+              "extension"
+              "build-aux"
+            ];
+            upstreamFrontends = [ "test" ];
+          };
+        };
+      };
+      releases = {
+        "5.1.1" = "sha256-2HYpOG6JS76hGl4AUV/JCdybcklSna2eajosdwhffqI=";
+        "5.2.2" = "sha256-PB/OFEa0y+4c0nO9fsZLyH2J9hU3RxzT4F4zqWWiUOk=";
+        "5.3.0" = "sha256-ypwW09EdD/jGnXncC0cmfhMppps5t5mJVgTtRH08qQs=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-4.1.4.nix;
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+        };
+        opts = {
+          buildFeatures = {
+            cStandard = null;
+            configureCFlags = [ ];
+          };
+          sourceLayout = {
+            productionFrontends = [
+              "awklib"
+              "extension"
+              "build-aux"
+            ];
+            upstreamFrontends = [ "test" ];
+          };
+        };
+      };
+      releases = {
+        "5.3.1" = "sha256-aU23ZIEqYjZCPU/0DOt7bExEEwG3KtUCu1wn4AzVb3g=";
+        "5.3.2" = "sha256-+MNIZQnecFGSE4sA7ywAu73Q6Eww1cB9I/xzqdxMycw=";
+        "5.4.0" = "sha256-PdQw8M07RCjGw/avwCG5zTwfjJP3pojcJoykKKkLSsE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-5.4.1.nix;
+        deps = {
+          gmp = tvp.packages.gmp_6;
+          mpfr = tvp.packages.mpfr_4;
+          readline = tvp.packages.readline_8;
+          ncurses = tvp.packages.ncurses_6;
+        };
+      };
+      releases = {
+        "5.4.1" = "sha256-B/b3NCt/6+QxP8LCVCrZPWT+IK2HFyABCfEFqCb1/Tc=";
+      };
     }
   ];
   pname = "gawk";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = import ./upstream.nix;
-    extraArgs.mkTests =
-      package:
-      import ./tests {
-        inherit tvpLib package;
-        pkgs = tvpLib.tests.withBase {
-          inherit pkgs;
-          base.stdenv = package.stdenv;
-        };
-      };
-  };
-  # Complete legacy call: table, factories, source construction and test routing.
-  constructionRecipe = packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
-    } candidate.tools.${name};
-  ordinaryDefs = import ./ordinary {
-    inherit
-      tvp
-      tvpLib
-      candidate
-      constructionTool
-      ;
-  };
-  ownedDefs = tvpLib.packages.mkDefs {
-    "5.4.1" = {
-      constructor = tvp.builder;
-      builder = ./native/build-5.4.1.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.tar.xz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        xz = constructionTool "xz";
-        perl = constructionTool "perl";
-        gmp = tvp.packages.gmp_6;
-        mpfr = tvp.packages.mpfr_4;
-        readline = tvp.packages.readline_8;
-        ncurses = tvp.packages.ncurses_6;
-        checkLocales = import ./native/check-locales.nix {
-          builder = tvp.builder;
-          base = candidate.base;
-          inherit (candidate.tools)
-            bash
-            coreutils
-            tar
-            xz
-            ;
-          libc = candidate.toolchain.libc;
-        };
-        localeProvider = tvpLib.packages.withConstraint {
-          category = "construction";
-          reason = "Matching source-owned target libc locale tools and C.UTF-8 data for upstream Unicode tests.";
-        } candidate.toolchain.libc;
-      };
-    };
-  };
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = candidate.base;
-    inherit (candidate.tools)
-      bash
-      coreutils
-      tar
-      xz
-      ;
-    libc = candidate.toolchain.libc;
-  };
-  installedArgs = packageArgs // {
-    versionTable = versionTable // {
-      "5.3.1" = versionTable."5.3.1" // {
-        def = if native then ordinaryDefs."5.3.1" else versionTable."5.3.1".def;
-      };
-      "5.3.2" = versionTable."5.3.2" // {
-        def = if native then ordinaryDefs."5.3.1" else versionTable."5.3.2".def;
-      };
-      "5.4.0" = versionTable."5.4.0" // {
-        def = if native then ordinaryDefs."5.3.1" else versionTable."5.4.0".def;
-      };
-      "5.1.1" = versionTable."5.1.1" // {
-        def = if native then ordinaryDefs."5.1.1" else versionTable."5.1.1".def;
-      };
-      "5.2.2" = versionTable."5.2.2" // {
-        def = if native then ordinaryDefs."5.1.1" else versionTable."5.2.2".def;
-      };
-      "5.3.0" = versionTable."5.3.0" // {
-        def = if native then ordinaryDefs."5.1.1" else versionTable."5.3.0".def;
-      };
-      "4.1.4" = versionTable."4.1.4" // {
-        def = if native then ordinaryDefs."4.1.4" else versionTable."4.1.4".def;
-      };
-      "4.2.1" = versionTable."4.2.1" // {
-        def = if native then ordinaryDefs."4.1.4" else versionTable."4.2.1".def;
-      };
-      "5.0.1" = versionTable."5.0.1" // {
-        def = if native then ordinaryDefs."4.1.4" else versionTable."5.0.1".def;
-      };
-      "4.0.2" = versionTable."4.0.2" // {
-        def = if native then ordinaryDefs."4.0.2" else versionTable."4.0.2".def;
-      };
-      "5.4.1" = versionTable."5.4.1" // {
-        def = if native then ownedDefs."5.4.1" else versionTable."5.4.1".def;
-      };
-    };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      (
-        if package ? testContext then
-          import
-            (
-              if
-                builtins.hasAttr package.version {
-                  "4.0.2" = true;
-                  "4.1.4" = true;
-                  "4.2.1" = true;
-                  "5.0.1" = true;
-                  "5.1.1" = true;
-                  "5.2.2" = true;
-                  "5.3.0" = true;
-                  "5.3.1" = true;
-                  "5.3.2" = true;
-                  "5.4.0" = true;
-                }
-              then
-                ./tests/ordinary.nix
-              else
-                ./tests/native-default.nix
-            )
-            {
-              inherit pkgs tvpLib package;
-              inherit locale;
-            }
-        else
-          import ./tests {
-            inherit tvpLib package;
-            pkgs = tvpLib.tests.withBase {
-              inherit pkgs;
-              base.stdenv = package.stdenv;
-            };
-          }
-      )
-      // pkgs.lib.optionalAttrs (
-        package ? testContext
-        && builtins.elem package.version [
-          "4.0.2"
-          "4.1.4"
-          "4.2.1"
-          "5.0.1"
-          "5.1.1"
-          "5.2.2"
-          "5.3.0"
-          "5.3.1"
-          "5.3.2"
-          "5.4.0"
-        ]
-      ) (import ../ordinary-text-contracts.nix { inherit tvp package; })
-    ) { inherit pkgs; };
-  };
-  previousPublicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
+    inherit (retained) packageMeta;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.${
+          if version == "3.0.6" then
+            "tar.gz"
+          else if version == "3.1.8" then
+            "tar.bz2"
           else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
+            "tar.xz"
+        }";
+        inherit sha256;
+      };
+    tests = import ./tests;
+    testDeps = {
+      inherit locale;
+      checkLocales = import ./native/check-locales.nix {
+        builder = tvp.builder;
+        base = testBase;
+        bash = testBase.shell;
+        coreutils = testBase.coreutils;
+        tar = testTools.gnutar;
+        xz = testTools.xz;
+        libc = testBase.compiler.libc;
+      };
+      localeProvider = testBase.compiler.libc;
     };
   };
-  compatibilityDefs = import ./compatibility { inherit tvp tvpLib candidate defs; };
-  compatibilityVersions = [ "3.0.6" "3.1.8" ];
-  publicArgs = previousPublicArgs // {
-    versionTable = previousPublicArgs.versionTable // builtins.listToAttrs (map (version: {
-      name = version;
-      value = versionTable.${version} // { def = if native then compatibilityDefs.${version} else versionTable.${version}.def; };
-    }) compatibilityVersions);
-    extraArgs = previousPublicArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable ({ pkgs }: package:
-        if package ? testContext && builtins.elem package.version compatibilityVersions then
-          import ./tests { inherit pkgs tvpLib package; }
-          // pkgs.lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
-            upstream = import ../../libraries/acl/native/upstream.nix { inherit package; };
-          }
-          else (previousPublicArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.gawk = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

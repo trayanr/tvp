@@ -1,93 +1,61 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  formerRecipe = builtins.removeAttrs previous.recipes.which [ "constructionRecipe" ];
-  constructionRecipe = previous.recipes.which.constructionRecipe;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an independent build-only construction generation; ordinary self-building tools must not construct themselves or their compiler.";
-    } candidate.tools.${name};
-  defs = tvpLib.packages.mkDefs {
-    "2.21" = {
-      constructor = tvp.builder;
-      builder = ./native/build-2.21.nix;
-      base = candidate.base;
-      helpers = {
-        inherit tvp;
-      };
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/which/which-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-
-      deps = {
-        python = constructionTool "python";
-        bash = tvp.packages.bash;
-        coreutils = tvp.packages.coreutils;
-        gnumake = tvp.packages.gnumake;
-        gnutar = tvp.packages.gnutar;
-        gzip = tvp.packages.gzip;
-        gawk = tvp.packages.gawk;
-        diffutils = tvp.packages.diffutils;
-        findutils = tvp.packages.findutils;
-        binutils = tvp.packages.binutils;
-        patchelf = tvp.packages.patchelf;
-        sed = tvp.packages.gnused;
-        grep = tvp.packages.gnugrep;
-      };
+  previous = import ./retained-index.nix { inherit pkgs tvp; };
+  prior = previous.recipes."which";
+  retained = prior.constructionRecipe or prior;
+  full = tvp.baseTiers.full;
+  earlier = import ../../../bases/source-gnu { };
+  profileBase = full.override {
+    shell = tvp.packages.bash;
+    coreutils = tvp.packages.coreutils;
+    standardTools = {
+      python = earlier.tools.python;
+      gnumake = tvp.packages.gnumake;
+      gnutar = tvp.packages.gnutar;
+      gzip = tvp.packages.gzip;
+      sed = tvp.packages.gnused;
+      grep = tvp.packages.gnugrep;
+      gawk = tvp.packages.gawk;
+      diffutils = tvp.packages.diffutils;
+      findutils = tvp.packages.findutils;
+      patchelf = tvp.packages.patchelf;
     };
   };
-  versionTable = formerRecipe.versionTable // {
-    "2.21" = formerRecipe.versionTable."2.21" // {
-      def = if native then defs."2.21" else formerRecipe.versionTable."2.21".def;
-    };
-  };
-  installedArgs = formerRecipe // {
-    inherit versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit pkgs tvpLib package; }
-      else
-        formerRecipe.extraArgs.mkTests.override { inherit pkgs; } package
-    ) { inherit pkgs; };
-  };
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
   pname = "which";
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-2.21-native.nix;
+        base = profileBase;
+        deps = {
+          binutils = tvp.packages.binutils;
+        };
+      };
+      releases = {
+        "2.21" = "sha256-9KJFuUEks3fYtJZGv0IfkVXTaqdhS26/g3BdP/x26q0=";
+      };
+    }
+  ];
+  testDeps = (prior.testDeps or { }) // { };
+  rawFamily = tvp.lib.packages.mkFamily {
+    inherit pname versionTable testDeps;
+    packageMeta = prior.packageMeta or { };
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/which/which-${version}.tar.gz";
+        inherit sha256;
+      };
+    tests = import ./tests;
+  };
+  family = rawFamily;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes."which" = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

@@ -1,83 +1,171 @@
-# Serves 8.0.2 onwards.
-#
-# 8.5 has no bundled extensions and no `packages` make target, and its configure
-# never looks for zlib.
+# Complete Tcl8.0.2 procedure; construction callers are explicitly retained.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
-
+  base,
+  src,
   version,
-  sha256,
-  cStandard ? null,
-
-  # 8.0.2 reports 8.0p2 — the patchlevel spelling its tarball also uses.
-  reportedVersion ? version,
-
+  buildFeatures ? { },
+  installedInterface ? { },
   patches ? [ ],
-
-  # Supplied by default.nix. A fork that drops this argument fails to evaluate.
-  mkTests,
 }:
-stdenv.mkDerivation (
-  finalAttrs:
-  {
-    pname = "tcl";
-    inherit version;
-
-    # 8.3.5 onwards publish tclX.Y.Z-src.tar.gz; older releases are tclX.Y.Z.tar.gz.
-    src = fetchurl {
-      urls = [
-        "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz"
-        "https://prdownloads.sourceforge.net/tcl/tcl${version}.tar.gz"
-        # 8.0.2 shipped as tcl8.0p2.tar.gz and 8.1.0 as tcl8.1.tar.gz. The
-        # patchlevel form must be tried first: tcl8.0.tar.gz exists and is a
-        # different release.
-        "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}p${lib.versions.patch version}.tar.gz"
-        "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}.tar.gz"
-      ];
-      inherit sha256;
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  command =
+    name: run:
+    (final.base.environment final.environment)
+    // {
+      name = "tcl.${name}";
+      cwd = "source/unix";
+      inherit run;
     };
-
-    # configure lives in unix/, and the unpacked directory is named for the
-    # release rather than the tarball.
-    setSourceRoot = "sourceRoot=$(echo */unix)";
-
-    # Upstream installs tclshX.Y only; every consumer looks for tclsh.
-    postInstall = ''
-      ln -s "$(basename "$out"/bin/tclsh*)" "$out/bin/tclsh"
-    '';
-
-    meta = {
-      description = "Tool Command Language interpreter";
-      homepage = "https://www.tcl-lang.org/";
-      license = lib.licenses.tcltk;
-      platforms = lib.platforms.unix;
-    };
-
-    passthru = {
-      inherit version;
-      tvp.deps = { };
-      tvp.cc = stdenv.cc;
-      tvp.reportedVersion = reportedVersion;
-
-      tvp.features = {
-        zipfsImage = false;
-        pkgConfig = lib.versionAtLeast version "8.5.16";
-        are = lib.versionAtLeast version "8.1";
-      };
-
-      tests = mkTests finalAttrs.finalPackage;
-    };
-  }
-  // lib.optionalAttrs (patches != [ ]) {
-    inherit patches;
-    # sourceRoot is unix/; the patches address the tree above it.
-    patchFlags = [
-      "-p1"
-      "-d"
-      ".."
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+in
+{
+  pname = "tcl";
+  inherit
+    base
+    src
+    version
+    patches
+    ;
+  inherit (tools) bash coreutils;
+  buildFeatures = {
+    cStandard = "gnu89";
+  } // buildFeatures;
+  installedInterface = {
+    reportedVersion = final.version;
+    pkgConfigVersion = final.version;
+  } // installedInterface;
+  artifactName = "${final.pname}-${final.version}";
+  environment = {
+    tools = [
+      tools.pkg-config
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+      tools.python
     ];
-  }
-  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
-)
+    libraries = [ ];
+  };
+  runtime = {
+    shell = final.bash;
+    loader = "${final.base.compiler.libc}/lib/ld-linux-x86-64.so.2";
+    libraries = [ ];
+  };
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
+    {
+      name = "tcl.patch";
+      enabled = final.patches != [ ];
+      cwd = "source";
+      tools = [ tools.patch ];
+      run = lib.concatMapStringsSep "\n" (
+        p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
+      ) final.patches;
+    }
+    (steps.prepareAutotools {
+      name = "tcl.prepare";
+      cwd = "source/unix";
+    })
+    (steps.shebangs {
+      name = "tcl.package-shells";
+      paths = [
+        "unix"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.bash}/bin/bash";
+    })
+    (command "configure" ''
+      export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
+      export CFLAGS="-g -O2 ${
+        lib.optionalString (final.buildFeatures.cStandard != null) "-std=${final.buildFeatures.cStandard}"
+      }"
+      ${final.bash}/bin/bash ./configure --prefix="$out"
+    '')
+    (command "build" "${make}")
+    (command "install" ''
+      export LD_LIBRARY_PATH="$PWD"
+      ${make} install
+      mkdir -p "$out/nix-support"
+      ln -s "$(basename "$out"/bin/tclsh*)" "$out/bin/tclsh"
+      chmod -R u+w "$out"
+    '')
+    (steps.split "tcl.finalize")
+    (outputs.copyArtifacts { })
+    {
+      name = "tcl.relocate-prefix";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./relocate.py} "$out"'';
+    }
+    (outputs.shebangs {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
+      interpreter = "${final.runtime.shell}/bin/bash";
+    })
+    (outputs.interpreters {
+      paths = [ "bin" ];
+      loader = final.runtime.loader;
+    })
+    (outputs.strip {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.stripArchives {
+      paths = [ "lib" ];
+    })
+    (outputs.rpaths {
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories or [ ];
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.development {
+      libraries = [ ];
+    })
+    (outputs.checkPaths {
+      paths = [
+        "bin"
+        "lib"
+      ];
+      elfKinds = [ "runtime" ];
+    })
+  ];
+  tvp.reportedVersion = final.installedInterface.reportedVersion;
+  tvp.features = {
+
+    are = lib.versionAtLeast final.version "8.1";
+    pkgConfig = lib.versionAtLeast final.version "8.5.16";
+    zipfsImage = false;
+    bundledPackages = false;
+  };
+  meta = {
+    description = "Tool Command Language interpreter";
+    homepage = "https://www.tcl-lang.org/";
+    license = lib.licenses.tcltk;
+    platforms = [ "x86_64-linux" ];
+  };
+}

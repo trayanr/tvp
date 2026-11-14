@@ -1,9 +1,10 @@
 # Rolling out the MPFR package model
 
 The accepted package model is documented in [NATIVE-RECIPES.md](NATIVE-RECIPES.md).
-MPFR implements it. The next work is to simplify construction-base composition,
-then convert complete package families while preserving their actual procedures
-and earlier construction inputs.
+All 110 ordinary family indexes now implement it, covering all 1,515 eligible
+canonical releases. Construction-caller adoption, recorded isolation debt and
+runtime qualification remain separate work. The 20 broken releases remain explicit
+exclusions; their presence does not make supported authoring incomplete.
 
 [MIGRATION-LOG.md](MIGRATION-LOG.md) records completed steps and bounded validation.
 [MIGRATION-DECISIONS.md](MIGRATION-DECISIONS.md) records scope exceptions and design
@@ -218,6 +219,23 @@ source shape: Rust really depends on the public GCC runtime, so launching that
 cold compiler before the remaining dependency indexes are adopted would waste a
 build. This is deferred execution, not runtime acceptance. MIG-020–022 record
 observer/role repairs, production scaffolding and the retained-generation boundary.
+
+All remaining ordinary indexes now use the same inline model: Tcl/Bash,
+terminal libraries, text utilities, JDK support libraries, native utilities,
+SDK/Dart/Flutter, build frontends/data and the final Perl/JDK/Node/glibc families.
+Measured adoption is 110/110 indexes and 1,515/1,515 eligible canonical releases.
+All five public variants evaluate; split coverage remains 1,520 compliant plus
+20 unchanged broken exclusions. This completes ordinary index adoption only.
+
+The final source pass checks all 1,535 canonical A/F descriptions and five public
+variants, 232 newly adopted rows and their existing test registrations. Captured
+closed-compiler/bootstrap/construction/frozen generations remain exact. Active
+implicit tool roles now honor runtime provider projections, with unknown names
+still rejected (MIG-023). Bounded multi-directory checkpoints support actual
+JSON-C/Zstd/Binutils layouts without a new runner (MIG-024). Retained caller
+compatibility and remaining isolation work are MIG-025–026. Current package
+execution follows against the assembled source shape; historical qualification
+and broader admission are not inferred from these counts.
 
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared

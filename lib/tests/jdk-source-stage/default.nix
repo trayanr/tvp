@@ -74,12 +74,12 @@ let
     src = source;
     base = spec.base.override {
       name = "jdk-control-selected-base";
+      shell = selected;
+      standardTools.gnumake = selected;
       compiler = spec.base.compiler // {
         outPath = selected.outPath;
       };
     };
-    bash = selected;
-    gnumake = selected;
     bootJdk = seed;
     fontconfig = font;
     libcups = cups;

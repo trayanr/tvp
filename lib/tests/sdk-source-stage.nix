@@ -132,8 +132,8 @@ let
         ];
     directShells =
       let
-        dartEdit = dart.edit (s: s // { bash = stable; });
-        flutterEdit = flutter.edit (s: s // { bash = stable; });
+        dartEdit = dart.edit (s: s // { base = s.base.override { shell = stable; }; });
+        flutterEdit = flutter.edit (s: s // { base = s.base.override { shell = stable; }; });
       in
       dartEdit.runtime.shell == "${stable}/bin/bash"
       && flutterEdit.runtime.shell.drvPath == stable.drvPath
@@ -165,7 +165,17 @@ let
       builtins.length (builtins.attrNames stable.tests) == 2
       && builtins.length (builtins.attrNames dart.tests) == 9
       && builtins.length (builtins.attrNames flutter.tests) == 4;
-    sourceLocksEffective = changedArtifact dart (dart.edit (s: s // { sourceLocks = [ ]; }));
+    sourceLocksEffective = changedArtifact dart (
+      dart.edit (
+        s:
+        s
+        // {
+          sourceLayout = s.sourceLayout // {
+            sourceLocks = [ ];
+          };
+        }
+      )
+    );
     llvmPrefixEffective = changedArtifact dart (
       dart.override {
         llvm = dart.specification.llvm.editSteps (
@@ -235,11 +245,32 @@ let
     archiveRejectsName =
       rejects
         (tvp.lib.sources.fetchArchive (archiveArgs // { name = "../source"; })).drvPath;
-    unsupportedDevtools = rejects (dart.edit (s: s // { buildDevtoolsFromSources = true; })).drvPath;
-    unsupportedStamps = rejects (dart.edit (s: s // { useCipdToolchainStamps = true; })).drvPath;
+    unsupportedDevtools =
+      rejects
+        (dart.edit (
+          s:
+          s
+          // {
+            buildFeatures = s.buildFeatures // {
+              buildDevtoolsFromSources = true;
+            };
+          }
+        )).drvPath;
+    unsupportedStamps =
+      rejects
+        (dart.edit (
+          s:
+          s
+          // {
+            buildFeatures = s.buildFeatures // {
+              useCipdToolchainStamps = true;
+            };
+          }
+        )).drvPath;
   };
   candidate = import ../../bases/source-gnu { };
   spec = dart.specification;
+  tools = (tvp.builder.forBase spec.base).tools;
   target = spec.llvm.specification.runtime.target;
   probe = tvp.builder {
     recipe =
@@ -340,10 +371,9 @@ let
         bash
         coreutils
         llvm
-        helperPython
-        binutils
-        patchelf
         ;
+      helperPython = tools.python;
+      inherit (tools) binutils patchelf;
     };
     dependencyNames = [ ];
     metadata = { };
@@ -392,11 +422,11 @@ let
     inherit (spec)
       bash
       curl
-      tar
-      gzip
       coreutils
       ;
-    python = spec.helperPython;
+    tar = tools.gnutar;
+    gzip = tools.gzip;
+    python = tools.python;
     certificates = spec.ca-certificates;
   };
 in

@@ -51,8 +51,12 @@ let
           };
         }
       );
-      tool = p.override { gnumake = tvp.packages.gnumake; };
-      toolEdit = p.edit (s: s // { gnumake = tvp.packages.gnumake; });
+      tool = p.override {
+        base = p.specification.base.override { standardTools.gnumake = tvp.packages.gnumake; };
+      };
+      toolEdit = p.edit (
+        s: s // { base = s.base.override { standardTools.gnumake = tvp.packages.gnumake; }; }
+      );
       factory = tvp.lib.packages.mkVersions (
         builtins.removeAttrs ((import ../default.nix { inherit pkgs tvp; }).recipes.perl) [
           "constructionRecipe"

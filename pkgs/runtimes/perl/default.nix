@@ -1,378 +1,121 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-
-  defs = tvpLib.packages.mkDefs {
-    "5.24.4" = {
-      builder = ./build-5.24.4.nix;
-      # Configure's malloc/free probes require pre-C23 declarations.
-      base = tvp.bases.default;
-      opts.cStandard = "gnu17";
-      patches = [
-        {
-          file = ./patches/configure-gcc-major.patch;
-          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
-        }
-        {
-          file = ./patches/linux-elf-probe.patch;
-          reason = "The Linux ELF probe uses implicit-int main, rejected by modern GCC even in GNU17, and wrongly selects the obsolete a.out shared-library format. Give the probe its actual int return type.";
-        }
-      ];
-      deps.coreutils = tvp.packages.coreutils;
-    };
-    "5.28.3" = {
-      builder = ./build-5.24.4.nix;
-      # Configure's malloc/free probes require pre-C23 declarations.
-      base = tvp.bases.default;
-      opts.cStandard = "gnu17";
-      patches = [
-        {
-          file = ./patches/configure-gcc-major.patch;
-          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
-        }
-      ];
-      deps = {
-        coreutils = tvp.packages.coreutils;
-      };
-    };
-
-    "5.30.3" = {
-      builder = ./build-5.30.nix;
-      # Configure's malloc()/free() probes predate C23; GNU17 detects their
-      # actual void pointer/void types. 5.36 removes these old probes.
-      opts.cStandard = "gnu17";
-      base = tvp.bases.default;
-      deps = {
-        coreutils = tvp.packages.coreutils;
-      };
-    };
-
-    "5.36.3" = {
-      builder = ./build-5.36.nix;
-      base = tvp.bases.default;
-      deps = { };
-    };
-  };
-
-  versionTable = tvpLib.packages.mkTable (import ./5.nix { inherit defs; });
-
+  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   pname = "perl";
-
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname;
-    inherit versionTable;
-
-    extraArgs = {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        perl:
-        import ./tests {
-          inherit tvpLib perl;
-          pkgs = tvpLib.tests.withBase {
-            inherit pkgs;
-            base.stdenv = perl.stdenv;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-owned-5.24.4.nix;
+        base = tvp.baseTiers.full;
+        opts.cStandard = "gnu17";
+        opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
+        deps = { };
+        patches = [
+          {
+            file = ./patches/configure-gcc-major.patch;
+            reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
+          }
+          {
+            file = ./patches/linux-elf-probe.patch;
+            reason = "The Linux ELF probe uses implicit-int main, rejected by modern GCC even in GNU17, and wrongly selects the obsolete a.out shared-library format. Give the probe its actual int return type.";
+          }
+        ];
+      };
+      releases = {
+        "5.24.4" = "sha256-vy893bEBVNgzzbQVqT8WcrbYWZ6HkTtmwIXDMss2GXA=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-5.24.4.nix;
+        base = tvp.baseTiers.full;
+        opts.cStandard = "gnu17";
+        opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
+        deps = { };
+        patches = [
+          {
+            file = ./patches/configure-gcc-major.patch;
+            reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
+          }
+        ];
+      };
+      releases = {
+        "5.28.3" = "sha256-r8nB1mFZeuFNnog8UHEJK+1z9gwxCbKUgj6gGspwURQ=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-5.30.3.nix;
+        base = tvp.baseTiers.full;
+        opts.cStandard = "gnu17";
+        deps = { };
+      };
+      releases = {
+        "5.30.3" = "sha256-MuBMi7exrssnQqf3rA6rrBAPOCRzUqc61/oQTjnnQG8=";
+        "5.32.1" = "sha256-A7aTkBzYroByMbF4d5jPHy4LilYhjQe32kT3hKfK6yw=";
+        "5.34.3" = "sha256-WxL2KGMzKypfVBAq+c34wBCHfkvzKUkR7b1ZSyoejt4=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-5.36.3.nix;
+        base = tvp.baseTiers.full;
+        deps = { };
+      };
+      releases = {
+        "5.36.3" = "sha256-8qGtiBFjkaF2Ji3ULfxS7yKvtA9MDpgQ8V1WHm8ccmo=";
+        "5.38.5" = "sha256-t2Z9P/MJBohSr3hTkQqszsJsg51xdAISG2ZKxwXge/4=";
+        "5.40.5" = "sha256-Cdkmri0bJ3w7zmIFTEHaR8mBOA1xnEHPmAtnlFzFge0=";
+        "5.42.3" = "sha256-ETd0CYWDe1zfFfDPq5Miedy0NS+RL+1vwUTotPCCNic=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-5.44.0.nix;
+        base = tvp.baseTiers.full;
+        source =
+          { version, sha256 }:
+          import <nix/fetchurl.nix> {
+            url = "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
+            inherit sha256;
           };
-        }
-      ) { inherit pkgs; };
-    };
-
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://www.cpan.org/src/5.0/";
-        pattern = "perl-5\\.[0-9][^\"]*\\.tar\\.gz";
-
-        normalise =
-          file:
-          if pkgs.lib.hasPrefix "perl-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "perl-" file)
-          else
-            null;
-
-        # Perl marks development releases by parity, not by a suffix: an odd
-        # second component (5.45, 5.9, 5.11) is a devel series and was never a
-        # stable release. RC and TRIAL tarballs are also published here.
-        include =
-          version:
-          let
-            minor = pkgs.lib.toInt (pkgs.lib.elemAt (pkgs.lib.splitVersion version) 1);
-          in
-          builtins.match "[0-9].*" version != null
-          && pkgs.lib.mod minor 2 == 0
-          && !(pkgs.lib.hasInfix "RC" version || pkgs.lib.hasInfix "TRIAL" version);
+        deps = { };
+      };
+      releases = {
+        "5.44.0" = "sha256-O4VQZrkkkctA6Gr/scpX0aOIqkPlG5HHgGoywvZflsM=";
+      };
+    }
+  ];
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    packageMeta = retained.packageMeta or { };
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        urls = [
+          "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
+          "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
+        ];
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
+  };
+  recipe = family // {
+    extraArgs = family.extraArgs // {
+      mkTests = import ./tests/caller-factory.nix {
+        inherit retained;
+        inherit (pkgs) lib;
+        tests = import ./tests/installed.nix;
       };
     };
   };
-
-  # Preserve the complete pre-promotion factory/table and its historical callers.
-  constructionRecipe = packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is the explicit host generation, independent of the ordinary target being built.";
-    } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "5.44.0" = {
-      constructor = tvp.builder;
-      builder = ./native/build-5.44.0.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-    };
-  };
-  ordinaryDefs = tvpLib.packages.mkDefs {
-    "5.24.4" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.24.4.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-          ];
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-      opts.cStandard = "gnu17";
-      opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
-      patches = [
-        {
-          file = ./patches/configure-gcc-major.patch;
-          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
-        }
-        {
-          file = ./patches/linux-elf-probe.patch;
-          reason = "The Linux ELF probe uses implicit-int main, rejected by modern GCC even in GNU17, and wrongly selects the obsolete a.out shared-library format. Give the probe its actual int return type.";
-        }
-      ];
-    };
-    "5.28.3" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.24.4.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-          ];
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-      opts.cStandard = "gnu17";
-      opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
-      patches = [
-        {
-          file = ./patches/configure-gcc-major.patch;
-          reason = "Limit all GCC 1 probes to that major: preserve modern aliasing safety, preprocessor selection and the structure-return ABI.";
-        }
-      ];
-    };
-    "5.30.3" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.30.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-          ];
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-      opts.cStandard = "gnu17";
-
-    };
-    "5.36.3" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-5.36.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        pkgs.fetchurl {
-          urls = [
-            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-          ];
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        pkgConfig = constructionTool "pkgConfig";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        python = constructionTool "python";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        gzip = constructionTool "gzip";
-      };
-
-    };
-  };
-  publicArgs = packageArgs // {
-    versionTable =
-      (builtins.mapAttrs (
-        _: entry:
-        entry
-        // {
-          def = if native then ordinaryDefs.${entry.def.name} or entry.def else entry.def;
-        }
-      ) versionTable)
-      // {
-        "5.44.0" = versionTable."5.44.0" // {
-          def = if native then ownedDefs."5.44.0" else versionTable."5.44.0".def;
-        };
-      };
-    extraArgs.mkTests =
-      package:
-      if package ? testContext then
-        if package.version != "5.44.0" then
-          import ./tests/ordinary-default.nix { inherit pkgs tvpLib package; }
-        else
-          import ./tests/native-default.nix { inherit pkgs tvpLib package; }
-      else
-        constructionRecipe.extraArgs.mkTests package;
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-
+  canonical = tvp.lib.packages.mkVersions recipe;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.perl = recipe // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases {
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
-  };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

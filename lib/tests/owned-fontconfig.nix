@@ -147,7 +147,7 @@ let
       };
     args = {
       inherit (p.specification) base bash coreutils;
-      grep = p.specification.grep;
+      grep = p.specification.base.standardTools.grep;
       fontconfig = p;
       pkgConfig = p.specification.pkg-config;
       version = "1";

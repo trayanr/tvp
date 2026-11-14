@@ -1,10 +1,14 @@
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   deps = package.tvp.deps;
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ deps.binutils ];
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   libraries = [
     package
     deps.zlib

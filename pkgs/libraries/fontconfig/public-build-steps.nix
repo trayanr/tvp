@@ -1,35 +1,22 @@
-# Independent public tests-enabled build-steps profile. Private injected evidence
-# and named-step consumers retain build-steps-2.18.3.nix byte for byte.
+# Complete public Fontconfig profile: tests-enabled A checkpoint, independent U.
 {
   tvp,
   lib,
   base,
   src,
   version,
-  bash,
-  coreutils,
-  gnumake,
-  gnutar,
-  python,
-  binutils,
-  patchelf,
-  sed,
-  grep,
-  gawk,
-  diffutils,
-  findutils,
-  xz,
+  expat,
+  freetype,
+  gperf,
   meson,
   ninja,
-  gperf,
   pkg-config,
-  freetype,
-  expat,
   doCheck ? true,
 }:
 final:
 let
-  inherit (tvp.builder) steps outputs;
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
   command =
     name: run:
     (final.base.environment final.environment)
@@ -38,7 +25,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {
   pname = "fontconfig";
@@ -48,19 +35,6 @@ in
     src
     version
     doCheck
-    bash
-    coreutils
-    gnumake
-    gnutar
-    python
-    binutils
-    patchelf
-    sed
-    grep
-    gawk
-    diffutils
-    findutils
-    xz
     meson
     ninja
     gperf
@@ -68,17 +42,18 @@ in
     freetype
     expat
     ;
+  inherit (tools) bash coreutils;
   outputs = [ "out" ];
   environment = {
     tools = [
-      final.gnumake
-      final.python
-      final.sed
-      final.grep
-      final.gawk
-      final.diffutils
-      final.findutils
-      final.xz
+      tools.gnumake
+      tools.python
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+      tools.xz
       final.meson
       final.ninja
       final.gperf
@@ -96,15 +71,11 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = final.gnutar;
-      xz = final.xz;
-      findutils = final.findutils;
       compression = "xz";
     })
     (steps.shebangs {
       name = "fontconfig.prepare-python";
-      python = final.python;
-      interpreter = "${final.python}/bin/python3";
+      interpreter = "${tools.python}/bin/python3";
       names = [ "python3" ];
       paths = [
         "src/cutout.py"
@@ -133,41 +104,36 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "fontconfig.finalize")
-    (tvp.builder.outputs.copyArtifacts {
-      coreutils = final.coreutils;
-    })
+    (outputs.copyArtifacts
+      {
+      }
+    )
     {
       name = "fontconfig.relocate";
-      tools = [ final.python ];
-      run = ''${final.python}/bin/python3 -B ${./profile-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${final.binutils}/bin/readelf ${final.patchelf}/bin/patchelf ${../libxml2/ordinary/elf.py} ${final.binutils}/bin/objdump'';
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./profile-relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.binutils}/bin/readelf ${tools.patchelf}/bin/patchelf ${../libxml2/ordinary/elf.py} ${tools.binutils}/bin/objdump'';
     }
     {
       name = "fontconfig.self-rpaths";
-      tools = [ final.patchelf ];
+      tools = [ tools.patchelf ];
       run = ''
         for program in "$out"/bin/fc-*; do
-          ${final.patchelf}/bin/patchelf --add-rpath "$out/lib" "$program"
+          ${tools.patchelf}/bin/patchelf --add-rpath "$out/lib" "$program"
         done
       '';
     }
     {
       name = "fontconfig.config-links";
-      tools = [ final.python ];
-      run = ''${final.python}/bin/python3 -B ${./check-config-links.py} "$out"'';
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./check-config-links.py} "$out"'';
     }
     (outputs.strip {
-      python = final.python;
-      binutils = final.binutils;
       paths = [
         "bin"
         "lib"
       ];
     })
     (outputs.rpaths {
-      python = final.python;
-      binutils = final.binutils;
-      patchelf = final.patchelf;
-      base = final.base;
       libraries = final.runtime.libraries;
       paths = [
         "bin"
@@ -175,16 +141,12 @@ in
       ];
     })
     (outputs.development {
-      python = final.python;
       libraries = [
         final.freetype
         final.expat
       ];
     })
     (outputs.checkPaths {
-      python = final.python;
-      binutils = final.binutils;
-      patchelf = final.patchelf;
       paths = [
         "bin"
         "lib"

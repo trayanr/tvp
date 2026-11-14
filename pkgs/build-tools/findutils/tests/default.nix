@@ -1,11 +1,27 @@
+# One installed-suite factory for the whole ordinary family.
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  locale = package.tvp.declaredTestDependencies.locale;
+in
+
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests = {
+    installed-helpers = {
+      script = ''
+        test "$(head -1 ${package}/bin/updatedb)" = '#!${package.specification.bash}/bin/bash'
+        grep -F '${package.specification.helperCoreutils}/bin/sort' ${package}/bin/updatedb >&2
+        test -x ${package}/bin/locate
+        test -x ${package}/libexec/frcode
+        echo installed-helpers
+      '';
+      expected = "installed-helpers";
+    };
     version = {
       script = ''
         ${package}/bin/find --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
@@ -30,3 +46,11 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+
+// import ../../../../lib/tests/command-nls.nix {
+  inherit package locale;
+  command = "find";
+}
+
+// import ../../ordinary-text-contracts.nix { inherit package lib context; }
+// import ../../text-tool-upstream.nix { inherit package lib context; }

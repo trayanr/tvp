@@ -1,7 +1,15 @@
 # Private upstream validation. No validation producer feeds the installed artifact.
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
   d = package.specification;
+  tools = (package.specification.base.standardTools or { }) // {
+    binutils = package.specification.base.compiler.bintools;
+  };
+
   steps = import ../../../../lib/build-steps.nix;
   environment = d.base.environment d.environment;
   prefix = (steps.partition package.buildSteps).first;
@@ -23,7 +31,7 @@ let
       s
   ) production;
 in
-(package.testContext.mkTest {
+(context.mkTest {
   inherit package;
   name = "upstream";
   script = "printf upstream-pass";

@@ -1,91 +1,54 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
   retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.android-platform-tools;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  definition =
-    (tvpLib.packages.mkDefs {
-      "37.0.1" = {
-        constructor = tvp.builder;
-        builder = ./native/build-37.0.1.nix;
-        base = candidate.base;
-        helpers = {
-          inherit tvp;
-        };
-        testContext =
-          package:
-          tvpLib.tests.fromPackage {
-            builder = tvp.builder;
-            inherit package;
-          };
-        source =
-          { version, sha256 }:
-          import <nix/fetchurl.nix> {
-            url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip";
-            inherit sha256;
-          };
-        deps =
-          pkgs.lib.mapAttrs
-            (
-              role: provider:
-              if provider ? __tvpSelection then
-                provider
-              else
-                tvpLib.packages.tagSelection {
-                  namespace = "source-gnu.inputs";
-                  selector = role;
-                  kind = "source-base-build-tool";
-                  reason = "Explicit candidate-base provider for Android payload installation, host finalization or owned tests; preserve its construction generation.";
-                } provider
-            )
-            {
-              inherit (candidate.tools)
-                bash
-                coreutils
-                python
-                binutils
-                patchelf
-                sed
-                grep
-                diffutils
-                findutils
-                ;
-              runtimeLibc = candidate.toolchain.libc;
-              runtimeCompiler = candidate.toolchain.runtime;
-              unzip = tvp.packages.unzip;
-            };
-        opts = {
-          sdkPath = "platform-tools";
-          archiveRoot = "platform-tools";
-          packageMetadata = ./metadata-37.0.1.xml;
-        };
-        blob = retained.versionTable."37.0.1".def.blob;
-      };
-    })."37.0.1";
-  versionTable = retained.versionTable // {
-    "37.0.1" = retained.versionTable."37.0.1" // {
-      def = if native then definition else retained.versionTable."37.0.1".def;
-    };
-  };
-  publicArgs = retained // {
-    inherit versionTable;
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? testContext then
-        import ./tests/native.nix { inherit pkgs tvpLib package; }
-      else
-        (retained.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
   pname = "android-platform-tools";
-  canonical = tvpLib.packages.mkVersions publicArgs;
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
+          } tvp.baseTiers.full.compiler.libc;
+          runtimeCompiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
+          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          unzip = tvp.packages.unzip;
+        };
+        opts = {
+          sourceLayout = {
+            url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip";
+          };
+        };
+        blob = {
+          reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
+          needs = "A source Android toolchain and component build graph.";
+          blocked.package = "android-sdk-from-source";
+        };
+      };
+      releases."37.0.1" = "sha256-0jDxOEL2D3gqhkX5yBP4+EW/NgiepyifKMSPF5eTE/E=";
+    }
+  ];
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = versionTable.${version}.def.opts.sourceLayout.url;
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
+    testDeps = { };
+  };
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
+  recipes."android-platform-tools" = family // {
     constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

@@ -1,11 +1,16 @@
+# One installed-suite factory for the whole ordinary family.
 {
-  pkgs,
-  tvpLib,
   package,
-  locale,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  locale = package.tvp.declaredTestDependencies.locale;
+in
+
+context.mkSuite {
+  inherit package;
+  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
   tests = {
     version = {
       script = ''
@@ -22,8 +27,8 @@ tvpLib.tests.mkSuite {
     pcre-utf8 = {
       script = ''
         unset LOCALE_ARCHIVE
-        export LOCPATH=${locale}/lib/locale LC_ALL=C.UTF-8
-        test "$(${locale.bin}/bin/locale charmap)" = UTF-8
+        export LOCPATH=${package.compiler.libc}/lib/locale LC_ALL=C.UTF-8
+        test "$(${package.compiler.libc}/bin/locale charmap)" = UTF-8
         printf 'release-42\nrelease-no\n' | ${package}/bin/grep -Po '(?<=release-)[0-9]+'
         printf '3\n٣\n' > digits
         ${package}/bin/grep -P '^\d$' digits
@@ -37,7 +42,7 @@ tvpLib.tests.mkSuite {
         (${package}/bin/grep -m2 x > /dev/null && head -n1) < input
       '';
       # Preserve the historical 3.11 overread rather than backporting a fix.
-      expected = if pkgs.lib.versionOlder package.version "3.12" then "" else "x-third";
+      expected = if lib.versionOlder package.version "3.12" then "" else "x-third";
     };
     unix-byte-offsets = {
       script = ''
@@ -46,7 +51,7 @@ tvpLib.tests.mkSuite {
           status=0
           printf 'x\n' | ${package}/bin/grep "$option" x > actual-output 2> diagnostic || status=$?
           ${
-            if pkgs.lib.versionOlder package.version "3.12" then
+            if lib.versionOlder package.version "3.12" then
               ''
                 test "$status" = 0
                 test "$(cat actual-output)" = x
@@ -69,3 +74,10 @@ tvpLib.tests.mkSuite {
     };
   };
 }
+
+// import ./native-nls.nix { inherit package locale; }
+
+// import ./native-contract.nix { inherit package; }
+
+// import ../../ordinary-text-contracts.nix { inherit package lib context; }
+// import ../../text-tool-upstream.nix { inherit package lib context; }

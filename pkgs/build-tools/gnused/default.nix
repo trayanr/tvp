@@ -1,202 +1,63 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-  defs = tvpLib.packages.mkDefs {
-    "4.9" = {
-      builder = ./build-4.9.nix;
-      base = tvp.bases.default;
-      deps = {
-        acl = tvp.packages.acl_2;
-      };
-    };
+  retained = (import ./retained { inherit pkgs tvp; }).recipes.gnused;
+  testBase = tvp.baseTiers.full;
+  testTools = testBase.standardTools;
+  locale = import ../../../lib/tests/gnu-locale.nix {
+    builder = tvp.builder;
+    base = testBase;
+    bash = testBase.shell;
+    coreutils = testBase.coreutils;
+    tar = testTools.gnutar;
+    xz = testTools.xz;
+    libc = testBase.compiler.libc;
   };
-  versionTable = tvpLib.packages.mkTable [
+  versionTable = tvp.lib.packages.mkTable [
     {
-      def = defs."4.9";
+      def = {
+        builder = ./build-4.9.nix;
+        deps = {
+          acl = tvp.packages.acl_2;
+        };
+      };
       releases = {
         "4.9" = "sha256-biJrcy4c1zlGStaGK9Ghq6QteYKSLaelNRljHSSXUYE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-4.10.nix;
+        deps = {
+          acl = tvp.packages.acl_2;
+        };
+      };
+      releases = {
         "4.10" = "sha256-uOchgrLslqNXTimYxHt6qmTMIM4ADY6awxPMB87PKMc=";
       };
     }
   ];
   pname = "gnused";
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    extraArgs.mkTests = package: import ./tests { inherit pkgs tvpLib package; };
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://mirrors.kernel.org/gnu/sed/";
-      # Capture whole filenames so signatures and archival README placeholders
-      # cannot be mistaken for available tarballs by a partial regex match.
-      pattern = "sed-[0-9][^\"<>[:space:]]*";
-      normalise =
-        file:
-        let
-          matched = builtins.match "sed-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|bz2|lz)" file;
-        in
-        if matched == null then null else builtins.head matched;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    inherit (retained) packageMeta;
+    source =
+      { version, sha256 }:
+      import <nix/fetchurl.nix> {
+        url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
+        inherit sha256;
+      };
+    tests = import ./tests;
+    testDeps = {
+      inherit locale;
     };
   };
-  # Complete capture, including the old table and test/source factories.
-  constructionRecipe = packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is a build-only host generation; ordinary Coreutils/Tar consume the target libraries used to construct these tools.";
-    } candidate.tools.${name};
-  ownedDefs = tvpLib.packages.mkDefs {
-    "4.9" = {
-      constructor = tvp.builder;
-      builder = ./ordinary/build-4.9.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        xz = constructionTool "xz";
-        gzip = constructionTool "gzip";
-        python = constructionTool "python";
-        perl = constructionTool "perl";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        acl = tvp.packages.acl_2;
-      };
-    };
-    "4.10" = {
-      constructor = tvp.builder;
-      builder = ./native/build-4.10.nix;
-      base = candidate.base;
-      source =
-        { version, sha256 }:
-        import <nix/fetchurl.nix> {
-          url = "https://mirrors.kernel.org/gnu/sed/sed-${version}.tar.xz";
-          inherit sha256;
-        };
-      testContext =
-        package:
-        tvpLib.tests.fromPackage {
-          builder = tvp.builder;
-          inherit package;
-        };
-      helpers = {
-        inherit tvp;
-      };
-      deps = {
-        bash = constructionTool "bash";
-        coreutils = constructionTool "coreutils";
-        gnumake = constructionTool "make";
-        gnutar = constructionTool "tar";
-        xz = constructionTool "xz";
-        gzip = constructionTool "gzip";
-        python = constructionTool "python";
-        perl = constructionTool "perl";
-        binutils = constructionTool "binutils";
-        patchelf = constructionTool "patchelf";
-        sed = constructionTool "sed";
-        grep = constructionTool "grep";
-        gawk = constructionTool "gawk";
-        diffutils = constructionTool "diffutils";
-        findutils = constructionTool "findutils";
-        acl = tvp.packages.acl_2;
-      };
-    };
-  };
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = candidate.base;
-    inherit (candidate.tools)
-      bash
-      coreutils
-      tar
-      xz
-      ;
-    libc = candidate.toolchain.libc;
-  };
-  installedArgs = packageArgs // {
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      (
-        (
-          if package ? testContext then
-            import ./tests/native-default.nix {
-              inherit
-                pkgs
-                tvpLib
-                package
-                locale
-                ;
-            }
-          else
-            import ./tests { inherit pkgs tvpLib package; }
-        )
-        // pkgs.lib.optionalAttrs (package ? testContext) (
-          import ../../../lib/tests/command-source-edit.nix { inherit tvp package; }
-        )
-      )
-      // pkgs.lib.optionalAttrs (package ? testContext && builtins.elem package.version [ "4.9" ]) (
-        import ../ordinary-text-contracts.nix { inherit tvp package; }
-      )
-    ) { inherit pkgs; };
-    versionTable = versionTable // {
-      "4.9" = versionTable."4.9" // {
-        def = if native then ownedDefs."4.9" else versionTable."4.9".def;
-      };
-      "4.10" = versionTable."4.10" // {
-        def = if native then ownedDefs."4.10" else versionTable."4.10".def;
-      };
-    };
-  };
-  publicArgs = installedArgs // {
-    extraArgs = installedArgs.extraArgs // {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        package:
-        (
-          if installedArgs.extraArgs.mkTests ? override then
-            (installedArgs.extraArgs.mkTests.override { inherit pkgs; }) package
-          else
-            installedArgs.extraArgs.mkTests package
-        )
-        // (import ../owned-split-tests.nix { inherit pkgs tvp package; })
-      ) { inherit pkgs; };
-    };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.gnused = family // {
+    constructionRecipe = retained;
   };
   inherit canonical;
-  aliases = tvpLib.packages.mkAliases { inherit pname versionTable canonical; };
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
 }

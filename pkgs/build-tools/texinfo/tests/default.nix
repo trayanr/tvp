@@ -1,43 +1,240 @@
 {
-  pkgs,
-  tvpLib,
   package,
+  lib,
+  context,
 }:
-tvpLib.tests.mkSuite {
-  inherit pkgs package;
+let
+  steps = (import ../../../../lib/builder.nix { inherit lib; }).steps;
+  p = package;
+  d = p.tvp.deps;
+  sourceProbe =
+    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
+      (
+        s:
+        let
+          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
+        in
+        (removeAttrs s [ "artifactName" ])
+        // {
+          inherit base;
+          plan = [
+            (steps.unpack {
+              src = s.src;
+              tar = p.specification.gnutar;
+              gzip = p.tvp.declaredTestDependencies.sourceGzip;
+              findutils = p.specification.findutils;
+              compression = "gzip";
+            })
+            (
+              (base.environment s.environment)
+              // {
+                name = "texinfo.source-base";
+                run = ''
+                  test "$(cat source/marker)" = 'alternate source'
+                  printf 'int main(void) { return 0; }\n' > probe.c
+                  "$CC" probe.c -o probe; "$CXX" -x c++ probe.c -o probe-cxx
+                  env -i ./probe; env -i ./probe-cxx
+                  test "$(cat selected-compiler)" = $'selected\nselected'
+                  mkdir "$out"; cp source/marker "$out/source-marker"
+                '';
+              }
+            )
+          ];
+        }
+      );
+  runtimeChanged = p.editRuntime (
+    r: r // { dlopenDirectories = [ "${p.specification.python}/lib" ]; }
+  );
+  outputChanged = p.editSteps (
+    steps.append [
+      {
+        name = "texinfo.output-control";
+        run = ''printf edited > "$out/nix-support/custom-output"'';
+      }
+    ]
+  );
+  provider = d.perl.edit (
+    s:
+    (removeAttrs s [ "artifactName" ])
+    // {
+      plan = [
+        {
+          name = "texinfo.provider";
+          run = ''
+            mkdir -p "$out/bin"
+            cat > "$out/bin/perl" <<'SCRIPT'
+            #!${p.specification.bash}/bin/bash
+            if [[ -n "''${TVP_PROVIDER_LOG-}" ]]; then printf selected >> "$TVP_PROVIDER_LOG"; fi
+            exec ${d.perl}/bin/perl "$@"
+            SCRIPT
+            chmod +x "$out/bin/perl"
+          '';
+        }
+      ];
+    }
+  );
+  localeProvider = d.perl.edit (
+    s:
+    (removeAttrs s [ "artifactName" ])
+    // {
+      plan = [
+        {
+          name = "texinfo.locale-provider";
+          run = ''
+            mkdir -p "$out/bin"
+            cat > "$out/bin/locale" <<'SCRIPT'
+            #!${p.specification.bash}/bin/bash
+            if [[ -n "''${TVP_PROVIDER_LOG-}" ]]; then printf locale >> "$TVP_PROVIDER_LOG"; fi
+            exec ${d.localeTools}/bin/locale "$@"
+            SCRIPT
+            chmod +x "$out/bin/locale"
+          '';
+        }
+      ];
+    }
+  );
+  ncursesProvider = d.ncurses.edit (
+    s:
+    (removeAttrs s [ "artifactName" ])
+    // {
+      plan = [
+        {
+          name = "texinfo.ncurses-provider";
+          run = ''mkdir "$out"; cp -R ${d.ncurses}/. "$out/"; chmod -R u+w "$out"'';
+        }
+      ];
+    }
+  );
+  rebound = p.override {
+    perl = provider;
+    localeTools = localeProvider;
+    ncurses = ncursesProvider;
+  };
+
+in
+context.mkSuite {
+  inherit package;
+  tools = [
+    p.specification.grep
+    p.specification.sed
+    p.specification.gawk
+    p.specification.findutils
+    p.specification.diffutils
+  ];
+  libraries = [ ];
   tests = {
+
     version = {
-      script = ''makeinfo --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' '';
-      expected = package.version;
+      script = ''${p}/bin/makeinfo --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' '';
+      expected = p.version;
     };
+
     formats = {
       script = ''
-        makeinfo ${./fixtures/manual.texi} -o manual.info
-        makeinfo --html --no-split ${./fixtures/manual.texi} -o manual.html
-        makeinfo --plaintext ${./fixtures/manual.texi} -o manual.txt
+        env -i ${p}/bin/makeinfo ${./fixtures/manual.texi} -o manual.info
+        env -i ${p}/bin/texi2any --html --no-split ${./fixtures/manual.texi} -o manual.html
+        env -i ${p}/bin/makeinfo --plaintext ${./fixtures/manual.texi} -o manual.txt
         grep -q 'TVP preserves build tools' manual.html
         grep -q 'TVP preserves build tools' manual.txt
-        # Also exercises the Info reader and its declared curses linkage.
-        info --file=./manual.info --output=read.txt
+        env -i ${p}/bin/info --file=./manual.info --output=read.txt
         grep -q 'TVP preserves build tools' read.txt
-        echo ok
+        printf ok
       '';
       expected = "ok";
     };
     perl-xs = {
       script = ''
-        TEXINFO_XS=required makeinfo --plaintext ${./fixtures/manual.texi} -o manual.txt
-        grep -q 'TVP preserves build tools' manual.txt
-        echo ok
+        env -i TEXINFO_XS=debug ${p}/bin/makeinfo --plaintext ${./fixtures/manual.texi} -o manual.txt 2>xs.log
+        grep -Fq '${p}/lib/texinfo/Parsetexi.so loaded' xs.log
+        grep -Fq '${p}/lib/texinfo/MiscXS.so loaded' xs.log
+        env -i TEXINFO_XS=required ${p}/bin/makeinfo --plaintext ${./fixtures/manual.texi} -o required.txt
+        cmp manual.txt required.txt
+        grep -q 'TVP preserves build tools' required.txt
+        printf ok
       '';
       expected = "ok";
+    };
+    errors = {
+      script = ''
+        printf '@node Top\n@top Bad\n@unknowncommand{}\n' > invalid.texi
+        if env -i TEXINFO_XS=required ${p}/bin/makeinfo invalid.texi -o bad.info >stdout 2>stderr; then exit 1; fi
+        grep -q 'unknown command' stderr
+        if env -i ${p}/bin/makeinfo missing.texi -o missing.info >stdout 2>stderr; then exit 1; fi
+        test -s stderr
+        printf errors
+      '';
+      expected = "errors";
+    };
+    reader-locale = {
+      script = ''
+        env -i ${p}/bin/info --version | head -1 | grep -q '${p.version}'
+        readelf -d ${p}/bin/info | grep -q 'libncursesw'
+        ${p.specification.base.compiler.libc}/lib/ld-linux-x86-64.so.2 --list ${p}/bin/info > linkage
+        grep -Fq '${d.ncurses}/lib/libncursesw' linkage
+        grep -Fq '${d.localeTools}/bin/locale' ${p}/share/texinfo/Texinfo/Translations.pm
+        env -i ${d.localeTools}/bin/locale -a | grep -qx C
+        printf reader
+      '';
+      expected = "reader";
     };
     tex-support = {
-      script = ''
-        test -s ${package}/texmf-dist/tex/texinfo/texinfo.tex
-        echo ok
-      '';
+      script = "test -s ${p}/texmf-dist/tex/texinfo/texinfo.tex; printf ok";
       expected = "ok";
     };
+
+    shell-helpers = {
+      script = ''
+        for name in texi2pdf texi2dvi texindex; do
+          env -i PATH=/nonexistent ${p}/bin/$name --help > help 2> error
+          test ! -s error; grep -q 'Usage:' help
+          env -i PATH=/nonexistent ${p}/bin/$name --version > version 2> error
+          test ! -s error; grep -q '${p.version}' version
+        done
+        printf '\\entry{zeta}{2}{zeta}\n\\entry{alpha}{1}{alpha}\n' > index.cp
+        env -i PATH=/nonexistent ${p}/bin/texindex index.cp 2> error
+        test ! -s error
+        printf '\\initial {A}\n\\entry{alpha}{1}\n\\initial {Z}\n\\entry{zeta}{2}\n' > expected
+        cmp expected index.cps
+        # Keep the documented external-tool seams, including argument-bearing SED.
+        env -i PATH=/nonexistent SED='${p.specification.sed}/bin/sed -u' ${p}/bin/texi2dvi --version > version 2> error
+        test ! -s error; grep -q '${p.version}' version
+        env -i PATH=/nonexistent TEXINDEX_AWK=${p.specification.gawk}/bin/awk TEXINDEX_SCRIPT=${p}/share/texinfo/texindex.awk ${p}/bin/texindex index.cp 2> error
+        test ! -s error
+        printf bound
+      '';
+      expected = "bound";
+    };
+
+    constructor = {
+      expected =
+        assert (p.override { }).drvPath == p.drvPath;
+        assert (p.edit (s: s)).drvPath == p.drvPath;
+        assert !(p ? stdenv) && !(p ? overrideAttrs);
+        assert rebound.tests.version.package.outPath == rebound.outPath;
+        assert
+          ((p.mkTests.override { tests = import ./default.nix; }) rebound).version.drvPath
+          == rebound.tests.version.drvPath;
+        assert runtimeChanged.drvPath != p.drvPath;
+        "qualified";
+      script = ''
+        test -s ${sourceProbe}/source-marker
+        test "$(cat ${outputChanged}/nix-support/custom-output)" = edited
+        ${runtimeChanged}/bin/makeinfo --version >&2
+        readelf -d ${runtimeChanged}/bin/info | grep -Fq '${p.specification.python}/lib'
+        env -i TVP_PROVIDER_LOG="$PWD/provider" TEXINFO_XS=required ${rebound}/bin/makeinfo --plaintext ${./fixtures/manual.texi} -o rebound.txt
+        test -s provider
+        # Exercise the selected locale executable through the installed module.
+        env -i TVP_PROVIDER_LOG="$PWD/locale-calls" ${provider}/bin/perl -I${rebound}/share/texinfo -MTexinfo::ModulePath -e 'Texinfo::ModulePath::init($ARGV[0],$ARGV[1],$ARGV[0], "installed" => 1); require Texinfo::Translations; Texinfo::Translations::_switch_messages_locale();' ${rebound}/share/texinfo ${rebound}/lib/texinfo 2>locale.err || { cat locale.err >&2; exit 1; }
+        test -s locale-calls
+        ${p.specification.base.compiler.libc}/lib/ld-linux-x86-64.so.2 --list ${rebound}/bin/info > rebound-linkage
+        grep -Fq '${ncursesProvider}/lib/libncursesw' rebound-linkage
+        grep -q 'TVP preserves build tools' rebound.txt
+        printf qualified
+      '';
+    };
   };
+}
+
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = context.mkUpstream { inherit package; };
 }

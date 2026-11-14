@@ -30,7 +30,7 @@ let
     };
     inherit pname versionTable;
     extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }: binutils: import ./tests { inherit pkgs tvpLib binutils; }
+      { pkgs }: binutils: import ./tests/retained.nix { inherit pkgs tvpLib binutils; }
     ) { inherit pkgs; };
     packageMeta.upstream = {
       type = "directory-index";

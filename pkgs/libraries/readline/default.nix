@@ -1,305 +1,231 @@
 { pkgs, tvp }:
 let
-  tvpLib = tvp.lib;
-
-  defs = tvpLib.packages.mkDefs {
-    "2.0" = {
-      builder = ./build-2.0.nix;
-      # gcc 10 made -fno-common the default, and these releases declare globals
-      # as tentative definitions in a header, so every object file defines them.
-      # The code was correct for its era; the compiler moved.
-      base = tvp.bases.gcc9;
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-
-    "2.1" = {
-      builder = ./build-2.0.nix;
-      base = tvp.bases.default;
-      # The configure probes and empty parameter lists require pre-C23 C.
-      opts = {
-        cStandard = "gnu89";
-        # readline.h defines rl_dispatching in every library object.
-        commonSymbols = true;
-      };
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-
-    "2.2.1" = {
-      builder = ./build-2.0.nix;
-      base = tvp.bases.default;
-      # Old configure/termcap declarations require the original C dialect.
-      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
-      opts.cStandard = "gnu89";
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-
-    "2.2" = {
-      builder = ./build-2.0.nix;
-      base = tvp.bases.default;
-      # Old configure/termcap declarations require the original C dialect.
-      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
-      opts.cStandard = "gnu89";
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-      };
-      patches = [
-        {
-          file = ./patches/2.2-install-clobbers-libreadline.patch;
-          reason = "2.2's install target backs up libreadline.a under libhistory's name, destroying the libreadline.a it installed three lines earlier, so the package ships with no readline library at all. Corrected upstream in 2.2.1.";
-        }
-      ];
-    };
-
-    "4.0" = {
-      builder = ./build-4.0.nix;
-      base = tvp.bases.default;
-      # Old configure/termcap declarations require the original C dialect.
-      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
-      opts.cStandard = "gnu89";
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-        automake = tvp.packages.automake_1;
-      };
-    };
-
-    "4.3" = {
-      builder = ./build-4.3.nix;
-      base = tvp.bases.default;
-      # Old configure/termcap declarations require the original C dialect.
-      # 8.3 replaces the empty prototypes; keep its newer defaults unchanged.
-      opts.cStandard = "gnu89";
-      deps = {
-        ncurses = tvp.packages.ncurses_6;
-      };
-    };
-    "8.3" = {
-      builder = ./build-4.3.nix;
-      base = tvp.bases.default;
-      deps.ncurses = tvp.packages.ncurses_6;
-    };
-
-  };
-
-  inherit (tvpLib.packages) merge mkTable;
-
-  versionTable = merge {
-    "2" = mkTable (import ./2.nix { inherit defs; });
-    "4" = mkTable (import ./4.nix { inherit defs; });
-    "5" = mkTable (import ./5.nix { inherit defs; });
-    "6" = mkTable (import ./6.nix { inherit defs; });
-    "7" = mkTable (import ./7.nix { inherit defs; });
-    "8" = mkTable (import ./8.nix { inherit defs; });
-  };
-
+  retained = import ./retained-construction.nix { inherit pkgs tvp; };
+  # Captured earlier Perl is a preparation role, not an ordinary runtime dependency.
+  retainedPreparationPerl = tvp.lib.packages.withConstraint {
+    category = "construction";
+    reason = "Retained source-GNU perl is an explicit build-only host generation, independent of these target libraries and commands.";
+  } (import ../../../bases/source-gnu { }).tools.perl;
   pname = "readline";
-
-  packageArgs = {
-    infra = {
-      inherit (pkgs) lib fetchurl;
-    };
-    inherit pname;
-    inherit versionTable;
-
-    extraArgs = {
-      mkTests = pkgs.lib.makeOverridable (
-        { pkgs }:
-        readline:
-        import ./tests {
-          inherit pkgs tvpLib readline;
-        }
-      ) { inherit pkgs; };
-    };
-
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://mirrors.kernel.org/gnu/readline/";
-        pattern = "readline-[0-9][^\"]*\\.tar\\.gz";
-
-        normalise =
-          file:
-          if pkgs.lib.hasPrefix "readline-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-            pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "readline-" file)
-          else
-            null;
-
-        # The directory also carries documentation-only tarballs named
-        # readline-4.2-doc.tar.gz, which are not releases of the library.
-        include =
-          version:
-          builtins.match "[0-9].*" version != null
-          && !(
-            pkgs.lib.hasSuffix "-doc" version
-            || pkgs.lib.hasInfix "alpha" version
-            || pkgs.lib.hasInfix "beta" version
-            || pkgs.lib.hasInfix "-rc" version
-          );
+  versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build-owned-2.1.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        opts.commonSymbols = true;
+        deps.perl = retainedPreparationPerl;
       };
-    };
-  };
-
-  # Complete legacy call: table, factories, source construction and test routing.
-  constructionRecipe = packageArgs;
-  candidate = import ../../../bases/source-gnu { };
-  native = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-  constructionTool =
-    name:
-    tvpLib.packages.withConstraint {
-      category = "construction";
-      reason = "Retained source-GNU ${name} is an explicit build-only host generation, independent of these target libraries and commands.";
-    } candidate.tools.${name};
-  ordinaryDefs = import ./ordinary {
-    inherit
-      tvp
-      tvpLib
-      candidate
-      constructionTool
-      ;
-    inherit (pkgs) fetchurl;
-    ncurses = tvp.packages.ncurses_6;
-  };
-  publicArgs = packageArgs // {
-    versionTable = versionTable // {
-      "2.1" = versionTable."2.1" // {
-        def = if native then ordinaryDefs."2.1" else versionTable."2.1".def;
-      };
-      "2.2" = versionTable."2.2" // {
-        def = if native then ordinaryDefs."2.2" else versionTable."2.2".def;
-      };
-      "2.2.1" = versionTable."2.2.1" // {
-        def = if native then ordinaryDefs."2.2.1" else versionTable."2.2.1".def;
-      };
-      "4.0" = versionTable."4.0" // {
-        def = if native then ordinaryDefs."4.0" else versionTable."4.0".def;
-      };
-      "4.1" = versionTable."4.1" // {
-        def = if native then ordinaryDefs."4.0" else versionTable."4.1".def;
-      };
-      "4.2" = versionTable."4.2" // {
-        def = if native then ordinaryDefs."4.0" else versionTable."4.2".def;
-      };
-      "4.2a" = versionTable."4.2a" // {
-        def = if native then ordinaryDefs."4.0" else versionTable."4.2a".def;
-      };
-      "4.3" = versionTable."4.3" // {
-        def = if native then ordinaryDefs."4.3" else versionTable."4.3".def;
-      };
-      "5.0" = versionTable."5.0" // {
-        def = if native then ordinaryDefs."4.3" else versionTable."5.0".def;
-      };
-      "5.1" = versionTable."5.1" // {
-        def = if native then ordinaryDefs."4.3" else versionTable."5.1".def;
-      };
-      "5.2" = versionTable."5.2" // {
-        def = if native then ordinaryDefs."4.3" else versionTable."5.2".def;
-      };
-
-      "6.0" = versionTable."6.0" // {
-        def = if native then ordinaryDefs."6.0" else versionTable."6.0".def;
-      };
-      "6.1" = versionTable."6.1" // {
-        def = if native then ordinaryDefs."6.0" else versionTable."6.1".def;
-      };
-      "6.2" = versionTable."6.2" // {
-        def = if native then ordinaryDefs."6.0" else versionTable."6.2".def;
-      };
-      "6.3" = versionTable."6.3" // {
-        def = if native then ordinaryDefs."6.0" else versionTable."6.3".def;
-      };
-      "7.0" = versionTable."7.0" // {
-        def = if native then ordinaryDefs."6.0" else versionTable."7.0".def;
-      };
-      "8.0" = versionTable."8.0" // {
-        def = if native then ordinaryDefs."8.0" else versionTable."8.0".def;
-      };
-      "8.1" = versionTable."8.1" // {
-        def = if native then ordinaryDefs."8.0" else versionTable."8.1".def;
-      };
-      "8.1.2" = versionTable."8.1.2" // {
-        def = if native then ordinaryDefs."8.0" else versionTable."8.1.2".def;
-      };
-      "8.2" = versionTable."8.2" // {
-        def = if native then ordinaryDefs."8.2" else versionTable."8.2".def;
-      };
-      "8.2.13" = versionTable."8.2.13" // {
-        def = if native then ordinaryDefs."8.2" else versionTable."8.2.13".def;
-      };
-
-      "8.3" = versionTable."8.3" // {
-        def = if native then ordinaryDefs."8.3" else versionTable."8.3".def;
-      };
-    };
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { pkgs }:
-      package:
-      if package ? specification && package.specification ? cStandard then
-        import ./tests/ordinary.nix {
-          inherit
-            pkgs
-            tvpLib
-            package
-            tvp
-            ;
-        }
-      else if package ? testContext then
-        import ./tests/native-default.nix { inherit pkgs tvpLib package; }
-      else
-        (constructionRecipe.extraArgs.mkTests.override { inherit pkgs; }) package
-    ) { inherit pkgs; };
-  };
-  canonical = tvpLib.packages.mkVersions publicArgs;
-  variants = tvpLib.packages.mkVariants (
-    (
-      publicArgs
-      // {
-        versionTable = {
-          "8.3" = versionTable."8.3" // {
-            def =
-              if native then
-                ordinaryDefs."8.3"
-                // {
-                  builder = ./ordinary/build-8.3-ncurses64.nix;
-                }
-              else
-                versionTable."8.3".def;
-          };
+      status = {
+        level = "degraded";
+        capability = "shared";
+        reason = "Static libraries only. These releases predate support/shobj-conf and link shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects; 2.0 and 2.1 carry no install-shared target at all.";
+        needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule these releases have.";
+        blocked = {
+          base = "period-linker";
         };
-      }
-    )
+      };
+      releases = {
+        "2.1" = "sha256-vZhE8r2ZBBbNjTskCB1tPGd2/nlQYwYU12iJ8iJCv70=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-2.1.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        patches = [
+          {
+            file = ./patches/2.2-install-clobbers-libreadline.patch;
+            reason = "Preserve libreadline.a while installing libhistory.a; fixed upstream in 2.2.1.";
+          }
+        ];
+        deps.perl = retainedPreparationPerl;
+      };
+      status = {
+        level = "degraded";
+        capability = "shared";
+        reason = "Static libraries only. This release predates support/shobj-conf and links shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects.";
+        needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule this release has.";
+        blocked = {
+          base = "period-linker";
+        };
+      };
+      releases = {
+        "2.2" = "sha256-eErtGTfKrHRqpLiGoMorou8tMRlCCv3iS6pWvHDAbZQ=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-2.1.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      status = {
+        level = "degraded";
+        capability = "shared";
+        reason = "Static libraries only. These releases predate support/shobj-conf and link shared objects with a SunOS-era `ld -assert pure-text` invocation that modern binutils rejects; 2.0 and 2.1 carry no install-shared target at all.";
+        needs = "A shared-library rule that works against ELF, which upstream first shipped at 4.0, or a period linker that accepts the rule these releases have.";
+        blocked = {
+          base = "period-linker";
+        };
+      };
+      releases = {
+        "2.2.1" = "sha256-GBmwBUI7eOaHZlN4H+WdmyLtElWGe3NtlckeUpp7Gns=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-4.0.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.automake = tvp.packages.automake_1;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "4.0" = "sha256-9Tt2z2sld7EbcOFJDycyH+LWdB40YVxFE0JMCYPY7Ss=";
+        "4.1" = "sha256-8bPPCD5/V+t9pfblOVy4rF0O0IsHUXzyhL6qGSq2S6Q=";
+        "4.2" = "sha256-9NmiMED9JrN63tuMB+cZpc60btb9aHqExOf5SRyyOHI=";
+        "4.2a" = "sha256-pQZJuTGODJVV941A9wGnjrd1LhkPC2cHu4CknXX+l/c=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-4.3.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "4.3" = "sha256-7q9vBQufUVsGNuW08sFT+e946QYe5d109hL6tUx3v4g=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-4.3.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "5.0" = "sha256-0Z5Pgg2mU7lCYrDlze2kX0dMLXs3ioWkua6q52JpphE=";
+        "5.1" = "sha256-Fj7GQH7HWnCckHdlex/KkxTMdJmdV9HDWrGFcCuwZ8Y=";
+        "5.2" = "sha256-EuiNlq7izRGSUANW8FNVQNtJkoLKf3Yzn7QijDEkn0U=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-6.0.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "6.0" = "sha256-EZnZBcAlc1s0z2fQMHhYXhj4RwcFJBMnn+aM5Iwcwd4=";
+        "6.1" = "sha256-8Mr2CMBszW1Ws77hhDRY1QnFP5tT3//+B8wR2PA/qWk=";
+        "6.2" = "sha256-eaaWBwoFjCM8ct1qxpcCHMZKvV7VHlnbhn1m0Zaok4E=";
+        "6.3" = "sha256-VrpgcblGL5gMWnKrACOJO2W6beu07rR116Vj3GXK/UM=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-6.0.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "7.0" = "sha256-dQ1DcYUob0CjaeHk9HZO2pMrlFm17JpzFig5PdPTIzQ=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-6.0.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        opts.pkgConfigModules = [ "readline" ];
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "8.0" = "sha256-4zn1GXFHjTafigU6MwoZB4GsuYZM9MVBBg8SB4lI5GE=";
+        "8.1" = "sha256-+M607hMeMjIiahf1GxZK/EbNC55s7zRL6Hxlliy4KwI=";
+        "8.1.2" = "sha256-dYmiOBqEGeaGVKR2I859/LdWgVyP7nJrmPkL9mive8Y=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-6.0.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        opts.pkgConfigModules = [
+          "readline"
+          "history"
+        ];
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "8.2" = "sha256-P+txcfFqhO6CyhijbXub4QmlLAT0kqBTMx19EJUAfDU=";
+        "8.2.13" = "sha256-Dlvk0pN+i9m3zWDUZyHOefiKM0Fd1owtc4+1kkY49lY=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-8.3.nix;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = retainedPreparationPerl;
+      };
+      releases = {
+        "8.3" = "sha256-/lODIERngozUle6NHTwDen66E4nCK8agQfYnl2+QYcw=";
+      };
+    }
+  ];
+  family = tvp.lib.packages.mkFamily {
+    inherit pname versionTable;
+    packageMeta = retained.packageMeta;
+    source =
+      { version, sha256 }:
+      pkgs.fetchurl {
+        urls = [
+          "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
+          "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
+        ];
+        inherit sha256;
+      };
+    tests = import ./tests/installed.nix;
+  };
+  # The established broken exclusion is neither ported nor instantiated by mkFamily.
+  brokenTable = {
+    "2.0" = retained.versionTable."2.0";
+  };
+  excluded = tvp.lib.packages.mkVersions (retained // { versionTable = brokenTable; });
+  canonical = tvp.lib.packages.mkVersions family // excluded;
+  allVersions = family.versionTable // brokenTable;
+  variants = tvp.lib.packages.mkVariants (
+    family
     // {
       inherit pkgs;
-      profiles.ncurses64 = {
-        base = if native then candidate.base else tvp.bases.default;
-        versions."8.3".deps.ncurses =
+      versionTable = {
+        "8.3" = family.versionTable."8.3";
+      };
+      profiles.ncurses64.base = family.versionTable."8.3".def.base;
+      profiles.ncurses64.versions."8.3" = {
+        deps.ncurses =
           tvp.lib.packages.withConstraint
             {
               reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
             }
-            (tvpLib.packages.mkVersions
+            (tvp.lib.packages.mkVersions
               (import ../ncurses { inherit pkgs tvp; }).recipes.ncurses.constructionRecipe
             ).ncurses_6_4;
+        opts.installedInterface = {
+          static = true;
+          propagateNcurses = true;
+        };
       };
     }
   );
-
 in
 {
-  recipes.${pname} = publicArgs // {
-    inherit constructionRecipe;
+  recipes.readline = family // {
+    versionTable = allVersions;
+    constructionRecipe = retained;
   };
   inherit canonical variants;
-  aliases = tvpLib.packages.mkAliases {
+  inherit (family) instantiate;
+  aliases = tvp.lib.packages.mkAliases {
+    inherit pname canonical;
+    versionTable = allVersions;
     lines = [ "6_2" ];
-    inherit
-      pname
-      versionTable
-      canonical
-      ;
   };
 }

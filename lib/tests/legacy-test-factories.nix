@@ -73,7 +73,7 @@ let
       recipe = recipes.texinfo;
       retained = recipe.constructionRecipe;
       package = (tvp.lib.packages.mkVersions retained).texinfo_7_1;
-      publicFactory = recipe.extraArgs.mkTests;
+      publicFactory = retained.extraArgs.mkTests;
       original = retained.extraArgs.mkTests;
       publicSelected = (publicFactory.override { pkgs = selected; }) package;
       retainedSelected = (original.override { pkgs = selected; }) package;
@@ -107,7 +107,7 @@ let
       other = import (../../pkgs/build-tools + "/${counterpart}/legacy.nix") { inherit pkgs tvp; };
       package = retained.aliases.${family};
       original = retained.publicArgs.extraArgs.mkTests;
-      publicFactory = recipes.${family}.extraArgs.mkTests;
+      publicFactory = recipes.${family}.constructionRecipe.extraArgs.mkTests;
       fallback = publicFactory package;
       requested = {
         ${counterpart} = tvp.packages.${counterpart};
@@ -134,7 +134,7 @@ let
       recipe = recipes.gnutar;
       construction = recipe.constructionRecipe;
       package = (tvp.lib.packages.mkVersions construction).gnutar_1_32;
-      factory = recipe.extraArgs.mkTests;
+      factory = construction.extraArgs.mkTests;
       publicSelected = (factory.override { pkgs = selected; }) package;
       variant =
         (tvp.lib.packages.mkVariants (

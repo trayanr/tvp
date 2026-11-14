@@ -21,16 +21,31 @@ let
   focus = f: builtins.all (n: f family.${n}) focusedNames;
   runtimeEdit = p: p.editRuntime (r: r // { dlopenDirectories = [ "/tcl-runtime-probe" ]; });
   sourceEdit = p: p.override { src = probe; };
+  # Binutils is also the compiler's construction tool. To exercise a genuinely
+  # final-only inspector edit, replace its explicit suffix commands/tools through
+  # the existing step interface, rather than changing production's base compiler.
   toolEdit =
     p:
-    p.edit (
-      s:
-      s
-      // {
-        tools = s.tools // {
-          binutils = toolProbe;
+    p.editSteps (
+      plan:
+      let
+        parts = steps.partition plan;
+        marker = builtins.head (builtins.filter (s: (s.kind or "command") == "split") plan);
+        original = p.specification.base.compiler.bintools;
+        selected = toolProbe // {
+          __tvpToolRole = "binutils";
         };
-      }
+        replace =
+          step:
+          step
+          // {
+            tools = map (tool: if toString tool == toString original then selected else tool) (
+              step.tools or [ ]
+            );
+            run = builtins.replaceStrings [ (toString original) ] [ (toString selected) ] step.run;
+          };
+      in
+      parts.first ++ [ marker ] ++ map replace parts.second
     );
   native = [
     family.tcl_8_6_18
@@ -150,7 +165,8 @@ in
       && family.tcl_8_5_16.tvp.features.pkgConfig;
     oldNoZlib = !(family.tcl_8_5_19.tvp.deps ? zlib);
     dialect =
-      family.tcl_8_0_2.specification.cStandard == "gnu89" && family.tcl_8_6_0.specification.linkUnwinder;
+      family.tcl_8_0_2.specification.buildFeatures.cStandard == "gnu89"
+      && family.tcl_8_6_0.specification.buildFeatures.linkUnwinder;
     pkgConfigVersion = family.tcl_8_6_0.tvp.pkgConfigVersion == "8.6";
     nativeTestIsolation = builtins.all (
       p:
