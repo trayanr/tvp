@@ -42,7 +42,10 @@ those retained roots. See the external candidate integration report for
 source bindings and deletion conditions. The selected current validation is
 recorded below.
 
-## Current bounded validation
+## Retained SQL/XML/OpenSSL-wave validation
+
+These receipts describe that earlier wave and apply only to matching identities.
+Current assembled execution is tracked in the migration log.
 
 All 69 rows and constructor/edit contracts evaluate. Earlier compiler, bootstrap,
 retained and frozen producers compare exact. Latest 2.15.4 passes its nine-leaf

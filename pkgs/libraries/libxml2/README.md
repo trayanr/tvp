@@ -1,4 +1,15 @@
-# libxml2 source staging
+# Libxml2
+
+All 69 public releases use inline family definitions and split production/final
+outputs. [AUTHORING.md](AUTHORING.md) describes the current procedures, independent
+upstream consumers, retained construction inputs and bounded earlier receipts.
+Current assembled execution is tracked separately; source adoption does not imply
+historical qualification or strict XML conformance.
+
+## Historical source staging — superseded
+
+The account below records the earlier source-stage design and its limits. Its
+unsplit and pre-split capture descriptions are historical, not the active design.
 
 All 68 supported ordinary releases from 2.7.4 through 2.15.3 select owned native
 procedures on x86_64 Linux. No releases are declared broken. `legacy.nix`, the

@@ -517,3 +517,32 @@ candidate seals, all attempts, source reviews, identity gates and strict failure
 - Evidence: `reviews/post-migration/remaining-family-authoring/`, including original
   candidates, failed evaluation attempts, corrections, source reviews and final
   source/identity/control records. No intermediate public compiler was launched.
+
+
+### Assembled validation attempt 001 and Ncurses repair
+
+The committed 110-index shape launched one existing selected-latest workflow.
+It stopped after 24.379s in Ncurses 6.6's generated production-Makefile guard,
+before GCC compilation. The archive/configure source generates two test-directory
+recursions (common targets and module/library targets), while the helper expected
+one. The repair removes exactly those two recursions and preserves other source
+directories. Four host controls pass, including rejection of one/three matches;
+pinned 5.8–6.6 archives confirm the test-module layout. All 293 previously valid
+selected outputs remain retained; no fresh selected output or success verifier
+was claimed. The original receipt/logs remain under `latest-001`.
+
+The preflight also identifies a separate retained GCC16 required by captured
+SDK/JDK bootstrap providers, alongside the public compiler generation. It is an
+actual production seed dependency, not another replay of the same compiler.
+Keep the preserved providers and realize a required generation once; do not swap
+it merely to obtain a cache hit. Libxcrypt's exact ABI baseline remains unchanged.
+The next workflow explicitly disables remote builders and substituters and keeps
+failed build trees. The first launch inherited host substituter defaults; its
+logs/host binding remain retained rather than rewritten as an explicit local-only
+request. CI/NAS publication stays disabled.
+
+A separate ergonomics audit confirms 396 inline definition sites across all 110
+indexes, with no lookup maps, numeric names, explicit ordinary constructors,
+string tool lists or `tvpLib = tvp.lib` aliases. Documentation now qualifies retained
+and checkpoint exceptions, labels superseded Libxml2 staging material, updates
+the structural tree and repairs three moved links.

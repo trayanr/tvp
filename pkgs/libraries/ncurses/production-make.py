@@ -1,8 +1,8 @@
 """Keep the generated production recursion and leave original test rules for U.
 
-Ncurses configure appends one all/install recursion per source subdirectory.
-The test directory installs nothing; its all target builds interactive fixtures.
-A private root Makefile omits just that recipe, with an exact cardinality guard.
+Ncurses appends a common recursion for each source subdirectory and another
+library/module recursion for directories with a modules file. The test directory
+has both; neither belongs in production. Keep every other directory unchanged.
 """
 from pathlib import Path
 import re
@@ -17,7 +17,7 @@ if b"\0" in data:
     raise ValueError("NUL in generated Makefile")
 pattern = rb'(?m)^\t(?:cd test && \$[({]MAKE[)}][^\n]*|\( cd "?test"? && \$[({]MAKE[)}][^\n]*\))\n'
 production, count = re.subn(pattern, b"", data)
-if count != 1:
-    raise ValueError(("expected one generated test recursion", count))
+if count != 2:
+    raise ValueError(("expected common and module test recursions", count))
 with Path("Makefile.production").open("xb") as stream:
     stream.write(production)

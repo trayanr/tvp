@@ -257,6 +257,10 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   retaining this test as NOT_RUN and the normal batch incomplete.
 - **Decision needed:** coordinate that historical baseline/compiler realization
   and run the unchanged ABI test; until then ABI qualification remains pending.
+- **Assembled follow-up:** the current end-result graph also needs that retained
+  GCC generation for captured SDK/JDK seed providers. Realizing this real seed
+  dependency once is distinct from launching it only for an authoring count.
+  Preserve the providers; keep ABI qualification pending until its actual receipt.
 
 
 ## MIG-018 — Native upstream profiles still reconstruct their build trees

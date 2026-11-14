@@ -27,7 +27,7 @@ R, then accepted only by the registered owned `tests.upstream` U. Nonzero raw
 status fails U and its normal batch while A/F remain independently valid.
 `doCheck = false` disables this test gate and explicitly records missing workload
 coverage; it does not alter production compilation. See the complete
-[ordinary upstream contract](ordinary/README.md) for targets, retention and limits.
+[ordinary upstream contract](../ordinary/README.md) for targets, retention and limits.
 OpenSSL 3.0.4's CVE/RSA status and named test exclusion remain unchanged and
 UNWAIVED. No upstream crypto is patched and no conformance claim is made.
 
