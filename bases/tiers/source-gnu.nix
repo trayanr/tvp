@@ -11,6 +11,7 @@ let
   initial = import ../../bootstrap/gnu-environment.nix { inherit bootstrap; };
   nativeInputs = import ../../bootstrap/source-native-compiler.nix { inherit bootstrap; };
   outputTools = import ../../bootstrap/output-tool-prerequisites.nix { inherit bootstrap; };
+  frontendTools = import ../../bootstrap/source-python-meson.nix { inherit bootstrap; };
   seedTools = {
     gnumake = bootstrap.gnumake-musl;
     gnutar = bootstrap.gnutar-latest;
@@ -62,6 +63,7 @@ let
     standardTools = seedTools // {
       python = nativeInputs.prior.python;
       gnumake = nativeInputs.tools.make;
+      pkg-config = frontendTools.tools.pkgConfig;
     };
     tools = [ nativeInputs.binutils ];
   };

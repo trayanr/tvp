@@ -5,13 +5,18 @@
 # libffi installs no executable, so every test compiles against the header and
 # links the library — which is also how every consumer uses it.
 {
-  pkgs,
-  pkg-config,
-  tvpLib,
-  libffi,
+  package,
+  lib,
+  context,
 }:
+
 let
-  cc = [ libffi.passthru.tvp.cc ];
+  libffi = package;
+  pkg-config = package.tvp.declaredTestDependencies.pkgConfig;
+  tools = package.specification.base.standardTools // {
+    binutils = package.specification.base.compiler.bintools;
+  };
+
   features = libffi.passthru.tvp.features or { };
 
   reported = libffi.passthru.tvp.reportedVersion or libffi.version;
@@ -24,9 +29,16 @@ let
     else
       "-I${libffi}/lib/libffi-${libffi.version}/include ";
 in
-tvpLib.tests.mkSuite {
-  inherit pkgs;
-  package = libffi;
+context.mkSuite {
+  inherit package;
+  tools = [
+    tools.binutils
+    tools.grep
+    tools.sed
+    tools.gawk
+    pkg-config
+  ];
+  libraries = [ package ];
 
   tests =
     {
@@ -36,7 +48,7 @@ tvpLib.tests.mkSuite {
           ./call
         '';
         expected = "42";
-        extraInputs = cc;
+
       };
 
       # The other direction: a native pointer that dispatches into libffi.
@@ -46,7 +58,7 @@ tvpLib.tests.mkSuite {
           ./closure
         '';
         expected = "42";
-        extraInputs = cc;
+
       };
 
       pkg-config = {
@@ -55,29 +67,45 @@ tvpLib.tests.mkSuite {
           pkg-config --modversion libffi
         '';
         expected = libffi.version;
-        extraInputs = [ pkg-config ];
+
       };
     }
 
-    // pkgs.lib.optionalAttrs (features.variadic or false) {
+    // lib.optionalAttrs features.static {
+      static = {
+        script = ''cc ${./fixtures/call.c} ${inc}${package}/lib/libffi.a -o static-call; ./static-call'';
+        expected = "42";
+      };
+    }
+
+    // lib.optionalAttrs (features.variadic or false) {
       variadic = {
         script = ''
           cc ${./fixtures/variadic.c} ${inc}-lffi -o variadic
           ./variadic
         '';
         expected = "42";
-        extraInputs = cc;
+
       };
     }
 
-    // pkgs.lib.optionalAttrs (features.versionFunction or false) {
+    // lib.optionalAttrs (features.versionFunction or false) {
       version = {
         script = ''
           cc ${./fixtures/version.c} ${inc}-lffi -o version
           ./version
         '';
         expected = reported;
-        extraInputs = cc;
+
       };
     };
+}
+
+// import ../../ffi-decimal-contracts.nix { inherit package lib context; }
+
+// lib.optionalAttrs package.specification.installedInterface.compatibilityLib64 (
+  import ./abi.nix { inherit package lib context; }
+)
+// lib.optionalAttrs (package.specification.upstreamCheck.enabled or true) {
+  upstream = import ./upstream.nix { inherit package lib context; };
 }

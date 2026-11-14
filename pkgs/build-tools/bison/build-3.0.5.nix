@@ -1,53 +1,193 @@
-# GNU release tarballs include generated parsers and manuals: no Bison bootstrap.
+# Bison 3.0.5-era installed skeleton layout. Upstream execution is independent.
 {
+  tvp,
   lib,
-  stdenv,
-  fetchurl,
+  base,
+  src,
+  version,
   m4,
   perl,
-  version,
-  sha256,
-  cStandard ? null,
-  mkTests,
+  doCheck ? true,
+  configureFlags ? [ ],
   patches ? [ ],
-  postPatch ? null,
+  postPatch ? "",
+  cStandard ? null,
+  preserveCharsetPrefix ? false,
+  upstreamPrerequisites ? [ ],
+  upstreamPatches ? [ ],
 }:
-stdenv.mkDerivation (
-  finalAttrs:
-  {
-    pname = "bison";
-    inherit version;
-    src = fetchurl {
-      url = "https://mirrors.kernel.org/gnu/bison/bison-${version}.tar.gz";
-      inherit sha256;
+final:
+let
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  environment = final.base.environment final.environment;
+  command =
+    name: run:
+    environment
+    // {
+      inherit name run;
+      cwd = "source";
     };
-    nativeBuildInputs = [
-      m4
-      perl
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  configure = prefix: ''
+    export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
+    ./configure --prefix=${prefix}  M4=${final.m4}/bin/m4 ${lib.escapeShellArgs final.configureFlags}
+  '';
+  checkpoint = "nix-support/bison-build-tree";
+  elfPaths = [ "bin" ];
+in
+{
+  pname = "bison";
+  # Production and installed prefixes have the same byte width; they remain
+  # distinct derivations and retain a real artifact/final boundary.
+  artifactName = "${final.pname}-${final.version}";
+  inherit
+    base
+    src
+    version
+    m4
+    perl
+    doCheck
+    configureFlags
+    patches
+    postPatch
+    cStandard
+    ;
+  inherit preserveCharsetPrefix upstreamPrerequisites upstreamPatches;
+  inherit (tools) bash coreutils;
+  buildFeatures = {
+    cStandard = final.cStandard;
+  };
+  sourceLayout = {
+    preserveCharsetPrefix = final.preserveCharsetPrefix;
+  };
+  installedInterface = {
+    skeletonDirectory = "share/bison";
+    yacc = true;
+  };
+  environment = {
+    tools = [
+      tools.gnumake
+      tools.sed
+      tools.grep
+      tools.gawk
+      tools.diffutils
+      tools.findutils
+      final.m4
+      final.perl
     ];
-    # The configured M4 path is used when Bison generates a parser at runtime.
-    configureFlags = [ "M4=${m4}/bin/m4" ];
-    enableParallelBuilding = true;
-    meta = {
-      description = "GNU parser generator";
-      homepage = "https://www.gnu.org/software/bison/";
-      license = lib.licenses.gpl3Plus;
-      platforms = lib.platforms.unix;
-      mainProgram = "bison";
+    libraries = [ ];
+    overrides.flags.NIX_CFLAGS_COMPILE = lib.optional (
+      final.buildFeatures.cStandard != null
+    ) "-std=${final.buildFeatures.cStandard}";
+  };
+  runtime = {
+    libraries = [ ];
+    dlopenDirectories = [ ];
+    shell = tools.bash;
+  };
+  productionPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
+    (steps.prepareAutotools { name = "bison.prepare"; })
+    (command "bison.patches" ''
+      for patch in ${lib.escapeShellArgs (map (p: "${p}") final.patches)}; do
+        ${tools.patch}/bin/patch -p1 < "$patch"
+      done
+      ${final.postPatch}
+    '')
+    (command "bison.configure" (configure ''"$out"''))
+    (
+      (command "bison.charset-prefix" ''${tools.python}/bin/python3 -B ${./charset-prefix.py}'')
+      // {
+        enabled = final.sourceLayout.preserveCharsetPrefix;
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+    (command "bison.build" make)
+    (command "bison.install" ''
+      ${make} install
+      test -s "$out/${final.installedInterface.skeletonDirectory}/yacc.c"
+      mkdir -p "$out/nix-support"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (
+      (command "bison.save-build-tree" ''
+        ${tools.python}/bin/python3 -B ${../../../lib/build-checkpoint.py} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"
+      '')
+      // {
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+  ];
+  upstreamPlan = artifact: [
+    {
+      name = "bison.restore-build-tree";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
+    }
+    {
+      name = "bison.upstream-discovery";
+      tools = final.upstreamCheck.tools ++ [ tools.patch ];
+      env = final.upstreamCheck.env;
+      # Source-proven configure conditionals choose real counterpart cases.
+      # Preserve A's prefix so fixture discovery does not relocate production.
+      run = ''
+        cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
+        for patch in ${lib.escapeShellArgs (map (p: "${p.file}") final.upstreamPatches)}; do
+          ${tools.patch}/bin/patch -p1 < "$patch"
+        done
+        ${configure (lib.escapeShellArg (toString artifact))}
+      '';
+    }
+  ];
+  upstreamCheck =
+    (command "bison.check" ''
+      export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
+      ${lib.optionalString (
+        final.upstreamPrerequisites != [ ]
+      ) ''${tools.gnumake}/bin/make ${lib.escapeShellArgs final.upstreamPrerequisites}''}
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL="$SHELL" TESTSUITEFLAGS="-j$NIX_BUILD_CORES"  check
+    '')
+    // {
+      enabled = final.doCheck;
     };
-    passthru = {
-      tvp.deps = {
-        inherit m4 perl;
-      };
-      tvp.cc = stdenv.cc;
-      tests = mkTests finalAttrs.finalPackage;
-    };
-  }
-  // lib.optionalAttrs (patches != [ ]) {
-    inherit patches;
-  }
-  // lib.optionalAttrs (postPatch != null) {
-    inherit postPatch;
-  }
-  // lib.optionalAttrs (cStandard != null) { env.NIX_CFLAGS_COMPILE = "-std=${cStandard}"; }
-)
+  plan = final.productionPlan ++ [
+    (steps.split "bison.finalize")
+    (outputs.copyArtifacts { })
+    {
+      name = "bison.drop-build-tree";
+      tools = [ tools.coreutils ];
+      run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
+    }
+    (outputs.shebangs {
+      paths = [ "bin/yacc" ];
+      names = [ "sh" ];
+      interpreter = "${final.runtime.shell}/bin/bash";
+    })
+    {
+      name = "bison.relocate";
+      tools = [
+        tools.python
+        tools.patchelf
+      ];
+      run = ''${tools.python}/bin/python3 -B ${../parser-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf'';
+    }
+    (outputs.strip { paths = elfPaths; })
+    (outputs.rpaths {
+      paths = elfPaths;
+      libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories;
+    })
+    (outputs.development { libraries = [ ]; })
+    (outputs.checkPaths { paths = elfPaths; })
+  ];
+  meta = {
+    homepage = "https://www.gnu.org/software/bison/";
+    description = "GNU parser generator";
+    license = lib.licenses.gpl3Plus;
+    mainProgram = "bison";
+  };
+}

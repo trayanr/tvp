@@ -107,7 +107,15 @@ let
         // lib.optionalAttrs (name == "libffi_3_8_0") {
           testProviderReusesProduction =
             let
-              edited = p.override { dejagnu = s.coreutils; };
+              edited = p.edit (
+                old:
+                old
+                // {
+                  upstreamCheck = old.upstreamCheck // {
+                    harness = s.coreutils;
+                  };
+                }
+              );
             in
             edited.artifact.drvPath == p.artifact.drvPath && edited.drvPath == p.drvPath;
         }

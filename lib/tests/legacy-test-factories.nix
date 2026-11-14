@@ -32,6 +32,8 @@ let
             "autoconf"
             "automake"
             "libtool"
+            "bison"
+            "flex"
           ]
         then
           construction.extraArgs.mkTests

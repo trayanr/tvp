@@ -292,3 +292,46 @@ CI/NAS and all broader admission holds remain unchanged.
 
 Records: `reviews/post-migration/authoring-migration-status` and the preceding
 Autotools `next-authoring-status-candidate` evidence under the same local state root.
+
+## 2026-11-14 — Parser, FFI, decimal, regex and hash family authoring
+
+All 48 supported releases now use inline family definitions: eleven Bison/two
+skeleton-layout procedures, four Flex/one procedure, four Gperf/one, four PCRE2/one,
+23 Libffi/four installed profiles, and two Mpdecimal/two profiles. Standard tools
+come from effective bases; package-specific inputs stay explicit TVP selectors.
+The exact earlier pkg-config provider is exposed lazily with its canonical role.
+MIG-016 records a caught name collision with Zlib's boolean recipe option.
+
+Shared installed tests retain ABI, closure, variadic, C/C++, static/shared,
+serialization, parser/scanner composition and constructor/runtime controls.
+Independent U restores completed build trees. Bison/Flex reconfigure in the complete
+test-tool environment so counterpart discovery enables real cases; this can
+regenerate/recompile check metadata and is not claimed as a free operation.
+Libffi keeps its exact earlier DejaGnu/Expect/Tcl harness in U. Decimal's existing
+offline check_local scope remains bounded; downloaded corpora are not claimed.
+
+All six latest normal batches pass, with 58 named leaves and raw upstream exits of zero.
+The first keep-going request took 179.866s, including real File/Zstd dependencies,
+and failed only the two confinement fixtures whose payload snapshot preceded
+intentional checkpoint removal. Corrected fixtures/batches passed in 12.946s,
+reusing the packages. Bounded source review then found two actual A/U gaps: Flex
+prepared tests/ frontends in A and PCRE2's default Make targets compiled internal
+noinst test programs. Flex's test preparation moved after U discovery; PCRE2 now
+builds installed libraries and its two shipped CLIs explicitly and uses direct
+install targets. U keeps the real original test programs/suite. The repaired
+request passed in 128.611s, including affected reverse consumers.
+
+Gzip's normal batch and two historical XZ helper controls also pass after their
+runtime pager follows the changed PCRE2/Less graph. Their compilation artifacts
+remain exact; only runtime suffixes change. Both compiler generations, construction
+variants, direct bootstrap compression/frontends and frozen tools remain exact.
+The full historical factory observer passes with all six Bison/Flex controls;
+MIG-012 is resolved explicitly while its original failure is retained.
+
+The other 42 releases remain evaluation-only here. Authoring adoption is 22/110
+indexes and 317 eligible canonical rows; split coverage stays 1,520/1,540 with 20
+broken exclusions. No compiler rebuilt. Existing nonpasses, corpus limits and
+broader admission remain unwaived; CI/NAS stay off.
+
+Records: `reviews/post-migration/parser-ffi-regex-family-authoring`, including
+source-review findings, all attempts, provider comparisons and scoped Tower roots.

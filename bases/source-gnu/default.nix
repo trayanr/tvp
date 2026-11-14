@@ -21,6 +21,7 @@ let
         {
           bzip2 = tools.bzip2;
           patch = tools.patch;
+          pkg-config = tools.pkgConfig;
           gnumake = tools.make;
           gnutar = tools.tar;
           inherit (tools)
