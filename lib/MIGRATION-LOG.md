@@ -647,3 +647,34 @@ claim all test-only edits reuse every compilation, or count whole request durati
 as exclusive upstream execution. The final normal latest aggregate and its success
 verifier are run separately after these concrete named batches finish. CI/NAS stay
 off; no historical all-version execution or full admission is claimed.
+
+
+### Normal latest verification and completed ordinary authoring scope
+
+Attempt 006 on code commit `524e24c7a5ca9d08ca03ab3b6f327f68a3680d8c`
+passed start/wait/success-verification with exits 0/0/0 in 14.570s. The verifier
+confirmed 1,191 valid selected outputs and 1,071 exact links across 110 families
+and 961 named tests. This final aggregate is availability verification over the
+matching earlier executions, not 961 new executions. All declared siblings are
+valid. The five separately verified public profiles contribute 60 exact test
+links and 75 retained paths; these counts are not added as unique fresh tests.
+
+The actual offline status app passes and reports all 110 ordinary indexes and
+1,515 eligible canonical rows adopted. The 1,540-row split inventory is 1,520
+compliant plus 20 declared-broken legacy exclusions. Runtime qualification and
+construction cleanup remain separately measured; source/index adoption does not
+silently mark them complete.
+
+All 116 artifact outputs of the 110 selected current packages and 54 immediate
+upstream-named execution inputs are explicitly scoped-rooted (170 paths), in
+addition to the workflow/runtime and profile roots. Retaining only F could lose
+reusable compilation checkpoints during later GC. This retention queried/realized
+already valid paths with builds and substituters disabled; it did not compile,
+fetch or copy data to NAS. The raw GCC capture is also retained explicitly.
+
+The final documentation-only receipt update adopts the exact verified package,
+test-batch and public-profile identities, checked again at evaluation scope.
+Historical/unselected releases, retained caller migration, recorded checkpoint
+reconstruction and pre-split checks (especially LLVM and the retained GCC seed),
+known upstream nonpasses, hardening and full/admission gates remain unwaived.
+CI/NAS remain off under the owner-approved migration policy.
