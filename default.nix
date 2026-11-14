@@ -94,6 +94,9 @@ let
       registry = runtimeRegistry;
     })
     // {
+      openssl-family = pkgs.writeText "tvp-openssl-family-contracts" (
+        builtins.toJSON (import ./lib/tests/openssl-family.nix { inherit pkgs tvp; })
+      );
       expat-family = pkgs.writeText "tvp-expat-family-contracts" (
         builtins.toJSON (import ./lib/tests/expat-family.nix { inherit pkgs tvp; })
       );

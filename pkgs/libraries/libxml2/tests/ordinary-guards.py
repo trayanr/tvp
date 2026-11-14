@@ -14,6 +14,7 @@ from prepare import prepare
 from classify import classify
 from capture import capture
 from finalize import archive, finalize
+from finalize import metadata_paths
 
 
 def rejects(fn):
@@ -21,6 +22,24 @@ def rejects(fn):
     except (ValueError, OSError, subprocess.CalledProcessError): return
     raise AssertionError('unsafe/unqualified fixture accepted')
 
+
+def path_prefix_controls():
+    old = b'/nix/store/' + b'a' * 32 + b'-libxml2-2.9.14'
+    new = old.replace(b'a' * 32, b'b' * 32)
+    for value in [old, b'"-L'+old+b'/lib"', b'"-I'+old+b'/include"',
+                  b'-L'+old+b'/lib', b' -I'+old+b'/include',
+                  b'-Wl,-rpath,'+old+b'/lib', b'prefix="'+old+b'"']:
+        assert metadata_paths(value, old, new) == value.replace(old, new)
+    for value in [b'FAKE-L'+old+b'/lib', b'/other-L'+old+b'/lib',
+                  b'append-I'+old+b'/include', old+b'-other',
+                  old+b'.suffix', b'word'+old]:
+        rejects(lambda: metadata_paths(value, old, new))
+
+
+path_prefix_controls()
+if sys.argv[1:] == ['--paths']:
+    print('7 compiler-metadata path spellings and 6 partial-path rejections passed')
+    sys.exit(0)
 
 shell,cc,readelf,ar,patchelf = sys.argv[1:]
 with tempfile.TemporaryDirectory() as temp:

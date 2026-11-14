@@ -16,6 +16,17 @@ import tempfile
 from elf import inspect, replace_paths, text, tree
 
 
+
+def metadata_paths(data, old, new):
+    # xml2Conf.sh carries complete -L/prefix and -I/prefix compiler flags.
+    # Mask only a delimited flag for the shared path-boundary validator; keep
+    # the original metadata bytes apart from the actual prefix replacement.
+    spelling = re.sub(rb"(^|[\s'\"=;:,(){}\[\]<>])-[IL](?=" + re.escape(old) + rb")",
+                      rb"\1  ", data)
+    replace_paths(spelling, old, new)
+    return data.replace(old, new)
+
+
 def catalog_slot(data, old, new):
     """Recognize complete catalog constants and xmllint's source-defined help."""
     paths = {old + b'/etc/xml/catalog', old + b'/etc/sgml/catalog'}
@@ -118,7 +129,7 @@ def finalize(root, artifact, readelf, patchelf):
         elif name=='lib/libxml2.a':
             changes[name]=archive(data,old,new,readelf)
         elif old in data:
-            changes[name]=replace_paths(text(data,name),old,new)
+            changes[name]=metadata_paths(text(data,name),old,new)
     for name,target in links.items():
         target=replace_paths(target.encode(),old,new).decode()
         if target.startswith('/'):

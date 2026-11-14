@@ -391,3 +391,57 @@ CI/NAS remain off.
 
 Records: `reviews/post-migration/dbm-expat-access-family-authoring`, including
 both attempts, exact selected paths, source contracts and preserved ABI debt.
+
+
+## 2026-11-14 — Whole SQLite, OpenSSL and Libxml2 authoring
+
+All 553 supported rows now use nameless inline family definitions: SQLite 269,
+OpenSSL 215 and Libxml2 69. Three SQLite, seven OpenSSL and six Libxml2 complete
+root procedures preserve real production/profile boundaries. The seven broken
+records stay exact. All 553 source/edit contracts, the 215-row OpenSSL contract,
+27 isolation contracts and ordinary effective-input/output observers pass.
+Independent family source reviews pass. Ordinary test observers follow effective
+base roles; the copy-fixture observer now uses the declared override interface
+instead of another growing package-name list.
+
+All 270 SQLite production identities (including its broken exclusion) and both
+native OpenSSL package profiles remain exact. Libxml2 gains reusable compiled
+checkpoints and explicit production-only targets; earlier noninstalled test
+programs compile in U. Historical OpenSSL retains its existing specialized T/R/U
+protocol and composed seven-flag hardening base. All earlier compiler, native,
+construction, frozen and bootstrap identities compare exact. No compiler rebuild
+was launched.
+
+The first selected keep-going request took 330.853s, including first realizations
+of actual Tcl/CMake dependencies, package builds and upstream checks. Four normal
+batches pass: SQLite 3.53.4, OpenSSL 4.0.1, OpenSSL 4.0.0 and Libxml2 2.15.4.
+Its only failure was older Libxml2 finalization rejecting a real compiler flag
+in xml2Conf.sh. The repair accepts delimited -L/-I metadata spellings while
+retaining partial-path rejection. A draft change to the general ELF module was
+rejected by identity comparison before any build: GCC also uses that file.
+The accepted repair is confined to Libxml2's finalizer; the shared inspector
+stays exact. Seven positive/six negative controls and actual metadata pass.
+
+The final-only repair request took 11.250s, reusing every selected A and raw
+result. It exposed one test binding gap: the construction libc does not ship ldd.
+The existing effective-LZMA assertion now traces the installed xmllint loader
+and checks the same exact runtime provider. That corrected leaf passes in the
+separate subsecond request; the final 85 selected paths are verified valid without
+replaying passing tests. Sixty-six leaves pass across the five selected outputs;
+29 scoped roots retain A/F/raw/batches and the older independent leaves.
+
+Libxml2 2.9.14's A/F, ten installed tests and raw exit zero pass, but strict
+acceptance rejects its configured header before case classification. MIG-019
+records that new reader-grammar gap separately from prior schema/corpus failures.
+Its normal historical batch remains red/incomplete. Native SQLite/OpenSSL
+source-reconstruction cost remains explicit isolation debt (MIG-018); unchanged
+package identities do not make those independent tests free.
+
+The other 548 supported rows are evaluation-only here. Ordinary authoring adoption
+is 31/110 indexes and 922/1,515 eligible canonical rows. Split coverage remains
+1,520/1,540 with 20 broken exclusions. Retained runtime GNU provider selections,
+construction Perl generations, native reconstruction limits and all prior holds
+remain explicit and unwaived. CI/NAS remain off.
+
+Records: `reviews/post-migration/xml-crypto-sql-family-authoring`, including
+candidate seals, all attempts, source reviews, identity gates and strict failure.

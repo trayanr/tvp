@@ -1,9 +1,8 @@
-# A -> private T -> private R -> registered owned U. Installed consumers use F.
+# A -> private T -> private R -> registered owned U; installed consumers use F.
 {
   package,
-  tvpLib,
-  builder,
   lib,
+  context,
 }:
 let
   s = package.specification;
@@ -11,27 +10,23 @@ let
   protocol = s.upstreamIsolation.protocol;
   validation =
     role: plan:
-    builder {
-      recipe =
-        { }:
-        _: {
+    (context.mkTest {
+      inherit package;
+      name = role;
+      script = ":";
+      expected = "";
+    }).edit
+      (
+        test:
+        test
+        // {
           pname = "openssl-${role}";
-          inherit (s)
-            version
-            base
-            bash
-            coreutils
-            ;
-          src = null;
+          inherit (s) version;
           inherit plan;
           validationRole = role;
-        };
-      args = { };
-      dependencyNames = [ ];
-      metadata.kind = "owned-validation";
-      selection.kind = "owned-validation";
-      mkTests = _: { };
-    };
+          passthru = { };
+        }
+      );
   restore = from: {
     name = "openssl.restore-private-tree";
     tools = [ s.python ];
@@ -47,9 +42,7 @@ let
         run = ''
           cd -- "$(cat "$TVP_SOURCE_ROOT/tree-path")"
           ${builtins.concatStringsSep "\n" (
-            map (p: "${s.testPatchTool}/bin/patch -p1 < ${p.file}") (
-              tvpLib.packages.checkPatches "openssl.testPatches" s.testPatches
-            )
+            map (p: "${s.testPatchTool}/bin/patch -p1 < ${p.file}") (s.testPatchesValidated)
           )}
           ${s.python}/bin/python3 -B ${s.testPrepareScript} ${s.bash}/bin/bash ${s.testPerl}/bin/perl ${s.coreutils} ${lib.escapeShellArg s.sourceEncoding}
         '';
@@ -95,7 +88,7 @@ let
     )
   ];
 in
-(package.testContext.mkTest {
+(context.mkTest {
   package = execution;
   name = "upstream";
   tools = [ s.python ];

@@ -193,6 +193,16 @@ normal batch is explicitly incomplete. Retained bootstrap/construction producers
 stay exact. MIG-010 and MIG-015 are resolved at their stated scopes; this is not
 full catalogue admission or historical runtime qualification.
 
+SQLite (269 supported releases), OpenSSL (215) and Libxml2 (69) raise index
+adoption to 31/110 and marked eligible rows to 922/1,515. Their seven broken
+records remain explicit exclusions. SQLite's full producer set and both native
+OpenSSL production profiles retain exact identities. Changed Libxml2/historical
+OpenSSL procedures keep real production/checkpoint boundaries and existing strict
+policies. Four selected normal batches and 66 leaves pass; older Libxml2 strict
+header parsing remains blocked (MIG-019). Native SQLite/OpenSSL upstream source
+reconstruction remains a documented convergence task (MIG-018), not a claimed
+checkpoint speedup. Earlier construction/compiler generations stay exact.
+
 The standalone GMP/MPC/ISL construction calls now share the same complete root
 procedures as ordinary packages, with explicit earlier owned bases and shared
 independent upstream factories. The duplicate direct `build-steps`/owned ISL

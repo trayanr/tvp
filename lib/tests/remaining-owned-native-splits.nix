@@ -168,17 +168,9 @@ let
         (builtins.head (
           builtins.filter (step: step.name == "output.copy-artifacts")
             (
-              if
-                builtins.elem name [
-                  "acl_2_3_2"
-                  "acl_2_4_0"
-                  "attr_2_6_0"
-                  "expat_2_9_0"
-                  "gdbm_1_26"
-                  "libxcrypt_4_5_2"
-                  "libyaml_0_2_5"
-                ]
-              then
+              if (lib.functionArgs p.override) ? coreutils then
+                p.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; }
+              else
                 p.edit (
                   spec:
                   spec
@@ -186,8 +178,6 @@ let
                     base = spec.base.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; };
                   }
                 )
-              else
-                p.override { coreutils = tvp.canonical.acl_2_3_2.specification.coreutils; }
             ).buildSteps
         )).run;
       commands =

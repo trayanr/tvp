@@ -1,13 +1,22 @@
-{ package }:
+{
+  package,
+  lib,
+  context,
+}:
 let
-  deps = package.tvp.deps;
+  tools = package.specification.base.standardTools // {
+    bash = package.specification.base.shell;
+    coreutils = package.specification.base.coreutils;
+    binutils = package.specification.base.compiler.bintools;
+  };
+  testDeps = package.tvp.declaredTestDependencies;
 in
-package.testContext.mkSuite {
+context.mkSuite {
   inherit package;
   tools = package.specification.environment.tools ++ [
-    deps.python
-    deps.binutils
-    deps.patchelf
+    tools.python
+    tools.binutils
+    tools.patchelf
   ];
   libraries = [ package ];
   tests =

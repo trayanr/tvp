@@ -5,7 +5,8 @@ let
   inherit (tvp.builder) steps outputs;
   policy = tvp.lib.upstreamTestIsolation;
   reference = tvp.canonical.sqlite_3_0_0.specification;
-  inherit (reference) bash coreutils python;
+  inherit (reference) bash coreutils;
+  python = reference.base.standardTools.python;
   base = reference.base.override { tools = [ coreutils ]; };
   context = tvp.lib.tests.forBase {
     inherit base coreutils;
@@ -14,18 +15,20 @@ let
   role =
     name: plan:
     tvp.builder {
-      recipe = { }: _: {
-        pname = "isolation-${name}";
-        version = "1";
-        src = null;
-        inherit
-          base
-          bash
-          coreutils
-          plan
-          ;
-        validationRole = "upstream-${name}";
-      };
+      recipe =
+        { }:
+        _: {
+          pname = "isolation-${name}";
+          version = "1";
+          src = null;
+          inherit
+            base
+            bash
+            coreutils
+            plan
+            ;
+          validationRole = "upstream-${name}";
+        };
       args = { };
       dependencyNames = [ ];
       metadata = { };
@@ -243,18 +246,109 @@ let
   contracts = {
     positive = (row fixture).compliant;
     unauditedNotCompliant = !(row (removeAttrs fixture [ "specification" ])).compliant;
-    expectedOnly = preserves [ "A" "F" "T" "R" ] expectationEdit && changes [ "U" ] expectationEdit;
-    runnerOnly = preserves [ "A" "F" "T" ] runnerEdit && changes [ "R" "U" ] runnerEdit;
-    classifierOnly = preserves [ "A" "F" "T" "R" ] classifierEdit && changes [ "U" ] classifierEdit;
-    captureOnly = preserves [ "A" "F" "T" ] captureEdit && changes [ "R" "U" ] captureEdit;
-    fixtureOnly = preserves [ "A" "F" ] fixtureEdit && changes [ "T" "R" "U" ] fixtureEdit;
-    patchOnly = preserves [ "A" "F" ] patchEdit && changes [ "T" "R" "U" ] patchEdit;
-    providerOnly = preserves [ "A" "F" ] providerEdit && changes [ "T" "R" "U" ] providerEdit;
-    flagOnly = preserves [ "A" "F" ] flagEdit && changes [ "T" "R" "U" ] flagEdit;
-    finalizerOnly = preserves [ "A" "T" "R" "U" ] finalEdit && changes [ "F" ] finalEdit;
-    engineInvalidates = changes [ "A" "F" "T" "R" "U" ] engineEdit;
-    compilerInvalidates = changes [ "A" "F" "T" "R" "U" ] compilerEdit;
-    failingSuiteKeepsProduction = preserves [ "A" "F" "T" ] failedSuite;
+    expectedOnly =
+      preserves [
+        "A"
+        "F"
+        "T"
+        "R"
+      ] expectationEdit
+      && changes [ "U" ] expectationEdit;
+    runnerOnly =
+      preserves [
+        "A"
+        "F"
+        "T"
+      ] runnerEdit
+      && changes [
+        "R"
+        "U"
+      ] runnerEdit;
+    classifierOnly =
+      preserves [
+        "A"
+        "F"
+        "T"
+        "R"
+      ] classifierEdit
+      && changes [ "U" ] classifierEdit;
+    captureOnly =
+      preserves [
+        "A"
+        "F"
+        "T"
+      ] captureEdit
+      && changes [
+        "R"
+        "U"
+      ] captureEdit;
+    fixtureOnly =
+      preserves [
+        "A"
+        "F"
+      ] fixtureEdit
+      && changes [
+        "T"
+        "R"
+        "U"
+      ] fixtureEdit;
+    patchOnly =
+      preserves [
+        "A"
+        "F"
+      ] patchEdit
+      && changes [
+        "T"
+        "R"
+        "U"
+      ] patchEdit;
+    providerOnly =
+      preserves [
+        "A"
+        "F"
+      ] providerEdit
+      && changes [
+        "T"
+        "R"
+        "U"
+      ] providerEdit;
+    flagOnly =
+      preserves [
+        "A"
+        "F"
+      ] flagEdit
+      && changes [
+        "T"
+        "R"
+        "U"
+      ] flagEdit;
+    finalizerOnly =
+      preserves [
+        "A"
+        "T"
+        "R"
+        "U"
+      ] finalEdit
+      && changes [ "F" ] finalEdit;
+    engineInvalidates = changes [
+      "A"
+      "F"
+      "T"
+      "R"
+      "U"
+    ] engineEdit;
+    compilerInvalidates = changes [
+      "A"
+      "F"
+      "T"
+      "R"
+      "U"
+    ] compilerEdit;
+    failingSuiteKeepsProduction = preserves [
+      "A"
+      "F"
+      "T"
+    ] failedSuite;
     reverseArtifact = rejects (reverse "fixture.install" "testPrepareScript");
     reverseProvider = rejects (reverse "fixture.install" "testZlib");
     reversePatch = rejects (

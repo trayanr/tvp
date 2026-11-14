@@ -207,6 +207,8 @@ let
           bzip2 = "shell";
           gzip = "coreutils";
           pcre2 = "coreutils";
+          sqlite = "coreutils";
+          libxml2 = "shell";
           attr = "shell";
           acl = "shell";
           libxcrypt = "shell";
