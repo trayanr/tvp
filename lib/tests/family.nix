@@ -136,7 +136,49 @@ let
     deps.dependency = package "dependency";
   };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
+  inlineTable = api.mkTable [
+    {
+      def = builtins.removeAttrs defs."1" [ "name" ];
+      releases."1" = "model";
+    }
+  ];
+  inline = build (args // { versionTable = inlineTable; });
+  numericTable = api.mkTable [
+    {
+      def.builder = ./fixtures/family-recipe.nix;
+      releases = {
+        "1.10" = "ten";
+        "1.9" = "nine";
+      };
+    }
+  ];
   results = {
+    inlineDefinition = inlineTable."1".def == defs."1";
+    inlinePreservesProduction =
+      inline.artifact.drvPath == p.artifact.drvPath && inline.drvPath == p.drvPath;
+    inlinePreservesTests = inline.tests.message.drvPath == p.tests.message.drvPath;
+    inferredNumericLabel =
+      numericTable."1.10".def.name == "1.9" && numericTable."1.9".def.name == "1.9";
+    emptyDependencies = numericTable."1.9".def.deps == { };
+    explicitLabelsPreserved =
+      (api.mkTable [
+        {
+          def = defs."1";
+          releases."2" = "second";
+        }
+      ])."2".def.name == "1";
+    duplicateInlineReleasesRejected = rejects (
+      api.mkTable [
+        {
+          def = { };
+          releases."1" = "first";
+        }
+        {
+          def = { };
+          releases."1" = "second";
+        }
+      ]
+    );
     explicitComposition = family ? versionTable && !(family ? canonical) && !(family ? aliases);
     generatedAliases = aliases.family-model.drvPath == p.drvPath;
     stageLocalInstantiation = constructed.drvPath == p.drvPath;

@@ -130,3 +130,52 @@ Commands, timings, exact comparisons, root links and results:
 `reviews/post-migration/m4-make-family-authoring` under the same local state root.
 Completed compiled trees and raw reports stay in the Tower store, with small scoped
 roots and no second state-directory copy.
+
+## 2026-11-14 — Inline recipes and whole frontend families
+
+At the owner's request, ordinary definitions now live directly in each `mkTable`
+release block. No separate map, lookup key, repeated version or singular wrapper
+is needed. `mkTable` infers the label with version ordering and supplies empty
+`deps`; named-map compatibility remains. All eight converted indexes use this form.
+The shared API has seven additional compatibility/isolation controls; the complete
+46-model suite and scoped family/effective-input contracts pass. Repository docs
+now show the inline form.
+
+Pkg-config's six releases use three actual procedure eras; Ninja's three use one
+complete builder. Both reuse shared constructor controls and independent checkpoint
+upstream tests. Patch comes from one lazy earlier-tier role. Ninja's runtime shell
+and browser Python are separate from its build/helper providers and change only F.
+Retained/direct bootstrap procedures and their pinned inputs remain explicit.
+
+Bounded qualification:
+
+- Five pkg-config releases (0.27.1, 0.28, 0.29, 0.29.1, 0.29.2) and all three
+  Ninja releases: 96 named leaves and eight normal batches PASS. Raw upstream exit
+  is zero for the existing discovery/charset and syntax groups; full vendored-GLib,
+  GoogleTest and PTY coverage is not claimed.
+- Six updated M4/Make constructor leaves and batches PASS; their other 81 leaves
+  were reused. Make's exact recorded nonpasses and exclusions remain unwaived.
+- Latest GMP/MPFR/MPC/ISL normal batches: 25 leaves PASS in
+  38.247s after the ordinary M4 provider activation.
+  That activation changes public library producer IDs. Earlier historical proofs
+  stay bound to their original IDs; they are not silently reused for new producers.
+- The inline presentation itself preserves A/F/raw/U for all 30 public library
+  versions and four standalone packages against the same current provider graph.
+- Both compiler generations, earlier standalone frontends, selected retained
+  construction and frozen tools remain exact. No compiler rebuilt. Split coverage
+  remains 1,520 compliant / 20 declared-broken.
+
+The first frontend request failed in 55.417s because pkg-config's logging child
+shell did not inherit the runner source-root needed by installation. The explicit
+export repairs all three procedures. The corrected eight-frontend/six-tool request
+passed in 70.815s, reusing Ninja's three completed compilation artifacts. Original
+logs are retained; this is not a one-attempt claim.
+
+Pkg-config 0.27 keeps its required Gettext selector but remains uncompiled: its dry
+run would activate an uncached public GCC/JDK chain. MIG-011 records that deferred
+scope; no dependency was suppressed. Ordinary authoring adoption is eight of the
+110 inventoried families. CI/NAS and broader admission remain off/unwaived.
+
+Records: `reviews/post-migration/build-frontends-family-authoring` under the same
+local state root, including commands, producer comparisons, timings and scoped
+store roots. Compiled checkpoints/raw reports stay in Tower's store.

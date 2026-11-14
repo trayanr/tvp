@@ -1,34 +1,26 @@
 { pkgs, tvp }:
 let
-  packageRecipes = tvp.lib.packages.mkDefs {
-    "4.3" = {
-      builder = ./build.nix;
-      deps = { };
-      opts.defaultCxx = "g++";
-      opts.upstreamProfile = "4.3";
-    };
-    "4.4" = {
-      builder = ./build.nix;
-      deps = { };
-      opts.defaultCxx = "g++";
-      opts.upstreamProfile = "4.4";
-    };
-    "4.4.1" = {
-      builder = ./build.nix;
-      deps = { };
-    };
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
-      def = packageRecipes."4.3";
+      def = {
+        builder = ./build.nix;
+        opts.defaultCxx = "g++";
+        opts.upstreamProfile = "4.3";
+      };
       releases."4.3" = "sha256-4F/d5HxffKRctpfpc4lP9PXXnhO3UO1X17Ztje/Hjhk=";
     }
     {
-      def = packageRecipes."4.4";
+      def = {
+        builder = ./build.nix;
+        opts.defaultCxx = "g++";
+        opts.upstreamProfile = "4.4";
+      };
       releases."4.4" = "sha256-WB9NToctp0s5Qch0IViYp9NYAvA3Mr3M7h1KeXkQXRg=";
     }
     {
-      def = packageRecipes."4.4.1";
+      def = {
+        builder = ./build.nix;
+      };
       releases."4.4.1" = "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=";
     }
   ];

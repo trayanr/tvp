@@ -167,19 +167,12 @@ compatibility options or patches. Common build tools are selected once in the ba
 Copy definitions in full rather than hiding their inputs behind a `common` overlay.
 
 ```nix
-# pkgs/libraries/mpfr/default.nix — one complete recipe record
-packageRecipes = tvp.lib.packages.mkDefs {
-  "4.2.1" = {
-    builder = ./build-4.0.2.nix;
-    deps.gmp = tvp.packages.gmp_6;
-  };
-};
-```
-
-```nix
 versionTable = tvp.lib.packages.mkTable [
   {
-    def = packageRecipes."4.2.1";
+    def = {
+      builder = ./build-4.0.2.nix;
+      deps.gmp = tvp.packages.gmp_6;
+    };
     releases = {
       "4.2.1" = "sha256-J3gHNTpnJpeJlpRa8T5Sgp46vXqaW3+yeTiU4Y8fy7I=";
       "4.2.2" = "sha256-tnugOD736KhWNzTi6InvXsPDuJigHQD6CmhprYHGzgE=";
@@ -208,7 +201,11 @@ in {
 # Version and hash table inside MPFR default.nix — excerpt
 versionTable = tvp.lib.packages.mkTable [
   {
-    def = packageRecipes."4.0.2";
+    def = {
+      builder = ./build-4.0.2.nix;
+      deps.gmp = tvp.packages.gmp_6;
+      opts.checkCFlags = [ "-std=gnu17" ];
+    };
     releases = {
       "4.0.2" = "sha256-HTvnCGBOrg5C1Xi6k7OQwqFF8XdDp0TY8/jCrVhVo4o=";
       "4.1.0" = "sha256-DJij8XMv9spOppBVIHnanFl4ctMOluwoQU7iPJVVin8=";
@@ -225,17 +222,18 @@ share one definition because their builder, dependencies and options are identic
 
 ### Rules
 
-- **A definition is named for the version where it first appears** — a name, not a range.
-  Definitions are *not* monotone in version: a deviation ends and later releases point back
-  at the earlier definition. OpenSSL `0.9.8k` returns to `defs."0.9.6"` after the hardened
-  run; Ruby `3.4.1` returns to `defs."3.3.0"` after `3.4.0`. That return is the fact worth
-  seeing, and it is why a definition cannot claim a forward range the way a builder does.
+- **An ordinary definition is written directly in its release block.** `mkTable`
+  derives its internal label from the earliest release using version ordering;
+  there is no duplicate version key or named-definition lookup. Omitted `deps`
+  means no additional package dependencies. Existing `mkDefs` maps and explicit
+  labels remain supported for retained callers.
 - **A version that differs forks a definition; it never overrides one.** A release entry may
   hold only `def`, `sha256` and `status`; anything else fails to evaluate. Forking in full
   keeps definitions diffable against each other, exactly as forked builders are.
 - **A block is a contiguous run of releases sharing everything but their hash.** Blocks are
   a list rather than an attrset so they stay in release order and one definition may appear
-  in several.
+  in several retained blocks. Ordinary tables repeat the complete definition when
+  a later block returns to an earlier recipe.
 - **A release is its hash**, or an attrset where there is more than a hash to state.
 - **A status belongs to the block when the recipe causes it** — every Ruby 4.0 is degraded
   for the same reason — **and to the release when the release does**, as OpenSSL 3.0.4 is
@@ -325,7 +323,7 @@ they do not dispatch hidden phases. Source preparation and installed-output repa
 remain explicit, separate operations.
 
 The MPFR exemplar keeps a flat package directory: `default.nix` contains its
-independent `packageRecipes` records, versions and hashes; `build-2.4.2.nix` and
+independent inline recipe records, versions and hashes; `build-2.4.2.nix` and
 `build-4.0.2.nix` are complete older and modern procedures; `tests/` holds the shared
 installed assertions and upstream restoration/acceptance. The older builder owns
 its source layout, disabled Float128 and lack of pkg-config metadata. The modern
@@ -1183,9 +1181,9 @@ so the tabs were being shipped inside the shell script.
 uses: `"3.6.4" = "sha256-…";`. Adding a version rebuilds nothing that already exists.
 
 **Add a version that needs different dependencies or options** — copy the current
-definition in `default.nix` to one named for that version, change it there, and open a new
-block pointing at it. If later versions go back to the old recipe, open another block
-naming the old definition; that return is a fact, not a duplicate.
+inline `def` record into a new release block in `default.nix` and change its inputs
+there. If later versions return to an earlier recipe, write that complete record
+in their block too. The versions already provide the labels.
 
 **Add a version that needs a different build procedure or starts a coherent era** —
 copy the current builder to `build-<that version>.nix`, change it there, record in the

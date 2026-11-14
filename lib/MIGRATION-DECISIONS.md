@@ -154,3 +154,18 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
 - **Decision needed:** repair the live LibYAML test-boundary assertions in that
   family's conversion. Keep full-inventory admission distinct from scoped package
   checks instead of silently skipping the unrelated nonpass.
+
+## MIG-011 — Deferred heavy providers behind a historical frontend
+
+- **Scope:** pkg-config 0.27's real Gettext dependency, beyond ordinary table and
+  frontend-builder cleanup.
+- **Evidence:** the local dry run retains `gettext = tvp.packages.gettext`, which
+  reaches uncached public GCC16 and JDK21 through the current Gettext feature set.
+  Removing that dependency or silently changing its profile would change the recipe.
+- **Current behavior:** all six pkg-config rows are source-converted; 0.27 remains
+  explicitly uncompiled/unqualified. The other five and all three Ninja releases
+  have bounded normal-batch qualification. No compiler/JDK build is launched merely
+  to clear this source cleanup, and there is no lighter-provider substitution.
+- **Decision needed:** coordinate the public compiler/toolchain and Gettext feature
+  activation, then qualify the exact ordinary 0.27 recipe. Historical construction
+  and its measured Gettext/JDK override remain separate and retained.

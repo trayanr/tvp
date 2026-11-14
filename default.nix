@@ -210,6 +210,12 @@ let
           }
         )
       );
+      ninja-family = pkgs.writeText "tvp-ninja-family-contracts" (
+        builtins.toJSON (import ./lib/tests/ninja-family.nix { inherit pkgs tvp; })
+      );
+      pkg-config-family = pkgs.writeText "tvp-pkg-config-family-contracts" (
+        builtins.toJSON (import ./lib/tests/pkg-config-family.nix { inherit pkgs tvp; })
+      );
       m4-family = pkgs.writeText "tvp-m4-family-contracts" (
         builtins.toJSON (import ./lib/tests/m4-family.nix { inherit pkgs tvp; })
       );

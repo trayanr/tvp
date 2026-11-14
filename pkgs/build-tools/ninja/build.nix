@@ -1,37 +1,29 @@
-# Native ordinary 1.13.2 retains browse with full public Python and the selected shell.
+# Complete ordinary Ninja procedure: bootstrap A, installed F, independent U.
 {
-  lib,
   tvp,
+  lib,
   base,
   src,
   version,
-  bash,
-  coreutils,
-  python,
-  helperPython,
-  gnutar,
-  gzip,
-  findutils,
-  patch,
-  sed,
-  binutils,
-  patchelf,
+  runtimeShell,
+  browsePython,
   patches,
   doCheck ? true,
 }:
 final:
 let
-  inherit (tvp.builder) steps outputs;
-  # Fixed-width valid paths preserve C++ string lengths, including CMake's
-  # generated Makefile fragments. The selected build shell runs during bootstrap.
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  # Fixed-width paths preserve C++ embedded string lengths for runtime edits.
   padded =
     path:
     assert builtins.stringLength path <= 256;
-    lib.concatStrings (lib.replicate (256 - builtins.stringLength path) "/") + path;
-  buildShell = padded "${final.bash}/bin/bash";
-  runtimeShell = padded "${final.runtime.shell}/bin/bash";
-  buildPython = padded "${python}/bin/python3";
-  runtimePython = padded "${final.runtime.python}/bin/python3";
+    builtins.concatStringsSep "" (builtins.genList (_: "/") (256 - builtins.stringLength path)) + path;
+  buildShell = padded "${tools.bash}/bin/bash";
+  finalShell = padded "${final.runtime.shell}/bin/bash";
+  buildPython = padded "${tools.python}/bin/python3";
+  finalPython = padded "${final.runtime.python}/bin/python3";
+  checkpoint = "nix-support/ninja-build-tree";
   environment = final.base.environment final.environment;
   # The selected compiler wrapper is an explicit tool interface. Keep required
   # transitive development paths when callers replace upstream scalar flags or
@@ -72,142 +64,138 @@ let
 in
 {
   pname = "ninja";
+  artifactName = "${final.pname}-${final.version}";
   inherit
     base
     src
     version
-    bash
-    coreutils
+    runtimeShell
+    browsePython
+    patches
+    doCheck
     ;
+  inherit (tools) bash coreutils;
+  dependencyProviders = {
+    runtimeShell = final.runtime.shell;
+    browsePython = final.runtime.python;
+  };
   environment.tools = [
-    helperPython
-    patch
-    sed
+    tools.python
+    tools.patch
+    tools.sed
   ];
   runtime = {
     libraries = environment.libraries;
-    shell = final.bash;
-    inherit python;
+    shell = final.runtimeShell;
+    python = final.browsePython;
+    dlopenDirectories = [ ];
   };
-  upstreamCheck = {
-    enabled = doCheck;
-    before = "ninja.install";
-    command = (
-      (command "ninja.check" ''
-        status=0
-        ${helperPython}/bin/python3 -B misc/ninja_syntax_test.py -v > "$out/.tvp-evidence/check.log" 2>&1 || status=$?
-        printf '%s\n' "$status" > "$out/.tvp-evidence/check.status"
-        cat "$out/.tvp-evidence/check.log"
-        test "$status" = 0
-      '')
-      // {
-        enabled = doCheck;
-      }
-    );
-  };
-  plan = steps.sequence [
+  productionPlan = steps.sequence [
     (steps.unpack {
       src = final.src;
-      tar = gnutar;
-      inherit gzip findutils;
       compression = "gzip";
     })
     (command "ninja.prepare" ''
-      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
-      ${helperPython}/bin/python3 -B - ${lib.escapeShellArg buildShell} <<'PY'
-      from pathlib import Path
-      import sys
-      p = Path('src/subprocess-posix.cc')
-      text = p.read_text()
-      assert text.count('@TVP_SHELL@') == 2
-      p.write_text(text.replace('@TVP_SHELL@', sys.argv[1]))
-      PY
+      ${tools.python}/bin/python3 -B ${../source-targets.py} src/subprocess-posix.cc src/inline.sh
+      ${lib.concatMapStringsSep "\n" (
+        patch: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${patch}"
+      ) final.patches}
+      ${tools.python}/bin/python3 -B ${./prepare.py} ${lib.escapeShellArg buildShell}
     '')
     (steps.shebangs {
       name = "ninja.source-shells";
-      python = helperPython;
       paths = [ "src/inline.sh" ];
       names = [ "sh" ];
-      interpreter = "${final.bash}/bin/bash";
+      interpreter = "${tools.bash}/bin/bash";
     })
     (command "ninja.build" ''
-      mkdir -p "$out/.tvp-evidence"
-      trap 'status=$?; if (( status != 0 )); then cat "$out/.tvp-evidence/build.log"; fi' EXIT
-      # Only the prepared compiler environment contributes flags.
-      ${helperPython}/bin/python3 -B configure.py --bootstrap --verbose --with-python=${lib.escapeShellArg buildPython} > "$out/.tvp-evidence/build.log" 2>&1
-      cp build.ninja "$out/.tvp-evidence/"
+      trap 'status=$?; if (( status != 0 )); then cat build.log >&2; fi' EXIT
+      ${tools.python}/bin/python3 -B configure.py --bootstrap --verbose \
+        --with-python=${lib.escapeShellArg buildPython} > build.log 2>&1
+      cat build.log >&2
     '')
     (command "ninja.install" ''
       install -Dm755 ninja "$out/bin/ninja"
       install -Dm644 misc/ninja_syntax.py "$out/share/ninja/ninja_syntax.py"
       install -Dm644 doc/manual.asciidoc "$out/share/doc/ninja/manual.asciidoc"
-      install -Dm644 ${../setup-hook.sh} "$out/nix-support/setup-hook"
+      install -Dm644 ${./setup-hook.sh} "$out/nix-support/setup-hook"
       install -Dm644 COPYING "$out/share/licenses/ninja/COPYING"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (
+      (command "ninja.save-build-tree" ''
+        ${tools.python}/bin/python3 -B ${../../../lib/build-checkpoint.py} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"
+      '')
+      // {
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+  ];
+  upstreamPlan = artifact: [
+    {
+      name = "ninja.restore-build-tree";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
+    }
+  ];
+  # Preserve the existing upstream scope: Python syntax module tests. C++ tests
+  # require GoogleTest, which is not provided by these source archives.
+  upstreamCheck =
+    (command "ninja.check" ''
+      ${tools.python}/bin/python3 -B misc/ninja_syntax_test.py -v
+    '')
+    // {
+      enabled = final.doCheck;
+    };
+  plan = final.productionPlan ++ [
     (steps.split "ninja.finalize")
-    (outputs.copyArtifacts { coreutils = final.coreutils; })
+    (outputs.copyArtifacts { })
+    {
+      name = "ninja.drop-build-tree";
+      tools = [ tools.coreutils ];
+      run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
+    }
     {
       name = "ninja.relocate";
-      tools = [ helperPython ];
-      run = ''${helperPython}/bin/python3 -B ${../../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${../owned-split-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${
         lib.escapeShellArg (
           builtins.toJSON {
             fixed = [
               [
                 buildShell
-                runtimeShell
+                finalShell
               ]
               [
                 buildPython
-                runtimePython
-              ]
-            ];
-            text = [
-              [
-                "${final.bash}/bin/bash"
-                "${final.runtime.shell}/bin/bash"
+                finalPython
               ]
             ];
           }
         )
-      } ${../../../../lib/installed-tree.py}'';
+      } ${../../../lib/installed-tree.py}'';
     }
     {
       name = "ninja.module-header";
+      tools = [ tools.coreutils ];
       run = ''
-        # This file is an imported module; discard only its unused script header.
+        # This installed file is imported source data, not an executable script.
         tail -n +2 "$out/share/ninja/ninja_syntax.py" > ninja_syntax.py
         cp ninja_syntax.py "$out/share/ninja/ninja_syntax.py"
       '';
     }
-    {
-      name = "ninja.remove-evidence";
-      run = ''rm -rf "$out/.tvp-evidence"'';
-    }
-    (outputs.strip {
-      python = helperPython;
-      inherit binutils;
-      paths = [ "bin" ];
-    })
+    (outputs.strip { paths = [ "bin" ]; })
     (outputs.rpaths {
-      python = helperPython;
-      inherit binutils patchelf;
-      base = final.base;
+      paths = [ "bin" ];
       libraries = final.runtime.libraries;
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
-      paths = [ "bin" ];
     })
-    (outputs.checkPaths {
-      python = helperPython;
-      inherit binutils patchelf;
-      paths = [ "bin" ];
-    })
+    (outputs.checkPaths { paths = [ "bin" ]; })
   ];
   meta = {
     homepage = "https://ninja-build.org/";
     description = "Small build system focused on speed";
     license = lib.licenses.asl20;
-    platforms = [ "x86_64-linux" ];
     mainProgram = "ninja";
   };
 }
