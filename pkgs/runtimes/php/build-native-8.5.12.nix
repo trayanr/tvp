@@ -20,13 +20,10 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "php.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "php.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
 in
 {
@@ -183,7 +180,8 @@ in
     functionEntryEnd = true;
     digestApi = true;
     sqlite2Api = false;
-  } // final.testFeatures;
+  }
+  // final.testFeatures;
   meta = {
     description = "General-purpose PHP interpreter";
     homepage = "https://www.php.net/";

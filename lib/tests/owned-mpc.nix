@@ -10,13 +10,16 @@ let
   coreutils = base.coreutils;
   inherit (tvp.packages) pkg-config;
   family = (import ../../pkgs/libraries/mpc { inherit pkgs tvp; }).recipes.mpc;
-  legacy = (tvp.lib.packages.mkVersions family.constructionRecipe).mpc_1_4_1;
+  staged = family.instantiate {
+    version = "1.4.1";
+    inherit base;
+  };
   fixture =
     name: run:
     (context.mkTest {
       package = p;
       inherit name;
-      script = '':'';
+      script = ":";
       expected = "";
     }).edit
       (
@@ -120,9 +123,10 @@ let
         && r.resolved.out == supportInputs.${r.dependency}.outPath
       ) supportRows;
     split = (steps.partition p.buildSteps).split;
-    sourceArchiveHash = p.src.outputHash == legacy.src.outputHash;
-    sourceProducer = p.src.drvPath != legacy.src.drvPath;
-    legacy = legacy ? overrideAttrs && !(legacy ? edit) && !(tvp.canonical.mpc_1_4_0 ? overrideAttrs);
+    sourceArchiveHash = p.src.outputHash == staged.src.outputHash;
+    singleSourceProducer = p.src.drvPath == staged.src.drvPath;
+    stageLocalOwned =
+      staged ? edit && !(staged ? overrideAttrs) && !(tvp.canonical.mpc_1_4_0 ? overrideAttrs);
     oldConstraint = tvp.canonical.mpc_1_0_3.tvp.deps.mpfr.version == "3.1.6";
     runtimeArtifact = p.artifact.drvPath == runtime.artifact.drvPath && p.drvPath != runtime.drvPath;
     runtimeReplacement =
@@ -288,9 +292,7 @@ let
                 test "$(env -i ./numeric)" = ok
                 env -i LD_DEBUG=libs ./numeric > /dev/null 2> loader
                 grep -F 'calling init: ${mpc}/lib/libmpc.so.3' loader
-                grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt mpc.runtime.libraries 1)
-                }/lib/libmpfr.so.6' loader
+                grep -F 'calling init: ${lib.getLib (builtins.elemAt mpc.runtime.libraries 1)}/lib/libmpfr.so.6' loader
                 grep -F 'calling init: ${p.tvp.deps.gmp}/lib/libgmp.so.10' loader
                 test ! -e ${mpc}/lib/libmpc.a
                 grep -E "^old_library=.{2}$" ${mpc}/lib/libmpc.la
@@ -381,7 +383,7 @@ assert failed == [ ] || throw "Owned MPC contracts: ${lib.concatStringsSep ", " 
       customRuntime
       selected
       disabled
-      legacy
+      staged
       lookup
       ;
   };

@@ -48,42 +48,41 @@ let
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;
-    installPhase =
-      ''
-        mkdir -p "$out/bin" "$out/nix-support"
-        for linker in ld ld.bfd ld.gold; do
-          if [ -x ${binutils}/bin/"$linker" ]; then
-            substitute ${scriptFor (scripts + "/ld.sh")} "$out/bin/$linker" \
-              --subst-var-by bash ${bash}/bin/bash \
-              --subst-var-by binutils ${binutils} \
-              --subst-var-by libc ${libc} \
-              ${responseSubstitutions}--subst-var linker
-            chmod +x "$out/bin/$linker"
-          fi
-        done
-        for tool in ${binutils}/bin/*; do
-          name="''${tool##*/}"
-          test -e "$out/bin/$name" || ln -s "$tool" "$out/bin/$name"
-        done
-        substitute ${scripts + "/bintools-setup.sh"} "$out/nix-support/setup-hook" \
-          --subst-var out
-      ''
-      + lib.optionalString supportMetadata ''
-        printf '%s\n' ${libc}/${platform.dynamicLinker} > "$out/nix-support/dynamic-linker"
-        printf '%s\n' ${libc} > "$out/nix-support/orig-libc"
-      ''
-      + lib.optionalString wrapGprofng ''
-        # The raw upstream HTML program uses /usr/bin/env perl. Bind its named
-        # interpreter here, including calls dispatched by the gprofng frontend.
-        rm "$out/bin/gprofng" "$out/bin/gp-display-html"
-        substitute ${./gprofng.sh} "$out/bin/gprofng" \
-          --subst-var-by bash ${bash}/bin/bash \
-        --subst-var-by binutils ${binutils}
-        substitute ${./gp-display-html.sh} "$out/bin/gp-display-html" \
-          --subst-var-by bash ${bash}/bin/bash \
-          --subst-var-by perl ${perl} --subst-var-by binutils ${binutils}
-        chmod +x "$out/bin/gprofng" "$out/bin/gp-display-html"
-      '';
+    installPhase = ''
+      mkdir -p "$out/bin" "$out/nix-support"
+      for linker in ld ld.bfd ld.gold; do
+        if [ -x ${binutils}/bin/"$linker" ]; then
+          substitute ${scriptFor (scripts + "/ld.sh")} "$out/bin/$linker" \
+            --subst-var-by bash ${bash}/bin/bash \
+            --subst-var-by binutils ${binutils} \
+            --subst-var-by libc ${libc} \
+            ${responseSubstitutions}--subst-var linker
+          chmod +x "$out/bin/$linker"
+        fi
+      done
+      for tool in ${binutils}/bin/*; do
+        name="''${tool##*/}"
+        test -e "$out/bin/$name" || ln -s "$tool" "$out/bin/$name"
+      done
+      substitute ${scripts + "/bintools-setup.sh"} "$out/nix-support/setup-hook" \
+        --subst-var out
+    ''
+    + lib.optionalString supportMetadata ''
+      printf '%s\n' ${libc}/${platform.dynamicLinker} > "$out/nix-support/dynamic-linker"
+      printf '%s\n' ${libc} > "$out/nix-support/orig-libc"
+    ''
+    + lib.optionalString wrapGprofng ''
+      # The raw upstream HTML program uses /usr/bin/env perl. Bind its named
+      # interpreter here, including calls dispatched by the gprofng frontend.
+      rm "$out/bin/gprofng" "$out/bin/gp-display-html"
+      substitute ${./gprofng.sh} "$out/bin/gprofng" \
+        --subst-var-by bash ${bash}/bin/bash \
+      --subst-var-by binutils ${binutils}
+      substitute ${./gp-display-html.sh} "$out/bin/gp-display-html" \
+        --subst-var-by bash ${bash}/bin/bash \
+        --subst-var-by perl ${perl} --subst-var-by binutils ${binutils}
+      chmod +x "$out/bin/gprofng" "$out/bin/gp-display-html"
+    '';
     passthru = {
       inherit binutils libc;
       bintools = binutils;
@@ -125,6 +124,13 @@ let
     passthru = {
       inherit bintools libc;
       cc = gcc;
+      # The owned environment consumes the same runtime/tool bindings already
+      # selected by these executable wrappers. Metadata adds no build inputs.
+      runtimeDirectories = lib.unique [
+        "${lib.getLib libc}/lib"
+        "${lib.getLib gcc}/lib"
+      ];
+      libcTools = [ (lib.getBin libc) ];
       targetPrefix = "";
       isGNU = true;
       isClang = false;

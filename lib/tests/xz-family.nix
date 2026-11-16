@@ -82,7 +82,7 @@ let
   );
   staged = family.instantiate {
     version = "5.8.4";
-    base = tvp.baseTiers.seed;
+    base = tvp.bases.gcc_16.seed;
   };
   results = {
     allThirtyNineReleases = builtins.length versions == 39;
@@ -93,8 +93,10 @@ let
     ) versions;
     noBackdoorReleases = !(table ? "5.6.0") && !(table ? "5.6.1");
     withdrawalRecordPreserved =
-      family.recipes.xz.packageMeta.upstream.unavailable
-      == family.recipes.xz.constructionRecipe.packageMeta.upstream.unavailable;
+      (builtins.head family.recipes.xz.packageMeta.upstream.unavailable).versions == [
+        "5.6.0"
+        "5.6.1"
+      ];
     allPlansSplit = builtins.all (
       version:
       let
@@ -136,7 +138,7 @@ let
     noModernLessDependency = !(table."5.2.0".def.deps ? less) && !(table."5.8.4".def.deps ? less);
     equalWidthPrefix =
       builtins.stringLength (toString p.artifact) == builtins.stringLength (toString p);
-    stageLocalBase = staged.specification.base.name == tvp.baseTiers.seed.name;
+    stageLocalBase = staged.specification.base.name == tvp.bases.gcc_16.seed.name;
     noopOverride = same (p.override { });
     noopEdit = same (p.edit (s: s));
     policyDoesNotInvalidateProduction = same disabled && !(disabled.tests ? upstream);
@@ -174,7 +176,8 @@ let
     distinctShellProbe =
       p.tvp.declaredTestDependencies.runtimeShell.drvPath != p.specification.runtime.shell.drvPath;
     retainedConstructionIsLegacy = builtins.all (
-      version: !(family.recipes.xz.constructionRecipe.versionTable.${version}.def ? constructor)
+      version:
+      family.recipes.xz.versionTable.${version}.def.authoring.origin == "tvp.lib.packages.mkFamily"
     ) versions;
     oneSharedInstalledSuite = builtins.all (
       version:

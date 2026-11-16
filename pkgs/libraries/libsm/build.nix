@@ -16,13 +16,10 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "libsm.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "libsm.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {

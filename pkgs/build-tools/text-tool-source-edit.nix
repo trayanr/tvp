@@ -6,7 +6,7 @@
 }:
 
 let
-  deps = package.specification.base.standardTools;
+  deps = package.specification.base.tools;
   spec = package.specification;
   codec = if compression == "xz" then deps.xz else deps.gzip;
   fixture =

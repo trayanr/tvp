@@ -413,3 +413,368 @@ remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
   readers were missing. Active helpers also register tagged tool providers, so
   that blanket P1 claim was withdrawn. Direct effective-base readers remain a
   valid cleanup; the original evidence and correction are both preserved.
+
+## MIG-027 — Compiler-family base selection and coherent provider edits
+
+- **Public selection:** bases are grouped by compiler line, with no composition
+  revision counter. GCC16 exposes the real `seed`, `runtime`, `reduced` and `full`
+  contexts. GCC13 exposes its retained complete owned adapter as `full`; the old
+  v2/v3 wrapper protocols do not establish reduced/full compiler stages. Existing
+  base names remain unchanged because they are recorded by actual consumers.
+- **Platform:** the root resolves the selected system through `bases/platforms`.
+  Ordinary definitions inherit that platform. Native x86_64 GNU/Linux remains the
+  only implemented platform; a new registry entry alone does not qualify a port.
+- **Provider authority:** `tools.gcc` selects a whole compiler driver. Compiler,
+  shell, Coreutils, Binutils and libc aliases derive from the effective catalogue.
+  The existing driver constructors expose different real override interfaces;
+  generic independent Binutils/libc changes are rejected when they disagree with
+  the selected driver. Adding advertised provider-specific rebinding is later work.
+- **Laziness:** named tools are validated when selected. The catalogue is never
+  converted wholesale to execution inputs. Existing explicit baseline tools stay
+  in `baselineTools`, including the GNU linker contribution used by hardening
+  consumers. Inferring replacements from matching output paths would lose that
+  contribution and change production identities.
+- **Compatibility:** old constructor lists and `standardTools` overrides are
+  translated at the owned-base boundary. `standardTools` is a derived view, not
+  another stored choice. Existing stdenv callers and flat graph labels use the
+  private `__legacyBases` surface, pinned before the public default advances to
+  `gcc16.full`. Removing those adapters requires actual caller migration (MIG-025);
+  new ordinary definitions must not use them.
+- **Edit semantics:** no-op edits preserve explicitly selected provider metadata
+  and enriched baseline contributions. Complete edits can remove optional fields;
+  missing required fields fail clearly. Driver edits derive inherited Binutils
+  bindings again; contradictory explicit choices remain errors.
+- **Status:** evaluated contexts include system, target, compiler version, driver,
+  Binutils/libc and only used tool roles. Nix JSON provider records use `path`:
+  an `outPath` field would cause Nix to serialize the whole record as a string.
+  Compiler-wrapper versions are reported separately from the underlying GCC version.
+- **Preserved limits:** the pre-existing construction snapshot check fails on the
+  original commit as well as the refactor. Its historical JSON baseline is not
+  refreshed or waived. All 1,794 current graph entries are independently identical
+  across the change. The broad dependency-policy traversal also reaches an old
+  JDK test assertion expecting the retired builder filename; that unrelated
+  contract cleanup remains outside this change. Selected base contracts now
+  recognize the already-owned MPFR construction instances and their exact earlier
+  helper context, instead of assuming every retained instance exposes stdenv.
+  Historical qualification, checkpoint debt and full/admission holds remain open.
+
+## MIG-028 — Subsystem entrypoints own composition
+
+- **Ownership:** `bases/default.nix` composes public compiler families, resolves
+  the selected platform and chooses the default. The retained construction
+  assembly lives in `bases/retained.nix` and is passed explicitly as private
+  wiring. GCC16's full-stage tool defaults select its local earlier stage;
+  construction no longer reaches through the global public base catalogue.
+- **Other entrypoints:** `pkgs/default.nix` owns selector tagging, aliases and
+  public variant projection. `tools/default.nix` owns CLI/provider assembly;
+  `checks/default.nix` composes repository checks and existing audits;
+  `tests/default.nix` owns lazy batch/latest registration, with audit fixtures in
+  `tests/support.nix`. `reports/default.nix` owns evaluated inventories, graph and
+  ownership/status composition. Root only wires inputs, shared context, modules
+  and public exports.
+- **Private handles:** related module results can carry explicit assembly handles
+  such as `ownedCLI`, `runtimeRegistry`, `allVariantPackages` and
+  `testBatchEntries`. Root does not add these to the public TVP record. The existing
+  `__legacyBases` compatibility field remains private-by-convention and unchanged.
+  These are plain imports and lazy records, without a new module framework.
+- **Preservation:** public exports, check registration, all 2,062 package selectors,
+  all six CLI derivations, 1,794 graph entries and captured stage/provider and
+  artifact/final identities remain unchanged at the same input source binding.
+  The formatting check intentionally retains the repository root; its source
+  snapshot changes when files move. Flake-bound status metadata likewise records
+  the new source tree. Neither is a compiler or package-definition change.
+- **Limits:** MIG-025–027 and the existing construction/JDK audit nonpasses remain
+  unchanged. No new architecture, provider upgrade, historical qualification,
+  CI execution or NAS operation is included in this organizational pass.
+
+## MIG-029 — Real GCC13 contexts and historical GCC9/GCC4.9 callers
+
+- **GCC13 composition:** the family now owns `seed`, `libc`, `shell`,
+  `compilerPreparation`, `compiler`, `toolFloor` and `full`. These correspond to
+  the actual retained construction boundaries. There is no separately reduced
+  GCC13 compiler, so the GCC16 stage names are not copied onto unrelated stages.
+  This extends the stage availability recorded in MIG-027.
+- **Live callers:** local contexts are created from raw earlier stage inputs
+  before their consumers. Both retained-chain owned MPFR instantiations now use
+  the shell/compiler contexts directly. They do not fetch their base through the
+  completed public GCC13 object, which would risk a compiler/prerequisite cycle.
+- **Provider protocol:** the existing GCC wrappers explicitly declare the same
+  runtime directories and libc tools formerly inferred by the compatibility
+  adapter. Executable scripts and hardening choices are unchanged. Full retains
+  the rich native platform, ordered baseline and reference ownership. Python and
+  Patchelf retain their captured earlier provider generations.
+- **Bounded completion:** this is owned stage-context and caller migration. The
+  borrowed seed, most retained producer recipes, wrapper production, setup hooks
+  and libc tool construction remain on their existing implementation. Full producer
+  conversion requires preserving their actual features and build/checkpoint
+  contracts and will change derivation identities; it is separate work. Do not
+  label the retained GCC13 source-bootstrap migration complete from these contexts.
+- **Historical compiler audit:** GCC9 9.5.0 is selected by broken Readline 2.0.
+  GCC4.9 4.9.4 is selected by ten broken Zlib releases: 0.71, 0.79, 0.8, 0.9,
+  0.91–0.95 and 0.99. No supported canonical recipe, public variant or retained
+  construction variant selects either. Each still has eight base tests and a
+  registered full/all batch, plus live graph and historical baseline records.
+  Deletion would require an explicit disposition for those callers, suites and
+  records, so both remain private historical compatibility contexts.
+- **Comment correction:** the recorded Zlib blocker already requires GCC <= 3.3;
+  GCC4.9 also rejects its cast-as-lvalue syntax. Correct the stale nearby comment
+  without changing the broken records, their compiler selections or their status.
+- **Validation:** raw stage bindings, internal MPFR A/F, full tools/platform and
+  ordered references, captured production identities and all 1,794 graph entries
+  remain exact. Seven concrete C compile/link/run probes pass; full also passes
+  C++. No compiler producer is rebuilt. Existing upstream, historical, checkpoint,
+  construction snapshot and admission limits remain unwaived.
+
+## MIG-030 — Authoritative owned GCC13/GCC9/GCC4.9 base definitions
+
+**Superseded provider decision:** MIG-033 removes the borrowed providers below.
+This interface conversion did not complete the requested source migration.
+
+- **Definition boundary:** remove `mkBase` and convert all seven declarations,
+  including the retained GCC16 consumer environment, to an actual owned
+  definition followed by `legacyEnvironment`. The checked projection derives old
+  version strings/floor names and retains stdenv only for pinned producer callers.
+  It must compare compiler, Binutils, libc, ordered baseline, Bash and platform;
+  it cannot introduce an independent selection policy.
+- **Public families:** GCC13 retains its seven real contexts and selects its locally
+  composed v3 full driver. GCC9/GCC4.9 publish only `full`; no fictitious native
+  intermediate stages or source-bootstrap claims are added. This supersedes
+  MIG-029's private-only visibility for the two historical contexts.
+- **External seed:** `borrowed-tools.nix` names exact providers instead of discovering
+  roles by package-name strings. Make and File deliberately come from the pinned
+  Nixpkgs producer generation rather than later public rebuilds. `borrowed.nix`
+  adds the owned compiler metadata protocol without rebuilding the external driver.
+  Retained environment projections verify the ordered selection still matches.
+- **Historical callers:** broken Readline 2.0 and ten Zlib 0.x public entries now use
+  genuine owned split procedures and the new family contexts. Reuse historical
+  installed test bodies; do not apply the modern shared-library suite to libgz.a.
+  Keep source hashes, statuses, reasons, compiler requirements and original defects.
+  In particular, do not repair the missing Readline header or Zlib cast-as-lvalue
+  source as part of a base-interface change. Their eleven obsolete split exceptions
+  are removed only after evaluated producer/partition checks pass. Nine exceptions
+  remain; all twenty declared-broken statuses remain unchanged.
+- **Validation construction:** the eight common base tests use the existing owned
+  test factory and the effective selected providers. They accept an owned base or
+  a retained projection; extra suites/ownership callbacks remain compatible.
+  Compiler/runtime producer bodies and setup hooks have not thereby migrated.
+- **Screening scope:** `tools/definition-inventory.py` reports lexical API use and
+  static source references without Nix evaluation or builds. Its output is an
+  inventory, not an admission policy or runtime-liveness proof. The 110 ordinary
+  entrypoints use `mkFamily`; 130 retained package files still use `mkDefs`, 87
+  declare `packageArgs`, and 152 package producer files use `mkDerivation`.
+  Keep the nine test-factory bridges and restricted `standardTools` selections
+  explicit until their actual callers move. Do not delete retained sources based
+  solely on directory names or an unreferenced-file heuristic.
+- **Result/limits:** 188 pure controls, scoped base/platform/catalogue checks and
+  all 24 GCC13/GCC9/GCC4.9 shared execution leaves pass. Compilers/providers are
+  reused; captured supported canonical/variant A/F and retained context providers
+  stay exact. Exactly eleven broken public producer graph entries change.
+  Latest/public-profile outputs are reused with builds/substituters disabled.
+  Source archive preflight and runtime qualification of the new broken procedures
+  remain unrun; required Readline2.0/Zlib0.x archives are absent locally. Existing
+  historical construction snapshot, JDK caller-audit and wider qualification
+  nonpasses remain unwaived. CI/NAS stay off.
+
+## MIG-031 — Canonical compiler versions and latest-major base aliases
+
+- **Public names:** base selectors use the same dot-to-underscore spelling as
+  package selectors. Exact registrations are `gcc_4_9_4`, `gcc_9_5_0`,
+  `gcc_13_3_0` and `gcc_16_2_0`.
+- **Aliases:** `gcc_4`, `gcc_9`, `gcc_13` and `gcc_16` select the greatest registered
+  version of that compiler major. In particular, `gcc_4` currently selects 4.9.4;
+  it is not a minor-line alias. Only major aliases are emitted; `gcc_4_9` is not
+  provided. Ordinary callers use major aliases; construction can pin exact selectors.
+  `default` continues to select `gcc_16.full` explicitly.
+- **Selection:** compare table version strings with `builtins.compareVersions`.
+  Never compare attribute names or infer `49` as GCC4.9. Selection does not evaluate
+  compiler providers or unused stages. Package alias tagging is not applied to base
+  records; aliases return the original selected family without a wrapper.
+- **Internal naming:** versioned names apply to owned and retained contexts as
+  well as public selectors. Callers, graph/status labels and fixture keys should
+  follow naming changes together. Existing identifiers are not a compatibility
+  requirement; runtime providers and execution behavior are validated separately.
+- **Validation:** ten pure alias cases cover major grouping, minor/patch ordering,
+  empty input and lazy unselected stages/providers. Actual-family contracts bind
+  every major alias to its exact compiler/stage set. Captured package A/F, variants,
+  compiler contexts and all 1,794 production graph entries remain identical.
+  Scope is selector naming; no package or compiler rebuild, architecture work,
+  source qualification, CI or NAS execution is introduced.
+
+## MIG-032 — Versioned base filenames and consistent internal names
+
+- **Files:** use `bases/gcc-4.9.4.nix`, `gcc-9.5.0.nix`, `gcc-13.3.0.nix`
+  and `gcc-16.2.0.nix`. GCC13's stage/full helpers live under `gcc-13.3.0/`.
+  Imports, current guides and links follow the new paths.
+- **Identifiers:** owned and retained GCC4/GCC9 context names use `gcc_4_9_4`
+  and `gcc_9_5_0`. Update private callers, graph/status keys and construction
+  fixture keys together. Keeping old identifiers for historical compatibility
+  is not a requirement; no compatibility alias is added for the old spelling.
+  Upstream Nixpkgs attribute names remain its external API.
+- **Public selection:** callers continue to use `gcc_4`, `gcc_9`, `gcc_13` and
+  `gcc_16`, with exact canonical version selectors available. Alias selection,
+  actual compiler providers and the default are unchanged.
+- **Verification:** source references and registered selection checks validate
+  the new paths/names. Captured package A/F, variants, compiler contexts and all
+  common graph entries remain exact. The only graph key changes are the two
+  explicitly renamed retained base records; their provider paths stay the same.
+  Naming cleanup is not a runtime qualification or an upstream failure waiver.
+
+## MIG-033 — Actual source-owned base providers
+
+- **Correction:** an owned base record around a Nixpkgs compiler/tool floor is
+  incomplete migration. Remove `borrowed.nix`, `borrowed-tools.nix` and the old
+  GCC13/v2/v3/GCC16 construction graph. Do not preserve their identities or invent
+  produced stages to retain an obsolete shape.
+- **Registry:** `bases/default.nix` accepts system, pure library and builder only.
+  GCC4.9/GCC9/GCC13 expose their actually produced `full` stage. GCC16 retains its
+  four real source-bootstrap stages. Major aliases still select exact versions.
+  The catalogue also evaluates with the standalone owned library, without importing
+  Nixpkgs. Repository-level pure `lib`/`config` use is separate from executable
+  provider selection.
+- **Construction:** build GCC4.9.4, GCC9.5.0 and GCC13.3.0 on the existing closed
+  source-GNU16 predecessor. Earlier means earlier in the construction DAG, not a
+  smaller compiler version. Explicit source prerequisites avoid public-alias cycles.
+  GCC4/GCC9 have complete independent procedures, genuine A/F boundaries and
+  explicit capability exclusions; their missing optional profiles are not claimed.
+- **Compatibility:** remaining stdenv recipe syntax uses the local vendored
+  constructor with the selected source compiler, libc, Binutils, File and tool
+  floor. Its metadata comes from those actual providers. It cannot select a foreign
+  stdenv, fabricate a libc tools output, or reconstruct the removed variant graph.
+  Removing this remaining recipe syntax is separate authoring work.
+- **Compiler layout:** use libc headers after compiler headers (`-idirafter`) and
+  select the libc sysroot with the native `/include` header root. GCC13's first two
+  source attempts exposed incorrect retained header/sysroot assumptions. Preserve
+  their diagnostics; correct the production recipe rather than its cached tree.
+- **Reusable finalization:** GCC13's successful bootstrap/comparison/install/checkpoint
+  produces a valid A. Its finalization-only ELF correction reuses that exact A.
+  `finalize-standard.py` handles ordinary GCC's configured-prefix diagnostic bytes
+  separately from dynamic strings, while retaining full artifact-reference checks
+  and exclusive RPATH validation. The closed patched GCC16 layout keeps its existing
+  finalizer, avoiding an unrelated bootstrap rebuild.
+- **Enforcement:** `checks.source-base-providers` checks the actual source floor,
+  driver, raw compiler lowering, A/F boundary, predecessor, sysroot and runtime
+  providers. Its source guard covers sixteen active modules. The current evaluated
+  production traversal checks 45 providers; seven mutation controls exercise
+  rejection/acceptance boundaries. These are bounded provenance checks, not an
+  unrestricted store-closure or compiler-conformance certificate.
+- **Validation:** 198 pure controls, nine source-GCC13 composition contracts,
+  seventeen MPFR assertions, registered base/platform/catalogue checks and normal
+  Git-backed origin evaluation pass. GCC13 A/F/driver build and bootstrap comparison
+  pass; fresh source-GCC13 and source-GCC16 legacy C/GMP/C++ probes pass. Both common
+  base suites pass seven of eight leaves: bind-now hardening remains a real failure.
+  Do not weaken that assertion or reuse old borrowed-provider qualification.
+- **Limits:** GCC4/GCC9 real source preparation/configuration pass, but their
+  compilers are UNBUILT/UNQUALIFIED. New compiler consumers and full upstream suites
+  are not globally requalified. Split coverage remains 1,531 compliant plus nine
+  explicit debts; all twenty declared-broken statuses remain. Historical upstream,
+  hardening and admission holds remain unwaived. CI/NAS stay off.
+
+
+## MIG-034 — Uniform package families and construction callers
+
+- **One family definition:** all 110 ordinary indexes own literal releases,
+  metadata and test dependencies. Remove imports of prior indexes and exported
+  `constructionRecipe`/`constructionBuilder` closures. Construction uses the same
+  family's `instantiate` operation with explicit earlier dependencies.
+- **Delete obsolete implementations:** remove 136 detached old indexes and their
+  559-file closure after source-graph/caller review; remove six additional unused
+  caller factories and four code-empty stage READMEs. Keep actual direct
+  source-bootstrap procedures and their helpers. Dynamic imports are checked again
+  by full catalogue and registered-check evaluation; a source scan alone is not
+  enough to establish liveness.
+- **Implicit providers:** ordinary tool-floor overlays are removed. Named tools,
+  including source-built File, come from the selected base. Go OS/architecture
+  and native loader facts are defined once in `bases/platforms` and supplied lazily
+  by `mkFamily`. CPython uses canonical `pkg-config`/`grep` roles instead of
+  repeated camel-case provider aliases. Genuine earlier compiler, seed, build-host
+  and named-profile differences remain explicit.
+- **One test factory:** `mkFamily` implements suite/configuration overrides once.
+  Extra test options reach `testConfiguration`; matching test dependency names
+  replace only declared test inputs. Package-local dispatcher wrappers and old
+  runCommand fallbacks are removed. Assertions stay in their family suites.
+- **Effective metadata:** grouped tool edits project their effective providers.
+  A projection may name a registered base role even when a source-only test removes
+  its steps. Only active or explicitly declared providers enter dependency metadata;
+  unused values remain lazy and unknown names still reject. Pure controls cover
+  inactive/unknown projections and production-preserving test customization.
+- **Owned closure audits:** runtime-expectation uses the existing owned test
+  context. Optional `exportReferencesGraph` lowering roots only the actual final
+  output; expected library paths are context-free. The Nix JSON is copied into the
+  private workspace without widening the fresh-step environment. The helper invokes
+  the selected audit Python absolutely. No new runner/framework is introduced.
+- **No artificial profile differences:** named selectors may share a procedure
+  and output when their effective choices match. Do not retain a foreign tool floor
+  or duplicate body merely to make a former migration pilot physically distinct.
+- **Broken releases:** all twenty status/reason records remain broken. The last
+  nine legacy records now have owned A/F plans and no split-baseline exception.
+  OpenSSL 0.9.6 has its own complete staged era procedure; unsupported architecture
+  is not claimed. Structural compliance does not imply those releases build.
+- **Remaining decisions:** preserve multi-URL/archive/retry fetch policies and
+  GNU Config's Git source backend until a shared replacement retains availability.
+  Source-bootstrap stage authoring, older upstream reconstruction, runtime compiler
+  qualification, bind-now hardening and historical/admission holds remain separate.
+- **Execution deviation:** an optional test-graph shell fragment initially added a
+  blank line to unrelated builder scripts. An unintended request started 152
+  derivations, chiefly scripts/runners and source prerequisites, before cancellation.
+  No GCC/LLVM compiler producer started. Corrected absent-branch bytes restore every
+  recorded compiler/stage identity exactly; the final tiny plan admits only expected
+  fixture/test scripts. Keep the cancelled log and inputs visible.
+- **Validation boundary:** all canonical/variant descriptions and test registrations
+  are evaluated offline, with source/alias/status checks and bounded pure tests.
+  Tiny actual closure acceptance and absent-library rejection run on cached tools.
+  Changed tool/source selections require fresh consumer qualification later; no
+  all-version/full/latest runtime acceptance is inferred. CI/NAS stay off.
+
+## MIG-035 — Share mechanical helpers and preserve explicit policies (2026-11-16)
+
+- Replace34 identical checkpoint readers with `lib/restore-checkpoint.py`;78
+  ordinary restore records use `steps.restoreCheckpoint`. Thirteen explicit
+  provider/infrastructure records call the same reader directly. Production
+  checkpoint saving remains independent of the test reader.
+- Share six loader-aware auditors and three prefix relocators. Remove49 redundant
+  files including six Nix wrappers. `outputs.checkLoaderPaths` preserves supported
+  loader tokens and artifact-prefix rejection; existing `checkPaths` retains its
+  absolute-path-only policy. Unresolved LIB/PLATFORM tokens retain their existing
+  runtime-existence limitation. New helpers live at lib root; existing helper
+  directory inputs remain unchanged. Keep the natural `relocate.py` basename for
+  File/Patch's shared implementation.
+- Share ordinary command records through `steps.command`, using the effective base,
+  environment and explicit working directory.159 equivalent constructors migrate;
+  73 specialized flag/logging/compiler/tool-interface constructors remain explicit.
+  A pure record helper must not add an automatic phase framework.
+- Add `versions.fromArchiveName` for13 mechanically equivalent normalizers. Keep38
+  custom regex/tag rules and every include predicate. Remove75 unused `pkgs`
+  arguments and three unused version-forwarding exports. Keep literal release
+  tables, dependency choices and complete era builders visible.
+- Share lazy test fixture construction. Effective package tools, shell and Coreutils
+  feed the locale fixture; explicit declared providers and test-factory overrides
+  retain priority. Existing GNU locale data remains pinned to glibc2.39; automatic
+  selection of other libc locale sources/architectures is separate work. Earlier
+  test-base selections remain explicit. Fixtures do not enter production merely
+  by appearing in the context.
+- Move remaining Nixpkgs-backed suite and aggregate helpers to
+  `tests.compatibility`; ordinary contexts remain owned. Correct stale authoring
+  diagnostics instead of adding namespace-forwarding aliases for all Nixpkgs lib
+  functions. Nixpkgs fetching/tooling/validation dependencies stay allowed.
+- Deferred: merging the two identical OpenSSL/SQLite production checkpoint savers
+  would invalidate A for481 releases solely to remove two source files. Keep this
+  deliberate production-input change for later. Retained specialized constructors,
+  custom trackers and provider-specific restore records are listed in the run notes.
+- Cache consequence: moving final-output helper inputs changes F identities and
+  downstream A identities even where program behavior is unchanged. This run
+  records that dependency propagation; it does not compile the changed catalogue
+  or infer runtime qualification. Compiler-base providers retain their recorded
+  identities. CI/NAS stay off; existing admission and historical holds remain.
+
+### MIG-035 verification follow-up — Flex production recursion
+
+Real compilation exposed Flex2.6.3 test BUILT_SOURCES in production make recursion.
+A command-line SUBDIRS override is unsuitable because GNU Make propagates it into
+nested directories. Apply a validated atomic change only to the generated top-level
+Makefile after configure. Preserve every other directory/rule, reject unexpected
+assignments and aliases, and keep Makefile.in unchanged. The upstream workspace
+reruns configure, restoring complete tests with the declared Bison provider. This
+needs no new version switch, builder flags or duplicate era procedure; all four
+supported source layouts satisfy the same guarded operation. Source/installed and
+upstream validation passed in the bounded13-version matrix. Other deferred decisions
+and historical/global qualification holds remain unchanged.

@@ -9,7 +9,7 @@ let
   tiers = import ./. { inherit lib builder; };
 in
 (tiers.fromLegacy legacy).override {
-  standardTools = {
+  tools = {
     python = bootstrap.build-python;
     patchelf = (import ../../bootstrap/output-tool-prerequisites.nix { inherit bootstrap; }).patchelf;
   };

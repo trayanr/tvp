@@ -21,13 +21,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   elfPaths = [ "lib" ];
   checkpoint = "nix-support/mpc-build-tree";
 in
@@ -57,7 +53,8 @@ in
       "missing"
       "depcomp"
       "test-driver"
-    ] ++ final.additionalSourceScripts;
+    ]
+    ++ final.additionalSourceScripts;
   };
   installedInterface = {
     hasPkgConfig = false;
@@ -114,11 +111,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "mpc.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "mpc.check" ''
@@ -139,7 +135,8 @@ in
     (outputs.relocateText {
       paths = [
         "lib/libmpc.la"
-      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpc.pc";
+      ]
+      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpc.pc";
     })
     (outputs.strip {
       paths = elfPaths;

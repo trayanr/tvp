@@ -1,10 +1,11 @@
 # ACL releases
 
 All four public releases share the complete `build.nix` procedure. The 2.3.0
-and 2.3.1 rows select `tvp.baseTiers.retained.gcc13-owned-v3`, which adapts the
-same GCC13 wrapper/Binutils/libc and earlier floor without rebuilding or
-substituting them. This preserves the measured compatibility selection for
-FORTIFY-sensitive sources. Those rows retain public Attr propagation.
+and 2.3.1 rows select `tvp.bases.gcc_13.full`: a source-built GCC13 driver with
+source-owned Binutils, libc and construction tools. The former borrowed GCC13
+generation is removed. The GCC13 version choice retains the historical
+FORTIFY-sensitive source profile; earlier execution receipts do not qualify
+the changed compiler/libc inputs. Those rows retain public Attr propagation.
 2.4.0 needs Attr headers to build but does not propagate Attr. Its installed
 headers work independently; consumers defining the optional `error_context`
 struct need explicit Attr headers. ELF, runpath and closure checks confirm
@@ -61,10 +62,10 @@ all API, exact-library, tracker and filesystem assertions. Isolated-header
 controls remain limited to the originally isolated 2.3.2/2.4.0 interface;
 2.3.0/1 deliberately propagate Attr and are not falsely claimed isolated.
 
-`retained.nix` preserves the old construction definition and factory closure;
-old root builders and frozen fixtures stay in place. Historical Tar remains
-explicitly constrained to `acl_2_3`. The authoring supplement itself has no new
-runtime qualification; all prior skips and limitations above remain unwaived.
+Construction callers instantiate the same family with explicit earlier inputs.
+The old construction definition, duplicate builders and caller factory are removed.
+Historical Tar remains explicitly constrained to `acl_2_3`. Current source cleanup
+adds no runtime qualification; prior skips and limitations remain unwaived.
 
 
 ## Current authoring validation
@@ -73,5 +74,7 @@ The historical observations above retain their original scope. The current
 family-authoring pass qualifies only the selected outputs recorded in
 `lib/MIGRATION-LOG.md`; it does not replay every historical release or waive
 filesystem/platform skips.
-ACL 2.4.0 and the retained-GCC13 2.3.0 representative pass their normal batches.
-The other two releases are evaluation-only in this authoring pass.
+ACL 2.4.0 and the former GCC13 2.3.0 representative passed their recorded normal
+batches. New source-GCC13 consumer execution remains pending; the old receipts
+are not evidence for the replacement provider. The other two releases were
+evaluation-only in the authoring pass.

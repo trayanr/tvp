@@ -15,13 +15,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   checkpoint = "nix-support/acl-build-tree";
   elfPaths = [
     "bin"
@@ -105,11 +101,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "acl.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "acl.check" ''
@@ -211,7 +206,7 @@ in
         "lib/libacl.so.1"
       ];
     })
-    ((import ../ordinary-attr-crypt-check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = elfPaths;
     })

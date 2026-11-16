@@ -21,7 +21,7 @@ context.mkSuite {
   ];
   tests = {
     helper-safety = {
-      script = ''${package.specification.python}/bin/python3 -B ${./test_helpers.py} ${package}/bin/tvp-gradle-seed-wrapper ${../native/render.py} >&2; printf helpers-safe'';
+      script = "${package.specification.python}/bin/python3 -B ${./test_helpers.py} ${package}/bin/tvp-gradle-seed-wrapper ${../native/render.py} >&2; printf helpers-safe";
       expected = "helpers-safe";
     };
     distribution = {

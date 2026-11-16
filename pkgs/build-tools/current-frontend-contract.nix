@@ -10,8 +10,8 @@ let
   steps = import ../../lib/build-steps.nix;
   testDeps = package.tvp.declaredTestDependencies;
   p = package;
-  sentinel = testDeps.sentinel;
-  alternate = testDeps.alternateSource;
+  sentinel = context.fixtures.sentinel;
+  alternate = context.fixtures.alternateSource;
   altered = p.editSteps (
     steps.append [
       {
@@ -28,7 +28,8 @@ let
       (removeAttrs s [ "artifactName" ])
       // {
         environment = s.environment // {
-          tools = s.environment.tools ++ [ testDeps.pkgConfig ];
+          # The replacement plan compiles one C consumer with this selected tool.
+          tools = [ testDeps.pkgConfig ];
           libraries = (s.environment.libraries or [ ]) ++ [ testDeps.mpfr ];
           overrides = (s.environment.overrides or { }) // {
             values = (s.environment.overrides.values or { }) // {

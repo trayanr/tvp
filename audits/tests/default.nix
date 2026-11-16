@@ -7,7 +7,7 @@ in
 assert builtins.all (passed: passed) (builtins.attrValues registration);
 assert builtins.all (passed: passed) (builtins.attrValues latest);
 assert builtins.all (passed: passed) (builtins.attrValues selection);
-tvp.bases.default.stdenv.mkDerivation {
+tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
   name = "tvp-audit-contracts";
   nativeBuildInputs = [ tvp.packages.python_3 ];
   dontUnpack = true;

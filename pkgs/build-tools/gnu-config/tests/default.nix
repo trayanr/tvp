@@ -6,10 +6,17 @@
 let
   p = package;
   s = p.specification;
-  d = s.base.standardTools // {
-    coreutils = s.base.coreutils;
-    bash = s.base.shell;
-  };
+  d =
+    (builtins.removeAttrs s.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ])
+    // {
+      coreutils = s.base.coreutils;
+      bash = s.base.shell;
+    };
   compiler = s.base.compiler;
   steps = import ../../../../lib/build-steps.nix;
   shell = p.edit (
@@ -62,7 +69,7 @@ let
     s:
     s
     // {
-      base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
+      base = s.base.override { compiler = context.fixtures.sentinel; };
     }
   );
 in
@@ -136,8 +143,7 @@ context.mkSuite {
           ((p.mkTests.override { tests = import ./.; }) rebound).layout.drvPath
           == rebound.tests.layout.drvPath;
         assert
-          sourceBase.tests.native.specification.base.compiler.drvPath
-          == p.tvp.declaredTestDependencies.sentinel.drvPath;
+          sourceBase.tests.native.specification.base.compiler.drvPath == context.fixtures.sentinel.drvPath;
         "customized";
       script = ''
         test "$(cat ${edited}/edited)" = edited

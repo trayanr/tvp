@@ -7,7 +7,14 @@
 }:
 let
   p = package;
-  tools = p.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   testDeps = p.tvp.declaredTestDependencies;
   shell = testDeps.runtimeShell;
   custom = (p.override { doCheck = false; }).editSteps (
@@ -30,7 +37,7 @@ in
   ];
   tests = {
     version = {
-      script = ''m4 --version | head -1 | awk '{ print $NF }' '';
+      script = "m4 --version | head -1 | awk '{ print $NF }' ";
       expected = p.version;
     };
     define = {

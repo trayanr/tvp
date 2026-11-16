@@ -6,7 +6,7 @@
 }:
 let
   openssl = package;
-  tools = package.specification.base.standardTools // {
+  tools = package.specification.base.tools // {
     binutils = package.specification.base.compiler.bintools;
   };
   # sha256("tvp") and sha1("tvp"), first 16 hex characters.

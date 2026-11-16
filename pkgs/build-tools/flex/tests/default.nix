@@ -5,7 +5,14 @@
 }:
 let
   p = package;
-  d = p.specification.base.standardTools // p.tvp.deps;
+  d =
+    (builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ])
+    // p.tvp.deps;
   steps = import ../../../../lib/build-steps.nix;
   skeleton = (p.edit (s: removeAttrs s [ "artifactName" ])).editSteps (plan: [
     (builtins.head plan)
@@ -22,43 +29,39 @@ let
         mkdir "$out"
         printf '/* TVP custom skeleton */\n' > "$out/custom.skl"
         ${d.sed}/bin/sed 's/4_/a4_/g; s/m4preproc_/m4_/g' src/flex.skl |
-          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=2 -DFLEX_MINOR_VERSION=6 -DFLEX_SUBMINOR_VERSION=${
-            builtins.elemAt (lib.splitString "." p.version) 2
-          } |
+          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=2 -DFLEX_MINOR_VERSION=6 -DFLEX_SUBMINOR_VERSION=${builtins.elemAt (lib.splitString "." p.version) 2} |
           ${d.sed}/bin/sed '/^%#/d; s/m4_/m4preproc_/g; s/a4_/4_/g' >> "$out/custom.skl"
       '';
     }
   ]);
-  sourceProbe =
-    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
-      (
-        s:
-        let
-          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
-        in
-        (builtins.removeAttrs s [ "artifactName" ])
-        // {
-          inherit base;
-          plan = [
-            (builtins.head s.plan)
-            (
-              (base.environment s.environment)
-              // {
-                name = "flex.source-base";
-                run = ''
-                  test "$(cat source/marker)" = 'alternate source'
-                  printf 'int main(void) { return 0; }\n' > probe.c
-                  "$CC" probe.c -o probe
-                  "$CXX" -x c++ probe.c -o probe-cxx
-                  env -i ./probe; env -i ./probe-cxx
-                  test "$(cat selected-compiler)" = $'selected\nselected'
-                  mkdir "$out"; cp source/marker "$out/source-marker"
-                '';
-              }
-            )
-          ];
-        }
-      );
+  sourceProbe = (p.override { src = "${context.fixtures.alternateSource}/source.tar.gz"; }).edit (
+    s:
+    let
+      base = s.base.override { compiler = context.fixtures.sentinel; };
+    in
+    (builtins.removeAttrs s [ "artifactName" ])
+    // {
+      inherit base;
+      plan = [
+        (builtins.head s.plan)
+        (
+          (base.environment s.environment)
+          // {
+            name = "flex.source-base";
+            run = ''
+              test "$(cat source/marker)" = 'alternate source'
+              printf 'int main(void) { return 0; }\n' > probe.c
+              "$CC" probe.c -o probe
+              "$CXX" -x c++ probe.c -o probe-cxx
+              env -i ./probe; env -i ./probe-cxx
+              test "$(cat selected-compiler)" = $'selected\nselected'
+              mkdir "$out"; cp source/marker "$out/source-marker"
+            '';
+          }
+        )
+      ];
+    }
+  );
   runtimeChanged = p.editRuntime (r: r // { dlopenDirectories = [ "${d.python}/lib" ]; });
   optionsChanged = p.override { configureFlags = [ "--disable-nls" ]; };
   factoryChanged = (p.mkTests.override { tests = import ./.; }) rebound;
@@ -102,8 +105,16 @@ context.mkSuite {
   ];
   libraries = [ p ];
   tests = {
+    production-layout = {
+      tools = [ d.python ];
+      script = ''
+        ${d.python}/bin/python3 -B ${./production-directories.py} ${../production-directories.py} >&2
+        printf production-layout-ok
+      '';
+      expected = "production-layout-ok";
+    };
     version = {
-      script = ''flex --version | awk 'NR==1 {print $NF}' '';
+      script = "flex --version | awk 'NR==1 {print $NF}' ";
       expected = p.version;
     };
     scanner = {

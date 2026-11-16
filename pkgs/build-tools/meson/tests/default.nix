@@ -16,12 +16,12 @@ context.mkSuite {
     package.specification.cmake
     package.specification.pkg-config
     package.specification.gnutar
-    (deps.python.specification.xz or deps.python.specification.base.standardTools.xz)
+    (deps.python.specification.xz or deps.python.specification.base.tools.xz)
   ];
   libraries = [ zlib ];
   tests = {
     profile = {
-      script = ''test -s ${
+      script = "test -s ${
         (import
           (
             if package.version == "1.12.1" then
@@ -33,7 +33,7 @@ context.mkSuite {
             inherit package lib context;
           }
         ).evidence
-      }/summary.json; printf qualified'';
+      }/summary.json; printf qualified";
       expected = "qualified";
     };
     version = {

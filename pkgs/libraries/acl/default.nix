@@ -1,12 +1,12 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build.nix;
-        # Measured FORTIFY failures require the exact GCC13 compiler/libc.
-        # Adapt its interface with the existing retained tier; do not swap base.
-        base = tvp.baseTiers.retained.gcc13-owned-v3;
+        # Historical FORTIFY failures select the GCC13 source profile.
+        # Requalify this release when that profile's actual providers change.
+        base = tvp.bases.gcc_13.full;
         deps.attr = tvp.packages.attr_2;
         opts.installedInterface = {
           libraryFile = "libacl.so.1.1.230";
@@ -20,7 +20,7 @@ let
     {
       def = {
         builder = ./build.nix;
-        base = tvp.baseTiers.retained.gcc13-owned-v3;
+        base = tvp.bases.gcc_13.full;
         deps.attr = tvp.packages.attr_2;
         opts.installedInterface = {
           libraryFile = "libacl.so.1.1.2301";
@@ -87,9 +87,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.acl = family // {
-    constructionRecipe = import ./retained.nix { inherit pkgs tvp; };
-  };
+  recipes.acl = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

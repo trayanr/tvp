@@ -5,7 +5,7 @@
 }:
 let
   inherit (pkgs) lib;
-  base = tvp.bases.default;
+  base = tvp.__legacyBases.gcc_16_2_0;
   inherit (tvp.packages) bash coreutils;
   adapter = import ../../build-step-runner.nix {
     inherit
@@ -148,7 +148,7 @@ let
     false = [ (simple "failure.false" "false; echo unreachable") ];
     pipeline = [ (simple "failure.pipeline" "false | true; echo unreachable") ];
     substitution = [
-      (simple "failure.substitution" ''value=$(false; echo unreachable); echo unreachable'')
+      (simple "failure.substitution" "value=$(false; echo unreachable); echo unreachable")
     ];
     function = [ (simple "failure.function" "f() { false; echo unreachable; }; f; echo unreachable") ];
     source = [
@@ -275,7 +275,8 @@ let
         run = "${first}/bin/step-choice";
         metadata = boom;
       }
-    ] ++ disabledSteps;
+    ]
+    ++ disabledSteps;
   };
   synthetic =
     name:
@@ -302,7 +303,8 @@ let
         cwd = "${builtins.elemAt contextInputs 4}/source";
         unknown = boom;
       }
-    ] ++ disabledSteps;
+    ]
+    ++ disabledSteps;
   };
   projectedContext = builtins.getContext (lib.concatStrings projection.childScripts);
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;

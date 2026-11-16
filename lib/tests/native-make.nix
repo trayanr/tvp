@@ -39,33 +39,32 @@ let
         version = "1";
         src = null;
         inherit base bash coreutils;
-        plan =
-          [
-            {
-              name = "fixture.prepare";
-              run = ''
-                mkdir source
-                cat > source/Makefile <<'MAKE'
-                SHELL := ${bash}/bin/bash
-                .RECIPEPREFIX := >
-                default:
-                >$(MAKE) child
-                child:
-                >printf 'built\n' > built
-                check:
-                >test -e built
-                install:
-                >mkdir -p $(out)
-                >cp built $(out)/built
-                MAKE
-              '';
-            }
-          ]
-          ++ helpers.make {
-            name = "fixture";
-            inherit make doCheck;
-            env.PROBE = "selected";
-          };
+        plan = [
+          {
+            name = "fixture.prepare";
+            run = ''
+              mkdir source
+              cat > source/Makefile <<'MAKE'
+              SHELL := ${bash}/bin/bash
+              .RECIPEPREFIX := >
+              default:
+              >$(MAKE) child
+              child:
+              >printf 'built\n' > built
+              check:
+              >test -e built
+              install:
+              >mkdir -p $(out)
+              >cp built $(out)/built
+              MAKE
+            '';
+          }
+        ]
+        ++ helpers.make {
+          name = "fixture";
+          inherit make doCheck;
+          env.PROBE = "selected";
+        };
       };
     args = {
       inherit base;
@@ -150,12 +149,27 @@ let
           }
         )
       )
-    ).editSteps
-      (steps.replace "zstd.check" (old: old // { run = throw "disabled Zstd check"; }));
-  customized = (zstdEdits p).override {
-    gnumake = make;
-    doCheck = false;
-  };
+    ).edit
+      (
+        s:
+        s
+        // {
+          upstreamCheck = s.upstreamCheck // {
+            run = throw "disabled Zstd check";
+          };
+        }
+      );
+  selectMake =
+    value:
+    (value.edit (
+      s:
+      s
+      // {
+        base = s.base.override { tools.gnumake = make; };
+      }
+    )).override
+      { doCheck = false; };
+  customized = selectMake (zstdEdits p);
   unpack = helpers.unpack {
     src = "fixture.tar.xz";
     tar = "tar";
@@ -178,7 +192,7 @@ let
       '';
     }
   ];
-  archive = tvp.bases.default.stdenv.mkDerivation {
+  archive = tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
     name = "native-unpack-fixture";
     nativeBuildInputs = with tvp.packages; [
       gnutar
@@ -199,7 +213,7 @@ let
       pname = "native-unpack-${compression}";
       version = "1";
       src = null;
-      base = tvp.bases.default;
+      base = tvp.__legacyBases.gcc_16_2_0;
       inherit (tvp.packages) bash coreutils;
       plan =
         helpers.unpack {
@@ -259,25 +273,16 @@ let
     replay = selected.drvPath == (edits (fixture.override { inherit make; })).drvPath;
     noOp = (fixture.override { }).drvPath == fixture.drvPath;
     disabledLazy = !(builtins.any (s: s.name == "fixture.check") (steps.active selected.buildSteps));
-    absoluteMake =
-      lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make")
-        (builtins.elemAt selected.buildSteps 1).run;
-    packageReplay =
-      customized.drvPath == (zstdEdits (
-        p.override {
-          gnumake = make;
-          doCheck = false;
-        }
-      )).drvPath;
-    metadataCurrent = customized.tvp.deps.gnumake == make;
+    absoluteMake = lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make") (builtins.elemAt selected.buildSteps 1)
+    .run;
+    packageReplay = customized.drvPath == (zstdEdits (selectMake p)).drvPath;
+    metadataCurrent = customized.tvp.deps.gnumake.drvPath == make.drvPath;
     featuresCurrent = !customized.tvp.features.doCheck;
     sourceRetained = customized.src == p.src;
     selectionCurrent = customized.__tvpSelection.kind == "override";
     testsRebound =
       customized.tests.version.drvPath != p.tests.version.drvPath
-      && builtins.any (
-        input: input.outPath == customized.outPath
-      ) customized.tests.version.tvp.deps.libraries;
+      && customized.tests.version.package.drvPath == customized.drvPath;
     lazyTests = builtins.all (t: builtins.isString t.drvPath) (builtins.attrValues customized.tests);
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

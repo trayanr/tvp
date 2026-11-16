@@ -53,13 +53,9 @@ let
         "src"
         "."
       ];
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "patch";
@@ -171,7 +167,7 @@ in
       name = "patch.relocate";
       tools = [ final.python ];
       run = ''
-        ${final.python}/bin/python3 -B ${./ordinary/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" "${final.patchelf}/bin/patchelf"
+        ${final.python}/bin/python3 -B ${../../../lib/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" "${final.patchelf}/bin/patchelf"
       '';
     }
     {
@@ -214,7 +210,7 @@ in
       name = "patch.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../utilities-restore.py} ${artifact}/nix-support/patch-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/patch-build-tree "$TVP_SOURCE_ROOT"
         printf '%s\n' ${artifact} > "$TVP_SOURCE_ROOT/production-artifact"
       '';
     }

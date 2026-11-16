@@ -31,13 +31,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/libtool-build-tree";
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   elfPaths = [ "lib" ];
 in
@@ -134,7 +130,8 @@ in
       name = "libtool.source-interpreter";
       paths = [
         "libtoolize.in"
-      ] ++ final.additionalTemplates;
+      ]
+      ++ final.additionalTemplates;
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })
@@ -142,7 +139,7 @@ in
       name = "libtool.source-confinement";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}'';
+      run = "${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}";
     }
     (steps.prepareAutotools {
       name = "libtool.prepare";
@@ -167,11 +164,10 @@ in
     '')
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "libtool.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "libtool.prepare-test-version-output";
       tools = [ tools.patch ];

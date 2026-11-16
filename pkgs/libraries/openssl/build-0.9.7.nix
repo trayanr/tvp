@@ -40,14 +40,11 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "openssl.${name}";
-      cwd = "source";
-      inherit run;
-    };
-  make = ''${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash'';
+    name:
+    steps.command {
+      environment = final.environment;
+    } "openssl.${name}";
+  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
   productionMake =
     make + (if lib.versionOlder final.version "0.9.8" then " 'DIRS=$(TVP_PRODUCTION_DIRS)'" else "");
   productionTargets =
@@ -147,7 +144,8 @@ in
   };
   features = {
     inherit (final.buildFeatures) shared static;
-  } // final.installedInterface;
+  }
+  // final.installedInterface;
 
   stateScript = ./ordinary/build-state.py;
   stateManifest = ./ordinary/build-state.json;
@@ -236,7 +234,10 @@ in
   configureFlags = [
     "shared"
     "--openssldir=etc/ssl"
-  ] ++ [ ] ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}" ++ final.compileFlags;
+  ]
+  ++ [ ]
+  ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
+  ++ final.compileFlags;
   environment = {
     tools = [
       tools.coreutils
@@ -297,11 +298,11 @@ in
         '')
         (command "configure" ''
           export PERL=${final.buildPerl}/bin/perl HASHBANGPERL=${final.buildPerl}/bin/perl
-          ${lib.optionalString final.forceGccName ''export CC=gcc''}
+          ${lib.optionalString final.forceGccName "export CC=gcc"}
           export LDFLAGS="''${LDFLAGS:-} -Wl,-rpath,$out/lib"
           ${final.buildPerl}/bin/perl ./Configure linux-x86_64 --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
         '')
-        (command "depend" ''${make} depend'')
+        (command "depend" "${make} depend")
         (command "build" "${productionMake} ${lib.escapeShellArgs productionTargets}")
         (command "install" ''
           ${productionMake} ${lib.escapeShellArg final.installTarget}

@@ -174,7 +174,7 @@ context.mkSuite {
   libraries = [ package ];
   tools = package.specification.environment.tools ++ [
     package.specification.base.compiler.bintools
-    package.specification.base.standardTools.python
+    package.specification.base.tools.python
   ];
   tests = {
     constructor =

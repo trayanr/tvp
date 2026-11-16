@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -51,12 +51,10 @@ let
       url = "https://pkg-config.freedesktop.org/releases/";
       pattern = "pkg-config-[0-9][^\"]*\\.tar\\.gz";
 
-      normalise =
-        file:
-        if pkgs.lib.hasPrefix "pkg-config-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-          pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "pkg-config-" file)
-        else
-          null;
+      normalise = tvp.lib.versions.fromArchiveName {
+        prefix = "pkg-config-";
+        suffixes = [ ".tar.gz" ];
+      };
 
       include = version: builtins.match "[0-9].*" version != null;
     };
@@ -75,17 +73,15 @@ let
       pkgConfig = tvp.packages.pkg-config;
       runtimeShell = tvp.packages.bash_5;
       alternateCoreutils = tvp.packages.coreutils;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.pkg-config = family // {
-    constructionRecipe = import ./retained { inherit pkgs tvp; };
-  };
+  recipes.pkg-config = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

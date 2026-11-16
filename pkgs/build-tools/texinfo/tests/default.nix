@@ -7,41 +7,39 @@ let
   steps = (import ../../../../lib/builder.nix { inherit lib; }).steps;
   p = package;
   d = p.tvp.deps;
-  sourceProbe =
-    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
-      (
-        s:
-        let
-          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
-        in
-        (removeAttrs s [ "artifactName" ])
-        // {
-          inherit base;
-          plan = [
-            (steps.unpack {
-              src = s.src;
-              tar = p.specification.gnutar;
-              gzip = p.tvp.declaredTestDependencies.sourceGzip;
-              findutils = p.specification.findutils;
-              compression = "gzip";
-            })
-            (
-              (base.environment s.environment)
-              // {
-                name = "texinfo.source-base";
-                run = ''
-                  test "$(cat source/marker)" = 'alternate source'
-                  printf 'int main(void) { return 0; }\n' > probe.c
-                  "$CC" probe.c -o probe; "$CXX" -x c++ probe.c -o probe-cxx
-                  env -i ./probe; env -i ./probe-cxx
-                  test "$(cat selected-compiler)" = $'selected\nselected'
-                  mkdir "$out"; cp source/marker "$out/source-marker"
-                '';
-              }
-            )
-          ];
-        }
-      );
+  sourceProbe = (p.override { src = "${context.fixtures.alternateSource}/source.tar.gz"; }).edit (
+    s:
+    let
+      base = s.base.override { compiler = context.fixtures.sentinel; };
+    in
+    (removeAttrs s [ "artifactName" ])
+    // {
+      inherit base;
+      plan = [
+        (steps.unpack {
+          src = s.src;
+          tar = p.specification.gnutar;
+          gzip = p.tvp.declaredTestDependencies.sourceGzip;
+          findutils = p.specification.findutils;
+          compression = "gzip";
+        })
+        (
+          (base.environment s.environment)
+          // {
+            name = "texinfo.source-base";
+            run = ''
+              test "$(cat source/marker)" = 'alternate source'
+              printf 'int main(void) { return 0; }\n' > probe.c
+              "$CC" probe.c -o probe; "$CXX" -x c++ probe.c -o probe-cxx
+              env -i ./probe; env -i ./probe-cxx
+              test "$(cat selected-compiler)" = $'selected\nselected'
+              mkdir "$out"; cp source/marker "$out/source-marker"
+            '';
+          }
+        )
+      ];
+    }
+  );
   runtimeChanged = p.editRuntime (
     r: r // { dlopenDirectories = [ "${p.specification.python}/lib" ]; }
   );

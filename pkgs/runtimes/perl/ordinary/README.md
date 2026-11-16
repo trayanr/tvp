@@ -1,9 +1,9 @@
 # Ordinary shared Perl 5.24.4–5.42.3
 
 Three complete procedures cover the Errno header/GCC probe boundary, the later
-preprocessor fallback, and the modern source/test-helper layout. The original
-constructors, patch records and non-native definitions remain available through
-`constructionRecipe`. Perl 5.44.0 keeps its independent unsplit procedure.
+preprocessor fallback, and the modern source/test-helper layout. Construction
+callers use the same current family; duplicate old constructor routes are removed.
+Perl 5.44.0 keeps its distinct complete procedure and artifact/final split.
 
 Each procedure installs an artifact before finalization and selects
 `artifactName = "${final.pname}-${final.version}"`. Equal-width prefixes keep

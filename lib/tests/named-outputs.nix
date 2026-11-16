@@ -1,7 +1,7 @@
 { pkgs, tvp }:
 let
   inherit (pkgs) lib;
-  base = tvp.bases.default;
+  base = tvp.__legacyBases.gcc_16_2_0;
   inherit (tvp.packages) bash coreutils;
   inherit (tvp.builder) steps;
   primitive =
@@ -398,17 +398,19 @@ let
       .artifact.outputs == validation.outputs;
     invalidBeforePayload =
       !(builtins.tryEval (
-        builtins.seq (validation.edit (
-          s:
-          s
-          // {
-            outputs = [
-              "out"
-              "tests"
-            ];
-            plan = throw "must not force plan";
-          }
-        )).drvPath true
+        builtins.seq
+          (validation.edit (
+            s:
+            s
+            // {
+              outputs = [
+                "out"
+                "tests"
+              ];
+              plan = throw "must not force plan";
+            }
+          )).drvPath
+          true
       )).success;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

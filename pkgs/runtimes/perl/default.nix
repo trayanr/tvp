@@ -1,15 +1,12 @@
 { pkgs, tvp }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   pname = "perl";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-owned-5.24.4.nix;
-        base = tvp.baseTiers.full;
         opts.cStandard = "gnu17";
         opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
-        deps = { };
         patches = [
           {
             file = ./patches/configure-gcc-major.patch;
@@ -28,10 +25,8 @@ let
     {
       def = {
         builder = ./build-owned-5.24.4.nix;
-        base = tvp.baseTiers.full;
         opts.cStandard = "gnu17";
         opts.upstreamNonpasses = [ "Time-Local-rolling-century-1970" ];
-        deps = { };
         patches = [
           {
             file = ./patches/configure-gcc-major.patch;
@@ -46,9 +41,7 @@ let
     {
       def = {
         builder = ./build-owned-5.30.3.nix;
-        base = tvp.baseTiers.full;
         opts.cStandard = "gnu17";
-        deps = { };
       };
       releases = {
         "5.30.3" = "sha256-MuBMi7exrssnQqf3rA6rrBAPOCRzUqc61/oQTjnnQG8=";
@@ -59,8 +52,6 @@ let
     {
       def = {
         builder = ./build-owned-5.36.3.nix;
-        base = tvp.baseTiers.full;
-        deps = { };
       };
       releases = {
         "5.36.3" = "sha256-8qGtiBFjkaF2Ji3ULfxS7yKvtA9MDpgQ8V1WHm8ccmo=";
@@ -72,14 +63,12 @@ let
     {
       def = {
         builder = ./build-owned-5.44.0.nix;
-        base = tvp.baseTiers.full;
         source =
           { version, sha256 }:
           import <nix/fetchurl.nix> {
             url = "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
             inherit sha256;
           };
-        deps = { };
       };
       releases = {
         "5.44.0" = "sha256-O4VQZrkkkctA6Gr/scpX0aOIqkPlG5HHgGoywvZflsM=";
@@ -88,7 +77,30 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://www.cpan.org/src/5.0/";
+        pattern = "perl-5\\.[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "perl-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        # Perl marks development releases by parity, not by a suffix: an odd
+        # second component (5.45, 5.9, 5.11) is a devel series and was never a
+        # stable release. RC and TRIAL tarballs are also published here.
+        include =
+          version:
+          let
+            minor = pkgs.lib.toInt (pkgs.lib.elemAt (pkgs.lib.splitVersion version) 1);
+          in
+          builtins.match "[0-9].*" version != null
+          && pkgs.lib.mod minor 2 == 0
+          && !(pkgs.lib.hasInfix "RC" version || pkgs.lib.hasInfix "TRIAL" version);
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
@@ -100,21 +112,10 @@ let
       };
     tests = import ./tests/installed.nix;
   };
-  recipe = family // {
-    extraArgs = family.extraArgs // {
-      mkTests = import ./tests/caller-factory.nix {
-        inherit retained;
-        inherit (pkgs) lib;
-        tests = import ./tests/installed.nix;
-      };
-    };
-  };
-  canonical = tvp.lib.packages.mkVersions recipe;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.perl = recipe // {
-    constructionRecipe = retained;
-  };
+  recipes.perl = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

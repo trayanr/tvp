@@ -16,7 +16,7 @@ let
     go-bootstrap = 1;
     rustc = 1;
   };
-  full = tvp.baseTiers.full;
+  full = tvp.bases.gcc_16.full;
   selected = lib.foldl' (all: family: all // modules.${family}.canonical) { } (
     builtins.attrNames modules
   );
@@ -127,7 +127,7 @@ let
     && q.specification.base.compiler.drvPath == p.specification.base.compiler.drvPath;
   strict = {
     gcc13OriginalTargetLibc =
-      gcc.gcc_13_3_0.specification.glibc.drvPath == tvp.bases.default.stdenv.cc.libc.drvPath;
+      gcc.gcc_13_3_0.specification.glibc.drvPath == tvp.__legacyBases.gcc_16_2_0.stdenv.cc.libc.drvPath;
     gcc16ClosedTargetLibc = gcc.gcc_16_2_0.specification.glibc.drvPath == full.compiler.libc.drvPath;
     mandatoryBootstrapComparison =
       builtins.all
@@ -160,10 +160,9 @@ let
         ];
     oldGoSeedExact =
       go.go_1_17_13.specification.bootstrap.drvPath
-      == (import ../../pkgs/compilers/go-bootstrap/legacy.nix { inherit pkgs tvp; })
+      == (import ../../pkgs/compilers/go-bootstrap { inherit pkgs tvp; })
       .canonical.go-bootstrap_20171003.drvPath;
-    latestGoSeedExact =
-      go.go_1_27_3.specification.bootstrap.drvPath == modules.go.construction.go_1_24_13.drvPath;
+    latestGoSeedExact = go.go_1_27_3.specification.bootstrap.drvPath == go.go_1_24_13.drvPath;
     movingOldGoLadder = go.go_1_24_13.specification.bootstrap.drvPath == go.go_1_22_12.drvPath;
     llvmHostAndTargetSeparate =
       llvm.specification.base.compiler.drvPath != llvm.specification.rawGCC.drvPath;

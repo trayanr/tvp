@@ -6,7 +6,7 @@
 }:
 let
   p = package;
-  tools = p.specification.base.standardTools;
+  tools = p.specification.base.tools;
   t = p.tvp.declaredTestDependencies;
   runtime = p.editRuntime (r: r // { dlopenDirectories = [ "${tools.python}/lib" ]; });
   suffix = p.editSteps (
@@ -62,7 +62,7 @@ context.mkTest {
   ];
   script = ''
     ${tools.python}/bin/python3 -B ${../../lib/tests/ordinary-rpaths.py} \
-      ${./parser-output.py} ${tools.patchelf}/bin/patchelf \
+      ${../../lib/relocate.py} ${tools.patchelf}/bin/patchelf \
       ${p.specification.base.coreutils}/bin/true >&2
     test "$(cat ${suffix}/nix-support/final-control)" = selected
     ${runtime}/bin/${p.pname} --version >&2

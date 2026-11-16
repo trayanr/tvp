@@ -53,29 +53,23 @@ let
     );
 in
 rec {
-  mkTier =
+  mkStage =
     {
       name,
       platform,
       previous ? null,
-      compiler,
-      shell,
-      coreutils,
-      standardTools ? { },
-      tools ? [ ],
+      tools,
+      baselineTools ? [ ],
       referencePackages ? [ ],
     }:
     builder.base {
       inherit
         name
         platform
-        compiler
-        shell
-        coreutils
-        standardTools
+        tools
         referencePackages
         ;
-      tools = lib.unique ([ coreutils ] ++ tools);
+      baselineTools = lib.unique ([ tools.coreutils ] ++ baselineTools);
       construction = {
         kind = if previous == null then "seed" else "stage";
         previous = if previous == null then null else previous.name;
@@ -86,7 +80,9 @@ rec {
   # it does not rebuild them or claim that their recipes use the owned protocol.
   fromLegacy =
     legacy:
-    if legacy ? compiler && !(legacy ? stdenv) then
+    if legacy ? ownedBase then
+      legacy.ownedBase
+    else if legacy ? compiler && !(legacy ? stdenv) then
       legacy
     else if !(legacy ? stdenv && legacy ? name) then
       fail "expected a named construction base with a selected stdenv"
@@ -128,17 +124,22 @@ rec {
           platform = selectedPlatform // {
             isMusl = selectedPlatform.isMusl or (selectedPlatform.hostPlatform.isMusl or false);
           };
-          inherit compiler;
-          shell = stdenv.shellPackage or (builtins.head shells);
-          coreutils = builtins.head coreTools;
-          tools = floor;
-          standardTools = fromFloor floor // lib.optionalAttrs (patchelf != null) { inherit patchelf; };
+          baselineTools = floor;
+          tools =
+            fromFloor floor
+            // lib.optionalAttrs (patchelf != null) { inherit patchelf; }
+            // {
+              gcc = compiler;
+              bash = stdenv.shellPackage or (builtins.head shells);
+              coreutils = builtins.head coreTools;
+            };
           referencePackages = [
             selectedCompiler
             selectedCompiler.bintools
             selectedCompiler.libc
             rawCompiler
-          ] ++ (legacy.runtimeInputs or [ ]);
+          ]
+          ++ (legacy.runtimeInputs or [ ]);
           construction = {
             kind = "legacy-inputs";
             previous = legacy.builtBy or null;

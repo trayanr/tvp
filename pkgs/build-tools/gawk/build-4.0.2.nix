@@ -121,11 +121,10 @@ in
     hasNls = true;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gawk.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "gawk.upstream-frontends";
@@ -250,7 +249,7 @@ in
     (outputs.development {
       libraries = [ ];
     })
-    ((import ../ordinary-text-check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = tools.python;
       binutils = tools.binutils;
       patchelf = tools.patchelf;

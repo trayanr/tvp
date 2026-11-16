@@ -63,13 +63,200 @@ let
       mkTests = _: { };
     };
   p = make base;
+  namedBase = builder.base {
+    inherit (args) name platform;
+    tools = {
+      gcc = a;
+      bash = args.shell;
+      coreutils = builtins.head args.tools;
+      gnumake = package "make";
+      unused = throw "unused catalogue provider was forced";
+    };
+    baselineTools = args.tools;
+  };
+  selectedDriver = namedBase.override { tools.gcc = b; };
+  editedDriver = namedBase.edit (
+    s:
+    s
+    // {
+      tools = s.tools // {
+        gcc = b;
+      };
+    }
+  );
+  contractCompiler = selected: {
+    cc = (selected.environment { }).env.CC;
+    cxx = (selected.environment { }).env.CXX;
+    ar = (selected.environment { }).env.AR;
+    runtime = selected.runtimeDirectories;
+  };
+  statusFacts = import ../../tools/status/manifest.nix {
+    inherit lib;
+    canonical.fixture_1 = {
+      pname = "fixture";
+      version = "1";
+      specification.base = namedBase;
+      tvp = {
+        base = namedBase.name;
+        deps.bash = namedBase.tools.bash;
+      };
+    };
+    variants = { };
+    source = {
+      path = "/fixture";
+      revision = null;
+    };
+    system = args.platform.system;
+    latest = {
+      measurement = "fixture";
+      families.fixture = {
+        job = "fixture_1";
+        version = "1";
+      };
+      skipped = [ ];
+    };
+    splitReport = {
+      scope = "fixture";
+      status = "PASS";
+      success = true;
+      allSplit = true;
+      errors = [ ];
+      rows = [
+        {
+          id = "canonical/fixture_1";
+          namespace = "canonical";
+          name = "fixture_1";
+          constructor = "owned";
+          compliant = true;
+          failure = null;
+          status.level = "ok";
+        }
+      ];
+      outsideOrdinaryScope.producers = { };
+    };
+  };
   contracts = {
+    statusDoesNotForceUnusedProviders =
+      builtins.attrNames (builtins.head statusFacts.rows).buildContext.usedTools == [ "bash" ];
+    statusProviderFactsRemainRecords =
+      builtins.isAttrs (builtins.head statusFacts.rows).buildContext.gcc
+      && (builtins.head statusFacts.rows).buildContext.usedTools.bash.path == namedBase.shell.outPath;
+
+    enrichedBinutilsSurviveNoop =
+      let
+        selected = namedBase.override {
+          tools.binutils = a.bintools // {
+            buildEnvironment = _: { values.POLICY = "selected"; };
+          };
+        };
+      in
+      ((selected.override { }).tools.binutils.buildEnvironment { }).values.POLICY == "selected"
+      && ((selected.edit (s: s)).tools.binutils.buildEnvironment { }).values.POLICY == "selected";
+    enrichedBaselineSurvivesNoop =
+      let
+        selected = namedBase.override {
+          baselineTools = [
+            ((builtins.head args.tools) // { buildEnvironment = _: { values.POLICY = "kept"; }; })
+          ];
+        };
+      in
+      ((selected.override { }).environment { }).env.POLICY == "kept"
+      && ((selected.edit (s: s)).environment { }).env.POLICY == "kept";
+    editRemovesOptionalFields =
+      let
+        selected = namedBase.override {
+          referencePackages = [ a ];
+          construction.kind = "seed";
+        };
+        edited = selected.edit (
+          s:
+          builtins.removeAttrs s [
+            "referencePackages"
+            "construction"
+          ]
+        );
+      in
+      edited.referencePackages == [ ] && !(edited ? construction);
+    editRemovesBaseline =
+      (namedBase.edit (s: builtins.removeAttrs s [ "baselineTools" ])).baselineTools == [ ];
+    editMissingRequiredRejected = rejects (namedBase.edit (s: builtins.removeAttrs s [ "platform" ]));
+    explicitBinutilsRebindsWithDriver =
+      let
+        selected = namedBase.override { tools.binutils = a.bintools; };
+      in
+      (selected.edit (
+        s:
+        s
+        // {
+          tools = s.tools // {
+            gcc = b;
+          };
+        }
+      )).tools.binutils == b.bintools;
+    fixedBaselineContributionsSurviveDriverEdit =
+      let
+        policyBase = namedBase.override {
+          baselineTools = [ (a.bintools // { buildEnvironment = _: { values.LINK_POLICY = "kept"; }; }) ];
+        };
+      in
+      ((policyBase.override { tools.gcc = b; }).environment { }).env.LINK_POLICY == "kept";
+    namedCompiler = namedBase.tools.gcc == namedBase.compiler;
+    derivedShell = namedBase.tools.bash == namedBase.shell;
+    derivedBinutils = namedBase.tools.binutils == namedBase.compiler.bintools;
+    derivedLibc = namedBase.libc == namedBase.compiler.libc;
+    compatibilityIsDerived = namedBase.standardTools.gnumake == namedBase.tools.gnumake;
+    lazyCatalogue = (namedBase.environment { }).env.CC == "${a}/bin/cc";
+    unusedNotInEnvironment = !(builtins.elem (package "make") (namedBase.environment { }).tools);
+    editAndOverrideAgree = contractCompiler selectedDriver == contractCompiler editedDriver;
+    catalogueEditRebinds = contractCompiler selectedDriver == contractCompiler rebound;
+    aliasEditRebinds =
+      contractCompiler (namedBase.edit (s: s // { compiler = b; })) == contractCompiler selectedDriver;
+    noOpBaseEdit = (make (namedBase.edit (s: s))).drvPath == (make namedBase).drvPath;
+    unusedEditPreservesProducer =
+      (make (namedBase.override { tools.unused = throw "unused override forced"; })).drvPath
+      == (make namedBase).drvPath;
+    namedCoreutilsRebindsBaseline =
+      (namedBase.override { tools.coreutils = package "new-coreutils"; }).baselineTools
+      == [ (package "new-coreutils") ];
+    namedEditRebindsBaseline =
+      (namedBase.edit (
+        s:
+        s
+        // {
+          tools = s.tools // {
+            coreutils = package "new-coreutils";
+          };
+        }
+      )).baselineTools == [ (package "new-coreutils") ];
+    removingUnusedRole =
+      !((namedBase.edit (s: s // { tools = builtins.removeAttrs s.tools [ "unused" ]; })).tools ? unused);
+    partialBinutilsRejected = rejects (namedBase.override { tools.binutils = b.bintools; });
+    partialLibcRejected = rejects (namedBase.override { libc = b.libc; });
+    contradictoryDriverRejected = rejects (
+      namedBase.override {
+        compiler = a;
+        tools.gcc = b;
+      }
+    );
+    coherentDriverAndBinutils =
+      (namedBase.override {
+        tools.gcc = b;
+        tools.binutils = b.bintools;
+      }).compiler == b;
+    unsupportedSystemRejected = rejects (
+      namedBase.override {
+        platform = args.platform // {
+          system = "aarch64-linux";
+        };
+      }
+    );
+
     direct =
       !(base ? stdenv)
       && !(base ? mkDerivation)
       && base.compiler == a
       && base.shell == args.shell
-      && base.tools == args.tools;
+      && base.baselineTools == args.tools;
     runtimeFromCompiler = rebound.runtimeDirectories == b.runtimeDirectories;
     rebind =
       (rebound.environment { }).env.CC == "${b}/bin/cc"

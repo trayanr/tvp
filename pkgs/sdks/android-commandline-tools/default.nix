@@ -1,6 +1,5 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.android-commandline-tools;
   pname = "android-commandline-tools";
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -10,11 +9,11 @@ let
           runtimeLibc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
-          } tvp.baseTiers.full.compiler.libc;
+          } tvp.bases.gcc_16.full.compiler.libc;
           runtimeCompiler = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
           unzip = tvp.packages.unzip;
           jdk = tvp.packages.jdk_21;
           androidCli = tvp.lib.packages.withConstraint {
@@ -50,9 +49,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."android-commandline-tools" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."android-commandline-tools" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

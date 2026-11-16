@@ -1,8 +1,7 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   # This named tier is the closed source-full-GCC driver, not canonical GCC.
-  compilerHostBase = tvp.baseTiers.full;
+  compilerHostBase = tvp.bases.gcc_16.full;
   reference = import ../../../bootstrap/source-full-gcc.nix { };
   # MIG-002 remains open: retain the current production interpreter/profile.
   productionPython = tvp.lib.packages.withConstraint {
@@ -46,7 +45,7 @@ let
           glibc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Completed default base target libc; moving public glibc consumes this raw compiler and would introduce a cycle.";
-          } tvp.bases.default.stdenv.cc.libc;
+          } compilerHostBase.compiler.libc;
         };
         patches = [
           {
@@ -121,7 +120,19 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://gcc.gnu.org/pub/gcc/releases/";
+      # Keep complete links so snapshots, prereleases and suffix junk cannot
+      # contribute a numeric release substring.
+      pattern = "href=\"[^\"]*\"";
+      normalise =
+        href:
+        let
+          match = builtins.match ''href="gcc-([0-9]+(\.[0-9]+)+)/"'' href;
+        in
+        if match == null then null else builtins.head match;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -134,9 +145,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gcc = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gcc = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

@@ -31,13 +31,10 @@ let
   pkgConfig = tools.pkg-config;
 
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "perl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "perl.${name}";
   pythonCommand =
     name: run:
     (final.base.environment (final.environment // { tools = final.environment.tools ++ [ python ]; }))

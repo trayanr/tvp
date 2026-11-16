@@ -1,7 +1,7 @@
 # Real tiny archive roundtrip for the newly supported owned-source codec.
 { tvp }:
 let
-  base = tvp.baseTiers.seed;
+  base = tvp.bases.gcc_16.seed;
   context = tvp.builder.forBase base;
   inherit (context) tools;
 in

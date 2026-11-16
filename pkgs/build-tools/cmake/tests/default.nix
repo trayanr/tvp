@@ -27,15 +27,15 @@ context.mkSuite {
   libraries = [ deps.zlib ];
   tests = {
     profile = {
-      script = ''test -s ${
+      script = "test -s ${
         (import ./current-native-profile.nix {
           inherit package lib context;
         }).evidence
-      }/success.json; printf qualified'';
+      }/success.json; printf qualified";
       expected = "qualified";
     };
     version = {
-      script = ''cmake --version | head -1 | awk '{print $3}' '';
+      script = "cmake --version | head -1 | awk '{print $3}' ";
       expected = package.version;
     };
     make = {

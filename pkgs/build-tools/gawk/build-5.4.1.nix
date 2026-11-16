@@ -20,13 +20,10 @@ let
 
   checkpoint = "nix-support/gawk-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "gawk.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gawk.${name}";
 in
 {
   pname = "gawk";
@@ -79,11 +76,10 @@ in
     hasNls = true;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gawk.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "gawk.upstream-frontends";

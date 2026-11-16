@@ -7,11 +7,13 @@ let
     version:
     family.instantiate {
       inherit version;
-      base = tvp.baseTiers.full;
+      base = tvp.bases.gcc_16.full;
     };
   p = instantiate "1.4.21";
   old = instantiate "1.4.19";
-  versions = builtins.attrNames family.recipes.m4.versionTable;
+  versions = builtins.attrNames (
+    lib.filterAttrs (_: entry: (entry.status.level or "ok") != "broken") family.recipes.m4.versionTable
+  );
   same = q: q.artifact.drvPath == p.artifact.drvPath && q.drvPath == p.drvPath;
   noCheck = p.override { doCheck = false; };
   shell = p.tvp.declaredTestDependencies.runtimeShell;
@@ -64,28 +66,21 @@ let
       version:
       family.recipes.m4.versionTable.${version}.def.builder == ../../pkgs/build-tools/m4/build.nix
     ) versions;
-    brokenExclusionsPreserved =
-      builtins.attrNames family.recipes.m4.excludedVersions == [
-        "1.4.17"
-        "1.4.18"
-      ]
-      &&
-        builtins.all
-          (
-            version:
-            let
-              entry = family.recipes.m4.excludedVersions.${version};
-            in
-            entry.status.level == "broken"
-            && !(entry.def ? constructor)
-            && family.canonical.${tvp.lib.versions.attrName "m4" version} ? overrideAttrs
-          )
-          [
-            "1.4.17"
-            "1.4.18"
-          ];
-    legacyConstructionRemainsExplicit =
-      !(family.recipes.m4.constructionRecipe.versionTable."1.4.21".def ? constructor);
+    brokenStatusesPreserved =
+      builtins.all
+        (
+          version:
+          let
+            entry = family.recipes.m4.versionTable.${version};
+            p = family.canonical.${tvp.lib.versions.attrName "m4" version};
+          in
+          entry.status.level == "broken" && p ? artifact && !(p ? overrideAttrs)
+        )
+        [
+          "1.4.17"
+          "1.4.18"
+        ];
+    oneConstructionDefinition = !(family.recipes.m4 ? constructionRecipe);
     oldDialectException = old.specification.cStandard == "gnu17" && p.specification.cStandard == null;
     allPlansSplit = builtins.all (
       version:

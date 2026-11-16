@@ -45,7 +45,8 @@ let
       p.drvPath != pilot.drvPath
       && p.artifact.drvPath != pilot.artifact.drvPath
       && p.specification.base.name == "source-gnu-candidate"
-      && pilot.specification.base.construction.sourceBase == tvp.bases.default.name;
+      && pilot.specification.base.compiler.drvPath == p.specification.base.compiler.drvPath
+      && pilot.specification.base.tools.gnumake.drvPath == tvp.packages.gnumake.drvPath;
     pilotReplay =
       (pilot.override { }).drvPath == pilot.drvPath && (pilot.editSteps (x: x)).drvPath == pilot.drvPath;
     split = (steps.partition p.buildSteps).split;
@@ -120,7 +121,10 @@ let
           ++ taggedEdit.all
         );
     source = p.src.drvPath == pilot.src.drvPath;
-    legacy = tvp.canonical.zstd_1_5_6 ? overrideAttrs && !(tvp.canonical.zstd_1_5_6 ? edit);
+    historicalOwned =
+      tvp.canonical.zstd_1_5_6 ? artifact
+      && tvp.canonical.zstd_1_5_6 ? edit
+      && !(tvp.canonical.zstd_1_5_6 ? overrideAttrs);
     publicRequirements = p.development.libraries == [ ];
     codecs = p.tvp.features.gzip && p.tvp.features.lzma && !p.tvp.features.lz4;
   };
@@ -176,12 +180,8 @@ let
                 ${zstd.tvp.deps.xz}/bin/xz -dc xz.data > xz-external
                 cmp sample gzip-external
                 cmp sample xz-external
-                grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt zstd.runtime.libraries 0)
-                }/lib/libz.so.1' gzip.loader
-                grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt zstd.runtime.libraries 1)
-                }/lib/liblzma.so.5' xz.loader
+                grep -F 'calling init: ${lib.getLib (builtins.elemAt zstd.runtime.libraries 0)}/lib/libz.so.1' gzip.loader
+                grep -F 'calling init: ${lib.getLib (builtins.elemAt zstd.runtime.libraries 1)}/lib/liblzma.so.5' xz.loader
                 ${lib.optionalString (zstd.drvPath != p.drvPath) ''
                   if grep -F 'calling init: ${p.tvp.deps.zlib}/lib/' gzip.loader; then exit 1; fi
                   if grep -F 'calling init: ${p.tvp.deps.xz}/lib/' xz.loader; then exit 1; fi

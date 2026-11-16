@@ -39,13 +39,10 @@ in
 
 let
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "binutils.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "binutils.${name}";
   make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {

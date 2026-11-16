@@ -5,38 +5,43 @@
 }:
 let
   p = package;
-  d = p.specification.base.standardTools // p.tvp.deps;
+  d =
+    (builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ])
+    // p.tvp.deps;
   steps = import ../../../../lib/build-steps.nix;
-  sourceProbe =
-    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
-      (
-        s:
-        let
-          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
-        in
-        (builtins.removeAttrs s [ "artifactName" ])
-        // {
-          inherit base;
-          plan = [
-            (builtins.head s.plan)
-            (
-              (base.environment s.environment)
-              // {
-                name = "bison.source-base";
-                run = ''
-                  test "$(cat source/marker)" = 'alternate source'
-                  printf 'int main(void) { return 0; }\n' > probe.c
-                  "$CC" probe.c -o probe
-                  "$CXX" -x c++ probe.c -o probe-cxx
-                  env -i ./probe; env -i ./probe-cxx
-                  test "$(cat selected-compiler)" = $'selected\nselected'
-                  mkdir "$out"; cp source/marker "$out/source-marker"
-                '';
-              }
-            )
-          ];
-        }
-      );
+  sourceProbe = (p.override { src = "${context.fixtures.alternateSource}/source.tar.gz"; }).edit (
+    s:
+    let
+      base = s.base.override { compiler = context.fixtures.sentinel; };
+    in
+    (builtins.removeAttrs s [ "artifactName" ])
+    // {
+      inherit base;
+      plan = [
+        (builtins.head s.plan)
+        (
+          (base.environment s.environment)
+          // {
+            name = "bison.source-base";
+            run = ''
+              test "$(cat source/marker)" = 'alternate source'
+              printf 'int main(void) { return 0; }\n' > probe.c
+              "$CC" probe.c -o probe
+              "$CXX" -x c++ probe.c -o probe-cxx
+              env -i ./probe; env -i ./probe-cxx
+              test "$(cat selected-compiler)" = $'selected\nselected'
+              mkdir "$out"; cp source/marker "$out/source-marker"
+            '';
+          }
+        )
+      ];
+    }
+  );
   runtimeChanged = p.editRuntime (r: r // { dlopenDirectories = [ "${d.python}/lib" ]; });
   optionsChanged = p.override { configureFlags = [ "--disable-nls" ]; };
   factoryChanged = (p.mkTests.override { tests = import ./.; }) rebound;
@@ -81,7 +86,7 @@ context.mkSuite {
   libraries = [ ];
   tests = {
     version = {
-      script = ''bison --version | awk 'NR==1 {print $NF}' '';
+      script = "bison --version | awk 'NR==1 {print $NF}' ";
       expected = p.version;
     };
     parser = {

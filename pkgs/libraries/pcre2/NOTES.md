@@ -1,7 +1,8 @@
 All four ordinary PCRE2 releases use the complete root `build.nix` procedure.
-The captured stdenv procedure remains under `retained/`, with its original test
-factory and consumer expectations unchanged. Ordinary Grep still uses moving
-`pcre2_10`; its frozen 3.11 consumer keeps the captured construction recipe.
+Construction callers use the same family with explicit earlier providers; the
+captured stdenv procedure and duplicate factory are removed. Ordinary Grep still
+uses the moving `pcre2_10` selector. Existing consumer assertions remain in the
+shared effective-context suite.
 
 This source proposal has not been compiled or executed. The historical validation
 observations below describe retained evidence, not qualification of this new

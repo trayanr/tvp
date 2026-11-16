@@ -1,5 +1,32 @@
 { lib }:
 {
+  # Effective base/environment wiring, returning an ordinary editable step.
+  command =
+    {
+      base,
+      environment,
+      cwd ? "source",
+    }:
+    let
+      selected = base.environment environment;
+    in
+    name: run: selected // { inherit name run cwd; };
+
+  # Test-side restoration never participates in the production checkpoint.
+  restoreCheckpoint =
+    {
+      name,
+      checkpoint,
+      python,
+    }:
+    {
+      inherit name;
+      tools = [ python ];
+      run = ''
+        ${python}/bin/python3 -B ${./restore-checkpoint.py} ${lib.escapeShellArg checkpoint} "$TVP_SOURCE_ROOT"
+      '';
+    };
+
   unpack =
     {
       src,
@@ -26,7 +53,8 @@
       tools = [
         tar
         codec
-      ] ++ lib.optional (findutils != null) findutils;
+      ]
+      ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
         PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
@@ -86,6 +114,6 @@
         CONFIG_SHELL = "${bash}/bin/bash";
         lt_cv_deplibs_check_method = "pass_all";
       };
-      run = ''${python}/bin/python3 -B ${./owned-autotools.py} ${lib.escapeShellArg "${bash}/bin/bash"}'';
+      run = "${python}/bin/python3 -B ${./owned-autotools.py} ${lib.escapeShellArg "${bash}/bin/bash"}";
     };
 }

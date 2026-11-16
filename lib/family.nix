@@ -21,14 +21,9 @@ let
     model = "ordinary-family/v1";
   };
   constructor = context.builder;
-  standardProviders =
-    base:
-    (base.standardTools or { })
-    // {
-      bash = base.shell;
-      coreutils = base.coreutils;
-      binutils = base.compiler.bintools;
-    };
+  # Preserve the helper argument surface: GCC is selected through the base,
+  # while explicit recipe dependencies named gcc remain ordinary dependencies.
+  standardProviders = base: builtins.removeAttrs base.tools [ "gcc" ];
   defaults =
     { arguments, specification }:
     let
@@ -40,6 +35,7 @@ let
     )
     // {
       inherit base;
+      inherit (specification.base.platform) goOS goArch dynamicLinker;
     };
   prepareDefinition =
     def:
@@ -95,11 +91,38 @@ let
     };
     argumentDefaults = defaults;
     extraArgs.mkTests = lib.makeOverridable (
-      { tests }:
+      { tests, ... }@configuration:
       package:
+      let
+        overrides = builtins.removeAttrs configuration [ "tests" ];
+        configured =
+          if overrides == { } then
+            package
+          else
+            package
+            // {
+              testConfiguration = (package.testConfiguration or { }) // overrides;
+              tvp = package.tvp // {
+                declaredTestDependencies =
+                  (package.tvp.declaredTestDependencies or { })
+                  // lib.filterAttrs (name: _: testDeps ? ${name}) overrides;
+              };
+            };
+      in
       tests {
-        inherit package lib;
-        context = package.testContext;
+        package = configured;
+        inherit lib;
+        context =
+          package.testContext
+          // lib.optionalAttrs (package.testContext ? fixtures) {
+            fixtures =
+              let
+                choices = (configured.tvp.declaredTestDependencies or { }) // (configured.testConfiguration or { });
+              in
+              package.testContext.fixtures
+              // builtins.intersectAttrs package.testContext.fixtures choices
+              // lib.optionalAttrs (choices ? locale) { gnuLocale = choices.locale; };
+          };
       }
     ) { inherit tests; };
   };

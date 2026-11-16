@@ -61,7 +61,7 @@ let
       s:
       s
       // {
-        base = s.base.override { standardTools.gnumake = toolProbe; };
+        base = s.base.override { tools.gnumake = toolProbe; };
       }
     );
   disabledEdit =
@@ -132,6 +132,32 @@ in
     );
     sourceInvalidates = every (production sourceEdit);
     compileToolInvalidates = every (production compileToolEdit);
+    standardRolesImplicit = allFull (
+      p:
+      p.specification.pkg-config.drvPath == p.specification.base.tools.pkg-config.drvPath
+      && p.specification.grep.drvPath == p.specification.base.tools.grep.drvPath
+      && p.tvp.deps.pkg-config.drvPath == p.specification.pkg-config.drvPath
+      && p.tvp.deps.grep.drvPath == p.specification.grep.drvPath
+      && !(p.specification ? pkgConfig)
+      && !(p.specification ? helperGrep)
+    );
+    standardRoleEditsRebind = allFull (
+      p:
+      let
+        selected = p.override {
+          base = p.specification.base.override {
+            tools.pkg-config = toolProbe;
+            tools.grep = toolProbe;
+          };
+        };
+      in
+      selected.artifact.drvPath != p.artifact.drvPath
+      && selected.drvPath != p.drvPath
+      && selected.tvp.deps.pkg-config.drvPath == toolProbe.drvPath
+      && selected.tvp.deps.grep.drvPath == toolProbe.drvPath
+      && selected.specification.pkg-config.drvPath == toolProbe.drvPath
+      && selected.specification.grep.drvPath == toolProbe.drvPath
+    );
     disabledModulesInvalidate = every (production disabledEdit);
     runtimeReusesArtifact = every (finalOnly runtimeEdit);
     finalToolReusesArtifact = every (finalOnly toolsEdit);

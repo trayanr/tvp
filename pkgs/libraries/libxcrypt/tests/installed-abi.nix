@@ -6,7 +6,7 @@
 let
   inherit (package.tvp.declaredTestDependencies) pkg-config baseline;
   commonTools =
-    with package.specification.base.standardTools;
+    with package.specification.base.tools;
     [
       sed
       grep

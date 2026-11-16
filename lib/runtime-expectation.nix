@@ -3,30 +3,39 @@
 { lib }:
 {
   package,
-  stdenv,
+  context,
   python,
 }:
-stdenv.mkDerivation {
-  name = "${package.name}-runtime-expectation";
-  __structuredAttrs = true;
-  exportReferencesGraph.package = [ package.out ];
+let
   expectedLibraries = map (p: builtins.unsafeDiscardStringContext (toString p)) (
     package.runtime.libraries or [ ]
   );
-  nativeBuildInputs = [ python ];
-  dontUnpack = true;
-  dontConfigure = true;
-  dontBuild = true;
-  dontFixup = true;
-  installPhase = ''
-    python3 - <<'PY'
-    import json, os
+in
+(context.mkTest {
+  inherit package;
+  name = "runtime-expectation";
+  tools = [ python ];
+  script = ''
+    ${python}/bin/python3 - "$TVP_SOURCE_ROOT/.tvp-reference-graph.json" <<'PYCODE'
+    import json, sys
     from pathlib import Path
-    attrs = json.loads(Path(os.environ['NIX_ATTRS_JSON_FILE']).read_text())
+    attrs = json.loads(Path(sys.argv[1]).read_text())
     reachable = {row['path'] for row in attrs['package']}
-    absent = set(attrs['expectedLibraries']) - reachable
+    expected = json.loads(${builtins.toJSON (builtins.toJSON expectedLibraries)})
+    absent = set(expected) - reachable
     assert not absent, 'Runtime libraries absent from package closure: ' + repr(sorted(absent))
-    Path(attrs['outputs']['out']).write_text(json.dumps(dict(reachable=sorted(reachable), expected=attrs['expectedLibraries'])))
-    PY
+    print('runtime-ok')
+    PYCODE
   '';
-}
+  expected = "runtime-ok";
+}).edit
+  (
+    s:
+    s
+    // {
+      exportReferencesGraph.package = [ package.out ];
+      passthru = s.passthru // {
+        inherit expectedLibraries;
+      };
+    }
+  )

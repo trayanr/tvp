@@ -1,5 +1,5 @@
-# Go 1.27.3 starts the direct native procedure; the retained 1.24.13 seed
-# constructs it without changing any older bootstrap generation.
+# Go 1.27.3 uses the preceding source-built Go 1.24.13 generation.
+# The family table declares that bootstrap edge explicitly.
 {
   tvp,
   lib,

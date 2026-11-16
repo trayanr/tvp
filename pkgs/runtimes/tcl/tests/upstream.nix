@@ -7,7 +7,7 @@
 }:
 let
   s = package.specification;
-  tools = s.base.standardTools;
+  tools = s.base.tools;
 in
 context.mkTest {
   inherit package;

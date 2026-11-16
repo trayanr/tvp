@@ -11,10 +11,10 @@ checkpoint privately; test-driver/Perl policy and filesystem capability
 wrappers are U inputs, so changing that policy does not invalidate A or F.
 Installed assertions are shared by all four releases.
 
-`retained.nix` preserves the historical construction recipe and its original
-factory closure. Its stdenv builders, frozen fixtures and factory entry points
-remain independent of the public ordinary route. Existing alias and release
-metadata are unchanged; ordinary authoring does not certify runtime behavior.
+Construction callers instantiate the same family with explicit earlier inputs.
+The historical duplicate index, stdenv builders and factory entry points are
+removed. Existing alias and release metadata remain; authoring consistency does
+not certify runtime behavior or transfer qualification across provider changes.
 
 The Savannah tracker accepts complete `attr-VERSION[.src].tar.gz` filenames.
 Its nine releases include the five still unpackaged 2.4.44–2.4.48 releases.

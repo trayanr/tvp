@@ -1,12 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   pname = "glibc";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-owned-2.39.nix;
-        base = tvp.baseTiers.full;
         deps = {
           # Raw target GCC; distinct from BUILD_CC from the closed host base.
           gcc = tvp.packages.gcc;
@@ -31,7 +29,6 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -40,18 +37,11 @@ let
       };
     tests = (import ./tests/installed.nix);
   };
-  # Preserve only the historical named test-factory override, lazily.
-  recipe = family // {
-    extraArgs = family.extraArgs // {
-      mkTests = import ./tests/caller-factory.nix { inherit pkgs tvp; };
-    };
-  };
-  canonical = tvp.lib.packages.mkVersions recipe;
+  canonical = tvp.lib.packages.mkVersions family;
+
 in
 {
-  recipes.glibc = recipe // {
-    constructionRecipe = retained;
-  };
+  recipes.glibc = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

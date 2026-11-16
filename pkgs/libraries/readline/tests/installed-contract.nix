@@ -6,7 +6,7 @@
 let
   d =
     package.tvp.deps
-    // package.specification.base.standardTools
+    // package.specification.base.tools
     // {
       binutils = package.specification.base.compiler.bintools;
     };

@@ -310,43 +310,93 @@ let
         "1.3.2" = "sha256-uzKaCizQJ00FUZ1hxmfAYuBpkNcuEl7i36jeZPARnRY=";
       };
     }
+    {
+      def = {
+        builder = ./build-0.8.nix;
+        base = tvp.bases.gcc_4.full;
+      };
+      status = {
+        level = "broken";
+        reason = "gzio.c writes `*((Byte*)buf)++`, the cast-as-lvalue extension gcc removed at 3.4. The library is otherwise complete and installs by hand, since these releases ship no configure and no install target.";
+        needs = "A gcc 3.3 or older base. Measured, not assumed: gcc 4.9 is the oldest stdenv nixpkgs offers and it rejects the construct, as do 9 and 13.";
+        blocked = {
+          base = "gcc<=3.3";
+        };
+      };
+      releases = {
+        "0.71" = "sha256-M7uIcAiI/wVxa3lKeQomt1UimP27PZpOR0TBTMTkgRA=";
+        "0.79" = "sha256-9FYP1ulpDwsECg8diF0wP9V/EUzvYf1gkOILC2jhU1w=";
+        "0.8" = "sha256-+20JiailWa6IF/3DO8jwTRqAt429iuywTzKKFnLrAfY=";
+        "0.9" = "sha256-5tVSviDj2p3eZpOZYXziJnn12CgWNgiWIKunuu7TWsw=";
+        "0.91" = "sha256-CQ/8n7n5V3Yd0jZTI+h7QrIOgf9SvJeKQG1paXWQBFc=";
+        "0.92" = "sha256-72AbQ1BJEFmBGBldMpglFB8OrVpQYiiJIjyPj7eZzyk=";
+        "0.93" = "sha256-7n8HT16e6l9Z/1E6vUn32QMJYVnqU4NgvdYGOPDEAd8=";
+        "0.94" = "sha256-EdNAaK4TyzULkScsSrkj7mo8L4H9olWmwvur0ACj6NQ=";
+        "0.95" = "sha256-fdNxiwRrPPTVkUtM+ZzivdQ2Q/TJYV5zbpqjAnvkYvc=";
+        "0.99" = "sha256-hoT7ed5iJ/uBFqTd/46xbud4nk3YtMwf93wBeHWEx/Q=";
+      };
+    }
   ];
   pname = "zlib";
-  retained = import ./retained { inherit pkgs tvp; };
-  excludedVersions = pkgs.lib.filterAttrs (
-    _: entry: (entry.status.level or "ok") == "broken"
-  ) retained.versionTable;
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/madler/zlib";
+
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(
+            pkgs.lib.hasInfix "alpha" version
+            || pkgs.lib.hasInfix "beta" version
+            || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "pre" version
+          );
+
+        unavailable = [
+          {
+            versions = [ "1.3.1.2" ];
+            reason = "Tagged but never published as a release tarball: absent from zlib.net and from fossils/, which is upstream's own archive of everything it has shipped. Only the GitHub git-archive snapshot exists, and that is a different artifact.";
+          }
+        ];
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
         url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
         inherit sha256;
       };
-    tests = import ./tests;
+    tests =
+      args@{ package, context, ... }:
+      if (package.tvp.features.libName or "z") == "gz" then
+        import ./tests/historical-interface.nix args
+      else
+        import ./tests args;
     testDeps = {
       pkgConfig = tvp.packages.pkg-config;
       gzip = tvp.packages.gzip;
-      runtimeShell = tvp.baseTiers.seed.shell;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      runtimeShell = tvp.bases.gcc_16.seed.shell;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
-  canonical =
-    tvp.lib.packages.mkVersions family
-    // tvp.lib.packages.mkVersions (retained // { versionTable = excludedVersions; });
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
   recipes.zlib = family // {
-    constructionRecipe = retained;
-    inherit excludedVersions;
+    excludedVersions = pkgs.lib.filterAttrs (
+      _: entry: (entry.status.level or "ok") == "broken"
+    ) family.versionTable;
   };
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {
     inherit pname canonical;
-    versionTable = versionTable // excludedVersions;
+    versionTable = family.versionTable;
   };
 }

@@ -19,13 +19,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   checkpoint = "nix-support/automake-build-tree";
 in
 {
@@ -45,7 +41,8 @@ in
   buildFeatures = {
     automaticCcCo = true;
     installAclocalDirectory = false;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     archiveExt = "tar.bz2";
     compression =
@@ -57,14 +54,16 @@ in
         "gzip"
       else
         throw "Automake: unsupported declared archive extension ${final.sourceLayout.archiveExt}";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     dataDirectory = "share/automake-${final.apiVersion}";
     versionedAliases = true;
     configuredApi = false;
     headerMacro = "AC_CONFIG_HEADERS";
     aclocal = true;
-  } // installedInterface;
+  }
+  // installedInterface;
   environment = {
     tools = [
       final.perl
@@ -97,7 +96,7 @@ in
       name = "automake.source-confinement";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}'';
+      run = "${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}";
     }
     (steps.prepareAutotools { name = "automake.prepare"; })
     (
@@ -131,11 +130,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "automake.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "automake.check" ''

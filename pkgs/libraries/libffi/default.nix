@@ -156,10 +156,31 @@ let
     }
   ];
   pname = "libffi";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/libffi/libffi";
+
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(pkgs.lib.hasInfix "rc" version || pkgs.lib.hasInfix "dev" version);
+
+        unavailable = [
+          {
+            versions = [
+              "3.4.0"
+              "3.4.1"
+            ];
+            reason = "Tagged but never published as a tarball: the GitHub release for each carries no assets at all, where 3.4.2's carries one, and sourceware's archive has neither. Only git-archive snapshots exist, and that is a different artifact.";
+          }
+        ];
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
@@ -176,16 +197,14 @@ let
         category = "construction";
         reason = "Retain the exact source GCC DejaGnu/Expect/Tcl harness for libffi ABI and closure tests; it is test-only and does not activate a public compiler generation.";
       } (import ../../../bootstrap/source-gcc-test-harness.nix { }).dejagnu;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.libffi = family // {
-    constructionRecipe = retained;
-  };
+  recipes.libffi = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

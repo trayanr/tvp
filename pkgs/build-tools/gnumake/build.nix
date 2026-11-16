@@ -114,7 +114,7 @@ in
       name = "gnumake.prepare";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./prepare.py} ${lib.escapeShellArg "${tools.bash}/bin/sh"}'';
+      run = "${tools.python}/bin/python3 -B ${./prepare.py} ${lib.escapeShellArg "${tools.bash}/bin/sh"}";
     }
     (command "gnumake.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -151,11 +151,10 @@ in
   upstreamPlan =
     artifact:
     [
-      {
+      (steps.restoreCheckpoint {
         name = "gnumake.restore-build-tree";
-        tools = [ tools.python ];
-        run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-      }
+        checkpoint = "${artifact}/${checkpoint}";
+      })
     ]
     ++ map (
       step:

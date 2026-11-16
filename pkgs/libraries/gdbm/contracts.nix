@@ -7,7 +7,7 @@
 }:
 let
   s = package.specification;
-  tools = s.base.standardTools // {
+  tools = s.base.tools // {
     bash = s.base.shell;
     coreutils = s.base.coreutils;
     binutils = s.base.compiler.bintools;

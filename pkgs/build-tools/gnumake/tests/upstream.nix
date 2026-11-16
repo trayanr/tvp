@@ -28,7 +28,7 @@ let
       "4.4.1" = ./upstream/check-4.4.1.py;
     }
     .${s.upstreamProfile};
-  python = s.base.standardTools.python;
+  python = s.base.tools.python;
 in
 (context.mkTest {
   inherit package;

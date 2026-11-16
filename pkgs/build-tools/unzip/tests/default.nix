@@ -5,30 +5,19 @@
 }:
 let
   zip = package.tvp.declaredTestDependencies.zip;
-in
-
-let
   d = package.tvp.deps;
-  mkSuite =
-    args:
-    context.mkSuite {
-      inherit package;
-      tests = builtins.mapAttrs (_: spec: {
-        inherit (spec) script expected;
-        tools = (spec.extraInputs or [ ]) ++ [
-          d.gawk
-          d.grep
-          d.sed
-          d.diffutils
-        ];
-      }) args.tests;
-    };
+  tools = [
+    d.gawk
+    d.grep
+    d.sed
+    d.diffutils
+  ];
 in
-mkSuite {
-  inherit package;
+context.mkSuite {
+  inherit package tools;
   tests = {
     version = {
-      script = ''unzip -v | awk 'NR==1 {print $2}' '';
+      script = "unzip -v | awk 'NR==1 {print $2}' ";
       expected = "6.00";
     };
     roundtrip = {
@@ -44,7 +33,7 @@ mkSuite {
         cat output/input/hello.txt
       '';
       expected = "preserved";
-      extraInputs = [ zip ];
+      tools = [ zip ] ++ tools;
     };
     archive-features = {
       script = ''
@@ -75,10 +64,11 @@ mkSuite {
         printf archive-features-ok
       '';
       expected = "archive-features-ok";
-      extraInputs = [
+      tools = [
         zip
         d.python
-      ];
+      ]
+      ++ tools;
     };
     installed-layout = {
       script = ''
@@ -101,10 +91,11 @@ mkSuite {
         printf installed-layout-ok
       '';
       expected = "installed-layout-ok";
-      extraInputs = [
+      tools = [
         d.binutils
         d.patchelf
-      ];
+      ]
+      ++ tools;
     };
     helpers = {
       script = ''
@@ -124,7 +115,7 @@ mkSuite {
         printf helpers-ok
       '';
       expected = "helpers-ok";
-      extraInputs = [ zip ];
+      tools = [ zip ] ++ tools;
     };
     upstream-record = {
       script = ''

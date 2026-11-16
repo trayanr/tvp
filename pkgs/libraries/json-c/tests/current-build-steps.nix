@@ -18,9 +18,9 @@ let
             (test.tools or [ ])
             ++ (test.extraInputs or [ ])
             ++ [
-              package.specification.gawk or package.specification.base.standardTools.gawk
-              package.specification.grep or package.specification.base.standardTools.grep
-              package.specification.sed or package.specification.base.standardTools.sed
+              package.specification.gawk or package.specification.base.tools.gawk
+              package.specification.grep or package.specification.base.tools.grep
+              package.specification.sed or package.specification.base.tools.sed
             ];
         }
       ) args.tests;

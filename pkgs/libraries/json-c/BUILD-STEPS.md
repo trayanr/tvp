@@ -1,6 +1,6 @@
 Canonical JSON-C 0.19 uses the source-GNU candidate base and an explicit
-package-owned test context. `variants.build-steps.json-c_0_19` retains the former
-default-base pilot generation; `legacy.nix` captures its complete factory.
+package-owned test context. `variants.build-steps.json-c_0_19` remains an explicit
+named tool-profile choice over the same family. Duplicate old factories are removed.
 Both use `tvp.builder`. The native procedure adds explicit Findutils for source
 epoch discovery and otherwise preserves the existing CMake procedure. Customize arguments with `.override`, specification data
 with `.edit`, or the ordered plan with `.editSteps`:

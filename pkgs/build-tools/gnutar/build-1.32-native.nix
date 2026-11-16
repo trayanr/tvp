@@ -54,13 +54,9 @@ let
         "po"
         "."
       ];
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "gnutar";
@@ -253,7 +249,7 @@ in
       ];
       elfKinds = [ "runtime" ];
     })
-    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = final.python;
       binutils = final.binutils;
       patchelf = final.patchelf;
@@ -275,7 +271,7 @@ in
       name = "gnutar.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../utilities-restore.py} ${artifact}/nix-support/gnutar-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/gnutar-build-tree "$TVP_SOURCE_ROOT"
         printf '%s\n' ${artifact} > "$TVP_SOURCE_ROOT/production-artifact"
       '';
     }

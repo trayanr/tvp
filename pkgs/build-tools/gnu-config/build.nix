@@ -70,11 +70,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gnu-config.restore-source-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "upstream" ''

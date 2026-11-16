@@ -26,13 +26,9 @@ let
 in
 
 let
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "meson";

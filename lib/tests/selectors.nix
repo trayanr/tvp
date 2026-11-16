@@ -169,7 +169,7 @@ let
     actualTestInputCapture =
       let
         package = consumer before.probe_1;
-        suite = tvp.lib.tests.mkSuite {
+        suite = tvp.lib.tests.compatibility.mkSuite {
           inherit pkgs package;
           tests.projection = {
             script = "printf checked";

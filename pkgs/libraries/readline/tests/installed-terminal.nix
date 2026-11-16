@@ -6,7 +6,7 @@
 let
   d =
     package.tvp.deps
-    // package.specification.base.standardTools
+    // package.specification.base.tools
     // {
       ncurses = builtins.head package.runtime.libraries;
     };

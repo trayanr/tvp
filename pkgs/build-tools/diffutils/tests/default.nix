@@ -5,7 +5,7 @@
   context,
 }:
 let
-  locale = package.tvp.declaredTestDependencies.locale;
+  locale = context.fixtures.gnuLocale;
 in
 
 context.mkSuite {

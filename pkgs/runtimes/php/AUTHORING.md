@@ -4,8 +4,8 @@ The literal table in `default.nix` selects seven complete ordinary procedures
 for all 190 public versions. Standard tools/helpers come from the effective
 base, while target libraries and genuine Flex dependencies use TVP selectors.
 All historical library constraints, source hashes, feature oracles and compiler/
-probe/install exceptions remain explicit. `legacy.nix`, old root builders and
-old factories stay at their exact paths for the frozen GCC13 consumer.
+probe/install exceptions remain explicit. Construction callers use the same family
+with earlier inputs; duplicate old indexes, builders and caller factories are removed.
 
 A compiles/installs and F finalizes, including the existing signed-PHAR repair.
 One installed suite is shared across versions. Native 8.5.12 retains its exact
@@ -17,9 +17,9 @@ provider bindings, with the separate OpenSSL compile-time version-role decision
 recorded in MIG-020. OpenSSL header-version assertions follow the construction
 provider; runtime linkage assertions follow the effective runtime provider.
 
-All 190 source/interface contracts evaluate. PHP 8.5.12 passes its normal
-25-leaf batch, including the existing signed-PHAR helper and four selected PHPT
+All 190 source/interface contracts evaluate. Recorded pre-cleanup PHP 8.5.12
+validation passed its normal 25-leaf batch, including the existing signed-PHAR helper and four selected PHPT
 cases. The other 189 releases remain unqualified in this authoring pass. Existing
-nonpasses and admission limits remain unwaived. Old test contexts stay confined
-to retained callers; ordinary overrides use base/dependencies/steps and the
-three-argument test module factory.
+nonpasses and admission limits remain unwaived. Outputs whose tool/provider
+inputs changed require new qualification. Overrides use base/dependencies/steps
+and the shared three-argument test module factory.

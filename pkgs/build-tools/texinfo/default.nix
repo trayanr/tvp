@@ -1,36 +1,13 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."texinfo";
-  retained = prior.constructionRecipe or prior;
   earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash_5;
-    coreutils = tvp.packages.coreutils_9;
-    standardTools = {
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
-      patch = earlier.tools.patch;
-      gnumake = tvp.packages.gnumake_4;
-      gnutar = tvp.packages.gnutar_1;
-      xz = tvp.packages.xz_5;
-      gzip = tvp.packages.gzip_1;
-      findutils = tvp.packages.findutils_4;
-      sed = tvp.packages.gnused_4;
-      grep = tvp.packages.gnugrep_3;
-      gawk = tvp.packages.gawk_5;
-      diffutils = tvp.packages.diffutils_3;
-    };
-  };
   pname = "texinfo";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-7.1-current.nix;
-        base = profileBase;
         deps = {
-          binutils = earlier.tools.linker;
+
           perl = tvp.packages.perl_5;
           ncurses = tvp.packages.ncurses_6;
           localeTools = earlier.tools.localeTools;
@@ -56,14 +33,13 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
-    sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-    alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+  testDeps = {
+    sentinel = tvp.lib.tests.fixtures.sentinel;
+    alternateSource = tvp.lib.tests.fixtures.alternateSource;
     sourceGzip = earlier.tools.gzip;
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -75,9 +51,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."texinfo" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."texinfo" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

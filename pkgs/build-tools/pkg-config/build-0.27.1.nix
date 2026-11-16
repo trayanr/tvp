@@ -141,7 +141,7 @@ in
       # Validate the existing regular leaf and parents before patch can write.
       ${tools.python}/bin/python3 -B ${../source-targets.py} glib/glib/libcharset/localcharset.c
       ${lib.concatMapStringsSep "\n" (
-        p: ''${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
+        p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
       ) final.patches}
       ${tools.python}/bin/python3 -B - ${../source-targets.py} ${lib.escapeShellArg "${final.base.compiler.libc}/lib"} <<'PYCODE'
       import json, runpy, sys
@@ -172,11 +172,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "pkg-config.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     (
       preparation
       // {

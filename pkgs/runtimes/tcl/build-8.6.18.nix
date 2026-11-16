@@ -16,13 +16,11 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "tcl.${name}";
+    name:
+    steps.command {
+      environment = final.environment;
       cwd = "source/unix";
-      inherit run;
-    };
+    } "tcl.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {

@@ -8,8 +8,7 @@ let
     "acl_2_4_0"
   ];
   selected = lib.genAttrs names (name: tvp.canonical.${name});
-  retained = tvp.baseTiers.retained.gcc13-owned-v3;
-  legacy = tvp.bases.gcc13-owned-v3;
+  earlier = tvp.bases.gcc_13.full;
   expected = {
     "2.3.0" = {
       libraryFile = "libacl.so.1.1.230";
@@ -56,12 +55,12 @@ let
     {
       exactInterface = s.installedInterface == expected.${p.version};
       attrProvider = s.attr.drvPath == tvp.packages.attr_2.drvPath;
-      selectedEarlierCompiler = !historical || s.base.compiler.outPath == legacy.stdenv.cc.outPath;
-      selectedEarlierLibc = !historical || s.base.compiler.libc.outPath == legacy.stdenv.cc.libc.outPath;
+      selectedEarlierCompiler = !historical || s.base.compiler.outPath == earlier.compiler.outPath;
+      selectedEarlierLibc = !historical || s.base.compiler.libc.outPath == earlier.compiler.libc.outPath;
       selectedEarlierBinutils =
-        !historical || s.base.compiler.bintools.outPath == legacy.stdenv.cc.bintools.outPath;
+        !historical || s.base.compiler.bintools.outPath == earlier.compiler.bintools.outPath;
       hardeningPreserved =
-        !historical || s.base.compiler.defaultHardeningFlags == legacy.stdenv.cc.defaultHardeningFlags;
+        !historical || s.base.compiler.defaultHardeningFlags == earlier.compiler.defaultHardeningFlags;
       checkpointBeforeSplit = builtins.elem "acl.save-build-tree" stepNames;
       hasUpstream = p.tests ? upstream;
       historicalHeadersNotClaimedIsolated = !historical || !(p.tests ? isolated-discovery);
@@ -73,18 +72,16 @@ let
       runtimeDoesNotInvalidateA = runtime.artifact.drvPath == p.artifact.drvPath;
     }
   ) selected;
-  adapter = {
-    compiler = retained.compiler.outPath == legacy.stdenv.cc.outPath;
-    libc = retained.compiler.libc.outPath == legacy.stdenv.cc.libc.outPath;
-    binutils = retained.compiler.bintools.outPath == legacy.stdenv.cc.bintools.outPath;
-    hardening = retained.compiler.defaultHardeningFlags == legacy.stdenv.cc.defaultHardeningFlags;
-    sourceBase = retained.construction.sourceBase == legacy.name;
+  construction = {
+    compilerVersion = earlier.compiler.version == "13.3.0";
+    sourceOwned = !(earlier ? stdenv) && earlier.compiler.tvp.deps.compiler ? artifact;
+    sourceBase = earlier.construction.previous == tvp.bases.gcc_16.full.name;
   };
   failed = lib.filterAttrs (_: checks: !(builtins.all (x: x) (builtins.attrValues checks))) (
-    rows // { inherit adapter; }
+    rows // { inherit construction; }
   );
 in
 {
-  inherit rows adapter failed;
+  inherit rows construction failed;
   success = failed == { };
 }

@@ -94,9 +94,11 @@ let
     direct = !(p ? stdenv) && !(p ? mkDerivation) && !(p ? runCommand);
     interface =
       builtins.attrNames context == [
+        "fixtures"
         "mkBatch"
         "mkSuite"
         "mkTest"
+        "mkUpstream"
       ];
     selectedCompiler =
       p.compiler == base.compiler

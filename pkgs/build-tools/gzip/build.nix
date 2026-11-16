@@ -22,13 +22,10 @@ let
     }
   );
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "gzip.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gzip.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
 in
 {
@@ -112,11 +109,10 @@ in
     '')
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gzip.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "check" ''

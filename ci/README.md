@@ -10,7 +10,19 @@ services. Buildbot dependencies are loaded only through `ci/buildbot/shell.nix`.
 Keep deployed configuration, credentials, NAS mounts and host setup scripts outside
 the repository. The service files and `config.example.json` are templates.
 
-## Temporary migration workflow
+## Migration closeout
+
+The owner declared the builder/base and ordinary package-authoring migration
+complete on 2026-11-16 and authorized committing/merging the final snapshot,
+running validation, and resuming CI/NAS operations. The normal workflow below
+applies after operational restoration. Restore the strict `tvp/full` requirement;
+source migration completion does not waive runtime or hardening failures.
+Actual service/protection observations belong in the deployment closeout receipts.
+
+The following temporary exception is retained as historical execution policy.
+It does not authorize future merges without the normal checks.
+
+## Temporary migration workflow (historical)
 
 Owner-approved on 2026-11-14: keep CI execution and NAS/cache synchronization off
 until the owner declares the builder/base and package-authoring migration complete.

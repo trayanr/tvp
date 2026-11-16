@@ -7,7 +7,14 @@
 let
   bundler = package;
   deps.ruby = package.runtime.ruby;
-  tools = package.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs package.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
 in
 (context.mkSuite {
   inherit package;

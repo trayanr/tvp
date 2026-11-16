@@ -26,13 +26,10 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    base = final.base;
+    environment = final.environment;
+  };
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'';
   rpaths = outputs.rpaths {
     inherit python binutils patchelf;
@@ -114,7 +111,7 @@ in
         enabled = doCheck;
       }
     )
-    (command "perl.install" ''${make} install'')
+    (command "perl.install" "${make} install")
     (
       rpaths
       // {

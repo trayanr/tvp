@@ -22,31 +22,32 @@ let
     name:
     let
       p = tvp.packages.${name};
-      retained = import (source + "/pkgs/libraries/${name}/legacy.nix") { inherit pkgs tvp; };
-      base = p.specification.base.override { name = "x11-override-base"; };
+      base = p.specification.base.override {
+        name = "x11-override-base";
+        tools = {
+          inherit bash;
+          gnumake = tool;
+        };
+      };
       bash = p.specification.bash // {
         outPath = "/nix/store/00000000000000000000000000000000-bash-control";
       };
-      tool = p.specification.gnumake // {
+      tool = p.specification.base.tools.gnumake // {
         outPath = "/nix/store/11111111111111111111111111111111-make-control";
       };
-      changed = p.override {
-        inherit base bash;
-        gnumake = tool;
-      };
+      changed = p.override { inherit base; };
       edited = p.edit (
         s:
         s
         // {
-          inherit base bash;
-          gnumake = tool;
+          inherit base;
           src = builtins.toFile "x11-source-control" "control";
         }
       );
       toolProvider = p.override { pkgConfig = tool; };
       libraryOverride = p.override { xorgproto = tvp.packages.zlib; };
-      pythonOverride = p.override { generatorPython = p.specification.python; };
-      pythonEdit = p.edit (s: s // { generatorPython = s.python; });
+      pythonOverride = p.override { generatorPython = p.specification.base.tools.python; };
+      pythonEdit = p.edit (s: s // { generatorPython = s.base.tools.python; });
       layoutEdit = p.edit (s: s // { pythonLayout = "lib/tvp-xcbgen-control"; });
       protocolOverride = p.override {
         xcb-proto = p.specification.xcb-proto // {
@@ -63,7 +64,6 @@ let
       publicFactory =
         (import (source + "/pkgs/libraries/${name}") { inherit pkgs tvp; })
         .recipes.${name}.extraArgs.mkTests;
-      retainedPackage = retained.aliases.${name};
       libChanged = p.edit (
         s:
         s
@@ -75,10 +75,15 @@ let
       );
     in
     {
-      legacyTestsExact = ids (publicFactory retainedPackage) == ids retainedPackage.tests;
-      callerPkgsOverride =
-        ((publicFactory.override { pkgs = pkgs // selectedPkgs; }) retainedPackage)
-        .consumer.selectedTestPkgs or false;
+      defaultTestsExact = ids (publicFactory p) == ids p.tests;
+      callerFactoryOverride =
+        (
+          (publicFactory.override {
+            helpers = "selected";
+            tests = { package, ... }: package.testConfiguration.helpers;
+          })
+          p
+        ) == "selected";
       srcOverride =
         changedSrc.drvPath != p.drvPath
         && has (toString changedSrc.specification.src) (unpack changedSrc).run;
@@ -102,7 +107,7 @@ let
         name != "xcb-proto"
         || (
           pythonOverride.specification.pythonLayout
-          == "lib/python${pkgs.lib.versions.majorMinor p.specification.python.version}/site-packages"
+          == "lib/python${pkgs.lib.versions.majorMinor p.specification.base.tools.python.version}/site-packages"
           && pythonEdit.specification.pythonLayout == pythonOverride.specification.pythonLayout
         );
       selectedGeneratorImportPath =

@@ -10,35 +10,33 @@ let
   c = p.testContext;
   rebound = p.override { zlib = p.tvp.declaredTestDependencies.alternateZlib; };
   changed = p.editRuntime (r: r // { dlopenDirectories = [ "${d.zlib}/lib" ]; });
-  sourceProbe =
-    (p.override { src = "${p.tvp.declaredTestDependencies.alternateSource}/source.tar.gz"; }).edit
-      (
-        s:
-        let
-          base = s.base.override { compiler = p.tvp.declaredTestDependencies.sentinel; };
-        in
-        (removeAttrs s [ "artifactName" ])
-        // {
-          inherit base;
-          plan = [
-            (builtins.head s.plan)
-            (
-              (base.environment s.environment)
-              // {
-                name = "file.source-base";
-                run = ''
-                  test "$(cat source/marker)" = 'alternate source'
-                  printf 'int main(void) { return 0; }\n' > probe.c
-                  "$CC" probe.c -o probe
-                  env -i ./probe
-                  test "$(cat selected-compiler)" = selected
-                  mkdir "$out"; cp source/marker "$out/marker"
-                '';
-              }
-            )
-          ];
-        }
-      );
+  sourceProbe = (p.override { src = "${context.fixtures.alternateSource}/source.tar.gz"; }).edit (
+    s:
+    let
+      base = s.base.override { compiler = context.fixtures.sentinel; };
+    in
+    (removeAttrs s [ "artifactName" ])
+    // {
+      inherit base;
+      plan = [
+        (builtins.head s.plan)
+        (
+          (base.environment s.environment)
+          // {
+            name = "file.source-base";
+            run = ''
+              test "$(cat source/marker)" = 'alternate source'
+              printf 'int main(void) { return 0; }\n' > probe.c
+              "$CC" probe.c -o probe
+              env -i ./probe
+              test "$(cat selected-compiler)" = selected
+              mkdir "$out"; cp source/marker "$out/marker"
+            '';
+          }
+        )
+      ];
+    }
+  );
   compress = ''
     printf '#!/bin/sh\necho preserved\n' > sample.sh
     ${d.bzip2}/bin/bzip2 -c sample.sh > sample.bz2

@@ -65,6 +65,71 @@ def binding_source(value):
             for key in ("path", "revision", "tree", "narHash")}
 
 
+def provider_facts(value, where):
+    value = obj(value, where)
+    result = {key: string(value.get(key), f"{where}.{key}", key != "path")
+              for key in ("name", "version", "drvPath", "path", "builtBy")}
+    selection = value.get("selection")
+    result["selection"] = (None if selection is None else {
+        string(key, f"{where}.selection key"): string(item, f"{where}.selection.{key}", True)
+        for key, item in obj(selection, f"{where}.selection").items()})
+    return result
+
+
+def build_context(value, row):
+    if value is None:
+        return None
+    obj(value, "row.buildContext")
+    if row["status"] == "broken" or row["constructor"] == "unavailable":
+        raise Invalid("broken or unavailable row must not claim a build context")
+    base = obj(value.get("base"), "buildContext.base")
+    base_name = string(base.get("name"), "buildContext.base.name", True)
+    if row.get("selectedBase") != base_name:
+        raise Invalid("build context disagrees with selected base")
+    construction = base.get("construction")
+    if construction is not None:
+        construction = {
+            string(key, "buildContext.base.construction key"):
+            string(item, f"buildContext.base.construction.{key}", True)
+            for key, item in obj(construction, "buildContext.base.construction").items()}
+    tools = {}
+    for name, tool in obj(value.get("usedTools"), "buildContext.usedTools").items():
+        string(name, "buildContext used tool name")
+        provider = provider_facts(tool, f"buildContext.usedTools.{name}")
+        role = string(tool.get("role"), f"buildContext.usedTools.{name}.role")
+        origin = string(tool.get("origin"), f"buildContext.usedTools.{name}.origin")
+        if origin not in ("selected-base", "package-dependency"):
+            raise Invalid("unknown used tool provider origin")
+        tools[name] = {**provider, "role": role, "origin": origin}
+    providers = {key: provider_facts(value.get(key), f"buildContext.{key}")
+                 for key in ("gcc", "binutils", "libc")}
+    return {"system": string(value.get("system"), "buildContext.system"),
+            "compilerVersion": string(value.get("compilerVersion", providers["gcc"]["version"]), "buildContext.compilerVersion", True),
+            "config": string(value.get("config"), "buildContext.config", True),
+            "base": {"name": base_name, "construction": construction},
+            **providers,
+            "usedTools": tools}
+
+
+def summarize_contexts(rows):
+    selections = {}
+    for row in rows:
+        context = row["buildContext"]
+        if context is None:
+            continue
+        selection = {key: value for key, value in context.items() if key != "usedTools"}
+        key = json.dumps(selection, sort_keys=True)
+        if key not in selections:
+            selections[key] = {**selection, "rows": 0}
+        selections[key]["rows"] += 1
+    return {"availableRows": sum(r["buildContext"] is not None for r in rows),
+            "unknownRows": sum(r["buildContext"] is None and r["status"] != "broken"
+                               and r["constructor"] != "unavailable" for r in rows),
+            "excludedBrokenRows": sum(r["status"] == "broken" or r["constructor"] == "unavailable"
+                                      for r in rows),
+            "selections": [selections[key] for key in sorted(selections)]}
+
+
 def summarize(rows):
     constructors = {key: sum(r["constructor"] == key for r in rows)
                     for key in ("owned", "legacy", "native-plan", "unavailable")}
@@ -212,7 +277,7 @@ def repository(facts, family=None):
         if boolean(row.get("compliant"), "row.compliant") != (row.get("failure") is None):
             raise Invalid("contradictory split compliance")
         string(row.get("selectedBase"), "row.selectedBase", True)
-        rows.append(row)
+        rows.append({**row, "buildContext": build_context(row.get("buildContext"), row)})
     families = sorted({r["family"] for r in rows})
     if family is not None and family not in families:
         raise Invalid(f"unknown family: {family}")
@@ -259,6 +324,7 @@ def repository(facts, family=None):
         "scope": string(facts.get("scope"), "scope"),
         "filter": family,
         "summary": summarize(selected),
+        "buildContexts": summarize_contexts(selected),
         "splitPolicy": policy,
         "strictSplitAdmission": "eligible" if policy["success"] and all(r["compliant"] for r in rows) else "blocked",
         "families": {name: summarize([r for r in selected if r["family"] == name])
@@ -412,6 +478,18 @@ def render(result):
              f'Latest applicable selectors: {latest["total"]} families; owned {latest["constructors"]["owned"]}/{latest["total"]}; selected candidate base {latest["sourceCandidateSelected"]}/{latest["total"]}; skipped {len(repo["latest"]["skipped"])}',
              'Outside ordinary policy: ' + repo["outsideOrdinaryScope"]["disposition"]]
     lines.append(f'Latest view: {repo["latest"]["measurement"]}; test-suite and runtime qualification unknown.')
+    contexts = repo["buildContexts"]
+    lines.append(f'Effective build contexts: {contexts["availableRows"]} supplied; {contexts["unknownRows"]} unknown; {contexts["excludedBrokenRows"]} broken/unavailable excluded.')
+
+    def provider_name(provider):
+        return " ".join(str(provider[key]) for key in ("name", "version")
+                        if provider[key] is not None) or "unknown"
+
+    for index, context in enumerate(contexts["selections"], 1):
+        lines.append(f'  Context {index} ({context["rows"]} rows): {context["system"]}; target {show(context["config"])}; base {show(context["base"]["name"])}; GCC {show(context["compilerVersion"])}; driver {provider_name(context["gcc"])}; Binutils {provider_name(context["binutils"])}; libc {provider_name(context["libc"])}')
+        if context["base"]["construction"] is not None:
+            lines.append("    Construction: " + "; ".join(
+                f"{key}={show(value)}" for key, value in context["base"]["construction"].items()))
     adoption = repo["authoring"]
     lines.extend(["", "AUTHORING — ordinary family index adoption"])
     if adoption["summary"] is None:
@@ -432,7 +510,32 @@ def render(result):
         lines.append(f'Family {repo["filter"]} (workflow and outside-scope remain global):')
         for entry in (adoption["families"] or {}).values():
             lines.append(f'  {entry["entrypoint"]}: index {entry["indexState"]}; retained construction recipe {show(entry["retainedConstructionRecipe"])}')
-        lines.extend(f'  {r["id"]} {r["version"]}: {r["constructor"]}; base {show(r["selectedBase"])}; {r["failure"] or "split-compliant"}; {r["status"]}' for r in repo["rows"])
+        for row in repo["rows"]:
+            context = row["buildContext"]
+            selected = None if context is None else {
+                key: value for key, value in context.items() if key != "usedTools"}
+            index = next((index for index, item in enumerate(contexts["selections"], 1)
+                          if selected == {key: value for key, value in item.items() if key != "rows"}), None)
+            lines.append(f'  {row["id"]} {row["version"]}: {row["constructor"]}; base {show(row["selectedBase"])}; {row["failure"] or "split-compliant"}; {row["status"]}; context {show(index)}')
+        providers = {}
+        for row in repo["rows"]:
+            for name, provider in (row["buildContext"] or {}).get("usedTools", {}).items():
+                key = (name, json.dumps(provider, sort_keys=True))
+                if key not in providers:
+                    providers[key] = {"name": name, "provider": provider, "rows": 0}
+                providers[key]["rows"] += 1
+        if providers:
+            lines.append("Used named tools (tracked production dependencies; distinct selections):")
+            for key in sorted(providers):
+                entry = providers[key]
+                provider = entry["provider"]
+                lines.append(f'  {entry["name"]} (role {provider["role"]}, {entry["rows"]} rows): {provider_name(provider)}; {provider["origin"]}; built by {show(provider["builtBy"])}')
+                lines.append(f'    Output: {provider["path"]}')
+                if provider["selection"]:
+                    lines.append("    Selection: " + "; ".join(
+                        f"{name}={show(value)}" for name, value in provider["selection"].items()))
+        elif contexts["availableRows"]:
+            lines.append("Used named tools: none recorded in tracked production dependencies.")
     w = result["workflow"]
     lines.extend(["", "WORKFLOW — optional external reported claims"])
     if w is None:

@@ -4,7 +4,7 @@
   context,
 }:
 let
-  providers = package.specification.base.standardTools // {
+  providers = package.specification.base.tools // {
     bash = package.specification.base.shell;
     coreutils = package.specification.base.coreutils;
     binutils = package.specification.base.compiler.bintools;
@@ -19,7 +19,8 @@ else
       providers.coreutils
       providers.sed
       providers.grep
-    ] ++ [ package.specification.gnumake ];
+    ]
+    ++ [ package.specification.gnumake ];
     tests = {
       version = {
         script = "sed -n 's/^Pkg.Revision *= *//p' ${package}/${package.tvp.android.componentPath}/source.properties";

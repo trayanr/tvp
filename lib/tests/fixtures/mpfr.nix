@@ -2,6 +2,6 @@
 { pkgs, tvp }:
 (import ../../../pkgs/libraries/mpfr { inherit pkgs tvp; }).instantiate {
   version = "4.2.2";
-  base = tvp.baseTiers.seed;
+  base = tvp.bases.gcc_16.seed;
   deps.gmp = (import ../../../bootstrap { }).gnu-gmp;
 }

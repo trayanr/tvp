@@ -47,13 +47,9 @@ let
       ];
   checkpoint = "nix-support/findutils-build-tree";
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "findutils";
@@ -90,11 +86,10 @@ in
     hasNls = true;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "findutils.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "findutils.upstream-frontends";

@@ -27,14 +27,11 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
-  make = ''${gnumake}/bin/make -j1 SHELL=${bash}/bin/bash'';
+  command = steps.command {
+    base = final.base;
+    environment = final.environment;
+  };
+  make = "${gnumake}/bin/make -j1 SHELL=${bash}/bin/bash";
 in
 {
   pname = "openssl";
@@ -125,8 +122,8 @@ in
       names = [ "sh" ];
       interpreter = "${bash}/bin/bash";
     })
-    ((command "openssl.check" ''${make} test'') // { enabled = doCheck; })
-    (command "openssl.install" ''${make} install_sw'')
+    ((command "openssl.check" "${make} test") // { enabled = doCheck; })
+    (command "openssl.install" "${make} install_sw")
     (outputs.rpaths {
       inherit python binutils patchelf;
       base = final.base;

@@ -17,13 +17,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   checkpoint = "nix-support/autoconf-build-tree";
 in
 {
@@ -84,7 +80,7 @@ in
       name = "autoconf.source-confinement";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}'';
+      run = "${tools.python}/bin/python3 -B ${../ordinary-autotools-source.py}";
     }
     (steps.prepareAutotools { name = "autoconf.prepare"; })
     (command "autoconf.configure" ''
@@ -108,11 +104,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "autoconf.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "autoconf.check" ''

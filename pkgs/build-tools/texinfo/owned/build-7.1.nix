@@ -24,13 +24,11 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "texinfo.${name}";
-      cwd = "source";
-      run = run;
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "texinfo.${name}";
 in
 {
   pname = "texinfo";

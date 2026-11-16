@@ -11,7 +11,7 @@ context.mkSuite {
   inherit package;
   tests = {
     version = {
-      script = ''cargo --version | ${s.gawk}/bin/awk '{print $2}' '';
+      script = "cargo --version | ${s.gawk}/bin/awk '{print $2}' ";
       expected = package.version;
     };
     offline = {

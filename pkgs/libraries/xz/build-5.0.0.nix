@@ -21,13 +21,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/xz-build-tree";
   rpaths = paths: {
@@ -71,10 +67,12 @@ in
     multithreadedEncoder = false;
     threading = "yes";
     boundLess = true;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     compression = "gzip";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     elfPaths = [
       "bin/xz"
@@ -85,7 +83,8 @@ in
     ];
     soname = "liblzma.so.5";
     prewriteGuards = true;
-  } // installedInterface;
+  }
+  // installedInterface;
   environment = {
     tools = [
       tools.gnumake
@@ -119,7 +118,7 @@ in
       cwd = "source";
       tools = [ tools.python ];
       env = environment.env;
-      run = ''${tools.python}/bin/python3 -B ${../ordinary-compression-production.py} xz ${tools.bash}/bin/bash ${../compression-source-tree.py}'';
+      run = "${tools.python}/bin/python3 -B ${../ordinary-compression-production.py} xz ${tools.bash}/bin/bash ${../compression-source-tree.py}";
     }
     (command "xz.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -145,11 +144,10 @@ in
     helper = ../ordinary-compression-test-shells.py;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "xz.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "xz.upstream-shells";
       tools = [ tools.python ];

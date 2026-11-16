@@ -74,6 +74,7 @@ in
   };
   tools = prerequisites.tools // {
     inherit linker;
+    inherit (full) file;
     inherit (cmake) cmake;
     inherit (pythonMeson) python meson;
     inherit (pythonMeson.tools) ninja pkgConfig;

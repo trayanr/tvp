@@ -7,7 +7,7 @@
 let
   p = package;
   s = p.specification;
-  tools = s.base.standardTools // {
+  tools = s.base.tools // {
     binutils = s.base.compiler.bintools;
   };
   finalEdit = p.editRuntime (r: r // { shell = s.coreutils; });
@@ -22,9 +22,7 @@ let
       };
     }
   );
-  toolEdit = p.edit (
-    old: old // { base = old.base.override { standardTools.gnutar = old.coreutils; }; }
-  );
+  toolEdit = p.edit (old: old // { base = old.base.override { tools.gnutar = old.coreutils; }; });
 in
 (lib.optionalAttrs s.installedInterface.ordinaryControls (
   assert (p.edit (x: x)).drvPath == p.drvPath;
@@ -120,7 +118,7 @@ in
               printf 'int main(void) { return 0; }\n' > probe.c
               "$CC" probe.c -o dynamic
               ${tools.python}/bin/python3 -B ${./ordinary-text-regressions.py} \
-                ${./ordinary-text-source.py} ${./ordinary-text-output.py} ${./ordinary-text-check-paths.py} \
+                ${./ordinary-text-source.py} ${./ordinary-text-output.py} ${../../lib/check-loader-paths.py} \
                 ${../../lib/native-output} ${tools.binutils}/bin/readelf ${tools.patchelf}/bin/patchelf \
                 ${s.bash}/bin/bash ${tools.perl}/bin/perl "$PWD/suffix.sh" "$PWD/dynamic"
             '';

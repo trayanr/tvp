@@ -6,7 +6,14 @@
 }:
 let
   pkgConfig = package;
-  tools = package.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs package.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   testDeps = package.tvp.declaredTestDependencies;
   # Copied rather than pointed at, so PKG_CONFIG_PATH is a directory containing
   # only these two files.

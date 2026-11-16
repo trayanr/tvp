@@ -7,7 +7,14 @@
 let
   contains = needle: haystack: lib.hasInfix (builtins.unsafeDiscardStringContext needle) haystack;
   base = package.specification.base;
-  tools = base.standardTools;
+  tools = (
+    builtins.removeAttrs base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   bash = base.shell;
   coreutils = base.coreutils;
   support = package.tvp.declaredTestDependencies;
@@ -216,7 +223,7 @@ let
             s:
             s
             // {
-              base = s.base.override { standardTools.gnumake = shim; };
+              base = s.base.override { tools.gnumake = shim; };
             }
           );
         in

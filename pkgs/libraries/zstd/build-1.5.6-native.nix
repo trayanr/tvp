@@ -61,11 +61,10 @@ let
     environment
     // {
       inherit name cwd;
-      run =
-        ''
-          export PREFIX="$out"
-        ''
-        + run;
+      run = ''
+        export PREFIX="$out"
+      ''
+      + run;
     };
   make = ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash HAVE_ZLIB=1 HAVE_LZMA=1 HAVE_LZ4=0'';
   rpaths =
@@ -192,7 +191,7 @@ in
       cwd = "source";
       tools = [ final.tools.python ];
       env = environment.env;
-      run = ''${final.tools.python}/bin/python3 -B ${../ordinary-compression-source.py} zstd ${final.bash}/bin/bash'';
+      run = "${final.tools.python}/bin/python3 -B ${../ordinary-compression-source.py} zstd ${final.bash}/bin/bash";
     }
     (command "zstd.build" make)
     (
@@ -332,7 +331,7 @@ in
       name = "zstd.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../../build-tools/utilities-restore.py} ${artifact}/nix-support/zstd-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/zstd-build-tree "$TVP_SOURCE_ROOT"
         printf '%s\n' ${artifact} > "$TVP_SOURCE_ROOT/production-artifact"
       '';
     }

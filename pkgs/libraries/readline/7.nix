@@ -1,9 +1,0 @@
-{ defs }:
-[
-  {
-    def = defs."4.3";
-    releases = {
-      "7.0" = "sha256-dQ1DcYUob0CjaeHk9HZO2pMrlFm17JpzFig5PdPTIzQ=";
-    };
-  }
-]

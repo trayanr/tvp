@@ -30,10 +30,10 @@ It does not restore A from a checkpoint. Test-source/patch/shell/Python/preparat
 runner/expectation edits remain independent of A/F. Historical profiles gain no
 new upstream gate. Existing raw failures/skips and external-client limits remain.
 
-Construction callers explicitly use `retained-construction.nix`, byte-identical
-old procedures under `retained/`, original8/9 release tables and original tests.
-The bootstrap-owned Tcl provider remains untouched. Old source-stage context is
-`retained/README.md`; it is historical evidence, not current qualification.
+Construction callers use the same family definition and shared factory with
+explicit earlier inputs. Duplicate tables and old constructor routes are removed.
+The source-bootstrap Tcl provider remains a separate active earlier generation.
+Historical source hashes, fallback policies, ABI limits and failures remain.
 
 Standard tools are customized through the effective base or selected steps. A
 compiler Binutils edit is a production change. The final-only inspector contract

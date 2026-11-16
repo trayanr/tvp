@@ -1,7 +1,5 @@
 { pkgs, tvp }:
 let
-  # Historical construction and the absent-file3.2.8 exclusion are explicit.
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -945,19 +943,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.11";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.11-install-before-relink.patch;
-              reason = "install depends on the libsqlite3.la build target rather than lib_install, so tcl_install relinks libtclsqlite3 against an -lsqlite3 that is not in libdir yet. Upstream made the same substitution in 3.6.12.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.11-install-before-relink.patch;
+            reason = "install depends on the libsqlite3.la build target rather than lib_install, so tcl_install relinks libtclsqlite3 against an -lsqlite3 that is not in libdir yet. Upstream made the same substitution in 3.6.12.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.11" = "sha256-rfWJJgWKbYqvF4feAFpm5eGncFpiTlOj/IfVS3nzjag=";
@@ -1016,19 +1013,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.14";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.14-stale-configure-version.patch;
-              reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.14-stale-configure-version.patch;
+            reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.14" = "sha256-WfqczGYq2jFfuNa+dXrVtEc2joKfhjctmoUsfKTG8Qo=";
@@ -1051,19 +1047,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.16.1";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.16.1-stale-configure-version.patch;
-              reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.16.1-stale-configure-version.patch;
+            reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.16.1" = "sha256-D3fW5/JvDofWa+Ts8NYiP2HsWa2/5RZ1lN29Lx9LCfM=";
@@ -1405,6 +1400,36 @@ let
         "3.53.4" = "sha256-iqLdnXEYGG41pUdn6/JuSVki6FEn0TmnmLaGSrB4TLY=";
       };
     }
+    {
+      def = {
+        builder = ./build-3.0.0.nix;
+        deps = {
+          tcl = tvp.packages.tcl_8;
+          readline = tvp.packages.readline_8;
+          testZlib = tvp.packages.zlib_1;
+        };
+        opts = {
+          buildFeatures = {
+            compileFlags = [
+              "-std=gnu17"
+              "-Wno-error=implicit-function-declaration"
+              "-DUSE_INTERP_RESULT"
+              "-fcommon"
+            ];
+            hardeningDisable = [ "format" ];
+          };
+          sourceLayout.configureIsExecutable = false;
+          installedInterface.pkgConfigMajorMinor = true;
+          testFixtureRelinks = true;
+        };
+      };
+      status = {
+        level = "broken";
+        reason = "The checkin is missing src/os_unix.h, which src/os.h includes unconditionally on unix and which Makefile.in lists as a dependency. Both neighbours, 3.2.7 and 3.3.0, carry it.";
+        needs = "Nothing TVP can supply. The file is absent from the tag itself, and this release predates the oldest autoconf tarball upstream still serves, so there is no second source to take it from.";
+      };
+      releases."3.2.8" = "sha256-37zGW4l0y68rzTQeIO/2YyQ+9LVXEraQ6DYtqYK8gpI=";
+    }
   ];
   packageMeta = {
     upstream = {
@@ -1427,23 +1452,15 @@ let
     tests = import ./tests/installed.nix;
     testDeps.pkg-config = tvp.packages.pkg-config;
   };
-  # Broken source remains a historical exclusion, never passed to the owned constructor.
-  brokenTable = {
-    "3.2.8" = retained.versionTable."3.2.8";
-  };
-  excluded = tvp.lib.packages.mkVersions (retained // { versionTable = brokenTable; });
-  canonical = tvp.lib.packages.mkVersions family // excluded;
-  allVersions = versionTable // brokenTable;
+  canonical = tvp.lib.packages.mkVersions family;
+
 in
 {
-  recipes.sqlite = family // {
-    versionTable = family.versionTable // brokenTable;
-    constructionRecipe = retained;
-  };
+  recipes.sqlite = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {
     inherit pname canonical;
-    versionTable = allVersions;
+    inherit versionTable;
   };
 }

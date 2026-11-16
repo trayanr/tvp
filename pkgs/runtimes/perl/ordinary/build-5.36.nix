@@ -28,13 +28,11 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "perl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "perl.${name}";
   make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   sourceContract = {
     shell = "${final.bash}/bin/bash";
@@ -126,12 +124,12 @@ in
     '')
     (command "build" make)
     (
-      (command "check" ''${final.python}/bin/python3 -B ${final.checkHelper} ${lib.escapeShellArg (builtins.toJSON final.upstreamNonpasses)} ${make} test_harness'')
+      (command "check" "${final.python}/bin/python3 -B ${final.checkHelper} ${lib.escapeShellArg (builtins.toJSON final.upstreamNonpasses)} ${make} test_harness")
       // {
         enabled = final.doCheck;
       }
     )
-    (command "install" ''${make} install'')
+    (command "install" "${make} install")
     (steps.split "perl.finalize")
     (outputs.copyArtifacts { coreutils = final.coreutils; })
     {

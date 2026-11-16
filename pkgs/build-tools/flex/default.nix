@@ -78,10 +78,21 @@ let
     }
   ];
   pname = "flex";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "git-tags";
+      url = "https://github.com/westes/flex.git";
+      normalise =
+        tag:
+        if pkgs.lib.hasPrefix "v" tag then
+          pkgs.lib.removePrefix "v" tag
+        else if pkgs.lib.hasPrefix "flex-" tag then
+          pkgs.lib.removePrefix "flex-" tag
+        else
+          null;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -91,16 +102,14 @@ let
     tests = import ./tests;
     testDeps = {
       bison = tvp.packages.bison;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.flex = family // {
-    constructionRecipe = retained;
-  };
+  recipes.flex = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

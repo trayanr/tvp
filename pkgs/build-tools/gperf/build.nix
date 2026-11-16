@@ -14,13 +14,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/gperf-build-tree";
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
 in
 {
@@ -71,11 +67,10 @@ in
     '')
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gperf.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "gperf.check" ''

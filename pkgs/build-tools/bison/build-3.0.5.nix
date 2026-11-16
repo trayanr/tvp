@@ -21,13 +21,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   configure = prefix: ''
     export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
@@ -100,7 +96,7 @@ in
     '')
     (command "bison.configure" (configure ''"$out"''))
     (
-      (command "bison.charset-prefix" ''${tools.python}/bin/python3 -B ${./charset-prefix.py}'')
+      (command "bison.charset-prefix" "${tools.python}/bin/python3 -B ${./charset-prefix.py}")
       // {
         enabled = final.sourceLayout.preserveCharsetPrefix;
         tools = environment.tools ++ [ tools.python ];
@@ -123,11 +119,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "bison.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "bison.upstream-discovery";
       tools = final.upstreamCheck.tools ++ [ tools.patch ];
@@ -148,7 +143,7 @@ in
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       ${lib.optionalString (
         final.upstreamPrerequisites != [ ]
-      ) ''${tools.gnumake}/bin/make ${lib.escapeShellArgs final.upstreamPrerequisites}''}
+      ) "${tools.gnumake}/bin/make ${lib.escapeShellArgs final.upstreamPrerequisites}"}
       ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL="$SHELL" TESTSUITEFLAGS="-j$NIX_BUILD_CORES"  check
     '')
     // {
@@ -173,7 +168,7 @@ in
         tools.python
         tools.patchelf
       ];
-      run = ''${tools.python}/bin/python3 -B ${../parser-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf'';
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf'';
     }
     (outputs.strip { paths = elfPaths; })
     (outputs.rpaths {

@@ -8,7 +8,7 @@ let
     version:
     family.instantiate {
       inherit version;
-      base = tvp.baseTiers.seed;
+      base = tvp.bases.gcc_16.seed;
       deps = {
         gmp = bootstrap.gnu-gmp;
         mpfr = bootstrap.gnu-mpfr;
@@ -82,7 +82,7 @@ let
       == old.specification.sourceLayout.scripts ++ [ "compile" ];
     oldMpfrConstraint = family.recipes.mpc.versionTable."1.0.3".def.deps.mpfr.version == "3.1.6";
     stageLocalInputs =
-      p.specification.base.name == tvp.baseTiers.seed.name
+      p.specification.base.name == tvp.bases.gcc_16.seed.name
       && p.tvp.deps.gmp.drvPath == bootstrap.gnu-gmp.drvPath
       && p.tvp.deps.mpfr.drvPath == bootstrap.gnu-mpfr.drvPath;
     noopOverride = sameProduction (p.override { });

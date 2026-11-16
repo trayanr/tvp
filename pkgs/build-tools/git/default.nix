@@ -1,33 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."git";
-  retained = prior.constructionRecipe or prior;
-  earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash;
-    coreutils = tvp.packages.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-      pkg-config = tvp.packages.pkg-config;
-      gnumake = tvp.packages.gnumake;
-      gnutar = tvp.packages.gnutar;
-      xz = tvp.packages.xz;
-      findutils = tvp.packages.findutils;
-      diffutils = tvp.packages.diffutils;
-      gawk = tvp.packages.gawk;
-      sed = tvp.packages.gnused;
-      grep = tvp.packages.gnugrep;
-      patchelf = tvp.packages.patchelf;
-    };
-  };
   pname = "git";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-2.56.0-current.nix;
-        base = profileBase;
         deps = {
           rustc = tvp.packages.rustc_1;
           cargo = tvp.packages.cargo-bootstrap_1;
@@ -38,7 +15,6 @@ let
           zlib = tvp.packages.zlib;
           expat = tvp.packages.expat;
           pcre2 = tvp.packages.pcre2;
-          binutils = tvp.packages.binutils;
         };
       };
       releases = {
@@ -46,10 +22,8 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // { };
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    inherit pname versionTable;
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -61,9 +35,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."git" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."git" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

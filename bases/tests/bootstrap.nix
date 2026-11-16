@@ -1,33 +1,21 @@
-# A default-alias move must not move the generation which constructs that base.
-{
-  pkgs,
-  parent,
-  owned,
-  packages,
-}:
+# Each complete compiler is built by an explicit earlier source generation.
+{ pkgs, tvp }:
 let
   inherit (pkgs) lib;
-  permittedForeign = [
-    parent.stdenv.cc.libc.outPath
-    parent.stdenv.cc.libc.bin.outPath
-  ];
-  failures = lib.filterAttrs (
-    _: package:
-    package.stdenv.drvPath != parent.stdenv.drvPath
-    || package.tvp.base != parent.name
-    || package.tvp.variant != parent.name
-    || !lib.all (
-      dependency:
-      if dependency ? tvp then
-        dependency.tvp.base == parent.name && (dependency.tvp.variant or null) == parent.name
-      else
-        lib.elem dependency.outPath permittedForeign
-    ) (lib.attrValues (package.tvp.deps or { }))
-  ) packages;
+  rows = lib.genAttrs [ "gcc_4" "gcc_9" "gcc_13" "gcc_16" ] (
+    name:
+    let
+      driver = tvp.bases.${name}.full.compiler;
+      raw = driver.tvp.deps.compiler;
+      base = raw.specification.base;
+      previous = if base ? compiler then base.compiler else base.stdenv.cc;
+    in
+    raw ? artifact
+    && previous.drvPath != driver.drvPath
+    && previous.drvPath != raw.drvPath
+    && !(base ? pkgs)
+  );
+  failed = lib.attrNames (lib.filterAttrs (_: ok: !ok) rows);
 in
-if failures != { } || owned.builtBy != parent.name then
-  throw "TVP: bootstrap generation is not independent of default: ${lib.concatStringsSep ", " (lib.attrNames failures)}"
-else
-  pkgs.runCommand "tvp-bootstrap-independent" { } ''
-    printf '%s\n' ${lib.escapeShellArgs (lib.attrNames packages)} > "$out"
-  ''
+assert failed == [ ] || throw "TVP compiler bootstrap cycle: ${lib.concatStringsSep ", " failed}";
+pkgs.writeText "tvp-source-bootstrap-independent" (builtins.toJSON rows)

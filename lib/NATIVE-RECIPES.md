@@ -2,9 +2,9 @@
 
 This is the agreed authoring model for new ordinary families and for cleaning up
 existing ones. Use `tvp.lib.packages.mkFamily`; MPFR is the complete reference.
-The earlier migration to owned, split producers did not convert every family to
-this authoring interface. The [rollout plan](AUTHORING-MIGRATION.md) records the
-remaining base and package work.
+All 110 ordinary families now use this interface. The
+[rollout plan](AUTHORING-MIGRATION.md) records completed authoring work and the
+remaining runtime/base qualification boundaries.
 
 [STRUCTURE.md](../STRUCTURE.md) defines repository layout and admission rules;
 [output helpers](native-output-steps.md) and [owned tests](owned-tests.md) describe
@@ -21,7 +21,6 @@ mpfr/
   build-4.0.2.nix
   tests/
     default.nix
-    restore.py
     fixtures/
 ```
 
@@ -48,9 +47,10 @@ source/build/install eras, not simply for every release or major version. Extra
 directories need a concrete purpose, such as source patches, package-specific
 helpers or large release data. Construction inputs and public profiles should
 share a complete procedure when
-their actual requirements match. Captured direct callers still retain distinct
-procedures until their real generations are migrated; their temporary files are
-recorded in [MIG-025](MIGRATION-DECISIONS.md#mig-025--retained-construction-callers-and-test-factory-compatibility).
+their actual requirements match. Construction callers select an explicit earlier
+base and dependencies through `family.instantiate`; they do not keep a second
+version table or constructor closure. Actual source-bootstrap stages remain
+separate, with their required providers recorded explicitly.
 
 The builder's `buildFeatures`, `sourceLayout` and `installedInterface` group its
 effective facts. Use descriptive groups where they help; these names are not a
@@ -147,7 +147,7 @@ The catalogue binds the ordinary-family context once. Definitions do not repeat:
 - the base/compiler and platform selection;
 - the standard `tvp` and `lib` helper arguments;
 - Bash, Coreutils and Binutils from the selected base;
-- Make, Tar, XZ/Gzip/Bzip2, Patch, text tools, Python and Patchelf from `base.standardTools`;
+- Make, Tar, XZ/Gzip/Bzip2, Patch, text tools, Python and Patchelf from `base.tools`;
 - the test context, derived from the effective package.
 
 Only declared constructor arguments receive defaults. Bound helpers and tools come
@@ -158,23 +158,49 @@ live once in the [base's standard tool set](../bases/source-gnu/standard-tools.n
 MPFR definitions therefore only select GMP and compatibility options.
 Resolved standard providers remain visible in `tvp.declaredDependencies`.
 
-A compatible ordinary base exposes `shell`, `coreutils`, `compiler`, `standardTools`,
-platform facts and the pure environment interface. Standard defaults are resolved on each
-constructor call. `.override { base = otherBase; }` recomputes the default tools;
-explicit argument replacements take precedence. Replacing `base.coreutils` through
-`base.override` also rebinds its baseline tool slot; an explicit `tools` replacement
-remains the caller's complete choice. Named standard-tool overrides merge by role:
-`base.override { standardTools.gnumake = otherMake; }` keeps the other standard
-providers. Bash, Coreutils and Binutils use their canonical base fields rather than
-entries in `standardTools`.
+A compatible ordinary base exposes a lazy named `tools` catalogue, platform facts
+and the pure environment interface. `tools.gcc` is the complete selected compiler
+driver, including its Binutils, libc/runtime and hardening contract; it is not the
+raw GCC artifact. Generic `compiler`, `shell` and `coreutils` fields derive from
+`tools.gcc`, `tools.bash` and `tools.coreutils`. They are not separate selections.
+`standardTools` remains a temporary derived compatibility alias, with its old
+overrides accepted; new code uses `tools`.
 
-Default resolution remains lazy: a procedure receives the roles it declares, and each
-step names the tools it uses. Unused standard providers are not forced or added to
-that step's PATH. This preserves bootstrap direction and cache identities. A tool
-building itself must select its earlier construction provider explicitly.
-The currently bound context is
-native x86_64 GNU/Linux. Platform support belongs to that context and to genuine
-recipe restrictions, not duplicated conditionals in version tables.
+Standard defaults are resolved on each constructor call. `.override { base =
+otherBase; }` recomputes them; explicit argument replacements take precedence.
+Named tool overrides merge by role:
+
+```nix
+base.override { tools.gnumake = otherMake; }
+
+base.edit (s: s // {
+  tools = s.tools // { gnumake = otherMake; };
+})
+```
+
+Base edits reconstruct the selected commands and provider tracking. Selecting
+`tools.gcc` replaces the whole driver. Unsupported partial Binutils/libc edits
+are rejected when they disagree with that driver; changing metadata alone cannot
+rebind the executable wrapper. Select a coherently constructed driver instead.
+
+Default resolution stays lazy: each procedure receives only its declared roles,
+and each step names its actual tools. The existing explicit `baselineTools` are
+preserved internally. Merely adding another catalogue entry does not put it on
+PATH, force it or add it to the production derivation. A tool building itself must
+select its earlier construction provider explicitly.
+
+The root resolves the system once; ordinary selection is `tvp.bases.gcc_16.full`,
+without a repeated system argument. Effective platform facts remain inspectable
+on the base. Current support is native x86_64 GNU/Linux; additional architectures
+and genuine recipe restrictions need their own support and validation.
+
+Base selectors follow package version spelling. `tvp.bases.gcc_16_2_0.full`
+selects the exact compiler release; `tvp.bases.gcc_16.full` selects the latest
+registered GCC16 release. The other major aliases are `gcc_4`, `gcc_9` and
+`gcc_13`; `gcc_4` currently resolves to `gcc_4_9_4`. Only major aliases are
+published. An exact selector keeps its named compiler release; major aliases may
+advance. Both expose the same available stages for the selected release.
+
 
 Construction calls use the same family definition before a public package is created:
 
@@ -187,11 +213,35 @@ family.instantiate {
 ```
 
 This replaces dependency choices before evaluation, avoiding a lookup of the final
-compiler being constructed. `tvp.baseTiers` exposes `seed`, `target`, `native` and
-`full` source-owned contexts; `retained` adapts existing construction generations.
-See [base tiers](../bases/tiers/README.md). MPFR's old construction recipe has been
-removed; other families still keep their earlier interfaces until they are migrated. Direct `tvp.builder` calls
-remain available for low-level fixtures and specialized construction work.
+compiler being constructed. `tvp.bases.gcc_16` exposes the real `seed`, `runtime`,
+`reduced` and `full` stages; `tvp.bases.default` is its `full` context.
+GCC4, GCC9 and GCC13 expose one actually produced `full` context each. Their
+source-built compilers use the earlier closed GNU16 generation; build order is
+independent of compiler version order. No earlier compiler stages are fabricated.
+See [compiler-family bases](../bases/tiers/README.md).
+
+All ordinary families, including explicit construction callers and public variants,
+use the same current family definition. A `constructionRecipe`, retained version
+table or separate old constructor is not part of that API. Remaining private
+`tvp.__legacyBases` views support low-level fixtures and source-bootstrap protocols,
+not ordinary package-family selection. Direct `tvp.builder` calls remain available
+for specialized construction work.
+
+The shared family test factory uses the effective package context. Callers may
+replace the suite or its test-only inputs without rebuilding production:
+
+```nix
+package.mkTests.override { tests = otherSuite; }
+package.mkTests.override { locale = otherLocale; }
+```
+
+A factory is applied to the package being tested. Extra options reach
+`package.testConfiguration`; replacements matching declared `testDeps` also reach
+`package.tvp.declaredTestDependencies`. Test assertions remain in one suite module
+per family. Do not add an index-local factory wrapper to handle a provider edit.
+The [uniform family check](tests/uniform-package-families.nix) rejects captured old
+indexes and recipes outside the shared family model. It does not certify runtime
+behavior or compiler conformance.
 
 ## Public dependencies and bootstrap cycles
 
@@ -201,12 +251,13 @@ Replacing a retained construction tool with an ordinary producer changes the
 build inputs and can require rebuilding; identical version numbers do not imply
 identical derivations.
 
-For example, the shared base tool set selects Gawk 4.0 because Gawk 5 depends on
-MPFR. Patchelf, Gzip and File also need MPFR-free AWK selections when they occur
-before MPFR in that dependency graph. Their build-only AWK roles use the public
-Gawk 4.0 line. This choice belongs to the base tool policy rather than each MPFR
-definition. Bootstrap providers elsewhere still need earlier tools; those choices
-remain explicit in their retained construction or compatibility definitions.
+For example, the base's build-host AWK comes from the explicit earlier generation;
+a final Gawk alias can depend on MPFR and make MPFR build itself. Patchelf, Gzip
+and File also need MPFR-free AWK providers when they precede MPFR in that graph.
+These build-tool choices belong to the base assembly, while ordinary library
+dependencies still select `tvp.packages`. Bootstrap providers elsewhere retain
+their explicit earlier construction and compatibility choices. Equal source
+versions do not establish equal provider identities.
 
 ## Customization
 
@@ -222,7 +273,7 @@ helpers, commands, metadata and attached tests from the effective specification:
 
 ```nix
 mpfr.edit (spec: spec // {
-  base = spec.base.override { standardTools.gnumake = myMake; };
+  base = spec.base.override { tools.gnumake = myMake; };
 })
 ```
 
@@ -312,3 +363,44 @@ editing the test reader does not change A or F. Check flags and acceptance likew
 remain outside production. Other families may retain earlier isolation debt. Source
 evaluation, a working compiler or an installed test does not establish full historical,
 platform, hardening or catalogue qualification.
+
+
+## Shared mechanical helpers
+
+Bind the effective base once with `tvp.builder.forBase final.base`. The common
+command constructor preserves ordinary editable step records:
+
+```nix
+command = steps.command { environment = final.environment; };
+
+productionPlan = steps.sequence [
+  (command "mpfr.build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
+];
+upstreamPlan = artifact: [
+  (steps.restoreCheckpoint {
+    name = "mpfr.restore-build-tree";
+    checkpoint = "${artifact}/${checkpoint}";
+  })
+];
+```
+
+`steps.command` defaults to `cwd = "source"`; explicitly select another working
+directory when required. A specialized compiler environment, logging prelude or
+flag transformation stays explicit. `restoreCheckpoint` uses the selected Python
+and the shared restoration implementation. Saving a production checkpoint remains
+separate; editing its test-side reader does not alter the production procedure.
+
+Archive trackers with literal prefix/suffix parsing can use
+`tvp.lib.versions.fromArchiveName { prefix = "m4-"; suffixes = [ ".tar.gz" ]; }`.
+It only extracts the version. `include` retains release/prerelease policy, and
+custom tag/regex rules remain explicit. Family indexes that do not use the supplied
+Nixpkgs package set take `{ tvp, ... }`.
+
+Test contexts expose lazy `fixtures.sentinel`, `fixtures.alternateSource`, and
+`fixtures.gnuLocale`. Effective test-provider replacements take precedence;
+`locale` remains the caller option for the GNU locale fixture. The shared GNU
+fixture retains the existing glibc 2.39 locale-data source and requires a GNU-libc
+test base with `localedef` and `locale`. This is not automatic locale/architecture
+support for every possible base. Explicit earlier-base fixture selections remain
+in `testDeps`. Named common fixtures are also available through
+`tvp.lib.tests.fixtures` for declarations of those test-only dependencies.

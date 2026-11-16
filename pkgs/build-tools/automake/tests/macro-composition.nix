@@ -7,7 +7,14 @@
 let
   p = package;
   d = p.tvp.deps;
-  tools = p.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   provider =
     marker:
     p.edit (

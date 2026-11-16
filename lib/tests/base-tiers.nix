@@ -53,12 +53,13 @@ let
   };
   tiers = import ../../bases/tiers { inherit lib builder; };
   inputs = tiers.fromLegacy legacy;
-  seed = tiers.mkTier {
+  seed = tiers.mkStage {
     name = "seed";
     inherit (legacy) platform;
-    compiler = inputs.compiler;
-    inherit shell coreutils;
-    standardTools = {
+    tools = {
+      gcc = inputs.compiler;
+      bash = shell;
+      inherit coreutils;
       gnumake = make;
       unused = throw "unused standard provider forced";
     };
@@ -67,14 +68,17 @@ let
     outPath = (package "next-gcc").outPath;
     drvPath = (package "next-gcc").drvPath;
   };
-  next = tiers.mkTier {
+  next = tiers.mkStage {
     name = "next";
     inherit (legacy) platform;
     previous = seed // {
       compiler = throw "tier lineage forces prior providers";
     };
-    compiler = nextCompiler;
-    inherit shell coreutils;
+    tools = {
+      gcc = nextCompiler;
+      bash = shell;
+      inherit coreutils;
+    };
   };
   edited = inputs.edit (args: args // { compiler = nextCompiler; });
   coreEdit = inputs.edit (args: args // { coreutils = package "other-coreutils"; });
@@ -97,7 +101,7 @@ let
         "${libc}/lib"
         "${raw}/lib"
       ];
-    exactFloor = inputs.tools == legacy.stdenv.initialPath;
+    exactFloor = inputs.baselineTools == legacy.stdenv.initialPath;
     exactShell = inputs.shell.drvPath == shell.drvPath;
     namedMake = inputs.standardTools.gnumake.drvPath == make.drvPath;
     namedTar = inputs.standardTools.gnutar.drvPath == tar.drvPath;
@@ -119,20 +123,20 @@ let
       };
     seedBoundary = seed.construction.kind == "seed" && seed.construction.previous == null;
     tierLineage = next.construction.kind == "stage" && next.construction.previous == seed.name;
-    minimalFloor = map (p: p.drvPath) seed.tools == [ coreutils.drvPath ];
+    minimalFloor = map (p: p.drvPath) seed.baselineTools == [ coreutils.drvPath ];
     currentCompiler = (next.environment { }).env.CC == "${nextCompiler}/bin/cc";
     baseEditRebinds = (edited.environment { }).env.CC == "${nextCompiler}/bin/cc";
     baseEditProvenance = edited.construction == inputs.construction;
     editCoreutilsFloor =
-      builtins.any (p: p.drvPath == (package "other-coreutils").drvPath) coreEdit.tools
-      && !(builtins.any (p: p.drvPath == coreutils.drvPath) coreEdit.tools);
-    explicitEditTools = explicitTools.tools == [ make ];
+      builtins.any (p: p.drvPath == (package "other-coreutils").drvPath) coreEdit.baselineTools
+      && !(builtins.any (p: p.drvPath == coreutils.drvPath) coreEdit.baselineTools);
+    explicitEditTools = explicitTools.baselineTools == [ make ];
     shellOverrideFloor =
       !(builtins.elem shell.drvPath (
-        map (p: p.drvPath) (inputs.override { shell = package "new-shell"; }).tools
+        map (p: p.drvPath) (inputs.override { shell = package "new-shell"; }).baselineTools
       ));
     shellEditFloor = builtins.elem (package "new-shell").drvPath (
-      map (p: p.drvPath) (inputs.edit (args: args // { shell = package "new-shell"; })).tools
+      map (p: p.drvPath) (inputs.edit (args: args // { shell = package "new-shell"; })).baselineTools
     );
     partialToolOverride =
       (inputs.override {
@@ -140,10 +144,11 @@ let
       }).standardTools.gnutar.drvPath == tar.drvPath;
     adaptedIdempotent = (tiers.fromLegacy inputs).name == inputs.name;
     legacyDefaultPlatform =
-      (tiers.fromLegacy (builtins.removeAttrs legacy [ "platform" ])).platform == legacy.platform;
+      builtins.intersectAttrs legacy.platform
+        (tiers.fromLegacy (builtins.removeAttrs legacy [ "platform" ])).platform == legacy.platform;
     explicitPlatformArgument =
       let
-        args = builtins.functionArgs tiers.mkTier;
+        args = builtins.functionArgs tiers.mkStage;
       in
       args ? platform && !args.platform;
     invalidLegacy = rejects (tiers.fromLegacy { name = "missing"; });
@@ -159,12 +164,15 @@ let
     );
     invalidEdit = rejects (inputs.edit (args: args // { compiler = null; }));
     selfLineage = rejects (
-      tiers.mkTier {
+      tiers.mkStage {
         name = "seed";
         inherit (legacy) platform;
         previous = seed;
-        compiler = inputs.compiler;
-        inherit shell coreutils;
+        tools = {
+          gcc = inputs.compiler;
+          bash = shell;
+          inherit coreutils;
+        };
       }
     );
     invalidConstruction = rejects (inputs.override { construction.kind = "unknown"; });

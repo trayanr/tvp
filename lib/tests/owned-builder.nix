@@ -2,7 +2,7 @@
 let
   inherit (pkgs) lib;
   inherit (tvp.builder) steps outputs;
-  base = tvp.bases.default;
+  base = tvp.__legacyBases.gcc_16_2_0;
   p = import ./fixtures/mpfr.nix { inherit pkgs tvp; };
   inherit (tvp.packages) bash coreutils;
   python = tvp.packages.python_3;

@@ -502,7 +502,7 @@ let
         builder = ./build-3.6.3.nix;
         deps.buildPerl = tvp.lib.packages.withConstraint {
           category = "construction";
-          reason = "Retain the exact earlier source-GNU Configure/diagnostic Perl used by this canonical native profile; ordinary authoring does not activate a new tool generation.";
+          reason = "The earlier source-GNU Perl is the isolated Configure/diagnostic build-host role; runtime Perl remains a separately selectable provider.";
         } (import ../../../bases/source-gnu { }).tools.perl;
         deps.perl = tvp.packages.perl_5;
       };
@@ -619,7 +619,7 @@ let
         builder = ./build-4.0.1.nix;
         deps.buildPerl = tvp.lib.packages.withConstraint {
           category = "construction";
-          reason = "Retain the exact earlier source-GNU Configure/diagnostic Perl used by this canonical native profile; ordinary authoring does not activate a new tool generation.";
+          reason = "The earlier source-GNU Perl is the isolated Configure/diagnostic build-host role; runtime Perl remains a separately selectable provider.";
         } (import ../../../bases/source-gnu { }).tools.perl;
       };
       releases = {
@@ -643,12 +643,108 @@ let
         "4.0.0" = "sha256-wyz0mpWcTzRflgaYLdNufSj3xYsZwuJddWJNKz0veaw=";
       };
     }
+    {
+      def = {
+        builder = ./build-0.9.6.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+      };
+      status = {
+        level = "broken";
+        reason = "Configure has no x86_64 target: 0.9.6 predates AMD64 and offers only alpha, ia64, m68k, mips, ppc, s390, sparc and 32-bit linux-elf.";
+        needs = "A period-appropriate architecture. Not fixable on x86_64-linux.";
+        blocked = {
+          platform = "pre-amd64";
+        };
+      };
+      releases = {
+        "0.9.6" = "sha256-UhW2cMJnTfmmQlZepopn5tlV2O/MoaobTmpbT9J0Tug=";
+        "0.9.6i" = "sha256-59i6mRAKUQetrEZd6MsVzTX9ScxtwbEnMWmAhUVlg1k=";
+        "0.9.6j" = "sha256-PPct3ugGSOpFZ7Aw0C1bMdLhCVuDCD/tRO3boYWpkwM=";
+        "0.9.6k" = "sha256-eLPwYwnagXHFwGuq/TAh3I/TMNYoxTXQhdWqcagROtE=";
+        "0.9.6l" = "sha256-JyPnyLT66JkY89QKbRq53WGATe2Zh/aOAJr+i3B43Zc=";
+        "0.9.6m" = "sha256-p3jAe13iSOGrizc0O8xgM/s62VXN1XmV6awKRM6UL9Y=";
+      };
+    }
   ];
   pname = "openssl";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/openssl/openssl";
+
+        # Releases that exist upstream and cannot be packaged at all. Listed so
+        # the delta separates work from dead ends, rather than showing both as
+        # "not packaged" forever.
+        unavailable = [
+          {
+            versions = [
+              "0.9.1c"
+              "0.9.2b"
+              "0.9.3"
+              "0.9.3a"
+              "0.9.4"
+              "0.9.5"
+              "0.9.5a"
+              "0.9.6a"
+              "0.9.6b"
+              "0.9.6c"
+              "0.9.6d"
+              "0.9.6e"
+              "0.9.6f"
+              "0.9.6g"
+              "0.9.6h"
+            ];
+            reason = "No tarball is served by openssl.org or by GitHub releases. Only git-archive snapshots survive, and a snapshot is a different artifact from the release.";
+          }
+        ];
+
+        # Two tag conventions, split at 3.0: OpenSSL_1_1_1w and openssl-3.0.0.
+        # Anything else (rsaref, the fips branches) is not a release.
+        normalise =
+          tag:
+          if pkgs.lib.hasPrefix "OpenSSL_" tag then
+            pkgs.lib.replaceStrings [ "_" ] [ "." ] (pkgs.lib.removePrefix "OpenSSL_" tag)
+          else if pkgs.lib.hasPrefix "openssl-" tag then
+            pkgs.lib.removePrefix "openssl-" tag
+          else
+            null;
+
+        # A release version starts with a digit. That rule, rather than another
+        # blacklist entry, is what drops OpenSSL_FIPS_1_0 — the separately
+        # distributed FIPS Object Module, which has no openssl-*.tar.gz at all.
+        # "-post-reformat" and friends tag repository maintenance, not releases.
+        include =
+          version:
+          let
+            # Published, then pulled: no tarball is served for either, and 3.0.6's
+            # tag no longer exists. A rule cannot express this, so the predicate
+            # closes over the list rather than a separate `exclude` field.
+            withdrawn = [
+              "1.1.1r" # withdrawn 2022-10-11, superseded same day by 1.1.1s
+              "3.0.6" # withdrawn 2022-10-11, superseded same day by 3.0.7
+            ];
+          in
+          builtins.match "[0-9].*" version != null
+          && !(pkgs.lib.elem version withdrawn)
+          && !(
+            pkgs.lib.hasInfix "pre" version
+            || pkgs.lib.hasInfix "alpha" version
+            || pkgs.lib.hasInfix "beta" version
+            || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "-post-" version
+          );
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -661,35 +757,20 @@ let
             "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
         inherit sha256;
       };
-    tests =
-      args:
-      if args.package ? testContext then import ./tests args else retained.extraArgs.mkTests args.package;
-    # The old pkg-config role is consumed only by the six retained broken
-    # factories. Ordinary installed suites select the effective base frontend.
-    testDeps = retained.testDeps // {
+    tests = import ./tests;
+    testDeps = {
+      pkg-config = tvp.packages.pkg-config;
       cmake = tvp.packages.cmake;
     };
   };
-  # Broken historical exclusions retain their actual earlier constructor/table.
-  # They are not counted as ordinary family authoring or new architecture support.
-  publicArgs = family // {
-    infra = family.infra // {
-      inherit (pkgs) fetchurl;
-    };
-    versionTable =
-      family.versionTable
-      // pkgs.lib.filterAttrs (_: entry: (entry.status.level or "ok") == "broken") retained.versionTable;
-  };
-  canonical = tvp.lib.packages.mkVersions publicArgs;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.openssl = publicArgs // {
-    constructionRecipe = retained;
-  };
+  recipes.openssl = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {
     inherit pname canonical;
-    versionTable = publicArgs.versionTable;
+    inherit versionTable;
   };
 }

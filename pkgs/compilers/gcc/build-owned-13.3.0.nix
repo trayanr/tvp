@@ -124,7 +124,14 @@ let
           ${run}
         ''} > "$validation/${name}.log" 2>&1 || status=$?
         printf '%s\n' "$status" > "$validation/${name}.status"
-        if (( status )); then tail -150 "$validation/${name}.log"; exit "$status"; fi
+        if (( status )); then
+          # Invalid store outputs are removed after failure. Keep the complete
+          # command log in the retained workspace, beyond the bounded Nix tail.
+          cp "$validation/${name}.log" "$TVP_SOURCE_ROOT/failure-${name}.log"
+          printf 'Full ${name} log: %s\n' "$TVP_SOURCE_ROOT/failure-${name}.log" >&2
+          tail -150 "$validation/${name}.log"
+          exit "$status"
+        fi
       '';
     };
 in
@@ -133,7 +140,7 @@ in
   configurePrefix = "/tvp/gcc13";
   inherit bootstrap hardeningDisable;
   checkpointScript = ./native/checkpoint-13.3.0.py;
-  finalizerScript = ./native/finalize.py;
+  finalizerScript = ./native/finalize-standard.py;
   upstreamRestore = ./tests/restore-16.2.0.py;
   upstreamCapture = ./tests/capture-16.2.0.nix; # Version-neutral raw DejaGNU capture; explicit sourceRoot.
   upstreamSummarizer = ./tests/summarise-upstream.py;
@@ -181,7 +188,9 @@ in
     ;
 
   tuple = "x86_64-unknown-linux-gnu";
-  libcFlags = "-B${libc}/lib/ -isystem ${lib.getDev libc}/include -I${lib.getDev zlib}/include -I${lib.getDev zstd}/include -I${lib.getDev libxcrypt}/include";
+  # Keep libc after the selected driver's C++ headers: libstdc++ uses
+  # include_next to reach stdlib.h, which fails if libc is promoted before it.
+  libcFlags = "-B${libc}/lib/ -idirafter ${lib.getDev libc}/include -I${lib.getDev zlib}/include -I${lib.getDev zstd}/include -I${lib.getDev libxcrypt}/include";
   linkFlags =
     "-Wl,-dynamic-linker,${libc}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,$out/lib "
     + lib.concatMapStringsSep " " (p: "-L${lib.getLib p}/lib -Wl,-rpath,${lib.getLib p}/lib") [
@@ -242,8 +251,10 @@ in
     "--with-gnu-ld"
     "--with-as=${binutils}/bin/as"
     "--with-ld=${binutils}/bin/ld"
-    "--with-build-sysroot=/"
-    "--with-native-system-header-dir=${lib.getDev libc}/include"
+    # The selected libc's linker scripts use /lib paths relative to a sysroot.
+    # Keep both the target linker and the compiler's header root on that provider.
+    "--with-sysroot=${libc}"
+    "--with-native-system-header-dir=/include"
   ];
   passthru = package: {
     # The passthru callback receives the raw final output, before catalogue

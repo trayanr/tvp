@@ -20,13 +20,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "libyaml.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "libyaml.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libyaml-build-tree";
 in
@@ -65,7 +62,8 @@ in
     libtoolAnchors = {
       "config/ltmain.sh" = 1;
     };
-  } // sourceLayout;
+  }
+  // sourceLayout;
   buildFeatures = {
     shared = true;
     static = true;
@@ -155,11 +153,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "libyaml.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "check" ''
@@ -199,13 +196,15 @@ in
               "lib/libyaml.a"
               "lib/libyaml.la"
               "include/yaml.h"
-            ] ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
+            ]
+            ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
             libtoolData = [ "lib/libyaml.la" ];
             requiredRegular = [
               "lib/libyaml.a"
               "lib/libyaml.la"
               "include/yaml.h"
-            ] ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
+            ]
+            ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
           }
         )
       }'';
@@ -237,7 +236,7 @@ in
       inherit (tools) python;
       libraries = [ ];
     })
-    ((import ../gdbm/ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = [ "lib" ];
       elfKinds = [ "runtime" ];

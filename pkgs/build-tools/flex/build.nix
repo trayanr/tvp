@@ -20,13 +20,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   configure = prefix: ''
     export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
@@ -111,6 +107,14 @@ in
     '')
     (command "flex.configure" (configure ''"$out"''))
     (
+      (command "flex.production-directories" ''
+        ${tools.python}/bin/python3 -B ${./production-directories.py} Makefile
+      '')
+      // {
+        tools = environment.tools ++ [ tools.python ];
+      }
+    )
+    (
       (command "flex.skeleton" ''
         ${make} -C src skel.c
         ${tools.coreutils}/bin/touch -r doc/flex.1 src/flex.skl
@@ -137,11 +141,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "flex.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "flex.upstream-discovery";
       tools = final.upstreamCheck.tools;
@@ -168,11 +171,10 @@ in
       in
       shells
       // {
-        run =
-          ''
-            cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
-          ''
-          + shells.run;
+        run = ''
+          cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
+        ''
+        + shells.run;
       }
     )
   ];
@@ -202,7 +204,7 @@ in
         tools.python
         tools.patchelf
       ];
-      run = ''${tools.python}/bin/python3 -B ${../parser-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf'';
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf'';
     }
     (outputs.strip { paths = elfPaths; })
     (outputs.stripArchives { paths = [ "lib/libfl.a" ]; })

@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -43,16 +43,14 @@ let
       };
     tests = import ./tests/installed.nix;
     testDeps = {
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gzip = family // {
-    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.gzip;
-  };
+  recipes.gzip = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

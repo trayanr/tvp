@@ -37,6 +37,12 @@ let
     assert noFixturePatch.artifact.drvPath == p.artifact.drvPath && noFixturePatch.drvPath == p.drvPath;
     assert changed.drvPath != p.tests.upstream.drvPath;
     assert p.tests.upstream.specification.validation.production.drvPath == p.artifact.drvPath;
+    assert
+      p.pname != "flex"
+      || (
+        builtins.any (step: step.name == "flex.production-directories") parts.first
+        && !(lib.hasInfix "SUBDIRS=" s.upstreamCheck.run)
+      );
     {
       pass = true;
     };

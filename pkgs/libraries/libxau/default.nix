@@ -1,6 +1,5 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./retained.nix { inherit pkgs tvp; }).packageArgs;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -18,7 +17,7 @@ let
     inherit pname versionTable;
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
+      import <nix/fetchurl.nix> {
         url = "https://www.x.org/releases/individual/lib/libXau-${version}.tar.xz";
         inherit sha256;
       };
@@ -28,9 +27,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.libxau = family // {
-    constructionRecipe = retained;
-  };
+  recipes.libxau = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

@@ -16,13 +16,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   checkpoint = "nix-support/expat-build-tree";
   onOff = value: if value then "ON" else "OFF";
   productionFlags =
@@ -58,13 +54,15 @@ in
     shared = true;
     tools = true;
     examples = true;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   # Keep the compiled CMake tree under source, so the shared checkpoint helper
   # saves it and restores the exact original absolute build location.
   sourceLayout = {
     compression = "xz";
     buildDirectory = ".tvp-build";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     elfPaths = lib.optional final.buildFeatures.tools "bin" ++ [ "lib" ];
     relocatedText = [
@@ -72,7 +70,8 @@ in
       "lib/cmake"
     ];
     soname = "libexpat.so.1";
-  } // installedInterface;
+  }
+  // installedInterface;
   environment = {
     tools = [
       tools.cmake
@@ -119,11 +118,10 @@ in
     ];
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "expat.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     (
       (command "expat.configure-upstream" ''
         cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"

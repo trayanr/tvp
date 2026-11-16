@@ -34,13 +34,10 @@ let
   pkgConfig = tools.pkg-config;
 
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "perl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "perl.${name}";
   make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   sourceContract = {
     shell = "${final.bash}/bin/bash";
@@ -135,7 +132,7 @@ in
         -Dranlib="$RANLIB" -Dmake=make -Dsh=${final.bash}/bin/bash
     '')
     (command "build" make)
-    (command "install" ''${make} install'')
+    (command "install" "${make} install")
   ];
   # Reconstructed private U tree; checkpoint restoration is deferred.
   upstreamPlan = steps.sequence [
@@ -162,7 +159,7 @@ in
     (command "build" make)
   ];
   upstreamCheck =
-    (command "check" ''${final.python}/bin/python3 -B ${final.checkHelper} ${lib.escapeShellArg (builtins.toJSON final.upstreamNonpasses)} ${make} test_harness'')
+    (command "check" "${final.python}/bin/python3 -B ${final.checkHelper} ${lib.escapeShellArg (builtins.toJSON final.upstreamNonpasses)} ${make} test_harness")
     // {
       enabled = final.doCheck;
     };

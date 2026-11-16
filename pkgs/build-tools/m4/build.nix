@@ -126,7 +126,7 @@ in
       ./configure --prefix="$out" --with-syscmd-shell=${tools.bash}/bin/bash ${lib.escapeShellArgs final.configureFlags}
     '')
     (
-      (command "m4.shell-slot" ''${tools.python}/bin/python3 -B ${./shell-slot.py} lib/config.h'')
+      (command "m4.shell-slot" "${tools.python}/bin/python3 -B ${./shell-slot.py} lib/config.h")
       // {
         tools = environment.tools ++ [ tools.python ];
       }
@@ -147,11 +147,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "m4.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     (
       preparation
       // {

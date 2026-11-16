@@ -102,10 +102,22 @@ let
     }
   ];
   pname = "libyaml";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/yaml/libyaml";
+
+        # `dist-X` duplicates the release tag it was cut from.
+        normalise = tag: if pkgs.lib.hasPrefix "dist-" tag then null else tag;
+
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(pkgs.lib.hasInfix "rc" version || pkgs.lib.hasInfix "pre" version);
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -118,9 +130,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.libyaml = family // {
-    constructionRecipe = retained;
-  };
+  recipes.libyaml = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

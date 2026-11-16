@@ -18,13 +18,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   checkpoint = "nix-support/gmp-build-tree";
   elfPaths = [ "lib" ];
 in
@@ -119,13 +115,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gmp.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''
-        ${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"
-      '';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "gmp.check" ''
@@ -144,10 +137,11 @@ in
       run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
     }
     (outputs.relocateText {
-      paths =
-        [ "lib/libgmp.la" ]
-        ++ lib.optional final.buildFeatures.cxx "lib/libgmpxx.la"
-        ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig";
+      paths = [
+        "lib/libgmp.la"
+      ]
+      ++ lib.optional final.buildFeatures.cxx "lib/libgmpxx.la"
+      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig";
     })
     (outputs.strip { paths = elfPaths; })
     (outputs.stripArchives { paths = [ "lib" ]; })

@@ -15,13 +15,10 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "openssl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "openssl.${name}";
   pythonCommand =
     name: run:
     (final.base.environment (
@@ -32,7 +29,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = ''${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash'';
+  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
   selectProductionGenerated = ''
     productionGenerated=$(
       ${final.buildPerl}/bin/perl -I. -Mconfigdata -e '
@@ -196,7 +193,7 @@ in
       interpreter = "${tools.bash}/bin/bash";
     })
   ];
-  upstreamCheck = ((command "check" ''${make} test'') // { enabled = final.doCheck; });
+  upstreamCheck = ((command "check" "${make} test") // { enabled = final.doCheck; });
   plan = steps.sequence (
     final.artifactPlan
     ++ [
@@ -297,7 +294,8 @@ in
   };
   tvp.features = {
     inherit (final.buildFeatures) shared static;
-  } // final.installedInterface;
+  }
+  // final.installedInterface;
   meta = {
     description = "A cryptographic library that implements the SSL and TLS protocols";
     homepage = "https://www.openssl.org/";

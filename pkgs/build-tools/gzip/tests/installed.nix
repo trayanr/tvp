@@ -6,7 +6,14 @@
 let
   p = package;
   s = p.specification;
-  tools = s.base.standardTools;
+  tools = (
+    builtins.removeAttrs s.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   steps = import ../../../../lib/build-steps.nix;
   sourceSteps = import ../../../../lib/owned-source-steps.nix { inherit lib; };
   d = tools // {
@@ -128,7 +135,7 @@ let
       // {
         base = spec.base.override {
           shell = shellProvider;
-          standardTools.grep = provider;
+          tools.grep = provider;
         };
       }
     )).editRuntime

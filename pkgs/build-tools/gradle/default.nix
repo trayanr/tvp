@@ -1,23 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."gradle";
-  retained = prior.constructionRecipe or prior;
-  earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash;
-    coreutils = tvp.packages.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-    };
-  };
   pname = "gradle";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-9.3.1-current.nix;
-        base = profileBase;
         deps = {
           jdk = tvp.packages.jdk_21;
           python = tvp.packages.python_3;
@@ -34,14 +21,13 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
+  testDeps = {
     grep = tvp.packages.gnugrep;
     sed = tvp.packages.gnused;
     findutils = tvp.packages.findutils;
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -53,9 +39,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."gradle" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."gradle" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

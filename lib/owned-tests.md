@@ -3,7 +3,7 @@
 `tvp.lib.tests.forBase { builder; base; coreutils; }` binds the owned builder,
 selected base and explicit Coreutils. Bash comes from `base.shell`. Catalogue
 factories select this context explicitly. Retained factories and aggregate test
-infrastructure can still use the legacy helpers; selecting this context does not
+infrastructure explicitly use `tvp.lib.tests.compatibility`; selecting this context does not
 rewrite those callers.
 
 From the repository root, with the qualified `base`, `coreutils` and `mpc` selected:
@@ -88,3 +88,16 @@ A base or shell replacement must provide a compatible native tool interface. Pub
 development libraries expand transitively. Context functions remain outside serializable
 package metadata and named test leaves. The final all-batch and plan writer still use
 legacy infrastructure. The new family interface does not rewrite those callers.
+
+
+The context also exposes lazy shared test fixtures. Ordinary family suites use
+`context.fixtures.gnuLocale`, `context.fixtures.sentinel` and
+`context.fixtures.alternateSource` instead of importing their construction helpers.
+The effective package's shell, Coreutils and published tool selections feed fixture
+construction. Existing `testDeps` and factory overrides retain priority; an explicit
+`locale` override selects `gnuLocale`. These fixtures are test inputs and do not
+enter production merely because the context exposes them.
+
+Nixpkgs-backed `mkTest`, `mkSuite`, `mkBatch`, `withBase` and associated aggregate
+helpers live in `compatibility-tests.nix`, under the explicit compatibility namespace.
+Owned `context.mkTest`/`mkSuite`/`mkBatch` remain the ordinary authoring API.

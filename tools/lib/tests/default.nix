@@ -39,6 +39,6 @@ pkgs.runCommand "tvp-cli-packaging-contracts" { nativeBuildInputs = [ tvp.packag
         ]
       )
     } \
-    ${tvp.bases.default.platform.system}
+    ${tvp.__legacyBases.gcc_16_2_0.platform.system}
   printf '%s\n' 'CLI argument, PATH, strict-mode, environment, exec, signal and exit contracts passed.' > "$out"
 ''

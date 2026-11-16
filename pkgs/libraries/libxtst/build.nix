@@ -24,13 +24,10 @@ let
   inherit (context) steps outputs tools;
   xorg = import ../../../lib/xorg-library-steps.nix { inherit lib context; };
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "libxtst.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "libxtst.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
 in
 {
@@ -55,7 +52,8 @@ in
   inherit (tools) bash coreutils;
   installedInterface = {
     libraryDirectory = "lib";
-  } // installedInterface;
+  }
+  // installedInterface;
   outputs = [ "out" ];
   environment = {
     tools = [

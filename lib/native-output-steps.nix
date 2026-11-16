@@ -23,7 +23,7 @@ let
   invoke =
     output: python: program: arguments:
     if output == "out" then
-      ''${python}/bin/python3 -B ${program} ${arguments}''
+      "${python}/bin/python3 -B ${program} ${arguments}"
     else
       ''
         if declare -p TVP_ARTIFACT_OUTPUTS > /dev/null 2>&1; then
@@ -35,25 +35,24 @@ let
       '';
   run =
     output: python: name: config:
-    invoke output python (script name)
-      ''${root output} ${lib.escapeShellArg (builtins.toJSON config)}'';
+    invoke output python (script name) "${root output} ${lib.escapeShellArg (builtins.toJSON config)}";
   sdkOutputRun =
     output: python: name: config:
     invoke output python "${./sdk-output}/${name}.py"
-      ''${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output} ${./output-tools}'';
+      "${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output} ${./output-tools}";
   outputRun =
     output: python: name: config:
     invoke output python "${./output-tools}/${name}.py"
-      ''${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}'';
+      "${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}";
   selectedRun =
     output: python: name: config: kinds:
     if kinds == null then
       run output python name config
     else
       invoke output python ./elf-output.py
-        ''${root output} ${
+        "${root output} ${
           lib.escapeShellArg (builtins.toJSON (config // { inherit kinds; }))
-        } ${./native-output} ${name}'';
+        } ${./native-output} ${name}";
 
 in
 {
@@ -114,7 +113,7 @@ in
       ];
       run =
         invoke output python (if executablesOnly then ./sdk-output/host-executables.py else ./host-elf.py)
-          ''${root output} ${
+          "${root output} ${
             lib.escapeShellArg (
               builtins.toJSON {
                 inherit paths patterns loader;
@@ -123,7 +122,7 @@ in
                 patchelf = "${patchelf}/bin/patchelf";
               }
             )
-          } ${./native-output}'';
+          } ${./native-output}";
     };
   copyArtifacts =
     {
@@ -179,7 +178,7 @@ in
       tools = [ python ];
       run =
         invoke output python ./owned-output/relocate.py
-          ''${root output} ${lib.escapeShellArg (builtins.toJSON { inherit paths; })} ${./native-output}'';
+          "${root output} ${lib.escapeShellArg (builtins.toJSON { inherit paths; })} ${./native-output}";
     };
   # Select normal GNU native non-LTO .a archives, strip debug data, then restore
   # their index. Fixed -S -p / -D operation; all selected tool failures fail.
@@ -308,7 +307,7 @@ in
         else if libraries != null then
           invoke output python
             (if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py)
-            ''${root output} ${
+            "${root output} ${
               lib.escapeShellArg (
                 builtins.toJSON {
                   inherit paths dlopenDirectories elfKinds;
@@ -333,7 +332,7 @@ in
                   patchelf = "${patchelf}/bin/patchelf";
                 }
               )
-            } ${./native-output}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}''
+            } ${./native-output}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}"
         else
           selectedRun output python "rpaths" {
             inherit paths dlopenDirectories;
@@ -377,7 +376,37 @@ in
       tools = [ python ];
       run =
         invoke output python ./symlink-tree.py
-          ''${root output} ${lib.escapeShellArg (builtins.toJSON { inherit paths; })} ${./native-output}'';
+          "${root output} ${lib.escapeShellArg (builtins.toJSON { inherit paths; })} ${./native-output}";
+    };
+  # Preserve loader-relative lookup spelling for procedures that support it.
+  # checkPaths below retains the stricter absolute-path contract.
+  checkLoaderPaths =
+    {
+      output ? "out",
+      python,
+      binutils,
+      patchelf,
+      paths,
+      elfKinds ? null,
+    }:
+    forOutput output {
+      name = "output.check-paths";
+      tools = [
+        python
+        binutils
+        patchelf
+      ];
+      run =
+        invoke output python ./check-loader-paths.py
+          "${root output} ${
+            lib.escapeShellArg (
+              builtins.toJSON {
+                inherit paths elfKinds;
+                readelf = "${binutils}/bin/readelf";
+                patchelf = "${patchelf}/bin/patchelf";
+              }
+            )
+          } ${./native-output}";
     };
   checkPaths =
     {

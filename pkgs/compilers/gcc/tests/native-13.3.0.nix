@@ -44,7 +44,7 @@ let
 in
 (import ./default.nix {
   inherit pkgs gcc;
-  tvpLib.tests.mkSuite =
+  tvpLib.tests.compatibility.mkSuite =
     args:
     package.testContext.mkSuite {
       inherit package;

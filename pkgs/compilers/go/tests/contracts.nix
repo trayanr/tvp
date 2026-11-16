@@ -24,7 +24,7 @@ let
         compiler = s.base.compiler // {
           bintools = alternate;
         };
-        standardTools = {
+        tools = {
           python = alternate;
           patchelf = alternate;
         };

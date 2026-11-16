@@ -162,18 +162,21 @@ let
         lib.hasInfix (builtins.unsafeDiscardStringContext needle) (
           builtins.unsafeDiscardStringContext text
         );
-      retained = import (../../pkgs/libraries + "/${name}/retained.nix") { inherit pkgs tvp; };
-      # The old factory API belongs to the explicit historical caller, not the owned factory.
-      historicalTests = retained.packageArgs.extraArgs.mkTests;
+      factory =
+        (import (../../pkgs/libraries + "/${name}") { inherit pkgs tvp; })
+        .recipes.${name}.extraArgs.mkTests;
       ids = builtins.mapAttrs (_: t: t.drvPath);
-      selectedPkgs = pkgs // {
-        runCommandWith = args: script: { selected = true; };
-      };
       assertions = {
         owned = builtins.all (t: t.tvp.kind == "owned-test") (builtins.attrValues p.tests);
-        legacyTests = ids (historicalTests retained.aliases.${name}) == ids retained.aliases.${name}.tests;
-        callerPkgs =
-          ((historicalTests.override { pkgs = selectedPkgs; }) retained.aliases.${name}).consumer.selected;
+        defaultTests = ids (factory p) == ids p.tests;
+        callerFactory =
+          (
+            (factory.override {
+              helpers = "selected";
+              tests = { package, ... }: package.testConfiguration.helpers;
+            })
+            p
+          ) == "selected";
         bothRoutes = overridden.drvPath == edited.drvPath && overridden.drvPath != p.drvPath;
         sourceCommand = has (toString source) (builtins.head overridden.buildSteps).run;
         baseCommand = (step overridden "build").env.CC == "${wrappers}/bin/cc";
@@ -304,5 +307,6 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
   support = {
     controlTools = wrappers;
     controlX11 = library;
-  } // lib.mapAttrs' (name: c: lib.nameValuePair "${name}-control-source" c.overridden.src) controls;
+  }
+  // lib.mapAttrs' (name: c: lib.nameValuePair "${name}-control-source" c.overridden.src) controls;
 }

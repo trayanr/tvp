@@ -77,7 +77,7 @@ p.testContext.mkTest {
   ];
   script = ''
     ${p.specification.python}/bin/python3 -B ${../../../../lib/tests/ordinary-rpaths.py} \
-      ${../ordinary/relocate.py} ${p.specification.patchelf}/bin/patchelf \
+      ${../../../../lib/relocate.py} ${p.specification.patchelf}/bin/patchelf \
       ${p.specification.coreutils}/bin/true >&2
     test -s ${sourceProbe}/source-marker
     test "$(cat ${suffix}/nix-support/final-control)" = selected

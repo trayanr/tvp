@@ -11,10 +11,11 @@ let
   base = builder.base {
     name = "source-gnu-candidate";
     inherit platform referencePackages;
-    compiler = toolchain.driver;
-    shell = tools.bash;
-    coreutils = tools.coreutils;
-    standardTools =
+    tools = {
+      gcc = toolchain.driver;
+      inherit (tools) bash coreutils;
+    }
+    // (
       if standardTools != null then
         standardTools
       else
@@ -25,6 +26,7 @@ let
           gnumake = tools.make;
           gnutar = tools.tar;
           inherit (tools)
+            file
             cmake
             ninja
             perl
@@ -38,8 +40,9 @@ let
             diffutils
             findutils
             ;
-        };
-    tools = [
+        }
+    );
+    baselineTools = [
       tools.coreutils
       tools.linker
     ];

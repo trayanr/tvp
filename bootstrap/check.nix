@@ -25,7 +25,7 @@ tvp.builder {
       ];
     };
   args = {
-    base = tvp.bases.default;
+    base = tvp.__legacyBases.gcc_16_2_0;
     inherit (tvp.packages) bash coreutils;
     python = tvp.packages.python_3;
   };

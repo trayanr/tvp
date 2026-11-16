@@ -13,10 +13,15 @@ let
     }
   ];
   pname = "gnu-config";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "git-head";
+      # Savannah's direct HTTPS transport for the canonical config.git repository.
+      url = "https://https.git.savannah.gnu.org/git/config.git";
+      ref = "refs/heads/master";
+      revisions."2026-05-17" = revision;
+    };
     source =
       { sha256, ... }:
       pkgs.fetchgit {
@@ -26,14 +31,12 @@ let
         fetchSubmodules = false;
       };
     tests = import ./tests;
-    testDeps.sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
+    testDeps.sentinel = tvp.lib.tests.fixtures.sentinel;
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gnu-config = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gnu-config = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

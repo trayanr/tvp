@@ -1,0 +1,10 @@
+{
+  "4.9.4": {
+    "hash": "sha256-bBHSks0BspT5+EyaWcIw2A6eSkflxjVfBGuzbU81gJI=",
+    "url": "https://mirrors.kernel.org/gnu/gcc/gcc-4.9.4/gcc-4.9.4.tar.bz2"
+  },
+  "9.5.0": {
+    "hash": "sha256-J3afZO8dTNXivoaCwMk/mIeYPmz9GpJ85aCikVqVz48=",
+    "url": "https://mirrors.kernel.org/gnu/gcc/gcc-9.5.0/gcc-9.5.0.tar.xz"
+  }
+}

@@ -169,5 +169,5 @@ make
     inherit (package.runtime) python cmake ninja;
     pkgConfig = package.runtime.pkg-config;
     tar = package.specification.gnutar;
-    xz = (d.python.specification.xz or d.python.specification.base.standardTools.xz);
+    xz = (d.python.specification.xz or d.python.specification.base.tools.xz);
   }

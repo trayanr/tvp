@@ -23,13 +23,10 @@
 final:
 let
   inherit (tvp.builder) steps outputs;
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    base = final.base;
+    environment = final.environment;
+  };
   logged =
     name: run:
     command "pkg-config.${name}" ''
@@ -144,7 +141,7 @@ in
         enabled = doCheck;
       }
     )
-    (logged "install" ''${gnumake}/bin/make SHELL=${bash}/bin/bash install'')
+    (logged "install" "${gnumake}/bin/make SHELL=${bash}/bin/bash install")
     (steps.split "pkg-config.finalize")
     (outputs.copyArtifacts { inherit coreutils; })
     {

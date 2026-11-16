@@ -17,13 +17,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   elfPaths = [ "lib/libz.so.${final.installedInterface.libraryVersion}" ];
   checkpoint = "nix-support/zlib-build-tree";
@@ -114,7 +110,7 @@ in
       cwd = "source";
       tools = [ tools.python ];
       env = environment.env;
-      run = ''${tools.python}/bin/python3 -B ${../ordinary-compression-production.py} zlib ${tools.bash}/bin/bash ${../compression-source-tree.py}'';
+      run = "${tools.python}/bin/python3 -B ${../ordinary-compression-production.py} zlib ${tools.bash}/bin/bash ${../compression-source-tree.py}";
     }
     (command "zlib.configure" ''
       ${lib.optionalString (final.cStandard != null || final.cFlags != [ ])
@@ -124,7 +120,7 @@ in
       }
       ${lib.optionalString final.bindLowercaseCc ''cc="$CC"''} ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "zlib.build" ''${make} libz.a libz.so.${final.installedInterface.libraryVersion}'')
+    (command "zlib.build" "${make} libz.a libz.so.${final.installedInterface.libraryVersion}")
     (command "zlib.install" ''
       ${make} install
       mkdir -p "$out/nix-support"
@@ -140,11 +136,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "zlib.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "zlib.check" ''

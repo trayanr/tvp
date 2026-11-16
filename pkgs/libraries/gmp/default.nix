@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -85,14 +85,6 @@ in
 {
   recipes.gmp = family // {
     # Historical/frozen construction stays exact until coordinated activation.
-    constructionRecipe = import ./retained {
-      inherit
-        pkgs
-        tvp
-        versionTable
-        packageMeta
-        ;
-    };
   };
   inherit canonical;
   inherit (family) instantiate;

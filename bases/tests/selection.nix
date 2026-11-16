@@ -1,4 +1,4 @@
-# Public selections may advance; the generations constructing them stay pinned.
+# Public base families select genuine source-built compiler generations.
 {
   pkgs,
   tvp,
@@ -7,85 +7,102 @@
 let
   inherit (pkgs) lib;
   bases = tvp.bases;
-  parent16 = construction.bases.gcc13-owned-v3;
-  inputs16 = lib.attrValues construction.variants.gcc16;
-  constructionPaths16 = lib.concatMap (p: map (output: toString p.${output}) p.outputs) inputs16 ++ [
-    (toString parent16.stdenv.cc.libc)
-    (toString parent16.stdenv.cc.libc.bin)
+  contexts = tvp.__legacyBases;
+  selections = [
+    {
+      alias = "gcc_4";
+      exact = "gcc_4_9_4";
+      version = "4.9.4";
+    }
+    {
+      alias = "gcc_9";
+      exact = "gcc_9_5_0";
+      version = "9.5.0";
+    }
+    {
+      alias = "gcc_13";
+      exact = "gcc_13_3_0";
+      version = "13.3.0";
+    }
+    {
+      alias = "gcc_16";
+      exact = "gcc_16_2_0";
+      version = "16.2.0";
+    }
   ];
   contracts = {
-    active-gcc16 =
-      bases.default.name == "gcc16-owned"
-      && bases.gcc16.stdenv.drvPath == bases.gcc16-owned.stdenv.drvPath;
-    retired-v2 = !(bases ? gcc13-owned-v2) && !(bases ? gcc13-owned);
-    measured-compat =
-      bases.gcc13-owned-v3.stdenv.drvPath == construction.bases.gcc13-owned-v3.stdenv.drvPath
-      && tvp.packages.acl_2_3_0.tvp.base == "gcc13-owned-v3"
-      && tvp.packages.acl_2_3_1.tvp.base == "gcc13-owned-v3"
+    selectors =
+      builtins.attrNames bases == [
+        "default"
+        "gcc_13"
+        "gcc_13_3_0"
+        "gcc_16"
+        "gcc_16_2_0"
+        "gcc_4"
+        "gcc_4_9_4"
+        "gcc_9"
+        "gcc_9_5_0"
+      ];
+    majorAliases = lib.all (
+      x:
+      bases.${x.alias}.full.compiler.drvPath == bases.${x.exact}.full.compiler.drvPath
+      && bases.${x.alias}.full.compiler.version == x.version
+    ) selections;
+    default = bases.default.compiler.drvPath == bases.gcc_16.full.compiler.drvPath;
+    actualStages =
+      lib.all (x: builtins.attrNames bases.${x.alias} == [ "full" ]) (lib.take 3 selections)
       &&
-        tvp.packages.acl_2_3_2.specification.base.compiler.drvPath == (import ../source-gnu { })
-        .base.compiler.drvPath;
-    no-construction-api = !(tvp ? bootstrap) && !(tvp ? construction) && !(tvp ? recipes);
-    retired-public = !(bases ? gcc13) && !(tvp.variants ? gcc13) && !(tvp.variants ? gcc13-owned);
-    pinned-gcc16-inputs =
-      builtins.length inputs16 == 18
-      && construction.variants.gcc16.gcc_16_2_0.tvp.bootstrap
-      && lib.all (
-        p:
-        p.tvp.base == parent16.name
-        && p.tvp.variant == "gcc16"
-        && p.stdenv.drvPath == parent16.stdenv.drvPath
-        && lib.all (dep: builtins.elem (toString dep) constructionPaths16) (
-          lib.attrValues (p.tvp.deps or { })
-        )
-      ) inputs16;
-    pinned-parent =
-      bases.default.builtBy == "internal:gcc13-owned-v3"
-      && construction.bases.gcc13-owned.builtBy == "gcc13";
-    pinned-fixup =
-      bases.default.fixupTools.patchelf.drvPath
-      == construction.variants.gcc13-owned.patchelf_0_19_2.drvPath
-      &&
-        construction.variants.gcc13-owned.patchelf_0_19_2.stdenv.drvPath
-        == construction.bases.gcc13-owned.stdenv.drvPath;
-    source-owned-patchelf =
-      tvp.packages.patchelf_0_19_2.specification.base.compiler.drvPath == (import ../source-gnu { })
-      .base.compiler.drvPath;
-    source-owned-tools =
-      lib.all
-        (
-          p:
-          p.specification.base.compiler.drvPath == (import ../source-gnu { }).base.compiler.drvPath
-          && p.tvp.base == "source-gnu-candidate"
-        )
-        [
-          tvp.packages.bash
-          tvp.packages.binutils
-          tvp.packages.which
-          tvp.packages.patch
+        builtins.attrNames bases.gcc_16 == [
+          "full"
+          "reduced"
+          "runtime"
+          "seed"
         ];
-    source-owned-gcc16 =
-      tvp.packages.gcc_16_2_0.tvp.base == "source-gnu-candidate"
-      &&
-        tvp.packages.gcc_16_2_0.specification.base.compiler.drvPath == (import ../source-gnu { })
-        .base.compiler.drvPath
-      && tvp.packages.gcc_16_2_0.rawCompiler;
-    source-owned-glibc =
-      tvp.packages.glibc_2_39.tvp.base == "source-gnu-candidate"
-      && tvp.packages.glibc_2_39.specification.gcc.drvPath == tvp.packages.gcc_16_2_0.drvPath
-      &&
-        tvp.packages.glibc_2_39.specification.base.compiler.drvPath == (import ../source-gnu { })
-        .base.compiler.drvPath;
-    canonical-tools =
-      tvp.packages.gcc_13_3_0.tvp.base == "source-gnu-candidate"
-      && tvp.packages.gcc_13_3_0.rawCompiler
-      && tvp.packages.gcc_13_3_0.specification.glibc.drvPath == bases.default.stdenv.cc.libc.drvPath;
+    ownedContexts = lib.all (
+      x:
+      let
+        b = bases.${x.alias}.full;
+      in
+      !(b ? stdenv)
+      && b.tools.gcc.drvPath == b.compiler.drvPath
+      && b.tools.bash.drvPath == b.shell.drvPath
+    ) selections;
+    sourceCompilers = lib.all (
+      x:
+      let
+        c = bases.${x.alias}.full.compiler.tvp.deps.compiler;
+      in
+      c ? artifact && c ? specification && c.artifact.drvPath != c.drvPath
+    ) selections;
+    retainedRecipesUseSameProviders = lib.all (
+      x:
+      let
+        b = contexts.${x.exact};
+      in
+      b.stdenv.cc.drvPath == bases.${x.alias}.full.compiler.drvPath
+      && b.ownedBase.compiler.drvPath == b.stdenv.cc.drvPath
+    ) selections;
+    noRetiredConstructionVariants = construction.variants == { };
+    noLegacyPublicAPI = !(tvp ? baseTiers) && !(tvp ? bootstrap) && !(tvp ? recipes);
+    historicalStatuses = lib.all (p: p.tvp.status.level == "broken" && p ? artifact) (
+      map (n: tvp.canonical.${n}) [
+        "readline_2_0"
+        "zlib_0_71"
+        "zlib_0_79"
+        "zlib_0_8"
+        "zlib_0_9"
+        "zlib_0_91"
+        "zlib_0_92"
+        "zlib_0_93"
+        "zlib_0_94"
+        "zlib_0_95"
+        "zlib_0_99"
+      ]
+    );
+    targetLibc =
+      tvp.packages.gcc_13_3_0.specification.glibc.drvPath == bases.gcc_16.full.compiler.libc.drvPath;
   };
-  failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) contracts);
+  failed = lib.attrNames (lib.filterAttrs (_: ok: !ok) contracts);
 in
-if failed != [ ] then
-  throw "TVP: base selection contracts failed: ${lib.concatStringsSep ", " failed}"
-else
-  pkgs.runCommand "tvp-base-selection" { } ''
-    printf '%s\n' ${lib.escapeShellArgs (lib.attrNames contracts)} > "$out"
-  ''
+assert failed == [ ] || throw "TVP base selection: ${lib.concatStringsSep ", " failed}";
+pkgs.writeText "tvp-source-base-selections" (builtins.toJSON contracts)

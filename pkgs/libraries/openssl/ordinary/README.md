@@ -1,9 +1,9 @@
 # Ordinary OpenSSL upstream isolation
 
 The five complete procedures cover 213 supported ordinary releases. Six broken
-0.9.6 releases, native newest 3.6.3/4.0.1 and the retained constructionRecipe keep
-their original procedures and test factories. They remain upstream-isolation
-UNAUDITED. CI and canonical runtime qualification are off.
+0.9.6 releases and the distinct newest 3.6.3/4.0.1 profiles have their own root
+procedures under the same family. Their upstream-isolation limits remain explicit;
+source staging is not runtime qualification. CI remains off.
 
 A compiles and installs production products, then saves a bounded prepared native
 tree under `nix-support/upstream-build-tree`. The existing single split gives F

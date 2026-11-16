@@ -24,13 +24,10 @@ in
 final:
 let
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    base = final.base;
+    environment = final.environment;
+  };
 in
 {
   pname = "libxcrypt";

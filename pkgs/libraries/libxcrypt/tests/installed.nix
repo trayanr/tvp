@@ -5,7 +5,7 @@
 }:
 let
   commonTools =
-    with package.specification.base.standardTools;
+    with package.specification.base.tools;
     [
       sed
       grep

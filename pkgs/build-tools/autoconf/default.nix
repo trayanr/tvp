@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -116,10 +116,24 @@ let
     }
   ];
   pname = "autoconf";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/autoconf/";
+        pattern = "autoconf-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "autoconf-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        # autoconf-latest.tar.gz is a moving alias and is excluded by requiring
+        # a leading digit. Betas live on alpha.gnu.org, not here.
+        include = version: builtins.match "[0-9].*" version != null;
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -133,16 +147,14 @@ let
       alternatePerl = (import ../../../bases/source-gnu { }).tools.perl;
       alternateM4 = (import ../../../bases/source-gnu { }).tools.m4;
       runtimeShell = tvp.packages.bash_5;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.autoconf = family // {
-    constructionRecipe = retained;
-  };
+  recipes.autoconf = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {

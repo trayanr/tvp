@@ -5,15 +5,8 @@
 }:
 let
   providers = import ./tool-providers.nix;
-  tools = builtins.mapAttrs providers.tag (
-    (base.standardTools or { })
-    // {
-      bash = base.shell;
-      coreutils = base.coreutils;
-      binutils = base.compiler.bintools;
-    }
-  );
-  defaults = tools // {
+  tools = builtins.mapAttrs providers.tag base.tools;
+  defaults = (builtins.removeAttrs tools [ "gcc" ]) // {
     inherit base;
     tar = tools.gnutar;
   };

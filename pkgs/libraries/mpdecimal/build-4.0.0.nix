@@ -17,13 +17,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "mpdecimal.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "mpdecimal.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/mpdecimal-build-tree";
   headerDirectory = "include";
@@ -116,11 +113,11 @@ in
       compression = "gzip";
     })
     (
-      (command "prepare" ''${tools.python}/bin/python3 -B ${../ffi-decimal-source.py} ${tools.bash}/bin/bash ${
+      (command "prepare" "${tools.python}/bin/python3 -B ${../ffi-decimal-source.py} ${tools.bash}/bin/bash ${
         lib.escapeShellArg (
           builtins.toJSON (final.sourceLayout // { patches = map (p: "${p}") final.patches; })
         )
-      } '')
+      } ")
       // {
         tools = environment.tools ++ [ tools.python ];
       }
@@ -152,11 +149,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "mpdecimal.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "mpdecimal.upstream-source";
       tools = [ tools.python ];
@@ -201,32 +197,30 @@ in
               "include"
               "nix-support"
             ];
-            requiredFiles =
+            requiredFiles = [
+              "include/mpdecimal.h"
+              "lib/pkgconfig/libmpdec.pc"
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
+            ++ lib.optionals final.buildFeatures.cxx (
               [
-                "include/mpdecimal.h"
-                "lib/pkgconfig/libmpdec.pc"
+                "include/decimal.hh"
+                "lib/pkgconfig/libmpdec++.pc"
               ]
-              ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
-              ++ lib.optionals final.buildFeatures.cxx (
-                [
-                  "include/decimal.hh"
-                  "lib/pkgconfig/libmpdec++.pc"
-                ]
-                ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
-              );
-            requiredRegular =
+              ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
+            );
+            requiredRegular = [
+              "include/mpdecimal.h"
+              "lib/pkgconfig/libmpdec.pc"
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
+            ++ lib.optionals final.buildFeatures.cxx (
               [
-                "include/mpdecimal.h"
-                "lib/pkgconfig/libmpdec.pc"
+                "include/decimal.hh"
+                "lib/pkgconfig/libmpdec++.pc"
               ]
-              ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
-              ++ lib.optionals final.buildFeatures.cxx (
-                [
-                  "include/decimal.hh"
-                  "lib/pkgconfig/libmpdec++.pc"
-                ]
-                ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
-              );
+              ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
+            );
             libtoolData = [ ];
           }
         )
@@ -256,7 +250,7 @@ in
       dlopenDirectories = final.runtime.dlopenDirectories;
     })
     (outputs.development { libraries = [ ]; })
-    ((import ../gdbm/ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = tools.python;
       binutils = tools.binutils;
       patchelf = tools.patchelf;

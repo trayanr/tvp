@@ -13,13 +13,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/bzip2-build-tree";
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash CC=cc'';
   elfPaths = [
     "bin/bzip2"
@@ -77,7 +73,7 @@ in
       tools = [ tools.python ];
       # The shared production-only helper is supplied by the XZ candidate.
       # The original combined helper remains exact for earlier callers.
-      run = ''${tools.python}/bin/python3 -B ${../../libraries/ordinary-compression-production.py} bzip2 ${tools.bash}/bin/bash ${../../libraries/compression-source-tree.py}'';
+      run = "${tools.python}/bin/python3 -B ${../../libraries/ordinary-compression-production.py} bzip2 ${tools.bash}/bin/bash ${../../libraries/compression-source-tree.py}";
     }
     (command "bzip2.build" ''
       # Upstream static objects intentionally reuse the shared build's PIC objects.
@@ -102,11 +98,10 @@ in
     '')
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "bzip2.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck = (command "bzip2.check" "${make} check") // {
     enabled = final.doCheck;

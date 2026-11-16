@@ -5,7 +5,7 @@
 }:
 let
   deps = package.tvp.deps;
-  tools = (package.specification.base.standardTools or { }) // {
+  tools = (package.specification.base.tools or { }) // {
     binutils = package.specification.base.compiler.bintools;
   };
   tcl = deps.tcl;

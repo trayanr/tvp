@@ -8,6 +8,6 @@
 import ./installed.nix {
   inherit package lib;
   context = context // {
-    callerPackages = pkgs;
+    callerPackages = package.testConfiguration.pkgs or pkgs;
   };
 }

@@ -52,26 +52,24 @@ strict error handling, historical known failures and skips remain unwaived.
 The historical profile keeps its indexed-integer regression; latest3.53.4 keeps
 its native feature/Tcl/discovery contracts without acquiring a new test policy.
 
-## Explicit historical callers
+## Construction callers and broken releases
 
-`retained-construction.nix`, `retained/build-3.0.0.nix`,
-`retained/build-3.48.0.nix`, the unchanged `3.nix` and `tests/default.nix` retain
-the historical stdenv constructor contract. The GCC13-owned test-public graph
-and consumer `.rebuild` route continue to use that recipe, original Tcl/Readline
-selectors and original installed assertions. These are construction roles,
-not ordinary mkFamily admission or an implicit fallback.
+Construction callers use `family.instantiate` with explicit earlier bases and
+dependencies. The duplicate tables, old stdenv procedures and caller factory have
+been removed. The ordinary directory contains active protocol helpers, not a
+second package index.
 
-Broken3.2.8 remains an explicit excluded historical record: upstream omits
-`src/os_unix.h`. Its hash, status, reason and needs are unchanged; no owned
-constructor is applied to that incomplete source. Original source-stage notes
-are retained in `retained/README.md` as historical evidence, not current proof.
+Broken 3.2.8 keeps its hash, status, reason and needs: upstream omits `src/os_unix.h`.
+It now has an owned split plan in the same family, which does not repair the
+incomplete archive or qualify that release.
 
-## Current bounded validation
+## Recorded bounded validation
 
 All 269 supported definitions and source/edit/isolation contracts evaluate.
-All 270 production identities, including broken 3.2.8, compare exact against the
-pre-authoring source. The current 3.53.4 normal batch passes all 19 leaves,
-including its existing upstream route. Earlier construction/compiler/frozen inputs
-remain exact. Other releases are not newly executed in this authoring pass.
+The earlier comparison covered 270 production identities against its pre-authoring
+source; those identities are not an acceptance requirement for the current cleanup.
+The recorded 3.53.4 normal batch passed all 19 leaves, including its upstream route.
+That receipt applies to its bound inputs. Changed outputs are not newly qualified
+by this source cleanup.
 Native source-reconstruction debt is MIG-018; historical failures and all broader
 holds remain unwaived. Existing proofs apply only to their bound producer IDs.

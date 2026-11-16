@@ -40,21 +40,19 @@ let
       };
     tests = import ./tests;
     testDeps = {
-      alternateShell = tvp.baseTiers.seed.shell;
+      alternateShell = tvp.bases.gcc_16.seed.shell;
       runtimeShell = tvp.packages.bash_5;
       alternateCoreutils = tvp.packages.coreutils;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.ninja = family // {
-    constructionRecipe = import ./retained { inherit pkgs tvp; };
-  };
+  recipes.ninja = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };
