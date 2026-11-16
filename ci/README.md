@@ -50,8 +50,8 @@ add `ci:build`. The branch must already contain the **current** target tip: reba
 merge master into it before testing. CI tests that exact PR head and never constructs
 a merge commit. A behind or diverged branch gets a pending `tvp/full` instruction
 without a full build. New commits requeue automatically while the label remains. Both PRs and
-master run the full catalogue. Existing local Nix outputs are reused; there is no TVP
-binary-cache service yet. Fork PRs require a later disposable VM worker pool.
+master run the full catalogue. The worker reuses its local outputs and its configured
+signed private NAS cache. Fork PRs require a later disposable VM worker pool.
 
 Use squash merge after the exact head passes. Require `tvp/full` and an up-to-date
 branch in GitHub's merge protection. After another PR lands, update remaining branches
@@ -61,6 +61,28 @@ after admission also stops a queued PR before Nix evaluation; update it and requ
 On GitHub, inspect the `tvp/full` status for counts and failing versions. The local
 Buildbot UI provides the queue, Rebuild action and complete failure logs. Buildbot binds
 to localhost; a host-managed reverse proxy or SSH tunnel can provide private access.
+
+## Reusing workstation builds
+
+The private deployment has a separate Tower-to-NAS publisher. A plain `nix build`
+on Tower stays local. Register an explicitly selected frozen terminal runner run
+with the installed cache operator, then verify its publication:
+
+```sh
+tvp-cache-lifecycle register NAME /absolute/frozen/run --publish
+tvp-cache-lifecycle ready NAME
+```
+
+Partial runs retain `full=false`. Declare the valid construction and compiler
+outputs needed by the candidate among the run's owned roots: a runtime closure can
+omit build-time bootstrap dependencies. The worker's Nix configuration supplies
+the cache URI and trusted public keys. Full `tvp/full` validation remains required.
+
+For a large backfill, hold the PR's `ci:build` admission until its cache is ready.
+Cancel only superseded requests through the authenticated operator interface, then
+restore the label. A push alone leaves older queued and running requests intact.
+Host services, signing credentials, deployment addresses and retention records are
+managed outside this repository.
 
 ## Check the CI configuration locally
 

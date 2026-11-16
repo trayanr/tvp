@@ -11,9 +11,12 @@ state are maintained separately from the repository.
 - TVP's existing frozen-plan runner builds **the entire catalogue and its checks** for
   every admitted PR and every master update. No changed-package-only shortcut.
 - Keep the active Nix store on local SSD and reuse its outputs between builds.
-  No TVP binary-cache service, signing or publication in this first version.
-- The NAS is the archive tier and future master binary-cache storage, not a
-  network mount for the active Nix store or controller database.
+  The private deployment's existing cache operator publishes frozen workstation
+  outputs to a signed NAS-backed work cache consumed by the worker. Signing and
+  publication are managed separately from the CI controller.
+- The NAS holds archives and the private work cache. The active Nix store and
+  controller database stay on local disk. Public master-cache activation is a
+  separate later phase.
 - The development workstation stays independent: develop new packages and fixes there
   while the builder processes queued expansion requests.
 
