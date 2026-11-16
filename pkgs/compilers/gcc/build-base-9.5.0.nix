@@ -105,6 +105,9 @@ in
     final.zlib
   ];
   environment = {
+    # Old Libtool drops -B from shared-link arguments. The native GCC driver
+    # also reads startup-file search from this build-only environment value.
+    overrides.values.LIBRARY_PATH = "${lib.getLib libc}/lib";
     libraries = [ ];
     tools = [
       tools.coreutils

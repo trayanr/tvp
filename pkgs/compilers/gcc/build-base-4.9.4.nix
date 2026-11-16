@@ -77,6 +77,7 @@ in
     ./patches/base-4.9.4-parallel-generators.patch
     ./patches/base-4.9.4-source-date-epoch.patch
     ./patches/base-4.9.4-reload-counter.patch
+    ./patches/base-4.9.4-ucontext.patch
   ];
   capabilities = {
     languages = [
@@ -107,6 +108,9 @@ in
     final.zlib
   ];
   environment = {
+    # Old Libtool drops -B from shared-link arguments. The native GCC driver
+    # also reads startup-file search from this build-only environment value.
+    overrides.values.LIBRARY_PATH = "${lib.getLib libc}/lib";
     libraries = [ ];
     tools = [
       tools.coreutils

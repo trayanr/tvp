@@ -74,20 +74,94 @@ def object_paths(data, old, new):
     return data
 
 
+def load_path_entries(data, old):
+    """Bound the known load-path array when a preceding constant has no NUL."""
+    if len(data) < 64 or data[:7] != b'\x7fELF\x02\x01\x01':
+        raise ValueError('expected ELF64 Ruby load-path array')
+    kind, machine, version = struct.unpack_from('<HHI', data, 16)
+    shoff = struct.unpack_from('<Q', data, 40)[0]
+    shsize, shnum, names = struct.unpack_from('<HHH', data, 58)
+    if (kind not in (2, 3) or machine != 62 or version != 1
+            or shsize != 64 or not 0 < names < shnum or shoff < 64
+            or shoff + 64 * shnum > len(data)):
+        raise ValueError('unsupported Ruby symbol table layout')
+    sections = [struct.unpack_from('<IIQQQQIIQQ', data, shoff + 64*i) for i in range(shnum)]
+    for section in sections:
+        if section[1] != 8 and section[4] + section[5] > len(data):
+            raise ValueError('truncated Ruby symbol section')
+    strings = sections[names]
+    if strings[1] != 3:
+        raise ValueError('expected Ruby section names')
+    section_names = data[strings[4]:strings[4]+strings[5]]
+    owners = set()
+    for table in sections:
+        if table[1] not in (2, 11):
+            continue
+        if (table[9] != 24 or table[5] % 24 or not 0 < table[6] < shnum
+                or sections[table[6]][1] != 3):
+            raise ValueError('invalid Ruby symbol table')
+        strings = sections[table[6]]
+        strings = data[strings[4]:strings[4]+strings[5]]
+        for pos in range(table[4], table[4]+table[5], 24):
+            name, info, _, index, value, size = struct.unpack_from('<IBBHQQ', data, pos)
+            end = strings.find(b'\0', name)
+            if name >= len(strings) or end < 0:
+                raise ValueError('invalid Ruby symbol name')
+            if strings[name:end] != b'ruby_initial_load_paths':
+                continue
+            if info & 15 != 1 or not 0 < index < shnum or not size:
+                raise ValueError('expected defined Ruby load-path object')
+            section = sections[index]
+            name_end = section_names.find(b'\0', section[0])
+            name = section_names[section[0]:name_end]
+            if (section[0] >= len(section_names) or name_end < 0
+                    or not (name == b'.rodata' or name.startswith(b'.rodata.str'))
+                    or section[1] != 1 or section[2] & 7 != 2
+                    or value < section[3] or value + size > section[3] + section[5]):
+                raise ValueError('unsupported Ruby load-path object owner')
+            start = section[4] + value - section[3]
+            owners.add((start, start+size))
+    if len(owners) != 1:
+        raise ValueError('missing or ambiguous Ruby load-path object')
+    start, limit = owners.pop()
+    payload = data[start:limit]
+    if not payload.endswith(b'\0'):
+        raise ValueError('unterminated Ruby load-path object')
+    entries = {}
+    for entry in payload.rstrip(b'\0').split(b'\0'):
+        if (not entry or entry.count(old) != 1
+                or not (entry == old or entry.startswith(old+b'/'))
+                or any(c < 32 or c >= 127 for c in entry)):
+            raise ValueError('unsupported Ruby load-path entry')
+        entries[start] = (start, start+len(entry))
+        start += len(entry)+1
+    return entries
+
+
 def compiled_paths(data, hits, old, new):
     """Relocate Ruby's root and path constants in readonly ELF strings."""
     if len(old) != len(new) or old == new:
         raise ValueError('distinct equal-width prefixes required')
+    entries = None
+    changes = set()
     for hit in hits:
         if hit['section'] == '.dynstr':
             continue
         start, end = hit['stringStart'], hit['stringEnd']
+        if not hit['prefixAtStringStart']:
+            if entries is None:
+                entries = load_path_entries(data, old)
+            if hit.get('offset') not in entries:
+                raise ValueError('prefix is not a Ruby load-path entry')
+            start, end = entries[hit['offset']]
         if (not (hit['section'] == '.rodata' or hit['section'].startswith('.rodata.str'))
                 or not hit['readonlyAllocated']
-                or not hit['prefixAtStringStart'] or end < 0
+                or end < 0
                 or data[start:start+len(old)] != old or data[end:end+1] != b'\0'
                 or data[start+len(old):start+len(old)+1] not in (b'/', b'\0')):
             raise ValueError('unsupported Ruby compiled path string')
+        changes.add(start)
+    for start in sorted(changes):
         data = data[:start] + new + data[start+len(old):]
     return data
 

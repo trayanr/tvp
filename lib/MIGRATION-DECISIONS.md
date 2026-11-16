@@ -800,6 +800,23 @@ results remain recorded, and do not constitute full qualification.
   runtime lookup repair: retain compiled artifacts, mandatory native-extension
   checks, and the narrow per-library provider scopes. Do not select a symlink or
   broaden lookup repair to every extension merely to find the shared library.
+- For Ruby's NUL-separated initial load-path array, use its ELF object bounds
+  when a separate preceding constant has no trailing NUL. A previous-NUL search
+  alone can incorrectly attach that constant to the first path. Require the
+  named read-only object and validate every array entry before replacing bytes;
+  arbitrary embedded path strings remain rejected. This changes finalization
+  helpers, so compiled artifacts remain reusable while affected finals change.
+- Port GCC 4.9.4's two Linux unwind context declarations to `ucontext_t`, as in
+  GCC 9.5.0. The selected modern glibc no longer exposes the old `struct ucontext`
+  tag. Keep this patch in the 4.9.4 procedure, preserving the unwind algorithm
+  and runtime capability set. Its compilation artifact must be rebuilt.
+- Bind the selected libc startup directory through GCC 4.9/9's build-only
+  `LIBRARY_PATH` environment value. Their bundled Libtool drops bare `-B`
+  arguments, including those supplied through the target compiler command.
+  GCC's native driver reads `LIBRARY_PATH` directly for startup-file lookup;
+  library `-L` directories alone cannot locate `crti.o`. Preserve the original
+  target flags and shared runtime capability set.
+
 - Respect historical installed layouts and generator ordering. Automake1.4-p6
   uses its versioned data directory; libffi3.0.12/3.0.13 normalize their lib64
   artifacts in finalization; old Autoconf generates autom4te before parallel use.
