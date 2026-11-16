@@ -18,6 +18,11 @@
   registry = runtimeRegistry;
 })
 // {
+  node-build-python = import ../pkgs/runtimes/nodejs/tests/build-python.nix {
+    context = tvp.packages.nodejs.testContext;
+    python = tvp.packages.nodejs.specification.python;
+  };
+
   shared-helper-filesystem = import ../lib/tests/shared-helper-filesystem.nix {
     inherit (pkgs) lib;
     builder = tvp.builder;
