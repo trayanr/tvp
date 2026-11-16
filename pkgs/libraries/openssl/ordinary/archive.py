@@ -60,6 +60,7 @@ def relocate(data, old, new, readelf, replace):
                 if s[1]!=8 and s[4]+s[5]>len(member):
                     raise ValueError('truncated section')
             pos=0
+            ranges=set()
             while True:
                 hit=member.find(old,pos)
                 if hit<0: break
@@ -80,11 +81,15 @@ def relocate(data, old, new, readelf, replace):
                 prefix=member[start:hit]
                 if not path_prefix(prefix):
                     raise ValueError(('unexpected archive self string',prefix))
+                ranges.add((start,stop))
+                pos=hit+len(old)
+            # A string can contain several directory macros. Inspect every
+            # original occurrence before replacing any of them.
+            for start,stop in sorted(ranges):
                 value=replace(member[start:stop],old,new)
                 if len(value)!=stop-start:
                     raise ValueError('archive relocation changed width')
                 member=member[:start]+value+member[stop:]
-                pos=hit+len(old)
             edits.append((begin,end,member))
         cursor=end+(size%2)
     if cursor!=len(data):

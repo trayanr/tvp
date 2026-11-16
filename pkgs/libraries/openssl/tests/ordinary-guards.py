@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import subprocess
+import struct
 import unittest
 import sys
 
@@ -150,6 +151,47 @@ class Guards(unittest.TestCase):
                        b'not compiler: cc -DOPENSSLDIR="',
                        b'compiler: cc -DOPENSSLDIR="prefix']:
             self.assertFalse(archive.path_prefix(prefix))
+
+    def test_archive_validates_all_original_path_occurrences(self):
+        def fixture(payload):
+            # A real minimal ELF64 ET_REL member, requiring no C compilation.
+            names = b'\0.rodata\0.shstrtab\0'
+            member = bytearray(64) + payload
+            names_offset = len(member)
+            member += names
+            member += bytes(-len(member) % 8)
+            sections_offset = len(member)
+            member += bytes(64)
+            member += struct.pack('<IIQQQQIIQQ', 1, 1, 2, 0, 64, len(payload), 0, 0, 1, 0)
+            member += struct.pack('<IIQQQQIIQQ', 9, 3, 0, 0, names_offset, len(names), 0, 0, 1, 0)
+            ident = b'\x7fELF\x02\x01\x01' + bytes(9)
+            member[:64] = struct.pack('<16sHHIQQQIHHHHHH', ident, 1, 62, 1,
+                                     0, 0, sections_offset, 0, 64, 0, 0, 64, 3, 2)
+            header = (b'probe.o/        ' + b'0           ' + b'0     ' + b'0     '
+                      + b'644     ' + str(len(member)).encode().ljust(10) + b'`\n')
+            return b'!<arch>\n' + header + member + (b'\n' if len(member) % 2 else b'')
+
+        old, new = self.old.encode(), str(self.root).encode()
+        supported = b'-DOPENSSLDIR="' + old + b'/ssl"'
+        engines = b'-DENGINESDIR="' + old + b'/lib/engines"'
+        unsupported = b'-DSOURCE_DIR="' + old + b'/private"'
+        for flags, accepted in [
+            (supported, True),
+            (unsupported, False),
+            (supported + b' ' + unsupported, False),
+            (unsupported + b' ' + supported, False),
+            (supported + b' ' + engines, True),
+        ]:
+            with self.subTest(flags=flags):
+                original = fixture(b'compiler: cc ' + flags + b'\0')
+                if not accepted:
+                    with self.assertRaisesRegex(ValueError, 'unexpected archive self string'):
+                        archive.relocate(original, old, new, config['readelf'], helper.replace_paths)
+                else:
+                    relocated = archive.relocate(original, old, new, config['readelf'], helper.replace_paths)
+                    self.assertEqual(len(relocated), len(original))
+                    self.assertNotIn(old, relocated)
+                    self.assertEqual(relocated.count(new), original.count(old))
 
     def test_raw_link_components_fail_before_mutation(self):
         (self.root/'lib/plain').write_text('regular')
