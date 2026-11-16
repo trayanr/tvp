@@ -83,18 +83,15 @@ in
       "_tkinter"
       "_uuid"
     ];
-  }
-  // buildFeatures;
+  } // buildFeatures;
   sourceLayout = {
     compression = "xz";
-  }
-  // sourceLayout;
+  } // sourceLayout;
   installedInterface = {
     finalizeEx = true;
     embedFlag = true;
     textSubprocess = true;
-  }
-  // installedInterface;
+  } // installedInterface;
   upstreamPolicy = {
     modules = [
       "test_ssl"
@@ -108,8 +105,7 @@ in
       "test_zlib"
       "test_readline"
     ];
-  }
-  // upstreamPolicy;
+  } // upstreamPolicy;
   libraries = {
     inherit
       openssl
@@ -123,13 +119,14 @@ in
       ncurses
       ;
   };
-  dependencyProviders = {
-    inherit (final) pkg-config grep;
-  }
-  // final.runtime.providers
-  // {
-    runtimeBash = final.runtime.shell;
-  };
+  dependencyProviders =
+    {
+      inherit (final) pkg-config grep;
+    }
+    // final.runtime.providers
+    // {
+      runtimeBash = final.runtime.shell;
+    };
   environment = {
     overrides.values.LIBS = "-lm";
     tools = [

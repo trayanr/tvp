@@ -43,14 +43,12 @@ in
     "missing"
     "depcomp"
     "compile"
-  ]
-  ++ final.additionalSourceScripts;
+  ] ++ final.additionalSourceScripts;
   installedInterface = {
     hasPkgConfig = false;
     sonameMajor = "4";
     mpfrRoundingNames = true;
-  }
-  // installedInterface;
+  } // installedInterface;
   stripFlags = [
     "-S"
     "-p"
@@ -128,8 +126,7 @@ in
     (outputs.relocateText {
       paths = [
         "lib/libmpfr.la"
-      ]
-      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
+      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
     })
     (outputs.strip {
       paths = elfPaths;

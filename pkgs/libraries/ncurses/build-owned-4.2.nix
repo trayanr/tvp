@@ -74,8 +74,7 @@ in
     (if final.features.shared then "--with-shared" else "--without-shared")
     (if final.features.static then "--with-normal" else "--without-normal")
     (if final.features.widec then "--enable-widec" else "--disable-widec")
-  ]
-  ++ lib.optional (!final.cxxBinding) "--without-cxx-binding";
+  ] ++ lib.optional (!final.cxxBinding) "--without-cxx-binding";
 
   environment = {
     tools = [

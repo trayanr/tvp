@@ -65,8 +65,7 @@ rec {
                 tools = [
                   package
                   coreutils
-                ]
-                ++ tools;
+                ] ++ tools;
                 inherit libraries;
                 overrides = environment;
               })

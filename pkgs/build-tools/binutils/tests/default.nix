@@ -52,10 +52,12 @@ context.mkSuite {
       expected = "tvp";
     };
     c = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ ${./fixtures/hello.c} -o hello
-        ./hello
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ ${./fixtures/hello.c} -o hello
+          ./hello
+        '';
       expected = "tvp";
       tools =
         cc
@@ -66,13 +68,15 @@ context.mkSuite {
         ]);
     };
     cxx = {
-      script = selectTools + ''
-        # Raw ld does not inject the runtime RPATHs normally supplied by the
-        # borrowed bintools wrapper. Name this compiler's C++ runtime.
-        c++ -B${binutils}/bin/ ${./fixtures/hello.cc} \
-          -Wl,-rpath,${builtins.head package.specification.base.compiler.runtimeDirectories} -o hello
-        ./hello
-      '';
+      script =
+        selectTools
+        + ''
+          # Raw ld does not inject the runtime RPATHs normally supplied by the
+          # borrowed bintools wrapper. Name this compiler's C++ runtime.
+          c++ -B${binutils}/bin/ ${./fixtures/hello.cc} \
+            -Wl,-rpath,${builtins.head package.specification.base.compiler.runtimeDirectories} -o hello
+          ./hello
+        '';
       expected = "42";
       tools =
         cc
@@ -83,10 +87,12 @@ context.mkSuite {
         ]);
     };
     lto = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ -flto ${./fixtures/hello.c} -o hello
-        ./hello
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ -flto ${./fixtures/hello.c} -o hello
+          ./hello
+        '';
       expected = "tvp";
       tools =
         cc
@@ -97,15 +103,17 @@ context.mkSuite {
         ]);
     };
     archive = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ -c ${./fixtures/answer.c} -o answer.o
-        ar crs first.a answer.o
-        touch -d '2001-02-03 04:05:06 UTC' answer.o
-        ar crs second.a answer.o
-        cmp first.a second.a
-        cc -B${binutils}/bin/ ${./fixtures/call.c} first.a -o call
-        ./call
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ -c ${./fixtures/answer.c} -o answer.o
+          ar crs first.a answer.o
+          touch -d '2001-02-03 04:05:06 UTC' answer.o
+          ar crs second.a answer.o
+          cmp first.a second.a
+          cc -B${binutils}/bin/ ${./fixtures/call.c} first.a -o call
+          ./call
+        '';
       expected = "42";
       tools =
         cc
@@ -116,12 +124,14 @@ context.mkSuite {
         ]);
     };
     shared = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ -fPIC -c ${./fixtures/answer.c} -o answer.o
-        ld -shared -soname libanswer.so answer.o -o libanswer.so
-        cc -B${binutils}/bin/ ${./fixtures/call.c} -L. -lanswer -Wl,-rpath,"$PWD" -o call
-        ./call
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ -fPIC -c ${./fixtures/answer.c} -o answer.o
+          ld -shared -soname libanswer.so answer.o -o libanswer.so
+          cc -B${binutils}/bin/ ${./fixtures/call.c} -L. -lanswer -Wl,-rpath,"$PWD" -o call
+          ./call
+        '';
       expected = "42";
       tools =
         cc
@@ -132,19 +142,21 @@ context.mkSuite {
         ]);
     };
     debug-compression = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ -g ${./fixtures/hello.c} -o hello
-        objcopy --dump-section .debug_info=original.info hello
-        for format in zlib zstd; do
-          objcopy --compress-debug-sections="$format" hello compressed
-          readelf -SW compressed | grep '\.debug_info ' | grep -qE '[[:space:]]C[[:space:]]'
-          readelf --debug-dump=info compressed | grep -q DW_TAG_compile_unit
-          objcopy --decompress-debug-sections compressed restored
-          objcopy --dump-section .debug_info=restored.info restored
-          cmp original.info restored.info
-        done
-        printf ok
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ -g ${./fixtures/hello.c} -o hello
+          objcopy --dump-section .debug_info=original.info hello
+          for format in zlib zstd; do
+            objcopy --compress-debug-sections="$format" hello compressed
+            readelf -SW compressed | grep '\.debug_info ' | grep -qE '[[:space:]]C[[:space:]]'
+            readelf --debug-dump=info compressed | grep -q DW_TAG_compile_unit
+            objcopy --decompress-debug-sections compressed restored
+            objcopy --dump-section .debug_info=restored.info restored
+            cmp original.info restored.info
+          done
+          printf ok
+        '';
       expected = "ok";
       tools =
         cc
@@ -155,13 +167,15 @@ context.mkSuite {
         ]);
     };
     strip = {
-      script = selectTools + ''
-        cc -B${binutils}/bin/ -g ${./fixtures/hello.c} -o hello
-        readelf -SW hello | grep -q '\.debug_info '
-        strip --strip-debug hello
-        if readelf -SW hello | grep -q '\.debug_info '; then exit 1; fi
-        ./hello
-      '';
+      script =
+        selectTools
+        + ''
+          cc -B${binutils}/bin/ -g ${./fixtures/hello.c} -o hello
+          readelf -SW hello | grep -q '\.debug_info '
+          strip --strip-debug hello
+          if readelf -SW hello | grep -q '\.debug_info '; then exit 1; fi
+          ./hello
+        '';
       expected = "tvp";
       tools =
         cc

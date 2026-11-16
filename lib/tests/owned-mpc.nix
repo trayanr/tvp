@@ -292,7 +292,9 @@ let
                 test "$(env -i ./numeric)" = ok
                 env -i LD_DEBUG=libs ./numeric > /dev/null 2> loader
                 grep -F 'calling init: ${mpc}/lib/libmpc.so.3' loader
-                grep -F 'calling init: ${lib.getLib (builtins.elemAt mpc.runtime.libraries 1)}/lib/libmpfr.so.6' loader
+                grep -F 'calling init: ${
+                  lib.getLib (builtins.elemAt mpc.runtime.libraries 1)
+                }/lib/libmpfr.so.6' loader
                 grep -F 'calling init: ${p.tvp.deps.gmp}/lib/libgmp.so.10' loader
                 test ! -e ${mpc}/lib/libmpc.a
                 grep -E "^old_library=.{2}$" ${mpc}/lib/libmpc.la

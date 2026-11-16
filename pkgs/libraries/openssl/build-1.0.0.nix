@@ -139,8 +139,7 @@ in
   };
   features = {
     inherit (final.buildFeatures) shared static;
-  }
-  // final.installedInterface;
+  } // final.installedInterface;
 
   stateScript = ./ordinary/build-state.py;
   stateManifest = ./ordinary/build-state.json;
@@ -229,10 +228,7 @@ in
   configureFlags = [
     "shared"
     "--openssldir=etc/ssl"
-  ]
-  ++ [ ]
-  ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
-  ++ final.compileFlags;
+  ] ++ [ ] ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}" ++ final.compileFlags;
   environment = {
     tools = [
       tools.coreutils

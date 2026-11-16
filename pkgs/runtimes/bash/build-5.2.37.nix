@@ -35,8 +35,7 @@ in
   buildFeatures = {
     cStandard = "gnu17";
     configureFlags = [ ];
-  }
-  // buildFeatures;
+  } // buildFeatures;
   environment = {
     tools = [
       tools.gnumake

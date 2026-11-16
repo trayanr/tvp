@@ -292,17 +292,16 @@ rec {
         builder = import recipe.builder;
         currentExtraArgs =
           extraArgs
-          //
-            lib.optionalAttrs
-              (
-                rebindTests != null
-                && !(recipe ? testContext)
-                && extraArgs ? mkTests
-                && extraArgs.mkTests ? override
-              )
-              {
-                mkTests = rebindTests extraArgs.mkTests;
-              };
+          // lib.optionalAttrs
+            (
+              rebindTests != null
+              && !(recipe ? testContext)
+              && extraArgs ? mkTests
+              && extraArgs.mkTests ? override
+            )
+            {
+              mkTests = rebindTests extraArgs.mkTests;
+            };
 
         pkg = lib.makeOverridable builder (
           builtins.intersectAttrs (builtins.functionArgs builder) infra

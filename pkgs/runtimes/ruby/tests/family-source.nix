@@ -9,7 +9,8 @@ let
   variants = lib.mapAttrs (_: lib.filterAttrs (name: _: families name)) tvp.variants;
   inventory = tvp.lib.recipeSplits.inventory { inherit canonical variants; };
   all =
-    builtins.attrValues canonical ++ lib.concatMap builtins.attrValues (builtins.attrValues variants);
+    builtins.attrValues canonical
+    ++ lib.concatMap builtins.attrValues (builtins.attrValues variants);
   candidate = import ../../../../bases/source-gnu { };
   checks =
     p:

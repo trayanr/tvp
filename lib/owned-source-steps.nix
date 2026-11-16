@@ -53,8 +53,7 @@
       tools = [
         tar
         codec
-      ]
-      ++ lib.optional (findutils != null) findutils;
+      ] ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
         PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${

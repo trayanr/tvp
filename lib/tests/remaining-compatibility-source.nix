@@ -102,129 +102,130 @@ let
         inherit lib;
         context = p.testContext;
       };
-      checks = {
-        noOpOverride =
-          (p.override { }).drvPath == p.drvPath && (p.override { }).artifact.drvPath == p.artifact.drvPath;
-        noOpEdit = (p.edit (x: x)).drvPath == p.drvPath;
-        sourceOverride =
-          sourceOverride.artifact.drvPath != p.artifact.drvPath && sourceOverride.src == source;
-        sourceEdit = sourceEdit.artifact.drvPath != p.artifact.drvPath && sourceEdit.drvPath != p.drvPath;
-        prefixEdit = prefix.artifact.drvPath != p.artifact.drvPath;
-        suffixReuse = suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
-        runtimeReuse = runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
-        runtimeExpectation = builtins.elem s.coreutils runtime.runtime.libraries;
-        productionPartition =
-          parts.split
-          && builtins.length parts.first >= 5
-          && (builtins.head parts.second).name == "output.copy-artifacts";
-        realInstall = builtins.any (
-          step: lib.hasInfix "make" step.run && lib.hasInfix "install" step.run
-        ) parts.first;
-        transport =
-          lib.hasInfix "TVP_ARTIFACT_ROOT" (builtins.head parts.second).run && consumes p p.artifact;
-        noCheckInProduction = builtins.all (step: !(lib.hasSuffix ".check" step.name)) (
-          tvp.builder.steps.active (parts.first ++ parts.second)
-        );
-        checkReuse = unchecked.drvPath == p.drvPath && unchecked.artifact.drvPath == p.artifact.drvPath;
-        effectiveTool =
-          changedTools.artifact.drvPath != p.artifact.drvPath
-          &&
-            (
-              if family == "gdbm" then
-                changedTools.specification.base.standardTools.gnumake.drvPath
-              else
-                changedTools.tvp.deps.gnumake.drvPath
-            ) == s.coreutils.drvPath;
-        testsRebound = suffix.tests.version.passthru.package.drvPath == suffix.drvPath;
-        testFactory = p.tests.version.tvp.kind == "owned-test";
-        outputs = p.outputs == [ "out" ] && p.out.artifact.drvPath == p.artifact.drvPath;
-      }
-      // lib.optionalAttrs (s ? upstreamPlan) {
-        upstreamRegistered = p.tests ? upstream && p.tests.upstream.tvp.kind == "owned-test";
-        rawExecution = raw.specification.validationRole == "upstream-execution";
-        rawAcceptance =
-          consumes p.tests.upstream raw
-          && p.tests.upstream.specification.validation.factory == "owned.mkTest";
-        noReverseInput =
-          !(consumes p raw)
-          && !(consumes p.artifact raw)
-          && !(consumes p p.tests.upstream)
-          && !(consumes p.artifact p.tests.upstream);
-        testOnlyReuse =
-          validation.drvPath == p.drvPath && validation.artifact.drvPath == p.artifact.drvPath;
-        testOnlyChangesRaw = validation.tests.upstream.passthru.upstreamExecution.drvPath != raw.drvPath;
-        noCheckUnregisters = !(unchecked.tests ? upstream);
-      }
-      // lib.optionalAttrs (family == "acl") {
-        measuredCompiler =
-          p.tvp.base == "gcc_13_3_0" && p.tvp.cc.drvPath == tvp.__legacyBases.gcc_13_3_0.stdenv.cc.drvPath;
-        hardening =
-          !(s ? hardeningDisable)
-          && p.tvp.cc.defaultHardeningFlags == tvp.__legacyBases.gcc_13_3_0.stdenv.cc.defaultHardeningFlags;
-        attrPropagation = map toString p.development.libraries == [ (toString s.libraries.attr) ];
-      }
-      // lib.optionalAttrs (family == "gawk") {
-        oldFeatures =
-          !p.tvp.features.bignum && !(p.tvp.deps ? gmp) && !(p.tvp.deps ? mpfr) && !(p.tvp.deps ? readline);
-        dialect = s.cStandard == "gnu89" && s.hardeningDisable == [ "format" ];
-        equalWidth = builtins.stringLength p.artifact.outPath == builtins.stringLength p.outPath;
-        functionPassthru = p ? mkTests.override;
-        privateShellEditReusesProduction =
-          let
-            q = p.edit (x: x // { testShell = x.coreutils; });
-          in
-          q.artifact.drvPath == p.artifact.drvPath
-          && q.drvPath == p.drvPath
-          && q.tests.upstream.passthru.upstreamExecution.drvPath != raw.drvPath;
-        shellBindingReuse =
-          shellEdit.artifact.drvPath == p.artifact.drvPath && shellEdit.drvPath != p.drvPath;
-      }
-      // lib.optionalAttrs (family == "gmp") {
-        configureFlags =
-          lib.hasInfix "--with-pic" effective."gmp.configure"
-          && lib.hasInfix "--enable-cxx" effective."gmp.configure";
-        checkFlagsIsolated =
-          !(s.checkCFlags != [ ] && lib.hasInfix (builtins.head s.checkCFlags) effective."gmp.build");
-        reportedVersion = p.tvp.reportedVersion == (if p.version == "6.0.0a" then "6.0.0" else p.version);
-        cxxOverride = !(p.override { cxx = false; }).tvp.features.cxx;
-        functionPassthru = p ? mkTests.override;
-      }
-      // lib.optionalAttrs (family == "mpfr") {
-        functionPassthru = p ? mkTests.override;
-        libraryEdit =
-          libraryEdit.artifact.drvPath != p.artifact.drvPath
-          && libraryEdit.tvp.deps.gmp.drvPath == s.coreutils.drvPath;
-        oldCapabilities =
-          !p.tvp.features.float128 && p.tvp.features.mpfrRoundingNames == (p.version != "2.4.2");
-        gmpCeiling = p.tvp.deps.gmp.version == (if p.version == "3.1.6" then "6.3.0" else "5.0.5");
-      }
-      // lib.optionalAttrs (family == "mpc") {
-        functionPassthru = p ? mkTests.override;
-        libraryEdit =
-          libraryEdit.artifact.drvPath != p.artifact.drvPath
-          && libraryEdit.tvp.deps.gmp.drvPath == s.coreutils.drvPath;
-        mpfr3 =
-          p.tvp.deps.mpfr.version == "3.1.6" && p.tvp.deps.mpfr.drvPath == tvp.packages.mpfr_3.drvPath;
-      }
-      // lib.optionalAttrs (family == "gdbm") {
-        degraded = p.tvp.status.level == "degraded";
-        staticBoundary =
-          p.tvp.features.shared == (p.version == "1.8.1")
-          && p.tvp.features.compatLib == (p.version == "1.8.1");
-        noDummySuite = !(p.tests ? upstream) && s ? upstreamUnavailable;
-        failingControlsRetained =
-          unfilteredGdbm ? store
-          && unfilteredGdbm ? ndbm
-          && lib.hasInfix "store.c" (builtins.head unfilteredGdbm.store.buildSteps).run
-          && lib.hasInfix "ndbm.c" (builtins.head unfilteredGdbm.ndbm.buildSteps).run;
-        knownFailures =
-          p.version != "1.8.1"
-          ||
-            p.tvp.status.knownTestFailures == [
-              "store"
-              "ndbm"
-            ];
-      };
+      checks =
+        {
+          noOpOverride =
+            (p.override { }).drvPath == p.drvPath && (p.override { }).artifact.drvPath == p.artifact.drvPath;
+          noOpEdit = (p.edit (x: x)).drvPath == p.drvPath;
+          sourceOverride =
+            sourceOverride.artifact.drvPath != p.artifact.drvPath && sourceOverride.src == source;
+          sourceEdit = sourceEdit.artifact.drvPath != p.artifact.drvPath && sourceEdit.drvPath != p.drvPath;
+          prefixEdit = prefix.artifact.drvPath != p.artifact.drvPath;
+          suffixReuse = suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
+          runtimeReuse = runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
+          runtimeExpectation = builtins.elem s.coreutils runtime.runtime.libraries;
+          productionPartition =
+            parts.split
+            && builtins.length parts.first >= 5
+            && (builtins.head parts.second).name == "output.copy-artifacts";
+          realInstall = builtins.any (
+            step: lib.hasInfix "make" step.run && lib.hasInfix "install" step.run
+          ) parts.first;
+          transport =
+            lib.hasInfix "TVP_ARTIFACT_ROOT" (builtins.head parts.second).run && consumes p p.artifact;
+          noCheckInProduction = builtins.all (step: !(lib.hasSuffix ".check" step.name)) (
+            tvp.builder.steps.active (parts.first ++ parts.second)
+          );
+          checkReuse = unchecked.drvPath == p.drvPath && unchecked.artifact.drvPath == p.artifact.drvPath;
+          effectiveTool =
+            changedTools.artifact.drvPath != p.artifact.drvPath
+            &&
+              (
+                if family == "gdbm" then
+                  changedTools.specification.base.standardTools.gnumake.drvPath
+                else
+                  changedTools.tvp.deps.gnumake.drvPath
+              ) == s.coreutils.drvPath;
+          testsRebound = suffix.tests.version.passthru.package.drvPath == suffix.drvPath;
+          testFactory = p.tests.version.tvp.kind == "owned-test";
+          outputs = p.outputs == [ "out" ] && p.out.artifact.drvPath == p.artifact.drvPath;
+        }
+        // lib.optionalAttrs (s ? upstreamPlan) {
+          upstreamRegistered = p.tests ? upstream && p.tests.upstream.tvp.kind == "owned-test";
+          rawExecution = raw.specification.validationRole == "upstream-execution";
+          rawAcceptance =
+            consumes p.tests.upstream raw
+            && p.tests.upstream.specification.validation.factory == "owned.mkTest";
+          noReverseInput =
+            !(consumes p raw)
+            && !(consumes p.artifact raw)
+            && !(consumes p p.tests.upstream)
+            && !(consumes p.artifact p.tests.upstream);
+          testOnlyReuse =
+            validation.drvPath == p.drvPath && validation.artifact.drvPath == p.artifact.drvPath;
+          testOnlyChangesRaw = validation.tests.upstream.passthru.upstreamExecution.drvPath != raw.drvPath;
+          noCheckUnregisters = !(unchecked.tests ? upstream);
+        }
+        // lib.optionalAttrs (family == "acl") {
+          measuredCompiler =
+            p.tvp.base == "gcc_13_3_0" && p.tvp.cc.drvPath == tvp.__legacyBases.gcc_13_3_0.stdenv.cc.drvPath;
+          hardening =
+            !(s ? hardeningDisable)
+            && p.tvp.cc.defaultHardeningFlags == tvp.__legacyBases.gcc_13_3_0.stdenv.cc.defaultHardeningFlags;
+          attrPropagation = map toString p.development.libraries == [ (toString s.libraries.attr) ];
+        }
+        // lib.optionalAttrs (family == "gawk") {
+          oldFeatures =
+            !p.tvp.features.bignum && !(p.tvp.deps ? gmp) && !(p.tvp.deps ? mpfr) && !(p.tvp.deps ? readline);
+          dialect = s.cStandard == "gnu89" && s.hardeningDisable == [ "format" ];
+          equalWidth = builtins.stringLength p.artifact.outPath == builtins.stringLength p.outPath;
+          functionPassthru = p ? mkTests.override;
+          privateShellEditReusesProduction =
+            let
+              q = p.edit (x: x // { testShell = x.coreutils; });
+            in
+            q.artifact.drvPath == p.artifact.drvPath
+            && q.drvPath == p.drvPath
+            && q.tests.upstream.passthru.upstreamExecution.drvPath != raw.drvPath;
+          shellBindingReuse =
+            shellEdit.artifact.drvPath == p.artifact.drvPath && shellEdit.drvPath != p.drvPath;
+        }
+        // lib.optionalAttrs (family == "gmp") {
+          configureFlags =
+            lib.hasInfix "--with-pic" effective."gmp.configure"
+            && lib.hasInfix "--enable-cxx" effective."gmp.configure";
+          checkFlagsIsolated =
+            !(s.checkCFlags != [ ] && lib.hasInfix (builtins.head s.checkCFlags) effective."gmp.build");
+          reportedVersion = p.tvp.reportedVersion == (if p.version == "6.0.0a" then "6.0.0" else p.version);
+          cxxOverride = !(p.override { cxx = false; }).tvp.features.cxx;
+          functionPassthru = p ? mkTests.override;
+        }
+        // lib.optionalAttrs (family == "mpfr") {
+          functionPassthru = p ? mkTests.override;
+          libraryEdit =
+            libraryEdit.artifact.drvPath != p.artifact.drvPath
+            && libraryEdit.tvp.deps.gmp.drvPath == s.coreutils.drvPath;
+          oldCapabilities =
+            !p.tvp.features.float128 && p.tvp.features.mpfrRoundingNames == (p.version != "2.4.2");
+          gmpCeiling = p.tvp.deps.gmp.version == (if p.version == "3.1.6" then "6.3.0" else "5.0.5");
+        }
+        // lib.optionalAttrs (family == "mpc") {
+          functionPassthru = p ? mkTests.override;
+          libraryEdit =
+            libraryEdit.artifact.drvPath != p.artifact.drvPath
+            && libraryEdit.tvp.deps.gmp.drvPath == s.coreutils.drvPath;
+          mpfr3 =
+            p.tvp.deps.mpfr.version == "3.1.6" && p.tvp.deps.mpfr.drvPath == tvp.packages.mpfr_3.drvPath;
+        }
+        // lib.optionalAttrs (family == "gdbm") {
+          degraded = p.tvp.status.level == "degraded";
+          staticBoundary =
+            p.tvp.features.shared == (p.version == "1.8.1")
+            && p.tvp.features.compatLib == (p.version == "1.8.1");
+          noDummySuite = !(p.tests ? upstream) && s ? upstreamUnavailable;
+          failingControlsRetained =
+            unfilteredGdbm ? store
+            && unfilteredGdbm ? ndbm
+            && lib.hasInfix "store.c" (builtins.head unfilteredGdbm.store.buildSteps).run
+            && lib.hasInfix "ndbm.c" (builtins.head unfilteredGdbm.ndbm.buildSteps).run;
+          knownFailures =
+            p.version != "1.8.1"
+            ||
+              p.tvp.status.knownTestFailures == [
+                "store"
+                "ndbm"
+              ];
+        };
     in
     {
       inherit checks;

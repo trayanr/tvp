@@ -21,7 +21,12 @@ Field classification:
   outputs and artifactName define the transport, not independent runtime knobs.
 * R/U: existing factory-installed controls remain separate; no producer gates A/F.
 
-finalize.py explicitly imports the supplied standalone ELF inspector. The policy
+The `native` directory contains only Python helpers. Recipes and documentation
+stay outside it, so formatting them does not change the helper store input.
+Preparation and finalization use individual helper files; script rebinding uses
+the Python directory for its sibling import.
+
+`native/finalize.py` explicitly imports the supplied standalone ELF inspector. The policy
 recognizes loader/prefix/sysconf/cache/preload/trusted-library, locale/gconv/i18n,
 zoneinfo and getconf constants in readonly ELF/static members, exact text paths,
 and known self PT_INTERP with matching program headers. It preserves widths,

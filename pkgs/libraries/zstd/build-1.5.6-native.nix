@@ -61,10 +61,11 @@ let
     environment
     // {
       inherit name cwd;
-      run = ''
-        export PREFIX="$out"
-      ''
-      + run;
+      run =
+        ''
+          export PREFIX="$out"
+        ''
+        + run;
     };
   make = ''${final.tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash HAVE_ZLIB=1 HAVE_LZMA=1 HAVE_LZ4=0'';
   rpaths =

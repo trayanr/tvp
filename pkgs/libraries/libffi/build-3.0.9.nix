@@ -77,8 +77,7 @@ in
       "missing"
       "ltmain.sh"
       "mdate-sh"
-    ]
-    ++ final.additionalSourceScripts;
+    ] ++ final.additionalSourceScripts;
     shellFragments = {
       "ltmain.sh" = [
         "# Generated from ltmain.m4sh."
@@ -100,8 +99,7 @@ in
         after = "proc libffi_target_compile { source dest type options } {\n    global env\n    if {[file extension $source] eq \".c\" && $env(TVP_TEST_C_STANDARD) ne \"\"} {\n        lappend options \"additional_flags=-std=$env(TVP_TEST_C_STANDARD)\"\n    }";
         count = 1;
       }
-    ]
-    ++ final.testEdits;
+    ] ++ final.testEdits;
     documentedData = final.upstreamData;
   };
   configureFlags = [
@@ -243,15 +241,13 @@ in
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ]
-            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             requiredRegular = [
               "lib/libffi.la"
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ]
-            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             libtoolData = [ "lib/libffi.la" ];
           }
         )

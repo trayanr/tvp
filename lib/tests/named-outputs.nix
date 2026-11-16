@@ -398,19 +398,17 @@ let
       .artifact.outputs == validation.outputs;
     invalidBeforePayload =
       !(builtins.tryEval (
-        builtins.seq
-          (validation.edit (
-            s:
-            s
-            // {
-              outputs = [
-                "out"
-                "tests"
-              ];
-              plan = throw "must not force plan";
-            }
-          )).drvPath
-          true
+        builtins.seq (validation.edit (
+          s:
+          s
+          // {
+            outputs = [
+              "out"
+              "tests"
+            ];
+            plan = throw "must not force plan";
+          }
+        )).drvPath true
       )).success;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);

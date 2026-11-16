@@ -33,13 +33,17 @@ let
     // {
       tests = import ./tests {
         inherit tvpLib;
-        pkgs = { inherit lib; };
+        pkgs = {
+          inherit lib;
+        };
         base = selected;
       };
     }
   ) contexts;
   construction = {
-    bases = { inherit (canonical) gcc_13_3_0 gcc_16_2_0; };
+    bases = {
+      inherit (canonical) gcc_13_3_0 gcc_16_2_0;
+    };
     ownedBases = lib.mapAttrs (_: base: base.ownedBase) construction.bases;
     variants = { };
   };

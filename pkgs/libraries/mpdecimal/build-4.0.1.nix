@@ -196,30 +196,32 @@ in
               "include"
               "nix-support"
             ];
-            requiredFiles = [
-              "include/mpdecimal.h"
-              "lib/pkgconfig/libmpdec.pc"
-            ]
-            ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
-            ++ lib.optionals final.buildFeatures.cxx (
+            requiredFiles =
               [
-                "include/decimal.hh"
-                "lib/pkgconfig/libmpdec++.pc"
+                "include/mpdecimal.h"
+                "lib/pkgconfig/libmpdec.pc"
               ]
-              ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
-            );
-            requiredRegular = [
-              "include/mpdecimal.h"
-              "lib/pkgconfig/libmpdec.pc"
-            ]
-            ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
-            ++ lib.optionals final.buildFeatures.cxx (
+              ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
+              ++ lib.optionals final.buildFeatures.cxx (
+                [
+                  "include/decimal.hh"
+                  "lib/pkgconfig/libmpdec++.pc"
+                ]
+                ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
+              );
+            requiredRegular =
               [
-                "include/decimal.hh"
-                "lib/pkgconfig/libmpdec++.pc"
+                "include/mpdecimal.h"
+                "lib/pkgconfig/libmpdec.pc"
               ]
-              ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
-            );
+              ++ lib.optional final.buildFeatures.static "lib/libmpdec.a"
+              ++ lib.optionals final.buildFeatures.cxx (
+                [
+                  "include/decimal.hh"
+                  "lib/pkgconfig/libmpdec++.pc"
+                ]
+                ++ lib.optional final.buildFeatures.static "lib/libmpdec++.a"
+              );
             libtoolData = [ ];
           }
         )

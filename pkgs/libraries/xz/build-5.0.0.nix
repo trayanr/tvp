@@ -67,12 +67,10 @@ in
     multithreadedEncoder = false;
     threading = "yes";
     boundLess = true;
-  }
-  // buildFeatures;
+  } // buildFeatures;
   sourceLayout = {
     compression = "gzip";
-  }
-  // sourceLayout;
+  } // sourceLayout;
   installedInterface = {
     elfPaths = [
       "bin/xz"
@@ -83,8 +81,7 @@ in
     ];
     soname = "liblzma.so.5";
     prewriteGuards = true;
-  }
-  // installedInterface;
+  } // installedInterface;
   environment = {
     tools = [
       tools.gnumake

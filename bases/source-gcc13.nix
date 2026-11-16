@@ -12,7 +12,9 @@ let
   reference = import ../bootstrap/source-full-gcc.nix { inherit bootstrap; };
   inherit (reference) prerequisites native harness;
   args = {
-    tvp = { inherit builder; };
+    tvp = {
+      inherit builder;
+    };
     inherit lib;
     base = constructionBase;
     src = import <nix/fetchurl.nix> {
@@ -78,7 +80,9 @@ let
       upstream-audit =
         (import ../pkgs/compilers/gcc/tests/upstream-13.3.0.nix {
           inherit lib package;
-          tvp = { inherit builder; };
+          tvp = {
+            inherit builder;
+          };
         }).acceptance;
     };
   };
@@ -117,5 +121,7 @@ in
   base = full;
   # This procedure produces one complete GCC13 generation. Reusing earlier
   # GCC16 construction stages does not make them additional GCC13 products.
-  family = { inherit full; };
+  family = {
+    inherit full;
+  };
 }

@@ -36,13 +36,11 @@ in
     cStandard = null;
     linkUnwinder = false;
     zipfsImage = true;
-  }
-  // buildFeatures;
+  } // buildFeatures;
   installedInterface = {
     reportedVersion = final.version;
     pkgConfigVersion = final.version;
-  }
-  // installedInterface;
+  } // installedInterface;
   libraries = {
     inherit zlib libgcc;
   };

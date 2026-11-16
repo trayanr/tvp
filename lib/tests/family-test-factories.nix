@@ -38,15 +38,17 @@ let
       selected =
         (factory.override {
           helpers = "selected-helpers";
-          tests = { package, context, ... }: {
-            options = package.testConfiguration;
-            probe = context.mkTest {
-              inherit package;
-              name = "selected-factory";
-              script = "printf selected";
-              expected = "selected";
+          tests =
+            { package, context, ... }:
+            {
+              options = package.testConfiguration;
+              probe = context.mkTest {
+                inherit package;
+                name = "selected-factory";
+                script = "printf selected";
+                expected = "selected";
+              };
             };
-          };
         })
           rebound;
       fixtureSelection =
@@ -54,11 +56,13 @@ let
           sentinel = rebound;
           alternateSource = rebound;
           locale = rebound;
-          tests = { context, ... }: {
-            sentinel = context.fixtures.sentinel.drvPath;
-            alternate = context.fixtures.alternateSource.drvPath;
-            locale = context.fixtures.gnuLocale.drvPath;
-          };
+          tests =
+            { context, ... }:
+            {
+              sentinel = context.fixtures.sentinel.drvPath;
+              alternate = context.fixtures.alternateSource.drvPath;
+              locale = context.fixtures.gnuLocale.drvPath;
+            };
         })
           p;
     in
