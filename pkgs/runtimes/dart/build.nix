@@ -32,12 +32,11 @@ let
     // {
       inherit name;
       cwd = "source";
-      run =
-        ''
-          export XDG_CONFIG_HOME="$TVP_SOURCE_ROOT/work-cache/config" PUB_CACHE="$TVP_SOURCE_ROOT/work-cache/pub-cache"
-          mkdir -p "$XDG_CONFIG_HOME" "$PUB_CACHE"
-        ''
-        + run;
+      run = ''
+        export XDG_CONFIG_HOME="$TVP_SOURCE_ROOT/work-cache/config" PUB_CACHE="$TVP_SOURCE_ROOT/work-cache/pub-cache"
+        mkdir -p "$XDG_CONFIG_HOME" "$PUB_CACHE"
+      ''
+      + run;
     };
   dependencySources = map (
     entry:
@@ -77,15 +76,25 @@ in
   inherit (tools) bash coreutils;
   sourceLayout = {
     sourceLocks = import ./sources-3.13.7.nix;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   buildFeatures = {
     buildDevtoolsFromSources = false;
     useCipdToolchainStamps = false;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   inherit ca-certificates;
   dependencyProviders.ca-certificates = final.runtime.certificates;
   runtime = {
-    loader = if final.dynamicLinker == null then final.llvm.tvp.dynamicLinker else final.dynamicLinker;
+    # Family platform defaults are relative to libc; absolute caller overrides
+    # remain complete paths. LLVM owns the selected target runtime.
+    loader =
+      if final.dynamicLinker == null then
+        final.llvm.tvp.dynamicLinker
+      else if lib.hasPrefix "/" final.dynamicLinker then
+        final.dynamicLinker
+      else
+        "${target.libc}/${final.dynamicLinker}";
     libraries = [
       target.libc
       target.gccRuntime

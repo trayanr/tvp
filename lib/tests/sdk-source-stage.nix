@@ -156,6 +156,19 @@ let
       && environment.NIX_LDFLAGS == ""
       && !lib.hasSuffix "/llvm-as" environment.AS;
     loader = dart.tvp.dynamicLinker == dart.specification.llvm.tvp.dynamicLinker;
+    loaderArguments =
+      let
+        libc = dart.specification.llvm.specification.runtime.target.libc;
+        expected = "${libc}/lib/stage-loader.so";
+        relative = dart.override { dynamicLinker = "lib/stage-loader.so"; };
+        absolute = dart.override { dynamicLinker = expected; };
+        automatic = dart.override { dynamicLinker = null; };
+      in
+      relative.runtime.loader == expected
+      && absolute.runtime.loader == expected
+      && automatic.runtime.loader == dart.specification.llvm.tvp.dynamicLinker
+      && stableArtifact dart relative
+      && stableArtifact dart absolute;
     flutterSnapshotFinal =
       !(builtins.any (s: lib.hasInfix "--snapshot=" (s.run or "")) partition.first)
       && builtins.any (

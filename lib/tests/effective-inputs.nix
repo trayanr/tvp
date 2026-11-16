@@ -376,6 +376,13 @@ let
   );
   contracts = {
     inherit providers checks shells;
+    dartLoaders =
+      let
+        sdkContracts = (import ./sdk-source-stage.nix { inherit pkgs tvp; }).contractValues;
+      in
+      {
+        inherit (sdkContracts) loader loaderArguments;
+      };
     unpublishedFieldDoesNotLie =
       unknownField.tvp.deps.dependency.outPath == original.outPath
       && unknownField.drvPath == fixture.drvPath;
