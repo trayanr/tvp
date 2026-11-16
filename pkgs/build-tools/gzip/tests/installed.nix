@@ -230,7 +230,10 @@ context.mkSuite {
         test "$(env -i ./executable)" = executable
         env -i ${p}/bin/gzexe -d executable >&2
         test "$(env -i ./executable)" = executable
-        env -i ${p}/bin/zless --version | head -1 | grep -q 'zless (gzip)'
+        # Read the whole banner before checking it; head/grep can close a pipe
+        # while zless is still printing, causing a spurious SIGPIPE failure.
+        zless_version=$(env -i ${p}/bin/zless --version)
+        [[ "$zless_version" == 'zless (gzip)'* ]]
         for name in gunzip zcat gzexe zcmp zdiff zegrep zfgrep zforce zgrep zless zmore znew uncompress; do
           test "$(head -1 ${p}/bin/$name)" = '#!${p.runtime.shell}/bin/bash'
         done

@@ -123,7 +123,8 @@ in
 // lib.optionalAttrs (atLeast "5.2") {
   persistent-memory = recorded "persistent-memory" ''
     export LC_ALL=C
-    if ! ${awk} --version | grep -q PMA; then
+    ${awk} --version > awk-version
+    if ! grep -q PMA awk-version; then
       echo 'SKIP: build has no PMA support' | tee "$out/status"
       exit 0
     fi

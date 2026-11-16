@@ -143,8 +143,10 @@ context.mkSuite {
     rebound-tools = {
       tools = testTools ++ [ reboundTools ];
       script = ''
-        PATH=/no-tools ${reboundTools}/bin/ldd --version | head -1
-        PATH=/no-tools ${reboundTools}/bin/mtrace --version | head -1
+        PATH=/no-tools ${reboundTools}/bin/ldd --version > ldd-version
+        PATH=/no-tools ${reboundTools}/bin/mtrace --version > mtrace-version
+        head -1 ldd-version
+        head -1 mtrace-version
         grep -F 'eval "exec ${spec.perl}/bin/perl -S $0 $@"' ${reboundTools}/bin/mtrace >&2
       '';
       expected = "ldd (GNU libc) ${glibc.version}\nmtrace (GNU libc) ${glibc.version}";
