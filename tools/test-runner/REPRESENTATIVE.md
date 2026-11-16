@@ -3,8 +3,11 @@ latest applicable ordinary release per family through the release-table aliases,
 plus explicitly reasoned current profiles, contract checks and compatibility
 cases. The catalogue entries and all-version test plan remain available.
 
-At a fixed committed revision, evaluate `testPlans.<system>.text` and
-`testCatalogues.<system>.text`. The latter records the actual family aliases,
+At a fixed committed revision, materialize the plan with
+`nix build .#testPlans.x86_64-linux --out-link plan` (substitute the target system)
+and read the resulting JSON file. Its store references retain the frozen
+derivation graph without a shell build. Evaluate `testCatalogues.<system>.text`
+for the catalogue. It records the actual family aliases,
 complete eligible version identities, public profiles and all declared package
 outputs without retaining package-output contexts. A reviewed selection manifest
 (`tvp.representative-selection/v1`) binds their SHA256 hashes, subject and exact

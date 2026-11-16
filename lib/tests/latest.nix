@@ -93,19 +93,20 @@ let
     check:
     builtins.fromJSON (
       plain (
-        tests.compatibility.mkPlan {
-          pkgs = {
-            writeText = _: text: text;
-            stdenv.hostPlatform.system = "x86_64-linux";
-            linkFarm = _: _: {
-              overrideAttrs = _: { drvPath = "/model/aggregate.drv"; };
+        builtins.readFile (
+          tests.compatibility.mkPlan {
+            pkgs = {
+              stdenv.hostPlatform.system = "x86_64-linux";
+              linkFarm = _: _: {
+                overrideAttrs = _: { drvPath = "/model/aggregate.drv"; };
+              };
             };
-          };
-          batches = { };
-          checks.fixture = check;
-          canonical = { };
-          source = ./latest.nix;
-        }
+            batches = { };
+            checks.fixture = check;
+            canonical = { };
+            source = ./latest.nix;
+          }
+        )
       )
     );
   plan = makePlan (

@@ -132,7 +132,11 @@ rec {
         in
         [ selected ] ++ builtins.filter (output: output != selected) declared;
     in
-    pkgs.writeText "tvp-test-plan.json" (
+    # This file references the complete derivation graph. Materialize it during
+    # evaluation: a shell writer would bind-mount that entire graph merely to
+    # write JSON, exceeding the kernel mount limit for the full catalogue.
+    # toFile retains the drv references, and nix build can root the store file.
+    builtins.toFile "tvp-test-plan.json" (
       builtins.toJSON {
         schema = 1;
         inherit revision;
