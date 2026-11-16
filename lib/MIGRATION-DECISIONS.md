@@ -794,6 +794,12 @@ results remain recorded, and do not constitute full qualification.
   dependency. Add link-only search flags from the effective Readline provider;
   those Ruby artifacts must rebuild. Do not accept the Reline fallback as proof
   that the native extension exists.
+- Select Ruby's concrete shared-library filename by its upstream era. Ruby
+  2.0–2.3 use the API version (`major.minor.0`); Ruby 2.4 onward use the release
+  version. The SONAME and public aliases remain `major.minor`. This is a final
+  runtime lookup repair: retain compiled artifacts, mandatory native-extension
+  checks, and the narrow per-library provider scopes. Do not select a symlink or
+  broaden lookup repair to every extension merely to find the shared library.
 - Respect historical installed layouts and generator ordering. Automake1.4-p6
   uses its versioned data directory; libffi3.0.12/3.0.13 normalize their lib64
   artifacts in finalization; old Autoconf generates autom4te before parallel use.

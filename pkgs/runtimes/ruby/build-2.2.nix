@@ -257,7 +257,13 @@ in
     # their provider too; base and own-library lookups survive the helper.
     (lookup "ruby" [
       "bin/ruby"
-      "lib/libruby.so.${builtins.head (lib.splitString "-p" final.version)}"
+      # Upstream switched from API version to release version in Ruby 2.4.
+      "lib/libruby.so.${
+        if lib.versionOlder final.version "2.4" then
+          "${lib.versions.majorMinor final.version}.0"
+        else
+          builtins.head (lib.splitString "-p" final.version)
+      }"
     ] [ final.runtime.zlib ])
     (lookup "readline" [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ] [
       final.runtime.readline

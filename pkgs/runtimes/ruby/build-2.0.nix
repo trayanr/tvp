@@ -261,7 +261,8 @@ in
     # their provider too; base and own-library lookups survive the helper.
     (lookup "ruby" [
       "bin/ruby"
-      "lib/libruby.so.${builtins.head (lib.splitString "-p" final.version)}"
+      # Ruby 2.0/2.1 name the shared library after the API version.
+      "lib/libruby.so.${lib.versions.majorMinor final.version}.0"
     ] [ final.runtime.zlib ])
     (lookup "readline" [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ] [
       final.runtime.readline
