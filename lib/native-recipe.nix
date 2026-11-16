@@ -52,7 +52,8 @@ let
       # Older recipes may keep a dependency only in their arguments.
       # A runtime override may replace a default input without changing the
       # construction provider. Projections may target declared dependencies or
-      # registered active tool roles; unknown names remain errors below.
+      # registered base tool roles. Only active tools enter dependencies; a
+      # source-only test can remove steps without forcing their unused providers.
       dependencyProviders = specification.dependencyProviders or { };
       # Collect only active production providers; upstream plans may depend on A.
       usedTools =
@@ -181,7 +182,10 @@ let
     if unknown != [ ] then
       throw "TVP native recipe: unknown arguments: ${lib.concatStringsSep ", " unknown}"
     else if
-      lib.subtractLists (builtins.attrNames dependencies) (builtins.attrNames dependencyProviders) != [ ]
+      lib.subtractLists (
+        (builtins.attrNames dependencies)
+        ++ lib.optionals owned (builtins.attrNames (specification.base.tools or { }))
+      ) (builtins.attrNames dependencyProviders) != [ ]
     then
       throw "TVP native recipe: dependency provider projection contains undeclared names"
     else if

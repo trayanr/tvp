@@ -1,8 +1,7 @@
 { pkgs, tvp }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   # Captured earlier Perl is a preparation role, not an ordinary runtime dependency.
-  retainedPreparationPerl = tvp.lib.packages.withConstraint {
+  preparationPerl = tvp.lib.packages.withConstraint {
     category = "construction";
     reason = "Retained source-GNU perl is an explicit build-only host generation, independent of these target libraries and commands.";
   } (import ../../../bases/source-gnu { }).tools.perl;
@@ -12,7 +11,7 @@ let
       def = {
         builder = ./build-owned-4.2.nix;
         deps.gnu-config = tvp.packages.gnu-config;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "4.2" = "sha256-sW1GX3BpftY3VWv/pRD2u65LMVru9UPHfdHrs5o8znw=";
@@ -23,7 +22,7 @@ let
         builder = ./build-owned-4.2.nix;
         deps.gnu-config = tvp.packages.gnu-config;
         opts.cxxBinding = false;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       status = {
         level = "degraded";
@@ -50,7 +49,7 @@ let
             reason = "Preserve const UserData observational getters with the selected compiler; retain the existing source repair.";
           }
         ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "5.3" = "sha256-bKyXPdMfnnpQXkX/qbuCz6a0H4S0gy/XdeFYV+6bNdQ=";
@@ -67,7 +66,7 @@ let
             reason = "Preserve const UserData observational getters with the selected compiler; retain the existing source repair.";
           }
         ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "5.5" = "sha256-J6Y/OirJ0Twe2aCjPuRJfBmmtYELj5c452VKDhIiW5M=";
@@ -84,7 +83,7 @@ let
             reason = "Preserve const UserData observational getters with the selected compiler; retain the existing source repair.";
           }
         ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "5.8" = "sha256-UVl/if1TqpkDIZVOM+W0hpxKXuYTe/qAD5j5HUtrVLU=";
@@ -94,7 +93,7 @@ let
     {
       def = {
         builder = ./build-owned-6.0.nix;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "6.0" = "sha256-9VHCSzDOi/tultn1m0L76jD6OmEjOEFy+ecoS89kcmA=";
@@ -105,7 +104,7 @@ let
       def = {
         builder = ./build-owned-6.0.nix;
         opts.cxxStandard = null;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "6.2" = "sha256-MDBuDHbg+fHw3ph88cgqXCHhzmVouSJ/faW3HL6obJ0=";
@@ -117,7 +116,7 @@ let
     {
       def = {
         builder = ./build-owned-6.6.nix;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "6.6" = "sha256-NVtMu+2ICwOBoExGYXt2VuNiWF1S6c+Epn4gCbdJ/xE=";
@@ -126,7 +125,20 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/ncurses/";
+        pattern = "ncurses-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "ncurses-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        include = version: builtins.match "[0-9].*" version != null;
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
@@ -141,9 +153,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.ncurses = family // {
-    constructionRecipe = retained;
-  };
+  recipes.ncurses = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {

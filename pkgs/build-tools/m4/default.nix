@@ -1,6 +1,21 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
+    {
+      def = {
+        builder = ./build.nix;
+      };
+      status = {
+        level = "broken";
+        reason = "The bundled gnulib tests SIGSTKSZ in a preprocessor conditional (lib/c-stack.c), and glibc 2.34 redefined it from a constant to a sysconf() call, so the file no longer preprocesses.";
+        needs = "A period glibc (< 2.34). The code was correct when released; the substrate moved under it. Upstream's own fix was a full gnulib rewrite that arrived in 1.4.19, not a change TVP can apply backwards.";
+        blocked.package = "glibc<2.34";
+      };
+      releases = {
+        "1.4.17" = "sha256-POclEz7lUri0usp4N/t3KUCyXoGyqdySU3rq9zNTjJ4=";
+        "1.4.18" = "sha256-qyYzkhpc045IeXv1UhrSWb3EuXkHgDSjt5DX/sVJP6s=";
+      };
+    }
     {
       def = {
         builder = ./build.nix;
@@ -20,13 +35,18 @@ let
     }
   ];
   pname = "m4";
-  retained = import ./retained { inherit pkgs tvp; };
-  excludedVersions = pkgs.lib.filterAttrs (
-    _: entry: (entry.status.level or "ok") == "broken"
-  ) retained.versionTable;
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/m4/";
+      pattern = "m4-[0-9][^\"]*\\.tar\\.gz";
+      normalise = tvp.lib.versions.fromArchiveName {
+        prefix = "m4-";
+        suffixes = [ ".tar.gz" ];
+      };
+      include = version: builtins.match "[0-9].*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -39,24 +59,19 @@ let
       alternateCoreutils = tvp.packages.coreutils;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
     tests = import ./tests;
   };
-  canonical =
-    tvp.lib.packages.mkVersions family
-    // tvp.lib.packages.mkVersions (retained // { versionTable = excludedVersions; });
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.m4 = family // {
-    constructionRecipe = retained;
-    inherit excludedVersions;
-  };
+  recipes.m4 = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases {
     inherit pname canonical;
-    versionTable = versionTable // excludedVersions;
+    inherit versionTable;
   };
 }

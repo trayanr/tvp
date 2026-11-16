@@ -94,7 +94,7 @@ let
         ];
       };
     args = {
-      base = tvp.bases.default;
+      base = tvp.__legacyBases.gcc_16_2_0;
       inherit (tvp.packages) bash coreutils;
       gmp = tvp.packages.gmp_6;
       src = p.src;
@@ -135,27 +135,46 @@ let
       )
     ).override
       { inherit gmp; };
-  runtime = import ../runtime-expectation.nix { inherit lib; } {
+  runtimeContext = tvp.lib.tests.forBase {
+    builder = tvp.builder;
+    base = tvp.bases.gcc_16.full;
+    coreutils = tvp.bases.gcc_16.full.coreutils;
+  };
+  runtimeExpectation = import ../runtime-expectation.nix { inherit lib; };
+  runtime = runtimeExpectation {
     package = composed;
-    stdenv = composed.stdenv;
+    context = runtimeContext;
     python = tvp.packages.python_3;
   };
-  absent = runtime.overrideAttrs (old: {
-    name = "native-runtime-absent-control";
-    expectedLibraries = [ (builtins.unsafeDiscardStringContext tvp.packages.zlib.outPath) ];
-    installPhase = ''
-      if ( ${old.installPhase} ) 2> rejected.log; then
-        echo 'absent library incorrectly accepted' >&2; exit 1
-      fi
-      grep -F "Runtime libraries absent from package closure:" rejected.log
-      touch "$out"
-    '';
-  });
+  absent =
+    (runtimeExpectation {
+      package = composed // {
+        runtime.libraries = [ tvp.packages.zlib ];
+      };
+      context = runtimeContext;
+      python = tvp.packages.python_3;
+    }).editSteps
+      (
+        plan:
+        map (
+          step:
+          step
+          // {
+            run = ''
+              if ( ${step.run} ) 2> rejected.log; then
+                echo 'absent library incorrectly accepted' >&2; exit 1
+              fi
+              grep -F "Runtime libraries absent from package closure:" rejected.log
+              touch "$out"
+            '';
+          }
+        ) plan
+      );
   auditRunner =
     import ../build-step-runner.nix
       {
         inherit lib;
-        base = tvp.bases.default;
+        base = tvp.__legacyBases.gcc_16_2_0;
         inherit (tvp.packages) bash coreutils;
       }
       {
@@ -170,9 +189,10 @@ let
               touch "$out/bin/.tool-wrapped"
             '';
           }
-        ] ++ (import ../native-steps.nix { inherit lib; }).finalize { };
+        ]
+        ++ (import ../native-steps.nix { inherit lib; }).finalize { };
       };
-  auditControl = tvp.bases.default.stdenv.mkDerivation {
+  auditControl = tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
     name = "native-shared-build-path-audit-control";
     buildCommand = ''
       mkdir workspace
@@ -189,23 +209,22 @@ let
     fixture.editSteps (_: [
       {
         name = "epoch.prepare";
-        run =
-          ''
-            mkdir -p "$out"
-          ''
-          + lib.optionalString (mode == "valid") ''
-            printf '%s\n' 1700000000 > source-date-epoch
-          ''
-          + lib.optionalString (mode == "invalid") ''
-            mkdir source-date-epoch
-          '';
+        run = ''
+          mkdir -p "$out"
+        ''
+        + lib.optionalString (mode == "valid") ''
+          printf '%s\n' 1700000000 > source-date-epoch
+        ''
+        + lib.optionalString (mode == "invalid") ''
+          mkdir source-date-epoch
+        '';
       }
       {
         name = "epoch.read";
         run = ''printf '%s\n' "''${SOURCE_DATE_EPOCH-unset}" > "$out/observed"'';
       }
     ]);
-  epochControl = tvp.bases.default.stdenv.mkDerivation {
+  epochControl = tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
     name = "native-source-epoch-control";
     buildCommand = ''
       mkdir missing-work valid-work invalid-work
@@ -226,7 +245,7 @@ let
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Native recipe contracts: ${lib.concatStringsSep ", " failed}";
-(tvp.bases.default.stdenv.mkDerivation {
+(tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
   name = "tvp-native-recipe-contracts";
   buildCommand = ''
     test -e ${composed.tests.run}

@@ -1,54 +1,29 @@
 { pkgs, tvp }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."zstd";
-  retained = prior.constructionRecipe or prior;
-  full = tvp.baseTiers.full;
-  earlier = import ../../../bases/source-gnu { };
-  profileBase = full.override {
-    shell = tvp.packages.bash;
-    coreutils = tvp.packages.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
+  full = tvp.bases.gcc_16.full;
+  variantBase = full.override {
+    tools = {
+      bash = tvp.packages.bash;
+      coreutils = tvp.packages.coreutils;
+      gnumake = tvp.packages.gnumake;
       gnutar = tvp.packages.gnutar;
       gzip = tvp.packages.gzip;
-      gnumake = tvp.packages.gnumake;
       sed = tvp.packages.gnused;
       grep = tvp.packages.gnugrep;
       diffutils = tvp.packages.diffutils;
-      findutils = tvp.packages.findutils;
+      python = tvp.packages.python-build_3;
+      patchelf = tvp.packages.patchelf_0;
     };
   };
-  variantBase =
-    (import ../../../bases/tiers/construction.nix {
-      inherit (pkgs) lib;
-      builder = tvp.builder;
-    } tvp.bases.default).override
-      {
-        shell = tvp.packages.bash;
-        coreutils = tvp.packages.coreutils;
-        standardTools = {
-          gnumake = tvp.packages.gnumake;
-          gnutar = tvp.packages.gnutar;
-          gzip = tvp.packages.gzip;
-          sed = tvp.packages.gnused;
-          grep = tvp.packages.gnugrep;
-          diffutils = tvp.packages.diffutils;
-          python = tvp.packages.python-build_3;
-          patchelf = tvp.packages.patchelf_0;
-        };
-      };
   pname = "zstd";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-1.5.6-native.nix;
-        base = profileBase;
         deps = {
           zlib = tvp.packages.zlib_1;
           xz = tvp.packages.xz_5;
-          binutils = earlier.tools.binutils;
+
         };
       };
       releases = {
@@ -58,11 +33,10 @@ let
     {
       def = {
         builder = ./build-1.5.7-native.nix;
-        base = profileBase;
         deps = {
           zlib = tvp.packages.zlib_1;
           xz = tvp.packages.xz_5;
-          binutils = earlier.tools.binutils;
+
         };
       };
       releases = {
@@ -70,10 +44,20 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // { };
-  rawFamily = tvp.lib.packages.mkFamily {
+  testDeps = {
+    gzip = tvp.packages.gzip;
+    python = tvp.packages.python_3;
+  };
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    packageMeta = {
+      upstream = {
+        type = "git-tags";
+        url = "https://github.com/facebook/zstd";
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -81,24 +65,6 @@ let
         inherit sha256;
       };
     tests = import ./tests;
-  };
-  family = rawFamily // {
-    extraArgs.mkTests = pkgs.lib.makeOverridable (
-      { tests }:
-      package:
-      (tests {
-        package = package;
-        lib = pkgs.lib;
-        context = package.testContext;
-      })
-      // pkgs.lib.optionalAttrs ((package.tvp.variant or null) == "build-steps") {
-        runtime-expectation = import ../../../lib/runtime-expectation.nix { inherit (pkgs) lib; } {
-          inherit package;
-          stdenv = tvp.bases.default.stdenv;
-          python = tvp.packages.python_3;
-        };
-      }
-    ) { tests = import ./tests; };
   };
   canonical = tvp.lib.packages.mkVersions family;
   variants = tvp.lib.packages.mkVariants (
@@ -110,16 +76,14 @@ let
         versions."1.5.7".deps = {
           zlib = tvp.packages.zlib_1;
           xz = tvp.packages.xz_5;
-          binutils = tvp.bases.default.stdenv.cc.bintools.bintools;
+          binutils = full.compiler.bintools;
         };
       };
     }
   );
 in
 {
-  recipes."zstd" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."zstd" = family;
   inherit canonical;
   inherit (family) instantiate;
   inherit variants;

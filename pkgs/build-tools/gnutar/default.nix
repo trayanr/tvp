@@ -1,47 +1,21 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."gnutar";
-  retained = prior.constructionRecipe or prior;
-  full = tvp.baseTiers.full;
-  earlier = import ../../../bases/source-gnu { };
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = full;
-    bash = full.shell;
-    coreutils = full.coreutils;
-    tar = full.standardTools.gnutar;
-    xz = full.standardTools.xz;
-    libc = full.compiler.libc;
-  };
-  profileBase = full.override {
-    standardTools = {
-      gnumake = earlier.tools.make;
-      gnutar = earlier.tools.tar;
-      xz = earlier.tools.xz;
-      gzip = earlier.tools.gzip;
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
-      sed = earlier.tools.sed;
-      grep = earlier.tools.grep;
-      gawk = earlier.tools.gawk;
-      diffutils = earlier.tools.diffutils;
-      findutils = earlier.tools.findutils;
-      perl = earlier.tools.perl;
-    };
-  };
+  full = tvp.bases.gcc_16.full;
+  locale =
+    (tvp.lib.tests.fixtures.forBase {
+      builder = tvp.builder;
+      base = full;
+    }).gnuLocale;
   pname = "gnutar";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-1.32-native.nix;
-        base = profileBase;
         deps = {
           acl = tvp.lib.packages.withConstraint {
             reason = "Tar's static three-argument acl_*_at helpers collide with ACL 2.4; retain the supported 2.3 API line.";
           } tvp.packages.acl_2_3;
           attr = tvp.packages.attr_2;
-          binutils = earlier.tools.binutils;
         };
       };
       releases = {
@@ -53,13 +27,11 @@ let
     {
       def = {
         builder = ./build-1.35-native.nix;
-        base = profileBase;
         deps = {
           acl = tvp.lib.packages.withConstraint {
             reason = "Tar's static three-argument acl_*_at helpers collide with ACL 2.4; retain the supported 2.3 API line.";
           } tvp.packages.acl_2_3;
           attr = tvp.packages.attr_2;
-          binutils = earlier.tools.binutils;
         };
       };
       releases = {
@@ -67,16 +39,16 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
+  testDeps = {
     inherit locale;
     gzip = tvp.packages.gzip;
     bzip2 = tvp.packages.bzip2_1;
     xz = tvp.packages.xz_5;
     zstd = tvp.packages.zstd_1;
   };
-  rawFamily = tvp.lib.packages.mkFamily {
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    packageMeta.upstream = import ./upstream.nix;
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -85,37 +57,10 @@ let
       };
     tests = import ./tests;
   };
-  family = rawFamily // {
-    extraArgs.mkTests =
-      pkgs.lib.makeOverridable
-        (
-          {
-            tests,
-            locale,
-            helpers ? null,
-          }:
-          package:
-          (tests {
-            package = package // {
-              testConfiguration = {
-                inherit locale helpers;
-              };
-            };
-            lib = pkgs.lib;
-            context = package.testContext;
-          })
-        )
-        {
-          tests = import ./tests;
-          inherit locale;
-        };
-  };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."gnutar" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."gnutar" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

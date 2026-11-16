@@ -1,15 +1,9 @@
 { pkgs, tvp }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.ruby;
-  retainedBase = import ../../../bases/tiers/construction.nix {
-    inherit (pkgs) lib;
-    builder = tvp.builder;
-  } tvp.bases.default;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-2.0.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -52,7 +46,6 @@ let
     {
       def = {
         builder = ./build-2.0.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -85,7 +78,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -119,7 +111,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -149,7 +140,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -178,7 +168,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -204,7 +193,6 @@ let
     {
       def = {
         builder = ./build-2.6.0.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -236,7 +224,6 @@ let
     {
       def = {
         builder = ./build-2.6.0.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -260,7 +247,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -284,7 +270,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -317,7 +302,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -348,7 +332,6 @@ let
     {
       def = {
         builder = ./build-2.7.4.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -375,7 +358,6 @@ let
     {
       def = {
         builder = ./build-2.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = (
@@ -405,7 +387,6 @@ let
     {
       def = {
         builder = ./build-3.1.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -426,7 +407,6 @@ let
     {
       def = {
         builder = ./build-3.1.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -448,7 +428,6 @@ let
     {
       def = {
         builder = ./build-3.2.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -459,8 +438,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
         opts = {
@@ -485,7 +464,6 @@ let
     {
       def = {
         builder = ./build-3.3.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -495,8 +473,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
         opts = {
@@ -518,7 +496,6 @@ let
     {
       def = {
         builder = ./build-3.3.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -528,8 +505,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
         opts = {
@@ -544,7 +521,6 @@ let
     {
       def = {
         builder = ./build-3.3.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -554,8 +530,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
         opts = {
@@ -572,7 +548,6 @@ let
     {
       def = {
         builder = ./build-3.3.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -582,8 +557,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
       };
@@ -601,7 +576,6 @@ let
     {
       def = {
         builder = ./build-3.3.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl;
@@ -611,8 +585,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
       };
@@ -639,7 +613,6 @@ let
     {
       def = {
         builder = ./build-4.0.nix;
-        base = retainedBase;
         dependencyNames = s: builtins.attrNames s.dependencyProviders;
         deps = {
           openssl = tvp.packages.openssl_3;
@@ -649,8 +622,8 @@ let
           rustc = (
             tvp.lib.packages.withConstraint {
               category = "construction";
-              reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-            } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1
+              reason = "Exact Rust distribution for the named Ruby source profile.";
+            } tvp.packages.rustc_1_97_1
           );
         };
       };
@@ -683,7 +656,36 @@ let
   pname = "ruby";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta testDeps;
+    packageMeta = {
+      upstream = {
+        # One TSV listing every tarball back to 0.49, rather than one request per
+        # minor directory. It also carries each sha256.
+        type = "directory-index";
+        url = "https://cache.ruby-lang.org/pub/ruby/index.txt";
+        pattern = "ruby-[0-9][^[:space:]]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "ruby-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        # Patchlevel tarballs (1.8.7-p374) are real releases and stay.
+        include =
+          version:
+          !(
+            pkgs.lib.hasInfix "preview" version
+            || pkgs.lib.hasInfix "-rc" version
+            || pkgs.lib.hasInfix "beta" version
+          );
+      };
+    };
+    testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
+      category = "artifact";
+      kind = "exact";
+      namespace = "bases";
+      selector = "gcc_13_3_0.full.compiler";
+      reason = "Independent GCC 13 consumer control against Ruby built by GCC 16; preserves cross-compiler extension coverage, not a compatibility limit.";
+    } tvp.bases.gcc_13_3_0.full.compiler;
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -698,19 +700,17 @@ let
     // {
       inherit pkgs;
       profiles.build-steps = {
-        base = retainedBase;
+        base = tvp.bases.gcc_16.full;
         versions."4.0.6".deps.rustc = tvp.lib.packages.withConstraint {
           category = "construction";
-          reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-        } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1;
+          reason = "Exact Rust distribution for the named Ruby source profile.";
+        } tvp.packages.rustc_1_97_1;
       };
     }
   );
 in
 {
-  recipes.ruby = family // {
-    constructionRecipe = retained;
-  };
+  recipes.ruby = family;
   inherit canonical variants;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

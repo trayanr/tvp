@@ -39,7 +39,7 @@ let
     }
     {
       def = {
-        builder = ./build-1.8.2.nix;
+        builder = ./build-1.8.1.nix;
         deps.file = tvp.packages.file;
         opts = {
           configureHost = true;
@@ -85,7 +85,7 @@ let
     }
     {
       def = {
-        builder = ./build-1.8.2.nix;
+        builder = ./build-1.8.1.nix;
         deps.file = tvp.packages.file;
       };
       releases = {
@@ -207,10 +207,25 @@ let
     }
   ];
   pname = "gdbm";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/gdbm/";
+        pattern = "gdbm-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "gdbm-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
@@ -225,9 +240,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gdbm = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gdbm = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

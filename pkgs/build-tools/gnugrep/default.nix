@@ -1,17 +1,11 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./retained { inherit pkgs tvp; }).recipes.gnugrep;
-  testBase = tvp.baseTiers.full;
-  testTools = testBase.standardTools;
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = testBase;
-    bash = testBase.shell;
-    coreutils = testBase.coreutils;
-    tar = testTools.gnutar;
-    xz = testTools.xz;
-    libc = testBase.compiler.libc;
-  };
+  testBase = tvp.bases.gcc_16.full;
+  locale =
+    (tvp.lib.tests.fixtures.forBase {
+      builder = tvp.builder;
+      base = testBase;
+    }).gnuLocale;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -39,7 +33,18 @@ let
   pname = "gnugrep";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/grep/";
+      # Capture the entire filename, including suffixes, before validating it.
+      pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
+      normalise =
+        file:
+        let
+          archive = builtins.match "grep-([0-9]+(\\.[0-9]+)+)\\.tar\\.(gz|bz2|xz)" file;
+        in
+        if archive == null then null else builtins.head archive;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -54,9 +59,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gnugrep = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gnugrep = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

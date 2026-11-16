@@ -16,13 +16,10 @@ let
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/ncurses-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "ncurses.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "ncurses.${name}";
 in
 {
   pname = "ncurses";
@@ -126,11 +123,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "ncurses.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "check" ''${tools.gnumake}/bin/make -C test -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'')
@@ -218,7 +214,7 @@ in
       python = tools.python;
       libraries = [ ];
     })
-    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       elfKinds = [ "runtime" ];
       python = tools.python;
       binutils = tools.binutils;

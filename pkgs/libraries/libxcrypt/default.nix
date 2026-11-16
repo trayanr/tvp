@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -32,7 +32,6 @@ let
       in
       if matched == null then null else builtins.head matched;
   };
-  retained = import ./retained.nix { inherit pkgs tvp; };
   pname = "libxcrypt";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable packageMeta;
@@ -45,16 +44,16 @@ let
     tests = import ./tests/installed.nix;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;
-      # Same constrained producer and lazy retained factory closure as before.
-      baseline = retained.testDeps.baseline;
+      baseline = tvp.lib.packages.withConstraint {
+        category = "artifact";
+        reason = "Historical libxcrypt 4.4.36 crypt-format ABI baseline, instantiated from the current family.";
+      } (family.instantiate { version = "4.4.36"; });
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.libxcrypt = family // {
-    constructionRecipe = retained;
-  };
+  recipes.libxcrypt = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

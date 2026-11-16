@@ -2,25 +2,44 @@
 
 How TVP is laid out and why, so a change lands where the next person expects to find it.
 
-New and migrated recipes follow the owned-builder contract below. Retained stdenv
-procedures document compatibility and frozen construction; they do not define the
-authoring pattern for new packages. The source-owned candidate base remains explicit
-until the default-switch validation gate is complete.
+All 110 ordinary family indexes follow the owned-builder contract below.
+Construction callers use those same families with explicit earlier providers;
+there are no captured old package indexes or alternate constructor routes.
+Low-level source-bootstrap recipes and compatibility fixtures remain separate.
+All 1,540 inventoried package/profile rows have artifact/final splits, including
+20 releases still declared broken. These source properties do not certify runtime
+qualification or waive historical holds.
 
 ## The tree
 
 ```
-bases/                        the ground packages are built on; `tvp.bases`
-├── default.nix               default and compatibility bases, pinned bootstrap inputs
-├── stdenv/                   vendored build protocol and native constructor
-├── wrappers/                 native compiler and linker wrappers
-├── tiers/                    seed, target, native, full and retained construction contexts
-├── source-gnu/               source-owned candidate base and explicit toolchain/tool inputs
-├── gcc13-owned/              retained bootstrap stages and consumer graphs
-│   └── tests/                checks explicitly attached by this base
-└── tests/                    shared behavior and generic ownership checks
+default.nix                   user inputs, shared lazy context, module imports and exports
+
+bases/                        compiler-family construction and `tvp.bases`
+├── default.nix               platform resolution, exact releases, major aliases and default
+├── aliases.nix               latest registered compiler release within each major
+├── gcc-4.9.4.nix              GCC4 full source definition
+├── gcc-9.5.0.nix              GCC9 full source definition
+├── gcc-13.3.0.nix             GCC13 full source definition
+├── gcc-16.2.0.nix             source-owned seed/runtime/reduced/full selections
+├── source-compiler.nix        GCC4/GCC9 source compiler and driver composition
+├── source-gcc13.nix           GCC13 source compiler and driver composition
+├── source-gnu/               closed full GNU base and explicit source-owned provider inputs
+├── tiers/                    stage assembly and the real source-GNU ladder
+├── compatibility.nix          local stdenv protocol backed by selected source-owned providers
+├── retained.nix               private compatibility records for remaining old recipe syntax
+├── platforms/                supported system facts, resolved once from the selected system
+├── stdenv/                   local vendored constructor and setup hooks
+├── wrappers/                 local compatibility setup-hook templates
+└── tests/                    provider-origin, selection and shared execution checks
 
 bootstrap/                    explicit source-bootstrap ladder and retained seeds
+
+checks/default.nix            repository check registration, composing existing audits
+tests/default.nix             batch/latest registration and private variant flattening
+tests/support.nix             explicit provider roles for existing audit/test fixtures
+tools/default.nix             CLI assembly, runtime provider choices and private ownedCLI handle
+reports/default.nix           evaluated inventories, graph, migration facts and ownership registry
 
 lib/                          shared evaluation and builder protocols
 ├── builder.nix               public `tvp.builder` constructor, steps, outputs and base
@@ -28,25 +47,24 @@ lib/                          shared evaluation and builder protocols
 ├── build-environment.nix     explicit compiler, tool and library contributions
 ├── native-output-steps.nix   reusable, explicitly selected output operations
 ├── versions.nix              version parsing, predicates, attribute naming
-├── bases.nix                 mkBase, base tests and runtime ownership audits
+├── bases.nix                 checked retained-environment projection and ownership audits
 ├── platforms.nix             native platform contract and architecture settings
 ├── packages.nix              version table → package set, merging, generated aliases
 └── tests.nix                 mkTest / mkSuite / mkBatch
 
 pkgs/
-├── default.nix               index of categories
+├── default.nix               family registration, public selectors, aliases and variant projections
 ├── data/                     dated CA certificates and other build/runtime data
 ├── sdks/                     Flutter and independent Android SDK components
 ├── libraries/                openssl, zlib, libxml2, sqlite …
 │   ├── default.nix           index of packages in this category
 │   └── openssl/
 │       ├── default.nix       inline recipe blocks and literal release hashes
-│       ├── retained/          captured construction inputs still used by callers
+│       ├── tests/            shared installed assertions and upstream consumers
 │       └── build-1.1.1.nix   build procedure
 ├── runtimes/                 ruby, php, python, perl, node, jdk …
 │   └── ruby/
 │       ├── default.nix       inline recipe blocks and literal release hashes
-│       ├── retained/          earlier tables/procedures until their callers migrate
 │       ├── build-2.7.nix     complete procedure; one file per actual era
 │       ├── build-3.1.nix
 │       ├── build-3.2.nix
@@ -68,9 +86,9 @@ models, different version-population policies — without changing what TVP is.
 
 The model can *express* any patch version; it does not have to *package* every one.
 
-GNU archive recipes try the kernel.org GNU mirror and retain the original GNU server
-as a fallback. The release hashes are unchanged: transport fallback preserves the exact
-upstream artifacts and package outputs.
+Each source resolver preserves its declared URL and hash policy. Single-URL
+resolvers use the builtin fetcher. Existing multi-URL/retry resolvers remain explicit
+fetch-backend exceptions so the cleanup does not remove their availability policy.
 
 ## Every level is an index
 
@@ -85,6 +103,22 @@ default.nix → pkgs/ → <category>/ → <package>/ → build-VERSION.nix
 
 Indexes merge with a duplicate-name check rather than `//`, because `//` resolves a clash
 silently in favour of whichever set came last.
+
+The repository's `default.nix` wires these entrypoints and exports their results.
+Each subsystem owns its choices: base families and the default belong in
+`bases/default.nix`, package tagging and aliases in `pkgs/default.nix`, and CLI
+providers in `tools/default.nix`. `checks/default.nix` registers repository checks
+while package suites stay with their families; `tests/default.nix` assembles their
+existing batches and latest selection. `reports/default.nix` owns evaluated
+inventories, graph/status facts and ownership registration. Report assembly does
+not query the store or execute tests.
+
+Modules return their namespace or related results together. The root shares
+private handles such as the CLI constructor, retained construction inputs and
+ownership registry only with the consumers that need them. Ordinary imports and
+the existing lazy context provide this composition; there is no additional module
+framework. Source organization preserves the public API and does not change the
+compiler construction graph.
 
 ## Builders describe complete procedures
 
@@ -136,8 +170,8 @@ Rules:
   those providers; the package's ordered procedure stays visible.
 - **Use an effective fixed-point specification.** Owned procedures have the shape
   `{ explicit arguments }: final: { ... }`. Build commands, metadata and tests read the
-  effective `final` fields so edits propagate. Retained stdenv procedures keep their
-  original fixed-point constructor until they are ported.
+  effective `final` fields so edits propagate. Low-level bootstrap and constructor
+  fixtures are separate from the ordinary family authoring API.
 
 Why not per-major: across 254 Ruby versions the only build-affecting divergences are at
 1.9, 2.0, 3.1, 3.2 and 4.0 — none of them a major boundary. Start-version files put the
@@ -239,7 +273,7 @@ share one definition because their builder, dependencies and options are identic
   throws.
 - **The ordinary family context supplies the base and owned constructor.** Version
   tables do not repeat platform selection, helpers or the standard Bash/Coreutils/
-  Binutils inputs or `base.standardTools` (Make, Tar, XZ, text tools, Python and
+  Binutils inputs or `base.tools` (Make, Tar, XZ, text tools, Python and
   Patchelf). Package-specific providers come from `tvp.packages`. A genuine construction
   or compatibility exception may explicitly replace the base. Retained low-level
   `mkVersions` callers still declare their own base; `null` records a legacy boundary.
@@ -339,9 +373,13 @@ of their actual tool arguments, including replacements. Unused base providers re
 lazy; package authors do not repeat a metadata-only provider list.
 
 `family.instantiate { version; base; deps; opts ? {}; }` selects a construction call
-before forcing public packages. `tvp.baseTiers` exposes the source-owned seed, target,
-native and full contexts, plus retained construction-input adapters. The tier selects
-provider generations; it does not select an earlier package builder implementation.
+before forcing public packages. `tvp.bases.gcc_16` exposes the real seed, runtime,
+reduced and full contexts. `tvp.bases.gcc_13` exposes its real `seed`, `libc`, `shell`,
+`compilerPreparation`, `compiler`, `toolFloor` and `full` contexts. Its retained
+MPFR shell/compiler calls use the corresponding local owned contexts. A stage
+selects provider generations; exposing it does not imply an extra compiler build
+or conversion of the producer recipes beneath it. Current bootstrap inputs remain
+explicitly pinned until those individual producer/caller boundaries migrate.
 
 ### Artifact and finalization boundary
 
@@ -460,20 +498,27 @@ The final audit/full-validation gate requires the outstanding list to be resolve
 
 ### Inputs, discovery and runtime roles
 
-`base.environment specification.environment` derives compiler commands and baseline
-tools from the selected base. For ordinary families, declared Bash, Coreutils and
-Binutils arguments default to that base's canonical fields. Other common build-tool
-arguments resolve from `base.standardTools`, selected once in
-[bases/source-gnu/standard-tools.nix](bases/source-gnu/standard-tools.nix).
-Default resolution is lazy and only supplies arguments declared by each procedure;
-step tool lists still state their actual execution inputs. Resolved providers remain
-visible in `tvp.declaredDependencies`, including when a definition customizes its
-metadata projection. Replacing the base with `.override` recomputes these defaults;
-explicit procedure arguments win. Partial `standardTools` overrides preserve the
-other roles. Every package-specific tool and library is named explicitly,
-including commands used only by configure or upstream checks. Tools contribute their
-discovery conventions; libraries expose their development layout. Do not add a tool
-to the base merely to make one package's undeclared command work.
+`base.environment specification.environment` derives compiler commands and the
+explicit internal `baselineTools` from the selected base. `base.tools` is a lazy
+named catalogue. Bash, Coreutils, Binutils and other common build-tool defaults
+resolve from it; generic `shell`, `coreutils` and `compiler` fields are derived
+aliases of the same selections. Ordinary build-only roles are selected once in
+[bases/source-gnu/standard-tools.nix](bases/source-gnu/standard-tools.nix), using
+the exact earlier generation rather than final aliases that depend on them.
+
+Only procedure-declared roles receive defaults; helpers and active step tool lists
+supply their actual execution inputs. An unused catalogue entry stays unforced and
+does not enlarge PATH or the production derivation. Existing explicit baseline
+inputs remain preserved. Used providers remain visible in `tvp.declaredDependencies`,
+including a definition's explicit metadata projection. Replacing the base recomputes
+these defaults; explicit procedure arguments win. Named `tools` overrides merge by
+role. `standardTools` remains a temporary derived compatibility view, with old
+overrides accepted; new code uses `tools`.
+
+Every package-specific tool and library is named explicitly, including commands
+used only by configure or upstream checks. Tools contribute discovery conventions;
+libraries expose their development layout. Adding a tool to the catalogue does not
+declare its use by a command.
 
 Build linkage, public development dependencies and runtime configuration are separate.
 For example, GMP headers required by MPFR's public headers belong in its development
@@ -755,249 +800,122 @@ nix build .#packages.x86_64-linux.ruby_2_7_0.tests.openssl
 
 ## Bases
 
-A definition selects its dependency graph through `deps` and its build environment
-through `base`. New owned recipes take that base as an argument; they never import
-a concrete compiler generation inside the procedure.
-
-`tvp.builder.base` constructs explicit native base data: `name`, `platform`,
-`compiler`, `shell` and baseline `tools`. The compiler driver declares Binutils,
-libc, runtime directories and its hardening interface. Replacing a compiler
-rebuilds environment composition, so CC/CXX and discovery cannot capture the old
-driver. Current owned support is native x86_64 GNU/Linux; other targets require
-explicit capability work and validation.
-
-[The source-GNU candidate](bases/source-gnu/default.nix) composes the source-owned
-compiler and tools from explicit [inputs](bases/source-gnu/inputs.nix). Its source
-bootstrap ladder lives under `bootstrap/`. Bootstrap construction inputs stay pinned
-and independent of the ordinary catalogue they help construct. Necessary seed and
-binary boundaries remain declared, with their provenance and required follow-up.
-
-The ordinary `mkFamily` context selects source-GNU once in the catalogue entry point;
-version definitions do not repeat that choice. Families awaiting the authoring migration
-keep their existing selections. The public `tvp.bases.default` alias remains the retained
-GCC16 environment until the migration/default-switch gates pass. Selecting a packaged GCC release is separate from promoting a base.
-
-- Ordinary families resolve their base from the selected build context. Specialized
-  construction and retained low-level callers declare their base explicitly.
-- The base supplies the compiler, shell and minimal explicit baseline. Additional
-  tools and libraries belong to recipe arguments and environment contributions.
-- Compatibility choices need measured reasons. Ordinary dependency aliases may move
-  within supported interfaces; bootstrap construction remains pinned.
-- Ownership registration, source provenance, runtime permission and compiler
-  conformance are separate claims. Record and test each at its actual scope.
-- Base and package tests bind to the base they claim to exercise. A different base's
-  successful test does not certify this one.
-
-### Retained stdenv generations
-
-The following generations retain their stdenv protocol, hooks and construction
-identities during migration. Historical helper-based definitions can declare
-`base = null`; this is a recorded legacy route, not the new authoring pattern.
-Older procedures continue to call their original constructor until explicitly
-ported and validated.
-
-During migration, indexes may route ordinary releases to complete procedures under
-`ordinary/` while retaining the original complete construction recipe for pinned
-bootstrap/base variants. Selection belongs in the index; ordinary procedures never
-inherit another versioned procedure. Preserve compatibility boundaries and validate
-representative releases on both sides.
-
-Promote a new default through a full-catalogue PR. Report graph changes, run the full
-validation and pin packages needing older environments before merging. Most packages
-follow the default, so a promotion rebuilds most of the catalogue. We do not build
-every package against every historical base.
-
-GCC is also an ordinary catalogue package. Adding a GCC release does not promote it
-into the default base or require a base for that release. The base assembler reuses the
-package recipe with pinned construction inputs.
-
-The current bootstrap boundary is explicit: `builtBy = null` bases still borrow their
-compiler, binutils, glibc, wrappers, floor tools and setup script from the pinned nixpkgs
-input. A TVP package built on one of them owns its recipe and named dependencies, not
-that substrate. In particular, packaged raw binutils are not a replacement for the
-bintools wrapper: the wrapper supplies library search paths, the dynamic interpreter
-and runtime RPATH policy.
-
-`gcc16-owned` is the default native x86_64 Linux base: GCC 16.2.0, binutils 2.42,
-glibc 2.39 with Linux 6.9 headers, and 14 explicitly versioned floor tools. `default` and
-`gcc16` both resolve to `gcc16-owned`. Its protocol-3 wrappers use the native GCC16
-compiler built on the pinned `gcc13-owned-v3` parent, with explicit dependency variants
-in `bases/gcc16-owned/inputs/`. The parent libc, binutils, floor, shell and fixup tool
-are reused. `builtBy = "internal:gcc13-owned-v3"` records that construction boundary.
-The GCC13-v3 compatibility selection remains for measured ACL 2.3.0/2.3.1
-consumers: their nested zero-length string member trips GCC16 fortified copies.
-Hardening and regression tests remain enabled; ACL 2.3.2/2.4.0 use GCC16. The borrowed
-GCC13 seed, original owned generation and v2 remain internal. Their construction recipes live inside `bases/gcc13-owned/inputs/`;
-there is no `tvp.bootstrap` API. Retained definitions select this default; migrated
-definitions explicitly select the source-GNU candidate until promotion. GCC 9 and
-GCC 4.9 compatibility bases remain.
-
-Historical releases can declare an older C dialect, a compatible dependency or a
-scoped diagnostic exception in their version definitions. Procedure fixes belong
-in versioned build files. Newer fixed releases keep their upstream defaults.
-These choices preserve native configure probes, extension compiler flags and
-runtime dependencies without replacing historical source behavior. Build and
-runtime checks determine which consumers need an older base; a compiler update
-does not add a package-by-base test matrix.
-
-The GCC16 base retains the protocol-3 wrapper, fixup and ownership checks, and
-adds C/C++ LTO checks through its selected compiler and binutils. Raw upstream
-failures and existing coverage limits remain explicit.
-
-Cached test artifacts keep host observations separate from assertions. GNU tar
-checks the original member lists and numeric PAX headers before saving sorted
-lists and a symbolic header PID. ISL 0.20's supplemental tests use the documented
-`--without-gcc-arch` option and require all seven upstream groups. Raw observations
-stay in build logs; saved ISL logs normalize only the kernel release and version.
-
-Canonical GCC, binutils and glibc follow the newest default; their bootstrap variants
-retain the original producer graph. The RPATH hook's patchelf is pinned to the earlier
-owned generation so selecting the default cannot introduce a dependency cycle.
-
-The assembler is `bases/gcc13-owned/default.nix`. It reuses the versioned package recipes,
-rebuilds their dependencies against the owned libc, and records each intermediate stage
-in `bootstrap`. C-only bootstrap variants break the C++ runtime and shell cycles; the
-final libraries and binutils restore the C++ bindings and gprofng. GCC retains its
-three-stage bootstrap comparison. glibc starts from the upstream release, with declared
-store-layout adaptations and no stable-branch fixes. Its libraries and tools are separate
-outputs so the tools' scripts can use the resulting Bash and Perl without a libc/shell
-dependency cycle. The rebinding procedure lives beside the glibc recipe in `tools.nix`;
-the assembler calls `libc.mkTools { stdenv = floorStage; bash = floor.bash; inherit perl; }`.
-
-The native wrappers live in `bases/wrappers/`. The new constructor, setup script and
-default hooks live in `bases/stdenv/`; vendored protocol files retain their source revision
-and license. The wrappers supply headers, startup objects, linker flags, interpreter,
-RPATHs and hardening. Package setup hooks still belong to their packages.
-The final bintools wrapper also binds gprofng's HTML program to its declared Perl,
-including calls dispatched through the gprofng frontend; Perl is not added to the floor.
-
-Platform facts live behind `tvp.lib.platforms` in `lib/platforms.nix`:
+A definition selects its dependency graph through `deps` and its execution
+context through `base`. Procedures receive the effective base rather than
+importing a concrete compiler generation themselves.
 
 ```nix
-platform = tvp.lib.platforms.forStdenv stdenv;
-# Alternatively: mkNative { buildPlatform = ...; hostPlatform = ...; targetPlatform = ...; }
+tvp.bases.gcc_4.full
+tvp.bases.gcc_9.full
+tvp.bases.gcc_13.full
+tvp.bases.gcc_16.seed
+tvp.bases.gcc_16.runtime
+tvp.bases.gcc_16.reduced
+tvp.bases.gcc_16.full
+
+tvp.bases.gcc_16.full.tools.gcc
 ```
 
-The returned record preserves `buildPlatform` (where compilation runs), `hostPlatform`
-(where the result runs) and `targetPlatform` (what a compiler generates code for). It also
-supplies the libc-relative `dynamicLinker`, `linuxHeadersArch` and `libcLibdirAliases`.
-Every base exposes this record as `base.platform`. The owned assembler passes it to its
-environment constructor and wrappers; GCC, glibc and Linux headers resolve it from their
-actual stdenv, including recipe overrides. The wrappers render the loader into their
-script templates at evaluation time, preserving existing source hashes when the rendered
-bytes do not change.
+Exact selectors follow package version spelling: `gcc_4_9_4`, `gcc_9_5_0`,
+`gcc_13_3_0` and `gcc_16_2_0`. Major aliases choose the latest registered release
+within that major using version-aware comparison. `gcc_4` currently selects
+4.9.4; there is no separate minor alias. `default` selects `gcc_16.full`.
+There is no additional composition revision number.
 
-Only native `x86_64-unknown-linux-gnu` is currently supported. Cross compilation,
-unsupported native systems and unsupported ABIs fail explicitly; the interface does not
-claim ARM support. Adding platform facts does not extend a recipe's `meta.platforms`:
-recipes keep their own tested support lists. Tool versions, bootstrap parents and glibc's
-minimum kernel version remain choices of their base or recipe. The
-`checks.native-platform-interface` contract checks rejection and base wiring.
+All four compiler families select source-owned compiler/tool providers. GCC4,
+GCC9 and GCC13 expose only `full`: each compiles its release source with an
+explicit earlier closed GCC16 context. [source-compiler.nix](bases/source-compiler.nix)
+composes GCC4/GCC9; [source-gcc13.nix](bases/source-gcc13.nix) composes GCC13.
+The raw compiler uses a genuine compilation artifact/final split, followed by
+[the selected source driver](bootstrap/source-full-gcc-driver.nix). The driver
+binds that compiler's runtimes to the selected source-built libc and Binutils.
+A newer compiler may construct an older compiler release; version order is not
+construction order.
 
-The ordinary family context supplies the native platform and base. Select a different
-context centrally when adding supported platforms; keep genuine per-procedure
-restrictions explicit. When porting a package, its dependency graph must be ported too: changing only its compiler can leave libraries on
-the borrowed libc. `components` exposes the assembled toolchain, floor and supporting
-libraries. The assembler's rebuilt variants are explicitly marked noncanonical and remain
-separate from the ordinary compiler and libc packages in the catalogue.
+GCC16 retains the real `seed`, `runtime`, `reduced` and `full` construction
+boundaries in [the source-GNU assembly](bases/tiers/source-gnu.nix), backed by
+[bootstrap/](bootstrap/default.nix). The old borrowed GCC13 seed, wrapper-revision
+generations, Nixpkgs host-tool floor and their construction variants are removed.
+Stage publication and source-provider checks do not imply that every compiler
+output has been built or runtime-qualified. Source preparation, compiler build,
+installed controls and upstream qualification remain distinct evidence.
 
-Run the complete base validation with:
+`tvp.builder.base` constructs native base data from `name`, `platform`, named
+`tools` and an explicit execution baseline. `tools.gcc` is the complete driver,
+not the raw GCC artifact. `compiler`, `shell` and `coreutils` derive from that
+catalogue. Only the baseline and providers used by active steps/helpers enter
+execution inputs; declaring a named tool alone does not put it on PATH.
 
-```sh
-nix build .#testBatches.x86_64-linux.bootstrap-base-gcc13-owned --no-link
+```nix
+base.override { tools.gnumake = otherMake; }
+
+base.edit (s: s // {
+  tools = s.tools // { gnumake = otherMake; };
+})
 ```
 
-That batch includes the shared base suite, the assembled packages' suites, and zlib,
-OpenSSL, libxml2, Tcl, SQLite and PHP consumer builds. The PHP suite also builds and loads
-a module through `phpize` using the owned compiler. Runtime ownership checks compare the
-base and consumer closures against exact lists of owned store outputs, so an installed
-helper or an unused RPATH cannot silently retain a bootstrap package.
-The component, consumer and gprofng checks are explicitly attached from
-`bases/gcc13-owned/tests/`; other owned bases do not inherit those requirements.
+Overrides merge named replacements; edits transform the selectable record.
+Both reconstruct environment composition and dependencies. A complete driver
+replacement recomposes compiler commands and discovery. Partial Binutils/libc
+edits reject if they disagree with the selected driver: changing metadata does
+not rewrite its executable behavior. `standardTools` remains a temporary
+compatibility view/input; new definitions use `tools`.
 
-`bases/gcc13-owned/tests/build-tools.nix` selects canonical owned tools, then declares
-test-only binutils, three-stage GCC and glibc integration
-builds using those inputs. Its rebuild helper is confined to these test consumers.
-Reusable tool builds are defined in their package directories. Their suites and runtime
-ownership audit are part of the complete base validation batch; the graph remains
-exposed as `buildToolValidation` for inspection. Production dependencies never refer
-to that validation record.
+The root accepts `system`; [bases/default.nix](bases/default.nix) resolves it
+through [platforms](bases/platforms/default.nix) once. Ordinary tables do not
+repeat platform selection. Effective facts remain visible on each base.
+Native x86_64 GNU/Linux is the current supported mode. Other systems, ABIs and
+cross compilation require concrete provider choices, recipe support and validation.
 
-Canonical M4 1.4.21, Autoconf 2.73, pkg-config 0.29.2, Bison 3.8.2, Texinfo 7.1,
-which 2.21 and minimal Python 3.12.5 follow `default`. The base implementation
-constructs its pinned tool builds from the same version tables. Bootstrap GMP and
-Autoconf explicitly retain bootstrap M4; bootstrap ncurses and binutils retain bootstrap
-pkg-config. These dependencies keep construction independent of the base it
-produces. Base migrations compare exactly which canonical derivations move, including
-downstream consumers of a changed tool.
+Construction supplies explicit earlier providers instead of looking through
+public aliases that depend on the base being constructed. A family can reuse its
+ordinary table/procedure through `.instantiate` with an earlier base and dependency
+instances. `construction.previous` records lineage; the selected compiler, tools
+and libraries establish the actual dependency edges. Reusing compatible earlier
+tools does not require rebuilding them for every compiler family.
 
-Ordinary tools select canonical Perl, Bash, ncurses and file as named dependencies;
-they do not depend on the base assembler's private build stages. The locale program
-comes from the selected base's libc tools, matching its ABI.
-Retained tool suites bind to each package's actual stdenv; owned suites derive their
-constructor and compiler from the effective package/base. Test factories also serve
-bootstrap variants without silently selecting the canonical base.
-Minimal Python is a build interpreter with a declared list of disabled third-party
-extension modules, not the full Python developer runtime. Its core standard library and
-C embedding API are tested.
+### Remaining stdenv recipe syntax
 
-Automake 1.19, Libtool 2.6.2 and Flex 2.6.4 are new canonical packages built directly on
-the default owned base. They reference canonical owned M4/Autoconf/Bison and Perl;
-they do not move the existing versions to another base. Automake provides a setup hook
-that adds declared packages' `share/aclocal` directories to `ACLOCAL_PATH`.
+[retained.nix](bases/retained.nix) provides private compatibility records for the
+four exact compiler releases. [compatibility.nix](bases/compatibility.nix) creates
+the local stdenv protocol with the selected source-owned compiler, Binutils, libc,
+Bash, Coreutils and tool floor. The constructor/setup hooks live in
+[bases/stdenv/](bases/stdenv/default.nix); local setup templates live in
+[bases/wrappers/](bases/wrappers). Pure `lib`/`config` values do not select Nixpkgs
+executable packages. This compatibility route is not a borrowed Nixpkgs environment.
 
-`bases/gcc13-owned/tests/autotools.nix` exposes these packages as `autotoolsValidation` and
-attaches their suites and a runtime ownership audit to the full base batch. The suites
-generate projects with `autoreconf`, build and install C/C++ shared libraries and an
-executable, link a static library, load a module through libltdl, and compile scanners
-with Flex and Bison. The tests themselves run on the owned stdenv.
+`lib/bases.nix.legacyEnvironment` verifies the selected local stdenv against its
+owned base and supplies `.ownedBase` to migrated callers. `tvp.__legacyBases`
+exists for remaining old recipe syntax. New ordinary definitions use the public
+owned contexts. Old recipe bodies and test adapters still need cleanup; retaining
+their syntax does not permit retaining a foreign compiler underneath it.
 
-```sh
-nix build .#automake_1_19 .#libtool_2_6_2 .#flex_2_6_4 --no-link
-nix build .#testBatches.x86_64-linux.bootstrap-base-gcc13-owned --no-link
-```
+Broken Readline 2.0 and ten Zlib 0.x declarations select GCC9/GCC4 respectively.
+Their source defects and broken statuses remain independent of the source compiler
+migration. GCC4.9 does not resolve the Zlib records' GCC3.3-or-older requirement.
 
-The production bootstrap also selects TVP's tools: binutils uses bootstrap Bison,
-Texinfo and pkg-config; GCC uses bootstrap Texinfo and which; glibc uses bootstrap Bison
-and minimal Python. The internal construction profiles pin the borrowed seed
-rather than following the default alias. `bootstrap.buildTools` records the helpers
-actually selected by these production recipes. Their package suites and a check requiring
-package-owned bootstrap variants are included in the complete base batch.
+### Provider and execution checks
 
-Bootstrap Texinfo binds its locale program to the parent base's glibc tools: using TVP's
-new libc there would create a Texinfo/GCC/glibc cycle. Canonical Texinfo binds to the
-owned libc tools. Runtime ownership does not remove these bootstrap dependencies: the
-initial compiler still needs the parent's libc, shell, compiler and floor. Fetching and
-generic evaluation infrastructure still use nixpkgs. The derivation constructor's
-CMake/Meson flag helpers, metadata validation and conditional hooks are local files
-under `bases/stdenv/`, copied from the same pinned revision as the build protocol.
-Constructing the owned stdenv requires no nixpkgs source path. These import moves are
-verified to preserve canonical, variant, base, bootstrap and consumer derivations.
-An owned runtime base is not a claim that TVP is self-hosted or nixpkgs-free.
-Native build-system packages ship their consumer setup hooks. Declaring
-`nativeBuildInputs = [ tvp.packages.cmake_4_4_5 tvp.packages.ninja_1_13_2 ];`
-selects CMake configuration and Ninja build/check/install phases. CMake alone uses
-Make; `nativeBuildInputs = [ tvp.packages.meson_1_12_1 ];` selects Meson's phases
-and its explicitly pinned Ninja, CMake, pkg-config and Python tools. The hooks search
-declared library inputs, honor explicit phase overrides and expose flags through
-`cmakeFlags`, `ninjaFlags`, and `mesonFlags` (with corresponding shell arrays).
-Meson configures with downloads disabled; wrap sources must be declared or cached inputs.
-The Python `python-build` profile includes TLS and archive modules; `python-minimal`
-remains the separate bootstrap interpreter. These hooks currently implement native Linux
-builds; cross compilation requires an explicit platform/toolchain design.
+`checks.source-base-providers` checks active base source modules and evaluated
+production providers against the independent source-GNU construction. It requires
+actual source-backed floor/driver/runtime selections, genuine raw compiler A/F
+identities and a valid earlier compiler. An owned interface around a Nixpkgs
+compiler cannot satisfy it. The gate is separate from runtime conformance and
+optional upstream harnesses.
 
-The complete construction generation, including Perl, Bash, compiler support libraries
-and floor tools, is selected inside `bases/gcc13-owned/inputs/`. Package modules supply
-uninstantiated recipe tables through the indexes' private `recipes` metadata. This lets
-the base instantiate pinned inputs without evaluating canonical derivations that already
-depend on it. The metadata and construction environments are not exported on `tvp`.
-The assembler uses that generation rather than following canonical packages through
-`default`.
-`checks.bootstrap-independent` verifies its parent, package bases and dependency edges.
-The switch preserves the bootstrap compiler, libraries and stages; the final linker
-wrapper also exports `nix-support/dynamic-linker` and `orig-libc` for consumers such as
-autoPatchelf. Rust declares patchelf explicitly and accepts either single-output or
-split-output compiler runtimes through `lib.getLib`.
+The eight shared base controls use the existing owned test factory and the
+effective selected compiler. Complete suites are registered as
+`testBatches.x86_64-linux.base-gcc_4_9_4`, `base-gcc_9_5_0`,
+`base-gcc_13_3_0` and `base-gcc_16_2_0`. They test the named base; a passing
+source-GNU16 probe does not qualify an unbuilt GCC4/GCC9/GCC13 compiler.
+Package tests bind to their effective package/base in the same way.
+
+Ownership registration, source-provider selection and compiler conformance are
+different claims. Changing a base can change package identities and runtime
+closures; review and test the changed boundary. Old graph labels or frozen
+construction records are not a reason to preserve an obsolete base definition.
+See [the remaining-definition inventory](lib/LEGACY-DEFINITIONS.md) for active
+recipe-authoring and caller cleanup.
 
 ## `lib/`
 
@@ -1316,20 +1234,18 @@ supplementary checks.
 
 ## Runtime cleanup and permanent audits
 
-`gcc13-owned-v2` reuses the first owned base's compiler, libc and floor, and adds an
-owned patchelf-backed RPATH cleanup hook. V3 retains these producers and revises the
-consumer protocol, including response-file expansion and wrapper support metadata.
-The GCC16 generation carries the v2/v3 consumer protocol and regression tests.
-Both `default` and `gcc16` select GCC16. Earlier GCC13 generations remain pinned bootstrap inputs; GCC13-v3 also
-serves the two measured ACL compatibility consumers. The original constructor's empty fixup-input selection computes the
-same earlier base and bootstrap producers.
+Current compiler bases and remaining stdenv recipe syntax share source-owned
+provider selections. Retired GCC13/v2/v3 wrapper generations are not active bases.
+The public default is `gcc_16.full`; compatibility records use exact compiler
+release keys. Runtime repair belongs in the relevant output procedure or selected
+driver, with its actual dependencies and tests visible.
 
-The v2 hook removes unused ELF search directories. A package declares store library
-directories required for name-based `dlopen` in `runtimeLibraryPaths`; these are
-preserved even without `DT_NEEDED` entries. `dontShrinkRpaths` opts out for packages
-whose output format needs a different fixup procedure. Static executables are retained.
-The base fixture runs linked/dlopen consumers, a symlinked executable, static code,
-multiple outputs and the explicit opt-out profile.
+Output RPATH cleanup must preserve explicitly declared runtime search directories
+needed for name-based `dlopen`, even without `DT_NEEDED` entries. A recipe can opt
+out of a generic cleanup when its output format requires a different procedure.
+Static executables, symlinked launchers and embedded native resources need their
+own appropriate controls. Selecting a source-owned base does not substitute for
+checking the installed runtime closure.
 
 Canonical JDK 21.0.13 follows the default base. Its procedure cleans the exploded JDK
 before building module images, so `jpackage` launchers embedded in `lib/modules` and
@@ -1350,9 +1266,9 @@ The audit walks references transitively per root, without calling a Nix daemon f
 inside the build sandbox.
 
 Existing foreign runtime debt is recorded in `audits/runtime-baseline.json` with exact
-paths, a reason and required follow-up per package. It covers borrowed compatibility
-bases, historical borrowed dependencies and retained binary toolchain references.
-A path accepted for one package is not accepted for another. New foreign paths fail;
+paths, a reason and required follow-up per package. Any remaining entries describe
+retained package dependencies or binary toolchain references; deleted borrowed base
+generations are not a current compatibility policy. A path accepted for one package is not accepted for another. New foreign paths fail;
 removed roots or cleared debt also require a reviewed baseline update. Binary seeds
 receive the same regression check. This freezes known debt without describing it as
 complete ownership. `checks.audit-contracts` exercises these failure cases and graph
@@ -1385,23 +1301,21 @@ prints selected Nix settings without dumping configuration tokens. See
 boundaries. Host provisioning, repository CI activation and publishing remain separate
 from the local validation entry points.
 
-Retired bootstrap generations retain full validation under
-`testBatches.x86_64-linux.bootstrap-base-gcc13`,
-`testBatches.x86_64-linux.bootstrap-base-gcc13-owned`,
-`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v2`,
-`testBatches.x86_64-linux.bootstrap-base-gcc13-owned-v3` and the corresponding
-`bootstrap-PROFILE-PACKAGE` batches. The active base suite is
-`testBatches.x86_64-linux.base-gcc16-owned`. All are included in the full plan.
-Graph snapshots expose their producers under `bootstrapBases`, `bootstrapVariants`,
-`bootstrapComponents`, `bootstrapStages` and `bootstrapConsumers`.
+Current source-backed compiler base suites use the exact-release keys:
+`testBatches.x86_64-linux.base-gcc_4_9_4`, `base-gcc_9_5_0`,
+`base-gcc_13_3_0` and `base-gcc_16_2_0`. Construction metadata contains the current
+source-backed compiler contexts, not the retired borrowed GCC13 generations or
+old construction variants. Provider-origin and bootstrap-independence checks
+validate the current definitions. Registered suites remain part of the full plan;
+registration does not mean that every suite has executed or passed.
 
 ### Staged stable Dart/Flutter owned procedures
 
 Native stable Dart bootstrap 3.13.7, source Dart 3.13.7 and Flutter 3.47.8
-select the source-GNU candidate and independent owned procedures. Their legacy
-construction recipes retain the original stable DevTools SDK and source Dart
-providers. The beta 3.13.0-103.1.beta compiler seed remains unchanged. Non-native
-selection retains the earlier constructor.
+select the source-GNU candidate and independent owned procedures. Their current
+family definitions supply the DevTools SDK, source Dart and released Android SDK
+profile directly. The beta 3.13.0-103.1.beta compiler seed remains an explicit
+source dependency. Unsupported systems do not acquire a legacy constructor fallback.
 
 The stable binary SDK splits after pristine installation. Source Dart splits
 after GN/Ninja, upstream checks and raw SDK installation. GN receives an explicit
@@ -1482,13 +1396,20 @@ must preserve A/F, expectation edits preserve T/R, runner edits preserve T, and
 finalizer edits preserve A/T/R. Production source/compiler edits invalidate A.
 Meaningful positive, invalidation and negative contracts accompany the policy.
 
-Unaudited recipes (including retained/native SQLite and OpenSSL procedures) are
+Unaudited recipes (including source-reconstruction SQLite and OpenSSL profiles) are
 UNAUDITED, never compliant by default. Broken/disabled coverage retains its explicit
 disposition. Scoped checks admit only the inspected scope; strict exposure rejects
 all remaining isolation debt and is not an unconditional failing full-suite check.
-This does not change audits/split-baseline.json, frozen construction identities or
-any full-validation/default admission hold. Source inspection and tiny controls
-are not canonical runtime qualification. Ordinary Libxml2 retains raw upstream
-capture before A as transition debt; separating its final-package acceptance does
-not establish execution isolation or strict conformance. Its upstream test remains
-in the normal batch, and known upstream/schema nonpasses remain unwaived.
+Split compliance remains distinct from workload isolation and runtime qualification.
+Test-only changes must stay out of production artifacts; full-validation/default
+admission holds remain separate. Source inspection and tiny controls are not
+canonical runtime qualification. Historical Libxml2 profiles now restore A and
+capture raw upstream evidence in independent U; the latest native profile still
+reconstructs a private source tree. Its normal upstream gate retains known
+upstream/schema nonpasses, corpus limits and strict-conformance limits.
+
+The current base definitions use source-owned raw compilers and drivers.
+The provider-origin gate checks actual compiler/tool selection. The uniform-family
+gate checks the shared family API and rejects captured old indexes. Low-level
+bootstrap protocols, fixture compatibility and runtime qualification remain separate;
+see [the remaining exceptions](lib/LEGACY-DEFINITIONS.md).

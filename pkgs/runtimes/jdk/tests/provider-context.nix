@@ -8,6 +8,6 @@
 import ./installed.nix {
   inherit package lib;
   context = context // {
-    closureInfo = pkgs.closureInfo;
+    closureInfo = (package.testConfiguration.pkgs or pkgs).closureInfo;
   };
 }

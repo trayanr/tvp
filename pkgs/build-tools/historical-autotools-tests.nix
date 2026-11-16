@@ -7,7 +7,7 @@
 }:
 let
   p = package;
-  tools = p.specification.base.standardTools;
+  tools = p.specification.base.tools;
   runtime = p.editRuntime (r: r // { shell = p.tvp.declaredTestDependencies.runtimeShell; });
   source = p.edit (s: s // { src = p.tvp.declaredTestDependencies.alternateSource; });
 in

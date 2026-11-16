@@ -1,34 +1,14 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."less";
-  retained = prior.constructionRecipe or prior;
-  full = tvp.baseTiers.full;
   earlier = import ../../../bases/source-gnu { };
-  profileBase = full.override {
-    standardTools = {
-      gnumake = earlier.tools.make;
-      gnutar = earlier.tools.tar;
-      gzip = earlier.tools.gzip;
-      findutils = earlier.tools.findutils;
-      sed = earlier.tools.sed;
-      grep = earlier.tools.grep;
-      gawk = earlier.tools.gawk;
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
-      patch = earlier.tools.patch;
-    };
-  };
   pname = "less";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-710-current.nix;
-        base = profileBase;
         deps = {
           ncurses = tvp.packages.ncurses_6;
           pcre2 = tvp.packages.pcre2_10;
-          binutils = earlier.tools.linker;
         };
         patches = [
           {
@@ -42,13 +22,24 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
+  testDeps = {
     diffutils = earlier.tools.diffutils;
     perl = earlier.tools.perl;
   };
-  rawFamily = tvp.lib.packages.mkFamily {
+  family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://www.greenwoodsoftware.com/less/download.html";
+      pattern = "less-[0-9]+\\.tar\\.gz";
+      normalise =
+        file:
+        let
+          m = builtins.match "less-([0-9]+)\\.tar\\.gz" file;
+        in
+        if m == null then null else builtins.head m;
+      include = version: builtins.match "[0-9]+" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -57,13 +48,10 @@ let
       };
     tests = import ./tests;
   };
-  family = rawFamily;
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."less" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."less" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

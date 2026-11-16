@@ -1,6 +1,5 @@
 { pkgs, tvp }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).recipes.dart-bootstrap;
   pname = "dart-bootstrap";
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -8,7 +7,6 @@ let
         builder = ./build.nix;
         deps = {
 
-          gawk = tvp.packages.gawk;
           unzip = tvp.packages.unzip;
           runtimeLibc = tvp.packages.glibc_2;
           runtimeCompiler = tvp.packages.gcc_16;
@@ -30,7 +28,6 @@ let
         builder = ./build.nix;
         deps = {
 
-          gawk = tvp.packages.gawk;
           unzip = tvp.packages.unzip;
           runtimeLibc = tvp.packages.glibc_2;
           runtimeCompiler = tvp.packages.gcc_16;
@@ -63,9 +60,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."dart-bootstrap" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."dart-bootstrap" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

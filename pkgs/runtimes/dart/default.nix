@@ -1,11 +1,5 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  captured = import ../../../sdks/retained-adapters.nix { inherit pkgs tvp; };
-  retained =
-    (import ./legacy.nix {
-      inherit pkgs;
-      tvp = captured.callerTvp;
-    }).recipes.dart;
   pname = "dart";
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -17,7 +11,7 @@ let
             tvp.lib.packages.withConstraint {
               category = "artifact";
               reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
-            } captured.canonical."dart-bootstrap_3_13_0_103_1_beta"
+            } tvp.canonical."dart-bootstrap_3_13_0_103_1_beta"
           );
           devtoolsAssets = (
             tvp.lib.packages.withConstraint {
@@ -25,12 +19,9 @@ let
               reason = "Matched released SDK/toolchain payload or profile test artifact; changing its release changes the declared artifact identity.";
             } tvp.canonical."dart-bootstrap_3_13_7"
           );
-          gawk = tvp.packages.gawk;
-          python = tvp.packages.python_3;
           llvm = tvp.packages.llvm_23;
           gn = tvp.packages.gn;
           git = tvp.packages.git_2;
-          ninja = tvp.packages.ninja;
           curl = tvp.packages.curl_8;
           fetchCertificates = tvp.packages.ca-certificates;
           ca-certificates = tvp.packages.ca-certificates;
@@ -70,9 +61,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."dart" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."dart" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

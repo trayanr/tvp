@@ -52,16 +52,10 @@ let
         }
       );
       tool = p.override {
-        base = p.specification.base.override { standardTools.gnumake = tvp.packages.gnumake; };
+        base = p.specification.base.override { tools.gnumake = tvp.packages.gnumake; };
       };
-      toolEdit = p.edit (
-        s: s // { base = s.base.override { standardTools.gnumake = tvp.packages.gnumake; }; }
-      );
-      factory = tvp.lib.packages.mkVersions (
-        builtins.removeAttrs ((import ../default.nix { inherit pkgs tvp; }).recipes.perl) [
-          "constructionRecipe"
-        ]
-      );
+      toolEdit = p.edit (s: s // { base = s.base.override { tools.gnumake = tvp.packages.gnumake; }; });
+      factory = tvp.lib.packages.mkVersions (import ../default.nix { inherit pkgs tvp; }).recipes.perl;
       callerFactory =
         (import ../default.nix {
           pkgs = pkgs // {

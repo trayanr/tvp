@@ -19,15 +19,14 @@ let
     environment
     // {
       inherit name;
-      run =
-        ''
-          export NIX_CFLAGS_COMPILE="${
-            lib.concatStringsSep " " (
-              lib.optionals (builtins.compareVersions final.base.compiler.version "15" >= 0) final.compileFlags
-            )
-          } $NIX_CFLAGS_COMPILE"
-        ''
-        + run;
+      run = ''
+        export NIX_CFLAGS_COMPILE="${
+          lib.concatStringsSep " " (
+            lib.optionals (builtins.compareVersions final.base.compiler.version "15" >= 0) final.compileFlags
+          )
+        } $NIX_CFLAGS_COMPILE"
+      ''
+      + run;
       cwd = "source";
     };
   checkpoint = "nix-support/libxcrypt-build-tree";
@@ -105,11 +104,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "libxcrypt.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "libxcrypt.check" ''
@@ -207,7 +205,7 @@ in
         "lib/libowcrypt.so.1"
       ];
     })
-    ((import ../ordinary-attr-crypt-check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = elfPaths;
     })

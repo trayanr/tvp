@@ -39,13 +39,10 @@ let
     patchelf
     ;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "curl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "curl.${name}";
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   elfPaths = [
     "bin/curl"

@@ -103,9 +103,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.xz = family // {
-    constructionRecipe = import ./retained { inherit pkgs tvp; };
-  };
+  recipes.xz = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

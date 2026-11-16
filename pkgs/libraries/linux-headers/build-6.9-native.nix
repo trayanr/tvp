@@ -31,13 +31,10 @@ let
     targetPlatform = final.base.platform;
   };
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "headers.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "headers.${name}";
 in
 {
   pname = "linux-headers";
@@ -71,7 +68,7 @@ in
       diffutils
       ;
   };
-  dependencyProviders = { };
+  dependencyProviders = final.tools;
   environment = {
     tools = with final.tools; [
       gnumake

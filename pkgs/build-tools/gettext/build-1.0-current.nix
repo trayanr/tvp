@@ -42,13 +42,10 @@ in
 let
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "gettext.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gettext.${name}";
   make = "${final.tools.gnumake}/bin/make SHELL=${final.bash}/bin/bash";
   elfPaths = [
     "bin"
@@ -325,7 +322,7 @@ in
       name = "gettext.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../current-restore.py} ${artifact}/nix-support/gettext-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/gettext-build-tree "$TVP_SOURCE_ROOT"
       '';
     }
     {

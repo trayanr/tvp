@@ -1,10 +1,13 @@
 # Rolling out the MPFR package model
 
 The accepted package model is documented in [NATIVE-RECIPES.md](NATIVE-RECIPES.md).
-All 110 ordinary family indexes now implement it, covering all 1,515 eligible
-canonical releases. Construction-caller adoption, recorded isolation debt and
-runtime qualification remain separate work. The 20 broken releases remain explicit
-exclusions; their presence does not make supported authoring incomplete.
+All 110 ordinary family indexes and their construction callers use the same
+current family definitions. Captured old indexes, duplicate constructor routes
+and package-local test-factory adapters are removed. All 1,540 evaluated canonical
+and variant rows have owned A/F splits; twenty declared-broken statuses remain.
+Runtime qualification and source-bootstrap authoring remain separate work.
+MIG-034 records the final caller cleanup and explicit exceptions. MIG-035 records
+shared mechanical helpers, lazy test fixtures and the compatibility-test boundary.
 
 [MIGRATION-LOG.md](MIGRATION-LOG.md) records completed steps and bounded validation.
 [MIGRATION-DECISIONS.md](MIGRATION-DECISIONS.md) records scope exceptions and design
@@ -12,6 +15,12 @@ questions found during implementation. Keep them explicit for later review inste
 of adding a package-specific workaround or silently broadening this rollout.
 
 ## Migration execution policy
+
+The owner closed the ordinary authoring migration on 2026-11-16 and authorized
+landing the final snapshot, running validation and restoring CI/NAS. Operational
+restoration is a deployment task; service state is recorded in the closeout receipts.
+The temporary policy below describes migration execution, not a continuing exception
+for subsequent package changes. Runtime/historical/hardening limits remain explicit.
 
 On 2026-11-14 the owner approved suspending the required `tvp/full` merge check
 until this migration is complete. Other branch protections stay unchanged. Keep
@@ -29,11 +38,18 @@ documented for use afterward.
 
 - The owned constructor, artifact/final split, generic helpers and shared test
   factory exist. `context.mkUpstream` executes/accepts independent checkpoint
-  tests once for all four converted library families; assertions remain local.
+  tests through the shared factory; assertions remain local.
 - `mkFamily` supplies implicit ordinary context, source/test wiring and stage-local
   `.instantiate { version; base; deps; opts; }`.
-- Base tiers expose `seed`, `target`, `native`, `full` and retained input adapters.
-  Ordinary standard-tool choices live in one explicit record.
+- Source-owned compiler-family definitions expose GCC4/GCC9/GCC13 `full` and
+  GCC16 `seed`, `runtime`, `reduced` and `full`. The public default is GCC16 full.
+  Actual compiler build/runtime qualification remains separate from source-plan
+  and provider-origin checks. Ordinary build-tool choices live in one lazy named
+  `tools` catalogue.
+- Subsystem entrypoints own their composition. The repository root connects
+  bases, packages, tools, checks, tests and reports through the existing lazy
+  context, then exports their public results. Retained construction and audit
+  support remain explicit private inputs.
 - MPFR has one readable family index and two independent era builders. Base,
   dependency, specification, step and runtime edits remain available.
 
@@ -86,46 +102,101 @@ audit, provider-role and checkpoint decisions are recorded separately as MIG-001
 
 ## 2. Make base composition explicit by role and construction generation
 
-Do not subdivide base files merely to make more files. The existing
-[tier assembly](../bases/tiers/source-gnu.nix) is already short and readable.
+The current public stages are `gcc_4.full`, `gcc_9.full`, `gcc_13.full` and
+`gcc_16.{seed,runtime,reduced,full}` under `tvp.bases`. `default` selects GCC16
+full. Exact release selectors use package spelling: `gcc_4_9_4`, `gcc_9_5_0`,
+`gcc_13_3_0` and `gcc_16_2_0`. A major alias selects the latest registered release
+within that major using version comparison; `gcc_4` currently selects 4.9.4.
+There is no minor-alias surface or separate composition revision number.
 
-The native platform facts now live in `bases/source-gnu/platform.nix`, and `mkTier`
-requires that platform explicitly. This extraction preserved the evaluated producer
-identities. Construction-family adoption and retained adapter removal remain work.
-Keep these responsibilities separate:
+Base migration changes the actual executable providers, not just the record used
+to describe them. The borrowed GCC4/GCC9 compilers, borrowed GCC13 seed and old
+GCC13/v2/v3 producer assembly have been removed. GCC4, GCC9 and GCC13 now have
+complete source compiler procedures on an explicit earlier closed GCC16 context.
+They expose only `full`, since they do not have separate owned seed/libc/shell or
+reduced-compiler builds. GCC16 retains its real four-stage source-GNU construction.
+A newer compiler can construct an older release; version order is not build order.
 
-| Responsibility | Existing home and intended boundary |
+The GCC4/GCC9 composition lives in [source-compiler.nix](../bases/source-compiler.nix);
+GCC13 uses [source-gcc13.nix](../bases/source-gcc13.nix). Raw compiler compilation
+and finalization have an actual A/F split. The shared source driver binds the
+compiler and its runtimes to the selected source-built libc and Binutils. Explicit
+earlier tool/library providers keep these constructions independent of public
+package aliases that could depend on the resulting base.
+
+These definitions do not claim that every compiler output is built or qualified.
+Source preflight and provider-origin checks are distinct from compilation,
+installed controls and upstream qualification. A failed or incomplete compiler
+attempt remains unqualified; logs and receipts record its actual disposition.
+
+The root accepts `system`; `bases/default.nix` resolves it through
+`bases/platforms/default.nix` once. Ordinary definitions omit platform selection.
+Native x86_64 GNU/Linux is the currently supported mode. Other systems, ABIs,
+cross compilation and different compiler/libc combinations need actual providers,
+recipe support and qualification.
+
+| Responsibility | Current home and boundary |
 |---|---|
-| Generic base/environment contracts | `lib/owned-base.nix`, `lib/build-environment.nix` and `bases/tiers/default.nix`; validate and compose supplied providers. |
-| Native platform/toolchain facts | `bases/source-gnu/default.nix` and `bases/tiers/default.nix`; isolate native GNU/Linux choices from generic contracts and package tables. |
-| Ordinary build-tool roles | `bases/source-gnu/standard-tools.nix`; explicit named providers from the preceding native tier, independent of public target libraries. |
-| Construction generations | `bases/tiers/source-gnu.nix` and `bootstrap/`; each stage selects its earlier compiler, tools and libraries. |
-| Compatibility adaptation | `bases/tiers/construction.nix` and `fromLegacy`; bounded adapters until their real callers move. |
-| Catalogue registration | Root `default.nix` and `bases/default.nix`; publish selected contexts and retained references. |
+| Generic base/environment contracts | `lib/owned-base.nix` and `lib/build-environment.nix`; validate supplied providers and compose execution inputs. |
+| Supported platform facts | `bases/platforms/`, selected once by the base entrypoint; unsupported systems reject. |
+| Family registration and aliases | `bases/default.nix` and `bases/aliases.nix`; explicit exact releases and latest-major selection. |
+| Source compiler composition | `bases/source-compiler.nix` for GCC4/GCC9 and `bases/source-gcc13.nix` for GCC13; raw A/F and selected source driver. |
+| Source-GNU construction ladder | `bases/tiers/source-gnu.nix` and `bootstrap/`; GCC16's real seed/runtime/reduced/full contexts. |
+| Build-tool roles | `bases/source-gnu/standard-tools.nix`; earlier local source-built tools, independent of final package aliases. |
+| Old recipe syntax | `bases/compatibility.nix` and `bases/retained.nix`; the local stdenv protocol backed by selected source-owned providers. |
+| Provider enforcement | `checks.source-base-providers`; source guard plus evaluated floor, driver, raw A/F, predecessor and runtime-provider checks. |
 
-Move construction callers to the same family instantiation interface used by MPFR,
-overriding base and dependencies before public evaluation. Keep construction
-provider choices explicit. A tool building itself needs an earlier provider; a
-lookup of its final public alias can create a cycle. Equal version numbers do not
-establish equal compiler generations.
+The repository root wires module results. Package registration and selector
+projection belong in `pkgs/default.nix`; CLI assembly in `tools/default.nix`;
+repository checks in `checks/default.nix`; batches/latest registration in
+`tests/default.nix`; inventories and ownership/status composition in
+`reports/default.nix`. These remain ordinary imports using the shared lazy context.
 
-Preserve current compiler/libc/Binutils/tool identities during organization-only
-changes. Base edits must rebind commands, provider metadata and attached tests;
-unused tools must remain lazy. An earlier tier must not force the public tier it
-constructs. `fromLegacy`'s package-name-based floor adaptation stays isolated from
-ordinary named provider selection until its callers are gone.
+`base.tools` is the authoritative lazy named catalogue. `tools.gcc` selects a whole
+driver; `compiler`, `shell` and `coreutils` are derived aliases. Only the execution
+baseline and providers used by active helpers/steps become inputs. A tool's presence
+in the catalogue does not grant an implicit PATH entry. `standardTools` remains a
+temporary compatibility input/view; new edits and definitions use `tools`.
 
-Platform-specific provider selection belongs to the base/context. The current
-concrete contexts are native x86_64 GNU/Linux. Additional architectures, cross
-compilation and new compiler/libc combinations need explicit provider contexts
-and qualification; flattening package indexes does not add that support.
+Base edits reconstruct validation, commands and dependencies from the effective
+choices. A partial Binutils/libc replacement that disagrees with the driver rejects
+clearly. Generic composition cannot rebind executable wrappers through metadata;
+select a coherent whole driver or construct one for the intended combination.
 
-## 3. Convert whole package families
+Remaining stdenv recipes use `tvp.__legacyBases` as a private syntax bridge.
+`bases/compatibility.nix` supplies the repository's vendored constructor with the
+selected source-owned compiler, shell, Coreutils, File and tool floor.
+`legacyEnvironment` verifies that view and exposes `.ownedBase`. It no longer
+wraps a Nixpkgs stdenv or preserves an old Nixpkgs-backed construction graph.
+Compatibility records use the exact compiler release keys; old construction
+variants are gone. Nixpkgs pure `lib`/`config` values used by assembly are separate
+from compiler/executable provider selection.
 
-Start with GMP, MPC and ISL. Together with MPFR they exercise the compiler's real
-library and bootstrap dependencies. Then convert other libraries, build tools,
-runtimes/profiles, and compiler, SDK and data entrypoints. Construction work can
-move a necessary provider earlier in that order.
+GCC9 still serves broken Readline 2.0; GCC4.9 serves ten broken Zlib 0.x
+entries. Their source/status defects remain separate from the compiler migration;
+GCC4.9 does not satisfy the Zlib records' GCC3.3-or-older requirement.
+
+Construction callers now use ordinary family `.instantiate`, supplying explicit
+earlier bases and dependencies before public evaluation. Obsolete retained recipe
+bodies have been removed; actual source-bootstrap procedures remain explicit.
+An old authoring API occurrence is not evidence of
+a foreign provider, and a new API occurrence is not proof of source independence.
+The provider-origin gate checks actual selections; build/runtime tests validate
+execution. Recipe syntax cleanup, runtime qualification and upstream nonpasses
+remain separate work, with [the source inventory](LEGACY-DEFINITIONS.md) recording
+the remaining authoring/caller boundaries.
+
+## 3. Whole-family rollout history
+
+The checkpoints below preserve the implementation sequence and the counts measured
+at each stage. Current adoption is 110 of 110 ordinary family indexes, as recorded
+above. These historical counts do not describe remaining migration work or imply
+runtime qualification of every release.
+
+The rollout started with GMP, MPC and ISL. Together with MPFR they exercise the
+compiler's real library and bootstrap dependencies. Other libraries, build tools,
+runtimes/profiles, compiler, SDK and data entrypoints followed. Construction work
+sometimes moved a necessary provider earlier in that order.
 The ordinary GMP, MPC and ISL indexes now follow this model across all 21 releases
 (three GMP eras, three MPC eras, two ISL eras). Together with MPFR, four family
 indexes use the authoring API. Standard build tools select the explicit earlier
@@ -244,12 +315,13 @@ implementations are removed. The intentionally small standalone pure library doe
 not yet expose the full family facade (MIG-008); importing the final catalogue there
 would create a cycle.
 
-Historical GCC13/GCC16 catalogue library selections remain retained until their
-actual legacy `rebuild`/stdenv callers are converted. Six library producer identities
-and frozen Coreutils remain exact. The locale fixture's public Bash/Perl helper
-edges still drift with the standalone compiler; their original evidence is retained
-without rebaseline or acceptance (MIG-009). MIG-005–007 record construction and
-observer boundaries, and MIG-010 records a separate whole-inventory failure.
+Retained GCC library procedures can still use old constructor syntax, but their
+compatibility views now select current source-owned compiler/tool providers.
+The old Nixpkgs-backed GCC13/GCC16 producer ladder is removed. Requalify affected
+release profiles against their actual new inputs; earlier exact-identity snapshots
+are not an active requirement to keep the old providers. MIG-005–010 retain prior
+construction, locale-fixture and whole-inventory observations without turning those
+nonpasses into acceptance.
 
 For each family:
 
@@ -300,3 +372,16 @@ Do not erase required seed providers, historical broken records, patches or real
 profiles just because their implementation is old. Existing hardening, historical
 failure and admission holds remain separate from this cleanup. Local iteration
 continues on Tower with CI and NAS off.
+
+The compiler bases now use actual source-owned providers. GCC4/GCC9/GCC13 raw
+compiler procedures have independent A/F boundaries and source drivers, constructed
+with the explicit closed GCC16 predecessor. The old borrowed modules and old
+GCC13/v2/v3 construction graph are removed. Remaining old recipe syntax executes
+through `bases/compatibility.nix` on those selected source providers.
+
+`checks.source-base-providers` rejects a new owned record that merely wraps a
+foreign compiler or tool floor. Shared base controls use the existing owned test
+factory. These checks do not qualify unbuilt or failed compiler outputs.
+The [source inventory](LEGACY-DEFINITIONS.md) records remaining recipe syntax,
+caller and test-adapter work; compilation, installed controls and upstream receipts
+record execution separately.

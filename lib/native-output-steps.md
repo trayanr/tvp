@@ -136,3 +136,17 @@ For example, the JDK selects `source/build/tvp-release` with `paths = [ "jdk" ]`
 between `exploded-image` and `images`, before native resources are embedded.
 `checks.owned-jdk-source-stage` uses miniature source and native ELF fixtures;
 it does not build OpenJDK or execute installed JDK controls.
+
+
+## Runtime-path validation policies
+
+`outputs.checkPaths` retains its absolute-path-only contract.
+`outputs.checkLoaderPaths` is the shared validator for procedures that preserve
+loader-relative RPATH spelling. Both return the existing `output.check-paths`
+step record and accept explicit paths, tools, output selection and ELF selection.
+Loader-token validation preserves `$ORIGIN`, `$LIB` and `$PLATFORM`; unresolved
+runtime tokens do not establish that a directory exists on every target host.
+The loader-aware helper also rejects build/artifact lookup prefixes. Choose the
+policy required by the procedure; sharing implementation does not broaden a
+caller's validation contract. Prefix relocation is shared by the existing
+selected procedures through `lib/relocate.py`.

@@ -26,6 +26,21 @@ def facts():
                     'bootstrap.seed':dict(role='bootstrap', disposition='requires audit', validation='OUTSIDE')}))
 
 
+def provider(name, version='1', built_by='earlier-runtime'):
+    return dict(name=name, version=version, drvPath=f'/nix/store/{name}.drv',
+                path=f'/nix/store/{name}', builtBy=built_by, selection=None)
+
+
+def context(base='source-gnu-candidate'):
+    return dict(system='x86_64-linux', config='x86_64-unknown-linux-gnu',
+                base=dict(name=base, construction=dict(kind='stage', previous='reduced', sourceBase=None)),
+                gcc=provider('selected-driver', '16.2.0'),
+                binutils=provider('selected-binutils', '2.46'),
+                libc=provider('selected-libc', '2.39'), usedTools={
+                    'gnumake': dict(provider('selected-make', '4.4.1'), role='gnumake', origin='selected-base'),
+                    'gnumake#1': dict(provider('explicit-make', '4.3'), role='gnumake', origin='package-dependency')})
+
+
 def progress():
     return dict(schema=1, status='running', updatedAt='2026-01-01',
                 workingBaseline=dict(normalized='/source', head='rev'),
@@ -98,6 +113,113 @@ class RepositoryTests(unittest.TestCase):
         for job in ['missing','x_1','z_1']:
             f=facts();f['latest']['families']['x']['job']=job
             with self.assertRaises(m.Invalid):m.report(f)
+
+
+class BuildContextTests(unittest.TestCase):
+    def facts(self):
+        f = facts()
+        f['rows'][1]['buildContext'] = context()
+        f['rows'][2]['buildContext'] = context()
+        f['rows'][3]['buildContext'] = context('retained')
+        f['rows'][3]['buildContext']['base']['construction'] = None
+        return f
+
+    def test_old_manifests_keep_unknown_contexts(self):
+        f = facts()
+        r = m.report(f)['repository']
+        self.assertEqual(r['buildContexts'], dict(availableRows=0, unknownRows=4,
+                                                excludedBrokenRows=1, selections=[]))
+        self.assertTrue(all(row['buildContext'] is None for row in r['rows']))
+        self.assertNotIn('buildContext', f['rows'][0])
+        self.assertIn('Effective build contexts: 0 supplied; 4 unknown; 1 broken/unavailable excluded.',
+                      m.render(m.report(f)))
+
+    def test_contexts_group_by_effective_selection_and_family(self):
+        f = self.facts()
+        r = json.loads(json.dumps(m.report(f, 'x')))
+        contexts = r['repository']['buildContexts']
+        self.assertEqual((contexts['availableRows'], contexts['unknownRows'],
+                          contexts['excludedBrokenRows']), (2, 1, 0))
+        self.assertEqual(len(contexts['selections']), 1)
+        self.assertEqual(contexts['selections'][0]['rows'], 2)
+        text = m.render(r)
+        self.assertIn('Context 1 (2 rows): x86_64-linux; target x86_64-unknown-linux-gnu', text)
+        self.assertIn('GCC 16.2.0; driver selected-driver 16.2.0', text)
+        self.assertIn('Construction: kind=stage; previous=reduced; sourceBase=unknown', text)
+        self.assertIn('canonical/x_3 3: owned; base source-gnu-candidate; split-compliant; ok; context 1', text)
+        for name, tool in r['repository']['rows'][2]['buildContext']['usedTools'].items():
+            self.assertIn(f'{name} (role {tool["role"]}, 2 rows)', text)
+            self.assertIn(tool['origin'], text)
+            self.assertIn(tool['path'], text)
+        self.assertEqual(r['repository']['rows'][2]['buildContext']['gcc']['drvPath'],
+                         '/nix/store/selected-driver.drv')
+        self.assertEqual(len(m.report(f)['repository']['buildContexts']['selections']), 2)
+
+    def test_same_names_with_different_drivers_are_distinct(self):
+        f = self.facts()
+        f['rows'][2]['buildContext']['gcc']['drvPath'] = '/nix/store/other-driver.drv'
+        f['rows'][2]['buildContext']['gcc']['path'] = '/nix/store/other-driver'
+        selections = m.report(f, 'x')['repository']['buildContexts']['selections']
+        self.assertEqual(len(selections), 2)
+        self.assertEqual([selection['rows'] for selection in selections], [1, 1])
+
+    def test_wrapper_version_does_not_hide_compiler_version(self):
+        f = self.facts()
+        c = f['rows'][2]['buildContext']
+        c['gcc']['version'] = '1'
+        c['compilerVersion'] = '16.2.0'
+        r = m.report(f, 'x')
+        self.assertIn('GCC 16.2.0; driver selected-driver 1', m.render(r))
+
+    def test_provider_changes_do_not_invent_a_new_toolchain(self):
+        f = self.facts()
+        tool = f['rows'][2]['buildContext']['usedTools']['gnumake']
+        tool.update(provider('replacement-make', '4.4.1'), origin='package-dependency')
+        tool['selection'] = dict(kind='override', operation='edit')
+        r = m.report(f, 'x')
+        self.assertEqual(len(r['repository']['buildContexts']['selections']), 1)
+        self.assertIn('replacement-make 4.4.1; package-dependency', m.render(r))
+        self.assertIn('Selection: kind=override; operation=edit', m.render(r))
+
+    def test_partial_identity_and_empty_used_tools_preserve_unknowns(self):
+        f = self.facts()
+        c = f['rows'][2]['buildContext']
+        c['config'] = None
+        c['usedTools'] = {}
+        c['gcc'].update(name=None, version=None, drvPath=None, builtBy=None)
+        r = m.report(f, 'x')
+        self.assertIsNone(r['repository']['rows'][2]['buildContext']['gcc']['version'])
+        self.assertIn('target unknown', m.render(r))
+
+    def test_malformed_contexts_fail_even_outside_family_filter(self):
+        changes = [
+            lambda c: c.update(system=False),
+            lambda c: c.update(config=[]),
+            lambda c: c.update(base=None),
+            lambda c: c['base'].update(name='different-base'),
+            lambda c: c['base'].update(construction=[]),
+            lambda c: c['base']['construction'].update(previous=True),
+            lambda c: c.update(gcc=None),
+            lambda c: c['gcc'].update(version=False),
+            lambda c: c['gcc'].update(drvPath=17),
+            lambda c: c['gcc'].update(path=None),
+            lambda c: c['gcc'].update(selection=[]),
+            lambda c: c['gcc'].update(selection={'kind': {'nested': True}}),
+            lambda c: c.update(usedTools=[]),
+            lambda c: c['usedTools']['gnumake'].update(role=False),
+            lambda c: c['usedTools']['gnumake'].update(origin='guessed'),
+            lambda c: c['usedTools']['gnumake'].update(path='/path\ninvalid'),
+        ]
+        for change in changes:
+            f = self.facts()
+            f['rows'][3]['buildContext']['base']['construction'] = dict(kind='stage', previous='reduced')
+            change(f['rows'][3]['buildContext'])
+            with self.subTest(change=change), self.assertRaises(m.Invalid):
+                m.report(f, 'x')
+        f = self.facts()
+        f['rows'][4]['buildContext'] = context()
+        with self.assertRaisesRegex(m.Invalid, 'broken or unavailable'):
+            m.report(f)
 
 
 class AuthoringTests(unittest.TestCase):
@@ -202,6 +324,7 @@ class AuthoringTests(unittest.TestCase):
                 sentinel.chmod(0o755)
             shutil.copyfile(m.__file__,root/'migration.py')
             f=self.facts();f['latest']['measurement']='declared-selectors'
+            f['rows'][2]['buildContext'] = context()
             (root/'manifest.json').write_text(json.dumps(f))
             env={**os.environ,'PATH':str(commands)}
             result=subprocess.run([sys.executable,'-B',str(root/'migration.py'),'--migration','--json'],env=env,capture_output=True,text=True)
@@ -210,6 +333,9 @@ class AuthoringTests(unittest.TestCase):
             self.assertEqual(report['repository']['latest']['measurement'],'declared-selectors')
             self.assertIsNone(report['repository']['latest']['runtimeQualifiedRows'])
             self.assertEqual(report['repository']['authoring']['summary']['adoptedIndexes'],1)
+            self.assertEqual(report['repository']['buildContexts']['availableRows'],1)
+            self.assertEqual(report['repository']['rows'][2]['buildContext']['usedTools']['gnumake']['path'],
+                             '/nix/store/selected-make')
             self.assertFalse(called.exists())
 
     def test_all_split_does_not_certify_authoring_or_runtime(self):

@@ -26,10 +26,7 @@ let
   env = p.specification.base.environment p.specification.environment;
   contracts = {
     distinctOrdinaryRecipe = p.drvPath != variant.drvPath && p.tvp.base == "source-gnu-candidate";
-    retainedVariant =
-      variant.tvp.deps.freetype.drvPath == (tvp.lib.packages.mkVersions
-        (import ../../pkgs/libraries/freetype { inherit pkgs tvp; }).recipes.freetype.constructionRecipe
-      ).freetype_2_15_0.drvPath;
+    currentVariantProvider = variant.tvp.deps.freetype.drvPath == tvp.canonical.freetype_2_15_0.drvPath;
     publicVariantSplit =
       (steps.partition variant.buildSteps).split
       && builtins.any (s: lib.hasInfix "-Dtests=enabled" (s.run or "")) variant.buildSteps;
@@ -44,7 +41,7 @@ let
       )
     );
     archiveHashPreserved = p.src.outputHash == variant.src.outputHash;
-    distinctSourceProducer = p.src.drvPath != variant.src.drvPath;
+    sharedSourceProducer = p.src.drvPath == variant.src.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
     disabledLazy =
       !(builtins.any (s: s.name == "fontconfig.check") (steps.active disabled.tests.upstream.buildSteps));
@@ -135,9 +132,7 @@ let
                 grep -F '${final.fontconfig}/share/fontconfig/conf.avail/' configurations
                 # Verify the actual loaded Expat provider through the loader's diagnostics.
                 env -i LD_DEBUG=libs ./consumer ${../../pkgs/libraries/fontconfig/tests/fixtures/font.bdf} 2> loader
-                grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt final.fontconfig.runtime.libraries 1)
-                }/lib/libexpat.so.1' loader
+                grep -F 'calling init: ${lib.getLib (builtins.elemAt final.fontconfig.runtime.libraries 1)}/lib/libexpat.so.1' loader
                 mkdir "$out"
                 cp consumer headers defaults requirements private-libs configurations loader "$out/"
               '';

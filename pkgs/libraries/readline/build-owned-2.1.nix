@@ -19,13 +19,10 @@ let
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/readline-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "readline.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "readline.${name}";
 in
 {
   pname = "readline";
@@ -153,7 +150,8 @@ in
             requiredFiles = [ "lib/libreadline.a" ] ++ lib.optional final.features.history "lib/libhistory.a";
             requiredRegular = [
               "lib/libreadline.a"
-            ] ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
+            ]
+            ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
           }
         )
       }'';
@@ -193,7 +191,7 @@ in
       python = tools.python;
       libraries = [ ];
     })
-    ((import ../ncurses/ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       elfKinds = [ "runtime" ];
       python = tools.python;
       binutils = tools.binutils;

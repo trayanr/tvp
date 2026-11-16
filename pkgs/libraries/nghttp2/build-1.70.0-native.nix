@@ -51,13 +51,10 @@ let
         "."
       ];
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "nghttp2.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "nghttp2.${name}";
   make = ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'';
 in
 {
@@ -182,7 +179,7 @@ in
       name = "nghttp2.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../../build-tools/utilities-restore.py} ${artifact}/nix-support/nghttp2-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/nghttp2-build-tree "$TVP_SOURCE_ROOT"
         printf '%s\n' ${artifact} > "$TVP_SOURCE_ROOT/production-artifact"
       '';
     }

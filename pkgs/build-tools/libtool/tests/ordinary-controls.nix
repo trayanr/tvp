@@ -6,7 +6,14 @@
 let
   p = package;
   d = p.tvp.deps;
-  tools = p.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   shellProvider = p.edit (
     s:
     (builtins.removeAttrs s [ "artifactName" ])
@@ -247,7 +254,7 @@ context.mkSuite {
         ${rebound}/bin/libtoolize --version >&2
         printf 'AC_INIT([provider], [1])\nLT_INIT\nAC_OUTPUT\n' > configure.ac
         env -u M4 TVP_PROVIDER_LOG="$PWD/provider-calls" ${rebound}/bin/libtoolize --copy --force >&2
-        ${lib.optionalString p.tvp.features.toolDefaults ''grep -qx selected-m4 provider-calls''}
+        ${lib.optionalString p.tvp.features.toolDefaults "grep -qx selected-m4 provider-calls"}
         env M4=${rebound.specification.m4}/bin/m4 TVP_PROVIDER_LOG="$PWD/provider-calls" ${d.autoconf}/bin/autoconf >&2
         grep -qx selected-m4 provider-calls
 

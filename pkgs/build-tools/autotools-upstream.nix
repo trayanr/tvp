@@ -37,8 +37,8 @@ let
           ++ lib.subtractLists production.tools check.tools
           ++ extra
           ++ [
-            spec.base.standardTools.gnutar
-            spec.base.standardTools.gzip
+            spec.base.tools.gnutar
+            spec.base.tools.gzip
           ];
         libraries = spec.environment.libraries or [ ];
         overrides = spec.environment.overrides or { };

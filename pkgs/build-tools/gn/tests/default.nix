@@ -18,12 +18,12 @@ context.mkSuite {
   inherit package;
   tests = {
     source-safety = {
-      script = ''${package.specification.python}/bin/python3 -B ${./test_unpack.py} ${../native/unpack.py} >&2; printf source-safe'';
+      script = "${package.specification.python}/bin/python3 -B ${./test_unpack.py} ${../native/unpack.py} >&2; printf source-safe";
       expected = "source-safe";
       tools = [ package.specification.python ];
     };
     version = {
-      script = ''test -s ${package}/share/licenses/gn/LICENSE; gn --version'';
+      script = "test -s ${package}/share/licenses/gn/LICENSE; gn --version";
       expected = package.tvp.revision;
     };
     project = {

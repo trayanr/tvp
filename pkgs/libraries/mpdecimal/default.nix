@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -16,10 +16,20 @@ let
     }
   ];
   pname = "mpdecimal";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://www.bytereef.org/mpdecimal/download.html";
+        pattern = "mpdecimal-[0-9][^\"]*\\.tar\\.gz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "mpdecimal-";
+          suffixes = [ ".tar.gz" ];
+        };
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -29,16 +39,14 @@ let
     tests = import ./tests;
     testDeps = {
       pkgConfig = tvp.packages.pkg-config;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.mpdecimal = family // {
-    constructionRecipe = retained;
-  };
+  recipes.mpdecimal = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

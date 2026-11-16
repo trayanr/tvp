@@ -216,9 +216,9 @@ rec {
   checkDef =
     attr: entry:
     if !(entry ? def) then
-      throw "TVP: ${attr} has no `def`. A version names a definition from its package's `defs`."
+      throw "TVP: ${attr} has no `def`. Declare `def` in the release block passed to tvp.lib.packages.mkTable."
     else if !(entry.def ? base) then
-      throw "TVP: the definition behind ${attr} declares no `base`. Use `null` if the builder takes no stdenv."
+      throw "TVP: the definition behind ${attr} declares no `base`. Ordinary definitions receive a base from their family context; compatibility definitions must declare their base explicitly."
     else
       entry.def;
 
@@ -283,7 +283,7 @@ rec {
 
         definition =
           recipe.name
-            or (throw "TVP: the definition behind ${attr} carries no name. Wrap the package's `defs` in `tvpLib.packages.mkDefs`.");
+            or (throw "TVP: the definition behind ${attr} carries no name. Build the version table with tvp.lib.packages.mkTable; named compatibility maps can use mkDefs.");
 
         status = checkStatus attr (entry.status or { level = "ok"; });
         patches = checkPatches attr (recipe.patches or [ ]);
@@ -292,16 +292,17 @@ rec {
         builder = import recipe.builder;
         currentExtraArgs =
           extraArgs
-          // lib.optionalAttrs
-            (
-              rebindTests != null
-              && !(recipe ? testContext)
-              && extraArgs ? mkTests
-              && extraArgs.mkTests ? override
-            )
-            {
-              mkTests = rebindTests extraArgs.mkTests;
-            };
+          //
+            lib.optionalAttrs
+              (
+                rebindTests != null
+                && !(recipe ? testContext)
+                && extraArgs ? mkTests
+                && extraArgs.mkTests ? override
+              )
+              {
+                mkTests = rebindTests extraArgs.mkTests;
+              };
 
         pkg = lib.makeOverridable builder (
           builtins.intersectAttrs (builtins.functionArgs builder) infra
@@ -309,14 +310,8 @@ rec {
             inherit version;
             inherit (entry) sha256;
           }
-          # The whole base mechanism. Builders already take `stdenv` and already
-          # call `stdenv.mkDerivation`, so naming it here is the only edit a base
-          # ever needs — no builder mentions bases at all.
-          #
-          # A null base means the builder does not take a stdenv because it
-          # delegates to a nixpkgs helper, and is therefore not on a TVP base at
-          # all. That has to be declared rather than inferred, and
-          # `passthru.tvp.base` reports it as null.
+          # Compatibility constructor only: ordinary family builders receive
+          # their effective owned base through argumentDefaults above.
           // lib.optionalAttrs (base != null) { inherit (base) stdenv; }
           // checkDeps attr recipe.deps
           // lib.optionalAttrs (patches != [ ]) { patches = map (p: p.file) patches; }
@@ -512,7 +507,7 @@ rec {
             rebindTests =
               factory:
               factory.override {
-                pkgs = tests.withBase {
+                pkgs = tests.compatibility.withBase {
                   inherit pkgs;
                   base = profile.base;
                 };

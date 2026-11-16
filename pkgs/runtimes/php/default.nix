@@ -916,9 +916,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.php = family // {
-    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.php;
-  };
+  recipes.php = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

@@ -24,13 +24,10 @@ let
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/readline-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "readline.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "readline.${name}";
 in
 {
   pname = "readline";
@@ -114,11 +111,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "readline.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "check" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash SHLIB_LIBS=-lncursesw check'')
@@ -199,7 +195,7 @@ in
       python = tools.python;
       libraries = lib.optional final.installedInterface.propagateNcurses final.ncurses;
     })
-    ((import ../ncurses/ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       elfKinds = [ "runtime" ];
       python = tools.python;
       binutils = tools.binutils;

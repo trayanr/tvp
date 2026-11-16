@@ -17,9 +17,9 @@ that private recipe and does not restore A. This known reuse/isolation debt is
 explicit; the authoring pass does not invent a checkpoint protocol or claim a
 full Bash conformance suite. Native shipped-test fixtures remain independent U.
 
-The old construction factory is `retained.nix`; its original stdenv procedure and
-installed assertions remain byte-exact under `retained/` and `tests/default.nix`.
-GCC13/seed/bootstrap shell providers are not redirected to public Bash.
+Construction callers use the same family with explicit earlier providers. The
+old construction factory and duplicate procedures are removed. Source-bootstrap
+shell providers remain explicit earlier generations, independent of public Bash.
 
 No Nix evaluation/build/runtime checks were performed by this proposal. Root
 must compare producers, reuse exact proofs and validate any changed boundary.

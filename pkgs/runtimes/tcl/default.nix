@@ -1,6 +1,5 @@
 { pkgs, tvp }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -118,7 +117,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
         opts = {
           buildFeatures = {
@@ -143,7 +142,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
         opts = {
           buildFeatures = {
@@ -166,7 +165,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
         opts = {
           buildFeatures = {
@@ -189,7 +188,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
       };
       releases = {
@@ -212,7 +211,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
       };
       releases = {
@@ -227,7 +226,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
         opts = {
           buildFeatures = {
@@ -260,7 +259,7 @@ let
           libgcc = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Keep the exact full-tier raw GCC runtime selected by this native driver, independently of public compiler generations.";
-          } tvp.baseTiers.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
         };
         opts = {
           testPatches = map (p: p.file) [
@@ -312,9 +311,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.tcl = family // {
-    constructionRecipe = retained;
-  };
+  recipes.tcl = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

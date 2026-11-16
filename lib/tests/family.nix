@@ -112,6 +112,23 @@ let
     message = "second";
   });
   retested = p.mkTests.override { tests = _: { }; };
+  probeTestConfiguration =
+    (p.mkTests.override {
+      tests = { package, ... }: {
+        inherit (package) drvPath;
+        options = package.testConfiguration;
+      };
+      helpers = "caller-helpers";
+    })
+      p;
+  dependencyFamily = api.mkFamily (args // { testDeps.tool = package "default-test-tool"; });
+  dependencyPackage = (api.mkVersions dependencyFamily).family-model_1;
+  probeTestDependency =
+    (dependencyPackage.mkTests.override {
+      tests = { package, ... }: package.tvp.declaredTestDependencies.tool;
+      tool = package "selected-test-tool";
+    })
+      dependencyPackage;
   customDependencies =
     dependencyNames: build (withDefinition (defs."1" // { inherit dependencyNames; }));
   floorVisible =
@@ -292,6 +309,10 @@ let
         }
       ]
     );
+    testConfigurationOverride = probeTestConfiguration.options.helpers == "caller-helpers";
+    testConfigurationPreservesProduction = probeTestConfiguration.drvPath == p.drvPath;
+    testDependencyOverride = probeTestDependency.drvPath == (package "selected-test-tool").drvPath;
+    testDependencyPreservesProduction = dependencyPackage.drvPath == p.drvPath;
     explicitComposition = family ? versionTable && !(family ? canonical) && !(family ? aliases);
     generatedAliases = aliases.family-model.drvPath == p.drvPath;
     stageLocalInstantiation = constructed.drvPath == p.drvPath;
@@ -334,7 +355,7 @@ let
     customListPreservesFloor = floorVisible (customDependencies [ "dependency" ]);
     customFunctionPreservesFloor = floorVisible (customDependencies (_: [ "dependency" ]));
     coreutilsOverrideRebindsFloor =
-      map (p: p.drvPath) coreutilsOnly.tools == [ coreutilsOnly.coreutils.drvPath ];
+      map (p: p.drvPath) coreutilsOnly.baselineTools == [ coreutilsOnly.coreutils.drvPath ];
     baseOverride =
       rebound.specification.bash.drvPath == replacement.shell.drvPath
       && rebound.specification.coreutils.drvPath == replacement.coreutils.drvPath

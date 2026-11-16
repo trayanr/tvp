@@ -51,13 +51,9 @@ let
         "python"
         "."
       ];
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${final.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   elfPaths = [
     "bin/file"
@@ -166,7 +162,7 @@ in
       name = "file.relocate";
       tools = [ final.python ];
       run = ''
-        ${final.python}/bin/python3 -B ${./ordinary/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" "${final.patchelf}/bin/patchelf"
+        ${final.python}/bin/python3 -B ${../../../lib/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" "${final.patchelf}/bin/patchelf"
       '';
     }
     (outputs.strip {
@@ -223,7 +219,7 @@ in
       name = "file.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../utilities-restore.py} ${artifact}/nix-support/file-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/file-build-tree "$TVP_SOURCE_ROOT"
         printf '%s\n' ${artifact} > "$TVP_SOURCE_ROOT/production-artifact"
       '';
     }

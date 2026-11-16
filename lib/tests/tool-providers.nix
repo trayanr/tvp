@@ -163,6 +163,13 @@ let
       dependencyProviders.notAUsedRole = otherCoreutils;
     }
   );
+  inactiveProjection = p.edit (
+    s:
+    s
+    // {
+      dependencyProviders.unused = throw "inactive projection forced";
+    }
+  );
   sorted = builtins.sort builtins.lessThan;
   results = {
     bzip2SelectedFromBase = (builtins.elemAt bzipUnpack.tools 1).drvPath == bzip2.drvPath;
@@ -182,6 +189,8 @@ let
     providerProjectionLeavesProductionExact =
       projected.drvPath == p.drvPath && projected.artifact.drvPath == p.artifact.drvPath;
     unknownProjectionRejected = !(builtins.tryEval invalidProjection.drvPath).success;
+    inactiveRegisteredProjectionStaysLazy =
+      inactiveProjection.drvPath == p.drvPath && !(inactiveProjection.tvp.deps ? unused);
     explicitDependencyPreserved = p.tvp.deps.dependency.drvPath == defs."1".deps.dependency.drvPath;
     unusedBaseAndUpstreamStayLazy = builtins.isString p.drvPath;
     disabledInputsStayLazy =

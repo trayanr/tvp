@@ -60,7 +60,7 @@ let
   configured = q: step "pkg-config.configure" q;
   staged = family.instantiate {
     version = "0.29.2";
-    base = tvp.baseTiers.seed;
+    base = tvp.bases.gcc_16.seed;
   };
   results = {
     allSixReleases =
@@ -112,7 +112,7 @@ let
     modernPrefixUsesEqualWidthArtifact =
       builtins.stringLength (toString p.artifact) == builtins.stringLength (toString p)
       && p.artifact.drvPath != p.drvPath;
-    stageLocalBase = staged.specification.base.name == tvp.baseTiers.seed.name;
+    stageLocalBase = staged.specification.base.name == tvp.bases.gcc_16.seed.name;
     noopOverride = same (p.override { });
     noopEdit = same (p.edit (s: s));
     testPolicyReusesProduction = same disabled && !(disabled.tests ? upstream);
@@ -154,7 +154,9 @@ let
       ++ p.all
     );
     retainedConstructionIsLegacy = builtins.all (
-      version: !(family.recipes.pkg-config.constructionRecipe.versionTable.${version}.def ? constructor)
+      version:
+      family.recipes.pkg-config.versionTable.${version}.def.authoring.origin
+      == "tvp.lib.packages.mkFamily"
     ) versions;
     oneSharedInstalledSuite = builtins.all (
       version:

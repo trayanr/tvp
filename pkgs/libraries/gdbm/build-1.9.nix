@@ -32,13 +32,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "gdbm.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gdbm.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/gdbm-build-tree";
 in
@@ -74,7 +71,8 @@ in
   configureFlags = [
     (if final.buildFeatures.shared then "--enable-shared" else "--disable-shared")
     (if final.buildFeatures.static then "--enable-static" else "--disable-static")
-  ] ++ lib.optional final.features.compatLib "--enable-libgdbm-compat";
+  ]
+  ++ lib.optional final.features.compatLib "--enable-libgdbm-compat";
   environment = {
     tools = [
       tools.pkg-config
@@ -155,11 +153,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gdbm.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "gdbm.upstream-source";
       tools = [ tools.python ];
@@ -286,7 +283,7 @@ in
       inherit (tools) python;
       libraries = [ ];
     })
-    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = [
         "lib"

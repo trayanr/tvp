@@ -50,7 +50,7 @@ let
       sourceChangesA = source.artifact.drvPath != p.artifact.drvPath;
       suffixReusesA = suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
       baseCoreutilsRebinds = base.specification.coreutils.outPath == changedBase.coreutils.outPath;
-      hostCompiler = s.base.compiler.drvPath == tvp.baseTiers.full.compiler.drvPath;
+      hostCompiler = s.base.compiler.drvPath == tvp.bases.gcc_16.full.compiler.drvPath;
       versionTest = p.tests ? version;
       reboundTest = suffix.tests.version.package.drvPath == suffix.drvPath;
     };
@@ -72,7 +72,7 @@ let
         in
         p.drvPath == canonical.drvPath && p.artifact.drvPath == canonical.artifact.drvPath
       ) versions;
-      capturedRecipe = recipe ? constructionRecipe;
+      singleFamilyDefinition = !(recipe ? constructionRecipe);
     }
   ) modules;
   perl = modules.perl.canonical;
@@ -110,7 +110,7 @@ let
       !(lib.hasInfix "Pod-Html" (builtins.readFile perl.perl_5_36_3.specification.prepareHelper));
     nodeNinjaGeneration = node.specification.ninja.drvPath == tvp.packages.ninja.drvPath;
     nodeRealRustDependency = node.specification.rustc.drvPath == tvp.packages.rustc_1.drvPath;
-    nodeRuntimeShell = node.specification.runtimeBash.drvPath == tvp.baseTiers.full.shell.drvPath;
+    nodeRuntimeShell = node.specification.runtimeBash.drvPath == tvp.bases.gcc_16.full.shell.drvPath;
     nodeNamedCallerOverride =
       ((node.mkTests.override { inherit pkgs; }) node).version.package.drvPath == node.drvPath;
     jdkSeedGeneration = jdk.specification.bootJdk.drvPath == seed.drvPath;

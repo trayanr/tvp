@@ -1,22 +1,17 @@
 { pkgs, tvp }:
 let
-  retained = (import ./retained { inherit pkgs tvp; }).recipes.gawk;
-  testBase = tvp.baseTiers.full;
-  testTools = testBase.standardTools;
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = testBase;
-    bash = testBase.shell;
-    coreutils = testBase.coreutils;
-    tar = testTools.gnutar;
-    xz = testTools.xz;
-    libc = testBase.compiler.libc;
-  };
+  testBase = tvp.bases.gcc_16.full;
+  testTools = testBase.tools;
+  locale =
+    (tvp.lib.tests.fixtures.forBase {
+      builder = tvp.builder;
+      base = testBase;
+    }).gnuLocale;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-3.0.6.nix;
-        deps = { };
+
         opts = {
           archiveExt = "tar.gz";
           license = pkgs.lib.licenses.gpl2Plus;
@@ -29,7 +24,7 @@ let
     {
       def = {
         builder = ./build-3.0.6.nix;
-        deps = { };
+
       };
       releases = {
         "3.1.8" = "sha256-Xbx7LEwyhxEzfCqs0JoSLHMTEiJi4/8DRZDwFAZ0ErQ=";
@@ -141,7 +136,7 @@ let
   pname = "gawk";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = import ./upstream.nix;
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -173,9 +168,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gawk = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gawk = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

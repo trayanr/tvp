@@ -66,7 +66,7 @@ let
     }
   );
   same = q: q.artifact.drvPath == p.artifact.drvPath && q.drvPath == p.drvPath;
-  historical = import ../../pkgs/libraries/expat/tests/legacy-callers.nix { inherit pkgs tvp; };
+  historical = import ../../pkgs/libraries/expat/tests/construction-callers.nix { inherit pkgs tvp; };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   results = {
     wholeFamily = builtins.attrNames family.recipes.expat.versionTable == [ "2.9.0" ];
@@ -132,9 +132,12 @@ let
         (p.override { cmakeFlags = [ "-DEXPAT_BUILD_TESTS=ON" ]; }).drvPath;
     customizationIsEvaluated =
       import ../../pkgs/libraries/expat/tests/customization.nix { package = p; } == "customization";
-    retainedFactoryObservers = builtins.all (value: value) (builtins.attrValues historical.contracts);
-    retainedConstructor =
-      !(family.recipes.expat.constructionRecipe.versionTable."2.9.0".def ? constructor);
+    constructionFactoryObservers = builtins.all (value: value) (
+      builtins.attrValues historical.contracts
+    );
+    singleConstructionDefinition =
+      !(family.recipes.expat ? constructionRecipe)
+      && family.instantiate { version = "2.9.0"; } ? artifact;
   };
   failed = builtins.filter (name: !results.${name}) (builtins.attrNames results);
 in

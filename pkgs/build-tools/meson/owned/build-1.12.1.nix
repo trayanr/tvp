@@ -20,13 +20,10 @@
 final:
 let
   inherit (tvp.builder) steps;
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    base = final.base;
+    environment = final.environment;
+  };
 in
 {
   pname = "meson";

@@ -4,6 +4,7 @@
   pkgs,
   tvpLib,
   bases,
+  legacyBases,
 }:
 let
   inherit (pkgs) lib;
@@ -43,7 +44,24 @@ let
       && p.targetPlatform.config == s.targetPlatform.config
       && p.system == s.system
       && p.dynamicLinker == profile.dynamicLinker
-    ) (lib.attrValues bases);
+    ) (lib.attrValues legacyBases);
+    stage-platforms =
+      lib.all
+        (
+          base:
+          base.platform.system == profile.system
+          && base.platform.config == profile.config
+          && !base.platform.isMusl
+        )
+        (
+          lib.attrValues bases.gcc_13
+          ++ lib.attrValues bases.gcc_16
+          ++ [
+            bases.gcc_9.full
+            bases.gcc_4.full
+          ]
+        );
+    implicit-platform = bases.default.platform == bases.gcc_16.full.platform;
   };
   failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) contracts);
 in

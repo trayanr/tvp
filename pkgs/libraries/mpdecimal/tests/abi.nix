@@ -4,7 +4,7 @@
   context,
 }:
 let
-  deps = package.specification.base.standardTools // {
+  deps = package.specification.base.tools // {
     binutils = package.specification.base.compiler.bintools;
   };
 in
@@ -41,7 +41,7 @@ context.mkSuite {
         ./context
         ${lib.optionalString (
           !package.specification.buildFeatures.static
-        ) ''test ! -e ${package}/lib/libmpdec.a; test ! -e ${package}/lib/libmpdec++.a''}
+        ) "test ! -e ${package}/lib/libmpdec.a; test ! -e ${package}/lib/libmpdec++.a"}
         printf context-ok
       '';
       expected = "context-ok";

@@ -9,7 +9,7 @@ let
   p = package;
   s = p.specification;
   d =
-    s.base.standardTools
+    s.base.tools
     // {
       coreutils = s.base.coreutils;
       bash = s.base.shell;
@@ -55,12 +55,12 @@ let
         {
           name = "alternate.xz";
           tools = [
-            ac.specification.base.standardTools.gzip
+            ac.specification.base.tools.gzip
             d.xz
           ];
           run = ''
             mkdir "$out"
-            ${ac.specification.base.standardTools.gzip}/bin/gzip -cd ${t.alternateSource}/source.tar.gz | ${d.xz}/bin/xz -c > "$out/source.tar.xz"
+            ${ac.specification.base.tools.gzip}/bin/gzip -cd ${t.alternateSource}/source.tar.gz | ${d.xz}/bin/xz -c > "$out/source.tar.xz"
           '';
         }
       ];

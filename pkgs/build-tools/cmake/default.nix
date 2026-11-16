@@ -1,36 +1,12 @@
 { pkgs, tvp }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."cmake";
-  retained = prior.constructionRecipe or prior;
-  earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash_5;
-    coreutils = earlier.tools.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
-      gnutar = earlier.tools.tar;
-      gzip = earlier.tools.gzip;
-      findutils = earlier.tools.findutils;
-      patch = earlier.tools.patch;
-      gnumake = earlier.tools.make;
-      sed = earlier.tools.sed;
-      grep = earlier.tools.grep;
-      diffutils = earlier.tools.diffutils;
-      gawk = earlier.tools.gawk;
-      pkg-config = tvp.packages.pkg-config;
-    };
-  };
   pname = "cmake";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-4.4.5-current.nix;
-        base = profileBase;
         deps = {
-          binutils = earlier.tools.binutils;
+
           openssl = tvp.packages.openssl;
           zlib = tvp.packages.zlib_1;
           bzip2 = tvp.packages.bzip2_1;
@@ -57,17 +33,22 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
+  testDeps = {
     ninja = tvp.packages.ninja;
     jsonC = tvp.packages.json-c;
     pkgConfig = tvp.packages.pkg-config;
     mpfr = tvp.packages.mpfr;
-    sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-    alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+    sentinel = tvp.lib.tests.fixtures.sentinel;
+    alternateSource = tvp.lib.tests.fixtures.alternateSource;
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    packageMeta.upstream = {
+      type = "git-tags";
+      url = "https://github.com/Kitware/CMake.git";
+      normalise = tag: pkgs.lib.removePrefix "v" tag;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -79,9 +60,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."cmake" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."cmake" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

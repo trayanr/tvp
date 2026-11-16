@@ -1,30 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."meson";
-  retained = prior.constructionRecipe or prior;
-  earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash_5;
-    coreutils = earlier.tools.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-      gnutar = earlier.tools.tar;
-      gzip = earlier.tools.gzip;
-      findutils = earlier.tools.findutils;
-      patch = earlier.tools.patch;
-      ninja = tvp.packages.ninja;
-      cmake = tvp.packages.cmake;
-      pkg-config = tvp.packages.pkg-config;
-    };
-  };
   pname = "meson";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-1.11.1-current.nix;
-        base = profileBase;
         deps = {
           python = tvp.packages.python_3;
           # Runtime discovery providers are real package dependencies.
@@ -48,7 +28,6 @@ let
     {
       def = {
         builder = ./build-1.12.1-current.nix;
-        base = profileBase;
         deps = {
           python = tvp.packages.python_3;
           # Runtime discovery providers are real package dependencies.
@@ -68,16 +47,21 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // {
+  testDeps = {
     zlib = tvp.packages.zlib_1;
     pkgConfig = tvp.packages.pkg-config;
     mpfr = tvp.packages.mpfr;
-    sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-    alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+    sentinel = tvp.lib.tests.fixtures.sentinel;
+    alternateSource = tvp.lib.tests.fixtures.alternateSource;
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    packageMeta.upstream = {
+      type = "git-tags";
+      url = "https://github.com/mesonbuild/meson.git";
+      normalise = tag: tag;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -89,9 +73,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."meson" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."meson" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

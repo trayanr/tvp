@@ -3,8 +3,10 @@
 The 11 general-purpose releases and two reduced public profiles use inline
 nameless definitions and the implicit family constructor/base/helper/test model.
 Tcl/SQLite/OpenSSL and every other actual dependency stay explicit TVP selections.
-Earlier standard tools come from the effective base. The public runtime Bash,
-public pkg-config and installed-helper Grep retain their distinct actual roles.
+Earlier standard tools come from the effective base, including `pkg-config` and
+`grep`; the builders use those canonical role names. Public runtime Bash remains
+an explicit installed-runtime dependency. Base/step edits can replace execution
+tools without repeating their providers in every release definition.
 
 Six complete general-purpose procedures preserve real profile boundaries:
 3.5 setup.py exclusions;3.7 Setup.local with setup.py extension detection;
@@ -14,8 +16,9 @@ Six complete general-purpose procedures preserve real profile boundaries:
 table. Upstream module choices are a separate test-only `upstreamPolicy`.
 
 `python-minimal/build.nix` and `python-build/build.nix` are complete independent
-public reduced-profile procedures. Their pinned old `build-3.12.5.nix` files and
-the direct `python-build/owned` bootstrap provider are deliberately unchanged.
+public reduced-profile procedures. The direct `python-build/owned` bootstrap
+provider remains an explicit earlier generation; duplicate old public builders
+and caller indexes are removed.
 Their disabled-module sets, no-pip/no-test-extension profile, static embedding
 interfaces, TLS/archive differences and loader/config-helper repairs remain.
 
@@ -38,15 +41,16 @@ is retained as explicit isolation debt; no claim of test-free compilation is mad
 Broad regression suites remain independent installed tests. Minimal/build keep
 `--disable-test-modules`; full Python keeps its complete existing installed payload.
 
-Construction callers use `retained-construction.nix`, six byte-identical
-`retained/build-*.nix` files, the original `3.nix`, and the unchanged old installed
-factory. Direct bootstrap and GCC13 frozen selections are not redirected.
-Original source-stage documentation is `retained/README.md`.
+Construction callers use the same family definition with explicit earlier inputs.
+The separate source-bootstrap route remains
+`bases/source-gnu.tools.python` → `bootstrap/source-python-meson.nix` →
+`python-build/owned/build-3.12.5.nix`. It does not use a duplicate public version
+table or an old caller factory. Historical module/ABI and hardening limits remain.
 
-All 13 public production artifact/final identities match the pre-authoring
-producers. Python 3.15.2 and the two public 3.12.5 reduced profiles pass their
-normal batches (27, 14 and 10 leaves respectively). Historical releases are not
-qualified by these results. The observer now checks actual scoped split admission
+Recorded pre-cleanup validation matched all 13 artifact/final identities and
+qualified Python 3.15.2 plus the two public 3.12.5 reduced profiles through their
+normal batches (27, 14 and 10 leaves respectively). Historical releases and
+outputs with changed providers are not qualified by these results. The observer now checks actual scoped split admission
 instead of a stale global debt count; final-only Binutils probes edit final steps
 without claiming that a construction-base compiler edit can reuse A. Existing
 qualification holds remain unwaived.

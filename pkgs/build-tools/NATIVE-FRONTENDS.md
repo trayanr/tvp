@@ -1,10 +1,11 @@
 # Ordinary native build frontends
 
 The selected pkg-config 0.29.2, Ninja 1.13.2, CMake 4.4.5 and Meson 1.12.1
-use complete independent native procedures on `source-gnu-candidate`. Other
-releases and platforms keep their original procedures and test factories. The
-complete `constructionRecipe` of every family remains available to historical
-base construction and test replay. This does not change the default base.
+use complete independent era procedures on source-owned compiler bases. Release
+tables, package metadata and test dependencies are declared in each current index.
+Earlier construction callers use the same family’s `instantiate` function with
+explicit earlier bases and dependencies. A second retained recipe graph is not
+exported by the ordinary families. Native x86_64 GNU/Linux is the supported mode.
 
 Construction helpers select retained source-GNU host generations explicitly.
 In particular pkg-config cannot use ordinary Python: ordinary Python discovers
@@ -14,8 +15,9 @@ runtime. Python's frontend test tools are declared test dependencies, outside
 its production recipe arguments. This distinction prevents strict dependency
 validation from forcing the Python/Ninja/Meson test cycle during construction.
 
-All four procedures are single-stage. Source, environment and runtime edits
-reconstruct the procedure; there is no split artifact reuse promise. Ninja's
+All four procedures have artifact/final splits. Production source and compile
+choices determine A; runtime/output repairs determine F. Runtime and test-only
+edits reuse A when its actual inputs remain unchanged. Ninja's
 compiled shell/Python and Meson's launcher/zipapp use the final runtime fields.
 CMake's generated shell bindings use its final runtime shell. ELF finalization
 uses the selected base and final runtime libraries. Tool overrides use the
@@ -41,5 +43,6 @@ vendored charset-object controls, not all bundled GLib tests. Meson runs eight
 selected internal unit tests from both source and installed zipapp, alongside
 native consumers; this is not its entire upstream suite.
 
-Retained Make/M4 constructors and Zstd availability do not imply source-GNU
-migration of those families or a fully source-owned transitive runtime closure.
+Provider-origin, output ownership and runtime qualification are separate checks.
+Family authoring or an available cached output alone does not establish a fully
+qualified transitive runtime closure.

@@ -5,7 +5,7 @@
 }:
 let
   s = package.specification;
-  tools = s.base.standardTools;
+  tools = s.base.tools;
   perl = package.tvp.declaredTestDependencies.perl;
   checked = package.edit (
     spec:

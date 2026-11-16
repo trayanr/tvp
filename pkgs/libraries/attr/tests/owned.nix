@@ -31,7 +31,7 @@ else
       }
     );
   in
-  tvpLib.tests.mkSuite {
+  tvpLib.tests.compatibility.mkSuite {
     inherit pkgs package;
     tests = {
       capability-runner = {

@@ -104,20 +104,19 @@ in
     (steps.shebangs {
       name = "gawk.source-shells";
 
-      paths =
-        [
-          "configure"
-          "install-sh"
-          "mkinstalldirs"
-          "missing"
-          "awklib"
-        ]
-        ++ lib.optionals (final.version == "3.1.8") [
-          "config.guess"
-          "config.sub"
-          "depcomp"
-          "ylwrap"
-        ];
+      paths = [
+        "configure"
+        "install-sh"
+        "mkinstalldirs"
+        "missing"
+        "awklib"
+      ]
+      ++ lib.optionals (final.version == "3.1.8") [
+        "config.guess"
+        "config.sub"
+        "depcomp"
+        "ylwrap"
+      ];
       names = [
         "sh"
         "bash"
@@ -159,11 +158,10 @@ in
     hasNls = false;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gawk.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "gawk.upstream-frontends";

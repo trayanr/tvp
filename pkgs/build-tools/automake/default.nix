@@ -251,12 +251,10 @@ let
     type = "directory-index";
     url = "https://mirrors.kernel.org/gnu/automake/";
     pattern = "automake-[0-9][^\"]*\\.tar\\.gz";
-    normalise =
-      file:
-      if pkgs.lib.hasPrefix "automake-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-        pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "automake-" file)
-      else
-        null;
+    normalise = tvp.lib.versions.fromArchiveName {
+      prefix = "automake-";
+      suffixes = [ ".tar.gz" ];
+    };
     include = version: builtins.match "[0-9]+(\\.[0-9]+)*(-p[0-9]+)?" version != null;
   };
   pname = "automake";
@@ -287,17 +285,15 @@ let
         reason = "An independent earlier Perl exercises runtime-provider edits without choosing the original public dependency again.";
       } (import ../../../bootstrap/source-full-gcc-prerequisites.nix { }).perl;
       runtimeShell = tvp.packages.bash_5;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.automake = family // {
-    constructionRecipe = (import ./retained { inherit pkgs tvp; }).recipes.automake;
-  };
+  recipes.automake = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

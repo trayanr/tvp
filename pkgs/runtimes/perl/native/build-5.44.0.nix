@@ -27,13 +27,11 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "perl.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "perl.${name}";
   pythonCommand =
     name: run:
     (final.base.environment (final.environment // { tools = final.environment.tools ++ [ python ]; }))

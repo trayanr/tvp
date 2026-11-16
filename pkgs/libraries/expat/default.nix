@@ -26,9 +26,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.expat = family // {
-    constructionRecipe = (import ./retained { inherit pkgs tvp; }).recipes.expat;
-  };
+  recipes.expat = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

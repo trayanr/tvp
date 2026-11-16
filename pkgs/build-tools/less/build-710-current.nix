@@ -38,13 +38,10 @@ let
   inherit (context) steps outputs;
   baseTools = context.tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "less.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "less.${name}";
 in
 {
   pname = "less";

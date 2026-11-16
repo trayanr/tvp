@@ -26,13 +26,11 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "ncurses.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "ncurses.${name}";
 in
 {
   pname = "ncurses";

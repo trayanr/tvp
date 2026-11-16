@@ -34,13 +34,10 @@ let
       ];
   checkpoint = "nix-support/gnugrep-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "gnugrep.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gnugrep.${name}";
 in
 {
   pname = "gnugrep";
@@ -76,11 +73,10 @@ in
     hasNls = true;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gnugrep.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "gnugrep.upstream-frontends";

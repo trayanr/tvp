@@ -30,8 +30,9 @@ Autoconf producer/artifact identities remain exact. The 25 compliant Automake
 and four compliant Libtool identities necessarily change transitively: their
 existing public latest Autoconf/Automake dependency selections now resolve to
 the newly split 2.73/1.19 producers. No dependency version is upgraded or pinned
-back to an unsplit producer to conceal this change. Retained legacy construction
-recipes, bootstrap routing and non-native selection remain unchanged.
+back to an unsplit producer to conceal this change. Those measurements describe
+the earlier split wave. Current construction callers use the same family API;
+duplicate old indexes are removed. Source-bootstrap providers remain explicit.
 
 Historical releases reuse the existing consumer suites, fixtures, feature profiles
 and test context/factory. Their independent make-check rebuild uses the historical

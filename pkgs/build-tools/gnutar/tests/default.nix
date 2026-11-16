@@ -4,7 +4,7 @@
   context,
 }:
 let
-  locale = (package.testConfiguration or { }).locale or package.tvp.declaredTestDependencies.locale;
+  locale = (package.testConfiguration or { }).locale or context.fixtures.gnuLocale;
   helpers =
     if ((package.testConfiguration or { }).helpers or null) != null then
       package.testConfiguration.helpers

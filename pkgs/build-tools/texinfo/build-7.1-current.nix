@@ -44,13 +44,10 @@ let
     coreutils
     ;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "texinfo.${name}";
-      cwd = "source";
-      run = run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "texinfo.${name}";
 in
 {
   pname = "texinfo";
@@ -255,7 +252,7 @@ in
       name = "texinfo.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../current-restore.py} ${artifact}/nix-support/texinfo-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/texinfo-build-tree "$TVP_SOURCE_ROOT"
       '';
     }
   ];

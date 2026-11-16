@@ -44,13 +44,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "gdbm.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "gdbm.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash CFLAGS="-O2${
     lib.optionalString (final.cStandard != null) " -std=${final.cStandard}"
   }${lib.optionalString final.commonSymbols " -fcommon"}"'';
@@ -242,7 +239,7 @@ in
       inherit (tools) python;
       libraries = [ ];
     })
-    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = [ "lib" ];
       elfKinds = [ "runtime" ];

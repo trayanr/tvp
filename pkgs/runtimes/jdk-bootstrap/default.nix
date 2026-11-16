@@ -1,12 +1,10 @@
 { pkgs, tvp }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).packageArgs;
   pname = "jdk-bootstrap";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-owned-21.0.13.nix;
-        base = tvp.baseTiers.full;
         deps = {
           runtimeLibc = tvp.packages.glibc_2;
           runtimeCompiler = tvp.packages.gcc_16;
@@ -25,7 +23,6 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -34,25 +31,28 @@ let
         inherit sha256;
       };
     tests = (import ./tests/installed.nix);
-    testDeps.fontArchive = tvp.lib.packages.tagSelection {
-      namespace = "upstream-source-fixture";
-      selector = "openjdk-21.0.13-ga-font";
-      kind = "test-source";
-      reason = "Pinned A.ttf fixture for the headless binary seed test; no source JDK build.";
-    } (import ../jdk/legacy.nix { inherit pkgs tvp; }).canonical.jdk_21_0_13.src;
+    testDeps.fontArchive =
+      let
+        sourceFamily = (import ../jdk { inherit pkgs tvp; }).recipes.jdk;
+      in
+      tvp.lib.packages.tagSelection
+        {
+          namespace = "upstream-source-fixture";
+          selector = "openjdk-21.0.13-ga-font";
+          kind = "test-source";
+          reason = "Pinned A.ttf fixture for the headless binary seed test; no source JDK build.";
+        }
+        (
+          sourceFamily.source {
+            version = "21.0.13";
+            sha256 = sourceFamily.versionTable."21.0.13".sha256;
+          }
+        );
   };
-  # Preserve only the historical named test-factory override, lazily.
-  recipe = family // {
-    extraArgs = family.extraArgs // {
-      mkTests = import ./tests/caller-factory.nix { inherit pkgs tvp; };
-    };
-  };
-  canonical = tvp.lib.packages.mkVersions recipe;
+  canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.jdk-bootstrap = recipe // {
-    constructionRecipe = retained;
-  };
+  recipes.jdk-bootstrap = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

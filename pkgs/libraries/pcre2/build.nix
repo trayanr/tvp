@@ -15,13 +15,10 @@ let
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/pcre2-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "pcre2.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "pcre2.${name}";
 in
 {
   pname = "pcre2";
@@ -117,7 +114,7 @@ in
         tools.python
         tools.coreutils
       ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/prepare.py} ${tools.coreutils}/bin/echo'';
+      run = "${tools.python}/bin/python3 -B ${./tests/prepare.py} ${tools.coreutils}/bin/echo";
     }
     (steps.shebangs {
       name = "pcre2.test-shells";
@@ -136,11 +133,10 @@ in
   upstreamPlan =
     artifact:
     [
-      {
+      (steps.restoreCheckpoint {
         name = "pcre2.restore-build-tree";
-        tools = [ tools.python ];
-        run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-      }
+        checkpoint = "${artifact}/${checkpoint}";
+      })
     ]
     ++ map (
       step:

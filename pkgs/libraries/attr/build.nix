@@ -19,7 +19,7 @@ let
     environment
     // {
       inherit name;
-      run = '''' + run;
+      run = "" + run;
       cwd = "source";
     };
   checkpoint = "nix-support/attr-build-tree";
@@ -102,11 +102,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "attr.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "attr.check" ''
@@ -205,7 +204,7 @@ in
         "lib/libattr.so.1"
       ];
     })
-    ((import ../ordinary-attr-crypt-check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       inherit (tools) python binutils patchelf;
       paths = elfPaths;
     })

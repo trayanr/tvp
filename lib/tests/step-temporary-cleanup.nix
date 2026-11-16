@@ -5,7 +5,7 @@ let
     temporaryDirectories = true;
   };
 in
-(tvp.bases.default.stdenv.mkDerivation {
+(tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
   name = "tvp-step-temporary-cleanup";
   nativeBuildInputs = [ tvp.packages.python_3 ];
   buildCommand = ''

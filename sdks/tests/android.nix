@@ -1,6 +1,6 @@
 { tvp }:
 let
-  inherit (tvp.bases.default) stdenv;
+  inherit (tvp.__legacyBases.gcc_16_2_0) stdenv;
   sdk = tvp.android.profiles.flutter;
 in
 stdenv.mkDerivation {

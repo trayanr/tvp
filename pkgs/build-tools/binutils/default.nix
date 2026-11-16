@@ -1,36 +1,12 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  previous = import ./retained-index.nix { inherit pkgs tvp; };
-  prior = previous.recipes."binutils";
-  retained = prior.constructionRecipe or prior;
-  earlier = import ../../../bases/source-gnu { };
-  full = tvp.baseTiers.full;
-  profileBase = full.override {
-    shell = tvp.packages.bash;
-    coreutils = tvp.packages.coreutils;
-    standardTools = {
-      python = earlier.tools.python;
-      patchelf = earlier.tools.patchelf;
-      gnumake = tvp.packages.gnumake;
-      gnutar = tvp.packages.gnutar;
-      gzip = tvp.packages.gzip;
-      xz = tvp.packages.xz;
-      gawk = tvp.packages.gawk;
-      diffutils = tvp.packages.diffutils;
-      findutils = tvp.packages.findutils;
-      pkg-config = tvp.packages.pkg-config;
-      sed = tvp.packages.gnused;
-      grep = tvp.packages.gnugrep;
-    };
-  };
   pname = "binutils";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-2.42-current.nix;
-        base = profileBase;
         deps = {
-          binutils = earlier.tools.binutils;
+
           zlib = tvp.packages.zlib;
           zstd = tvp.packages.zstd;
           perl = tvp.packages.perl;
@@ -44,10 +20,18 @@ let
       };
     }
   ];
-  testDeps = (prior.testDeps or { }) // { };
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable testDeps;
-    packageMeta = prior.packageMeta or { };
+    inherit pname versionTable;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/binutils/";
+      pattern = "binutils-[0-9][^\"]*\\.tar\\.xz";
+      normalise = tvp.lib.versions.fromArchiveName {
+        prefix = "binutils-";
+        suffixes = [ ".tar.xz" ];
+      };
+      include = version: builtins.match "[0-9]+\\.[0-9]+(\\.[0-9]+)?" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -59,9 +43,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."binutils" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."binutils" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

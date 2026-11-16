@@ -19,7 +19,11 @@ let
       ];
     }
   );
-  planText = package: builtins.concatStringsSep "\n" (map (s: s.run) package.buildSteps);
+  planText =
+    package:
+    builtins.concatStringsSep "\n" (
+      map (s: if (s.kind or "") == "split" then "" else s.run) package.buildSteps
+    );
   results = {
     emptyExact = empty == base && disabled == base;
     defaults =

@@ -56,7 +56,7 @@
       expected = "cvsserver-entry-paths-ok";
     };
     version = {
-      script = ''git --version | awk '{print $3}' '';
+      script = "git --version | awk '{print $3}' ";
       expected = package.version;
     };
     repository = {

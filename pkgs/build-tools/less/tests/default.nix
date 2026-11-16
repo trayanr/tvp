@@ -18,7 +18,7 @@ in
   libraries = [ ];
   tests = {
     version = {
-      script = ''${p}/bin/less --version | head -1'';
+      script = "${p}/bin/less --version | head -1";
       expected = "less 710 (PCRE2 regular expressions)";
     };
     commands = {

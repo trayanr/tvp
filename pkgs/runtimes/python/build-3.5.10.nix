@@ -6,8 +6,8 @@
   src,
   version,
   runtimeBash,
-  pkgConfig,
-  helperGrep,
+  pkg-config,
+  grep,
   openssl,
   zlib,
   bzip2,
@@ -76,8 +76,8 @@ in
     src
     version
     patches
-    pkgConfig
-    helperGrep
+    pkg-config
+    grep
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
@@ -88,7 +88,8 @@ in
       "_uuid"
       "nis"
     ];
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     compression = "xz";
     pkgConfigRequired = false;
@@ -96,12 +97,14 @@ in
     systemFfi = false;
     opensslPrefix = true;
     platlibdir = true;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     finalizeEx = true;
     embedFlag = true;
     textSubprocess = true;
-  } // installedInterface;
+  }
+  // installedInterface;
   upstreamPolicy = {
     modules = [
       "test_ssl"
@@ -115,7 +118,8 @@ in
       "test_zlib"
       "test_readline"
     ];
-  } // upstreamPolicy;
+  }
+  // upstreamPolicy;
   libraries = {
     inherit
       openssl
@@ -130,14 +134,13 @@ in
       libxcrypt
       ;
   };
-  dependencyProviders =
-    {
-      inherit (final) pkgConfig helperGrep;
-    }
-    // final.runtime.providers
-    // {
-      runtimeBash = final.runtime.shell;
-    };
+  dependencyProviders = {
+    inherit (final) pkg-config grep;
+  }
+  // final.runtime.providers
+  // {
+    runtimeBash = final.runtime.shell;
+  };
   environment = {
     overrides.values.LIBS =
       "-lm"
@@ -151,7 +154,7 @@ in
       tools.grep
       tools.gawk
       tools.diffutils
-      final.pkgConfig
+      final.pkg-config
     ];
     libraries = builtins.attrValues final.libraries;
   };
@@ -207,7 +210,7 @@ in
               final.runtime.shell
               final.coreutils
               tools.sed
-              final.helperGrep
+              final.grep
               tools.binutils
             ]
           )
@@ -260,16 +263,15 @@ in
       PYTHON
     '')
   ];
-  configureFlags =
-    [
-      "--with-ensurepip=install"
-      "--with-dbmliborder=gdbm"
-    ]
-    ++ lib.optional final.sourceLayout.pkgConfigRequired "--with-pkg-config=yes"
-    ++ lib.optional final.sourceLayout.opensslRpath "--with-openssl-rpath=auto"
-    ++ lib.optional final.sourceLayout.platlibdir "--with-platlibdir=lib"
-    ++ lib.optional final.sourceLayout.systemFfi "--with-system-ffi"
-    ++ lib.optional final.sourceLayout.opensslPrefix "--with-openssl=${final.libraries.openssl}";
+  configureFlags = [
+    "--with-ensurepip=install"
+    "--with-dbmliborder=gdbm"
+  ]
+  ++ lib.optional final.sourceLayout.pkgConfigRequired "--with-pkg-config=yes"
+  ++ lib.optional final.sourceLayout.opensslRpath "--with-openssl-rpath=auto"
+  ++ lib.optional final.sourceLayout.platlibdir "--with-platlibdir=lib"
+  ++ lib.optional final.sourceLayout.systemFfi "--with-system-ffi"
+  ++ lib.optional final.sourceLayout.opensslPrefix "--with-openssl=${final.libraries.openssl}";
   tvp = {
     profile = "general-purpose";
     features = {

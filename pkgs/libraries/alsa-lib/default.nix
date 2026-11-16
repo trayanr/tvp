@@ -1,11 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = import ./retained.nix { inherit pkgs tvp; };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build.nix;
-        deps = { };
+
       };
       releases."1.2.16.1" = "sha256-90Dbf0iCVZRP/UQoQW7jOQqWdChWkWQz30aMKBQ2SA4=";
     }
@@ -25,9 +24,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.alsa-lib = family // {
-    constructionRecipe = retained;
-  };
+  recipes.alsa-lib = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

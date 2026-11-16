@@ -29,7 +29,7 @@ let
   step = name: q: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
   constructed = family.instantiate {
     version = "6.3.0";
-    base = tvp.baseTiers.seed;
+    base = tvp.bases.gcc_16.seed;
     deps.m4 = bootstrap.build-m4;
   };
   interface = p.edit (
@@ -48,7 +48,7 @@ let
       let
         q = family.canonical.${tvp.lib.versions.attrName "gmp" version};
       in
-      q.specification.base.name == tvp.baseTiers.full.name
+      q.specification.base.name == tvp.bases.gcc_16.full.name
       && builtins.length (builtins.filter (s: (s.kind or "") == "split") q.buildSteps) == 1
       && !(q ? overrideAttrs)
       && !(builtins.any (s: s.name == "gmp.check") q.buildSteps)
@@ -63,7 +63,7 @@ let
     publicM4Choice = p.tvp.deps.m4.drvPath == tvp.packages.m4.drvPath;
     latestAlias = tvp.packages.gmp.drvPath == p.drvPath;
     legacyAlias = tvp.packages.gmp_5_0.drvPath == old.drvPath;
-    stageLocalBase = constructed.specification.base.name == tvp.baseTiers.seed.name;
+    stageLocalBase = constructed.specification.base.name == tvp.bases.gcc_16.seed.name;
     stageLocalM4 = constructed.tvp.deps.m4.drvPath == bootstrap.build-m4.drvPath;
     noopOverride = sameProduction (p.override { });
     noopEdit = sameProduction (p.edit (s: s));
@@ -98,8 +98,8 @@ let
       builtins.all
         (
           name:
-          tvp.baseTiers.full.standardTools.${name}.drvPath
-          == tvp.baseTiers.native.standardTools.${name}.drvPath
+          tvp.bases.gcc_16.full.standardTools.${name}.drvPath
+          == tvp.bases.gcc_16.reduced.standardTools.${name}.drvPath
         )
         [
           "gnumake"
@@ -115,7 +115,10 @@ let
         ];
     m4BuildToolsPrecedeGmp =
       builtins.all
-        (name: tvp.packages.m4.tvp.deps.${name}.drvPath == tvp.baseTiers.full.standardTools.${name}.drvPath)
+        (
+          name:
+          tvp.packages.m4.tvp.deps.${name}.drvPath == tvp.bases.gcc_16.full.standardTools.${name}.drvPath
+        )
         [
           "gnumake"
           "gnutar"

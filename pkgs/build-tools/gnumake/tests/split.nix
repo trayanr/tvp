@@ -7,7 +7,7 @@
 let
   p = package;
   s = p.specification;
-  runtime = p.editRuntime (r: r // { dlopenDirectories = [ "${s.base.standardTools.python}/lib" ]; });
+  runtime = p.editRuntime (r: r // { dlopenDirectories = [ "${s.base.tools.python}/lib" ]; });
   suffix = p.editSteps (
     plan:
     plan

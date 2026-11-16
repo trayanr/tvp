@@ -85,7 +85,7 @@ let
   resolved = expand libraries;
   direct = base ? compiler;
   cc = if direct then base.compiler else base.stdenv.cc;
-  baselineTools = if direct then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
+  baselineTools = if direct then [ base.shell ] ++ base.baselineTools else base.stdenv.initialPath;
   baseline = {
     values = {
       CC = "${cc}/bin/cc";
@@ -119,25 +119,24 @@ let
       ) resolved;
     };
   };
-  contributions =
-    [
-      {
-        origin = "base ${base.name}";
-        data = baseline;
-      }
-    ]
-    ++ map (tool: {
-      origin = "tool ${tool.name or (toString tool)}";
-      data =
-        if tool ? buildEnvironment then
-          tool.buildEnvironment {
-            inherit tool base;
-            libraries = resolved;
-            inherit directories;
-          }
-        else
-          { };
-    }) ((lib.optional direct base.shell) ++ (if direct then base.tools else [ ]) ++ tools);
+  contributions = [
+    {
+      origin = "base ${base.name}";
+      data = baseline;
+    }
+  ]
+  ++ map (tool: {
+    origin = "tool ${tool.name or (toString tool)}";
+    data =
+      if tool ? buildEnvironment then
+        tool.buildEnvironment {
+          inherit tool base;
+          libraries = resolved;
+          inherit directories;
+        }
+      else
+        { };
+  }) ((lib.optional direct base.shell) ++ (if direct then base.baselineTools else [ ]) ++ tools);
   entries =
     origin: data:
     lib.concatMap

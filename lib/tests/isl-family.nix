@@ -39,7 +39,7 @@ let
   step = name: q: builtins.head (builtins.filter (s: s.name == name) q.buildSteps);
   constructed = family.instantiate {
     version = "0.28";
-    base = tvp.baseTiers.seed;
+    base = tvp.bases.gcc_16.seed;
     deps.gmp = bootstrap.gnu-gmp;
   };
   text = value: builtins.unsafeDiscardStringContext value;
@@ -54,7 +54,7 @@ let
       && builtins.length (builtins.filter (s: (s.kind or "") == "split") q.buildSteps) == 1
       && !(builtins.any (s: s.name == "isl.check") q.buildSteps)
       && q.tests ? upstream
-      && q.specification.base.name == tvp.baseTiers.full.name
+      && q.specification.base.name == tvp.bases.gcc_16.full.name
     ) (builtins.attrNames family.recipes.isl.versionTable);
     coherentModernEra =
       family.recipes.isl.versionTable."0.26".def.builder
@@ -87,7 +87,7 @@ let
     shellEditRebindsTests = shell.tests.version.specification.base.shell.drvPath == marker.drvPath;
     publicGmp = p.tvp.deps.gmp.drvPath == tvp.packages.gmp_6.drvPath;
     defaultAlias = tvp.packages.isl.drvPath == p.drvPath;
-    stageLocalBase = constructed.specification.base.name == tvp.baseTiers.seed.name;
+    stageLocalBase = constructed.specification.base.name == tvp.bases.gcc_16.seed.name;
     stageLocalGmp = constructed.tvp.deps.gmp.drvPath == bootstrap.gnu-gmp.drvPath;
     customizationEveryVersion = builtins.all (
       q: (import ../../pkgs/libraries/isl/tests/customization.nix { package = q; }) == "customization"

@@ -50,7 +50,7 @@ let
       python_3 = "python-fixture";
     };
     android.profiles = { };
-    bases.default.stdenv.mkDerivation = attrs: attrs;
+    __legacyBases.gcc_16_2_0.stdenv.mkDerivation = attrs: attrs;
   };
   make =
     universe:
@@ -145,16 +145,18 @@ in
   catalogueDeclarationsDiscardContexts = !(builtins.hasContext (builtins.toJSON catalogue.families));
   catalogueRejectsOlderAlias =
     !(builtins.tryEval (
-      builtins.deepSeq (makeCatalogue (
-        packages
-        // {
-          widget = canonical.widget_1_9 // {
-            __tvpSelection = packages.widget.__tvpSelection // {
-              canonical = "widget_1_9";
-              version = "1.9";
+      builtins.deepSeq
+        (makeCatalogue (
+          packages
+          // {
+            widget = canonical.widget_1_9 // {
+              __tvpSelection = packages.widget.__tvpSelection // {
+                canonical = "widget_1_9";
+                version = "1.9";
+              };
             };
-          };
-        }
-      )).text true
+          }
+        )).text
+        true
     )).success;
 }

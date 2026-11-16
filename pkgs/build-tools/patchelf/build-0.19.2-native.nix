@@ -36,13 +36,9 @@ let
     ;
   elfPaths = [ "bin/patchelf" ];
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "patchelf";
@@ -100,7 +96,7 @@ in
     }
     (command "patchelf.configure" ''${bash}/bin/bash ./configure --prefix="$out"'')
     (command "patchelf.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    (command "patchelf.install" ''${gnumake}/bin/make install'')
+    (command "patchelf.install" "${gnumake}/bin/make install")
   ];
   inherit doCheck;
   upstreamPlan = steps.sequence [

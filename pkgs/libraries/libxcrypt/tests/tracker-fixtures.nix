@@ -4,10 +4,10 @@
   context,
 }:
 let
-  gnused = package.specification.base.standardTools.sed;
+  gnused = package.specification.base.tools.sed;
   coreutils = package.specification.base.coreutils;
   commonTools =
-    with package.specification.base.standardTools;
+    with package.specification.base.tools;
     [
       sed
       grep

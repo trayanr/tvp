@@ -159,15 +159,9 @@ let
   failed = builtins.mapAttrs (_: r: builtins.filter (n: !r.${n}) (builtins.attrNames r)) rows;
   fc = packages.fontconfig;
   rl = packages.readline;
-  retainedNcurses =
-    (tvp.lib.packages.mkVersions
-      (import ../../pkgs/libraries/ncurses { inherit pkgs tvp; }).recipes.ncurses.constructionRecipe
-    ).ncurses_6_4;
   profiles = {
     buildToolsJdkGeneration =
-      packages.android-build-tools_36_0_0.tvp.deps.jdk.drvPath
-      == (import ../../sdks/retained-adapters.nix { inherit pkgs tvp; })
-      .buildTools.versionTable."36.0.0".def.deps.jdk.drvPath;
+      packages.android-build-tools_36_0_0.tvp.deps.jdk.drvPath == tvp.canonical.jdk_21_0_13.drvPath;
     platformFinalPolicyReuse =
       let
         p = packages.android-platform_36_r2;
@@ -184,7 +178,7 @@ let
       in
       p.tests.runtime-expectation.expectedLibraries
       == map (x: builtins.unsafeDiscardStringContext (toString x)) p.runtime.libraries;
-    readlineProvider = rl.tvp.deps.ncurses.drvPath == retainedNcurses.drvPath;
+    readlineProvider = rl.tvp.deps.ncurses.drvPath == tvp.canonical.ncurses_6_4.drvPath;
     readlineStaticShared = rl.tvp.features.static && rl.tvp.features.shared && rl.tvp.features.history;
     readlineLinkage = builtins.any (
       s: lib.hasInfix "SHLIB_LIBS=-lncursesw" (s.run or "")

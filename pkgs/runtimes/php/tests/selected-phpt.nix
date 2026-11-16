@@ -5,7 +5,7 @@
   context,
 }:
 let
-  tools = package.specification.base.standardTools;
+  tools = package.specification.base.tools;
   spec = {
     tools = package.specification.environment.tools ++ [
       tools.gnutar

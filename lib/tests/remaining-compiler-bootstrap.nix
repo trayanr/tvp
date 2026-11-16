@@ -181,7 +181,7 @@ in
   gcc = {
     bootstrap = has "make" (run gcc "gcc.bootstrap") && has "compare" (run gcc "gcc.bootstrap");
     patches = builtins.length gs.patches == 3;
-    libc = gs.glibc.drvPath == tvp.bases.default.stdenv.cc.libc.drvPath;
+    libc = gs.glibc.drvPath == tvp.__legacyBases.gcc_16_2_0.stdenv.cc.libc.drvPath;
     raw = gcc.rawCompiler && gcc.tvp.bootstrap && gcc.libc.drvPath == gs.glibc.drvPath;
     tests = builtins.all (n: builtins.hasAttr n gcc.tests) [
       "version"

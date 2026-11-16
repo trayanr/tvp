@@ -1,14 +1,10 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).packageArgs;
-  # Explicit earlier closed host, independent of the public compiler indexes.
-  compilerHostBase = tvp.baseTiers.full;
   pname = "rustc";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-owned-1.97.1.nix;
-        base = compilerHostBase;
         deps = {
           runtimeLibc = tvp.packages.glibc_2;
           runtimeCompiler = tvp.packages.gcc_16;
@@ -25,7 +21,18 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
+    packageMeta = {
+      upstream = {
+        # static.rust-lang.org/dist/ is an S3 bucket with no listing (416), so
+        # releases are read from the repository's tags instead.
+        type = "git-tags";
+        url = "https://github.com/rust-lang/rust";
+
+        normalise = tag: tag;
+
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -38,9 +45,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.rustc = family // {
-    constructionRecipe = retained;
-  };
+  recipes.rustc = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

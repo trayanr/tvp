@@ -7,20 +7,14 @@ let
   spec = package.specification;
   python = spec.tools.python;
   jdk = spec.runtime.jdk;
-  locale = import ../../../../lib/tests/gnu-locale.nix {
-    builder = import ../../../../lib/builder.nix { inherit lib; };
-    inherit (spec) base bash coreutils;
-    tar = spec.tools.gnutar;
-    xz = spec.tools.xz;
-    libc = spec.base.compiler.libc;
-  };
+  locale = context.fixtures.gnuLocale;
 in
 context.mkSuite {
   inherit package;
   tests = {
     version = {
       tools = [ package.specification.tools.gawk ];
-      script = ''${package}/bin/msgfmt --version | head -1 | awk '{print $NF}' '';
+      script = "${package}/bin/msgfmt --version | head -1 | awk '{print $NF}' ";
       expected = package.version;
     };
     catalog = {
@@ -85,16 +79,15 @@ context.mkSuite {
       expected = "ok";
     };
     shell-helpers = {
-      tools =
-        [
-          spec.tools.grep
-          python
-        ]
-        ++ (with package.tvp.declaredTestDependencies; [
-          autoconf
-          automake
-          libtool
-        ]);
+      tools = [
+        spec.tools.grep
+        python
+      ]
+      ++ (with package.tvp.declaredTestDependencies; [
+        autoconf
+        automake
+        libtool
+      ]);
       script = ''
         ${python}/bin/python3 -B ${./prepare.py} ${../native/prepare.py}
         actual=$(

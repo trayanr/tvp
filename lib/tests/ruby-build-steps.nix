@@ -55,7 +55,7 @@ let
     pname = "passthru-authority-probe";
     version = "1";
     src = p.src;
-    base = tvp.bases.default;
+    base = tvp.__legacyBases.gcc_16_2_0;
     inherit (tvp.packages) bash coreutils;
     plan = [ ];
     tvp.marker = true;
@@ -148,7 +148,7 @@ let
     canonicalPreservesPilotBehaviors =
       builtins.all (n: builtins.hasAttr n tvp.canonical.ruby_4_0_6.tests) (builtins.attrNames p.tests)
       && builtins.length (builtins.attrNames tvp.canonical.ruby_4_0_6.tests) == 25;
-    distinctConstructions = p.drvPath != tvp.canonical.ruby_4_0_6.drvPath;
+    sharedProcedure = p.tvp.builder == tvp.canonical.ruby_4_0_6.tvp.builder && !(p ? overrideAttrs);
     independentConsumer = p.tvp.declaredTestDependencies.consumerCompiler.drvPath != p.tvp.cc.drvPath;
   };
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
@@ -164,7 +164,7 @@ let
       gzip
       ;
   };
-  checkEnvironment = tvp.bases.default.stdenv;
+  checkEnvironment = tvp.__legacyBases.gcc_16_2_0.stdenv;
   supportInputs = nativeTools // {
     environment = checkEnvironment;
     compiler = checkEnvironment.cc;

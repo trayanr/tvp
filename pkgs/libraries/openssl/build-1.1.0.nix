@@ -40,14 +40,11 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "openssl.${name}";
-      cwd = "source";
-      inherit run;
-    };
-  make = ''${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash'';
+    name:
+    steps.command {
+      environment = final.environment;
+    } "openssl.${name}";
+  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
   # Upstream INSTALL_* sets exclude noinst test libraries/programs/modules.
   # Keep tests configured: T uses the original Makefile sets without these overrides.
   productionMake =
@@ -141,7 +138,8 @@ in
   };
   features = {
     inherit (final.buildFeatures) shared static;
-  } // final.installedInterface;
+  }
+  // final.installedInterface;
 
   stateScript = ./ordinary/build-state.py;
   stateManifest = ./ordinary/build-state.json;
@@ -226,14 +224,13 @@ in
   elfHelper = ./ordinary/elf.py;
   # Shared pure tree/text inspection owns no family mutations or recipe.
   inspectionHelper = ../../../lib/installed-tree.py;
-  configureFlags =
-    [
-      "shared"
-      "--openssldir=etc/ssl"
-    ]
-    ++ [ "--libdir=lib" ]
-    ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
-    ++ final.compileFlags;
+  configureFlags = [
+    "shared"
+    "--openssldir=etc/ssl"
+  ]
+  ++ [ "--libdir=lib" ]
+  ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
+  ++ final.compileFlags;
   environment = {
     tools = [
       tools.coreutils

@@ -192,7 +192,6 @@ in
 {
   recipes.libxml2 = family // {
     # Exact historical factory/definitions and GCC13 consumer stay independent.
-    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).publicArgs;
   };
   inherit canonical;
   inherit (family) instantiate;

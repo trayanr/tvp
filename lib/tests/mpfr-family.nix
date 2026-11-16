@@ -9,7 +9,7 @@ let
     version:
     family.instantiate {
       inherit version;
-      base = tvp.baseTiers.seed;
+      base = tvp.bases.gcc_16.seed;
       deps.gmp = bootstrap.gnu-gmp;
     };
   p = instantiate "4.2.2";
@@ -51,7 +51,7 @@ let
         b:
         b
         // {
-          standardTools = b.standardTools // {
+          tools = b.tools // {
             gnumake = marker;
           };
         }
@@ -68,7 +68,7 @@ let
       let
         q = family.canonical.${"mpfr_" + lib.replaceStrings [ "." ] [ "_" ] version};
       in
-      q.specification.base.name == tvp.baseTiers.full.name
+      q.specification.base.name == tvp.bases.gcc_16.full.name
       &&
         builtins.baseNameOf family.recipes.mpfr.versionTable.${version}.def.builder
         == (if lib.versionOlder version "4" then "build-2.4.2.nix" else "build-4.0.2.nix")
@@ -104,13 +104,13 @@ let
       !(builtins.any (s: s.name == "mpfr.check") p.buildSteps)
       && p.tests.upstream.specification.validation.production.drvPath == p.artifact.drvPath;
     targetIsActualNativeInput =
-      tvp.baseTiers.target.compiler.drvPath == nativeInputs.prior.composition.cc.drvPath;
+      tvp.bases.gcc_16.runtime.compiler.drvPath == nativeInputs.prior.composition.cc.drvPath;
     nativeLineage =
-      tvp.baseTiers.native.construction.previous == tvp.baseTiers.target.name
-      && tvp.baseTiers.native.compiler.drvPath == nativeInputs.driver.drvPath;
+      tvp.bases.gcc_16.reduced.construction.previous == tvp.bases.gcc_16.runtime.name
+      && tvp.bases.gcc_16.reduced.compiler.drvPath == nativeInputs.driver.drvPath;
     fullLineage =
-      tvp.baseTiers.full.construction.previous == tvp.baseTiers.native.name
-      && tvp.baseTiers.native.compiler.drvPath == fullInputs.native.composition.cc.drvPath;
+      tvp.bases.gcc_16.full.construction.previous == tvp.bases.gcc_16.reduced.name
+      && tvp.bases.gcc_16.reduced.compiler.drvPath == fullInputs.native.composition.cc.drvPath;
   };
   failed = builtins.filter (name: !results.${name}) (builtins.attrNames results);
 in

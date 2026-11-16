@@ -35,7 +35,7 @@ let
   };
   runtimeOwnership =
     name: selectedRoots: baselineFile:
-    tvp.bases.default.stdenv.mkDerivation {
+    tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
       inherit name;
       __structuredAttrs = true;
       exportReferencesGraph.runtime = lib.attrValues selectedRoots;
@@ -46,7 +46,7 @@ let
       dontConfigure = true;
       dontBuild = true;
       dontFixup = true;
-      installPhase = ''python3 ${./runtime.py} ${baselineFile}'';
+      installPhase = "python3 ${./runtime.py} ${baselineFile}";
     };
   invalidProvenance = lib.filterAttrs (
     _: p:

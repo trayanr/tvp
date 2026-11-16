@@ -6,7 +6,7 @@
 }:
 let
   spec = package.specification;
-  tools = spec.base.standardTools;
+  tools = spec.base.tools;
 in
 if !spec.tvp.features.doCheck then
   { }

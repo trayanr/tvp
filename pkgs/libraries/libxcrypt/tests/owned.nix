@@ -38,7 +38,7 @@ else
   in
   assert lazy.drvPath == package.drvPath;
   assert runtime.drvPath == package.drvPath;
-  tvpLib.tests.mkSuite {
+  tvpLib.tests.compatibility.mkSuite {
     inherit pkgs package;
     tests = {
       static-consumer = {

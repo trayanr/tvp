@@ -20,13 +20,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "libxml2.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "libxml2.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libxml2-build-tree";
   elfPaths = [
@@ -92,7 +89,7 @@ in
       export lt_cv_deplibs_check_method=pass_all
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "build" ''${make} libxml2.la xmllint xmlcatalog'')
+    (command "build" "${make} libxml2.la xmllint xmlcatalog")
     (command "install" ''
       # The root install target in 2.10 also generates testapi.c. Enter the
       # generated recursive installer directly; retain all installed directories.
@@ -111,11 +108,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "libxml2.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "libxml2.bind-configured-header";
       tools = [ tools.coreutils ];

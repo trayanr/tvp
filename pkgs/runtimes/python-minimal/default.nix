@@ -1,13 +1,9 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./retained.nix { inherit pkgs tvp; }).recipes.python-minimal;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build.nix;
-        deps = {
-          file = tvp.packages.file;
-        };
         patches = [
           {
             file = ./patches/subprocess-shell.patch;
@@ -28,14 +24,12 @@ let
         inherit sha256;
       };
     tests = import ./tests/installed.nix;
-    testDeps.glibc = tvp.packages.glibc_2_39;
+    testDeps.glibc = tvp.packages.glibc_2;
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.python-minimal = family // {
-    constructionRecipe = retained;
-  };
+  recipes.python-minimal = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

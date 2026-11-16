@@ -1,11 +1,5 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  captured = import ../../../sdks/retained-adapters.nix { inherit pkgs tvp; };
-  retained =
-    (import ./legacy.nix {
-      inherit pkgs;
-      tvp = captured.callerTvp;
-    }).recipes.flutter;
   pname = "flutter";
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -20,12 +14,10 @@ let
           git = tvp.packages.git_2;
           curl = tvp.packages.curl_8;
           gradle = tvp.packages.gradle_9;
-          androidSdk = tvp.android.constructionProfiles.flutter;
+          androidSdk = tvp.android.profiles.flutter;
           jdk = tvp.packages.jdk_21;
           ca-certificates = tvp.packages.ca-certificates;
-          gawk = tvp.packages.gawk;
           unzip = tvp.packages.unzip;
-          python = tvp.packages.python_3;
           which = tvp.packages.which;
           runtimeLibc = tvp.packages.glibc_2;
           runtimeCompiler = tvp.packages.gcc_16;
@@ -53,9 +45,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes."flutter" = family // {
-    constructionRecipe = retained;
-  };
+  recipes."flutter" = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

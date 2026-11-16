@@ -1,22 +1,51 @@
-# Pure native base data. Re-enter on replacement so no environment captures an
-# earlier compiler. Shell is a package and contributes to PATH before base tools.
-# referencePackages records definition ownership without adding execution inputs.
+# One lazy provider catalogue. Compatibility aliases are derived, never selected
+# independently. Only baselineTools and tools used by steps enter execution inputs.
 { lib }:
 let
+  fail = message: throw "TVP owned base: ${message}";
+  sameProvider =
+    a: b:
+    builtins.isAttrs a && builtins.isAttrs b && a ? outPath && b ? outPath && a.outPath == b.outPath;
+  aliases = {
+    compiler = "gcc";
+    shell = "bash";
+    coreutils = "coreutils";
+  };
+  mergeAliases =
+    arguments: tools:
+    builtins.foldl' (
+      selected: alias:
+      let
+        role = aliases.${alias};
+      in
+      if !(arguments ? ${alias}) then
+        selected
+      else if selected ? ${role} && !sameProvider selected.${role} arguments.${alias} then
+        fail "conflicting ${alias} and tools.${role} selections"
+      else
+        selected // { ${role} = arguments.${alias}; }
+    ) tools (builtins.attrNames aliases);
+  reserved = [
+    "gcc"
+    "bash"
+    "coreutils"
+    "binutils"
+  ];
   make =
     args@{
       name,
       platform,
-      compiler,
-      shell,
       tools,
+      baselineTools ? [ ],
       referencePackages ? [ ],
-      coreutils ? null,
-      standardTools ? { },
       construction ? null,
     }:
     let
-      fail = message: throw "TVP owned base: ${message}";
+      supportedPlatform = import ../bases/platforms { inherit (platform) system; };
+      compiler = tools.gcc or (fail "tools.gcc must select a compiler driver");
+      shell = tools.bash or (fail "tools.bash must select the execution shell");
+      coreutils = tools.coreutils or null;
+      selectedBinutils = tools.binutils or compiler.bintools;
       package = p: builtins.isAttrs p && p ? outPath;
       matchesExecution =
         p:
@@ -76,11 +105,9 @@ let
         then
           fail "construction must identify a seed or an earlier named tier"
         else if
-          platform.system != "x86_64-linux"
-          || platform.config != "x86_64-unknown-linux-gnu"
-          || platform.isMusl
+          platform.config != supportedPlatform.config || platform.isMusl != supportedPlatform.isMusl
         then
-          fail "only native x86_64 GNU/Linux is supported"
+          fail "platform facts disagree with the selected supported system"
         else if
           !(
             package compiler
@@ -120,88 +147,175 @@ let
           fail "compiler must declare nonempty runtimeDirectories"
         else if coreutils != null && !(package coreutils && matchesExecution coreutils) then
           fail "Coreutils must execute on the selected platform"
-        else if !(builtins.isAttrs standardTools) then
-          fail "standardTools must be a named package set"
-        else if
-          builtins.any (name: standardTools ? ${name}) [
-            "bash"
-            "coreutils"
-            "binutils"
-          ]
-        then
-          fail "standard Bash, Coreutils and Binutils come from shell, coreutils and compiler"
-        else if !(package shell && builtins.isList tools && builtins.all package tools) then
+        else if !(package shell && builtins.isList baselineTools && builtins.all package baselineTools) then
           fail "shell and baseline tools must be packages"
-        else if !(builtins.all matchesExecution ([ shell ] ++ tools)) then
+        else if !(builtins.all matchesExecution ([ shell ] ++ baselineTools)) then
           fail "shell and baseline tools must execute on the native platform"
+        else if !sameProvider selectedBinutils compiler.bintools then
+          fail "tools.binutils disagrees with tools.gcc; select a driver bound to the desired Binutils"
         else
           true;
       composeEnvironment = import ./build-environment.nix { inherit lib base; };
-      base =
-        {
-          inherit
-            name
-            platform
-            compiler
-            shell
-            tools
-            referencePackages
-            ;
-          runtimeDirectories = compiler.runtimeDirectories;
-          # Validate only selected roles; forcing the whole set would create cycles.
-          standardTools = lib.mapAttrs (
-            name: tool:
-            if package tool && matchesExecution tool then
-              tool
+      # Map validation stays lazy: asking for one tool cannot force another role.
+      catalogue = lib.mapAttrs (
+        role: tool:
+        if package tool && matchesExecution tool then
+          tool
+        else
+          fail "tool ${role} must execute on the selected platform"
+      ) (tools // { binutils = selectedBinutils; });
+      # Preserve explicitly selected provider metadata across no-op edits. The
+      # update path drops only an inherited Binutils role when its driver changes.
+      inputs = args;
+      replace =
+        editing: changes:
+        let
+          legacyTools = builtins.isList (changes.tools or { });
+          named = changes.standardTools or { };
+          toolChanges = if legacyTools then { } else changes.tools or { };
+          aliased = mergeAliases changes (named // toolChanges);
+          mergedTools = (if editing && !legacyTools then { } else inputs.tools) // aliased;
+          nextCompiler = mergedTools.gcc;
+          inheritedBinutils =
+            !(toolChanges ? binutils)
+            || (editing && sameProvider (toolChanges.binutils or null) (tools.binutils or compiler.bintools));
+          nextTools =
+            if !sameProvider compiler nextCompiler && inheritedBinutils then
+              builtins.removeAttrs mergedTools [ "binutils" ]
             else
-              fail "standard tool ${name} must execute on the selected platform"
-          ) standardTools;
-          environment = composeEnvironment;
-          override =
-            replacements:
+              mergedTools;
+          nextShell = nextTools.bash;
+          nextCoreutils = nextTools.coreutils or null;
+          rebound = map (
+            tool:
+            if
+              coreutils != null
+              && nextCoreutils != null
+              && !sameProvider coreutils nextCoreutils
+              && sameProvider tool coreutils
+            then
+              nextCoreutils
+            else if !sameProvider shell nextShell && sameProvider tool shell then
+              nextShell
+            else
+              tool
+          ) baselineTools;
+          nextBaseline = if legacyTools then changes.tools else changes.baselineTools or rebound;
+          extra = builtins.removeAttrs changes [
+            "tools"
+            "standardTools"
+            "compiler"
+            "shell"
+            "coreutils"
+            "libc"
+            "binutils"
+          ];
+          checkedChanges =
+            if editing && (!(changes ? name) || !(changes ? platform)) then
+              fail "an edit must retain name and platform"
+            else if !(mergedTools ? gcc && mergedTools ? bash) then
+              fail "an edit must retain tools.gcc and tools.bash"
+            else if !builtins.isAttrs named || builtins.any (role: named ? ${role}) reserved then
+              fail "standardTools is a compatibility catalogue; select reserved roles through tools"
+            else if changes ? libc && !sameProvider changes.libc nextCompiler.libc then
+              fail "libc disagrees with tools.gcc; select a driver bound to the desired libc"
+            else if changes ? binutils && !sameProvider changes.binutils nextCompiler.bintools then
+              fail "binutils disagrees with tools.gcc; select a driver bound to the desired Binutils"
+            else
+              true;
+        in
+        builtins.seq checkedChanges (
+          make (
+            (if editing then { } else inputs)
+            // extra
+            // {
+              tools = nextTools;
+              baselineTools = nextBaseline;
+            }
+          )
+        );
+      base = {
+        inherit
+          name
+          platform
+          compiler
+          shell
+          referencePackages
+          ;
+        inherit baselineTools;
+        tools = catalogue;
+        libc = compiler.libc;
+        runtimeDirectories = compiler.runtimeDirectories;
+        # Temporary compatibility for retained helpers; no second provider record.
+        standardTools = builtins.removeAttrs catalogue reserved;
+        environment = composeEnvironment;
+        override =
+          replacements:
+          replace false (if builtins.isFunction replacements then replacements inputs else replacements);
+        edit = transform: makeEdited (transform inputs);
+      }
+      // lib.optionalAttrs (coreutils != null) { inherit coreutils; }
+      // lib.optionalAttrs (construction != null) { inherit construction; };
+      makeEdited =
+        edited:
+        let
+          # Legacy aliases explicitly added by an edit take precedence over the
+          # unchanged inherited role. Conflicting new choices still fail closed.
+          changes = builtins.foldl' (
+            result: alias:
             let
-              changes = if builtins.isFunction replacements then replacements args else replacements;
-              reboundTools = lib.optionalAttrs (!(changes ? tools)) {
-                tools = map (
-                  tool:
-                  if coreutils != null && changes ? coreutils && tool.outPath == coreutils.outPath then
-                    changes.coreutils
-                  else if changes ? shell && tool.outPath == shell.outPath then
-                    changes.shell
-                  else
-                    tool
-                ) tools;
-              };
-              reboundStandards = lib.optionalAttrs (changes ? standardTools) {
-                standardTools = standardTools // changes.standardTools;
-              };
+              role = aliases.${alias};
             in
-            make (args // reboundTools // changes // reboundStandards);
-          # Edits transform the complete selected input record and re-enter all
-          # validation/environment binding, just like explicit argument overrides.
-          edit =
-            transform:
-            let
-              edited = transform args;
-              nextCoreutils = edited.coreutils or null;
-              nextShell = edited.shell or shell;
-              reboundTools = lib.optionalAttrs ((edited.tools or [ ]) == tools) {
-                tools = map (
-                  tool:
-                  if coreutils != null && nextCoreutils != null && tool.outPath == coreutils.outPath then
-                    nextCoreutils
-                  else if tool.outPath == shell.outPath then
-                    nextShell
-                  else
-                    tool
-                ) tools;
-              };
-            in
-            make (edited // reboundTools);
-        }
-        // lib.optionalAttrs (coreutils != null) { inherit coreutils; }
-        // lib.optionalAttrs (construction != null) { inherit construction; };
+            if
+              edited ? ${alias} && sameProvider (edited.tools.${role} or null) (inputs.tools.${role} or null)
+            then
+              result
+              // {
+                tools = (result.tools or { }) // {
+                  ${role} = edited.${alias};
+                };
+              }
+            else
+              result
+          ) edited (builtins.attrNames aliases);
+          reboundChanges =
+            if !(edited ? baselineTools) then
+              changes // { baselineTools = [ ]; }
+            else if edited.baselineTools == baselineTools then
+              builtins.removeAttrs changes [ "baselineTools" ]
+            else
+              changes;
+        in
+        replace true reboundChanges;
     in
     builtins.seq checked base;
+  # Translate the old constructor shape at one boundary. New definitions use a
+  # tools record; legacy tools lists remain exact baseline execution inputs.
+  fromArguments =
+    args:
+    let
+      legacyTools = builtins.isList (args.tools or { });
+      named = args.standardTools or { };
+      tools = named // (if legacyTools then { } else args.tools or { });
+      selected = mergeAliases args tools;
+      pure = builtins.removeAttrs args [
+        "compiler"
+        "shell"
+        "coreutils"
+        "standardTools"
+        "tools"
+        "baselineTools"
+      ];
+    in
+    if !builtins.isAttrs named || builtins.any (role: named ? ${role}) reserved then
+      fail "standardTools cannot select GCC, Bash, Coreutils or Binutils"
+    else
+      make (
+        pure
+        // {
+          tools = selected;
+          baselineTools = if legacyTools then args.tools else args.baselineTools or [ ];
+        }
+      );
 in
-make
+fromArguments

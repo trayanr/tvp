@@ -61,16 +61,22 @@ let
     doCheck
     ;
   inherit (tvp.builder) steps outputs;
-  configurePrefix = if builtins.isString final.configurePrefix && !(builtins.hasContext final.configurePrefix) && builtins.match "/tvp/[A-Za-z0-9][A-Za-z0-9_+./-]*" final.configurePrefix != null && !(builtins.elem ".." (lib.splitString "/" final.configurePrefix)) then final.configurePrefix else throw "Node configurePrefix must be a context-free /tvp path";
+  configurePrefix =
+    if
+      builtins.isString final.configurePrefix
+      && !(builtins.hasContext final.configurePrefix)
+      && builtins.match "/tvp/[A-Za-z0-9][A-Za-z0-9_+./-]*" final.configurePrefix != null
+      && !(builtins.elem ".." (lib.splitString "/" final.configurePrefix))
+    then
+      final.configurePrefix
+    else
+      throw "Node configurePrefix must be a context-free /tvp path";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "nodejs.${name}";
-      cwd = "source";
-      inherit run;
-
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "nodejs.${name}";
 in
 {
   pname = "nodejs";
@@ -133,7 +139,7 @@ in
       inherit xz findutils;
     })
     (command "prepare" ''
-      ${lib.concatMapStringsSep "\n" (p: ''${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}'') patches}
+      ${lib.concatMapStringsSep "\n" (p: "${patch}/bin/patch --batch --fuzz=0 -p1 < ${p}") patches}
       ${toolPython}/bin/python3 -B - <<'PYTHON'
       from pathlib import Path
       for file in ['lib/child_process.js', 'deps/npm/node_modules/@npmcli/promise-spawn/lib/index.js']:

@@ -35,12 +35,11 @@ provider, while compilation still uses the declared build dependency. No XML
 source semantics, corpus expectation, private normative/observation prototype,
 classifier, source manifest or original fixture is changed.
 
-Old root stdenv builders, `legacy.nix`, the original table/factory and the
-GCC13 consumer import remain exact. `ordinary/elf.py` is retained at its path
-because GCC/glibc helpers import it directly. New names avoid overwriting
-those retained roots. See the external candidate integration report for
-source bindings and deletion conditions. The selected current validation is
-recorded below.
+Construction callers use the same family with explicit earlier inputs. The old
+stdenv builders and duplicate index/factory are removed. `ordinary/elf.py` remains
+an active shared implementation input because GCC/glibc helpers import it directly.
+Its location does not imply a second package index. Earlier bounded validation is
+recorded below and applies only to its bound producers.
 
 ## Retained SQL/XML/OpenSSL-wave validation
 

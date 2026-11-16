@@ -27,13 +27,9 @@ let
 in
 
 let
-  command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   finalCommand = name: run: (command name run) // { cwd = "."; };
 in
 {
@@ -110,7 +106,7 @@ in
       # Validate before patching, then recheck before the token rewrite.
       ${final.helperPython}/bin/python3 -B ${../source-targets.py} mesonbuild/scripts/depfixer.py
       ${lib.concatMapStringsSep "\n" (
-        p: ''${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}''
+        p: "${final.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
       ) final.patches}
       ${final.helperPython}/bin/python3 -B - ${../source-targets.py} <<'PYTHON'
       import runpy, sys

@@ -7,7 +7,7 @@
 let
   bash = package.specification.bash;
   coreutils = package.specification.coreutils;
-  gnugrep = package.specification.base.standardTools.grep;
+  gnugrep = package.specification.base.tools.grep;
   interpreter = "${bash}/bin/bash";
   script = ''
     mkdir -p "$out" empty supplied
@@ -51,7 +51,7 @@ package.testContext.mkTest {
     bash
     coreutils
     gnugrep
-    package.specification.base.standardTools.diffutils
+    package.specification.base.tools.diffutils
   ];
   script = ''
     ( export out="$PWD/helper-results"

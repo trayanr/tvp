@@ -1,17 +1,18 @@
 # OpenSSL family
 
 All 215 supported releases use literal inline definitions and the owned family
-constructor. Six broken 0.9.6 records remain exact exclusions. Standard build
+constructor. Six 0.9.6 records retain their declared-broken architecture status;
+their independent era procedure is source-staged and unqualified. Standard build
 and helper tools follow the effective base. Actual runtime GNU providers, runtime
 Perl and constrained earlier construction Perl remain explicit roles.
 
-Seven complete root procedures preserve the real profiles: 0.9.7's dependency
-and installation procedure, 1.0.0's domd interface, 1.1.0's unified build, 3.0.0's
-provider build, 4.0.0's provider-only installation, and the distinct existing native
+Eight complete root procedures preserve the real profiles: the staged 0.9.6 era,
+0.9.7's dependency and installation procedure, 1.0.0's domd interface, 1.1.0's
+unified build, 3.0.0's provider build, 4.0.0's provider-only installation, and the distinct existing native
 3.6.3/4.0.1 profiles. Release-specific C dialect, warnings, Perl compatibility,
 CMake metadata and installed interfaces stay visible in table options.
 
-The 213 historical procedures retain their specialized A/F/T/R/U protocol.
+The 213 historical releases use their specialized A/F/T/R/U protocol.
 Mandatory production generation excludes test/fuzz inputs. T restores the compiled
 checkpoint and constructs test programs; R executes the existing offline runner;
 U applies the unchanged strict classifier. Test policy/helpers remain independent
@@ -27,14 +28,14 @@ closure, which remains false for the recorded Perl-based profiles.
 
 One installed suite retains digest, encryption, C/static consumers, module/engine,
 rehash, metadata, CMake and mutation assertions at their real interface guards.
-The bootstrap-owned 4.0.1 entry point, construction tables/factories and shared
-protocol files remain explicit and exact. Historical source-stage observations
-and prior failures are retained in [retained/README.md](retained/README.md).
+Construction callers use this same family with explicit earlier inputs. The
+source-bootstrap 4.0.1 procedure and shared protocol helpers remain active; the
+obsolete construction tables and caller factories are removed.
 
-Current bounded authoring validation passes all 215 source/edit contracts and
-independent source review. Native 4.0.1 production identities remain exact; its
-12-leaf normal batch passes. Historical-profile 4.0.0 passes its 16-leaf normal
-batch and specialized strict acceptance. Native 3.6.3 identities also remain exact,
-but are not newly realized here. Other releases are evaluation-only in this pass.
+Recorded pre-cleanup authoring validation passed all 215 source/edit contracts and
+independent source review. Native 4.0.1 passed its 12-leaf normal batch. Historical-profile 4.0.0 passed its 16-leaf normal
+batch and specialized strict acceptance. Native 3.6.3 identities were also compared,
+but were not realized in that pass. These receipts apply to their bound producer
+identities; the current tool/provider cleanup does not requalify changed outputs.
 Original certificate-expiry failures, 3.0.4 RSA degradation, raw limits and broader
 qualification holds remain unwaived; CI/NAS remain off.

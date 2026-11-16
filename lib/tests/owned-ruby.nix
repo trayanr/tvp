@@ -78,7 +78,7 @@ let
         };
       };
     args = {
-      base = tvp.bases.default;
+      base = tvp.__legacyBases.gcc_16_2_0;
       inherit (tvp.packages) bash coreutils;
       ruby = p;
       version = "1";
@@ -184,7 +184,7 @@ let
         ];
       };
     args = {
-      base = tvp.bases.default;
+      base = tvp.__legacyBases.gcc_16_2_0;
       inherit (tvp.packages) bash coreutils;
       ruby = p;
       pkgConfig = tvp.packages.pkg-config;
@@ -206,7 +206,7 @@ let
   runtimeConsumer = consumer.override { ruby = runtime; };
   traceTool =
     name: binary: original:
-    tvp.bases.default.stdenv.mkDerivation {
+    tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
       name = "ruby-selected-${name}";
       buildCommand = ''
         mkdir -p "$out/bin"
@@ -253,8 +253,8 @@ let
     pkgConfig = tvp.packages.pkg-config;
     python = tvp.packages.python-build_3;
     sed = tvp.packages.gnused;
-    environment = tvp.bases.default.stdenv;
-    compiler = tvp.bases.default.stdenv.cc;
+    environment = tvp.__legacyBases.gcc_16_2_0.stdenv;
+    compiler = tvp.__legacyBases.gcc_16_2_0.stdenv.cc;
   };
   supportRows = builtins.filter (
     row: row.scope == "build-test-support" && row.consumer == "owned-ruby"
@@ -329,8 +329,10 @@ let
       && q.tests.launchers.specification.coreutils.outPath == q.specification.coreutils.outPath
       && lib.hasInfix (builtins.unsafeDiscardStringContext "${q.specification.coreutils}/bin/env") script
       && !(lib.hasInfix (builtins.unsafeDiscardStringContext "${p.specification.coreutils}/bin/env") script);
-    distinctRecipes =
-      p.drvPath != pilot.drvPath && p.tvp.base == "source-gnu-candidate" && pilot.tvp.base != p.tvp.base;
+    sharedSourceProcedure =
+      p.tvp.builder == pilot.tvp.builder
+      && p.specification.base.compiler.drvPath == pilot.specification.base.compiler.drvPath
+      && !(pilot ? overrideAttrs);
     installedSplit = (steps.partition p.buildSteps).split && p ? artifact;
     runtimeRebuilds = p.drvPath != runtime.drvPath && runtime.artifact.drvPath == p.artifact.drvPath;
     runtimeSummaryGuard =
@@ -374,7 +376,7 @@ let
     noOp = (p.override { }).drvPath == p.drvPath && (p.editSteps (s: s)).drvPath == p.drvPath;
     noOverrideAttrs = !(p ? overrideAttrs);
     noSetup =
-      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${tvp.bases.default.stdenv}/setup") (
+      !lib.hasInfix (builtins.unsafeDiscardStringContext "source ${tvp.__legacyBases.gcc_16_2_0.stdenv}/setup") (
         lib.concatStrings p.buildStepRunner.childScripts
       );
     unknownRejected = !(builtins.tryEval (p.override { unknown = true; }).drvPath).success;
@@ -458,17 +460,18 @@ let
           ++ tagged.all
         );
     historicOwned = tvp.canonical.ruby_4_0_5 ? artifact && tvp.canonical.ruby_4_0_5 ? edit;
-    retainedLegacy =
+    singleFamilyRecipe =
       let
-        retained = (import ../../pkgs/runtimes/ruby { inherit pkgs tvp; }).recipes.ruby.constructionRecipe;
-        q = (tvp.lib.packages.mkVersions retained).ruby_4_0_5;
+        family = import ../../pkgs/runtimes/ruby { inherit pkgs tvp; };
       in
-      q ? overrideAttrs && !(q ? edit);
+      !(family.recipes.ruby ? constructionRecipe)
+      && (family.instantiate { version = "4.0.5"; }).drvPath == tvp.canonical.ruby_4_0_5.drvPath;
+
   };
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned Ruby contracts: ${lib.concatStringsSep ", " failed}";
-(tvp.bases.default.stdenv.mkDerivation {
+(tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
   name = "tvp-owned-ruby-contracts";
   buildCommand = ''
     test -e ${consumer}/discovery

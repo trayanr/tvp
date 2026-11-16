@@ -20,9 +20,9 @@ let
       shell = "${s.runtime.shell}";
       libraries = map (p: "${p}") s.runtime.libraries;
     };
-    make = "${s.base.standardTools.gnumake}";
+    make = "${s.base.tools.gnumake}";
     bash = "${s.base.shell}";
-    python = "${s.base.standardTools.python}";
+    python = "${s.base.tools.python}";
     commandCaptureHelper = "${../ordinary/capture-command.py}";
   };
   accepted =
@@ -30,8 +30,8 @@ let
       inherit package;
       name = "upstream";
       tools = [
-        s.base.standardTools.python
-        s.base.standardTools.diffutils
+        s.base.tools.python
+        s.base.tools.diffutils
       ];
       script = ''
         # The classifier's canonical evidence-root/header relationship is kept.
@@ -39,7 +39,7 @@ let
         test -f ${package.artifact}/${header}
         test "$(readlink -f ${package.artifact}/${header})" = ${package.artifact}/${header}
         cmp -- ${package.artifact}/${header} ${raw}/${header}
-        ${s.base.standardTools.python}/bin/python3 -B ${../ordinary/classify.py} \
+        ${s.base.tools.python}/bin/python3 -B ${../ordinary/classify.py} \
           ${raw}/nix-support/upstream-raw ${lib.escapeShellArg s.version} \
           --contracts ${../ordinary/source-contracts.json} \
           --binding-json ${lib.escapeShellArg binding} \

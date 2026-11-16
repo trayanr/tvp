@@ -1,0 +1,15 @@
+# Upstream GCC d57c99458933a21fdf94f508191f145ad8d5ec58, reload.h hunk.
+# The indirection depth is a counter, not a boolean; modern host C++ rejects ++bool.
+diff --git a/gcc/reload.h b/gcc/reload.h
+index a58b9025bf55..a089faafffeb 100644
+--- a/gcc/reload.h
++++ b/gcc/reload.h
+@@ -168,7 +168,7 @@ struct target_reload {
+      value indicates the level of indirect addressing supported, e.g., two
+      means that (MEM (MEM (REG n))) is also valid if (REG n) does not get
+      a hard register.  */
+-  bool x_spill_indirect_levels;
++  unsigned char x_spill_indirect_levels;
+ 
+   /* True if caller-save has been reinitialized.  */
+   bool x_caller_save_initialized_p;

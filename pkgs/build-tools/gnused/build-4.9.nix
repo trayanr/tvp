@@ -31,13 +31,9 @@ let
       ];
   checkpoint = "nix-support/gnused-build-tree";
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   rpaths =
     {
       python,
@@ -121,11 +117,10 @@ in
     hasNls = true;
   };
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "gnused.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${../text-tool-restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
 
     {
       name = "gnused.upstream-frontends";
@@ -238,7 +233,7 @@ in
       paths = [ "bin" ];
       elfKinds = [ "runtime" ];
     })
-    ((import ../ordinary-text-check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = tools.python;
       binutils = tools.binutils;
       patchelf = tools.patchelf;

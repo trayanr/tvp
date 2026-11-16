@@ -1,15 +1,9 @@
 { pkgs, tvp }:
 let
-  previous = import ./legacy.nix { inherit pkgs tvp; };
-  retainedBase = import ../../../bases/tiers/construction.nix {
-    inherit (pkgs) lib;
-    builder = tvp.builder;
-  } tvp.bases.default;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-1.17.3.nix;
-        base = retainedBase;
         deps.ruby = tvp.packages.ruby_2;
       };
       releases = {
@@ -20,13 +14,7 @@ let
     {
       def = {
         builder = ./build-1.17.3.nix;
-        base = retainedBase;
-        deps.ruby = tvp.packages.ruby_3.override {
-          rustc = tvp.lib.packages.withConstraint {
-            category = "construction";
-            reason = "Retained complete Rust seed generation; historical construction and tests must not follow the promoted public provider.";
-          } (import ../../compilers/rust/legacy.nix { inherit pkgs tvp; }).canonical.rustc_1_97_1;
-        };
+        deps.ruby = tvp.packages.ruby_3;
       };
       releases."2.5.11" = "sha256-3XhL/lODSzmlbmQtvG4eyhmi5kVOTVOZTLcpgAWsTC4=";
     }
@@ -42,7 +30,20 @@ let
   pname = "bundler";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (previous.recipes.bundler) packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "rubygems";
+        url = "https://rubygems.org/api/v1/versions/bundler.json";
+
+        include =
+          version:
+          !(
+            pkgs.lib.hasInfix "pre" version
+            || pkgs.lib.hasInfix "rc" version
+            || pkgs.lib.hasInfix "beta" version
+          );
+      };
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -53,24 +54,17 @@ let
     testDeps = {
       ruby = tvp.packages.ruby_3;
       libyaml = tvp.packages.libyaml;
-      alternateYaml = tvp.packages.libyaml_0_2_4;
-      sourceCompiler = tvp.baseTiers.full.compiler;
+      alternateYaml = tvp.lib.packages.withConstraint {
+        reason = "Older LibYAML provider for the runtime rebinding control; deliberately distinct from the default library.";
+      } tvp.packages.libyaml_0_2_4;
+      sourceCompiler = tvp.bases.gcc_16.full.compiler;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
-  constructionRecipe =
-    (import ./legacy.nix {
-      inherit pkgs;
-      tvp = tvp // {
-        packages =
-          tvp.packages // (import ../../runtimes/ruby/retained-public.nix { inherit pkgs tvp; }).aliases;
-      };
-    }).recipes.bundler;
+
 in
 {
-  recipes.bundler = family // {
-    inherit constructionRecipe;
-  };
+  recipes.bundler = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

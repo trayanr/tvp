@@ -20,13 +20,10 @@ let
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/ncurses-build-tree";
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "ncurses.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "ncurses.${name}";
 in
 {
   pname = "ncurses";
@@ -77,7 +74,8 @@ in
     (if final.features.shared then "--with-shared" else "--without-shared")
     (if final.features.static then "--with-normal" else "--without-normal")
     (if final.features.widec then "--enable-widec" else "--disable-widec")
-  ] ++ lib.optional (!final.cxxBinding) "--without-cxx-binding";
+  ]
+  ++ lib.optional (!final.cxxBinding) "--without-cxx-binding";
 
   environment = {
     tools = [
@@ -260,7 +258,7 @@ in
       python = tools.python;
       libraries = [ ];
     })
-    ((import ./ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       elfKinds = [ "runtime" ];
       python = tools.python;
       binutils = tools.binutils;

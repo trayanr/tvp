@@ -35,13 +35,9 @@ in
 
 let
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
 in
 {
   pname = "coreutils";
@@ -221,7 +217,7 @@ in
       name = "coreutils.restore-build-tree";
       tools = [ baseTools.python ];
       run = ''
-        ${baseTools.python}/bin/python3 -B ${../current-restore.py} ${artifact}/nix-support/coreutils-build-tree "$TVP_SOURCE_ROOT"
+        ${baseTools.python}/bin/python3 -B ${../../../lib/restore-checkpoint.py} ${artifact}/nix-support/coreutils-build-tree "$TVP_SOURCE_ROOT"
       '';
     }
     {

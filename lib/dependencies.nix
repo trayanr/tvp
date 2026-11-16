@@ -192,7 +192,7 @@ let
         ++ role "compiler-binutils" [ compiler.bintools ]
         ++ role "compiler-libc" [ compiler.libc ]
         ++ role "runtime-directory" (compiler.runtimeDirectories or [ ])
-        ++ role "base-tool" (if base ? compiler then base.tools else base.stdenv.initialPath)
+        ++ role "base-tool" (if base ? compiler then base.baselineTools else base.stdenv.initialPath)
         ++ lib.concatMap (
           step: role "step-tool" (step.tools or [ ]) ++ role "step-library" (step.libraries or [ ])
         ) active;

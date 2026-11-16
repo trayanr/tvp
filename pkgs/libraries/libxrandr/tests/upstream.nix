@@ -6,7 +6,7 @@
 }:
 let
   d = package.specification;
-  tools = (package.specification.base.standardTools or { }) // {
+  tools = (package.specification.base.tools or { }) // {
     binutils = package.specification.base.compiler.bintools;
   };
 

@@ -28,6 +28,8 @@ let
     };
 in
 rec {
+  fixtures = (import ./test-fixtures.nix).forBase { inherit builder base coreutils; };
+
   mkTest =
     {
       package,
@@ -63,7 +65,8 @@ rec {
                 tools = [
                   package
                   coreutils
-                ] ++ tools;
+                ]
+                ++ tools;
                 inherit libraries;
                 overrides = environment;
               })

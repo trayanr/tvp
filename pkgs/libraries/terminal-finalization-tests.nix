@@ -7,7 +7,7 @@
 }:
 let
   s = package.specification;
-  tools = s.base.standardTools;
+  tools = s.base.tools;
   binutils = s.base.compiler.bintools;
   support =
     name: run:

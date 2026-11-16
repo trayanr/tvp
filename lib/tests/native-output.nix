@@ -109,7 +109,7 @@ let
   failed = builtins.filter (n: !contracts.${n}) (builtins.attrNames contracts);
 in
 assert failed == [ ] || throw "Native output contracts: ${lib.concatStringsSep ", " failed}";
-tvp.bases.default.stdenv.mkDerivation {
+tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
   name = "tvp-native-output-contracts";
   nativeBuildInputs = [
     tools.python

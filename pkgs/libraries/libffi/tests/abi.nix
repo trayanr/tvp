@@ -4,7 +4,7 @@
   context,
 }:
 let
-  deps = package.specification.base.standardTools // {
+  deps = package.specification.base.tools // {
     binutils = package.specification.base.compiler.bintools;
   };
 in

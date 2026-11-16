@@ -9,8 +9,7 @@ let
   variants = lib.mapAttrs (_: lib.filterAttrs (name: _: families name)) tvp.variants;
   inventory = tvp.lib.recipeSplits.inventory { inherit canonical variants; };
   all =
-    builtins.attrValues canonical
-    ++ lib.concatMap builtins.attrValues (builtins.attrValues variants);
+    builtins.attrValues canonical ++ lib.concatMap builtins.attrValues (builtins.attrValues variants);
   candidate = import ../../../../bases/source-gnu { };
   checks =
     p:
@@ -50,12 +49,8 @@ let
       factory =
         (import (if ruby then ../. else ../../../build-tools/bundler) { inherit pkgs tvp; })
         .recipes.${p.pname};
-      retained =
-        (tvp.lib.packages.mkVersions factory.constructionRecipe)
-        .${tvp.lib.versions.attrName p.pname p.version};
-      selected = pkgs // {
-        inherit lib;
-        runCommand = _: _: _: { callerSelected = true; };
+      selected = {
+        callerSelected = true;
       };
       expectedProvider = if ruby then changed.runtime.zlib else changed.runtime.ruby;
       declaredProvider = if ruby then changed.tvp.deps.zlib else changed.tvp.deps.ruby;
@@ -108,9 +103,23 @@ let
         );
       upstreamConsumesFinal =
         !ruby || contains "${p}/bin/ruby" (builtins.head p.tests.upstream-basic.buildSteps).run;
-      preservedFactory =
-        (factory.constructionRecipe.extraArgs.mkTests.override { pkgs = selected; } retained)
-        .version.callerSelected;
+      callerConfiguration =
+        (
+          (factory.extraArgs.mkTests.override {
+            pkgs = selected;
+            tests =
+              {
+                package,
+                lib,
+                context,
+              }:
+              {
+                selected = package.testConfiguration.pkgs.callerSelected;
+                effectivePackage = package.outPath == p.outPath;
+              };
+          })
+          p
+        ).selected;
       ordinaryFactory =
         let
           suite =
@@ -141,15 +150,15 @@ let
   }) all;
   failed = builtins.filter (r: !(builtins.all (x: x) (builtins.attrValues r.checks))) results;
   reviewContracts = import ./review-contracts.nix { inherit pkgs tvp; };
-  legacyCallers = import ./legacy-callers.nix { inherit pkgs tvp; };
+  factoryCallers = import ./factory-callers.nix { inherit pkgs tvp; };
 in
 assert builtins.length inventory.rows == 149;
 assert builtins.all (r: r.compliant) inventory.rows;
 assert failed == [ ] || throw "Ruby/Bundler family source contracts: ${builtins.toJSON failed}";
 assert builtins.all (x: x) (builtins.attrValues reviewContracts);
-assert builtins.all (x: x) (builtins.attrValues legacyCallers);
+assert builtins.all (x: x) (builtins.attrValues factoryCallers);
 {
   count = builtins.length inventory.rows;
-  inherit results reviewContracts legacyCallers;
+  inherit results reviewContracts factoryCallers;
   qualification = "SOURCE_ONLY; all changed releases remain uncompiled and runtime-unqualified";
 }

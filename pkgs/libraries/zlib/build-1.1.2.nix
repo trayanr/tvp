@@ -16,13 +16,9 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
-  command =
-    name: run:
-    environment
-    // {
-      inherit name run;
-      cwd = "source";
-    };
+  command = steps.command {
+    environment = final.environment;
+  };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   elfPaths = [ "lib/libz.so.${final.installedInterface.libraryVersion}" ];
   checkpoint = "nix-support/zlib-build-tree";
@@ -121,7 +117,7 @@ in
       cwd = "source";
       tools = [ tools.python ];
       env = environment.env;
-      run = ''${tools.python}/bin/python3 -B ${./source.py} ${tools.bash}/bin/bash ${
+      run = "${tools.python}/bin/python3 -B ${./source.py} ${tools.bash}/bin/bash ${
         lib.escapeShellArg (
           builtins.toJSON (
             final.sourceLayout
@@ -133,7 +129,7 @@ in
             }
           )
         )
-      }'';
+      }";
     }
     (command "zlib.configure" ''
       sed -i -e 's|test ! -f /usr/include/errno.h|false|' -e 's|test -f /usr/include/unistd.h|true|' configure
@@ -142,7 +138,7 @@ in
       export LDSHARED="$CC -shared -Wl,-soname,libz.so.1"
       prefix="$out" ./configure ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "zlib.build" ''${make} libz.so.${final.installedInterface.libraryVersion}'')
+    (command "zlib.build" "${make} libz.so.${final.installedInterface.libraryVersion}")
     (command "zlib.install" ''
       mkdir -p "$out/include" "$out/lib"
       ${make} install
@@ -159,11 +155,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "zlib.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
   ];
   upstreamCheck =
     (command "zlib.check" ''
@@ -236,7 +231,7 @@ in
         "lib/libz.so.1"
       ];
     })
-    ((import ./check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = tools.python;
       binutils = tools.binutils;
       patchelf = tools.patchelf;

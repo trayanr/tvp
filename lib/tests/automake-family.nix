@@ -65,7 +65,7 @@ let
   );
   staged = family.instantiate {
     version = "1.19";
-    base = tvp.baseTiers.seed;
+    base = tvp.bases.gcc_16.seed;
   };
   expectedBuilder =
     version:
@@ -133,7 +133,7 @@ let
       ];
     historicalUpstreamScope =
       !(old.specification ? upstreamTests) && !(middle.specification ? upstreamTests);
-    stageLocalBase = staged.specification.base.name == tvp.baseTiers.seed.name;
+    stageLocalBase = staged.specification.base.name == tvp.bases.gcc_16.seed.name;
     noopOverride = same (p.override { });
     noopEdit = same (p.edit (s: s));
     testPolicyReusesProduction = same disabled && !(disabled.tests ? upstream);
@@ -164,7 +164,8 @@ let
     distinctRuntimeShellProbe =
       p.tvp.declaredTestDependencies.runtimeShell.drvPath != p.specification.runtime.shell.drvPath;
     retainedHistoricalRecipe = builtins.all (
-      version: !(family.recipes.automake.constructionRecipe.versionTable.${version}.def ? constructor)
+      version:
+      family.recipes.automake.versionTable.${version}.def.authoring.origin == "tvp.lib.packages.mkFamily"
     ) versions;
   };
   failed = builtins.filter (name: !results.${name}) (builtins.attrNames results);

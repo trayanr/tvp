@@ -1,12 +1,10 @@
 { pkgs, tvp }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-3.5.10.nix;
         deps = rec {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = (
@@ -28,7 +26,6 @@ let
             reason = "Modules/_cursesmodule.c reads WINDOW._flags directly. Native 6.4 header control passes; 6.5/6.6 make WINDOW opaque and reject that expression. The full 6.6 consumer silently drops _curses, caught by stdlib and linkage checks.";
           } tvp.packages.ncurses_6_4;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -74,7 +71,6 @@ let
       def = {
         builder = ./build-3.5.10.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = (
@@ -91,7 +87,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -136,7 +131,6 @@ let
       def = {
         builder = ./build-3.7.17.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = (
@@ -153,7 +147,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -192,7 +185,6 @@ let
       def = {
         builder = ./build-3.7.17.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.lib.packages.withConstraint {
@@ -207,7 +199,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -246,7 +237,6 @@ let
       def = {
         builder = ./build-3.7.17.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.lib.packages.withConstraint {
@@ -261,7 +251,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -299,7 +288,6 @@ let
       def = {
         builder = ./build-3.7.17.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl_3;
@@ -312,7 +300,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           upstreamPolicy = {
@@ -347,7 +334,6 @@ let
       def = {
         builder = ./build-3.7.17.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl_3;
@@ -360,7 +346,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         opts = {
           sourceLayout = {
@@ -384,7 +369,6 @@ let
       def = {
         builder = ./build-3.12.16.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl_3;
@@ -397,7 +381,6 @@ let
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
           libxcrypt = tvp.packages.libxcrypt_4;
-          pkgConfig = tvp.packages.pkg-config;
         };
         patches = [
           {
@@ -416,7 +399,6 @@ let
       def = {
         builder = ./build-3.13.18.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl_3;
@@ -428,7 +410,6 @@ let
           gdbm = tvp.packages.gdbm_1;
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
-          pkgConfig = tvp.packages.pkg-config;
         };
         patches = [
           {
@@ -447,7 +428,6 @@ let
       def = {
         builder = ./build-3.14.10.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl_3;
@@ -460,7 +440,6 @@ let
           gdbm = tvp.packages.gdbm_1;
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
-          pkgConfig = tvp.packages.pkg-config;
         };
         patches = [
           {
@@ -479,7 +458,6 @@ let
       def = {
         builder = ./build-3.15.2.nix;
         deps = {
-          helperGrep = tvp.packages.gnugrep;
 
           runtimeBash = tvp.packages.bash_5;
           openssl = tvp.packages.openssl;
@@ -493,7 +471,6 @@ let
           gdbm = tvp.packages.gdbm_1;
           readline = tvp.packages.readline_8;
           ncurses = tvp.packages.ncurses_6;
-          pkgConfig = tvp.packages.pkg-config;
         };
         patches = [
           {
@@ -520,7 +497,7 @@ let
     };
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
+      import <nix/fetchurl.nix> {
         url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
         inherit sha256;
       };
@@ -536,9 +513,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.python = family // {
-    constructionRecipe = retained;
-  };
+  recipes.python = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

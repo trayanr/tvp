@@ -68,10 +68,10 @@ let
     inherit (tvp.packages)
       bash
       coreutils
-      cmake
-      gnumake
-      pkg-config
       ;
+    cmake = p.tvp.deps.cmake;
+    gnumake = p.tvp.deps.gnumake;
+    pkg-config = base.tools.pkg-config;
     patchelf = p.tvp.deps.patchelf;
     environment = base.compiler;
     compiler = p.tvp.cc;
@@ -91,7 +91,8 @@ let
       p.drvPath != pilot.drvPath
       && p.artifact.drvPath != pilot.artifact.drvPath
       && p.specification.base.name == "source-gnu-candidate"
-      && pilot.specification.base.name == tvp.bases.default.name;
+      && pilot.specification.base.compiler.drvPath == p.specification.base.compiler.drvPath
+      && pilot.specification.base.tools.gnumake.drvPath == tvp.packages.gnumake.drvPath;
     pilotReplay =
       (pilot.override { }).drvPath == pilot.drvPath && (pilot.editSteps (x: x)).drvPath == pilot.drvPath;
     source = p.src.drvPath == pilot.src.drvPath;
@@ -300,7 +301,7 @@ let
       json = p;
       inherit (p.tvp.deps) cmake patchelf;
       make = p.tvp.deps.gnumake;
-      pkgConfig = tvp.packages.pkg-config;
+      pkgConfig = base.tools.pkg-config;
       grep = tvp.packages.gnugrep;
       src = null;
       version = "1";
@@ -346,11 +347,19 @@ let
             cmakeFlags = [ "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ];
           };
         }
-      )).override
-      {
-        cmake = traceTool "cmake" p.tvp.deps.cmake;
-        gnumake = traceTool "make" p.tvp.deps.gnumake;
-      }
+      )).edit
+      (
+        s:
+        s
+        // {
+          base = s.base.override {
+            tools = {
+              cmake = traceTool "cmake" p.tvp.deps.cmake;
+              gnumake = traceTool "make" p.tvp.deps.gnumake;
+            };
+          };
+        }
+      )
     ).editSteps
       (
         steps.insertBefore "json-c.finalize" [

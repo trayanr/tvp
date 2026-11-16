@@ -58,7 +58,6 @@ in
 {
   recipes.isl = family // {
     # Frozen observers retain this exact historical definition until MIG-007.
-    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.isl;
   };
   inherit canonical;
   inherit (family) instantiate;

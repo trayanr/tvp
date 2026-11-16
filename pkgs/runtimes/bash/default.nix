@@ -1,6 +1,5 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./retained.nix { inherit pkgs tvp; }).recipes.bash;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -24,9 +23,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.bash = family // {
-    constructionRecipe = retained;
-  };
+  recipes.bash = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

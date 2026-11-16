@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -115,10 +115,18 @@ let
     }
   ];
   pname = "bison";
-  retained = import ./retained { inherit pkgs tvp; };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/bison/";
+      pattern = "bison-[0-9][^\"]*\\.tar\\.gz";
+      normalise = tvp.lib.versions.fromArchiveName {
+        prefix = "bison-";
+        suffixes = [ ".tar.gz" ];
+      };
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -129,16 +137,14 @@ let
     testDeps = {
       flex = tvp.packages.flex;
       autoconf = tvp.packages.autoconf;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.bison = family // {
-    constructionRecipe = retained;
-  };
+  recipes.bison = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

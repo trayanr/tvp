@@ -1,14 +1,12 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./legacy.nix { inherit pkgs tvp; }).publicArgs;
   # Explicit earlier closed host, independent of the public compiler indexes.
-  compilerHostBase = tvp.baseTiers.full;
+  compilerHostBase = tvp.bases.gcc_16.full;
   pname = "go-bootstrap";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
         builder = ./build-owned-20171003.nix;
-        base = compilerHostBase;
         deps = {
           compiler = tvp.lib.packages.withConstraint {
             category = "construction";
@@ -25,8 +23,6 @@ let
         };
         opts = {
           cStandard = "gnu17";
-          goOS = "linux";
-          goArch = "amd64";
           reportedVersion = "go1.4-bootstrap-20170531";
           compiledRoot = "/tvp/go-bootstrap";
           cgo = false;
@@ -37,10 +33,9 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta or { };
     source =
       { version, sha256 }:
-      pkgs.fetchurl {
+      import <nix/fetchurl.nix> {
         url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
         inherit sha256;
       };
@@ -49,9 +44,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.go-bootstrap = family // {
-    constructionRecipe = retained;
-  };
+  recipes.go-bootstrap = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

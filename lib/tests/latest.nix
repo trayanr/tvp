@@ -205,7 +205,7 @@ let
       };
     # Reuse the existing collision contract at the job composition boundary.
     duplicateJobs = rejects (
-      tests.suiteJobs {
+      tests.compatibility.suiteJobs {
         batches.check-probe = batch;
         checks.probe = batch;
       }

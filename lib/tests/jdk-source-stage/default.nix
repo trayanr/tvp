@@ -120,30 +120,18 @@ let
     readelf = "${spec.binutils}/bin/readelf";
     patchelf = "${spec.patchelf}/bin/patchelf";
   };
-  retained = import ../../../pkgs/runtimes/jdk/legacy.nix { inherit pkgs tvp; };
   factory = (import ../../../pkgs/runtimes/jdk { inherit pkgs tvp; }).recipes.jdk.extraArgs.mkTests;
-  callerPkgs = pkgs // {
-    runCommandWith =
-      args:
-      pkgs.runCommandWith (
-        args
-        // {
-          derivationArgs = args.derivationArgs // {
-            callerControl = "selected";
-          };
-        }
-      );
+  selectedFactory = factory.override {
+    tests = { package, ... }: {
+      producer = package.drvPath;
+      options = package.testConfiguration;
+    };
+    helpers = "selected-jdk-helpers";
   };
-  testIds = builtins.mapAttrs (_: test: test.drvPath);
   contracts = {
-    retainedFactoryCaller =
-      testIds ((factory.override { pkgs = callerPkgs; }) retained.canonical.jdk_21_0_13) == testIds (
-        (import ../../../pkgs/runtimes/jdk/legacy.nix {
-          pkgs = callerPkgs;
-          inherit tvp;
-        }).packageArgs.extraArgs.mkTests
-          retained.canonical.jdk_21_0_13
-      );
+    effectiveFactoryCaller =
+      (selectedFactory p).producer == p.drvPath
+      && (selectedFactory p).options.helpers == "selected-jdk-helpers";
 
     defaultRendering =
       defaultRpaths.run
@@ -166,7 +154,7 @@ let
       has "${selected}/bin/bash" (builtins.head edited.tests.shell.buildSteps).run
       && has "${font}/lib/libfontconfig.so" (builtins.head edited.tests.desktop.buildSteps).run
       && has "${cups}/lib/libcups.so" (builtins.head edited.tests.desktop.buildSteps).run;
-    independentRecipe = p.tvp.builder == "build-21.0.13.nix";
+    independentRecipe = p.tvp.builder == "build-owned-21.0.13.nix";
     nineTests =
       builtins.attrNames p.tests == [
         "desktop"

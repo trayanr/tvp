@@ -1,5 +1,5 @@
-# The 20171003 C-source snapshot needs no earlier Go compiler. Keep its
-# retained complete procedure alongside this independent native implementation.
+# The 20171003 C-source snapshot needs no earlier Go compiler.
+# The selected base supplies its C construction toolchain.
 {
   tvp,
   lib,

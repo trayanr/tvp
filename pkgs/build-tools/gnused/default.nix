@@ -1,17 +1,11 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
-  retained = (import ./retained { inherit pkgs tvp; }).recipes.gnused;
-  testBase = tvp.baseTiers.full;
-  testTools = testBase.standardTools;
-  locale = import ../../../lib/tests/gnu-locale.nix {
-    builder = tvp.builder;
-    base = testBase;
-    bash = testBase.shell;
-    coreutils = testBase.coreutils;
-    tar = testTools.gnutar;
-    xz = testTools.xz;
-    libc = testBase.compiler.libc;
-  };
+  testBase = tvp.bases.gcc_16.full;
+  locale =
+    (tvp.lib.tests.fixtures.forBase {
+      builder = tvp.builder;
+      base = testBase;
+    }).gnuLocale;
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -39,7 +33,20 @@ let
   pname = "gnused";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    inherit (retained) packageMeta;
+    packageMeta.upstream = {
+      type = "directory-index";
+      url = "https://mirrors.kernel.org/gnu/sed/";
+      # Capture whole filenames so signatures and archival README placeholders
+      # cannot be mistaken for available tarballs by a partial regex match.
+      pattern = "sed-[0-9][^\"<>[:space:]]*";
+      normalise =
+        file:
+        let
+          matched = builtins.match "sed-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|bz2|lz)" file;
+        in
+        if matched == null then null else builtins.head matched;
+      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
+    };
     source =
       { version, sha256 }:
       import <nix/fetchurl.nix> {
@@ -54,9 +61,7 @@ let
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gnused = family // {
-    constructionRecipe = retained;
-  };
+  recipes.gnused = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

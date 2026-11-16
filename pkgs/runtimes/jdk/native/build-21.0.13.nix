@@ -52,13 +52,11 @@ final:
 let
   inherit (tvp.builder) steps outputs;
   command =
-    name: run:
-    (final.base.environment final.environment)
-    // {
-      name = "jdk.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      base = final.base;
+      environment = final.environment;
+    } "jdk.${name}";
   make = ''${final.gnumake}/bin/make JOBS="$NIX_BUILD_CORES" CONF=${lib.escapeShellArg final.configurationName} SHELL=${final.bash}/bin/bash'';
   outputPaths = [
     "bin"

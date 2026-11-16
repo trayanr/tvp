@@ -4,9 +4,9 @@
   builder,
   bootstrap ? import ../../bootstrap { },
   standardTools ? null,
+  platform ? import ../source-gnu/platform.nix,
 }:
 let
-  platform = import ../source-gnu/platform.nix;
   tiers = import ./. { inherit lib builder; };
   initial = import ../../bootstrap/gnu-environment.nix { inherit bootstrap; };
   nativeInputs = import ../../bootstrap/source-native-compiler.nix { inherit bootstrap; };
@@ -27,49 +27,51 @@ let
     diffutils = bootstrap.diffutils;
     findutils = bootstrap.gnu-tool-floor.gnu-findutils;
   };
-  seed = tiers.mkTier {
+  seed = tiers.mkStage {
     name = "source-gnu-seed";
     inherit platform;
-    compiler = initial.cc // {
-      runtimeDirectories = [
-        "${bootstrap.gnu-libc}/lib"
-        "${bootstrap.gnu-libgcc}/lib/gcc/x86_64-unknown-linux-gnu/16.2.0"
-        "${bootstrap.gnu-libstdcxx}/lib"
-      ];
+    tools = seedTools // {
+      gcc = initial.cc // {
+        runtimeDirectories = [
+          "${bootstrap.gnu-libc}/lib"
+          "${bootstrap.gnu-libgcc}/lib/gcc/x86_64-unknown-linux-gnu/16.2.0"
+          "${bootstrap.gnu-libstdcxx}/lib"
+        ];
+      };
+      bash = initial.bash;
+      coreutils = initial.coreutils;
     };
-    shell = initial.bash;
-    coreutils = initial.coreutils;
-    standardTools = seedTools;
-    tools = [ bootstrap.gnu-binutils ];
+    baselineTools = [ bootstrap.gnu-binutils ];
   };
   targetInputs = nativeInputs.prior.composition;
-  target = tiers.mkTier {
+  target = tiers.mkStage {
     name = "source-gnu-target";
     inherit platform;
     previous = seed;
-    compiler = targetInputs.cc;
-    shell = targetInputs.bash;
-    coreutils = targetInputs.coreutils;
-    standardTools = seedTools;
-    tools = (targetInputs.base.environment { }).tools;
+    tools = seedTools // {
+      gcc = targetInputs.cc;
+      bash = targetInputs.bash;
+      coreutils = targetInputs.coreutils;
+    };
+    baselineTools = (targetInputs.base.environment { }).tools;
   };
-  native = tiers.mkTier {
+  native = tiers.mkStage {
     name = "source-gnu-native";
     inherit platform;
     previous = target;
-    compiler = nativeInputs.driver;
-    shell = seed.shell;
-    coreutils = seed.coreutils;
-    standardTools = seedTools // {
+    tools = seedTools // {
+      gcc = nativeInputs.driver;
+      inherit (seed.tools) bash coreutils;
       python = nativeInputs.prior.python;
       gnumake = nativeInputs.tools.make;
       pkg-config = frontendTools.tools.pkgConfig;
       cmake = (import ../../bootstrap/source-cmake.nix { inherit bootstrap; }).cmake;
       ninja = frontendTools.tools.ninja;
+      file = (import ../../bootstrap/source-full-gcc.nix { inherit bootstrap; }).file;
       # Exact retained build-host Perl; public Perl may depend on these libraries.
       perl = (import ../../bootstrap/source-cmake-prerequisites.nix { inherit bootstrap; }).perl;
     };
-    tools = [ nativeInputs.binutils ];
+    baselineTools = [ nativeInputs.binutils ];
   };
   full = (import ../source-gnu { inherit bootstrap standardTools; }).base.override {
     construction = {

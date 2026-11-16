@@ -34,7 +34,7 @@ let
     // {
       inherit pkgs;
       profiles.fixture = {
-        base = tvp.baseTiers.seed;
+        base = tvp.bases.gcc_16.seed;
         versions."4.2.2".deps = {
           inherit gmp;
         };
@@ -57,7 +57,7 @@ let
         name = "1";
         constructor = tvp.builder;
         builder = ./owned-catalogue-recipe.nix;
-        base = tvp.bases.default;
+        base = tvp.__legacyBases.gcc_16_2_0;
         deps = {
           inherit (tvp.packages) bash coreutils;
           dependency = gmp;
@@ -134,7 +134,7 @@ let
       base = spec.base.override {
         compiler = sentinel;
         shell = tvp.packages.bash;
-        coreutils = tvp.bases.default.components.floor.coreutils;
+        coreutils = tvp.bases.gcc_16.full.tools.coreutils;
       };
     }
   );
@@ -361,21 +361,22 @@ let
       && contextChanged.tests.arithmetic.specification.bash.drvPath == tvp.packages.bash.drvPath
       &&
         contextChanged.tests.arithmetic.specification.coreutils.drvPath
-        == tvp.bases.default.components.floor.coreutils.drvPath
+        == tvp.bases.gcc_16.full.tools.coreutils.drvPath
       && contextChanged.tests.arithmetic.package.drvPath == contextChanged.drvPath
       && contextChanged.tests.arithmetic.tvp.cc.drvPath == sentinel.drvPath
       && contextBatch.specification.base.compiler.drvPath == sentinel.drvPath
       && contextBatch.testSuite.arithmetic.drvPath == contextChanged.tests.arithmetic.drvPath
       && !(p.tvp ? testContext)
       && !(p.tests ? testContext);
-    variantContext = variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.baseTiers.seed.name;
+    variantContext =
+      variants.fixture.mpfr_4_2_2.tests.arithmetic.tvp.base == tvp.bases.gcc_16.seed.name;
 
     canonicalOwned = p.tvp.builder == "build-4.0.2.nix" && !(p ? overrideAttrs);
     canonicalSelection = p.__tvpSelection.kind == "exact";
     constructionScope =
       constructionMpfr.drvPath != p.drvPath
-      && p.tvp.base == tvp.baseTiers.full.name
-      && constructionMpfr.tvp.base == tvp.baseTiers.seed.name;
+      && p.tvp.base == tvp.bases.gcc_16.full.name
+      && constructionMpfr.tvp.base == tvp.bases.gcc_16.seed.name;
     distinctArtifact = p.artifact.drvPath != constructionMpfr.artifact.drvPath;
     archiveHash = p.src.outputHash == constructionMpfr.src.outputHash;
     sharedSourceProducer = p.src.drvPath == constructionMpfr.src.drvPath;

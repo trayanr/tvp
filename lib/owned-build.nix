@@ -47,7 +47,8 @@ let
       }) true
     else
       true;
-  baselineTools = if base ? compiler then [ base.shell ] ++ base.tools else base.stdenv.initialPath;
+  baselineTools =
+    if base ? compiler then [ base.shell ] ++ base.baselineTools else base.stdenv.initialPath;
   multiOutput = outputNames != [ "out" ];
   steps = import ./build-steps.nix;
   parts = steps.partition plan;
@@ -94,9 +95,9 @@ let
                     if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
                       SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
                     fi
-                    ${lib.optionalString (artifact != null)
-                      ''readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT''
-                    }
+                    ${lib.optionalString (
+                      artifact != null
+                    ) "readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT"}
                   ''
                   + lib.optionalString (splitNamed && artifact != null) (
                     # Explicit contextual bindings in every fresh suffix step.
@@ -133,7 +134,11 @@ let
               }
               export NIX_BUILD_TOP="$PWD"
               ${coreutils}/bin/mkdir workspace
-              ${bash}/bin/bash ${runner.script} "$PWD/workspace"${
+              ${
+                lib.optionalString (spec ? exportReferencesGraph) ''
+                  ${coreutils}/bin/cp "$NIX_ATTRS_JSON_FILE" workspace/.tvp-reference-graph.json
+                ''
+              }${bash}/bin/bash ${runner.script} "$PWD/workspace"${
                 lib.optionalString splitNamed (
                   "\n" + lib.concatMapStringsSep "\n" (output: ''test -d "''${outputs[${output}]}"'') outputNames
                 )
@@ -141,6 +146,9 @@ let
             ''
           ];
           outputs = outputNames;
+        }
+        // lib.optionalAttrs (spec ? exportReferencesGraph) {
+          inherit (spec) exportReferencesGraph;
         }
         // lib.optionalAttrs (artifact != null || (!parts.split && spec ? outputChecks)) {
           # Caller constraints belong to F (or the unsplit package), never A.

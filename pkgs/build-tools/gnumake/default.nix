@@ -1,4 +1,4 @@
-{ pkgs, tvp }:
+{ tvp, ... }:
 let
   versionTable = tvp.lib.packages.mkTable [
     {
@@ -28,12 +28,10 @@ let
     type = "directory-index";
     url = "https://mirrors.kernel.org/gnu/make/";
     pattern = "make-[0-9][^\"]*\\.tar\\.gz";
-    normalise =
-      file:
-      if pkgs.lib.hasPrefix "make-" file && pkgs.lib.hasSuffix ".tar.gz" file then
-        pkgs.lib.removeSuffix ".tar.gz" (pkgs.lib.removePrefix "make-" file)
-      else
-        null;
+    normalise = tvp.lib.versions.fromArchiveName {
+      prefix = "make-";
+      suffixes = [ ".tar.gz" ];
+    };
     include = version: builtins.match "[0-9].*" version != null;
   };
   pname = "gnumake";
@@ -51,24 +49,22 @@ let
       alternateShell = tvp.packages.bash_5;
       # These are used by the shared constructor fixture, never by production.
       runtimeShell = tvp.packages.bash_5;
-      compiler = tvp.baseTiers.full.compiler;
-      coreutils = tvp.baseTiers.full.coreutils;
+      compiler = tvp.bases.gcc_16.full.compiler;
+      coreutils = tvp.bases.gcc_16.full.coreutils;
       alternateCoreutils = tvp.packages.coreutils;
-      python = tvp.baseTiers.full.standardTools.python;
-      grep = tvp.baseTiers.full.standardTools.grep;
-      binutils = tvp.baseTiers.full.compiler.bintools;
+      python = tvp.bases.gcc_16.full.tools.python;
+      grep = tvp.bases.gcc_16.full.tools.grep;
+      binutils = tvp.bases.gcc_16.full.compiler.bintools;
       pkgConfig = tvp.packages.pkg-config;
       mpfr = tvp.packages.mpfr;
-      sentinel = (import ../../../bases/source-gnu/tests/probes.nix { }).sentinel;
-      alternateSource = (import ../../../bootstrap/source-cmake-prerequisite-tests.nix { }).alternate;
+      sentinel = tvp.lib.tests.fixtures.sentinel;
+      alternateSource = tvp.lib.tests.fixtures.alternateSource;
     };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
 {
-  recipes.gnumake = family // {
-    constructionRecipe = (import ./legacy.nix { inherit pkgs tvp; }).recipes.gnumake.constructionRecipe;
-  };
+  recipes.gnumake = family;
   inherit canonical;
   inherit (family) instantiate;
   aliases = tvp.lib.packages.mkAliases { inherit pname versionTable canonical; };

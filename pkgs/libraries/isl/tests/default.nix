@@ -10,7 +10,7 @@ let
   gmp =
     assert builtins.length runtimeGmp == 1;
     builtins.head runtimeGmp;
-  patchelf = s.base.standardTools.patchelf;
+  patchelf = s.base.tools.patchelf;
   modern = s.installedInterface.cppBindings;
 in
 context.mkSuite {
@@ -18,7 +18,7 @@ context.mkSuite {
   tools = [
     patchelf
     package.tvp.declaredTestDependencies.pkg-config
-    s.base.standardTools.grep
+    s.base.tools.grep
   ];
   libraries = [ package ];
   tests = {
@@ -36,7 +36,7 @@ context.mkSuite {
             }
           ]);
         in
-        ''cat ${control}/marker'';
+        "cat ${control}/marker";
       expected = "edited plan executed";
     };
     version = {
@@ -44,31 +44,31 @@ context.mkSuite {
       expected = package.version;
     };
     arithmetic = {
-      script = ''cc ${./fixtures/arithmetic.c} -lisl -lgmp -o arithmetic; ./arithmetic'';
+      script = "cc ${./fixtures/arithmetic.c} -lisl -lgmp -o arithmetic; ./arithmetic";
       expected = "5";
     };
     semantics = {
-      script = ''cc -std=c99 -Wall -Wextra -Werror ${lib.optionalString modern "-DMODERN_API"} ${./fixtures/semantics.c} -lisl -lgmp -o semantics; ./semantics > semantics.log; cat semantics.log >&2; echo semantics'';
+      script = "cc -std=c99 -Wall -Wextra -Werror ${lib.optionalString modern "-DMODERN_API"} ${./fixtures/semantics.c} -lisl -lgmp -o semantics; ./semantics > semantics.log; cat semantics.log >&2; echo semantics";
       expected = "semantics";
     };
     cpp11 = {
       script =
         if !modern then
-          ''test ! -e ${package}/include/isl/cpp.h; echo 'SKIP ISL 0.20 has no installed C++ bindings' >&2; echo cpp11''
+          "test ! -e ${package}/include/isl/cpp.h; echo 'SKIP ISL 0.20 has no installed C++ bindings' >&2; echo cpp11"
         else
-          ''c++ -std=c++11 -Wall -Wextra -Werror ${./fixtures/consumer.cc} -lisl -lgmp -o consumer; ./consumer > consumer.log; cat consumer.log >&2; echo cpp11'';
+          "c++ -std=c++11 -Wall -Wextra -Werror ${./fixtures/consumer.cc} -lisl -lgmp -o consumer; ./consumer > consumer.log; cat consumer.log >&2; echo cpp11";
       expected = "cpp11";
     };
     cpp17 = {
       script =
         if !modern then
-          ''test ! -e ${package}/include/isl/cpp.h; echo 'SKIP ISL 0.20 has no installed C++ bindings' >&2; echo cpp17''
+          "test ! -e ${package}/include/isl/cpp.h; echo 'SKIP ISL 0.20 has no installed C++ bindings' >&2; echo cpp17"
         else
-          ''c++ -std=c++17 -Wall -Wextra -Werror ${./fixtures/consumer.cc} -lisl -lgmp -o consumer; ./consumer > consumer.log; cat consumer.log >&2; echo cpp17'';
+          "c++ -std=c++17 -Wall -Wextra -Werror ${./fixtures/consumer.cc} -lisl -lgmp -o consumer; ./consumer > consumer.log; cat consumer.log >&2; echo cpp17";
       expected = "cpp17";
     };
     static = {
-      script = ''cc ${./fixtures/arithmetic.c} ${package}/lib/libisl.a -lgmp -o arithmetic; ./arithmetic'';
+      script = "cc ${./fixtures/arithmetic.c} ${package}/lib/libisl.a -lgmp -o arithmetic; ./arithmetic";
       expected = "5";
     };
     pkg-config = {
@@ -102,8 +102,8 @@ context.mkSuite {
     upstream-python = {
       tools = [
         package.tvp.declaredTestDependencies.python3
-        s.base.standardTools.gnutar
-        s.base.standardTools.xz
+        s.base.tools.gnutar
+        s.base.tools.xz
       ];
       script =
         if lib.versionAtLeast package.version "0.28" then
@@ -144,7 +144,7 @@ context.mkSuite {
       expected = "upstream-python";
     };
     tracker = {
-      script = ''echo tracker'';
+      script = "echo tracker";
       expected =
         assert package.tvp.upstream.normalise ''href="isl-0.28.tar.xz"'' == "0.28";
         assert package.tvp.upstream.normalise ''href="isl-0.28.tar.xz.junk"'' == null;

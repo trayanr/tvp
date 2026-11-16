@@ -6,7 +6,14 @@
 }:
 let
   p = package;
-  tools = p.specification.base.standardTools;
+  tools = (
+    builtins.removeAttrs p.specification.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   runtime = p.editRuntime (r: r // { dlopenDirectories = [ "${tools.python}/lib" ]; });
   suffix = p.editSteps (
     plan:
@@ -45,7 +52,7 @@ let
             name = "ordinary.source-compiler";
             run = ''
               mkdir source
-              ${s.base.standardTools.gnutar}/bin/tar --use-compress-program=${s.base.standardTools.gzip}/bin/gzip -xf ${s.src} -C source --strip-components=1
+              ${s.base.tools.gnutar}/bin/tar --use-compress-program=${s.base.tools.gzip}/bin/gzip -xf ${s.src} -C source --strip-components=1
               test "$(cat source/marker)" = 'alternate source'
               printf 'int main(void) { return 0; }\n' > probe.c
               "$CC" probe.c -o probe; "$CXX" -x c++ probe.c -o probe-cxx

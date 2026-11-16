@@ -65,15 +65,34 @@ let
 in
 {
   inherit policy;
-  legacyContext =
+  callerContext =
     let
-      retained = import ../legacy.nix { inherit pkgs tvp; };
-      caller = retained.recipes.php.extraArgs.mkTests.override {
-        pkgs = pkgs // {
-          runCommandWith = _: _: { callerContext = true; };
-        };
-      };
+      package = tvp.canonical.php_5_0_5;
+      suite =
+        (package.mkTests.override {
+          pkgs = {
+            callerContext = true;
+          };
+          tests =
+            {
+              package,
+              lib,
+              context,
+            }:
+            {
+              selected = package.testConfiguration.pkgs.callerContext;
+              effective = package.outPath == tvp.canonical.php_5_0_5.outPath;
+              context =
+                (context.mkTest {
+                  inherit package;
+                  name = "factory-context";
+                  script = "printf selected";
+                  expected = "selected";
+                }).tvp.base == package.tvp.base;
+            };
+        })
+          package;
     in
-    (caller retained.canonical.php_5_0_5).version.callerContext;
+    builtins.all (value: value) (builtins.attrValues suite);
   contracts = builtins.mapAttrs check family;
 }

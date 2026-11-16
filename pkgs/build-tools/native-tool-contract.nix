@@ -12,7 +12,7 @@ let
   tool = p.tvp.declaredTestDependencies;
   inherit (tool) sentinel;
   alternate = tool.alternateSource;
-  python = p.specification.base.standardTools.python;
+  python = p.specification.base.tools.python;
   coreutils = p.specification.base.coreutils;
   altered = p.editSteps (
     steps.append [
@@ -119,10 +119,10 @@ let
           coreutils = tool.alternateCoreutils;
           tools = map (
             t: if t.outPath == s.base.coreutils.outPath then tool.alternateCoreutils else t
-          ) s.base.tools;
+          ) s.base.baselineTools;
         };
         environment = s.environment // {
-          tools = [ s.base.standardTools.python ];
+          tools = [ s.base.tools.python ];
         };
       }
     )).editSteps

@@ -6,8 +6,8 @@
   src,
   version,
   runtimeBash,
-  pkgConfig,
-  helperGrep,
+  pkg-config,
+  grep,
   openssl,
   zlib,
   bzip2,
@@ -73,8 +73,8 @@ in
     src
     version
     patches
-    pkgConfig
-    helperGrep
+    pkg-config
+    grep
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
@@ -84,15 +84,18 @@ in
       "_tkinter"
       "_uuid"
     ];
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     compression = "xz";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     finalizeEx = true;
     embedFlag = true;
     textSubprocess = true;
-  } // installedInterface;
+  }
+  // installedInterface;
   upstreamPolicy = {
     modules = [
       "test_ssl"
@@ -106,7 +109,8 @@ in
       "test_zlib"
       "test_readline"
     ];
-  } // upstreamPolicy;
+  }
+  // upstreamPolicy;
   libraries = {
     inherit
       openssl
@@ -121,14 +125,13 @@ in
       ncurses
       ;
   };
-  dependencyProviders =
-    {
-      inherit (final) pkgConfig helperGrep;
-    }
-    // final.runtime.providers
-    // {
-      runtimeBash = final.runtime.shell;
-    };
+  dependencyProviders = {
+    inherit (final) pkg-config grep;
+  }
+  // final.runtime.providers
+  // {
+    runtimeBash = final.runtime.shell;
+  };
   environment = {
     overrides.values.LIBS = "-lm";
     tools = [
@@ -140,7 +143,7 @@ in
       tools.grep
       tools.gawk
       tools.diffutils
-      final.pkgConfig
+      final.pkg-config
     ];
     libraries = builtins.attrValues final.libraries;
   };
@@ -195,7 +198,7 @@ in
               final.runtime.shell
               final.coreutils
               tools.sed
-              final.helperGrep
+              final.grep
               tools.binutils
             ]
           )

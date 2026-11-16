@@ -101,7 +101,7 @@
           program = "${tvp.tools.testRunner}/bin/tvp-test";
         };
 
-        testPlans = tvp.lib.tests.mkPlan {
+        testPlans = tvp.lib.tests.compatibility.mkPlan {
           inherit pkgs;
           batches = removeAttrs tvp.testBatches [ "all" ];
           inherit (tvp) checks canonical;

@@ -1,19 +1,34 @@
 { pkgs, tvp }:
 let
-  retained = import ./retained-construction.nix { inherit pkgs tvp; };
   # Captured earlier Perl is a preparation role, not an ordinary runtime dependency.
-  retainedPreparationPerl = tvp.lib.packages.withConstraint {
+  preparationPerl = tvp.lib.packages.withConstraint {
     category = "construction";
     reason = "Retained source-GNU perl is an explicit build-only host generation, independent of these target libraries and commands.";
   } (import ../../../bases/source-gnu { }).tools.perl;
   pname = "readline";
   versionTable = tvp.lib.packages.mkTable [
     {
+      # Keep the original broken-release status and archive identity. The public
+      # procedure now uses the same owned base contract as the other releases.
+      def = {
+        builder = ./build-owned-2.0.nix;
+        base = tvp.bases.gcc_9.full;
+        deps.ncurses = tvp.packages.ncurses_6;
+        deps.perl = preparationPerl;
+      };
+      status = {
+        level = "broken";
+        reason = "readline.h includes readline/tilde.h, which 2.0 omits from INSTALLED_HEADERS, so nothing can compile against the installed tree. The library itself builds.";
+        needs = "A patch adding tilde.h to INSTALLED_HEADERS. Deferred rather than impossible: 2.0 already needed a period compiler, a named ncurses include path, an undefined incdir supplied and a pre-created include directory, and a fifth independent fix for one release is re-porting rather than packaging.";
+      };
+      releases."2.0" = "sha256-PJYYtkajIHTvt1J7WrJoN9VcSp0Xwr66ec7veA5HQ2c=";
+    }
+    {
       def = {
         builder = ./build-owned-2.1.nix;
         deps.ncurses = tvp.packages.ncurses_6;
         opts.commonSymbols = true;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       status = {
         level = "degraded";
@@ -38,7 +53,7 @@ let
             reason = "Preserve libreadline.a while installing libhistory.a; fixed upstream in 2.2.1.";
           }
         ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       status = {
         level = "degraded";
@@ -57,7 +72,7 @@ let
       def = {
         builder = ./build-owned-2.1.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       status = {
         level = "degraded";
@@ -77,7 +92,7 @@ let
         builder = ./build-owned-4.0.nix;
         deps.ncurses = tvp.packages.ncurses_6;
         deps.automake = tvp.packages.automake_1;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "4.0" = "sha256-9Tt2z2sld7EbcOFJDycyH+LWdB40YVxFE0JMCYPY7Ss=";
@@ -90,7 +105,7 @@ let
       def = {
         builder = ./build-owned-4.3.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "4.3" = "sha256-7q9vBQufUVsGNuW08sFT+e946QYe5d109hL6tUx3v4g=";
@@ -100,7 +115,7 @@ let
       def = {
         builder = ./build-owned-4.3.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "5.0" = "sha256-0Z5Pgg2mU7lCYrDlze2kX0dMLXs3ioWkua6q52JpphE=";
@@ -112,7 +127,7 @@ let
       def = {
         builder = ./build-owned-6.0.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "6.0" = "sha256-EZnZBcAlc1s0z2fQMHhYXhj4RwcFJBMnn+aM5Iwcwd4=";
@@ -125,7 +140,7 @@ let
       def = {
         builder = ./build-owned-6.0.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "7.0" = "sha256-dQ1DcYUob0CjaeHk9HZO2pMrlFm17JpzFig5PdPTIzQ=";
@@ -136,7 +151,7 @@ let
         builder = ./build-owned-6.0.nix;
         deps.ncurses = tvp.packages.ncurses_6;
         opts.pkgConfigModules = [ "readline" ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "8.0" = "sha256-4zn1GXFHjTafigU6MwoZB4GsuYZM9MVBBg8SB4lI5GE=";
@@ -152,7 +167,7 @@ let
           "readline"
           "history"
         ];
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "8.2" = "sha256-P+txcfFqhO6CyhijbXub4QmlLAT0kqBTMx19EJUAfDU=";
@@ -163,7 +178,7 @@ let
       def = {
         builder = ./build-owned-8.3.nix;
         deps.ncurses = tvp.packages.ncurses_6;
-        deps.perl = retainedPreparationPerl;
+        deps.perl = preparationPerl;
       };
       releases = {
         "8.3" = "sha256-/lODIERngozUle6NHTwDen66E4nCK8agQfYnl2+QYcw=";
@@ -172,7 +187,30 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = retained.packageMeta;
+    packageMeta = {
+      upstream = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/readline/";
+        pattern = "readline-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "readline-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        # The directory also carries documentation-only tarballs named
+        # readline-4.2-doc.tar.gz, which are not releases of the library.
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(
+            pkgs.lib.hasSuffix "-doc" version
+            || pkgs.lib.hasInfix "alpha" version
+            || pkgs.lib.hasInfix "beta" version
+            || pkgs.lib.hasInfix "-rc" version
+          );
+      };
+    };
     source =
       { version, sha256 }:
       pkgs.fetchurl {
@@ -184,13 +222,8 @@ let
       };
     tests = import ./tests/installed.nix;
   };
-  # The established broken exclusion is neither ported nor instantiated by mkFamily.
-  brokenTable = {
-    "2.0" = retained.versionTable."2.0";
-  };
-  excluded = tvp.lib.packages.mkVersions (retained // { versionTable = brokenTable; });
-  canonical = tvp.lib.packages.mkVersions family // excluded;
-  allVersions = family.versionTable // brokenTable;
+  canonical = tvp.lib.packages.mkVersions family;
+  allVersions = family.versionTable;
   variants = tvp.lib.packages.mkVariants (
     family
     // {
@@ -200,14 +233,9 @@ let
       };
       profiles.ncurses64.base = family.versionTable."8.3".def.base;
       profiles.ncurses64.versions."8.3" = {
-        deps.ncurses =
-          tvp.lib.packages.withConstraint
-            {
-              reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
-            }
-            (tvp.lib.packages.mkVersions
-              (import ../ncurses { inherit pkgs tvp; }).recipes.ncurses.constructionRecipe
-            ).ncurses_6_4;
+        deps.ncurses = tvp.lib.packages.withConstraint {
+          reason = "Named ncurses64 profile preserves its documented Ncurses 6.4 public WINDOW/header contract; ordinary canonical Readline follows the current ABI line.";
+        } tvp.packages.ncurses_6_4;
         opts.installedInterface = {
           static = true;
           propagateNcurses = true;
@@ -219,7 +247,6 @@ in
 {
   recipes.readline = family // {
     versionTable = allVersions;
-    constructionRecipe = retained;
   };
   inherit canonical variants;
   inherit (family) instantiate;

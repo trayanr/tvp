@@ -5,7 +5,7 @@
 }:
 let
   commonTools =
-    with package.specification.base.standardTools;
+    with package.specification.base.tools;
     [
       sed
       grep
@@ -44,9 +44,9 @@ context.mkSuite {
   tools = commonTools;
   tests = {
     capability-runner = {
-      tools = commonTools ++ [ package.specification.base.standardTools.python ];
+      tools = commonTools ++ [ package.specification.base.tools.python ];
       script = ''
-        ${package.specification.base.standardTools.python}/bin/python3 -B \
+        ${package.specification.base.tools.python}/bin/python3 -B \
           ${../../../../lib/tests/test-filesystem-runner.py} \
           ${../../../../lib/tests/filesystem-test-runner.py} >&2
         echo ok

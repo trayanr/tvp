@@ -6,44 +6,64 @@
   base,
 }:
 let
-  shared = tvpLib.bases.mkBaseSuite {
-    inherit base;
+  selected = base.ownedBase or base;
+  owned =
+    if selected ? compiler && selected ? environment && !(selected ? stdenv) then
+      selected
+    else
+      throw "TVP base tests: an owned base selection is required";
+  builder = import ../../lib/builder.nix { inherit (pkgs) lib; };
+  context = tvpLib.tests.forBase {
+    inherit builder;
+    base = owned;
+    coreutils = owned.tools.coreutils;
+  };
+  compiler = owned.compiler;
+  shared = context.mkSuite {
+    package = compiler;
 
     tests = {
       # Not -dumpversion: it prints the full version before gcc 7 and the major
       # after it, so neither form is comparable across the catalogue.
       cc-version = {
-        script = "cc --version | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+'";
-        expected = base.cc;
+        script = ''
+          "$CC" --version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'
+        '';
+        expected = compiler.version;
       };
 
       binutils-version = {
         script = ''
-          ${base.stdenv.cc.bintools}/bin/ld --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
+          "${compiler.bintools}/bin/ld" --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?'
         '';
-        expected = base.binutils;
+        expected = pkgs.lib.getVersion compiler.bintools;
       };
 
       libc-version = {
         script = ''
-          ${base.stdenv.cc.libc.bin}/bin/getconf GNU_LIBC_VERSION
+          "$CC" -x c -o libc-version - <<'C'
+          #include <gnu/libc-version.h>
+          #include <stdio.h>
+          int main(void) { printf("glibc %s\n", gnu_get_libc_version()); }
+          C
+          ./libc-version
         '';
-        expected = "glibc ${base.libc}";
+        expected = "glibc ${compiler.libc.version}";
       };
 
       compile = {
         script = ''
-          cc ${./fixtures/libc.c} -o libc
-          readelf -l libc | grep -F '${base.stdenv.cc.libc}/${base.platform.dynamicLinker}' >&2
-          readelf -l libc | grep GNU_RELRO >&2
-          readelf -d libc | grep -E 'BIND_NOW|FLAGS.*NOW' >&2
+          "$CC" ${./fixtures/libc.c} -o libc
+          "$READELF" -l libc | grep -F '[Requesting program interpreter: ${compiler.libc}/' >&2
+          "$READELF" -l libc | grep GNU_RELRO >&2
+          "$READELF" -d libc | grep -E 'BIND_NOW|FLAGS.*NOW' >&2
           ./libc
         '';
         expected = "45";
       };
       cxx = {
         script = ''
-          c++ ${./fixtures/cxx.cc} -o cxx
+          "$CXX" ${./fixtures/cxx.cc} -o cxx
           ./cxx
         '';
         expected = "42";
@@ -51,15 +71,15 @@ let
       response-file = {
         script = ''
           printf '%s\n' '${./fixtures/libc.c}' -o response > args
-          cc @args
+          "$CC" @args
           ./response
         '';
         expected = "45";
       };
       static = {
         script = ''
-          cc -static -L${base.stdenv.cc.libc.static or base.stdenv.cc.libc}/lib ${./fixtures/libc.c} -o static
-          if readelf -l static | grep -q INTERP; then exit 1; fi
+          "$CC" -static -L${compiler.libc.static or compiler.libc}/lib ${./fixtures/libc.c} -o static
+          if "$READELF" -l static | grep -q INTERP; then exit 1; fi
           ./static
         '';
         expected = "45";

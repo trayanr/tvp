@@ -6,7 +6,14 @@
 }:
 let
   s = package.specification;
-  tools = s.base.standardTools;
+  tools = (
+    builtins.removeAttrs s.base.tools [
+      "gcc"
+      "bash"
+      "coreutils"
+      "binutils"
+    ]
+  );
   steps = import ../../../../lib/build-steps.nix;
 in
 context.mkSuite {

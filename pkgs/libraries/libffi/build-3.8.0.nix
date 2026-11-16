@@ -16,13 +16,10 @@ let
   inherit (context) steps outputs tools;
   environment = final.base.environment final.environment;
   command =
-    name: run:
-    environment
-    // {
-      name = "libffi.${name}";
-      cwd = "source";
-      inherit run;
-    };
+    name:
+    steps.command {
+      environment = final.environment;
+    } "libffi.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libffi-build-tree";
   headerDirectory = "include";
@@ -120,11 +117,11 @@ in
       compression = "gzip";
     })
     (
-      (command "prepare" ''${tools.python}/bin/python3 -B ${../ffi-decimal-source.py} ${tools.bash}/bin/bash ${
+      (command "prepare" "${tools.python}/bin/python3 -B ${../ffi-decimal-source.py} ${tools.bash}/bin/bash ${
         lib.escapeShellArg (
           builtins.toJSON (final.sourceLayout // { patches = map (p: "${p}") final.patches; })
         )
-      } '')
+      } ")
       // {
         tools = environment.tools ++ [ tools.python ];
       }
@@ -132,7 +129,7 @@ in
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       ${lib.optionalString (final.buildFeatures.cStandard != null || final.buildFeatures.cFlags != [ ])
-        ''export CFLAGS=${
+        "export CFLAGS=${
           lib.escapeShellArg (
             lib.concatStringsSep " " (
               [ "-O2" ]
@@ -140,7 +137,7 @@ in
               ++ final.buildFeatures.cFlags
             )
           )
-        }''
+        }"
       }
       ./configure --prefix="$out" --libdir="$out/lib" ${lib.escapeShellArgs final.configureFlags} 
     '')
@@ -158,11 +155,10 @@ in
     )
   ];
   upstreamPlan = artifact: [
-    {
+    (steps.restoreCheckpoint {
       name = "libffi.restore-build-tree";
-      tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./tests/restore.py} ${artifact}/${checkpoint} "$TVP_SOURCE_ROOT"'';
-    }
+      checkpoint = "${artifact}/${checkpoint}";
+    })
     {
       name = "libffi.upstream-source";
       tools = [ tools.python ];
@@ -226,13 +222,15 @@ in
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             requiredRegular = [
               "lib/libffi.la"
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             libtoolData = [ "lib/libffi.la" ];
           }
         )
@@ -263,7 +261,7 @@ in
       tools = [ tools.coreutils ];
       run = ''ln -s lib "$out/lib64"'';
     }
-    ((import ../gdbm/ordinary/check-paths.nix { inherit lib; }) {
+    (outputs.checkLoaderPaths {
       python = tools.python;
       binutils = tools.binutils;
       patchelf = tools.patchelf;
