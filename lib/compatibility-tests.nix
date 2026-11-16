@@ -124,7 +124,11 @@ rec {
         drv:
         let
           selected = builtins.unsafeDiscardStringContext drv.outPath;
-          declared = map (output: builtins.unsafeDiscardStringContext drv.${output}.outPath) drv.outputs;
+          # builtins.derivation omits `outputs` when using its implicit `out`.
+          # An explicit list still requires every declared sibling to exist.
+          declared = map (output: builtins.unsafeDiscardStringContext drv.${output}.outPath) (
+            drv.outputs or [ "out" ]
+          );
         in
         [ selected ] ++ builtins.filter (output: output != selected) declared;
     in
