@@ -139,9 +139,12 @@ in
     // lib.optionalAttrs owned {
       embedding = {
         script = ''
+          # The independent compiler's sysroot needs an explicit transitive
+          # link search. Keep it link-only so Ruby's own RUNPATH is tested below.
           ${consumerCompiler}/bin/cc ${./fixtures/embed.c} \
             -I${ruby}/include/ruby-${ruby.libDir} \
             -I${ruby}/include/ruby-${ruby.libDir}/x86_64-linux \
+            -Wl,-rpath-link,${ruby.runtime.zlib}/lib \
             -L${ruby}/lib -Wl,-rpath,${ruby}/lib -lruby -o embed
           env -i HOME="$TMPDIR" ./embed
         '';
