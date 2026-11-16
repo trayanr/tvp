@@ -94,8 +94,27 @@ rec {
         name:
         let
           b = registeredBases.${name};
+          owned = b.ownedBase or b;
+          providers =
+            lib.optional (owned ? compiler) owned.compiler
+            ++ builtins.attrValues (owned.tools or { })
+            ++ (owned.baselineTools or [ ])
+            ++ (owned.referencePackages or [ ]);
+          declared = lib.concatMap (
+            p:
+            map (output: {
+              name = "base:${name}";
+              kind = "base";
+              inherit output;
+              path = builtins.unsafeDiscardStringContext p.${output}.outPath;
+              source = "substrate";
+              base = name;
+              blob = null;
+            }) (p.outputs or [ "out" ])
+          ) providers;
         in
-        map (p: {
+        declared
+        ++ map (p: {
           name = "base:${name}";
           kind = "base";
           output = "out";
@@ -103,8 +122,26 @@ rec {
           source = "substrate";
           base = name;
           blob = null;
-        }) b.ownership.allowedRuntimePaths
-      ) (lib.attrNames (lib.filterAttrs (_: b: b ? ownership) registeredBases));
+        }) (b.ownership.allowedRuntimePaths or [ ])
+      ) (lib.attrNames registeredBases);
+      # Earlier-generation installed interfaces can name explicit construction
+      # providers which are no longer selected as tools. Register those recipes,
+      # never the discovered runtime closure of a base or package.
+      constructionReferences = lib.concatMap (
+        name:
+        let
+          p = construction.runtimeReferences.${name};
+        in
+        map (output: {
+          name = "construction:${name}";
+          kind = "construction-reference";
+          inherit output;
+          path = builtins.unsafeDiscardStringContext p.${output}.outPath;
+          source = "substrate";
+          base = null;
+          blob = null;
+        }) (p.outputs or [ "out" ])
+      ) (lib.attrNames (construction.runtimeReferences or { }));
     in
     packageRows "canonical" canonical
     ++ referenceRows canonical
@@ -124,6 +161,7 @@ rec {
       )
     ) (lib.attrNames construction.variants)
     ++ baseRows
+    ++ constructionReferences
     ++ lib.mapAttrsToList (name: p: {
       inherit name;
       kind = "composition";

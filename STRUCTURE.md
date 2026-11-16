@@ -1258,6 +1258,10 @@ profile additionally rejects the boot JDK, file utility and X11 inputs in its cl
 `checks.package-runtime-ownership` reads an exported Nix reference graph for every
 buildable canonical package and SDK composition. Registration includes canonical, variant and private bootstrap
 outputs, the owned bases' explicitly declared private paths and SDK profiles.
+Owned base registration reads the selected compiler, tools, baseline tools and
+reference packages, including their named outputs. Earlier construction providers
+still named by installed interfaces are explicit `construction.runtimeReferences`
+definitions. Neither declaration automatically registers a provider's closure.
 Customized owned recipes selected in declared package dependencies are registered
 against their canonical procedure, including all outputs and explicit base references.
 This does not register arbitrary inputs, test-only dependencies or a dependency's

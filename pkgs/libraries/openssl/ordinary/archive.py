@@ -4,9 +4,21 @@ No addresses, relocation records, offsets, symbols or archive indices move.
 This is the ET_REL operation missing from the retained runtime ELF inspector.
 """
 import struct
+import re
 import subprocess
 import tempfile
 from pathlib import Path
+
+
+def path_prefix(prefix):
+    if prefix in (b'', b'OPENSSLDIR: "', b'ENGINESDIR: "', b'MODULESDIR: "'):
+        return True
+    # Older OpenSSL embeds its compiler flags in the version report. Only
+    # relocate self paths that are values of these installed-directory macros.
+    return re.fullmatch(
+        rb'compiler: [\x20-\x7e]* -D(?:OPENSSL|ENGINES|MODULES)DIR=[\\"]*',
+        prefix,
+    ) is not None
 
 
 def relocate(data, old, new, readelf, replace):
@@ -66,7 +78,7 @@ def relocate(data, old, new, readelf, replace):
                 if stop<0:
                     raise ValueError('unterminated archive self string')
                 prefix=member[start:hit]
-                if prefix not in (b'',b'OPENSSLDIR: "',b'ENGINESDIR: "',b'MODULESDIR: "'):
+                if not path_prefix(prefix):
                     raise ValueError(('unexpected archive self string',prefix))
                 value=replace(member[start:stop],old,new)
                 if len(value)!=stop-start:

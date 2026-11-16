@@ -87,6 +87,27 @@ let
       namespace = "canonical";
     };
   };
+  ownedBaseRows = tvp.lib.provenance.registry {
+    canonical = { };
+    variants = { };
+    bases.selected.ownedBase = {
+      compiler = library;
+      tools.selected = customized;
+      baselineTools = [ reference ];
+      referencePackages = [ (package "base-reference") ];
+    };
+    construction = {
+      bases = { };
+      variants = { };
+      runtimeReferences.earlier = package "earlier-generation";
+    };
+  };
+  ownedPaths = map (row: row.path) ownedBaseRows;
+  oldBaseRows = tvp.lib.provenance.registry {
+    canonical = { };
+    variants = { };
+    bases.previous.ownership.allowedRuntimePaths = [ "/nix/store/registry-fixture-old-base" ];
+  };
 in
 {
   allOutputs =
@@ -107,4 +128,16 @@ in
   transitiveNotRegistered =
     !(builtins.any (row: row.path == "/nix/store/registry-fixture-foreign") rows);
   contextFree = !(builtins.hasContext (builtins.toJSON rows));
+  ownedBaseProviders = builtins.all (p: builtins.elem p ownedPaths) [
+    library.outPath
+    customized.out.outPath
+    customized.dev.outPath
+    reference.outPath
+    "/nix/store/registry-fixture-base-reference"
+    "/nix/store/registry-fixture-earlier-generation"
+  ];
+  noImplicitBaseClosure = !(builtins.elem "/nix/store/registry-fixture-foreign" ownedPaths);
+  previousBaseDeclarations =
+    map (row: row.path) oldBaseRows == [ "/nix/store/registry-fixture-old-base" ];
+  ownedBaseContextFree = !(builtins.hasContext (builtins.toJSON ownedBaseRows));
 }

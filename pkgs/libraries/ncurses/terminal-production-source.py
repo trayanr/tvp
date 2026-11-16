@@ -66,7 +66,8 @@ for path in files:
         raise ValueError(('unsupported executable source frontend', path))
     if selected(path) and data.startswith(b'#!'):
         front, body = data.split(b'\n', 1)
-        if re.fullmatch(rb'#![ \t]*(?:/(?:bin|usr/bin)/(?:sh|bash)|/usr/bin/env (?:sh|bash))(?: (-e|-))?', front):
+        if (re.fullmatch(rb'#![ \t]*(?:/(?:bin|usr/bin)/(?:sh|bash)|/usr/bin/env (?:sh|bash))(?: (-e|-))?', front)
+                or re.fullmatch(rb'#!' + re.escape(shell.encode()) + rb'(?: (-e|-))?', front)):
             changes[path] = b'#!' + shell.encode() + (b' ' + front.split()[-1] if front.split()[-1] in {b'-e', b'-'} else b'') + b'\n' + body
         elif front == b'#!@SHELL@':
             changes[path] = b'#!' + shell.encode() + b'\n' + body

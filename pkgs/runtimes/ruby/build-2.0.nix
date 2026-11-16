@@ -118,6 +118,12 @@ in
       zlib
       libffi
     ];
+    # GNU ld resolves transitive RUNPATHs inside its sysroot. Name Readline's
+    # runtime providers for linking without exposing their headers or adding
+    # their paths to the installed Ruby runtime.
+    overrides.flags.NIX_CFLAGS_LINK = map (library: "-Wl,-rpath-link,${lib.getLib library}/lib") (
+      final.libraries.readline.runtime.libraries or [ ]
+    );
     # LC_ALL=C from the base overrides LANG; RDoc needs UTF-8 explicitly.
     overrides.values =
       {

@@ -778,3 +778,39 @@ needs no new version switch, builder flags or duplicate era procedure; all four
 supported source layouts satisfy the same guarded operation. Source/installed and
 upstream validation passed in the bounded13-version matrix. Other deferred decisions
 and historical/global qualification holds remain unchanged.
+
+### Closeout full-catalogue repairs
+
+The latest selection passed963 named tests before the historical full run. The
+full run exposed production and fixture defects; its cancellation and failed
+results remain recorded, and do not constitute full qualification.
+
+- Register the new owned base's explicit providers and named outputs. Register
+  earlier source-built construction providers by definition, without discovering
+  or allowing their runtime closure. Remove the five old Rust baseline paths only
+  after proving they are absent from the completed current Rust closure.
+- Keep mandatory Ruby Readline validation. Its missing extension was a real
+  construction defect: the GNU linker's sysroot hid Readline's transitive Ncurses
+  dependency. Add link-only search flags from the effective Readline provider;
+  those Ruby artifacts must rebuild. Do not accept the Reline fallback as proof
+  that the native extension exists.
+- Respect historical installed layouts and generator ordering. Automake1.4-p6
+  uses its versioned data directory; libffi3.0.12/3.0.13 normalize their lib64
+  artifacts in finalization; old Autoconf generates autom4te before parallel use.
+  Repeated terminal source preparation accepts only the exact selected shell.
+- Keep OpenSSL's known script roles and directory-string checks explicit. Preserve
+  tsget's Perl warning flag, recognize installed-directory macros in compiler
+  version strings, and validate all ELF hits before replacing each string once.
+  Checkpoints preserve internal dangling optional FIPS aliases while continuing
+  to reject external links. Changing checkpoint capture changes the affected A
+  inputs; a passing previous artifact is not evidence for a new identity.
+- Correct fixtures for test isolation: JSON-C's production tool trace must not
+  contain CTest; its separate upstream execution must use the selected CTest.
+  Ruby's selected-tools assertion declares its own grep dependency.
+- Tower's normal Nix settings remain the default. Sequence heavy preparation
+  separately; do not replace the default with a global concurrency cap.
+
+OpenSSL's optional `tsget` network helper still requires `WWW::Curl::Easy`,
+which the selected Perl does not provide. Finalization and preserved warning-flag
+fixtures do not certify that optional network functionality; keep it deferred and
+visible rather than claiming complete helper qualification.

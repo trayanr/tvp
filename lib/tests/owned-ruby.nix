@@ -236,6 +236,7 @@ let
         steps.append [
           {
             name = "fixture.selected-tools";
+            tools = [ p.specification.base.tools.grep ];
             run = ''
               for tool in make sed python; do grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"; done
               sort -u "$NIX_BUILD_TOP/selected-tools" > "$out/selected-tools"

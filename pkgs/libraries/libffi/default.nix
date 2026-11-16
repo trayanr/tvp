@@ -55,6 +55,8 @@ let
         opts = {
           variadic = true;
           additionalSourceScripts = [ "libtool-ldflags" ];
+          # These archives install multi-os libraries in lib64 despite --libdir.
+          artifactLibraryDirectory = "lib64";
           testHarnessFile = "testsuite/lib/libffi.exp";
         };
       };

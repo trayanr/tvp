@@ -15,6 +15,7 @@
   testHarnessFile ? "testsuite/lib/libffi-dg.exp",
   testEdits ? [ ],
   upstreamData ? { },
+  artifactLibraryDirectory ? "lib",
 }:
 final:
 let
@@ -49,6 +50,7 @@ in
     testHarnessFile
     testEdits
     upstreamData
+    artifactLibraryDirectory
     ;
   inherit (tools) bash coreutils;
   buildFeatures = {
@@ -226,30 +228,33 @@ in
       ];
       run = ''${tools.python}/bin/python3 -B ${../ffi-decimal-output.py} "$out" "$TVP_ARTIFACT_ROOT" ${tools.patchelf}/bin/patchelf ${
         lib.escapeShellArg (
-          builtins.toJSON {
-            readelf = "${tools.binutils}/bin/readelf";
-            shell = "${final.runtime.shell}/bin/bash";
-            buildShell = "${tools.bash}/bin/bash";
-            paths = map (p: "${p}/bin") final.runtime.tools;
-            requiredDirectories = [
-              "lib"
-              "${headerDirectory}"
-              "nix-support"
-            ];
-            requiredFiles = [
-              "lib/libffi.la"
-              "${headerDirectory}/ffi.h"
-              "${headerDirectory}/ffitarget.h"
-              "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
-            requiredRegular = [
-              "lib/libffi.la"
-              "${headerDirectory}/ffi.h"
-              "${headerDirectory}/ffitarget.h"
-              "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
-            libtoolData = [ "lib/libffi.la" ];
-          }
+          builtins.toJSON (
+            {
+              readelf = "${tools.binutils}/bin/readelf";
+              shell = "${final.runtime.shell}/bin/bash";
+              buildShell = "${tools.bash}/bin/bash";
+              paths = map (p: "${p}/bin") final.runtime.tools;
+              requiredDirectories = [
+                "lib"
+                "${headerDirectory}"
+                "nix-support"
+              ];
+              requiredFiles = [
+                "lib/libffi.la"
+                "${headerDirectory}/ffi.h"
+                "${headerDirectory}/ffitarget.h"
+                "lib/pkgconfig/libffi.pc"
+              ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+              requiredRegular = [
+                "lib/libffi.la"
+                "${headerDirectory}/ffi.h"
+                "${headerDirectory}/ffitarget.h"
+                "lib/pkgconfig/libffi.pc"
+              ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+              libtoolData = [ "lib/libffi.la" ];
+            }
+            // lib.optionalAttrs (final.artifactLibraryDirectory == "lib64") { library64 = true; }
+          )
         )
       }'';
     }

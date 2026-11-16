@@ -202,7 +202,7 @@ in
     // lib.optionalAttrs (deps ? readline) {
       readline = {
         script = ''
-          ruby -e 'require "readline"; print Readline.respond_to?(:readline) ? "readline-ok" : "MISSING"'
+          ruby -e 'require "readline"; abort "native Readline extension missing" unless $LOADED_FEATURES.any? { |path| path.end_with?("/readline.so") }; print Readline.respond_to?(:readline) ? "readline-ok" : "MISSING"'
         '';
         expected = "readline-ok";
       };

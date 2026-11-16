@@ -51,8 +51,28 @@ let
         "1.4-p3" = "sha256-nIQtSkYTURqUQvVK+KpI6lAqRtu1r9WMnlSlhYXVOMk=";
         "1.4-p4" = "sha256-pb2w10605yMN4cRrJ0HQGMkU6PBwK+s4Z0ri3kGuKAs=";
         "1.4-p5" = "sha256-1vJac4eTCyikM04InCnBTzF0ZrTivjtCRHGKUpxBR+o=";
-        "1.4-p6" = "sha256-UDzcKwmSpDCVRdF/RiyxX5m7V7cWHfxAgrLnGI8rzA8=";
       };
+    }
+    {
+      def = {
+        builder = ./build-1.0.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          perl = tvp.packages.perl_5;
+        };
+        patches = [
+          {
+            file = ./patches/1.4-perl-indirect-call.patch;
+            reason = "Perl 5.20 removed do SUBROUTINE(LIST); call the language handlers through their symbolic references instead.";
+          }
+        ];
+        # 1.4-p6 alone backports the versioned installation layout.
+        opts.installedInterface = {
+          dataDirectory = "share/automake-1.4";
+          versionedAliases = true;
+        };
+      };
+      releases."1.4-p6" = "sha256-UDzcKwmSpDCVRdF/RiyxX5m7V7cWHfxAgrLnGI8rzA8=";
     }
     {
       def = {

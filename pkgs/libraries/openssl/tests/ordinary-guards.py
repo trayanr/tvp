@@ -56,14 +56,21 @@ class Guards(unittest.TestCase):
 
     def test_misc_perl_helpers_bind_runtime_commands(self):
         self.fake_openssl()
-        for name in ['etc/ssl/misc/CA.pl', 'etc/ssl/misc/der_chop']:
+        helpers = ['etc/ssl/misc/CA.pl', 'etc/ssl/misc/der_chop', 'etc/ssl/misc/tsget']
+        for name in helpers:
             body = b"system('openssl', 'fixture') == 0 or die 'command failed';\n"
+            flags = b''
             if name.endswith('der_chop'):
                 body = b"require 'getopts.pl';\n&Getopts('vd:') or die 'options';\n" + body
-            path = self.install_helper(name, b'#!'+config['buildPerl'].encode()+b'\n'+body)
+            elif name.endswith('tsget'):
+                flags = b' -w'
+                body = b"die 'warnings disabled' unless $^W;\n" + body
+            path = self.install_helper(name, b'#!'+config['buildPerl'].encode()+flags+b'\n'+body)
         self.run_final()
-        for name in ['etc/ssl/misc/CA.pl', 'etc/ssl/misc/der_chop']:
+        for name in helpers:
             path = self.root/name
+            flags = b' -w' if name.endswith('tsget') else b''
+            self.assertEqual(path.read_bytes().splitlines()[0], b'#!'+config['perl'].encode()+flags)
             result = subprocess.run([str(path)], env={'PATH': ''}, capture_output=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout, b'selected:fixture\n')
@@ -80,6 +87,9 @@ class Guards(unittest.TestCase):
         for name, data in [
             ('CA.pl', b'#!/usr/bin/python3\nprint(1)\n'),
             ('der_chop', b'#!'+config['buildPerl'].encode()+b'\nprint "missing parser";\n'),
+            ('tsget', b'#!/usr/bin/perl -w\nprint "wrong provider";\n'),
+            ('tsget', b'#!'+config['buildPerl'].encode()+b' -x\nprint "unsupported flags";\n'),
+            ('tsget', b'#!'+config['buildPerl'].encode()+b' -w\nprint "nul\0";\n'),
             ('unknown.pl', b'#!'+config['buildPerl'].encode()+b'\nprint "unsupported";\n'),
         ]:
             with self.subTest(name=name):
@@ -129,6 +139,17 @@ class Guards(unittest.TestCase):
         data=b'!<arch>\n'+header+member+(b'\n' if len(member)%2 else b'')
         with self.assertRaises(ValueError):
             archive.relocate(data,self.old.encode(),str(self.root).encode(),config['readelf'],helper.replace_paths)
+
+    def test_archive_compiler_directory_flags(self):
+        for prefix in [b'compiler: cc -O2 -DOPENSSLDIR="\\"',
+                       b'compiler: cc -O2 -DENGINESDIR="\\"',
+                       b'compiler: cc -O2 -DMODULESDIR="\\"']:
+            self.assertTrue(archive.path_prefix(prefix))
+        for prefix in [b'compiler: cc -I', b'compiler: cc -DSOURCEDIR="',
+                       b'compiler: cc\n -DOPENSSLDIR="',
+                       b'not compiler: cc -DOPENSSLDIR="',
+                       b'compiler: cc -DOPENSSLDIR="prefix']:
+            self.assertFalse(archive.path_prefix(prefix))
 
     def test_raw_link_components_fail_before_mutation(self):
         (self.root/'lib/plain').write_text('regular')

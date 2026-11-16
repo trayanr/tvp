@@ -88,7 +88,14 @@ in
       export PERL=${final.perl}/bin/perl M4=${final.m4}/bin/m4
       ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "autoconf.build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'')
+    (command "autoconf.build" ''
+      # Older Makefiles refer to ../bin/autom4te as a dependency without a
+      # rule for that spelling. Generate the local tool before parallel use.
+      if test -f bin/autom4te.in; then
+        ${tools.gnumake}/bin/make -C bin -j1 SHELL=${tools.bash}/bin/bash autom4te
+      fi
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash
+    '')
     (command "autoconf.install" ''
       ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash install
       mkdir -p "$out/nix-support"
