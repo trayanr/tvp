@@ -106,9 +106,9 @@ rec {
       suite = suiteJobs { inherit batches checks; };
     };
 
-  # Reference derivations without demanding their outputs. Rooting this plan
-  # protects the frozen build graph without building the catalogue first.
-  mkPlan =
+  # Keep manifest construction separate from materialization so evaluation
+  # contracts can inspect it without reading generated files in a fresh store.
+  planManifest =
     {
       pkgs,
       batches,
@@ -132,34 +132,34 @@ rec {
         in
         [ selected ] ++ builtins.filter (output: output != selected) declared;
     in
-    # This file references the complete derivation graph. Materialize it during
-    # evaluation: a shell writer would bind-mount that entire graph merely to
-    # write JSON, exceeding the kernel mount limit for the full catalogue.
-    # toFile retains the drv references, and nix build can root the store file.
-    builtins.toFile "tvp-test-plan.json" (
-      builtins.toJSON {
-        schema = 1;
-        inherit revision;
-        source = builtins.path {
-          path = source;
-          name = "tvp-test-source";
-        };
-        system = pkgs.stdenv.hostPlatform.system;
-        aggregate = builtins.unsafeDiscardOutputDependency (mkAll { inherit pkgs batches checks; }).drvPath;
-        jobs = lib.mapAttrsToList (name: drv: {
-          inherit name;
-          drv = builtins.unsafeDiscardOutputDependency drv.drvPath;
-          outputs = outputPaths drv;
-          tests = lib.mapAttrsToList (testName: test: {
-            name = testName;
-            drv = builtins.unsafeDiscardOutputDependency test.drvPath;
-            outputs = outputPaths test;
-          }) (drv.testSuite or { });
-        }) jobs;
-        skipped = lib.mapAttrsToList (name: p: {
-          inherit name;
-          inherit (p.tvp.status) reason;
-        }) broken;
-      }
-    );
+    {
+      schema = 1;
+      inherit revision;
+      source = builtins.path {
+        path = source;
+        name = "tvp-test-source";
+      };
+      system = pkgs.stdenv.hostPlatform.system;
+      aggregate = builtins.unsafeDiscardOutputDependency (mkAll { inherit pkgs batches checks; }).drvPath;
+      jobs = lib.mapAttrsToList (name: drv: {
+        inherit name;
+        drv = builtins.unsafeDiscardOutputDependency drv.drvPath;
+        outputs = outputPaths drv;
+        tests = lib.mapAttrsToList (testName: test: {
+          name = testName;
+          drv = builtins.unsafeDiscardOutputDependency test.drvPath;
+          outputs = outputPaths test;
+        }) (drv.testSuite or { });
+      }) jobs;
+      skipped = lib.mapAttrsToList (name: p: {
+        inherit name;
+        inherit (p.tvp.status) reason;
+      }) broken;
+    };
+
+  # Reference derivations without demanding their outputs. Rooting this plan
+  # protects the frozen build graph without building the catalogue first.
+  # A shell writer would bind-mount that entire graph merely to write JSON,
+  # exceeding the kernel mount limit. toFile retains the same drv references.
+  mkPlan = args: builtins.toFile "tvp-test-plan.json" (builtins.toJSON (planManifest args));
 }

@@ -93,8 +93,8 @@ let
     check:
     builtins.fromJSON (
       plain (
-        builtins.readFile (
-          tests.compatibility.mkPlan {
+        builtins.toJSON (
+          tests.compatibility.planManifest {
             pkgs = {
               stdenv.hostPlatform.system = "x86_64-linux";
               linkFarm = _: _: {
