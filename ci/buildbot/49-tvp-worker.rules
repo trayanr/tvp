@@ -1,0 +1,13 @@
+// Install as root in /etc/polkit-1/rules.d/49-tvp-worker.rules.
+// The administrator can operate this worker; unit definitions remain root-owned.
+polkit.addRule(function(action, subject) {
+    if (action.id === "org.freedesktop.systemd1.manage-units" &&
+        subject.user === "server" &&
+        action.lookup("unit") === "tvp-worker.service") {
+        var verb = action.lookup("verb");
+        if (verb === "start" || verb === "stop" ||
+            verb === "restart" || verb === "reload") {
+            return polkit.Result.YES;
+        }
+    }
+});

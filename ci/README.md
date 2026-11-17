@@ -178,13 +178,21 @@ Run `bash ci/builder-preflight.sh` and install Nix using the
 and build sandboxing. Keep `/nix`, build scratch and controller state on local SSD.
 The NAS is not needed for initial operation.
 
-Create separate `tvp-controller` and `tvp-worker` service users, neither an administrator
-nor a Nix trusted user. Put a clean checkout of the reviewed CI revision at `/opt/tvp-ci`,
-owned by an administrator and not writable by either service user. Keep its Git checkout
-at that revision; do not point the controller at an expansion PR checkout.
+The controller runs as the builder's administrator account, `server`, in its systemd
+user manager. The worker remains a separate unprivileged `tvp-worker` Unix account
+and system service. Do not add the worker to the administrator's groups, NAS write
+groups or Nix's `trusted-users`.
 
-Create private state directories `/var/lib/tvp-controller` and `/var/lib/tvp-worker`,
-owned by their respective users, mode `0700`. Provision the controller files:
+One-time root setup creates `/srv/tvp-ci`, owned by `server`, and installs the worker
+system unit. Put clean, reviewed revisions in `/srv/tvp-ci/releases/FULL_SHA`; keep
+each release unchanged after promotion. The administrator manages the
+`/srv/tvp-ci/current` symlink to the active release. The worker can read the source
+tree but cannot modify it. Never point `current` at a candidate PR checkout. This
+shared path also avoids granting the worker access through the administrator's home.
+
+Create `~/.local/state/tvp-ci/controller` under the administrator's account and
+`/var/lib/tvp-worker` under the worker's account, both mode `0700`. The controller's
+configuration and secrets stay in its private state directory. Provision these files:
 
 | File | Purpose |
 | --- | --- |
@@ -196,7 +204,9 @@ owned by their respective users, mode `0700`. Provision the controller files:
 The initial GitHub credential needs repository metadata, contents and PR read access,
 and commit-status write access. It needs no Actions, comment, administration or code
 write permission. Keep credentials in the controller's private secrets directory,
-readable only by its account. Do not commit them or pass them as command-line arguments.
+readable only by the administrator account. Do not commit them or pass them as
+command-line arguments. Set `secrets_directory` in `config.json` to the absolute
+path of this private secrets directory.
 
 Set `controller_revision` to the reviewed **full commit SHA containing this CI code**.
 Leave `github_enabled` false during setup: the dashboard and worker can start without
@@ -207,25 +217,65 @@ worker authentication value into `/var/lib/tvp-worker/worker-password`, readable
 the worker. The worker receives no GitHub or operator credential.
 
 For a local deployment before the CI commit is pushed, `tools_ref` may instead point
-to the deployed source with a NAR hash, for example `path:/opt/tvp-ci?narHash=sha256-...`.
-The hash pins the exact files; both service accounts must be able to read that checkout.
+to the deployed release with a NAR hash, for example
+`path:/srv/tvp-ci/releases/FULL_SHA?narHash=sha256-...`. The hash pins the exact files;
+both accounts must be able to read that release.
 
 In the pinned CI shell, under the controller account:
 
 ```sh
-buildbot create-master /var/lib/tvp-controller
-cp /opt/tvp-ci/ci/buildbot/master.cfg /var/lib/tvp-controller/master.cfg
-export TVP_CI_SOURCE=/opt/tvp-ci
-export TVP_CI_CONFIG=/var/lib/tvp-controller/config.json
-buildbot checkconfig /var/lib/tvp-controller
+buildbot create-master "$HOME/.local/state/tvp-ci/controller"
+cp /srv/tvp-ci/current/ci/buildbot/master.cfg "$HOME/.local/state/tvp-ci/controller/master.cfg"
+export TVP_CI_SOURCE=/srv/tvp-ci/current
+export TVP_CI_CONFIG="$HOME/.local/state/tvp-ci/controller/config.json"
+buildbot checkconfig "$HOME/.local/state/tvp-ci/controller"
 ```
 
-The service templates in `buildbot/tvp-controller.service` and
-`buildbot/tvp-worker.service` are for the same PC and loopback-only communication.
-Review the Nix executable path against the actual installation, install the units only
-when ready, then enable them. `worker.tac` reads its password file directly, avoiding a
-password in process arguments. Run the worker as its own account, not the controller.
-No services are installed by the files in this repository.
+For an existing deployment, stop the old controller before copying its entire state
+directory, including its database, poller state, history, artifacts and secrets, into
+the new private controller directory. Give the administrator ownership and update the
+configuration paths. Preserve the old copy until the migrated history is verified;
+do not run `create-master` over the migrated state. Retain `/var/lib/tvp-worker`,
+its existing runs and their Nix GC roots. Disable the old system controller unit so
+it cannot compete for the same ports. This migration keeps the Nix store, cache
+configuration, publisher state and NAS contents in place.
+
+Install `buildbot/tvp-controller.service` as
+`~/.config/systemd/user/tvp-controller.service` for `server`. Root must enable
+lingering once with `loginctl enable-linger server`, so the controller starts at boot
+and continues after SSH logout. Install `buildbot/tvp-worker.service` in
+`/etc/systemd/system/` and enable it as a system service. It connects to the controller
+over loopback and retries when the controller is unavailable; it has no dependency
+on a system controller unit. Review the Nix executable path against the actual host.
+`worker.tac` reads its password file directly, avoiding a password in process arguments.
+
+Root also installs `buildbot/49-tvp-worker.rules` as
+`/etc/polkit-1/rules.d/49-tvp-worker.rules`. This grants only `server` permission to
+start, stop, restart or reload `tvp-worker.service` without sudo. It grants no unit
+editing, unit enablement or access to other system units. Adapt the account name in
+the rule if the builder uses another administrator. After this bootstrap, ordinary
+release promotion, controller configuration and service restarts run as `server`.
+No services or authorization rules are installed by this repository automatically.
+
+The one-time bootstrap can install a `tvp-ci` shortcut in `/usr/local/bin`:
+
+```sh
+#!/bin/sh
+exec /usr/bin/python3 /srv/tvp-ci/current/ci/control.py "$@"
+```
+
+Routine operations run from the administrator account without sudo:
+
+```sh
+tvp-ci status
+tvp-ci cancel BUILD_ID
+tvp-ci restart-controller
+tvp-ci restart-worker
+```
+
+The control command reads the private local operator credential itself; it does
+not require typing it for each cancellation. Service restart permissions do not
+grant the worker access to controller credentials.
 
 Visit `http://localhost:8010/` at the builder, or configure a reverse proxy on its LAN
 address. Keep proxy and firewall configuration on the host and set `dashboard_url` in
@@ -251,8 +301,27 @@ default; CI uses its `--report-only` mode. Invalid graph data still fails valida
 ## Inspect and operate
 
 ```sh
-journalctl -u tvp-controller -u tvp-worker -f
+systemctl --user status tvp-controller.service
+journalctl --user -u tvp-controller.service -f
+journalctl -u tvp-worker.service -f
 ```
+
+As the administrator, manage the user controller and isolated system worker without
+sudo:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now tvp-controller.service
+systemctl --user restart tvp-controller.service
+systemctl restart tvp-worker.service
+```
+
+Promote reviewed release copies and update `current` as the administrator, then restart
+the controller and worker when the current validation has finished or been deliberately
+stopped. Keep the controller revision and pinned tools reference aligned with the
+promoted code. The host-managed Nix daemon still supplies the worker's signed cache
+URI and public keys; worker access to controller secrets or NAS write credentials is
+not needed.
 
 Each Buildbot build has a unique `runs/BUILD_NUMBER` worker directory and controller
 `artifacts/BUILD_NUMBER` evidence directory. Evidence includes the source identities,
@@ -266,7 +335,7 @@ RUNNER status --run EXACT_RUN_PATH --json
 
 The exact paths are in `evidence/launch.json`. Rebuild in the authenticated UI to retry
 an unchanged commit; push a fix to automatically queue a new revision. The default queue
-does not cancel running work or collapse different commits. Removing a label prevents
+does not cancel running work or collapse different commits. Closing a PR prevents
 future admissions but does not discard already queued requests.
 
 **Cancel** removes a queued request. **Stop** interrupts a running validation,

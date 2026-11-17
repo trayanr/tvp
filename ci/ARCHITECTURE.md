@@ -8,7 +8,8 @@ state are maintained separately from the repository.
 - GitHub hosts PRs, reviews and the `tvp/smoke` status. Repository PRs are scheduled
   automatically, including drafts and stacked branches.
 - A Buildbot controller on the local Linux builder polls GitHub over outbound HTTPS.
-  It owns the durable queue, credentials, history and reporting.
+  It runs as the administrator's systemd user service and owns the durable queue,
+  credentials, history and reporting. A separate worker Unix account executes builds.
 - TVP's existing frozen-plan runner builds the explicitly declared small smoke
   selection for admitted PRs and master updates. Full catalogue and upstream suites
   are separate explicit requests; a smoke pass never certifies them.
@@ -151,7 +152,10 @@ The pool admits every open PR whose head and base repositories are both
 branches. Fork PRs are not admitted to this pool. This is deliberate scope:
 [Nix evaluation and builds execute candidate-controlled instructions](https://docs.github.com/en/actions/reference/security/secure-use#hardening-for-self-hosted-runners).
 
-Controller and worker run as separate Unix users. The worker is a regular, untrusted
+Controller and worker run as separate Unix users. The controller runs as `server`,
+with private state in `~/.local/state/tvp-ci/controller` (mode `0700`). The worker
+remains a system service under `tvp-worker`, with its existing private state in
+`/var/lib/tvp-worker`. The worker is a regular, untrusted
 Nix-daemon client, with sandboxing enabled; it does not receive the GitHub token,
 operator password, signing keys or NAS write credentials. Worker authentication is a
 separate secret. The worker is not added to Nix's `trusted-users`.
@@ -203,5 +207,24 @@ or building a package does not load Buildbot or install services.
 Actual controller settings, credentials, proxy configuration, NAS mounts and host setup
 scripts stay outside the repository. Deploy a reviewed CI revision independently of
 the PRs it builds.
+
+The administrator owns `/srv/tvp-ci/releases` and promotes unchanged reviewed source
+copies through `/srv/tvp-ci/current`. Both services read this source; only the
+administrator can update it. Candidate PR checkouts never become the active source.
+Controller configuration, GitHub credentials and the operator password remain in the
+administrator's private controller directory, outside the shared source tree.
+
+Root performs the one-time bootstrap: create the isolated worker account and system
+unit, enable the administrator's user-manager linger for startup without a login,
+and install the narrow worker polkit rule. Normal controller operations use
+`systemctl --user`; the rule permits `server` to start, stop, restart and reload only
+`tvp-worker.service` with ordinary `systemctl`. Unit definitions and authorization
+remain root-owned. The worker reconnects independently, without depending on the old
+system controller unit.
+
+Moving an existing controller preserves its complete database, history, poller state
+and evidence before retiring the old system unit. Worker state and Nix GC roots stay
+in place. Host Nix/cache settings, publisher state and NAS data are retained; the
+worker continues consuming the configured signed HTTP cache without NAS write access.
 
 See [the operator handoff](README.md) for preparation and local checks.

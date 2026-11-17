@@ -3,6 +3,6 @@
   "branch": "master",
   "github_enabled": false,
   "controller_revision": "REPLACE_WITH_REVIEWED_FULL_CI_COMMIT_SHA",
-  "secrets_directory": "/var/lib/tvp-controller/secrets",
+  "secrets_directory": "/home/server/.local/state/tvp-ci/controller/secrets",
   "dashboard_url": "http://localhost:8010/"
 }
