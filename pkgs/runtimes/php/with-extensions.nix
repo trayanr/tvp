@@ -83,7 +83,17 @@ let
           || fail "invalid or reserved INI setting name";
         true;
       config =
-        lib.concatMapStrings (
+        # PHP 5.2 prefixes extension_dir even when a module path is absolute.
+        lib.optionalString
+          (
+            modules != [ ]
+            && builtins.compareVersions final.php.version "5.2" >= 0
+            && builtins.compareVersions final.php.version "5.3" < 0
+          )
+          ''
+            extension_dir="/"
+          ''
+        + lib.concatMapStrings (
           extension: "${extension.loader}=${iniValue "${extension}/${extension.modulePath}"}\n"
         ) modules
         + lib.concatStrings (lib.mapAttrsToList (key: value: "${key}=${iniValue value}\n") final.settings);

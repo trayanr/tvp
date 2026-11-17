@@ -59,12 +59,29 @@ let
   );
   rpathCommand =
     package: (builtins.head (builtins.filter (s: s.name == "output.rpaths") package.buildSteps)).run;
+  runtimeCommand =
+    package:
+    (builtins.head (builtins.filter (s: s.name == "php-runtime.configure") package.buildSteps)).run;
   has =
     needle: haystack:
     lib.hasInfix (builtins.unsafeDiscardStringContext needle) (
       builtins.unsafeDiscardStringContext haystack
     );
   results = {
+    php52AbsoluteModulePaths =
+      let
+        legacyPHP = tvp.packages.php_5_2;
+        php53 = tvp.packages.php_5_3;
+        withRedis = engine: engine.withExtensions { extensions = extensions: [ extensions.redis ]; };
+        directory = ''extension_dir="/"'';
+      in
+      has directory (runtimeCommand (withRedis legacyPHP))
+      && !(has directory (runtimeCommand (legacyPHP.withExtensions { })))
+      && !(has directory (runtimeCommand (withRedis php53)))
+      && !(has directory (runtimeCommand runtime));
+    legacyRedisBuilderContract =
+      builtins.functionArgs (import ../../pkgs/runtimes/php/extensions/redis/build-2.2.8.nix)
+      == builtins.functionArgs (import ../../pkgs/runtimes/php/extensions/build-phpize.nix);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let

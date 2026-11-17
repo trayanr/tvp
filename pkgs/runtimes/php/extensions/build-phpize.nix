@@ -41,6 +41,12 @@ let
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   # Some historical PHP headers require the same dialect used by their tests.
   consumerStandard = final.php.tvp.features.consumerCStandard or null;
+  prepareAutotools = steps.prepareAutotools {
+    name = "php-extension.prepare-autotools";
+  };
+  legacyPhpize =
+    builtins.compareVersions final.php.version "5.2" >= 0
+    && builtins.compareVersions final.php.version "5.4" < 0;
 in
 {
   pname = "php-${final.extensionName}";
@@ -140,9 +146,20 @@ in
         # versions put ltmain.sh at the source root; newer ones use build/.
         find . -type f \( -path './build/*' -o -name ltmain.sh \) -exec chmod u+w {} +
       '')
-      (steps.prepareAutotools {
-        name = "php-extension.prepare-autotools";
-      })
+      (
+        if legacyPhpize then
+          prepareAutotools
+          // {
+            # The old SDK's divert(1) puts Autoconf comments before the shebang.
+            # Normalize that prefix before the shared strict shell preparation.
+            run = ''
+              ${tools.python}/bin/python3 -B ${./normalize-legacy-configure.py}
+              ${prepareAutotools.run}
+            '';
+          }
+        else
+          prepareAutotools
+      )
       (command "configure" ''
         export CONFIG_SHELL=${tools.bash}/bin/bash
         export PKG_CONFIG=${tools.pkg-config}/bin/pkg-config

@@ -37,6 +37,15 @@ the separate permission and loader failures to memory pressure. The standard
 `test all` entry point remains an ordinary cached Nix build; no new per-engine
 preparation loop or hidden resource cap was introduced.
 
+The remaining three legacy PHP/Redis pairs exposed an old SDK M4 diversion:
+Autoconf emitted comments before the configure shebang. PHP 5.2/5.3 extension
+preparation moves the known shell header ahead of that comment-only prefix,
+retaining the comments and timestamps before the unchanged strict preparation.
+All 190 PHP engine artifact/final identities and the other 293 extension pairs
+remain unchanged. PHP 5.2 also needs Redis 2.2.8 callable/argument metadata
+adapted to its SDK, and a root extension directory when loading absolute module
+paths. These changes are confined to that old Redis procedure and runtime.
+
 ## Intentional controls and remaining constraints
 
 Fixed one/two-worker values remain in fixtures that test GNU Make/Ninja

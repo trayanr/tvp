@@ -3,7 +3,7 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ../build-phpize.nix;
+        builder = ./build-2.2.8.nix;
         deps.php = tvp.packages.php_5_2;
         opts = {
           phpCompatibility = {
