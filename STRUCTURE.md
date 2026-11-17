@@ -1300,13 +1300,16 @@ repeatable `--allow-change EXACT_NAME` arguments, and unused allowances fail. Th
 keeps before/after values for reviewed changes. `--out` compares outputs for verified
 transport changes; the original canonical-only text commands remain available.
 
-`ci/validate.sh` provides a foreground exit code around the smoke-default runner.
+`nix run .#test -- all` runs the standard focused plan in the foreground and returns
+success or failure. `ci/validate.sh` adds graph and flake evaluation before invoking
+that command; Buildbot uses it through its pinned trusted tools revision.
 The explicit small selection lives in `tests/smoke.nix`; `test start --full` is
 available only for deliberately requested comprehensive runs. CI reports
 `tvp/smoke`, without certifying the unrun full catalogue.
-`start --json` returns the exact frozen run identity; CI waits on that identity rather
-than following a movable `latest` alias. Final machine-readable status is retained in
-the run directory. `ci/builder-preflight.sh` performs read-only Linux inventory and
+`all --json` returns the terminal status and exact frozen run identity, waiting on
+that identity rather than following a movable `latest` alias. Final machine-readable
+status is retained as `result.json` in the run directory. `ci/builder-preflight.sh`
+performs read-only Linux inventory and
 prints selected Nix settings without dumping configuration tokens. See
 [the builder handoff](ci/README.md) for the existing-distribution setup and deployment
 boundaries. Host provisioning, repository CI activation and publishing remain separate

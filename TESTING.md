@@ -9,14 +9,21 @@ that treated full catalogue or upstream runs as automatic completion gates.
 
 ```sh
 # Declared installed checks, including the PHP extension compatibility matrix:
-nix run .#test -- start --smoke --json
+nix run .#test -- all
 # Narrow it to the changed subject:
-nix run .#test -- start --only perl_5_30_3
+nix run .#test -- all --only perl_5_30_3
 # Or one PHP/extension pair:
-nix run .#test -- start --only php_8_5_12--redis_6_3_0
+nix run .#test -- all --only php_8_5_12--redis_6_3_0
 ```
 
-`test start` defaults to this smoke scope. The selection in
+`test all` is the standard foreground command, also used by CI. It submits the
+declared checks to Nix, reuses valid local or substituted results, waits for
+independent checks even after a failure, and exits zero only when they all pass.
+It uses the machine's Nix concurrency settings. Logs and the terminal result are
+retained under `.tvp-tests/latest/`; separate preparation and wait commands are
+not needed. `test start` remains available for background execution.
+
+Both commands default to this smoke scope. The selection in
 [`tests/smoke.nix`](tests/smoke.nix) contains 606 named checks across 303
 subjects: two checks for each of 296 declared compatible PHP/extension pairs,
 plus 14 checks across the four compiler bases, Perl, Ruby and Redis.

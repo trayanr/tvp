@@ -26,7 +26,7 @@ def directory():
 
 
 class FrozenValidation(unittest.TestCase):
-    def run_validation(self, phase, wait_code, base="", scope="smoke", full=False):
+    def run_validation(self, phase, exit_code, base="", scope="smoke", full=False):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
@@ -38,17 +38,21 @@ class FrozenValidation(unittest.TestCase):
                 return json.dumps({"added": ["packages.new_1"],
                                    "changed": {"packages.consumer_1": {"before": {}, "after": {}}},
                                    "removed": ["packages.old_1"]})
-            if "start" in argv:
-                return json.dumps({"run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test", "validationScope": scope, "full": full})
-            if "status" in argv:
-                return json.dumps({"phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": [], "validationScope": scope, "full": full})
             raise AssertionError(argv)
         def run(argv, **kwargs):
             commands.append(argv)
             if argv[:3] == ["nix", "flake", "check"]:
                 kwargs["stdout"].write(b"flake evaluation output\n")
                 self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
-            return subprocess.CompletedProcess(argv, wait_code if 'wait' in argv else 0)
+            if "all" in argv:
+                self.assertEqual(kwargs["stdout"], subprocess.PIPE)
+                self.assertIs(kwargs["text"], True)
+                return subprocess.CompletedProcess(argv, exit_code, json.dumps({
+                    "run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test",
+                    "phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": [],
+                    "validationScope": scope, "full": full,
+                }))
+            return subprocess.CompletedProcess(argv, 0)
         args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, target_branch="master", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
              patch.object(job.subprocess, "check_output", side_effect=output), \
@@ -60,14 +64,17 @@ class FrozenValidation(unittest.TestCase):
             identity = json.loads(Path("evidence/identity.json").read_text())
             self.assertEqual(identity['merge'], args.head)
             self.assertFalse(any('merge' in c for c in commands))
+            launch = json.loads(Path("evidence/launch.json").read_text())
+            self.assertEqual(launch['run'], '/immutable/run-17')
+            self.assertEqual(launch['runner'], '/immutable/run-17/runner/bin/tvp-test')
         return code, commands
 
-    def test_wait_success_cannot_hide_failed_suite_results(self):
+    def test_exit_success_cannot_hide_failed_suite_results(self):
         code, commands = self.run_validation("failed", 0)
         self.assertEqual(code, 1)
-        wait = next(c for c in commands if "wait" in c)
-        self.assertEqual(wait[0], "/immutable/run-17/runner/bin/tvp-test")
-        self.assertNotIn("latest", " ".join(wait))
+        command = next(c for c in commands if "all" in c)
+        self.assertNotIn("latest", " ".join(command))
+        self.assertFalse(any("wait" in c or "status" in c for c in commands))
 
     def test_runner_exit_failure_cannot_hide_behind_passed_status(self):
         self.assertEqual(self.run_validation("passed", 1)[0], 1)
@@ -75,12 +82,13 @@ class FrozenValidation(unittest.TestCase):
     def test_only_both_success_signals_pass(self):
         code, commands = self.run_validation("passed", 0)
         self.assertEqual(code, 0)
-        start = next(c for c in commands if "start" in c)
-        self.assertIn("--smoke", start)
-        self.assertNotIn("--full", start)
+        command = next(c for c in commands if "all" in c)
+        self.assertIn("--smoke", command)
+        self.assertNotIn("--full", command)
+        self.assertEqual(command[3], 'github:trayanr/tvp/' + 'b' * 40 + '#test')
 
-    def test_smoke_ci_rejects_a_full_scope_launch(self):
-        with self.assertRaisesRegex(ValueError, "explicit smoke plan"):
+    def test_smoke_ci_rejects_a_full_scope_result(self):
+        with self.assertRaisesRegex(ValueError, "requested smoke plan"):
             self.run_validation("passed", 0, scope="full", full=True)
 
     def test_master_records_producers_before_read_only_checks_with_full_traces(self):
@@ -93,27 +101,18 @@ class FrozenValidation(unittest.TestCase):
             if command[:1] == ['nix'] and command[1] in ['eval', 'flake', 'run']:
                 self.assertIn('--show-trace', command)
 
-    def test_operator_stop_targets_the_exact_frozen_run(self):
-        handlers = {}
-        calls = []
-        def register(sig, handler):
-            handlers[sig] = handler
-            return "previous"
-        def run(argv, **kwargs):
-            calls.append(argv)
-            if "wait" in argv:
-                handlers[job.signal.SIGTERM](None, None)
-            return SimpleNamespace(returncode=1)
-        with patch.object(job.signal, "signal", side_effect=register), patch.object(job.subprocess, "run", side_effect=run):
-            job.wait_for_run("/frozen/runner", "/immutable/run-17")
-        self.assertIn(["/frozen/runner", "stop", "--run", "/immutable/run-17"], calls)
+    def test_foreground_command_inherits_the_worker_owner_lock(self):
+        _, commands = self.run_validation("passed", 0)
+        command = next(c for c in commands if "all" in c)
+        owner = command[command.index('--owner-lock') + 1]
+        self.assertEqual(Path(owner).name, 'validation-owner.lock')
 
     def test_changed_and_removed_producers_are_evidence_not_a_build_gate(self):
         code, commands = self.run_validation("passed", 0, base="c" * 40)
         self.assertEqual(code, 0)
         report = next(c for c in commands if "--report-only" in c)
-        start = next(c for c in commands if "start" in c)
-        self.assertLess(commands.index(report), commands.index(start))
+        command = next(c for c in commands if "all" in c)
+        self.assertLess(commands.index(report), commands.index(command))
         self.assertIn("packages.consumer_1", self.graph_diff["changed"])
         self.assertEqual(self.graph_diff["removed"], ["packages.old_1"])
         self.assertTrue(self.graph_diff["informational"])

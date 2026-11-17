@@ -93,8 +93,9 @@ For PRs:
    additions, changes and removals, retaining exact before/after identities in
    `graph-diff.json`. These differences are informational and do not skip builds.
 4. Run `nix flake check --no-build` on the candidate.
-5. Start its explicit smoke frozen test plan through the trusted test runner, wait using the
-   returned exact run identity and require both exit success and terminal `passed`.
+5. Run `test all --smoke --json` through the trusted tools revision. It freezes the
+   smoke test plan and waits on its exact run. Require both exit success and terminal
+   `passed`, retaining the returned run identity.
 6. Collect final suite/test counts, frozen plan, Nix logs and available full failure
    logs. Upload evidence to the controller even on failure.
 

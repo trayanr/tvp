@@ -6,15 +6,23 @@ package or representative builder, including every declared compatible PHP
 extension pair in standard testing and CI. Full upstream suites remain opt-in.
 
 ```sh
-nix run .#test -- start --json
-# Equivalent explicit scope, also used by CI:
-nix run .#test -- start --smoke --json
+nix run .#test -- all
+# Terminal JSON for automation; the same standard scope is used by CI:
+nix run .#test -- all --json
 nix run .#test -- status
-nix run .#test -- wait
 # Narrow within the smoke selection:
-nix run .#test -- start --only perl_5_30_3
-nix run .#test -- start --only php_8_5_12--redis_6_3_0
+nix run .#test -- all --only perl_5_30_3
+nix run .#test -- all --only php_8_5_12--redis_6_3_0
 ```
+
+`all` waits in the foreground and exits zero only if every selected check passes.
+Nix skips valid cached results and builds or substitutes missing outputs. Failed
+checks do not cancel independent work. The command uses Nix's configured jobs
+and cores without an extra preparation loop. Logs, `state.json` and terminal
+`result.json` remain in `.tvp-tests/latest/` for inspection. `--json` prints the
+terminal result, including the exact `run` and `runner` paths. Interrupting or
+killing the foreground command stops its worker. `start` and `wait` remain
+available for explicitly requested background execution.
 
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version

@@ -291,10 +291,14 @@ directories. Use the Buildbot dashboard for server CI builds.
 For trusted local development, independently of Buildbot:
 
 ```sh
+nix run .#test -- all
+# Include CI's graph and flake evaluation first:
 bash ci/validate.sh .tvp-tests/ci
 nix run .#test -- status --state-dir .tvp-tests/ci --json
 ```
 
-This uses the existing frozen-plan runner, inherits Nix's job/core settings and retains
-logs, result roots and terminal `ci-status.json`. The Buildbot harness adds pinned
-head validation, trusted graph comparison and reporting around that same runner.
+`all` waits for its exact frozen run and returns success or failure. It uses the
+standard focused smoke plan, inherits Nix's job/core settings, reuses valid cached
+outputs, and retains logs, result roots and terminal `result.json` in the printed
+run directory. Buildbot invokes this same command through its pinned trusted tools
+revision and adds head validation, graph comparison and evidence reporting.

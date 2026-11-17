@@ -117,7 +117,9 @@ def work(run, global_fd, lease_fd):
     def watch_owner():
         while not finished.wait(0.5):
             try:
-                held = lease_held(Path(state["ownerLock"]))
+                held = all(lease_held(Path(path)) for path in (
+                    state["ownerLock"], state.get("parentOwnerLock")
+                ) if path)
             except OSError:
                 held = False
             if not held:
@@ -219,7 +221,7 @@ def work(run, global_fd, lease_fd):
     return 0 if state["phase"] == "passed" else 1
 
 
-def start(args):
+def start(args, return_run=False):
     if args.owner_lock:
         args.owner_lock = args.owner_lock.resolve()
         if not lease_held(args.owner_lock):
@@ -243,6 +245,8 @@ def start(args):
                      "validationScope": scope}
             if args.owner_lock:
                 state["ownerLock"] = str(args.owner_lock)
+            if getattr(args, "parent_owner_lock", None):
+                state["parentOwnerLock"] = str(args.parent_owner_lock)
             write_json(run / "state.json", state)
             temporary = directory / f"latest-{os.getpid()}.tmp"
             temporary.symlink_to(run)
@@ -283,6 +287,8 @@ def start(args):
                 state.update(phase="error", error=str(error), finishedAt=time.time())
                 write_json(run / "state.json", state)
                 raise
+    if return_run:
+        return run
     if getattr(args, "json", False):
         print(json.dumps({"run": str(run), "runner": str(run / "runner/bin/tvp-test"),
                           "suites": len(plan["jobs"]), "source": plan["source"],
@@ -295,6 +301,43 @@ def start(args):
         print("Progress: nix run .#test -- status --run", args.retry_of.resolve() if args.retry_of else run)
         print("Frozen runner:", run / "runner/bin/tvp-test", "status --run", run)
     return 0
+
+
+def run_all(args):
+    directory = args.state_dir.resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    owner_path = directory / f"all-owner-{os.getpid()}.lock"
+    parent_owner = args.owner_lock.resolve() if args.owner_lock else None
+    if parent_owner and not lease_held(parent_owner):
+        raise RuntimeError("The controlling process must hold --owner-lock before starting")
+    # Reuse the existing worker. Releasing this lock also stops it if the
+    # foreground command is killed before it can return a result.
+    with owner_path.open("a") as owner:
+        fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        launch = argparse.Namespace(**vars(args), parent_owner_lock=parent_owner)
+        launch.owner_lock = owner_path
+        run = start(launch, return_run=True)
+        interrupted = None
+
+        def stop(signum, _frame):
+            nonlocal interrupted
+            interrupted = signum
+            # The worker may still be starting. Its owner watcher will stop it
+            # when this lease closes, without racing PID publication.
+            fcntl.flock(owner, fcntl.LOCK_UN)
+
+        previous = {sig: signal.signal(sig, stop) for sig in (signal.SIGTERM, signal.SIGINT)}
+        try:
+            code = wait(run, quiet=args.json)
+        finally:
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
+        result = status(run, as_json=None, inspect_store=False)
+        result["runner"] = str(run / "runner/bin/tvp-test")
+        write_json(run / "result.json", result)
+        if args.json:
+            print(json.dumps(result))
+        return 128 + interrupted if interrupted else code
 
 
 def status(run, as_json=False, attempt_only=False, inspect_store=True):
@@ -382,17 +425,17 @@ def progress_key(state):
     return json.dumps(fields, sort_keys=True)
 
 
-def wait(run):
+def wait(run, quiet=False):
     previous, printed_at = None, None
     while True:
         # The worker publishes observations and rooting progress. Waiting on its
         # snapshot avoids a second process continually querying the same store.
         state = status(run, as_json=None, inspect_store=False)
         key, now = progress_key(state), time.monotonic()
-        if key != previous:
+        if not quiet and key != previous:
             print_status(run, state)
             previous, printed_at = key, now
-        elif now - printed_at >= 60:
+        elif not quiet and now - printed_at >= 60:
             operation = state.get("operation", state["phase"])
             label = {"registering-roots": "registering GC roots", "checking-outputs": "checking outputs"}.get(operation, operation)
             print(f"Still {label}; {state['elapsedSeconds']}s elapsed.", flush=True)
@@ -418,19 +461,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("latest", help="freeze and supervise a resumable latest-only workflow")
-    launch = commands.add_parser("start", help="freeze and launch installed-result checks (full upstream suites are opt-in)")
-    launch.add_argument("--flake", default=".")
-    launch.add_argument("--system", default=os.environ.get("TVP_TEST_SYSTEM", "x86_64-linux"))
-    launch.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"))
-    launch.add_argument("--jobs", type=positive, help="override Nix's max-jobs setting")
-    launch.add_argument("--cores", type=int, help="override Nix's cores setting (0 uses all cores)")
-    launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
-    scope = launch.add_mutually_exclusive_group()
-    scope.add_argument("--smoke", action="store_true", help="select the standard installed-result plan explicitly")
-    scope.add_argument("--full", action="store_true", help="explicitly run the full catalogue, including upstream suites")
-    launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
-    launch.add_argument("--json", action="store_true", help="return the exact frozen run identity for automation")
-    launch.add_argument("--owner-lock", type=Path, help="stop if the controlling process releases this file lock")
+    for name, help_text in (
+        ("all", "run the standard installed-result checks and return success or failure"),
+        ("start", "launch checks in the background (full upstream suites are opt-in)"),
+    ):
+        launch = commands.add_parser(name, help=help_text)
+        launch.add_argument("--flake", default=".")
+        launch.add_argument("--system", default=os.environ.get("TVP_TEST_SYSTEM", "x86_64-linux"))
+        launch.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"))
+        launch.add_argument("--jobs", type=positive, help="override Nix's max-jobs setting")
+        launch.add_argument("--cores", type=int, help="override Nix's cores setting (0 uses all cores)")
+        launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
+        scope = launch.add_mutually_exclusive_group()
+        scope.add_argument("--smoke", action="store_true", help="select the standard installed-result plan explicitly")
+        scope.add_argument("--full", action="store_true", help="explicitly run the full catalogue, including upstream suites")
+        launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
+        launch.add_argument("--json", action="store_true", help="return the frozen run identity (all returns its terminal result)")
+        launch.add_argument("--owner-lock", type=Path, help="stop if the controlling process releases this file lock")
     for name in ("status", "wait", "stop"):
         command = commands.add_parser(name, help=f"{name} a local validation run")
         command.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"),
@@ -455,6 +502,8 @@ def main():
             return dispatch_representative(args)
         if args.command == "start":
             return start(args)
+        if args.command == "all":
+            return run_all(args)
         run = (args.run or args.state_dir / "latest").resolve()
         if not (run / "state.json").is_file():
             raise RuntimeError(f"No local validation run found at {run}.\n"

@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -39,6 +40,8 @@ time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
 targets=set(args)
 for job in plan['jobs']:
+    if all(Path(out).exists() for item in [job]+job.get('tests',[]) for out in item['outputs']):
+        continue
     if job['name']==os.environ.get('FAKE_FAILURE'):
         failed=True
         continue
@@ -145,6 +148,71 @@ class RunnerTests(unittest.TestCase):
         result=self.cli('start','--full','--smoke','--state-dir',str(self.state))
         self.assertNotEqual(result.returncode,0)
         self.assertFalse(self.commands_file.exists())
+
+    def test_all_waits_for_standard_checks_and_retains_logs_and_result(self):
+        result=self.cli('all','--state-dir',str(self.state),'--json')
+        self.assertEqual(result.returncode,0,result.stderr)
+        terminal=json.loads(result.stdout)
+        self.run=Path(terminal['run'])
+        self.assertEqual(terminal['phase'],'passed')
+        self.assertEqual(terminal['validationScope'],'smoke')
+        self.assertIs(terminal['full'],False)
+        self.assertEqual(terminal['runner'],str(self.run/'runner/bin/tvp-test'))
+        self.assertEqual(json.loads((self.run/'result.json').read_text()),terminal)
+        self.assertTrue((self.run/'nix.log').is_file())
+        command=json.loads((self.run/'command.json').read_text())
+        self.assertIn('--keep-going',command)
+        self.assertNotIn('--max-jobs',command)
+        self.assertNotIn('--cores',command)
+        self.assertNotIn(self.plan['aggregate']+'^*',command)
+
+    def test_all_failure_returns_nonzero_after_independent_checks_finish(self):
+        self.env['FAKE_FAILURE']='first'
+        result=self.cli('all','--state-dir',str(self.state),'--json')
+        self.assertEqual(result.returncode,1,result.stderr)
+        terminal=json.loads(result.stdout)
+        self.assertEqual(terminal['phase'],'failed')
+        self.assertEqual(terminal['jobs']['first']['status'],'failed-or-blocked')
+        self.assertEqual(terminal['jobs']['second']['status'],'passed')
+
+    def test_all_reuses_cached_results_without_omitting_missing_checks(self):
+        cached=Path(self.plan['jobs'][0]['outputs'][0])
+        cached.write_text('cached result')
+        self.env['FAKE_FAILURE']='first'
+        result=self.cli('all','--state-dir',str(self.state),'--json')
+        self.assertEqual(result.returncode,0,result.stderr)
+        terminal=json.loads(result.stdout)
+        self.assertTrue(terminal['jobs']['first']['cachedAtStart'])
+        self.assertFalse(terminal['jobs']['second']['cachedAtStart'])
+        self.assertEqual(cached.read_text(),'cached result')
+        self.assertTrue(Path(self.plan['jobs'][1]['outputs'][0]).exists())
+
+    def test_all_stop_or_killed_foreground_cancels_its_worker(self):
+        self.env['FAKE_DELAY']='30'
+        for sig in (signal.SIGTERM,signal.SIGKILL):
+            with self.subTest(signal=sig):
+                state=self.root/('state-'+str(sig))
+                process=subprocess.Popen([sys.executable,str(self.script),'all',
+                                          '--state-dir',str(state),'--json'],env=self.env,
+                                         stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                self.addCleanup(lambda p=process: p.poll() is None and p.kill())
+                deadline=time.monotonic()+8
+                while True:
+                    latest=state/'latest'
+                    if latest.exists():
+                        self.run=latest.resolve()
+                        self.addCleanup(self.stop_if_running)
+                        if json.loads((self.run/'state.json').read_text()).get('active'):
+                            break
+                    self.assertIsNone(process.poll())
+                    self.assertLess(time.monotonic(),deadline)
+                    time.sleep(0.02)
+                process.send_signal(sig)
+                stdout,stderr=process.communicate(timeout=10)
+                self.assertNotEqual(process.returncode,0,stderr)
+                self.assertEqual(self.wait_done()['phase'],'cancelled')
+                if sig==signal.SIGTERM:
+                    self.assertEqual(json.loads(stdout)['phase'],'cancelled')
 
     def stop_if_running(self):
         if hasattr(self,'run') and runner.lease_held(self.run/'worker.lock'):
@@ -439,6 +507,7 @@ class RunnerTests(unittest.TestCase):
                    n:{'status':value,'cachedAtStart':False,'tests':{value:1}} for n,value in statuses.items()},
                'reportedFailedDerivations':[job['drv'] for job in plan['jobs']
                                             if statuses[job['name']]=='failed-or-blocked']}
+        (run/'state.json').write_text(json.dumps(state))
         return run,state
 
     def test_retry_pending_does_not_claim_pass_or_hide_unrelated_failure(self):
