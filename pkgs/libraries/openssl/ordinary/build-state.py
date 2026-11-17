@@ -16,7 +16,10 @@ def namespace(root):
             p = Path(parent) / name
             s = p.lstat()
             if stat.S_ISLNK(s.st_mode):
-                if not p.resolve(strict=True).is_relative_to(root):
+                # Upstream ships optional FIPS aliases whose in-tree targets
+                # are absent in non-FIPS releases. Preserve those aliases;
+                # resolving existing components still rejects external links.
+                if not p.resolve(strict=False).is_relative_to(root):
                     raise ValueError(f'external link: {p}')
             elif not (stat.S_ISREG(s.st_mode) or stat.S_ISDIR(s.st_mode)):
                 raise ValueError(f'special file: {p}')

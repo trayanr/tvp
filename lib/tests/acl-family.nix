@@ -9,6 +9,8 @@ let
   ];
   selected = lib.genAttrs names (name: tvp.canonical.${name});
   earlier = tvp.bases.gcc_13.full;
+  underlyingDriver =
+    driver: if driver ? underlyingDriver then underlyingDriver driver.underlyingDriver else driver;
   expected = {
     "2.3.0" = {
       libraryFile = "libacl.so.1.1.230";
@@ -74,7 +76,8 @@ let
   ) selected;
   construction = {
     compilerVersion = earlier.compiler.version == "13.3.0";
-    sourceOwned = !(earlier ? stdenv) && earlier.compiler.tvp.deps.compiler ? artifact;
+    sourceOwned =
+      !(earlier ? stdenv) && (underlyingDriver earlier.compiler).tvp.deps.compiler ? artifact;
     sourceBase = earlier.construction.previous == tvp.bases.gcc_16.full.name;
   };
   failed = lib.filterAttrs (_: checks: !(builtins.all (x: x) (builtins.attrValues checks))) (

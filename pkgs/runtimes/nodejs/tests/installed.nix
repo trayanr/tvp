@@ -149,15 +149,15 @@ in
       expected = "elf-ok";
     };
     version = {
-      script = ''node --version'';
+      script = "node --version";
       expected = "v${package.version}";
     };
     runtime = {
-      script = ''node ${./fixtures/runtime.js}'';
+      script = "node ${./fixtures/runtime.js}";
       expected = "runtime-ok";
     };
     shell = {
-      script = ''env -i ${package}/bin/node ${./fixtures/shell.js} '${package.specification.runtime.shell}/bin/bash' '';
+      script = "env -i ${package}/bin/node ${./fixtures/shell.js} '${package.specification.runtime.shell}/bin/bash' ";
       expected = "shell-ok";
     };
     addon = {
@@ -199,5 +199,9 @@ in
   };
 })
 // {
+  build-python = import ./build-python.nix {
+    inherit context;
+    python = package.specification.python;
+  };
   upstream = import ./upstream.nix { inherit package; };
 }

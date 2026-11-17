@@ -196,4 +196,7 @@ in
       expected = "owned";
     };
   };
-}) // { upstream = import ./upstream.nix { inherit package; }; }
+})
+// {
+  upstream = import ./upstream.nix { inherit package; };
+}

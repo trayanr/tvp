@@ -233,15 +233,39 @@ let
       }
     )).editSteps
       (
-        steps.append [
-          {
-            name = "fixture.selected-tools";
-            run = ''
-              for tool in make sed python; do grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"; done
-              sort -u "$NIX_BUILD_TOP/selected-tools" > "$out/selected-tools"
-            '';
-          }
-        ]
+        plan:
+        steps.append
+          [
+            {
+              name = "fixture.selected-tools";
+              tools = [ p.specification.base.tools.grep ];
+              run = ''
+                # A and F have distinct build directories. Keep the construction
+                # proof and also require the selected Python in finalization.
+                grep -Fx python "$NIX_BUILD_TOP/selected-tools"
+                for tool in make sed python; do
+                  grep -Fx "$tool" "$TVP_ARTIFACT_ROOT/nix-support/selected-build-tools"
+                done
+                sort -u "$TVP_ARTIFACT_ROOT/nix-support/selected-build-tools" \
+                  "$NIX_BUILD_TOP/selected-tools" > "$out/selected-tools"
+              '';
+            }
+          ]
+          (
+            steps.insertBefore "ruby.finalize" [
+              {
+                name = "fixture.selected-build-tools";
+                tools = [ p.specification.base.tools.grep ];
+                run = ''
+                  for tool in make sed python; do
+                    grep -Fx "$tool" "$NIX_BUILD_TOP/selected-tools"
+                  done
+                  mkdir -p "$out/nix-support"
+                  sort -u "$NIX_BUILD_TOP/selected-tools" > "$out/nix-support/selected-build-tools"
+                '';
+              }
+            ] plan
+          )
       );
   # These retained check fixtures use their original public support tools; the
   # native recipe independently declares its source construction tools.

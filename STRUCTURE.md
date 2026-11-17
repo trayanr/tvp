@@ -2,6 +2,9 @@
 
 How TVP is laid out and why, so a change lands where the next person expects to find it.
 
+[TESTING.md](TESTING.md) defines validation scope: a few focused installed-package
+smoke checks by default; full upstream and catalogue suites only on explicit request.
+
 All 110 ordinary family indexes follow the owned-builder contract below.
 Construction callers use those same families with explicit earlier providers;
 there are no captured old package indexes or alternate constructor routes.
@@ -18,6 +21,7 @@ default.nix                   user inputs, shared lazy context, module imports a
 bases/                        compiler-family construction and `tvp.bases`
 ├── default.nix               platform resolution, exact releases, major aliases and default
 ├── aliases.nix               latest registered compiler release within each major
+├── consumer.nix              bind-now/RELRO defaults for public full-base consumers
 ├── gcc-4.9.4.nix              GCC4 full source definition
 ├── gcc-9.5.0.nix              GCC9 full source definition
 ├── gcc-13.3.0.nix             GCC13 full source definition
@@ -1258,6 +1262,10 @@ profile additionally rejects the boot JDK, file utility and X11 inputs in its cl
 `checks.package-runtime-ownership` reads an exported Nix reference graph for every
 buildable canonical package and SDK composition. Registration includes canonical, variant and private bootstrap
 outputs, the owned bases' explicitly declared private paths and SDK profiles.
+Owned base registration reads the selected compiler, tools, baseline tools and
+reference packages, including their named outputs. Earlier construction providers
+still named by installed interfaces are explicit `construction.runtimeReferences`
+definitions. Neither declaration automatically registers a provider's closure.
 Customized owned recipes selected in declared package dependencies are registered
 against their canonical procedure, including all outputs and explicit base references.
 This does not register arbitrary inputs, test-only dependencies or a dependency's
@@ -1292,7 +1300,10 @@ repeatable `--allow-change EXACT_NAME` arguments, and unused allowances fail. Th
 keeps before/after values for reviewed changes. `--out` compares outputs for verified
 transport changes; the original canonical-only text commands remain available.
 
-`ci/validate.sh` provides a foreground exit code around the existing full-suite runner.
+`ci/validate.sh` provides a foreground exit code around the smoke-default runner.
+The explicit small selection lives in `tests/smoke.nix`; `test start --full` is
+available only for deliberately requested comprehensive runs. CI reports
+`tvp/smoke`, without certifying the unrun full catalogue.
 `start --json` returns the exact frozen run identity; CI waits on that identity rather
 than following a movable `latest` alias. Final machine-readable status is retained in
 the run directory. `ci/builder-preflight.sh` performs read-only Linux inventory and

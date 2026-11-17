@@ -38,60 +38,61 @@ context.mkSuite {
     tools.gawk
   ];
 
-  tests = {
-    version = {
-      script = ''
-        autoconf --version | head -1 | awk '{ print $NF }'
-      '';
-      expected = package.version;
-    };
-    legacy = {
-      script = ''
-        mkdir project
-        cd project
-        cp ${./fixtures/configure.in} configure.in
-        cp ${./fixtures/acconfig.h} acconfig.h
-        cp ${./fixtures/answer.c} answer.c
-        autoconf
-        autoheader
-        ${configureEnv}./configure --silent >&2
-        cc -I. answer.c -o answer
-        ./answer
-      '';
-      expected = "42";
-    };
-  }
-  // lib.optionalAttrs package.tvp.features.modernInit {
-    generate = {
-      script = ''
-        ${project}
-        ./configure --version | head -1
-      '';
-      expected = "tvp configure 1.2.3";
-    };
+  tests =
+    {
+      version = {
+        script = ''
+          autoconf --version | head -1 | awk '{ print $NF }'
+        '';
+        expected = package.version;
+      };
+      legacy = {
+        script = ''
+          mkdir project
+          cd project
+          cp ${./fixtures/configure.in} configure.in
+          cp ${./fixtures/acconfig.h} acconfig.h
+          cp ${./fixtures/answer.c} answer.c
+          autoconf
+          autoheader
+          ${configureEnv}./configure --silent >&2
+          cc -I. answer.c -o answer
+          ./answer
+        '';
+        expected = "42";
+      };
+    }
+    // lib.optionalAttrs package.tvp.features.modernInit {
+      generate = {
+        script = ''
+          ${project}
+          ./configure --version | head -1
+        '';
+        expected = "tvp configure 1.2.3";
+      };
 
-    # The generated configure actually running and substituting, which is the
-    # only thing a consumer cares about.
-    substitute = {
-      script = ''
-        ${project}
-        ${configureEnv}./configure --silent >&2
-        cat greeting.txt
-      '';
-      expected = "tvp 1.2.3 preserved";
-    };
+      # The generated configure actually running and substituting, which is the
+      # only thing a consumer cares about.
+      substitute = {
+        script = ''
+          ${project}
+          ${configureEnv}./configure --silent >&2
+          cat greeting.txt
+        '';
+        expected = "tvp 1.2.3 preserved";
+      };
 
-    # autoheader is a separate program sharing autom4te's machinery, so it
-    # fails independently of autoconf when the m4 wiring is wrong.
-    autoheader = {
-      script = ''
-        cp ${./fixtures/configure-header.ac} configure.ac
-        autoheader
-        grep -c TVP_OK config.h.in
-      '';
-      expected = "1";
+      # autoheader is a separate program sharing autom4te's machinery, so it
+      # fails independently of autoconf when the m4 wiring is wrong.
+      autoheader = {
+        script = ''
+          cp ${./fixtures/configure-header.ac} configure.ac
+          autoheader
+          grep -c TVP_OK config.h.in
+        '';
+        expected = "1";
+      };
     };
-  };
 }
 
 // (

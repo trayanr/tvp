@@ -371,15 +371,33 @@ let
               grep -F 'cmake -S source -B selected-build' "$NIX_BUILD_TOP/selected-tools"
               grep -F 'cmake --build selected-build --parallel' "$NIX_BUILD_TOP/selected-tools"
               grep -F 'cmake --build selected-build --target install' "$NIX_BUILD_TOP/selected-tools"
-              grep -F 'ctest --test-dir selected-build' "$NIX_BUILD_TOP/selected-tools"
+              # CTest runs only in the independent upstream derivation.
+              if grep -F 'ctest --test-dir selected-build' "$NIX_BUILD_TOP/selected-tools"; then
+                exit 1
+              fi
               grep -E '^make .*' "$NIX_BUILD_TOP/selected-tools"
               # Full invocations stay in the build log: their artifact prefix must
               # never enter the final output. Export only the verified operations.
-              printf '%s\n' cmake-configure cmake-build cmake-install ctest make > "$out/selected-tools"
+              printf '%s\n' cmake-configure cmake-build cmake-install make > "$out/selected-tools"
             '';
           }
         ]
       );
+  selectedUpstream = selected.tests.upstream.upstreamExecution.editSteps (
+    steps.insertAfter "upstream.capture" [
+      {
+        name = "fixture.selected-upstream-tools";
+        tools = [ tvp.packages.gnugrep ];
+        run = ''
+          test "$(cat "$out/raw/status")" = 0
+          grep -F 'cmake -S source -B selected-build' "$NIX_BUILD_TOP/selected-tools"
+          grep -F 'ctest --test-dir selected-build' "$NIX_BUILD_TOP/selected-tools"
+          grep -E '^make .*' "$NIX_BUILD_TOP/selected-tools"
+          printf '%s\n' cmake-configure cmake-build ctest make > "$out/selected-tools"
+        '';
+      }
+    ]
+  );
   failed = lib.filter (n: !contracts.${n}) (lib.attrNames contracts);
 in
 assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ", " failed}";
@@ -387,6 +405,7 @@ assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ",
   name = "tvp-owned-json-c-contracts";
   buildCommand = ''
     test -s ${selected}/selected-tools
+    test -s ${selectedUpstream}/selected-tools
     test -x ${consumer}/shared
     test -x ${runtimeConsumer}/shared
     test -e ${disabled}/lib/libjson-c.a
@@ -405,6 +424,7 @@ assert failed == [ ] || throw "Owned JSON-C contracts: ${lib.concatStringsSep ",
       customRuntime
       runtimeConsumer
       selected
+      selectedUpstream
       disabled
       lookup
       ;

@@ -4,9 +4,21 @@ No addresses, relocation records, offsets, symbols or archive indices move.
 This is the ET_REL operation missing from the retained runtime ELF inspector.
 """
 import struct
+import re
 import subprocess
 import tempfile
 from pathlib import Path
+
+
+def path_prefix(prefix):
+    if prefix in (b'', b'OPENSSLDIR: "', b'ENGINESDIR: "', b'MODULESDIR: "'):
+        return True
+    # Older OpenSSL embeds its compiler flags in the version report. Only
+    # relocate self paths that are values of these installed-directory macros.
+    return re.fullmatch(
+        rb'compiler: [\x20-\x7e]* -D(?:OPENSSL|ENGINES|MODULES)DIR=[\\"]*',
+        prefix,
+    ) is not None
 
 
 def relocate(data, old, new, readelf, replace):
@@ -48,6 +60,7 @@ def relocate(data, old, new, readelf, replace):
                 if s[1]!=8 and s[4]+s[5]>len(member):
                     raise ValueError('truncated section')
             pos=0
+            ranges=set()
             while True:
                 hit=member.find(old,pos)
                 if hit<0: break
@@ -66,13 +79,17 @@ def relocate(data, old, new, readelf, replace):
                 if stop<0:
                     raise ValueError('unterminated archive self string')
                 prefix=member[start:hit]
-                if prefix not in (b'',b'OPENSSLDIR: "',b'ENGINESDIR: "',b'MODULESDIR: "'):
+                if not path_prefix(prefix):
                     raise ValueError(('unexpected archive self string',prefix))
+                ranges.add((start,stop))
+                pos=hit+len(old)
+            # A string can contain several directory macros. Inspect every
+            # original occurrence before replacing any of them.
+            for start,stop in sorted(ranges):
                 value=replace(member[start:stop],old,new)
                 if len(value)!=stop-start:
                     raise ValueError('archive relocation changed width')
                 member=member[:start]+value+member[stop:]
-                pos=hit+len(old)
             edits.append((begin,end,member))
         cursor=end+(size%2)
     if cursor!=len(data):

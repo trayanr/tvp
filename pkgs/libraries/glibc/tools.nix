@@ -54,7 +54,7 @@ tvp.builder {
           run = ''
             ${final.coreutils}/bin/cp -a --no-preserve=ownership ${final.glibc.bin} "$out"
             ${final.coreutils}/bin/chmod -R u+w "$out"
-            ${final.python3Minimal}/bin/python3 -B ${./.}/rebind-tools.py "$out" \
+            ${final.python3Minimal}/bin/python3 -B ${./native}/rebind-tools.py "$out" \
               ${final.bash}/bin/bash ${final.perl}/bin/perl ${final.buildPerl}/bin/perl \
               ${lib.escapeShellArg "${final.coreutils}/bin:${final.sed}/bin:${final.grep}/bin:${final.gawk}/bin"}
           '';

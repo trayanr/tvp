@@ -1,3 +1,8 @@
+> Default testing is the small [smoke selection](SMOKE.md), following
+> [TESTING.md](../../TESTING.md). `latest` remains an explicit broader command:
+> it includes every own test for each latest release, including upstream suites.
+> Do not use it as the default package smoke check.
+
 # Latest ordinary releases first
 
 `tvp.lib.tests.selectLatest { canonical; packages; batches; }` is a pure Nix
@@ -47,8 +52,8 @@ and dependency reports remain diagnostics. Latest compatible moving dependencies
 advance through their existing aliases; measured major/minor constraints, exact
 exceptions and independent bootstrap seeds remain intact.
 
-CI remains OFF until the whole migration is complete. A future, separately reviewed
-two-stage job can use the same pinned source for both commands:
+The normal CI path uses the small smoke plan. When broader validation is explicitly
+requested, both commands can use the same pinned source:
 
 ```sh
 set -eu
@@ -59,8 +64,8 @@ nix build .#testBatches.x86_64-linux.all --no-link
 
 Use normal Nix fail-fast behavior (`keep-going = false`); do not add `-k` to the
 latest stage or launch both stages in parallel. Already running sibling builds
-may finish when a test fails. Latest-only success is partial coverage and cannot
-satisfy the existing full-only protected status. The frozen full runner and
+may finish when a test fails. Latest-only success is partial coverage and does not
+certify full coverage. The protected smoke status has its own explicit scope. The frozen full runner and
 representative certificates retain their existing semantics.
 
 On Tower, Make/M4 changes can still invalidate expensive consumers selected here.
@@ -193,7 +198,8 @@ of a successful terminal run without rerunning builds or modifying its receipt.
 For long-lived observers the copied `code/latest.py` can be invoked with the same
 rooted interpreter recorded in `attempts/NNN/launch.json`.
 
-The existing `start/status/wait/stop/verify`, full plans, representative verifier
-and all catalogue/construction policies retain their interfaces. A full historical
-run remains a separate explicit action. Hosted CI remains OFF until migration is
-complete; this workflow does not activate or satisfy a protected full-suite gate.
+The normal `start/status/wait/stop` commands reuse the frozen runner. `start`
+now defaults to the small smoke plan; historical catalogue suites require explicit
+`start --full`. The full and representative verifiers retain their own scopes.
+This explicit latest workflow is separate from the protected smoke check and
+never certifies the full catalogue.

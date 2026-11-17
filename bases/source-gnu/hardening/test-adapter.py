@@ -58,6 +58,18 @@ with tempfile.TemporaryDirectory() as work:
         reject(lambda: prep([invalid, 'a.c']))
     for opaque in [['-Wp,-D_FORTIFY_SOURCE=0'], ['-Xpreprocessor', '-U_FORTIFY_SOURCE'], ['-specs=hidden']]:
         reject(lambda: prep(opaque + ['a.c']))
+    # Kbuild's dependency-only cpp forwarding does not hide policy options.
+    for dependency in ['-Wp,-MD,host.d', '-Wp,-MMD,scripts/basic/.fixdep.d']:
+        for mode in [[], ['-c']]:
+            actual, _ = prep(['-O2', dependency] + mode + ['a.c'])
+            assert dependency in actual and '-D_FORTIFY_SOURCE=2' in actual
+            assert ('-Wl,-z,now' in actual) == (not mode)
+    for dependency in [
+        '-Wp,-MMD', '-Wp,-MMD,', '-Wp,-MMD,host.d,-D_FORTIFY_SOURCE=0',
+        '-Wp,-MMD,-D_FORTIFY_SOURCE=0', '-Wp,-MMD,@hidden',
+        '-Wp,-MMD,host\0.d', '-Wp,-include,hidden',
+    ]:
+        reject(lambda: prep(['-O2', dependency, 'a.c']))
     assert '-Wl,-z,now' not in prep(['-Wl,-r', 'a.o'])[0]
     # R1: output names are compiler options, in argv, responses and both flag lists.
     for option in ['-dumpbase', '-dumpdir', '-dumpbase-ext']:
@@ -155,6 +167,10 @@ with tempfile.TemporaryDirectory() as work:
         return run([readelf, option, path])
     source = '#include <stdio.h>\n#include <string.h>\n__attribute__((noinline)) int f(char *p) { char b[32]; strcpy(b,p); puts(b); return b[0]; }\nint main(int n,char **v) { return n>1 ? f(v[1])==0 : 0; }\n'
     Path('tiny.c').write_text(source)
+    build(hardened + '/bin/cc', ['-O2', '-Wp,-MMD,kbuild.d', 'tiny.c'], 'kbuild')
+    assert 'tiny.c' in Path('kbuild.d').read_text()
+    assert 'BIND_NOW' in elf('kbuild', '-dW')
+    run(['./kbuild'])
     results = {}
     for language, command in [('C', 'cc'), ('C++', 'c++')]:
         for label, optimization, enabled in [('hardened', '-O2', True), ('O0', '-O0', False), ('default', None, False)]:

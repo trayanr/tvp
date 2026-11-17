@@ -8,6 +8,8 @@ let
   inherit (pkgs) lib;
   bases = tvp.bases;
   contexts = tvp.__legacyBases;
+  underlyingDriver =
+    driver: if driver ? underlyingDriver then underlyingDriver driver.underlyingDriver else driver;
   selections = [
     {
       alias = "gcc_4";
@@ -70,9 +72,16 @@ let
     sourceCompilers = lib.all (
       x:
       let
-        c = bases.${x.alias}.full.compiler.tvp.deps.compiler;
+        c = (underlyingDriver bases.${x.alias}.full.compiler).tvp.deps.compiler;
       in
       c ? artifact && c ? specification && c.artifact.drvPath != c.drvPath
+    ) selections;
+    consumerDefaults = lib.all (
+      x:
+      bases.${x.alias}.full.compiler.defaultHardeningFlags == [
+        "bindnow"
+        "relro"
+      ]
     ) selections;
     retainedRecipesUseSameProviders = lib.all (
       x:

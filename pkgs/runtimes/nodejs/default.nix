@@ -6,6 +6,9 @@ let
       def = {
         builder = ./build-owned-26.13.0.nix;
         deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          python = tvp.packages.python_3;
           # Exact previous runtime shell; independent of public Bash's bashbug.
           runtimeBash = tvp.lib.packages.withConstraint {
             category = "construction";

@@ -73,7 +73,61 @@ let
     packages = { };
     batches = { };
   };
+  # Real Nix primitive derivations may omit `outputs`; default out is implicit.
+  # Exercise the full-plan serializer without building either fixture.
+  primitive = builtins.derivation {
+    name = "plan-implicit-output";
+    system = "x86_64-linux";
+    builder = "/not-built";
+  };
+  named = builtins.derivation {
+    name = "plan-named-outputs";
+    system = "x86_64-linux";
+    builder = "/not-built";
+    outputs = [
+      "out"
+      "validation"
+    ];
+  };
+  makePlan =
+    check:
+    builtins.fromJSON (
+      plain (
+        builtins.toJSON (
+          tests.compatibility.planManifest {
+            pkgs = {
+              stdenv.hostPlatform.system = "x86_64-linux";
+              linkFarm = _: _: {
+                overrideAttrs = _: { drvPath = "/model/aggregate.drv"; };
+              };
+            };
+            batches = { };
+            checks.fixture = check;
+            canonical = { };
+            source = ./latest.nix;
+          }
+        )
+      )
+    );
+  plan = makePlan (
+    primitive
+    // {
+      testSuite = {
+        implicit = primitive;
+        selected = named.validation;
+      };
+    }
+  );
+  planJob = builtins.head plan.jobs;
+  plain = builtins.unsafeDiscardStringContext;
   checks = {
+    fullPlanImplicitOutput = planJob.outputs == [ (plain primitive.outPath) ];
+    fullPlanImplicitTest = (builtins.head planJob.tests).outputs == [ (plain primitive.outPath) ];
+    fullPlanNamedTest =
+      (builtins.elemAt planJob.tests 1).outputs == [
+        (plain named.validation.outPath)
+        (plain named.outPath)
+      ];
     semanticLatest = selected.metadata.families.probe.version == "10.0";
     aliasPolicy = selected.metadata.families.probe.selector == packages.probe.__tvpSelection;
     exactBatch = selected.batches.probe_10_0 == batch;

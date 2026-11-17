@@ -51,13 +51,9 @@ in
       tools = s.environment.tools;
       tests = args.tests // {
         tool-overrides = args.tests.tool-overrides // {
-          script =
-            builtins.replaceStrings
-              [ "chmod +x tools/as tools/ld" ]
-              [
-                "${s.sed}/bin/sed -i '1c#!${s.bash}/bin/bash' tools/as tools/ld\nchmod +x tools/as tools/ld"
-              ]
-              args.tests.tool-overrides.script;
+          script = builtins.replaceStrings [ "chmod +x tools/as tools/ld" ] [
+            "${s.sed}/bin/sed -i '1c#!${s.bash}/bin/bash' tools/as tools/ld\nchmod +x tools/as tools/ld"
+          ] args.tests.tool-overrides.script;
         };
       };
     };

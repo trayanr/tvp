@@ -8,6 +8,8 @@
   tvpLib,
 }:
 let
+  bootstrap = import ../bootstrap { system = bases.default.platform.system; };
+  buildFrontend = import ../bootstrap/source-python-meson.nix { inherit bootstrap; };
   contexts = {
     gcc_4_9_4 = bases.gcc_4.full;
     gcc_9_5_0 = bases.gcc_9.full;
@@ -33,13 +35,33 @@ let
     // {
       tests = import ./tests {
         inherit tvpLib;
-        pkgs = { inherit lib; };
+        pkgs = {
+          inherit lib;
+        };
         base = selected;
       };
     }
   ) contexts;
   construction = {
-    bases = { inherit (canonical) gcc_13_3_0 gcc_16_2_0; };
+    # Installed interfaces of the selected construction tools still name these
+    # earlier source-owned providers. Ownership registers these definitions;
+    # it does not infer permission from whatever happens to be in their closure.
+    runtimeReferences = {
+      bootstrapBash = bootstrap.bash;
+      bootstrapEarlyBash = bootstrap.bash_2_05;
+      bootstrapCoreutils = bootstrap.coreutils;
+      bootstrapMusl = bootstrap.musl;
+      bootstrapTinyccLibraries = bootstrap.tinycc-musl.libs;
+      previousGNUCompiler = bootstrap.gnu-gcc-unwrapped;
+      previousGNUMpfr = bootstrap.gnu-mpfr;
+      previousGNUMpc = bootstrap.gnu-mpc;
+      targetDriver = buildFrontend.composition.cc;
+      buildPythonOpenSSL = buildFrontend.pythonOpenssl;
+      buildPythonBzip2 = buildFrontend.prerequisites.bzip2;
+    };
+    bases = {
+      inherit (canonical) gcc_13_3_0 gcc_16_2_0;
+    };
     ownedBases = lib.mapAttrs (_: base: base.ownedBase) construction.bases;
     variants = { };
   };

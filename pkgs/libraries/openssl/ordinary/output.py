@@ -33,6 +33,8 @@ def role(name):
         return 'ca-perl'
     if name == 'etc/ssl/misc/der_chop':
         return 'der-perl'
+    if name == 'etc/ssl/misc/tsget':
+        return 'tsget-perl'
     if re.fullmatch(r'etc/ssl/man/man([1-9])/[^/]+\.\1', name):
         return 'documentation'
     if (name.endswith(('.la', '.pc', '.cmake', '.h'))
@@ -145,7 +147,7 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manu
         if selected_role == 'evidence':
             removals.update(group)
             continue
-        if selected_role in ('text', 'rehash', 'documentation', 'ca-perl', 'der-perl'):
+        if selected_role in ('text', 'rehash', 'documentation', 'ca-perl', 'der-perl', 'tsget-perl'):
             helper.text(data, group)
         if data.startswith(b'\x7fELF'):
             hits = inspect_elf(p, old, config['readelf'])
@@ -158,18 +160,28 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manu
             for component in raw.split(b':'):
                 if component and not (component.startswith(b'/nix/store/') or re.match(rb'^\$(?:ORIGIN|LIB|PLATFORM)(?:/|$)|^\$\{(?:ORIGIN|LIB|PLATFORM)\}(?:/|$)', component)):
                     raise ValueError(('non-loader-relative RPATH', name, component))
+            strings = set()
             for hit in hits:
                 if hit['section'] == '.dynstr':
                     if hit.get('exclusiveRpath', '').encode() != raw:
                         raise ValueError(('nonexclusive dynamic self path', name))
                 elif (hit['section'] != '.rodata' or not hit['readonlyAllocated']
                       or hit['stringEnd'] < 0
-                      or data[hit['stringStart']:hit['offset']] not in (b'', b'OPENSSLDIR: \"', b'ENGINESDIR: \"', b'MODULESDIR: \"')
+                      or not (
+                          data[hit['stringStart']:hit['offset']] in (b'', b'OPENSSLDIR: \"', b'ENGINESDIR: \"', b'MODULESDIR: \"')
+                          or re.fullmatch(
+                              rb'compiler: [\x20-\x7e]* -D(?:OPENSSL|ENGINES|MODULES)DIR=[\\"]*',
+                              data[hit['stringStart']:hit['offset']],
+                          )
+                      )
                       or not data[hit['offset']:].startswith(old+b'/')):
                     raise ValueError(('unsupported compiled self path', name, hit))
                 else:
-                    a, b = hit['stringStart'], hit['stringEnd']
-                    data = data[:a] + helper.replace_paths(data[a:b], old, new) + data[b:]
+                    strings.add((hit['stringStart'], hit['stringEnd']))
+            # A compiler-flags string can contain both OPENSSLDIR and
+            # ENGINESDIR. Validate every hit before relocating each string once.
+            for a, b in sorted(strings):
+                data = data[:a] + helper.replace_paths(data[a:b], old, new) + data[b:]
             relocated = helper.replace_paths(raw, old, new)
             if relocated != raw:
                 rpaths[name] = relocated.decode()
@@ -190,7 +202,7 @@ def finalize(helper, root, artifact, config, relocate_archive, inspect_elf, manu
             preamble = ('BEGIN { $ENV{PATH} = ' + json.dumps(str(root/'bin')+':'+':'.join(config['tools']))
                         + '; $ENV{OPENSSL} = ' + json.dumps(str(root/'bin/openssl')) + ' unless defined $ENV{OPENSSL}; }\n').encode()
             data = b'#!'+config['perl'].encode()+b'\n'+preamble+body
-        elif selected_role in ('ca-perl', 'der-perl'):
+        elif selected_role in ('ca-perl', 'der-perl', 'tsget-perl'):
             if not p.stat().st_mode & 0o111:
                 raise ValueError(('non-executable installed Perl helper', name))
             data = misc_perl(data, name, root, config)

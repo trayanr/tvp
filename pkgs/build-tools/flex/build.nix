@@ -171,10 +171,11 @@ in
       in
       shells
       // {
-        run = ''
-          cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
-        ''
-        + shells.run;
+        run =
+          ''
+            cd "$(cat "$TVP_SOURCE_ROOT/tree-path")"
+          ''
+          + shells.run;
       }
     )
   ];

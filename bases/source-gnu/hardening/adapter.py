@@ -124,6 +124,15 @@ def static_search(opts):
     return static
 
 
+def dependency_preprocessor_option(option):
+    # Kbuild forwards dependency generation directly to cpp. Accept only its
+    # option and one literal filename, never another option or response file.
+    parts = option.split(',')
+    return (len(parts) == 3 and parts[0] == '-Wp'
+            and parts[1] in ('-MD', '-MMD') and bool(parts[2])
+            and not parts[2].startswith(('-', '@')) and '\0' not in parts[2])
+
+
 def prepare(program, argv, environment, defaults):
     env = environment.copy()
     selected = env.pop('NIX_HARDENING_ENABLE', ' '.join(defaults)).split()
@@ -166,7 +175,10 @@ def prepare(program, argv, environment, defaults):
         opts = list(options(args))
     # These interfaces can rewrite flags/macros behind the policy analyzer.
     # Fail closed on active policies; callers can explicitly select the old base.
-    if any(a in ('-specs', '-wrapper', '-Xpreprocessor', '-imacros') or a.startswith(('-specs=', '--specs=', '-fplugin', '-Wp,')) for a, _ in opts):
+    if any(a in ('-specs', '-wrapper', '-Xpreprocessor', '-imacros')
+           or a.startswith(('-specs=', '--specs=', '-fplugin'))
+           or (a.startswith('-Wp,') and not dependency_preprocessor_option(a))
+           for a, _ in opts):
         fail('opaque specs/plugin/preprocessor options are unsupported with an active policy')
     # Retain ABI/static-PIE rejection even when options came through response files.
     if any(a in ('-static-pie', '-m16', '-m32', '-mx32', '-mmusl', '-mbionic', '-muclibc') for a, _ in opts):

@@ -159,7 +159,7 @@ in
         coreutils ? final.coreutils,
         python3Minimal ? final.python3Minimal,
       }:
-      import ./native/tools.nix {
+      import ./tools.nix {
         inherit
           tvp
           lib

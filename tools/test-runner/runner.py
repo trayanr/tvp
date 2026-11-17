@@ -237,8 +237,10 @@ def start(args):
         (run / "roots").mkdir(parents=True)
         with (run / "worker.lock").open("a") as lease:
             fcntl.flock(lease, fcntl.LOCK_EX)
+            scope = "full" if args.full else "smoke"
             state = {"phase": "preparing", "startedAt": time.time(), "maxJobs": args.jobs,
-                     "cores": args.cores, "jobs": {}, "full": not bool(args.only)}
+                     "cores": args.cores, "jobs": {}, "full": args.full and not bool(args.only),
+                     "validationScope": scope}
             if args.owner_lock:
                 state["ownerLock"] = str(args.owner_lock)
             write_json(run / "state.json", state)
@@ -248,8 +250,9 @@ def start(args):
             try:
                 # Keep the executable and its interpreter alive after nix run exits.
                 root_path(run / "runner", Path(__file__).resolve().parents[2])
+                plan_attribute = "testPlans" if args.full else "smokeTestPlans"
                 command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
-                           args.flake + "#testPlans." + args.system]
+                           args.flake + "#" + plan_attribute + "." + args.system]
                 with (run / "prepare.log").open("w") as log:
                     subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
                 plan = json.loads((run / "plan").read_text())
@@ -283,6 +286,7 @@ def start(args):
     if getattr(args, "json", False):
         print(json.dumps({"run": str(run), "runner": str(run / "runner/bin/tvp-test"),
                           "suites": len(plan["jobs"]), "source": plan["source"],
+                          "validationScope": scope, "full": state["full"],
                           "cachedAtStart": sum(x["cachedAtStart"] for x in state["jobs"].values()),
                           "declaredBroken": len(plan["skipped"])}))
     else:
@@ -331,6 +335,7 @@ def print_status(run, state):
     counts = collections.Counter(state["counts"])
     duration = state["elapsedSeconds"]
     print("Run:", run)
+    print("Scope:", state.get("validationScope", "full" if state.get("full") else "partial"))
     print(f"{state['phase']} | {duration // 3600:02}:{duration // 60 % 60:02}:{duration % 60:02} elapsed")
     print(f"Suites: {counts['passed']}/{len(state['jobs'])} passed; {counts['failed-or-blocked']} failed/blocked; {counts['pending']} pending; {counts['cancelled']} cancelled")
     if state.get("testCounts"):
@@ -413,13 +418,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("latest", help="freeze and supervise a resumable latest-only workflow")
-    launch = commands.add_parser("start", help="freeze and launch the full suite in the background")
+    launch = commands.add_parser("start", help="freeze and launch the small smoke selection (full suites are opt-in)")
     launch.add_argument("--flake", default=".")
     launch.add_argument("--system", default=os.environ.get("TVP_TEST_SYSTEM", "x86_64-linux"))
     launch.add_argument("--state-dir", type=Path, default=Path(".tvp-tests"))
     launch.add_argument("--jobs", type=positive, help="override Nix's max-jobs setting")
     launch.add_argument("--cores", type=int, help="override Nix's cores setting (0 uses all cores)")
     launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
+    scope = launch.add_mutually_exclusive_group()
+    scope.add_argument("--smoke", action="store_true", help="select the default small smoke plan explicitly")
+    scope.add_argument("--full", action="store_true", help="explicitly run the full catalogue, including upstream suites")
     launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
     launch.add_argument("--json", action="store_true", help="return the exact frozen run identity for automation")
     launch.add_argument("--owner-lock", type=Path, help="stop if the controlling process releases this file lock")

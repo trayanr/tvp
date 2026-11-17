@@ -1,0 +1,47 @@
+# Small installed-result checks. Full package and upstream suites stay separate.
+{ pkgs, tvp }:
+let
+  subjects = {
+    base-gcc_4_9_4 = {
+      inherit (tvp.__legacyBases.gcc_4_9_4.tests) compile cxx;
+    };
+    base-gcc_9_5_0 = {
+      inherit (tvp.__legacyBases.gcc_9_5_0.tests) compile cxx;
+    };
+    base-gcc_13_3_0 = {
+      inherit (tvp.__legacyBases.gcc_13_3_0.tests) compile cxx;
+    };
+    base-gcc_16_2_0 = {
+      inherit (tvp.__legacyBases.gcc_16_2_0.tests) compile cxx;
+    };
+    perl_5_30_3 = {
+      inherit (tvp.canonical.perl_5_30_3.tests) version modules;
+    };
+    ruby_4_0_6 = {
+      inherit (tvp.canonical.ruby_4_0_6.tests) version stdlib;
+    };
+  };
+  batches = pkgs.lib.mapAttrs (
+    name: suite:
+    tvp.lib.tests.compatibility.mkBatch {
+      inherit pkgs suite;
+      name = "smoke-${name}";
+    }
+  ) subjects;
+in
+{
+  inherit batches;
+  metadata = {
+    schema = "tvp.smoke-tests/v1";
+    scope = "smoke";
+    subjects = builtins.mapAttrs (_: suite: builtins.attrNames suite) subjects;
+    namedTests = pkgs.lib.foldl' (count: suite: count + builtins.length (builtins.attrNames suite)) 0 (
+      builtins.attrValues subjects
+    );
+    upstreamIncluded = false;
+  };
+  all = tvp.lib.tests.compatibility.mkAll {
+    inherit pkgs batches;
+    checks = { };
+  };
+}

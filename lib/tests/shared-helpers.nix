@@ -12,7 +12,9 @@ let
   python = model "shared-helper-python";
   alternate = model "shared-helper-alternate-python";
   base = {
-    tools = { inherit python; };
+    tools = {
+      inherit python;
+    };
     environment = env: env // { selectedBase = "original"; };
   };
   other = base // {
@@ -66,6 +68,12 @@ let
   };
   locale = fixtureContext.fixtures.gnuLocale;
   results = {
+    # The copied directory must not capture recipes or documentation as inputs.
+    glibcHelpersOnlyPython = builtins.all (
+      name:
+      lib.hasSuffix ".py" name
+      && (builtins.readDir ../../pkgs/libraries/glibc/native).${name} == "regular"
+    ) (builtins.attrNames (builtins.readDir ../../pkgs/libraries/glibc/native));
     editableRecord =
       step.name == "package.build" && step.run == "printf selected" && step.cwd == "source";
     environmentRetained = step.tools == [ python ] && step.env.MARKER == "selected";

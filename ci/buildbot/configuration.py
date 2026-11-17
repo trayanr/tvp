@@ -5,7 +5,7 @@ from buildbot.reporters.generators.build import BuildStartEndStatusGenerator
 from buildbot.reporters.generators.buildrequest import BuildRequestGenerator
 from buildbot.reporters.message import MessageFormatterRenderable
 from changes import LabelledPullRequests
-from policy import REPOSITORY, SHA, eligible, result_properties
+from policy import REPOSITORY, SHA, STATUS_CONTEXT, eligible, result_properties
 
 
 def make_config(settings, source):
@@ -41,7 +41,7 @@ def make_config(settings, source):
                    "--tools-ref", tools_ref, "--compare", "compare.py"]
         return command
     factory.addStep(steps.SetPropertyFromCommand(
-        name="full-catalogue", workdir=directory,
+        name="smoke-catalogue", workdir=directory,
         command=validation_command,
         extract_fn=result_properties, haltOnFailure=True,
         timeout=None, maxTime=None, sigtermTime=30,
@@ -83,10 +83,10 @@ def make_config(settings, source):
         "builders": [util.BuilderConfig(name="tvp-full", workernames=["tvp-linux"],
                                          factory=factory, collapseRequests=False)],
         "services": [reporters.GitHubStatusPush(
-            token=github_token, context="tvp/full",
+            token=github_token, context=STATUS_CONTEXT,
             generators=[BuildRequestGenerator(formatter=MessageFormatterRenderable("Queued on local TVP builder")),
                         BuildStartEndStatusGenerator(
-                            start_formatter=MessageFormatterRenderable("Building full catalogue locally"),
+                            start_formatter=MessageFormatterRenderable("Checking package smoke tests locally"),
                             end_formatter=MessageFormatterRenderable(util.Property("ci_summary", default="Validation stopped before its final report")),
                         )],
         )] if github_enabled else [],

@@ -44,6 +44,7 @@ with tempfile.TemporaryDirectory() as tmp:
         (source / 'libcrypto.so').write_bytes(b'ELF\0unchanged')
         (source / 'libcrypto.so.0').symlink_to('libcrypto.so')
         (source / 'test/fixture.pem').write_text('fixture')
+        (source / 'test/fips-data').symlink_to('../fips/aes/fips_aes_data')
         (source / '.git').mkdir(); (source / '.git/history').write_text('excluded')
         (source / 'temp.db').write_text('excluded')
         os.utime(source / 'apps/openssl', ns=(120123456789, 120123456789))
@@ -61,6 +62,8 @@ with tempfile.TemporaryDirectory() as tmp:
         assert (private / 'apps/openssl').stat().st_mode & 0o777 == 0o751
         assert (private / 'apps/openssl').read_bytes() == (source / 'apps/openssl').read_bytes()
         assert (private / 'libcrypto.so.0').readlink() == Path('libcrypto.so')
+        assert (private / 'test/fips-data').readlink() == Path('../fips/aes/fips_aes_data')
+        assert not (private / 'test/fips-data').exists()
         assert str(private) in (private / 'Makefile').read_text()
         for name in production_metadata:
             assert (private / name).read_bytes() == (source / name).read_bytes()
@@ -71,13 +74,15 @@ with tempfile.TemporaryDirectory() as tmp:
         state.save(private, root / (protocol + '-T'), manifest, protocol, '/nix/store/production-prefix', epoch, True)
         second = root / (protocol + '-R'); second.mkdir()
         restore.restore(root / (protocol + '-T'), second)
-        (source / 'outside').symlink_to('/nix/store')
-        try:
-            state.save(source, root / (protocol + '-bad'), manifest, protocol, 'prefix', epoch)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError('external link accepted')
+        for target in ['/nix/store', '../missing-external']:
+            alias = source / 'outside'; alias.symlink_to(target)
+            try:
+                state.save(source, root / (protocol + '-bad'), manifest, protocol, 'prefix', epoch)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('external link accepted')
+            alias.unlink()
     raw = root / 'raw'; raw.mkdir()
     output = b'native workload output\n'
     (raw / 'output').write_bytes(output)

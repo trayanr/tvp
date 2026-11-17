@@ -86,7 +86,7 @@ let
       checks
       ;
   };
-  inherit (testSet) testBatches latestTests;
+  inherit (testSet) testBatches latestTests smokeTests;
 
   reports = import ./reports {
     inherit
@@ -116,6 +116,7 @@ let
       checks
       testBatches
       latestTests
+      smokeTests
       tools
       ;
     inherit (reports)

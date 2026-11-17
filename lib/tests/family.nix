@@ -114,10 +114,12 @@ let
   retested = p.mkTests.override { tests = _: { }; };
   probeTestConfiguration =
     (p.mkTests.override {
-      tests = { package, ... }: {
-        inherit (package) drvPath;
-        options = package.testConfiguration;
-      };
+      tests =
+        { package, ... }:
+        {
+          inherit (package) drvPath;
+          options = package.testConfiguration;
+        };
       helpers = "caller-helpers";
     })
       p;

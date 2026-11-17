@@ -96,6 +96,12 @@ let
     environmentBindingEra = lib.hasInfix "export PERL=" (step "automake.configure" old).run;
     argumentBindingEra = lib.hasInfix ''--prefix="$out" PERL='' (step "automake.configure" middle).run;
     unsuffixedOldData = old.specification.installedInterface.dataDirectory == "share/automake";
+    backportedVersionedData =
+      family.canonical.automake_1_4_p5.specification.installedInterface.dataDirectory == "share/automake"
+      &&
+        family.canonical.automake_1_4_p6.specification.installedInterface.dataDirectory
+        == "share/automake-1.4"
+      && family.canonical.automake_1_4_p6.specification.installedInterface.versionedAliases;
     suffixedMiddleData = middle.specification.installedInterface.dataDirectory == "share/automake-1.6";
     modernApiPreparation =
       hasStep "automake.api" firstPrepared

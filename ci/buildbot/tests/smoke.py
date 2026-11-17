@@ -30,7 +30,7 @@ flake='''{ inputs.nixpkgs.url = "github:NixOS/nixpkgs/NIXPKGS_REV"; outputs = { 
       aggregate = builtins.unsafeDiscardOutputDependency result.drvPath;
       jobs = [{ name = "fixture"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ];
         tests = [{ name = "run"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ]; }]; }]; skipped = []; }; };
-in { testPlans.${system} = plan; checks.${system}.fixture = result;
+in { testPlans.${system} = plan; smokeTestPlans.${system} = plan; checks.${system}.fixture = result;
  graph = { schema = 1; entries.fixture = { drv = discard result.drvPath; out = discard result.outPath; };
  entries.retired = { drv = discard result.drvPath; out = discard result.outPath; }; }; }; }
 '''.replace('NIXPKGS_REV',revision).replace('BASH', '"${pkgs.bash}/bin/bash"').replace('SMOKE_ID',area.name)

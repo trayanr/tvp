@@ -110,15 +110,21 @@ in
       readline
       zlib
     ];
+    # GNU ld resolves transitive RUNPATHs inside its sysroot. Name Readline's
+    # runtime providers for linking without exposing their headers or adding
+    # their paths to the installed Ruby runtime.
+    overrides.flags.NIX_CFLAGS_LINK = map (library: "-Wl,-rpath-link,${lib.getLib library}/lib") (
+      final.libraries.readline.runtime.libraries or [ ]
+    );
     # LC_ALL=C from the base overrides LANG; RDoc needs UTF-8 explicitly.
-    overrides.values = {
-      LANG = "C.UTF-8";
-      LC_ALL = "C.UTF-8";
-      CONFIG_SHELL = "${tools.bash}/bin/bash";
-      lt_cv_deplibs_check_method = "pass_all";
-    }
-    //
-      lib.optionalAttrs
+    overrides.values =
+      {
+        LANG = "C.UTF-8";
+        LC_ALL = "C.UTF-8";
+        CONFIG_SHELL = "${tools.bash}/bin/bash";
+        lt_cv_deplibs_check_method = "pass_all";
+      }
+      // lib.optionalAttrs
         (final.cStandard != null || final.mkmfProbeFlags != [ ] || final.compileFlags != [ ])
         {
           cflags = lib.concatStringsSep " " (
@@ -127,9 +133,9 @@ in
             ++ final.compileFlags
           );
         }
-    // lib.optionalAttrs (final.extraWarnFlags != [ ]) {
-      extra_warnflags = lib.concatStringsSep " " final.extraWarnFlags;
-    };
+      // lib.optionalAttrs (final.extraWarnFlags != [ ]) {
+        extra_warnflags = lib.concatStringsSep " " final.extraWarnFlags;
+      };
   };
   plan = steps.sequence [
     (steps.unpack {
@@ -235,19 +241,13 @@ in
     })
     # Apply only the provider needed by each ELF scope. dlopen users declare
     # their provider too; base and own-library lookups survive the helper.
-    (lookup "ruby"
-      [
-        "bin/ruby"
-        "lib/libruby.so.${builtins.head (lib.splitString "-p" final.version)}"
-      ]
-      [ final.runtime.zlib ]
-    )
-    (lookup "readline"
-      [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ]
-      [
-        final.runtime.readline
-      ]
-    )
+    (lookup "ruby" [
+      "bin/ruby"
+      "lib/libruby.so.${builtins.head (lib.splitString "-p" final.version)}"
+    ] [ final.runtime.zlib ])
+    (lookup "readline" [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ] [
+      final.runtime.readline
+    ])
     (lookup "openssl" [ "lib/ruby/${final.libDir}/x86_64-linux/openssl.so" ] [ final.runtime.openssl ])
     (lookup "zlib" [ "lib/ruby/${final.libDir}/x86_64-linux/zlib.so" ] [ final.runtime.zlib ])
     (outputs.shebangs {

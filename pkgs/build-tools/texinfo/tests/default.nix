@@ -165,12 +165,16 @@ context.mkSuite {
     };
     reader-locale = {
       script = ''
-        env -i ${p}/bin/info --version | head -1 | grep -q '${p.version}'
-        readelf -d ${p}/bin/info | grep -q 'libncursesw'
+        env -i ${p}/bin/info --version > info-version
+        head -1 info-version > info-version-first
+        grep -Fq '${p.version}' info-version-first
+        readelf -d ${p}/bin/info > info-dynamic
+        grep -q 'libncursesw' info-dynamic
         ${p.specification.base.compiler.libc}/lib/ld-linux-x86-64.so.2 --list ${p}/bin/info > linkage
         grep -Fq '${d.ncurses}/lib/libncursesw' linkage
         grep -Fq '${d.localeTools}/bin/locale' ${p}/share/texinfo/Texinfo/Translations.pm
-        env -i ${d.localeTools}/bin/locale -a | grep -qx C
+        env -i ${d.localeTools}/bin/locale -a > locales
+        grep -qx C locales
         printf reader
       '';
       expected = "reader";

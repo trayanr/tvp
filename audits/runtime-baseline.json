@@ -1,15 +1,1 @@
-{
-  "rustc_1_97_1": {
-    "base": "gcc13-owned",
-    "needs": "A source bootstrap chain or a separately migrated, fully adapted seed.",
-    "paths": [
-      "/nix/store/04hj9k1gyv26b9gdmcmw3l3bbi124xxi-libidn2-2.3.7",
-      "/nix/store/cjnmdi9chk0fhjy8p8dq8inxqr4p3vk7-libunistring-1.2",
-      "/nix/store/mrsnnz2nmnb4mrma1bfv6inmy2k3k3k8-xgcc-13.3.0-libgcc",
-      "/nix/store/wfml6h84mna7sw9f6v7z0l60f4faxk8w-zlib-1.3.1",
-      "/nix/store/wlffq5p6mxxgfap10sav3ij936jzqm59-glibc-2.39-52"
-    ],
-    "reason": "Existing upstream binary seed retains foreign runtime paths in its private libraries.",
-    "source": "binary"
-  }
-}
+{}

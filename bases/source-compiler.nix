@@ -25,7 +25,9 @@ let
     };
   compiler = make (import recipe) {
     inherit lib version;
-    tvp = { inherit builder; };
+    tvp = {
+      inherit builder;
+    };
     base = previous;
     src = import <nix/fetchurl.nix> sources.${version};
     glibc = previous.compiler.libc;

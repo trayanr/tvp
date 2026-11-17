@@ -41,6 +41,13 @@ def runtime_paths(value, artifact, prefix, root, elf):
             if not target.is_relative_to(root) or not target.is_dir():
                 raise ValueError('GCC runtime directory escapes final output')
             directory=str(target)
+        elif directory.startswith('/nix/store/'):
+            # Host-built plugins retain their host C++ runtime provider. Resolve
+            # its lib/../lib64 spelling without rebinding it to the target GCC.
+            target=Path(directory).resolve(strict=True)
+            if not target.is_relative_to('/nix/store') or not target.is_dir():
+                raise ValueError('GCC external runtime directory escapes store')
+            directory=str(target)
         directories.append(directory)
     return ':'.join(directories)
 

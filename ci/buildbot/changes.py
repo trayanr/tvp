@@ -4,7 +4,7 @@ from urllib.parse import quote
 from twisted.internet import defer
 from buildbot.changes.github import GitHubPullrequestPoller
 
-from policy import SHA
+from policy import SHA, STATUS_CONTEXT
 
 
 class LabelledPullRequests(GitHubPullrequestPoller):
@@ -72,14 +72,14 @@ class LabelledPullRequests(GitHubPullrequestPoller):
                 raise ValueError("Invalid GitHub compare response")
             if comparison["status"] in ("behind", "diverged"):
                 response = yield self._http.post(f"{prefix}/statuses/{head}", json={
-                    "state": "pending", "context": "tvp/full",
+                    "state": "pending", "context": STATUS_CONTEXT,
                     "description": "Rebase or merge the current target branch into this PR before testing.",
                 })
                 if response.code != 201:
                     raise RuntimeError(f"GitHub blocked status failed: HTTP {response.code}")
                 status = yield response.json()
                 if (not isinstance(status, dict) or status.get("state") != "pending"
-                        or status.get("context") != "tvp/full"):
+                        or status.get("context") != STATUS_CONTEXT):
                     raise ValueError("Invalid GitHub blocked status response")
                 yield self._setCurrentRev(number, {"identity": identity, "decision": "blocked"})
                 continue

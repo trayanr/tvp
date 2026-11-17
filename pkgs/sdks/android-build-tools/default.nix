@@ -13,7 +13,7 @@ let
           runtimeCompiler = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
-          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.cc;
           unzip = tvp.packages.unzip;
           jdk = tvp.lib.packages.withConstraint {
             reason = "Exact JDK21 provider of the released Android36 SDK profile; keep its launcher/runtime selection explicit.";
@@ -48,7 +48,7 @@ let
           runtimeCompiler = tvp.lib.packages.withConstraint {
             category = "construction";
             reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
-          } tvp.bases.gcc_16.full.compiler.tvp.deps.compiler;
+          } tvp.bases.gcc_16.full.compiler.cc;
           unzip = tvp.packages.unzip;
           jdk = tvp.packages.jdk_21;
         };

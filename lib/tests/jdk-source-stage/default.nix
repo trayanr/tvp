@@ -122,10 +122,12 @@ let
   };
   factory = (import ../../../pkgs/runtimes/jdk { inherit pkgs tvp; }).recipes.jdk.extraArgs.mkTests;
   selectedFactory = factory.override {
-    tests = { package, ... }: {
-      producer = package.drvPath;
-      options = package.testConfiguration;
-    };
+    tests =
+      { package, ... }:
+      {
+        producer = package.drvPath;
+        options = package.testConfiguration;
+      };
     helpers = "selected-jdk-helpers";
   };
   contracts = {

@@ -60,6 +60,19 @@ let
     noCompilerChurn =
       pilots.base.compiler.underlyingDriver == base.compiler
       && pilots.base.compiler.underlyingBintools == base.compiler.bintools;
+    adapterVersions =
+      pilots.base.compiler.version == base.compiler.version
+      &&
+        pilots.base.compiler.bintools.version
+        == (base.compiler.bintools.version or (builtins.parseDrvName base.compiler.bintools.name).version);
+    declaredProviders =
+      pilots.base.compiler.tvp.declaredDependencies.driver.drvPath == base.compiler.drvPath
+      &&
+        pilots.base.compiler.bintools.tvp.declaredDependencies.bintools.drvPath
+        == base.compiler.bintools.drvPath;
+    rawCompilerMetadata =
+      pilots.base.compiler.cc.drvPath
+      == (base.compiler.cc or base.compiler.tvp.declaredDependencies.compiler).drvPath;
     runtimeExact = pilots.base.runtimeDirectories == base.runtimeDirectories;
     optedOutExact = off.drvPath == (pilots.zip.override { inherit base; }).drvPath;
     unknownRecipeException = rejects (pilots.zip.override { hardeningDisable = [ "pie" ]; }).drvPath;

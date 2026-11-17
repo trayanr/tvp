@@ -137,11 +137,12 @@ in
       run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
     }
     (outputs.relocateText {
-      paths = [
-        "lib/libgmp.la"
-      ]
-      ++ lib.optional final.buildFeatures.cxx "lib/libgmpxx.la"
-      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig";
+      paths =
+        [
+          "lib/libgmp.la"
+        ]
+        ++ lib.optional final.buildFeatures.cxx "lib/libgmpxx.la"
+        ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig";
     })
     (outputs.strip { paths = elfPaths; })
     (outputs.stripArchives { paths = [ "lib" ]; })

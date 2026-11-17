@@ -19,8 +19,7 @@ else
       providers.coreutils
       providers.sed
       providers.grep
-    ]
-    ++ [ package.specification.jdk ];
+    ] ++ [ package.specification.jdk ];
     tests = {
       version = {
         script = "sed -n 's/^Pkg.Revision=//p' ${package}/${package.tvp.android.componentPath}/source.properties";

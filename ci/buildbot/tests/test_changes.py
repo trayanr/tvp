@@ -96,7 +96,7 @@ class Delivery(TestCase):
         statuses = [kwargs['json'] for method, _, kwargs in http.calls if method == 'POST']
         self.assertEqual(len(statuses), 1)
         self.assertEqual(statuses[0]['state'], 'pending')
-        self.assertEqual(statuses[0]['context'], 'tvp/full')
+        self.assertEqual(statuses[0]['context'], 'tvp/smoke')
         self.assertIn('Rebase or merge', statuses[0]['description'])
         self.assertEqual(state[1]['decision'], 'blocked')
         pr['head']['sha'], http.ancestry = 'e' * 40, 'ahead'

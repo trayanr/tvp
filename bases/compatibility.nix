@@ -25,6 +25,9 @@ let
   # through public aliases which may depend on the compiler being constructed.
   file = base.tools.file or (import ../bootstrap/source-full-gcc.nix { }).file;
   originalCompiler = base.compiler;
+  underlyingDriver =
+    driver: if driver ? underlyingDriver then underlyingDriver driver.underlyingDriver else driver;
+  constructionCompiler = underlyingDriver originalCompiler;
   originalBinutils = originalCompiler.bintools;
   binutils = originalBinutils // {
     bintools = originalBinutils;
@@ -36,8 +39,8 @@ let
       targetPrefix = originalCompiler.targetPrefix or "";
       isGNU = true;
     }
-    // lib.optionalAttrs (originalCompiler ? cc || originalCompiler ? tvp.deps.compiler) {
-      cc = originalCompiler.cc or originalCompiler.tvp.deps.compiler;
+    // lib.optionalAttrs (constructionCompiler ? cc || constructionCompiler ? tvp.deps.compiler) {
+      cc = constructionCompiler.cc or constructionCompiler.tvp.deps.compiler;
     };
   tools = base.tools // {
     inherit file;
@@ -90,29 +93,31 @@ let
     builtins.readFile ./wrappers/bintools-setup.sh
   );
   setupHook = builder {
-    recipe = { }: _: {
-      pname = "tvp-${name}-compiler-setup";
-      version = compiler.version;
-      src = null;
-      base = owned;
-      bash = tools.bash;
-      coreutils = tools.coreutils;
-      plan = [
-        {
-          name = "compatibility.setup";
-          tools = [ tools.coreutils ];
-          run = ''
-            cat > "$out" <<'TVP_COMPILER_SETUP'
-            ${compilerHook}
-            ${linkerHook}
-            export CC=${compiler}/bin/cc CXX=${compiler}/bin/c++
-            export AR=${binutils}/bin/ar AS=${binutils}/bin/as LD=${binutils}/bin/ld
-            export NM=${binutils}/bin/nm RANLIB=${binutils}/bin/ranlib STRIP=${binutils}/bin/strip
-            TVP_COMPILER_SETUP
-          '';
-        }
-      ];
-    };
+    recipe =
+      { }:
+      _: {
+        pname = "tvp-${name}-compiler-setup";
+        version = compiler.version;
+        src = null;
+        base = owned;
+        bash = tools.bash;
+        coreutils = tools.coreutils;
+        plan = [
+          {
+            name = "compatibility.setup";
+            tools = [ tools.coreutils ];
+            run = ''
+              cat > "$out" <<'TVP_COMPILER_SETUP'
+              ${compilerHook}
+              ${linkerHook}
+              export CC=${compiler}/bin/cc CXX=${compiler}/bin/c++
+              export AR=${binutils}/bin/ar AS=${binutils}/bin/as LD=${binutils}/bin/ld
+              export NM=${binutils}/bin/nm RANLIB=${binutils}/bin/ranlib STRIP=${binutils}/bin/strip
+              TVP_COMPILER_SETUP
+            '';
+          }
+        ];
+      };
     args = { };
     dependencyNames = [ ];
     metadata.kind = "source-compiler-compatibility";

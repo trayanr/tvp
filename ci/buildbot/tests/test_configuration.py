@@ -24,7 +24,7 @@ class Deployment(unittest.TestCase):
             self.assertEqual(len(config['workers']), 1)
             self.assertIn('127.0.0.1', config['www']['port'])
             step = next(s for s in config['builders'][0].factory.steps
-                        if s.kwargs.get('name') == 'full-catalogue')
+                        if s.kwargs.get('name') == 'smoke-catalogue')
             self.assertEqual(step.kwargs['sigtermTime'], 30)
 
     def test_enabling_github_requires_a_real_provisioned_credential_file(self):
@@ -51,7 +51,7 @@ class Deployment(unittest.TestCase):
             settings['branch'] = 'release/next'
             config = make_config(settings, Path(__file__).resolve().parents[3])
             step = next(s for s in config['builders'][0].factory.steps
-                        if s.kwargs.get('name') == 'full-catalogue')
+                        if s.kwargs.get('name') == 'smoke-catalogue')
             properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40, 'target_branch': 'untrusted'}
             props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
             command = step.kwargs['command'].fn(props)

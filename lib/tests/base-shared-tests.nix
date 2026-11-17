@@ -51,7 +51,9 @@ let
     base:
     import ../../bases/tests {
       inherit base tvpLib;
-      pkgs = { inherit lib; };
+      pkgs = {
+        inherit lib;
+      };
     };
   suite = suiteFor base;
   names = [

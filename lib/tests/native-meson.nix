@@ -37,24 +37,24 @@ let
         version = "1";
         src = null;
         inherit base bash coreutils;
-        plan = [
-          {
-            name = "fixture.prepare";
-            run = ''
-              mkdir -p source/pc
-              cat > source/meson.build <<'MESON'
-              project('probe', 'c')
-              dependency('tvp-probe', method: 'pkg-config')
-              probe = executable('probe', 'probe.c', install: true)
-              test('probe', probe)
-              MESON
-              printf 'int main(void) { return 0; }\n' > source/probe.c
-              printf 'Name: tvp-probe\nDescription: isolated probe\nVersion: 1\n' > source/pc/tvp-probe.pc
-            '';
-          }
-        ]
-        ++
-          map
+        plan =
+          [
+            {
+              name = "fixture.prepare";
+              run = ''
+                mkdir -p source/pc
+                cat > source/meson.build <<'MESON'
+                project('probe', 'c')
+                dependency('tvp-probe', method: 'pkg-config')
+                probe = executable('probe', 'probe.c', install: true)
+                test('probe', probe)
+                MESON
+                printf 'int main(void) { return 0; }\n' > source/probe.c
+                printf 'Name: tvp-probe\nDescription: isolated probe\nVersion: 1\n' > source/pc/tvp-probe.pc
+              '';
+            }
+          ]
+          ++ map
             (step: step // { run = ''export PKG_CONFIG_PATH="$TVP_SOURCE_ROOT/source/pc"'' + "\n" + step.run; })
             (
               helpers.meson {

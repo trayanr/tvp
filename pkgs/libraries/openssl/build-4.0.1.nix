@@ -282,8 +282,7 @@ in
   };
   tvp.features = {
     inherit (final.buildFeatures) shared static;
-  }
-  // final.installedInterface;
+  } // final.installedInterface;
   meta = {
     description = "A cryptographic library that implements the SSL and TLS protocols";
     homepage = "https://www.openssl.org/";

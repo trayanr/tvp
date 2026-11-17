@@ -138,8 +138,7 @@ rec {
             selectedCompiler.bintools
             selectedCompiler.libc
             rawCompiler
-          ]
-          ++ (legacy.runtimeInputs or [ ]);
+          ] ++ (legacy.runtimeInputs or [ ]);
           construction = {
             kind = "legacy-inputs";
             previous = legacy.builtBy or null;

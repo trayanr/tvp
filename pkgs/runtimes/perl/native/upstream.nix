@@ -4,6 +4,29 @@
 let
   s = package.specification;
   check = s.upstreamCheck;
+  # Backport the later upstream locale fixture fix only to the affected test
+  # tree. Production and the other releases keep their existing identities.
+  upstreamPlan =
+    if s.version != "5.30.3" then
+      s.upstreamPlan
+    else
+      assert
+        builtins.length (builtins.filter (step: step.name == "perl.prepare") s.upstreamPlan) == 1
+        || throw "Perl 5.30 locale test preparation requires one perl.prepare step";
+      map (
+        step:
+        if step.name == "perl.prepare" then
+          step
+          // {
+            run =
+              step.run
+              + ''
+                ${s.python}/bin/python3 -B ${./close-locale-data.py} "$PWD"
+              '';
+          }
+        else
+          step
+      ) s.upstreamPlan;
   raw =
     (package.testContext.mkTest {
       inherit package;
@@ -23,7 +46,7 @@ let
                 run = ''mkdir -p "$out"'';
               }
             ]
-            ++ s.upstreamPlan
+            ++ upstreamPlan
             ++ [
               (
                 check

@@ -1,6 +1,10 @@
 # Ordinary raw GCC probes on the owned test constructor. All providers and
 # rebound package paths come from the effective specification.
-{ package, tvp, lib }:
+{
+  package,
+  tvp,
+  lib,
+}:
 let
   gcc = package;
   spec = package.specification;
@@ -196,6 +200,7 @@ assert
       expected = "stable-index";
     };
   };
-}) // {
+})
+// {
   upstream-audit = (import ./upstream-16.2.0.nix { inherit package tvp lib; }).acceptance;
 }

@@ -149,8 +149,7 @@ in
             requiredFiles = [ "lib/libreadline.a" ] ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
             requiredRegular = [
               "lib/libreadline.a"
-            ]
-            ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
+            ] ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
           }
         )
       }'';

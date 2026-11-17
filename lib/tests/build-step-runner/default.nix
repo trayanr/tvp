@@ -275,8 +275,7 @@ let
         run = "${first}/bin/step-choice";
         metadata = boom;
       }
-    ]
-    ++ disabledSteps;
+    ] ++ disabledSteps;
   };
   synthetic =
     name:
@@ -303,8 +302,7 @@ let
         cwd = "${builtins.elemAt contextInputs 4}/source";
         unknown = boom;
       }
-    ]
-    ++ disabledSteps;
+    ] ++ disabledSteps;
   };
   projectedContext = builtins.getContext (lib.concatStrings projection.childScripts);
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
