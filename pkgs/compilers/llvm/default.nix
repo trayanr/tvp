@@ -23,12 +23,17 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}/llvm-project-${version}.src.tar.xz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}/llvm-project-${version}.src.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/llvm/llvm-project";
+        prefix = "llvmorg-";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

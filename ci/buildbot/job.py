@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import re
 import shutil
-import signal
 import subprocess
 import sys
 
@@ -49,17 +48,6 @@ def checkout(repository, revision, destination):
         raise ValueError("Checkout does not match the scheduled commit")
 
 
-def wait_for_run(runner, run):
-    def stop(_signal, _frame):
-        subprocess.run([str(runner), "stop", "--run", str(run)], check=False)
-    previous = {sig: signal.signal(sig, stop) for sig in (signal.SIGTERM, signal.SIGINT)}
-    try:
-        return subprocess.run([str(runner), "wait", "--run", str(run)])
-    finally:
-        for sig, handler in previous.items():
-            signal.signal(sig, handler)
-
-
 def require_current_target(repository, candidate, base, head, branch):
     if not re.fullmatch(r"[0-9a-f]{40}", base):
         raise ValueError("A full immutable base SHA is required")
@@ -82,7 +70,7 @@ def require_current_target(repository, candidate, base, head, branch):
 
 def validate(args):
     # The detached runner must not outlive its controlling Buildbot command,
-    # including a forced kill or a stop before start returns the run identity.
+    # including a forced kill before the foreground command returns its result.
     owner_path = Path.cwd() / "validation-owner.lock"
     with owner_path.open("a+") as owner:
         fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -131,29 +119,22 @@ def validate_owned(args, owner_path):
             for name in difference[key]:
                 print(f"  {key}: {name}", flush=True)
     check_flake(candidate, evidence)
-    start = subprocess.check_output([
-        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--smoke", "--flake", str(candidate),
+    completed = subprocess.run([
+        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
         "--system", "x86_64-linux", "--state-dir", str(root / "validation"),
         "--owner-lock", str(owner_path), "--json",
-    ], text=True)
-    launch = json.loads(start)
-    run = Path(launch["run"])
-    frozen_runner = Path(launch["runner"])
+    ], text=True, stdout=subprocess.PIPE)
+    # A failing test still returns a terminal receipt and retained evidence.
+    result = json.loads(completed.stdout)
+    run = Path(result["run"])
+    launch = {key: result[key] for key in ("run", "runner", "validationScope", "full")}
     (evidence / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
-    if launch.get("validationScope") != "smoke" or launch.get("full") is not False:
-        subprocess.run([str(frozen_runner), "stop", "--run", str(run)], check=False)
-        raise ValueError("CI requires the explicit smoke plan, not a full-suite launch")
-    # Never find this run via latest; another request may move that alias.
-    waited = wait_for_run(frozen_runner, run)
-    result = json.loads(subprocess.check_output([
-        str(frozen_runner), "status", "--run", str(run), "--json"
-    ], text=True))
     result["ciIdentity"] = identity
     result["workerRun"] = str(run)
     if result.get("validationScope") != "smoke" or result.get("full") is not False:
         raise ValueError("CI result scope differs from the requested smoke plan")
     (evidence / "status.json").write_text(json.dumps(result, indent=2) + "\n")
-    for name in ["nix.log", "prepare.log", "worker.log", "plan.json", "command.json"]:
+    for name in ["nix.log", "prepare.log", "worker.log", "plan.json", "command.json", "result.json"]:
         if (run / name).is_file():
             shutil.copyfile(run / name, evidence / name)
     failures = evidence / "failure-logs"
@@ -165,7 +146,7 @@ def validate_owned(args, owner_path):
         if log.returncode == 0:
             (failures / (Path(drv).name + ".log")).write_text(log.stdout)
             print(f"\nFull failure log: {drv}\n{log.stdout}", flush=True)
-    return result, 0 if waited.returncode == 0 and result["phase"] == "passed" else 1
+    return result, 0 if completed.returncode == 0 and result["phase"] == "passed" else 1
 
 
 def result_record(result):

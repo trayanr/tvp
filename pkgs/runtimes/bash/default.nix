@@ -12,12 +12,10 @@ let
   pname = "bash";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/bash/bash-${version}.tar.gz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/bash/";
+      archive = "bash-{version}.tar.gz";
+    };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

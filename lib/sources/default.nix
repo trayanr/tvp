@@ -1,6 +1,11 @@
 # Immutable, root-preserving source inputs; not an installed-package constructor.
 { lib }:
+let
+  descriptors = import ./descriptors.nix { inherit lib; };
+in
 {
+  inherit (descriptors) archive directory;
+
   fetchArchive =
     {
       url,

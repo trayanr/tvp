@@ -34,12 +34,10 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://curl.se/download/curl-${version}.tar.gz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://curl.se/download/";
+      archive = "curl-{version}.tar.gz";
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

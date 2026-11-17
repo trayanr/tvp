@@ -119,7 +119,84 @@ rec {
     }:
     let
       jobs = suiteJobs { inherit batches checks; };
+      aggregate = mkAll { inherit pkgs batches checks; };
       broken = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") == "broken") canonical;
+      # Display metadata comes from the selected test objects, without walking
+      # their native dependency graph or demanding any package output.
+      plain = builtins.unsafeDiscardStringContext;
+      metadata = value: name: value.${name} or ((value.passthru or { }).${name} or null);
+      title = name: value: name + lib.optionalString (value ? version) " ${value.version}";
+      friendlyName =
+        name:
+        if name == "php" then "PHP" else if name == "redis" then "Redis" else name;
+      extensionTitle = package: title (friendlyName (metadata package "extensionName")) package;
+      subject =
+        fallback: package:
+        if package == null then
+          fallback
+        else if metadata package "php" != null && metadata package "extensionName" != null then
+          "${title "PHP" (metadata package "php")} / ${extensionTitle package}"
+        else if (package.pname or null) == "php-with-extensions" && metadata package "unwrapped" != null then
+          title "PHP" (metadata package "unwrapped")
+          + lib.optionalString (metadata package "enabledExtensions" != null && metadata package "enabledExtensions" != [ ]) (
+            " / " + lib.concatMapStringsSep ", " extensionTitle (metadata package "enabledExtensions")
+          )
+        else if package ? pname then
+          title (friendlyName package.pname) package
+        else
+          fallback;
+      label =
+        drv: text:
+        lib.optional (drv != null && drv ? drvPath) (lib.nameValuePair (plain drv.drvPath) (plain text));
+      packageLabels =
+        fallback: package:
+        if package == null then
+          [ ]
+        else
+          let
+            name = subject fallback package;
+            artifact = metadata package "artifact";
+            kind =
+              if metadata package "extensionName" != null then
+                " extension"
+              else if (package.pname or null) == "php" then
+                " engine"
+              else if (package.pname or null) == "php-with-extensions" then
+                " runtime"
+              else
+                "";
+            compiling = if kind == " runtime" then "composing runtime" else "compiling${kind}";
+            engine =
+              if kind == " runtime" then metadata package "unwrapped" else metadata package "php";
+          in
+          label package "${name}: ${if artifact == null then compiling else "finalizing${kind}"}"
+          ++ label artifact "${name}: ${compiling}"
+          ++ lib.optionals (engine != null) (packageLabels "PHP" engine);
+      testSubject = fallback: test: subject fallback (metadata test "package");
+      testLabels =
+        fallback: name: test:
+        let
+          testName = metadata test "testName";
+        in
+        label test "${testSubject fallback test}: test ${if testName == null then name else testName}"
+        ++ packageLabels fallback (metadata test "package")
+        ++ lib.concatMap (packageLabels fallback) (
+          builtins.filter (tool: (tool.pname or null) == "php-with-extensions") (
+            test.specification.tools or [ ]
+          )
+        );
+      jobLabels =
+        name: drv:
+        let
+          suite = drv.testSuite or { };
+          subjects = lib.unique (map (testSubject name) (builtins.attrValues suite));
+          suiteSubject = if builtins.length subjects == 1 then builtins.head subjects else name;
+        in
+        if suite == { } then
+          testLabels name name drv
+        else
+          lib.concatLists (lib.mapAttrsToList (testLabels suiteSubject) suite)
+          ++ label drv "${suiteSubject}: collecting results";
       outputPaths =
         drv:
         let
@@ -140,7 +217,11 @@ rec {
         name = "tvp-test-source";
       };
       system = pkgs.stdenv.hostPlatform.system;
-      aggregate = builtins.unsafeDiscardOutputDependency (mkAll { inherit pkgs batches checks; }).drvPath;
+      aggregate = builtins.unsafeDiscardOutputDependency aggregate.drvPath;
+      displayLabels = builtins.listToAttrs (
+        lib.concatLists (lib.mapAttrsToList jobLabels jobs)
+        ++ label aggregate "All tests: collecting results"
+      );
       jobs = lib.mapAttrsToList (name: drv: {
         inherit name;
         drv = builtins.unsafeDiscardOutputDependency drv.drvPath;

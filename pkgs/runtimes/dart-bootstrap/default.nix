@@ -46,14 +46,20 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://storage.googleapis.com/dart-archive/channels/${
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://storage.googleapis.com/dart-archive/channels/${
           if pkgs.lib.hasSuffix ".beta" version then "beta" else "stable"
         }/release/${version}/sdk/dartsdk-linux-x64-release.zip";
-        inherit sha256;
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/dart-lang/sdk.git";
+        # This family supplies both a pinned beta compiler and stable SDK assets.
+        include =
+          version: builtins.match "[0-9]+[.][0-9]+[.][0-9]+(-[0-9]+[.][0-9]+[.]beta)?" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = { };
   };

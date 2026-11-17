@@ -60,7 +60,7 @@ for name, plan in json.loads(Path(sys.argv[1]).read_text()).items():
         # reproduces the original production failure when no selector is passed.
         clear()
         result = subprocess.run(
-            [plan['make'], '-j1', 'SHELL=' + plan['shell'], 'build_generated'],
+            [plan['make'], '-j' + env['NIX_BUILD_CORES'], 'SHELL=' + plan['shell'], 'build_generated'],
             cwd=source, env=env, text=True, capture_output=True, timeout=30,
         )
         assert result.returncode == 0, (name, result.stdout, result.stderr)

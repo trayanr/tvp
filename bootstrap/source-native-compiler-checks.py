@@ -65,11 +65,11 @@ for tag, generator in [('make', 'Unix Makefiles'), ('ninja', 'Ninja')]:
     assert 'CMAKE_CXX_COMPILER:FILEPATH=' + cxx in cache
     call(tag + '-build', ['cmake', '--build', build, '--verbose', '-j', os.environ['NIX_BUILD_CORES']])
     times = {str(p): p.stat().st_mtime_ns for p in [build/'generator', build/'answer', build/'generated.h']}
-    call(tag + '-noop', ['cmake', '--build', build, '--verbose'])
+    call(tag + '-noop', ['cmake', '--build', build, '--verbose', '-j', os.environ['NIX_BUILD_CORES']])
     assert all(Path(p).stat().st_mtime_ns == t for p,t in times.items())
     # A content edit must rebuild the affected consumer, not the generator.
     Path('main.cc').write_text(Path('main.cc').read_text() + '\n// rebuild ' + tag + '\n')
-    call(tag + '-rebuild', ['cmake', '--build', build, '--verbose'])
+    call(tag + '-rebuild', ['cmake', '--build', build, '--verbose', '-j', os.environ['NIX_BUILD_CORES']])
     assert (build/'answer').stat().st_mtime_ns != times[str(build/'answer')]
     assert (build/'generator').stat().st_mtime_ns == times[str(build/'generator')]
     call(tag + '-install', ['cmake', '--install', build])

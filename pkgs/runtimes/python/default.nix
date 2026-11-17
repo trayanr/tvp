@@ -489,18 +489,16 @@ let
   pname = "python";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/python/cpython";
-      normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
-      include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
-        inherit sha256;
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/python/cpython";
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     # Suite-only support. Meson/Ninja can depend on this full Python.
     testDeps = {

@@ -16,12 +16,10 @@ let
   pname = "freetype";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://download.savannah.gnu.org/releases/freetype/freetype-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://download.savannah.gnu.org/releases/freetype/";
+      archive = "freetype-{version}.tar.xz";
+    };
     tests = import ./tests/owned.nix;
 
   };

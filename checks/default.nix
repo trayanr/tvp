@@ -18,6 +18,15 @@
   registry = runtimeRegistry;
 })
 // {
+  build-concurrency = pkgs.writeText "tvp-build-concurrency-contracts" (
+    builtins.toJSON (import ../lib/tests/build-concurrency.nix { inherit pkgs tvp; })
+  );
+
+  php-extensions = pkgs.writeText "tvp-php-extension-contracts" (
+    builtins.toJSON (import ../lib/tests/php-extensions.nix { inherit pkgs tvp; })
+  );
+  php-extension-custom = import ../lib/tests/php-extension-custom.nix { inherit tvp; };
+
   node-build-python = import ../pkgs/runtimes/nodejs/tests/build-python.nix {
     context = tvp.packages.nodejs.testContext;
     python = tvp.packages.nodejs.specification.python;
@@ -35,6 +44,10 @@
 
   version-helpers = pkgs.writeText "tvp-version-helper-contracts" (
     builtins.toJSON (import ../lib/tests/version-helpers.nix { inherit (pkgs) lib; })
+  );
+
+  source-descriptors = pkgs.writeText "tvp-source-descriptor-contracts" (
+    builtins.toJSON (import ../lib/tests/source-descriptors.nix { inherit (pkgs) lib; })
   );
 
   openssl-family = pkgs.writeText "tvp-openssl-family-contracts" (

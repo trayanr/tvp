@@ -1434,24 +1434,26 @@ let
       releases."3.2.8" = "sha256-37zGW4l0y68rzTQeIO/2YyQ+9LVXEraQ6DYtqYK8gpI=";
     }
   ];
-  packageMeta = {
-    upstream = {
-      type = "git-tags";
-      url = "https://github.com/sqlite/sqlite";
 
-      # The tag namespace also holds branch-ish names and four spellings of
-      # "release"; only version-X.Y.Z is a release.
-      normalise =
-        tag:
-        if builtins.match "version-[0-9].*" tag != null then pkgs.lib.removePrefix "version-" tag else null;
-
-      include = version: builtins.match "3\\..*" version != null;
-    };
-  };
   pname = "sqlite";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source = import ./source.nix { inherit (pkgs) fetchurl; };
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url = version: "https://sqlite.org/src/tarball/version-${version}/sqlite-${version}.tar.gz";
+      fetch = import ./source.nix { inherit (pkgs) fetchurl; };
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/sqlite/sqlite";
+
+        # The tag namespace also holds branch-ish names and four spellings of
+        # "release"; only version-X.Y.Z is a release.
+        normalise =
+          tag:
+          if builtins.match "version-[0-9].*" tag != null then pkgs.lib.removePrefix "version-" tag else null;
+
+        include = version: builtins.match "3\\..*" version != null;
+      };
+    };
     tests = import ./tests/installed.nix;
     testDeps.pkg-config = tvp.packages.pkg-config;
   };

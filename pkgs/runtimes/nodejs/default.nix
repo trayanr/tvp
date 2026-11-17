@@ -31,12 +31,16 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url = version: "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
+      discovery = {
+        type = "json-index";
+        url = "https://nodejs.org/dist/index.json";
+        selector = ".[].version";
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
+    };
     tests = (import ./tests/provider-context.nix { inherit pkgs; });
     testDeps.shell = tvp.packages.bash_5;
   };

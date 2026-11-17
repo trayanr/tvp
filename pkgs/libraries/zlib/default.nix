@@ -340,8 +340,11 @@ let
   pname = "zlib";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.directory {
+      url = "https://zlib.net/fossils/";
+      archive = "zlib-{version}.tar.gz";
+      discovery = {
         type = "git-tags";
         url = "https://github.com/madler/zlib";
 
@@ -365,12 +368,6 @@ let
         ];
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://zlib.net/fossils/zlib-${version}.tar.gz";
-        inherit sha256;
-      };
     tests =
       args@{ package, context, ... }:
       if (package.tvp.features.libName or "z") == "gz" then

@@ -57,27 +57,25 @@ let
     }
 
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/gmp/";
-    pattern = "gmp-[0-9][^\"]*\\.tar\\.(gz|bz2|xz)";
-    normalise =
-      file:
-      let
-        match = builtins.match "gmp-([0-9]+(\\.[0-9]+)*[a-z]?)\\.tar\\.(gz|bz2|xz)" file;
-      in
-      if match == null then null else builtins.head match;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
-  };
+
   pname = "gmp";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/gmp/gmp-${version}.tar.xz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/gmp/";
+      archive = "gmp-{version}.tar.xz";
+      discovery = {
+
+        pattern = "gmp-[0-9][^\"]*\\.tar\\.(gz|bz2|xz)";
+        normalise =
+          file:
+          let
+            match = builtins.match "gmp-([0-9]+(\\.[0-9]+)*[a-z]?)\\.tar\\.(gz|bz2|xz)" file;
+          in
+          if match == null then null else builtins.head match;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*[a-z]?" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

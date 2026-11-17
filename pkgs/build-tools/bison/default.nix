@@ -117,22 +117,20 @@ let
   pname = "bison";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/bison/";
-      pattern = "bison-[0-9][^\"]*\\.tar\\.gz";
-      normalise = tvp.lib.versions.fromArchiveName {
-        prefix = "bison-";
-        suffixes = [ ".tar.gz" ];
+      archive = "bison-{version}.tar.gz";
+      discovery = {
+
+        pattern = "bison-[0-9][^\"]*\\.tar\\.gz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "bison-";
+          suffixes = [ ".tar.gz" ];
+        };
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/bison/bison-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       flex = tvp.packages.flex;

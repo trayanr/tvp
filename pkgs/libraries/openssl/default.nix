@@ -677,8 +677,17 @@ let
   pname = "openssl";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        if pkgs.lib.versionOlder version "3.0.0" then
+          "https://github.com/openssl/openssl/releases/download/OpenSSL_${
+            builtins.replaceStrings [ "." ] [ "_" ] version
+          }/openssl-${version}.tar.gz"
+        else
+          "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
+      discovery = {
         type = "git-tags";
         url = "https://github.com/openssl/openssl";
 
@@ -745,18 +754,6 @@ let
           );
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url =
-          if pkgs.lib.versionOlder version "3.0.0" then
-            "https://github.com/openssl/openssl/releases/download/OpenSSL_${
-              builtins.replaceStrings [ "." ] [ "_" ] version
-            }/openssl-${version}.tar.gz"
-          else
-            "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;

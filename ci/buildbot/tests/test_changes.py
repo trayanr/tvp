@@ -54,7 +54,7 @@ class HTTP:
         return self.request('POST', path, **kwargs)
 
 
-def source(state, emitted, http, fail=False, branch='master'):
+def source(state, emitted, http, fail=False):
     def emit(**change):
         if fail:
             raise RuntimeError("temporary DB failure")
@@ -62,7 +62,7 @@ def source(state, emitted, http, fail=False, branch='master'):
         return defer.succeed(None)
     return SimpleNamespace(
         owner="trayanr", repo="tvp", _http=http,
-        pullrequest_filter=lambda pr: eligible(pr, "trayanr/tvp", branch=branch),
+        pullrequest_filter=lambda pr: eligible(pr, "trayanr/tvp"),
         _getCurrentRev=lambda number: defer.succeed(deepcopy(state.get(number))),
         _setCurrentRev=lambda number, revision: state.update({number: deepcopy(revision)}),
         master=SimpleNamespace(data=SimpleNamespace(updates=SimpleNamespace(addChange=emit))),
@@ -82,6 +82,7 @@ class Delivery(TestCase):
         self.assertEqual(len(emitted), 1)
         self.assertEqual(emitted[0]['revision'], HEAD)
         self.assertEqual(emitted[0]['properties']['tvp_base'], BASE)
+        self.assertEqual(emitted[0]['properties']['tvp_target_branch'], 'master')
         self.assertEqual(sum('/git/ref/' in path for _, path, _ in http.calls), 2)
 
     @defer.inlineCallbacks
@@ -127,20 +128,41 @@ class Delivery(TestCase):
     @defer.inlineCallbacks
     def test_ref_resolved_once_per_eligible_branch_per_poll_and_escaped(self):
         state, emitted, http = {}, [], HTTP()
-        yield poll(state, emitted, http, [pull(1, 'release/next'), pull(2, 'release/next')], branch='release/next')
+        yield poll(state, emitted, http, [pull(1, 'release/next'), pull(2, 'release/next')])
         refs = [path for _, path, _ in http.calls if '/git/ref/' in path]
         self.assertEqual(refs, ['/repos/trayanr/tvp/git/ref/heads/release%2Fnext'])
         self.assertEqual(len(emitted), 2)
         self.assertTrue(all('/compare/' not in path or f'{BASE}...{HEAD}' in path for _, path, _ in http.calls))
+        self.assertTrue(all(change['properties']['tvp_target_branch'] == 'release/next' for change in emitted))
+
+    @defer.inlineCallbacks
+    def test_unlabelled_draft_stack_emits_its_exact_target_and_head(self):
+        state, emitted, http, pr = {}, [], HTTP(), pull(branch='feature/source-release-discovery')
+        pr['draft'], pr['labels'] = True, []
+        yield poll(state, emitted, http, [pr])
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0]['revision'], HEAD)
+        self.assertEqual(emitted[0]['properties'], {
+            'tvp_pr': 1, 'tvp_base': BASE, 'tvp_target_branch': 'feature/source-release-discovery'})
+
+    @defer.inlineCallbacks
+    def test_retargeting_same_head_and_base_requeues_with_new_target(self):
+        state, emitted, http, pr = {}, [], HTTP(), pull()
+        yield poll(state, emitted, http, [pr])
+        pr['base']['ref'] = 'release/next'
+        yield poll(state, emitted, http, [pr])
+        self.assertEqual(len(emitted), 2)
+        self.assertEqual(emitted[-1]['properties']['tvp_target_branch'], 'release/next')
+        self.assertEqual(state[1]['identity'], [HEAD, BASE, 'release/next'])
 
     @defer.inlineCallbacks
     def test_ineligible_pulls_do_not_cause_network_or_state_writes(self):
         prs = []
-        for field, value in [('labels', []), ('draft', True), ('state', 'closed')]:
+        for field, value in [('state', 'closed')]:
             pr = pull(); pr[field] = value; prs.append(pr)
         pr = pull(); pr['head']['repo']['full_name'] = 'fork/tvp'; prs.append(pr)
         pr = pull(); pr['head']['sha'] = 'short'; prs.append(pr)
-        prs.append(pull(branch='other'))
+        prs.append(pull(branch=''))
         state, emitted, http = {}, [], HTTP()
         yield poll(state, emitted, http, prs)
         yield poll(state, emitted, http, [])

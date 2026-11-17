@@ -23,13 +23,21 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${version}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
-        name = "OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${version}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/adoptium/temurin21-binaries.git";
+        normalise =
+          tag:
+          let
+            match = builtins.match "jdk-(21([.][0-9]+)*)[+][0-9]+" tag;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = (import ./tests/installed.nix);
     testDeps.fontArchive =
       let

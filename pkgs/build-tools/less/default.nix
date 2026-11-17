@@ -28,24 +28,23 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://www.greenwoodsoftware.com/less/download.html";
-      pattern = "less-[0-9]+\\.tar\\.gz";
-      normalise =
-        file:
-        let
-          m = builtins.match "less-([0-9]+)\\.tar\\.gz" file;
-        in
-        if m == null then null else builtins.head m;
-      include = version: builtins.match "[0-9]+" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.greenwoodsoftware.com/less/less-${version}.tar.gz";
-        inherit sha256;
+
+    source = tvp.lib.sources.directory {
+      url = "https://www.greenwoodsoftware.com/less/";
+      archive = "less-{version}.tar.gz";
+      discovery = {
+
+        url = "https://www.greenwoodsoftware.com/less/download.html";
+        pattern = "less-[0-9]+\\.tar\\.gz";
+        normalise =
+          file:
+          let
+            m = builtins.match "less-([0-9]+)\\.tar\\.gz" file;
+          in
+          if m == null then null else builtins.head m;
+        include = version: builtins.match "[0-9]+" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

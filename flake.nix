@@ -39,10 +39,6 @@
         };
         tvp = import ./. {
           inherit pkgs system;
-          source = {
-            path = self.outPath;
-            revision = self.rev or self.dirtyRev or null;
-          };
         };
       in
       {
@@ -56,10 +52,10 @@
             canonical
             variants
             android
+            php
             graph
             dependencyRoots
             dependencyInventory
-            migrationStatusManifest
             upstreamIsolationInventory
             upstreamIsolationReport
             upstreamIsolationStrict

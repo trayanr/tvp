@@ -18,9 +18,12 @@ let
   pname = "mpdecimal";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
+
+    source = tvp.lib.sources.directory {
+      url = "https://www.bytereef.org/software/mpdecimal/releases/";
+      archive = "mpdecimal-{version}.tar.gz";
+      discovery = {
+
         url = "https://www.bytereef.org/mpdecimal/download.html";
         pattern = "mpdecimal-[0-9][^\"]*\\.tar\\.gz";
         normalise = tvp.lib.versions.fromArchiveName {
@@ -30,12 +33,6 @@ let
         include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       pkgConfig = tvp.packages.pkg-config;

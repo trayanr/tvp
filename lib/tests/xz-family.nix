@@ -93,7 +93,7 @@ let
     ) versions;
     noBackdoorReleases = !(table ? "5.6.0") && !(table ? "5.6.1");
     withdrawalRecordPreserved =
-      (builtins.head family.recipes.xz.packageMeta.upstream.unavailable).versions == [
+      (builtins.head family.recipes.xz.source.discovery.unavailable).versions == [
         "5.6.0"
         "5.6.1"
       ];

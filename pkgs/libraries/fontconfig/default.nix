@@ -19,12 +19,27 @@ let
   pname = "fontconfig";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://gitlab.freedesktop.org/fontconfig/fontconfig.git";
+        normalise =
+          tag:
+          let
+            numeric = builtins.match "[0-9]+(\\.[0-9]+)+" tag;
+            legacy = builtins.match "(fcpackage_|fc-|v)([0-9]+(_[0-9]+)+)" tag;
+          in
+          if numeric != null then
+            tag
+          else if legacy != null then
+            pkgs.lib.replaceStrings [ "_" ] [ "." ] (builtins.elemAt legacy 1)
+          else
+            null;
       };
+    };
     tests = import ./tests/owned.nix;
 
   };
@@ -46,12 +61,7 @@ let
         releases."2.18.3" = "sha256-T3tVSjjN94wDP2ZsiHHzdJ4UoJT2Wgf2MMke0LQ9NeM=";
       }
     ];
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = family.source;
     testDeps.python = tvp.packages.python_3;
     # Closure expectations are an independent consumer of the effective output.
     tests =

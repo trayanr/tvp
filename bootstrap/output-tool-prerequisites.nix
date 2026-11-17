@@ -131,7 +131,7 @@ let
           "$LD" -shared shared-rpath.o -rpath a_symbol_name -o tests/libshared-rpath.so
           ${b.gnu-binutils}/bin/readelf -d tests/no-rpath tests/libshared-rpath.so > "$evidence/normalized-fixtures.elf"
           status=0
-          ${b.gnumake-musl}/bin/make -C tests check TESTS='no-rpath.sh shared-rpath.sh replace-add-needed.sh' > "$evidence/fixture-recheck.log" 2>&1 || status=$?
+          ${b.gnumake-musl}/bin/make -j"$NIX_BUILD_CORES" -C tests check TESTS='no-rpath.sh shared-rpath.sh replace-add-needed.sh' > "$evidence/fixture-recheck.log" 2>&1 || status=$?
           printf '%s\n' "$status" > "$evidence/fixture-recheck.status"
           cat "$evidence/fixture-recheck.log"
           test "$status" = 0
@@ -139,7 +139,7 @@ let
             "$evidence/fixture-recheck.log" "$evidence/fixture-recheck.status" tests \
             > "$evidence/fixture-recheck-classification.json"
           ${b.findutils}/bin/find tests -name '*.log' -exec cp --parents '{}' "$evidence" \;
-          ${b.gnumake-musl}/bin/make install > "$evidence/install.log" 2>&1
+          ${b.gnumake-musl}/bin/make -j"$NIX_BUILD_CORES" install > "$evidence/install.log" 2>&1
           ${b.gnu-binutils}/bin/strip -S -p "$out/bin/patchelf"
           mkdir -p "$out/share/licenses/patchelf"
           cp COPYING "$out/share/licenses/patchelf/"

@@ -13,27 +13,26 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/gperf/";
-    pattern = "gperf-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|bz2|xz|lz)";
-    normalise =
-      file:
-      let
-        matched = builtins.match "gperf-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|bz2|xz|lz)" file;
-      in
-      if matched == null then null else builtins.head matched;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-  };
+
   pname = "gperf";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://ftpmirror.gnu.org/gperf/gperf-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://ftpmirror.gnu.org/gperf/";
+      archive = "gperf-{version}.tar.gz";
+      discovery = {
+
+        url = "https://mirrors.kernel.org/gnu/gperf/";
+        pattern = "gperf-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|bz2|xz|lz)";
+        normalise =
+          file:
+          let
+            matched = builtins.match "gperf-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|bz2|xz|lz)" file;
+          in
+          if matched == null then null else builtins.head matched;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       sentinel = tvp.lib.tests.fixtures.sentinel;

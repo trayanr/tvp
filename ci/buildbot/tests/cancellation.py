@@ -94,9 +94,7 @@ wrappers.mkdir()
     '#!' + str(Path(shutil.which('bash')).resolve()) + '\nset -e\n'
     'if [[ "$1" == run ]]; then\n shift\n'
     ' if [[ "$1" == --show-trace ]]; then shift; fi\n shift 2\n'
-    f' {shlex.quote(str(runner))} "$@" > "$PWD/test-launch.json"\n'
-    f' if [[ -e {shlex.quote(str(area / "hold-launch"))} ]]; then sleep 120; fi\n'
-    ' cat "$PWD/test-launch.json"\n exit 0\nfi\n'
+    f' exec {shlex.quote(str(runner))} "$@"\nfi\n'
     f'exec {shlex.quote(real_nix)} "$@"\n')
 (wrappers / 'nix').chmod(0o755)
 (area / 'gitconfig').write_text(f'[url "{repository}"]\n\tinsteadOf = https://github.com/fixture/tvp.git\n')
@@ -146,15 +144,16 @@ try:
         cwd=worker, env=environment, stdout=logs[1], stderr=logs[1]))
     wait_for('worker connection', lambda: any(w['connected_to'] for w in get('workers')['workers']))
 
-    for mode in ['running-stop', 'killed-harness', 'launch-stop']:
-        if mode == 'launch-stop':
-            (area / 'hold-launch').touch()
+    for mode in ['running-stop', 'killed-harness']:
         request_id = queue()
         build = wait_for('fixture build', lambda: next((b for b in get('builds')['builds']
                                                       if b['buildrequestid'] == request_id), None))
         workdir = worker / 'tvp-full/runs' / str(build['number'])
-        launch = wait_for('exact run identity', lambda: json.loads((workdir / 'test-launch.json').read_text()))
-        run = Path(launch['run'])
+        # This fixture owns a fresh per-build state directory. The foreground
+        # command emits its JSON receipt after completion, so inspect the run
+        # created in this isolated directory while testing cancellation.
+        run = wait_for('exact run identity', lambda: (
+            path.resolve() if (path := workdir / 'validation/latest').is_symlink() else None))
         runs.append(run)
         plan = json.loads((run / 'plan.json').read_text())
         kept = Path(next(j for j in plan['jobs'] if j['name'] == 'kept')['outputs'][0])

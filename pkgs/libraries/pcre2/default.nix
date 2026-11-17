@@ -15,15 +15,15 @@ let
     }
   ];
   pname = "pcre2";
-  packageMeta.upstream = import ./upstream.nix;
+
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${version}/pcre2-${version}.tar.bz2";
-        inherit sha256;
-      };
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${version}/pcre2-${version}.tar.bz2";
+      discovery = import ./upstream.nix;
+    };
     tests = import ./tests/installed.nix;
     testDeps.perl = tvp.packages.perl_5;
   };

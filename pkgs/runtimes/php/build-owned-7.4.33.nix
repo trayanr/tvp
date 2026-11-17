@@ -16,7 +16,7 @@
   sqlite,
   cStandard ? null,
   iconvFromBase ? false,
-  parallelBuild ? false,
+  parallelBuild ? true,
   testFeatures ? { },
   doCheck ? true,
 }:
@@ -189,7 +189,10 @@ in
       elfKinds = [ "runtime" ];
     })
     (outputs.rpaths {
-      libraries = final.runtime.libraries;
+      libraries = tvp.lib.php.runtimeLibraries {
+        base = final.base;
+        libraries = final.runtime.libraries;
+      };
       dlopenDirectories = final.runtime.dlopenDirectories or [ ];
       paths = [
         "bin"

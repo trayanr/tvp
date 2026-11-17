@@ -23,7 +23,23 @@ info = path.stat()
 data = path.read_bytes()
 if b"\0" in data or data.count(b"@TVP_SHELL@") != 2:
     raise ValueError("unexpected Ninja patched shell declarations")
-# Validate every requested replacement before the single source write.
+# Validate every requested replacement before changing either source file.
 data.decode("utf-8")
+configure = root / "configure.py"
+configure_info = configure.lstat()
+if not stat.S_ISREG(configure_info.st_mode) or configure_info.st_nlink != 1:
+    raise ValueError("expected singly linked Ninja configure source")
+configure_data = configure.read_bytes()
+original = b"subprocess.check_call(rebuild_args)"
+if b"\0" in configure_data or configure_data.count(original) != 1:
+    raise ValueError("unexpected Ninja bootstrap rebuild command")
+configure_data.decode("utf-8")
+# Ninja's self-rebuild otherwise uses its host-CPU default, ignoring Nix cores.
+configure_data = configure_data.replace(
+    original,
+    b'subprocess.check_call(rebuild_args + ["-j", os.environ["NIX_BUILD_CORES"]])',
+)
 path.write_bytes(data.replace(b"@TVP_SHELL@", shell))
 os.utime(path, ns=(info.st_atime_ns, info.st_mtime_ns))
+configure.write_bytes(configure_data)
+os.utime(configure, ns=(configure_info.st_atime_ns, configure_info.st_mtime_ns))

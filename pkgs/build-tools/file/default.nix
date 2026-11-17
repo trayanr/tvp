@@ -43,24 +43,23 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://www.astron.com/pub/file/";
-      pattern = "file-[0-9]+[.][0-9]+[.]tar[.](gz|bz2|xz|Z|lz|zst)";
-      normalise =
-        file:
-        let
-          match = builtins.match "file-([0-9]+[.][0-9]+)[.]tar[.](gz|bz2|xz|Z|lz|zst)" file;
-        in
-        if match == null then null else builtins.head match;
-      include = version: builtins.match "[0-9]+[.][0-9]+" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://astron.com/pub/file/file-${version}.tar.gz";
-        inherit sha256;
+
+    source = tvp.lib.sources.directory {
+      url = "https://astron.com/pub/file/";
+      archive = "file-{version}.tar.gz";
+      discovery = {
+
+        url = "https://www.astron.com/pub/file/";
+        pattern = "file-[0-9]+[.][0-9]+[.]tar[.](gz|bz2|xz|Z|lz|zst)";
+        normalise =
+          file:
+          let
+            match = builtins.match "file-([0-9]+[.][0-9]+)[.]tar[.](gz|bz2|xz|Z|lz|zst)" file;
+          in
+          if match == null then null else builtins.head match;
+        include = version: builtins.match "[0-9]+[.][0-9]+" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

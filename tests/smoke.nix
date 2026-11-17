@@ -20,7 +20,10 @@ let
     ruby_4_0_6 = {
       inherit (tvp.canonical.ruby_4_0_6.tests) version stdlib;
     };
-  };
+    redis_8_10_3 = {
+      inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
+    };
+  } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {

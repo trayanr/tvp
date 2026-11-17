@@ -44,7 +44,7 @@ let
     steps.command {
       environment = final.environment;
     } "openssl.${name}";
-  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
+  make = "${tools.gnumake}/bin/make -j\"$NIX_BUILD_CORES\" SHELL=${tools.bash}/bin/bash";
   productionMake = make;
   productionTargets = [
     "build_libs"

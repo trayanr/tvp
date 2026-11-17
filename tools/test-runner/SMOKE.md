@@ -2,24 +2,48 @@
 
 Default testing answers whether the selected installed results work. Follow the
 repository [testing policy](../../TESTING.md): a couple of useful checks per
-changed package or representative builder, with broad suites only on explicit request.
+package or representative builder, including every declared compatible PHP
+extension pair in standard testing and CI. Full upstream suites remain opt-in.
 
 ```sh
-nix run .#test -- start --json
-# Equivalent explicit scope, also used by CI:
-nix run .#test -- start --smoke --json
+nix run .#test -- all
+# Terminal JSON for automation; the same standard scope is used by CI:
+nix run .#test -- all --json
 nix run .#test -- status
-nix run .#test -- wait
 # Narrow within the smoke selection:
-nix run .#test -- start --only perl_5_30_3
+nix run .#test -- all --only perl_5_30_3
+nix run .#test -- all --only php_8_5_12--redis_6_3_0
 ```
+
+`all` waits in the foreground and exits zero only if every selected check passes.
+Nix skips valid cached results and builds or substitutes missing outputs. Failed
+checks do not cancel independent work. The command uses Nix's configured jobs
+and cores without an extra preparation loop. Logs, `state.json` and terminal
+`result.json` remain in `.tvp-tests/latest/` for inspection. `--json` prints the
+terminal result, including the exact `run` and `runner` paths. Interrupting or
+killing the foreground command stops its worker. `start` and `wait` remain
+available for explicitly requested background execution.
+
+New run plans carry display labels with both the PHP and extension versions,
+and distinguish compilation, finalization, runtime composition and actual tests.
+For example: `PHP 8.2.30 / Redis 6.0.2: compiling extension (38s)`.
+Script-generation derivations are grouped under `Build scripts` rather than
+listed as separate packages. These are display changes; package names and store
+identities stay unchanged, and older run plans remain inspectable.
 
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
-and compiled module loading, and Ruby's version and standard library. Twelve
-named tests run across six subjects. No upstream test is included. Update this
+and compiled module loading, Ruby's version and standard library, Redis's own
+checks, and all 296 declared compatible PHP/PHPRedis pairs. The matrix contributes
+592 load and Unix-socket roundtrip checks; the seven other subjects contribute
+14 checks, for 606 named tests across 303 subjects.
+No upstream regression test is included. Update this
 explicit selection when the changed package needs different representative checks;
 do not infer a policy from test names or silently include its whole suite.
+
+Standard CI runs the complete declared PHP extension matrix. Local work can use
+`--only` to select one pair. Missing cached outputs may require compilation of
+historical PHP engines and extensions; valid builds and test results are reused.
 
 `smokeTests.<system>.metadata` describes the selection;
 `smokeTests.<system>.all` builds it directly. The normal runner freezes

@@ -23,12 +23,21 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
+      discovery = {
+        # The project's RSS inventory includes current and archived source files.
+        type = "directory-index";
+        url = "https://sourceforge.net/projects/infozip/rss?path=/";
+        pattern = "/zip[0-9]{2,3}\\.(tar\\.gz|tgz|zip)/download";
+        normalise =
+          file:
+          let
+            match = builtins.match "/zip([0-9])([0-9]{1,2})\\.(tar\\.gz|tgz|zip)/download" file;
+          in
+          if match == null then null else "${builtins.elemAt match 0}.${builtins.elemAt match 1}";
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

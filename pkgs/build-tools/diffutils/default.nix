@@ -34,25 +34,23 @@ let
   pname = "diffutils";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/diffutils/";
-      # Capture whole filenames, including any README, signature or diff suffix.
-      # Normalising a matched prefix would falsely count those as archives.
-      pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
-      normalise =
-        file:
-        let
-          archive = builtins.match "diffutils-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|bz2)" file;
-        in
-        if archive == null then null else builtins.head archive;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/diffutils/diffutils-${version}.tar.xz";
-        inherit sha256;
+      archive = "diffutils-{version}.tar.xz";
+      discovery = {
+
+        # Capture whole filenames, including any README, signature or diff suffix.
+        # Normalising a matched prefix would falsely count those as archives.
+        pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
+        normalise =
+          file:
+          let
+            archive = builtins.match "diffutils-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|bz2)" file;
+          in
+          if archive == null then null else builtins.head archive;
       };
+    };
     tests = import ./tests;
     testDeps = {
       inherit locale;

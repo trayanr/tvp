@@ -24,25 +24,23 @@ let
       releases."4.4.1" = "sha256-3Rb7HWe/q3mnL16DkHNcSePo5wtJRaFasfgd23hlj7M=";
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/make/";
-    pattern = "make-[0-9][^\"]*\\.tar\\.gz";
-    normalise = tvp.lib.versions.fromArchiveName {
-      prefix = "make-";
-      suffixes = [ ".tar.gz" ];
-    };
-    include = version: builtins.match "[0-9].*" version != null;
-  };
+
   pname = "gnumake";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/make/make-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/make/";
+      archive = "make-{version}.tar.gz";
+      discovery = {
+
+        pattern = "make-[0-9][^\"]*\\.tar\\.gz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "make-";
+          suffixes = [ ".tar.gz" ];
+        };
+        include = version: builtins.match "[0-9].*" version != null;
       };
+    };
     tests = import ./tests;
     testDeps = {
       perl = tvp.packages.perl_5;

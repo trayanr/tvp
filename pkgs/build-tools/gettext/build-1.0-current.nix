@@ -156,7 +156,7 @@ in
   upstreamCheck =
     (command "check" ''
       status=0
-      ${make} -j1 check > upstream-check.log 2>&1 || status=$?
+      ${make} -j"$NIX_BUILD_CORES" check > upstream-check.log 2>&1 || status=$?
       cat upstream-check.log
       printf '%s\n' "$status" > upstream-check.status
       exit "$status"

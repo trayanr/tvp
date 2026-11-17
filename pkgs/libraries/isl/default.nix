@@ -20,33 +20,31 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://libisl.sourceforge.io/";
-    pattern = "href=\"[^\"]*\"";
-    normalise =
-      href:
-      let
-        link = builtins.match ''href="([^"]*)"'' href;
-        match =
-          if link == null || pkgs.lib.hasSuffix "/" (builtins.head link) then
-            null
-          else
-            builtins.match ''isl-([0-9]+(\.[0-9]+)*)\.tar\.(gz|bz2|xz)'' (
-              builtins.baseNameOf (builtins.head link)
-            );
-      in
-      if match == null then null else builtins.head match;
-  };
+
   pname = "isl";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://libisl.sourceforge.io/isl-${version}.tar.xz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://libisl.sourceforge.io/";
+      archive = "isl-{version}.tar.xz";
+      discovery = {
+
+        pattern = "href=\"[^\"]*\"";
+        normalise =
+          href:
+          let
+            link = builtins.match ''href="([^"]*)"'' href;
+            match =
+              if link == null || pkgs.lib.hasSuffix "/" (builtins.head link) then
+                null
+              else
+                builtins.match ''isl-([0-9]+(\.[0-9]+)*)\.tar\.(gz|bz2|xz)'' (
+                  builtins.baseNameOf (builtins.head link)
+                );
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     testDeps = {
       python3 = tvp.packages.python_3;
       pkg-config = tvp.packages.pkg-config;

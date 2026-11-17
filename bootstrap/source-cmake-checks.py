@@ -66,30 +66,30 @@ for gen, program in [('make', c['make']), ('ninja', c['ninja'])]:
     if gen == 'make':
         assert 'SHELL = ' + c['shell'] in (build / 'CMakeFiles/answer.dir/build.make').read_text()
     run(gen + '-build', [cmake, '--build', build, '--parallel', os.environ['NIX_BUILD_CORES']])
-    p = run(gen + '-ctest', [ctest, '--test-dir', build, '--output-on-failure'])
+    p = run(gen + '-ctest', [ctest, '--test-dir', build, '--output-on-failure', '--parallel', os.environ['NIX_BUILD_CORES']])
     assert '100% tests passed out of 2' in p.stdout
-    run(gen + '-noop', [cmake, '--build', build, '--verbose'])
+    run(gen + '-noop', [cmake, '--build', build, '--verbose', '--parallel', os.environ['NIX_BUILD_CORES']])
     objects = sorted(build.rglob('answer.c.o')); assert objects
     before = [p.stat().st_mtime_ns for p in objects]
     time.sleep(1.1)
     (source / 'marker.h').write_text('#define BUILD_MARKER 2\n')
-    run(gen + '-header-rebuild', [cmake, '--build', build, '--verbose'])
+    run(gen + '-header-rebuild', [cmake, '--build', build, '--verbose', '--parallel', os.environ['NIX_BUILD_CORES']])
     assert all(p.stat().st_mtime_ns > t for p, t in zip(objects, before))
     before = [p.stat().st_mtime_ns for p in objects]
     time.sleep(1.1)
     answer.write_text(answer.read_text() + '\n/* source rebuild */\n')
-    run(gen + '-source-rebuild', [cmake, '--build', build, '--verbose'])
+    run(gen + '-source-rebuild', [cmake, '--build', build, '--verbose', '--parallel', os.environ['NIX_BUILD_CORES']])
     assert all(p.stat().st_mtime_ns > t for p, t in zip(objects, before))
     before = [p.stat().st_mtime_ns for p in objects]
-    run(gen + '-final-noop', [cmake, '--build', build, '--verbose'])
+    run(gen + '-final-noop', [cmake, '--build', build, '--verbose', '--parallel', os.environ['NIX_BUILD_CORES']])
     assert [p.stat().st_mtime_ns for p in objects] == before
     run(gen + '-install', [cmake, '--install', build])
     # Real compile failure must cross the chosen build tool and CMake boundary.
     answer.write_text(answer.read_text() + '\n#error expected_failure_probe\n')
-    assert run(gen + '-expected-failure', [cmake, '--build', build], ok=False).returncode != 0
+    assert run(gen + '-expected-failure', [cmake, '--build', build, '--parallel', os.environ['NIX_BUILD_CORES']], ok=False).returncode != 0
     if gen == 'make':
         answer.write_text(answer.read_text().replace('#error expected_failure_probe', ''))
-        run('archive-rebuild', [cmake, '--build', build])
+        run('archive-rebuild', [cmake, '--build', build, '--parallel', os.environ['NIX_BUILD_CORES']])
         for format_, suffix in [('TXZ', 'xz'), ('TGZ', 'gz'), ('TBZ2', 'bz2'), ('TZST', 'zst')]:
             run('cpack-' + format_, [cpack, '-G', format_], cwd=build)
             archive = next(build.glob('answer-*.tar.' + suffix)).resolve()

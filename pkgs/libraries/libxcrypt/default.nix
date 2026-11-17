@@ -22,25 +22,25 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "git-tags";
-    url = "https://github.com/besser82/libxcrypt";
-    normalise =
-      tag:
-      let
-        matched = builtins.match "v([0-9]+\\.[0-9]+\\.[0-9]+)" tag;
-      in
-      if matched == null then null else builtins.head matched;
-  };
+
   pname = "libxcrypt";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/besser82/libxcrypt/releases/download/v${version}/libxcrypt-${version}.tar.xz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/besser82/libxcrypt/releases/download/v${version}/libxcrypt-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/besser82/libxcrypt";
+        normalise =
+          tag:
+          let
+            matched = builtins.match "v([0-9]+\\.[0-9]+\\.[0-9]+)" tag;
+          in
+          if matched == null then null else builtins.head matched;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;

@@ -267,37 +267,38 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/automake/";
-    pattern = "automake-[0-9][^\"]*\\.tar\\.gz";
-    normalise = tvp.lib.versions.fromArchiveName {
-      prefix = "automake-";
-      suffixes = [ ".tar.gz" ];
-    };
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*(-p[0-9]+)?" version != null;
-  };
+
   pname = "automake";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      let
-        # Archive publication changed independently of installed-layout eras.
-        archiveExt =
-          versionTable.${version}.def.opts.sourceLayout.archiveExt or (
-            if pkgs.lib.versionOlder version "1.6.1" then
-              "tar.gz"
-            else if pkgs.lib.versionOlder version "1.11.3" then
-              "tar.bz2"
-            else
-              "tar.xz"
-          );
-      in
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/automake/automake-${version}.${archiveExt}";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        let
+          # Archive publication changed independently of installed-layout eras.
+          archiveExt =
+            versionTable.${version}.def.opts.sourceLayout.archiveExt or (
+              if pkgs.lib.versionOlder version "1.6.1" then
+                "tar.gz"
+              else if pkgs.lib.versionOlder version "1.11.3" then
+                "tar.bz2"
+              else
+                "tar.xz"
+            );
+        in
+        "https://mirrors.kernel.org/gnu/automake/automake-${version}.${archiveExt}";
+
+      discovery = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/automake/";
+        pattern = "automake-[0-9][^\"]*\\.tar\\.gz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "automake-";
+          suffixes = [ ".tar.gz" ];
+        };
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*(-p[0-9]+)?" version != null;
       };
+    };
     testDeps = {
       libtool = tvp.packages.libtool_2;
       alternatePerl = tvp.lib.packages.withConstraint {

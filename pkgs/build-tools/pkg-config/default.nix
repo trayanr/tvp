@@ -45,29 +45,25 @@ let
       releases."0.29.2" = "sha256-b8acAWiMlFilfrmhZkyaujcszaQgoCv0Qp/mEOfn1ZE=";
     }
   ];
-  packageMeta = {
-    upstream = {
-      type = "directory-index";
-      url = "https://pkg-config.freedesktop.org/releases/";
-      pattern = "pkg-config-[0-9][^\"]*\\.tar\\.gz";
 
-      normalise = tvp.lib.versions.fromArchiveName {
-        prefix = "pkg-config-";
-        suffixes = [ ".tar.gz" ];
-      };
-
-      include = version: builtins.match "[0-9].*" version != null;
-    };
-  };
   pname = "pkg-config";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://pkg-config.freedesktop.org/releases/pkg-config-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://pkg-config.freedesktop.org/releases/";
+      archive = "pkg-config-{version}.tar.gz";
+      discovery = {
+
+        pattern = "pkg-config-[0-9][^\"]*\\.tar\\.gz";
+
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "pkg-config-";
+          suffixes = [ ".tar.gz" ];
+        };
+
+        include = version: builtins.match "[0-9].*" version != null;
       };
+    };
     testDeps = {
       mpfr = tvp.packages.mpfr;
       pkgConfig = tvp.packages.pkg-config;

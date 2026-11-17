@@ -20,27 +20,25 @@ let
       releases."1.15" = "sha256-mqDMeA3sFWuCgoRIM7NCq3ywjCXSzZoYac3Q3zHe/0g=";
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/gzip/";
-    pattern = "gzip-[0-9][^\"]*\\.(tar(\\.(gz|xz))?|zip|shar)";
-    normalise =
-      file:
-      let
-        matched = builtins.match "gzip-([0-9]+(\\.[0-9]+)*)\\.(tar(\\.(gz|xz))?|zip|shar)" file;
-      in
-      if matched == null then null else builtins.head matched;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-  };
+
   pname = "gzip";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/gzip/gzip-${version}.tar.xz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/gzip/";
+      archive = "gzip-{version}.tar.xz";
+      discovery = {
+
+        pattern = "gzip-[0-9][^\"]*\\.(tar(\\.(gz|xz))?|zip|shar)";
+        normalise =
+          file:
+          let
+            matched = builtins.match "gzip-([0-9]+(\\.[0-9]+)*)\\.(tar(\\.(gz|xz))?|zip|shar)" file;
+          in
+          if matched == null then null else builtins.head matched;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       sentinel = tvp.lib.tests.fixtures.sentinel;

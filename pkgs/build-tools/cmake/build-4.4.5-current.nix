@@ -210,7 +210,7 @@ in
     '')
     (command "cmake.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
     (command "cmake.install" ''
-      ${gnumake}/bin/make install
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" install
       for document in ${lib.escapeShellArgs bundledLicenseFiles}; do
         install -Dm644 "$document" "$out/${docDirectory}/''${document#Utilities/}"
       done

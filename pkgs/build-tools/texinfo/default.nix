@@ -40,12 +40,10 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/texinfo/texinfo-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/texinfo/";
+      archive = "texinfo-{version}.tar.xz";
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

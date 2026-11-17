@@ -104,8 +104,11 @@ let
   pname = "libyaml";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.directory {
+      url = "https://pyyaml.org/download/libyaml/";
+      archive = "yaml-{version}.tar.gz";
+      discovery = {
         type = "git-tags";
         url = "https://github.com/yaml/libyaml";
 
@@ -118,12 +121,6 @@ let
           && !(pkgs.lib.hasInfix "rc" version || pkgs.lib.hasInfix "pre" version);
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://pyyaml.org/download/libyaml/yaml-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps.pkgConfig = tvp.packages.pkg-config;
   };

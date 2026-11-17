@@ -33,12 +33,24 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.directory {
+      url = "https://dl.google.com/go/";
+      archive = "go1.4-bootstrap-{version}.tar.gz";
+      discovery = {
+        type = "directory-index";
+        # The download bucket has no public listing. Go's installation guide
+        # publishes the recommended dated C-bootstrap archive instead.
+        url = "https://go.dev/doc/install/source";
+        pattern = ''href="https://dl[.]google[.]com/go/go1[.]4-bootstrap-[0-9]{8}[.]tar[.]gz"'';
+        scope = "Currently documented C-bootstrap archives; historical snapshots are not enumerated.";
+        normalise =
+          filename:
+          let
+            match = builtins.match ''href="https://dl[.]google[.]com/go/go1[.]4-bootstrap-([0-9]{8})[.]tar[.]gz"'' filename;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

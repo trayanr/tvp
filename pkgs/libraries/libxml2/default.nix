@@ -163,29 +163,30 @@ let
   pname = "libxml2";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      let
-        line = builtins.head (builtins.match "([0-9]+\\.[0-9]+).*" version);
-      in
-      import <nix/fetchurl.nix> {
-        url = "https://download.gnome.org/sources/libxml2/${line}/libxml2-${version}.tar.xz";
-        inherit sha256;
-      };
-    tests = import ./tests/installed.nix;
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://gitlab.gnome.org/GNOME/libxml2";
-      normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else tag;
-      include =
+    source = tvp.lib.sources.archive {
+      url =
         version:
-        builtins.match "[0-9].*" version != null
-        && !(
-          pkgs.lib.hasInfix "alpha" version
-          || pkgs.lib.hasInfix "beta" version
-          || pkgs.lib.hasInfix "rc" version
-        );
+        let
+          line = builtins.head (builtins.match "([0-9]+\\.[0-9]+).*" version);
+        in
+        "https://download.gnome.org/sources/libxml2/${line}/libxml2-${version}.tar.xz";
+
+      discovery = {
+        type = "git-tags";
+        url = "https://gitlab.gnome.org/GNOME/libxml2";
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else tag;
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(
+            pkgs.lib.hasInfix "alpha" version
+            || pkgs.lib.hasInfix "beta" version
+            || pkgs.lib.hasInfix "rc" version
+          );
+      };
     };
+    tests = import ./tests/installed.nix;
+
   };
   canonical = tvp.lib.packages.mkVersions family;
 in

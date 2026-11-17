@@ -63,12 +63,10 @@ let
     {
       def = {
         builder = ./build-owned-5.44.0.nix;
-        source =
-          { version, sha256 }:
-          import <nix/fetchurl.nix> {
-            url = "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
-            inherit sha256;
-          };
+        source = tvp.lib.sources.archive {
+          url = version: "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
+          discovery = family.source.discovery;
+        };
       };
       releases = {
         "5.44.0" = "sha256-O4VQZrkkkctA6Gr/scpX0aOIqkPlG5HHgGoywvZflsM=";
@@ -77,8 +75,19 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
+      fetch =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          urls = [
+            "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
+            "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
+          ];
+          inherit sha256;
+        };
+      discovery = {
         type = "directory-index";
         url = "https://www.cpan.org/src/5.0/";
         pattern = "perl-5\\.[0-9][^\"]*\\.tar\\.gz";
@@ -101,15 +110,6 @@ let
           && !(pkgs.lib.hasInfix "RC" version || pkgs.lib.hasInfix "TRIAL" version);
       };
     };
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
-          "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"
-        ];
-        inherit sha256;
-      };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

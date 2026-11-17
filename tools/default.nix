@@ -36,6 +36,7 @@ let
     };
     upstream = pkgs.callPackage ./upstream.nix {
       inherit ownedCLI;
+      python3 = tvp.packages.python_3;
       coreutils = tvp.packages.coreutils;
       curl = tvp.packages.curl;
       git = tvp.packages.git;
@@ -55,7 +56,7 @@ let
     };
     status =
       let
-        # Keep progress reporting available while public package outputs change.
+        # Status uses the cached source-owned CLI floor.
         tooling = (import ../bases/source-gnu { }).tools;
       in
       pkgs.callPackage ./status.nix {
@@ -65,8 +66,6 @@ let
           shellcheck = pkgs.shellcheck-minimal;
           platform = bases.default.platform;
         };
-        python3 = tooling.python;
-        migrationFacts = tvp.migrationStatusManifest;
         coreutils = tooling.coreutils;
         gnugrep = tooling.grep;
         gnused = tooling.sed;

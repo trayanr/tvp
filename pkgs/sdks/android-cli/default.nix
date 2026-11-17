@@ -32,12 +32,22 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = versionTable.${version}.def.opts.sourceLayout.url;
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url = version: versionTable.${version}.def.opts.sourceLayout.url;
+      discovery = {
+        type = "directory-index";
+        url = "https://developer.android.com/tools/agents/android-cli/release-notes";
+        # Release-note headings retain the complete published version, including
+        # the build number used by the immutable download URL.
+        pattern = ''data-text="Version [0-9]+(\.[0-9]+)+ \([^"]+\)"'';
+        normalise =
+          heading:
+          let
+            match = builtins.match ''data-text="Version ([0-9]+(\.[0-9]+)+) \([^"]+\)"'' heading;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = { };
   };

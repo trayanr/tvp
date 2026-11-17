@@ -5,9 +5,11 @@ state are maintained separately from the repository.
 
 ## Decisions
 
-- GitHub hosts PRs, reviews, the `ci:build` opt-in label and the `tvp/smoke` status.
+- GitHub hosts PRs, reviews and the `tvp/smoke` status. Repository PRs are scheduled
+  automatically, including drafts and stacked branches.
 - A Buildbot controller on the local Linux builder polls GitHub over outbound HTTPS.
-  It owns the durable queue, credentials, history and reporting.
+  It runs as the administrator's systemd user service and owns the durable queue,
+  credentials, history and reporting. A separate worker Unix account executes builds.
 - TVP's existing frozen-plan runner builds the explicitly declared small smoke
   selection for admitted PRs and master updates. Full catalogue and upstream suites
   are separate explicit requests; a smoke pass never certifies them.
@@ -23,7 +25,7 @@ state are maintained separately from the repository.
 
 ```mermaid
 flowchart LR
-    developer[Development workstation] -->|push expansion branches| github[GitHub PRs and ci:build labels]
+    developer[Development workstation] -->|push branches| github[GitHub PRs]
     controller[Local Buildbot controller] -->|poll HTTPS and post statuses| github
     controller -->|durable FIFO queue| worker[Local worker account]
     worker -->|frozen smoke test plan| store[Local SSD: Nix store and builds]
@@ -41,7 +43,8 @@ reverse proxy on the host exposes the dashboard on its LAN address.
 ## Queue and expansion workflow
 
 1. Open independent PRs, such as "PHP 7.3", "PHP 7.2" and "older Autoconf".
-2. Add `ci:build` to each ready PR. Drafts are not scheduled.
+2. Open PRs are scheduled automatically; no label or ready-for-review transition
+   is required. Both their head and target must belong to this repository.
 3. The next poll resolves the actual target ref, independently of the PR payload's
    possibly stale base SHA, and compares that immutable tip with the full head SHA.
    Only an ahead or identical head is admitted. Behind/diverged branches get a pending
@@ -49,14 +52,15 @@ reverse proxy on the host exposes the dashboard on its LAN address.
    Buildbot stores admitted requests in its database and reports **pending**.
 4. One smoke validation runs per worker; other PRs stay queued. Within that validation,
    Nix inherits its normal machine-wide job/core settings. CI adds no Nix resource caps.
-5. Read the failing version and test, fix the PR and push. Keeping `ci:build` attached
-   automatically schedules its new head; no repeated labelling is needed.
+5. Read the failing version and test, fix the PR and push. The next poll
+   automatically schedules its new head.
 6. Squash merge a passing PR, with `tvp/smoke` required and GitHub's up-to-date branch
-   requirement enabled. Master receives its own smoke validation. Update other labelled
+   requirement enabled. Squash-only merging and linear history are enforced on
+   master, including for administrators. Master receives its own smoke validation. Update other
    branches to include the new target and wait for their updated heads to pass.
 
 Requests contain immutable head and target SHAs. Before any Nix evaluation or builds,
-the worker fetches the configured target branch (default master), requires its tip to
+the worker fetches the PR's admitted target branch (master for master/manual requests), requires its tip to
 equal the queued base and verifies that it is an ancestor of the head. An advance after
 admission requires a branch update and requeue. CI never edits the candidate branch or
 constructs a synthetic merge. Evidence records head, base and frozen source/plan;
@@ -66,9 +70,9 @@ Two passing sibling PRs are not a guarantee that their later combination passes.
 The first queue preserves requests rather than silently collapsing different commits.
 A push does not stop an older running build. Multiple revisions can be queued for one
 PR; each reports only against its own head. Rebuilding the exact same request is
-available through the authenticated Buildbot Rebuild action. Removing the label stops
+available through the authenticated Buildbot Rebuild action. Closing a PR stops
 future admissions; already queued/running requests remain until an operator cancels
-or they finish. Closing a PR has the same admission-only effect.
+or they finish.
 
 The poller paginates all open PRs and resolves each eligible target branch once per
 poll, even when the PR payload base stays unchanged. No eligible PR means no target
@@ -93,8 +97,9 @@ For PRs:
    additions, changes and removals, retaining exact before/after identities in
    `graph-diff.json`. These differences are informational and do not skip builds.
 4. Run `nix flake check --no-build` on the candidate.
-5. Start its explicit smoke frozen test plan through the trusted test runner, wait using the
-   returned exact run identity and require both exit success and terminal `passed`.
+5. Run `test all --smoke --json` through the trusted tools revision. It freezes the
+   smoke test plan and waits on its exact run. Require both exit success and terminal
+   `passed`, retaining the returned run identity.
 6. Collect final suite/test counts, frozen plan, Nix logs and available full failure
    logs. Upload evidence to the controller even on failure.
 
@@ -142,12 +147,15 @@ from the PRs it builds.
 
 ## Initial trust boundary
 
-The initial pool admits labelled, non-draft PRs whose head and base repositories are
-both `trayanr/tvp`, targeting master. It is for maintainer-controlled expansion branches.
-Fork PRs are not admitted to this pool, even when labelled. This is deliberate scope:
+The pool admits every open PR whose head and base repositories are both
+`trayanr/tvp`, including drafts and stacked branches. It is for repository-controlled
+branches. Fork PRs are not admitted to this pool. This is deliberate scope:
 [Nix evaluation and builds execute candidate-controlled instructions](https://docs.github.com/en/actions/reference/security/secure-use#hardening-for-self-hosted-runners).
 
-Controller and worker run as separate Unix users. The worker is a regular, untrusted
+Controller and worker run as separate Unix users. The controller runs as `server`,
+with private state in `~/.local/state/tvp-ci/controller` (mode `0700`). The worker
+remains a system service under `tvp-worker`, with its existing private state in
+`/var/lib/tvp-worker`. The worker is a regular, untrusted
 Nix-daemon client, with sandboxing enabled; it does not receive the GitHub token,
 operator password, signing keys or NAS write credentials. Worker authentication is a
 separate secret. The worker is not added to Nix's `trusted-users`.
@@ -199,5 +207,25 @@ or building a package does not load Buildbot or install services.
 Actual controller settings, credentials, proxy configuration, NAS mounts and host setup
 scripts stay outside the repository. Deploy a reviewed CI revision independently of
 the PRs it builds.
+
+The administrator owns `/srv/tvp-ci/releases` and promotes unchanged reviewed source
+copies through `/srv/tvp-ci/current`. Both services read this source; only the
+administrator can update it. Candidate PR checkouts never become the active source.
+Controller configuration, GitHub credentials and the operator password remain in the
+administrator's private controller directory, outside the shared source tree.
+
+Root performs the one-time bootstrap: create the isolated worker account and system
+unit, enable the administrator's user-manager linger for startup without a login,
+and install the narrow worker sudoers rule. Normal controller operations use
+`systemctl --user`; the rule permits `server` to run four exact passwordless
+`/usr/bin/systemctl` commands for `tvp-worker.service`. The operator CLI invokes
+worker restarts with `sudo -n`, without a credential prompt. Unit definitions and authorization
+remain root-owned. The worker reconnects independently, without depending on the old
+system controller unit.
+
+Moving an existing controller preserves its complete database, history, poller state
+and evidence before retiring the old system unit. Worker state and Nix GC roots stay
+in place. Host Nix/cache settings, publisher state and NAS data are retained; the
+worker continues consuming the configured signed HTTP cache without NAS write access.
 
 See [the operator handoff](README.md) for preparation and local checks.

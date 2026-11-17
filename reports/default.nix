@@ -4,18 +4,19 @@
   tvp,
   tvpLib,
   canonical,
-  packages,
   variants,
   construction,
   legacyBases,
   tools,
   checks,
   testBatchEntries,
-  source,
-  system,
-  familyEntrypoints,
 }:
 let
+  compositions =
+    tvp.android.profiles
+    // pkgs.lib.mapAttrs' (
+      name: package: pkgs.lib.nameValuePair "php-${name}" package
+    ) tvp.php.profiles;
   runtimeRegistry = tvpLib.provenance.registry {
     inherit
       canonical
@@ -23,28 +24,11 @@ let
       construction
       ;
     bases = legacyBases;
-    compositions = tvp.android.profiles;
+    inherit compositions;
   };
 in
 {
   inherit runtimeRegistry;
-  migrationStatusManifest = import ../tools/status/manifest.nix {
-    inherit (pkgs) lib;
-    inherit
-      canonical
-      variants
-      source
-      system
-      ;
-    inherit familyEntrypoints;
-    splitReport = tvp.recipeSplitReport;
-    # Progress observes declared aliases without forcing their test suites.
-    # The real latestSelection/full validation above remains unchanged.
-    latest = import ../tools/status/selectors.nix {
-      inherit (pkgs) lib;
-      inherit canonical packages;
-    };
-  };
   upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
   upstreamIsolationReport =
     (tvpLib.upstreamTestIsolation.validate {
@@ -102,7 +86,7 @@ in
         construction
         ;
       bases = legacyBases;
-      compositions = tvp.android.profiles;
+      inherit compositions;
     };
     inventory = tvp.dependencyInventory;
     registry = runtimeRegistry;
@@ -118,7 +102,7 @@ in
       variants
       construction
       ;
-    compositions = tvp.android.profiles;
+    inherit compositions;
     buildTestSupport = import ../tests/support.nix { inherit pkgs tvp legacyBases; };
   };
   graph = tvpLib.graph.snapshot {
@@ -128,6 +112,6 @@ in
       construction
       ;
     bases = legacyBases;
-    compositions = tvp.android.profiles;
+    inherit compositions;
   };
 }

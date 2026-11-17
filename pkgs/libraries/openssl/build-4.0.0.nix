@@ -334,7 +334,7 @@ in
           '')
           (command "install" ''
             ${selectProductionGenerated}
-            ${productionMake} -j1 ${lib.escapeShellArg final.installTarget}
+            ${productionMake} -j"$NIX_BUILD_CORES" ${lib.escapeShellArg final.installTarget}
             # Normalize the installed metadata directory search permissions.
             if test -d "$out/lib/pkgconfig"; then chmod 755 "$out/lib/pkgconfig"; fi
             mkdir -p "$out/nix-support"

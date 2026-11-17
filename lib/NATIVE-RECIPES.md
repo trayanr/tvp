@@ -100,9 +100,9 @@ versionTable = tvp.lib.packages.mkTable [
 pname = "mpfr";
 family = tvp.lib.packages.mkFamily {
   inherit pname versionTable;
-  source = { version, sha256 }: import <nix/fetchurl.nix> {
-    url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-${version}.tar.xz";
-    inherit sha256;
+  source = tvp.lib.sources.directory {
+    url = "https://mirrors.kernel.org/gnu/mpfr/";
+    archive = "mpfr-{version}.tar.xz";
   };
   tests = import ./tests;
 };
@@ -126,6 +126,13 @@ and shared test wiring, returning recipe
 arguments for `mkVersions` plus stage-local `instantiate`. Canonical construction
 and alias generation remain visible in the package file. There is no releases
 callback or second version list.
+
+Download and release-discovery information live together in the source definition.
+`sources.directory` shares an archive directory and filename template;
+`sources.archive` can declare independent download and discovery locations. An
+explicit discovery parser can cover historical archive formats and release policy,
+as MPFR's actual definition does. Hashes remain in the version table. See
+[package sources](sources/README.md) for both forms and exceptional fetchers.
 
 A test function receives `{ package, lib, context }`. It returns named test
 derivations, usually through `context.mkSuite`; capability-specific tests use the

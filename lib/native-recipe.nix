@@ -20,7 +20,7 @@ let
   steps = import ./build-steps.nix;
   toolProviders = import ./tool-providers.nix;
   build = import (if owned then ./owned-build.nix else ./native-build.nix) { inherit lib; };
-  declared = builtins.functionArgs recipe;
+  declared = recipe.__functionArgs or (builtins.functionArgs recipe);
   call =
     current: edits: customized:
     let

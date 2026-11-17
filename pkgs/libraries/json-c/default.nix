@@ -42,8 +42,12 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/json-c/json-c/releases/download/json-c-${version}-20260627/json-c-${version}.tar.gz";
+      discovery = {
         type = "git-tags";
         url = "https://github.com/json-c/json-c.git";
         normalise =
@@ -54,12 +58,6 @@ let
           if m == null then null else builtins.head m;
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/json-c/json-c/releases/download/json-c-${version}-20260627/json-c-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

@@ -29,7 +29,7 @@ let
       cwd = "source";
       inherit run;
     };
-  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
+  make = "${tools.gnumake}/bin/make -j\"$NIX_BUILD_CORES\" SHELL=${tools.bash}/bin/bash";
   selectProductionGenerated = ''
     productionGenerated=$(
       ${final.buildPerl}/bin/perl -I. -Mconfigdata -e '

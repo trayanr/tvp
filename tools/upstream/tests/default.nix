@@ -16,6 +16,7 @@ let
   };
   cli = pkgs.callPackage ../../upstream.nix {
     inherit ownedCLI;
+    python3 = tvp.packages.python_3;
     inherit (tvp.packages)
       coreutils
       curl
@@ -24,11 +25,18 @@ let
       gnused
       ;
     tvpLib = lib;
-    packages.fixture_2026_05_17 = {
-      pname = "fixture";
-      version = "2026-05-17";
-      tvp = {
-        inherit upstream;
+    packages = {
+      fixture_2026_05_17 = {
+        pname = "fixture";
+        version = "2026-05-17";
+        tvp = {
+          inherit upstream;
+        };
+      };
+      unconfigured_2_0 = {
+        pname = "unconfigured";
+        version = "2.0";
+        tvp.source.url = "https://example.invalid/unconfigured-2.0.tar.gz";
       };
     };
   };
@@ -85,6 +93,15 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     grep -Fx 'fixture — upstream branch head comparison (history not enumerated)' "$out/cli-packaged.log"
     grep -Fx '  head packaged: true' "$out/cli-packaged.log"
     grep -Fx '  missing revision: none' "$out/cli-packaged.log"
+
+    # Inventory includes unconfigured families without contacting their source.
+    ${cli}/bin/tvp-upstream --list > "$out/cli-list.log"
+    grep -Fx 'fixture — 1 packaged; discovery: git-head' "$out/cli-list.log"
+    grep -Fx 'unconfigured — 1 packaged; discovery: not configured' "$out/cli-list.log"
+    ${cli}/bin/tvp-upstream unconfigured > "$out/cli-unconfigured.log"
+    grep -Fx 'unconfigured — release discovery not configured' "$out/cli-unconfigured.log"
+    grep -Fx '  download: https://example.invalid/unconfigured-2.0.tar.gz' "$out/cli-unconfigured.log"
+    grep -Fx '  missing versions: unknown' "$out/cli-unconfigured.log"
 
     git --git-dir=upstream update-ref refs/heads/master "$second"
     upstream_git_head "$row" > "$out/new-head.json"

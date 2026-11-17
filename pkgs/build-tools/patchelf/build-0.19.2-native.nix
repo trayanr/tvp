@@ -96,7 +96,7 @@ in
     }
     (command "patchelf.configure" ''${bash}/bin/bash ./configure --prefix="$out"'')
     (command "patchelf.build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES"'')
-    (command "patchelf.install" "${gnumake}/bin/make install")
+    (command "patchelf.install" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" install'')
   ];
   inherit doCheck;
   upstreamPlan = steps.sequence [

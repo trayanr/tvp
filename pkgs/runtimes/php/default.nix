@@ -31,7 +31,6 @@ let
 
         };
         opts = {
-          parallelBuild = true;
           testFeatures.passwordApi = false;
           testFeatures.shortArraySyntax = false;
           testFeatures.sqlite3Api = false;
@@ -72,7 +71,6 @@ let
 
         };
         opts = {
-          parallelBuild = true;
           testFeatures.passwordApi = false;
           testFeatures.shortArraySyntax = false;
           testFeatures.sqlite3Api = false;
@@ -112,7 +110,6 @@ let
 
         };
         opts = {
-          parallelBuild = true;
           testFeatures.passwordApi = false;
           testFeatures.shortArraySyntax = false;
           testFeatures.sqlite3Api = false;
@@ -152,7 +149,6 @@ let
 
         };
         opts = {
-          parallelBuild = true;
           testFeatures.passwordApi = false;
           testFeatures.shortArraySyntax = false;
           testFeatures.sqlite2Api = true;
@@ -193,13 +189,7 @@ let
         };
         # The historical typed zlib globals constructor predates this callback API.
         opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
-        opts = {
-          parallelBuild = true;
-          # install-cli and install-pharcmd race in the shipped mkdir helper.
-          # Keep parallel compilation; serialise this release's install targets.
-          parallelInstall = false;
-          testFeatures.passwordApi = false;
-        };
+        opts.testFeatures.passwordApi = false;
       };
       releases."5.4.45" = "sha256-JbxHI5VfTjUpNSWAAq8UoUqYELSRoZQA12/N+p0Eso8=";
     }
@@ -234,7 +224,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
         # 7.0 adds an explicit cast for the typed zlib globals constructor.
         opts.compileFlags = [
           "-Wno-error=incompatible-pointer-types"
@@ -275,7 +264,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
         # 7.0 adds an explicit cast for the typed zlib globals constructor.
         opts.compileFlags = [ "-Wno-error=incompatible-pointer-types" ];
       };
@@ -313,7 +301,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
       };
       releases."7.0.33" = "sha256-1xpuy2sT3FP+11Mqf4+UnEBEgG8GdQL4+2+frLtARSo=";
     }
@@ -347,7 +334,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
       };
       releases."7.1.33" = "sha256-AFXzaP/v5R1aRIN1W9F0deiOdDAsCLcnlSgxxbJoLqI=";
       releases."7.2.34" = "sha256-iyd3x0HoPxiNPKbY6Y7OcmSsr+6GeHKY+uV+BdDd3Hg=";
@@ -376,7 +362,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
         # php_time() has the old unspecified-argument declaration.
         opts.cStandard = "gnu17";
         # The runtime probe calls close(DIR*) and ignores that result.
@@ -409,7 +394,6 @@ let
           sqlite = tvp.packages.sqlite_3;
 
         };
-        opts.parallelBuild = true;
       };
       releases."7.4.33" = "sha256-WiM3mW8HyKCX4D1GJjtcmNLI41Uid1Y1FCEAO+qPRj4=";
     }
@@ -879,41 +863,48 @@ let
   pname = "php";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url =
-          if
-            builtins.elem version [
-              "5.0.5"
-              "5.1.6"
-              "5.2.17"
-            ]
-          then
-            "https://museum.php.net/php5/php-${version}.tar.gz"
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        if
+          builtins.elem version [
+            "5.0.5"
+            "5.1.6"
+            "5.2.17"
+          ]
+        then
+          "https://museum.php.net/php5/php-${version}.tar.gz"
+        else
+          "https://www.php.net/distributions/php-${version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/php/php-src";
+        normalise =
+          tag:
+          if pkgs.lib.hasPrefix "php-" tag then
+            pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
           else
-            "https://www.php.net/distributions/php-${version}.tar.gz";
-        inherit sha256;
+            null;
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       autoconf = tvp.packages.autoconf_2;
       automake = tvp.packages.automake_1;
       libtool = tvp.packages.libtool_2;
     };
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/php/php-src";
-      normalise =
-        tag:
-        if pkgs.lib.hasPrefix "php-" tag then
-          pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
-        else
-          null;
-      include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
-    };
+
   };
-  canonical = tvp.lib.packages.mkVersions family;
+  extensionCatalogue = import ./extensions { inherit pkgs tvp; };
+  canonical = builtins.mapAttrs (
+    _: php:
+    import ./interface.nix {
+      inherit tvp php;
+      inherit (pkgs) lib;
+      catalogue = extensionCatalogue;
+    }
+  ) (tvp.lib.packages.mkVersions family);
 in
 {
   recipes.php = family;

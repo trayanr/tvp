@@ -21,12 +21,16 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/NixOS/patchelf/releases/download/${version}/patchelf-${version}.tar.bz2";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/NixOS/patchelf/releases/download/${version}/patchelf-${version}.tar.bz2";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/NixOS/patchelf";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

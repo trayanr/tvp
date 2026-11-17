@@ -31,7 +31,7 @@ owned derivations, and are not canonical packages or fake named passing tests.
   the private fixture tree. 3.0.0 intentionally compiles a private SQLITE_TEST
   pragma/pager engine; there is no claim of zero fixture-engine compilation.
 * R: privately restore T, repeat the required old libtool relink environment,
-  execute quick.test or modern --jobs 8 veryquick with timeout 900. Capture native
+  execute quick.test or modern --jobs $NIX_BUILD_CORES veryquick with timeout 900. Capture native
   status/output and available runner.log/runner.db. Missing modern evidence stays
   missing so U rejects it; successful capture does not imply acceptance.
 * U: registered `tests.upstream`, owned mkTest, unchanged strict classifier over R.

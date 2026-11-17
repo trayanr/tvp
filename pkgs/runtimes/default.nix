@@ -9,6 +9,7 @@ tvp.lib.packages.mergeNamespaces {
   perl = import ./perl { inherit pkgs tvp; };
   python-minimal = import ./python-minimal { inherit pkgs tvp; };
   php = import ./php { inherit pkgs tvp; };
+  php-extensions = import ./php/extensions { inherit pkgs tvp; };
   ruby = import ./ruby { inherit pkgs tvp; };
   tcl = import ./tcl { inherit pkgs tvp; };
   python = import ./python { inherit pkgs tvp; };

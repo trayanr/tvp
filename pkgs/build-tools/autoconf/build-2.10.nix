@@ -92,7 +92,7 @@ in
       # Older Makefiles refer to ../bin/autom4te as a dependency without a
       # rule for that spelling. Generate the local tool before parallel use.
       if test -f bin/autom4te.in; then
-        ${tools.gnumake}/bin/make -C bin -j1 SHELL=${tools.bash}/bin/bash autom4te
+        ${tools.gnumake}/bin/make -C bin -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash autom4te
       fi
       ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash
     '')

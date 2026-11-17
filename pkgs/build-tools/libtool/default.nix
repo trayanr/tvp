@@ -111,29 +111,29 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://mirrors.kernel.org/gnu/libtool/";
-    pattern = "libtool-[0-9][^\"]*\\.tar\\.(gz|xz)";
-    normalise =
-      file:
-      let
-        match = builtins.match "libtool-(.*)\\.tar\\.(gz|xz)" file;
-      in
-      if match == null then null else builtins.head match;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-  };
+
   pname = "libtool";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.tar.${
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://mirrors.kernel.org/gnu/libtool/libtool-${version}.tar.${
           if builtins.compareVersions version "2.4.7" < 0 then "gz" else "xz"
         }";
-        inherit sha256;
+      discovery = {
+        type = "directory-index";
+        url = "https://mirrors.kernel.org/gnu/libtool/";
+        pattern = "libtool-[0-9][^\"]*\\.tar\\.(gz|xz)";
+        normalise =
+          file:
+          let
+            match = builtins.match "libtool-(.*)\\.tar\\.(gz|xz)" file;
+          in
+          if match == null then null else builtins.head match;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests;
     testDeps = {
       runtimeShell = tvp.packages.bash_5;

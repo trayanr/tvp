@@ -12,12 +12,10 @@ let
   pname = "alsa-lib";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.alsa-project.org/files/pub/lib/alsa-lib-${version}.tar.bz2";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://www.alsa-project.org/files/pub/lib/";
+      archive = "alsa-lib-{version}.tar.bz2";
+    };
     tests = import ./tests/owned.nix;
     testDeps.pkgConfig = tvp.packages.pkg-config;
   };

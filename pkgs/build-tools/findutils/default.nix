@@ -33,26 +33,24 @@ let
   pname = "findutils";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/findutils/";
-      pattern = "findutils-[0-9][^\"]*\\.tar\\.(gz|bz2|xz|lz)";
-      # Multiple archive formats describe the same numeric release. The
-      # directory-index adapter deduplicates the normalised versions.
-      normalise =
-        file:
-        let
-          matched = builtins.match "findutils-([0-9]+(\\.[0-9]+)+)\\.tar\\.(gz|bz2|xz|lz)" file;
-        in
-        if matched == null then null else builtins.head matched;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/findutils/findutils-${version}.tar.xz";
-        inherit sha256;
+      archive = "findutils-{version}.tar.xz";
+      discovery = {
+
+        pattern = "findutils-[0-9][^\"]*\\.tar\\.(gz|bz2|xz|lz)";
+        # Multiple archive formats describe the same numeric release. The
+        # directory-index adapter deduplicates the normalised versions.
+        normalise =
+          file:
+          let
+            matched = builtins.match "findutils-([0-9]+(\\.[0-9]+)+)\\.tar\\.(gz|bz2|xz|lz)" file;
+          in
+          if matched == null then null else builtins.head matched;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests;
     testDeps = {
       inherit locale;

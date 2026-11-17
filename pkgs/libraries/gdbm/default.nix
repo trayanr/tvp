@@ -209,8 +209,19 @@ let
   pname = "gdbm";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz";
+      fetch =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          urls = [
+            "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
+            "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
+          ];
+          inherit sha256;
+        };
+      discovery = {
         type = "directory-index";
         url = "https://mirrors.kernel.org/gnu/gdbm/";
         pattern = "gdbm-[0-9][^\"]*\\.tar\\.gz";
@@ -226,15 +237,6 @@ let
           && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
       };
     };
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/gdbm/gdbm-${version}.tar.gz"
-          "https://ftp.gnu.org/gnu/gdbm/gdbm-${version}.tar.gz"
-        ];
-        inherit sha256;
-      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

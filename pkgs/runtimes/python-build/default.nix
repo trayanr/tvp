@@ -30,12 +30,15 @@ let
   pname = "python-build";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url = version: "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/python/cpython";
+        prefix = "v";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps.glibc = tvp.packages.glibc_2;
   };

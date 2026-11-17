@@ -18,27 +18,25 @@ let
       releases."1.0.8" = "sha256-q1oDF27hBtPw+pDjgdpHjdrkBZGBU8yiSOaCzQxKImk=";
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://sourceware.org/pub/bzip2/";
-    pattern = "bzip2-[0-9]+(\\.[0-9]+)+\\.tar\\.(gz|bz2|xz|lz)";
-    normalise =
-      file:
-      let
-        match = builtins.match "bzip2-([0-9]+(\\.[0-9]+)+)\\.tar\\.(gz|bz2|xz|lz)" file;
-      in
-      if match == null then null else builtins.head match;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
-  };
+
   pname = "bzip2";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://sourceware.org/pub/bzip2/bzip2-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://sourceware.org/pub/bzip2/";
+      archive = "bzip2-{version}.tar.gz";
+      discovery = {
+
+        pattern = "bzip2-[0-9]+(\\.[0-9]+)+\\.tar\\.(gz|bz2|xz|lz)";
+        normalise =
+          file:
+          let
+            match = builtins.match "bzip2-([0-9]+(\\.[0-9]+)+)\\.tar\\.(gz|bz2|xz|lz)" file;
+          in
+          if match == null then null else builtins.head match;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

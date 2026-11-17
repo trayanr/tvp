@@ -22,22 +22,20 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/binutils/";
-      pattern = "binutils-[0-9][^\"]*\\.tar\\.xz";
-      normalise = tvp.lib.versions.fromArchiveName {
-        prefix = "binutils-";
-        suffixes = [ ".tar.xz" ];
+      archive = "binutils-{version}.tar.xz";
+      discovery = {
+
+        pattern = "binutils-[0-9][^\"]*\\.tar\\.xz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "binutils-";
+          suffixes = [ ".tar.xz" ];
+        };
+        include = version: builtins.match "[0-9]+\\.[0-9]+(\\.[0-9]+)?" version != null;
       };
-      include = version: builtins.match "[0-9]+\\.[0-9]+(\\.[0-9]+)?" version != null;
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/binutils/binutils-${version}.tar.xz";
-        inherit sha256;
-      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;
