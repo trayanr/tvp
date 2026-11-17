@@ -287,8 +287,11 @@ let
   pname = "tcl";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz";
+      fetch = import ./source.nix { inherit (pkgs) lib fetchurl; };
+      discovery = {
         type = "git-tags";
         url = "https://github.com/tcltk/tcl";
 
@@ -304,7 +307,6 @@ let
         include = version: builtins.match "[0-9].*" version != null;
       };
     };
-    source = import ./source.nix { inherit (pkgs) lib fetchurl; };
     tests = import ./tests/installed.nix;
     testDeps.pkg-config = tvp.packages.pkg-config;
   };

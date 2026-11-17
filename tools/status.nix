@@ -5,9 +5,6 @@
 {
   lib,
   ownedCLI,
-  python3,
-  migrationFacts,
-
   coreutils,
   gnused,
   gnugrep,
@@ -18,19 +15,6 @@
   tvpLib,
 }:
 let
-  migrationJSON = builtins.toJSON migrationFacts;
-  migration = ownedCLI.python {
-    name = "tvp-migration-status";
-    inherit python3;
-    systemVariable = "TVP_STATUS_SYSTEM";
-    files = {
-      "migration.py" = ./status/migration.py;
-      "manifest.json" =
-        assert !(builtins.hasContext migrationJSON);
-        builtins.toFile "tvp-migration-facts.json" migrationJSON;
-    };
-    entrypoint = "migration.py";
-  };
   canonical = lib.filterAttrs (
     name: p:
     (p.pname or "") != ""
@@ -90,12 +74,15 @@ ownedCLI.shell {
     jq
   ];
   text = ''
-    # Dispatch before mktemp and the whole-store closure scan. Inspect all
-    # arguments so --json --migration is also safe. Python validates the mode.
+    json=0
     for arg in "$@"; do
       case "$arg" in
-        --migration|--migration=*|--family|--family=*|--workflow|--workflow=*|--help|-h)
-          exec ${migration}/bin/tvp-migration-status "$@" ;;
+        --json) json=1 ;;
+        -h|--help)
+          echo "usage: tvp-status [--json]"
+          exit 0
+          ;;
+        *) echo "tvp-status: unknown option '$arg'" >&2; exit 2 ;;
       esac
     done
 
@@ -148,7 +135,7 @@ ownedCLI.shell {
       fi
     fi
 
-    if [ "''${1:-}" = "--json" ]; then
+    if [ "$json" = 1 ]; then
       jq --argjson surface "$surface" '. + { buildSurface: $surface }' "$manifest"
       exit 0
     fi

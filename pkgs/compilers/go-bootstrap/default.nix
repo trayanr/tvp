@@ -33,12 +33,11 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://dl.google.com/go/go1.4-bootstrap-${version}.tar.gz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://dl.google.com/go/";
+      archive = "go1.4-bootstrap-{version}.tar.gz";
+      discovery = null;
+    };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

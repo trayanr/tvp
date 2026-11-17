@@ -22,22 +22,26 @@ let
       };
     }
   ];
-  packageMeta.upstream = {
-    type = "git-tags";
-    url = "https://github.com/ninja-build/ninja.git";
-    normalise = tag: pkgs.lib.removePrefix "v" tag;
-    include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-  };
+
   pname = "ninja";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        name = "ninja-${version}.tar.gz";
-        url = "https://github.com/ninja-build/ninja/archive/refs/tags/v${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url = version: "https://github.com/ninja-build/ninja/archive/refs/tags/v${version}.tar.gz";
+      fetch =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          name = "ninja-${version}.tar.gz";
+          url = "https://github.com/ninja-build/ninja/archive/refs/tags/v${version}.tar.gz";
+          inherit sha256;
+        };
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/ninja-build/ninja.git";
+        normalise = tag: pkgs.lib.removePrefix "v" tag;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests;
     testDeps = {
       alternateShell = tvp.bases.gcc_16.seed.shell;

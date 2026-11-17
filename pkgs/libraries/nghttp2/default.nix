@@ -13,12 +13,17 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/nghttp2/nghttp2/releases/download/v${version}/nghttp2-${version}.tar.xz";
-        inherit sha256;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/nghttp2/nghttp2/releases/download/v${version}/nghttp2-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/nghttp2/nghttp2";
+        prefix = "v";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

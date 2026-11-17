@@ -21,8 +21,17 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+      fetch =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+          inherit sha256;
+          name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
+        };
+      discovery = {
         # static.rust-lang.org/dist/ is an S3 bucket with no listing (416), so
         # releases are read from the repository's tags instead.
         type = "git-tags";
@@ -33,13 +42,6 @@ let
         include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-        inherit sha256;
-        name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-      };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

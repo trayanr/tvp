@@ -33,26 +33,30 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://ftp.gnu.org/gnu/gettext/";
-      pattern = "gettext-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|xz|lz)";
-      normalise =
-        file:
-        let
-          m = builtins.match "gettext-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|lz)" file;
-        in
-        if m == null then null else builtins.head m;
-    };
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz"
-          "https://ftp.gnu.org/gnu/gettext/gettext-${version}.tar.xz"
-        ];
-        inherit sha256;
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz";
+      fetch =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          urls = [
+            "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz"
+            "https://ftp.gnu.org/gnu/gettext/gettext-${version}.tar.xz"
+          ];
+          inherit sha256;
+        };
+      discovery = {
+        type = "directory-index";
+        url = "https://ftp.gnu.org/gnu/gettext/";
+        pattern = "gettext-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|xz|lz)";
+        normalise =
+          file:
+          let
+            m = builtins.match "gettext-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|xz|lz)" file;
+          in
+          if m == null then null else builtins.head m;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

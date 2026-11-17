@@ -20,15 +20,18 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import ./native/source.nix {
-        inherit (earlier.tools) bash coreutils python;
-        curl = tvp.packages.curl;
-        caCertificates = tvp.packages.ca-certificates;
-        inherit sha256;
-        revision = "b8becbd4f7979f63ab3542524b2b4d8db2ce3b52";
-      };
+    source = tvp.lib.sources.archive {
+      url = "https://gn.googlesource.com/gn/+archive/b8becbd4f7979f63ab3542524b2b4d8db2ce3b52.tar.gz";
+      fetch =
+        { version, sha256 }:
+        import ./native/source.nix {
+          inherit (earlier.tools) bash coreutils python;
+          curl = tvp.packages.curl;
+          caCertificates = tvp.packages.ca-certificates;
+          inherit sha256;
+          revision = "b8becbd4f7979f63ab3542524b2b4d8db2ce3b52";
+        };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

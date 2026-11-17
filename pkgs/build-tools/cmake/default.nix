@@ -43,18 +43,17 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/Kitware/CMake.git";
-      normalise = tag: pkgs.lib.removePrefix "v" tag;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz";
-        inherit sha256;
+
+    source = tvp.lib.sources.archive {
+      url =
+        version: "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/Kitware/CMake.git";
+        normalise = tag: pkgs.lib.removePrefix "v" tag;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

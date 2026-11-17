@@ -37,12 +37,9 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = versionTable.${version}.def.opts.sourceLayout.url;
-        inherit sha256;
-      };
+    source = tvp.lib.sources.archive {
+      url = version: versionTable.${version}.def.opts.sourceLayout.url;
+    };
     tests = import ./tests/installed.nix;
     testDeps = { };
   };

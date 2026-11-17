@@ -20,12 +20,10 @@ let
   pname = "libxrender";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.x.org/releases/individual/lib/libXrender-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://www.x.org/releases/individual/lib/";
+      archive = "libXrender-{version}.tar.xz";
+    };
     tests = import ./tests/owned.nix;
 
   };

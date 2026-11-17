@@ -55,7 +55,7 @@ let
     };
     status =
       let
-        # Keep progress reporting available while public package outputs change.
+        # Status uses the cached source-owned CLI floor.
         tooling = (import ../bases/source-gnu { }).tools;
       in
       pkgs.callPackage ./status.nix {
@@ -65,8 +65,6 @@ let
           shellcheck = pkgs.shellcheck-minimal;
           platform = bases.default.platform;
         };
-        python3 = tooling.python;
-        migrationFacts = tvp.migrationStatusManifest;
         coreutils = tooling.coreutils;
         gnugrep = tooling.grep;
         gnused = tooling.sed;

@@ -42,12 +42,20 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/openjdk/jdk21u/archive/refs/tags/jdk-${version}-ga.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.directory {
+      url = "https://github.com/openjdk/jdk21u/archive/refs/tags/";
+      archive = "jdk-{version}-ga.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/openjdk/jdk21u";
+        normalise =
+          tag:
+          let
+            match = builtins.match "jdk-([0-9]+(\\.[0-9]+)+)-ga" tag;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = (import ./tests/provider-context.nix { inherit pkgs; });
   };
   canonical = tvp.lib.packages.mkVersions family;

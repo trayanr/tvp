@@ -47,12 +47,15 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/dart-lang/sdk/archive/refs/tags/${version}.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.directory {
+      url = "https://github.com/dart-lang/sdk/archive/refs/tags/";
+      archive = "{version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/dart-lang/sdk";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       nodejs = tvp.packages.nodejs_26;

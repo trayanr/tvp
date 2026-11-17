@@ -12,12 +12,16 @@ let
   pname = "libdns_sd";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/apple-oss-distributions/mDNSResponder/archive/refs/tags/mDNSResponder-${version}.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.directory {
+      url = "https://github.com/apple-oss-distributions/mDNSResponder/archive/refs/tags/";
+      archive = "mDNSResponder-{version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/apple-oss-distributions/mDNSResponder";
+        prefix = "mDNSResponder-";
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)+" version != null;
       };
+    };
     tests = import ./tests/owned.nix;
 
   };

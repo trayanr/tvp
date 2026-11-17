@@ -29,12 +29,10 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/glibc/glibc-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/glibc/";
+      archive = "glibc-{version}.tar.xz";
+    };
     tests = (import ./tests/installed.nix);
   };
   canonical = tvp.lib.packages.mkVersions family;

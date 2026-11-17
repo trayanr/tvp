@@ -30,8 +30,11 @@ let
   pname = "bundler";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.directory {
+      url = "https://rubygems.org/gems/";
+      archive = "bundler-{version}.gem";
+      discovery = {
         type = "rubygems";
         url = "https://rubygems.org/api/v1/versions/bundler.json";
 
@@ -44,12 +47,6 @@ let
           );
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://rubygems.org/gems/bundler-${version}.gem";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       ruby = tvp.packages.ruby_3;

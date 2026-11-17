@@ -23,12 +23,9 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.archive {
+      url = "https://downloads.sourceforge.net/infozip/zip30.tar.gz";
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

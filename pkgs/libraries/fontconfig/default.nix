@@ -19,12 +19,11 @@ let
   pname = "fontconfig";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
+    };
     tests = import ./tests/owned.nix;
 
   };
@@ -46,12 +45,7 @@ let
         releases."2.18.3" = "sha256-T3tVSjjN94wDP2ZsiHHzdJ4UoJT2Wgf2MMke0LQ9NeM=";
       }
     ];
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = family.source;
     testDeps.python = tvp.packages.python_3;
     # Closure expectations are an independent consumer of the effective output.
     tests =

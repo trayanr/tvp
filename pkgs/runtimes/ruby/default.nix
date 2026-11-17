@@ -656,8 +656,19 @@ let
   pname = "ruby";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
+      category = "artifact";
+      kind = "exact";
+      namespace = "bases";
+      selector = "gcc_13_3_0.full.compiler";
+      reason = "Independent GCC 13 consumer control against Ruby built by GCC 16; preserves cross-compiler extension coverage, not a compatibility limit.";
+    } tvp.bases.gcc_13_3_0.full.compiler;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://cache.ruby-lang.org/pub/ruby/${pkgs.lib.versions.majorMinor version}/ruby-${version}.tar.gz";
+      discovery = {
         # One TSV listing every tarball back to 0.49, rather than one request per
         # minor directory. It also carries each sha256.
         type = "directory-index";
@@ -679,19 +690,6 @@ let
           );
       };
     };
-    testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
-      category = "artifact";
-      kind = "exact";
-      namespace = "bases";
-      selector = "gcc_13_3_0.full.compiler";
-      reason = "Independent GCC 13 consumer control against Ruby built by GCC 16; preserves cross-compiler extension coverage, not a compatibility limit.";
-    } tvp.bases.gcc_13_3_0.full.compiler;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://cache.ruby-lang.org/pub/ruby/${pkgs.lib.versions.majorMinor version}/ruby-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

@@ -50,20 +50,17 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url =
+        version: "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
+      discovery = {
         type = "git-tags";
         url = "https://github.com/facebook/zstd";
         normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
         include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/facebook/zstd/releases/download/v${version}/zstd-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

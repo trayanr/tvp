@@ -68,15 +68,9 @@ found 110 family entrypoints: 46 libraries, 38 build tools, 13 runtimes, seven S
 five compilers and one data family. Only MPFR used `mkFamily`; the other 109 still
 used earlier wiring. This count inspects tracked files matching
 `pkgs/<category>/<family>/default.nix`; it is not an evaluation or build result.
-The current `status --migration` report measures ordinary index adoption and
-split coverage separately. It does not certify builder/caller cleanup or runtime
-qualification; those fields remain unknown until separately measured.
-
-From the implementation checkout:
-
-```sh
-nix run .#status -- --migration
-```
+The migration-specific status view has been retired. Evaluated split coverage
+remains available through `recipeSplitReport`; ordinary `status` reports package
+capabilities and declared gaps. Neither certifies runtime qualification.
 
 ## 1. Finish production/test separation beneath the full base
 

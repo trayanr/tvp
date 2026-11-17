@@ -56,18 +56,17 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/mesonbuild/meson.git";
-      normalise = tag: tag;
-      include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/mesonbuild/meson/releases/download/${version}/meson-${version}.tar.gz";
-        inherit sha256;
+
+    source = tvp.lib.sources.archive {
+      url =
+        version: "https://github.com/mesonbuild/meson/releases/download/${version}/meson-${version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/mesonbuild/meson.git";
+        normalise = tag: tag;
+        include = version: builtins.match "[0-9]+(\\.[0-9]+)*" version != null;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

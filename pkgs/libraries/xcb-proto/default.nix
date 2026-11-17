@@ -15,12 +15,10 @@ let
   pname = "xcb-proto";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://xcb.freedesktop.org/dist/xcb-proto-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://xcb.freedesktop.org/dist/";
+      archive = "xcb-proto-{version}.tar.xz";
+    };
     tests = import ./tests/owned.nix;
 
   };

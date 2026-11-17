@@ -136,11 +136,11 @@ let
   pname = "gawk";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = import ./upstream.nix;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.${
+
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://mirrors.kernel.org/gnu/gawk/gawk-${version}.${
           if version == "3.0.6" then
             "tar.gz"
           else if version == "3.1.8" then
@@ -148,8 +148,8 @@ let
           else
             "tar.xz"
         }";
-        inherit sha256;
-      };
+      discovery = import ./upstream.nix;
+    };
     tests = import ./tests;
     testDeps = {
       inherit locale;

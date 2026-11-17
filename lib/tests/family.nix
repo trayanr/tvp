@@ -83,6 +83,30 @@ let
   };
   p = canonical.family-model_1;
   build = args: (api.mkVersions (api.mkFamily args)).family-model_1;
+  descriptor = (import ../sources { inherit lib; }).archive {
+    url = version: "https://example.invalid/family-${version}.tar.xz";
+    fetch = args.source;
+    discovery = {
+      type = "git-tags";
+      url = "https://git.example.invalid/family.git";
+      prefix = "v";
+    };
+  };
+  described = build (args // { source = descriptor; });
+  overriddenSource = build (
+    (withDefinition (
+      defs."1"
+      // {
+        source = (import ../sources { inherit lib; }).archive {
+          url = "https://mirror.example.invalid/source.tar.xz";
+          fetch = args.source;
+        };
+      }
+    ))
+    // {
+      source = descriptor;
+    }
+  );
   withDefinition =
     def:
     args
@@ -205,58 +229,37 @@ let
       aliases = throw "origin inventory forced aliases";
     };
   };
-  statusCanonical.family-model_1 = p // {
-    tests = throw "status forced a package test assertion";
-    artifact = throw "status forced an artifact";
-    drvPath = throw "status forced a producer";
-    outPath = throw "status forced a producer output";
-  };
-  statusSelectors = import ../../tools/status/selectors.nix {
-    inherit lib;
-    canonical = statusCanonical;
-    packages.family-model = aliases.family-model // {
-      tests = throw "status forced alias tests";
-      drvPath = throw "status forced alias producer";
-      outPath = throw "status forced alias output";
-    };
-  };
-  statusFacts = import ../../tools/status/manifest.nix {
-    inherit lib;
-    canonical = statusCanonical;
-    variants = { };
-    familyEntrypoints = registration.familyEntrypoints;
-    latest = statusSelectors;
-    source = {
-      path = "/status-model";
-      revision = null;
-    };
-    system = "x86_64-linux";
-    splitReport = {
-      scope = "fixture";
-      status = "PASS";
-      success = true;
-      allSplit = true;
-      errors = [ ];
-      rows = [
-        {
-          id = "canonical/family-model_1";
-          namespace = "canonical";
-          name = "family-model_1";
-          constructor = "owned";
-          compliant = true;
-          failure = null;
-          status.level = "ok";
-        }
-      ];
-      outsideOrdinaryScope.producers = { };
-    };
-  };
   results = {
-    statusSelectorDoesNotForceSuites = statusSelectors.families.family-model.job == "family-model_1";
-    statusManifestDoesNotForceSuites =
-      statusFacts.latest.measurement == "declared-selectors"
-      && statusFacts.latest.runtimeQualifiedRows == null
-      && builtins.length statusFacts.authoring.entries == 1;
+    sourceDescriptorPreservesProduction =
+      described.drvPath == p.drvPath && described.artifact.drvPath == p.artifact.drvPath;
+    sourceDescriptorMetadata =
+      described.tvp.source.url == "https://example.invalid/family-1.tar.xz"
+      && described.tvp.upstream.normalise "v1" == "1";
+    effectiveDefinitionSource =
+      overriddenSource.tvp.source.url == "https://mirror.example.invalid/source.tar.xz"
+      && !(overriddenSource.tvp ? upstream)
+      && overriddenSource.drvPath == p.drvPath;
+    duplicateDiscoveryRejected = rejects (
+      (build (
+        args
+        // {
+          source = descriptor;
+          packageMeta.upstream = descriptor.discovery;
+        }
+      )).tvp.source
+    );
+    sourceDescriptorConflictsRejected =
+      rejects
+        (build (
+          args
+          // {
+            source = descriptor;
+            packageMeta.upstream = {
+              type = "git-tags";
+              url = "https://other.invalid/family.git";
+            };
+          }
+        )).tvp.upstream;
     evaluatedOrigin =
       family.authoring == {
         origin = "tvp.lib.packages.mkFamily";

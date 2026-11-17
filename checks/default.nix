@@ -37,6 +37,10 @@
     builtins.toJSON (import ../lib/tests/version-helpers.nix { inherit (pkgs) lib; })
   );
 
+  source-descriptors = pkgs.writeText "tvp-source-descriptor-contracts" (
+    builtins.toJSON (import ../lib/tests/source-descriptors.nix { inherit (pkgs) lib; })
+  );
+
   openssl-family = pkgs.writeText "tvp-openssl-family-contracts" (
     builtins.toJSON (import ../lib/tests/openssl-family.nix { inherit pkgs tvp; })
   );

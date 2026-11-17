@@ -187,8 +187,19 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
+      fetch =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          urls = [
+            "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
+            "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
+          ];
+          inherit sha256;
+        };
+      discovery = {
         type = "directory-index";
         url = "https://mirrors.kernel.org/gnu/readline/";
         pattern = "readline-[0-9][^\"]*\\.tar\\.gz";
@@ -211,15 +222,6 @@ let
           );
       };
     };
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
-          "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
-        ];
-        inherit sha256;
-      };
     tests = import ./tests/installed.nix;
   };
   canonical = tvp.lib.packages.mkVersions family;

@@ -33,28 +33,26 @@ let
       releases."2.6.0" = "sha256-1C+jdFExgLtIyxGkZpb0iCQOUST/HmrYiwq/9waYVhI=";
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://download.savannah.nongnu.org/releases/attr/";
-    # Extract the complete filename first: a family-specific substring would
-    # turn prefixattr-2.6.0.tar.gz into a false attr release.
-    pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
-    normalise =
-      file:
-      let
-        match = builtins.match "attr-([0-9]+\\.[0-9]+\\.[0-9]+)(\\.src)?\\.tar\\.gz" file;
-      in
-      if match == null then null else builtins.head match;
-  };
+
   pname = "attr";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://download.savannah.nongnu.org/releases/attr/attr-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://download.savannah.nongnu.org/releases/attr/";
+      archive = "attr-{version}.tar.gz";
+      discovery = {
+
+        # Extract the complete filename first: a family-specific substring would
+        # turn prefixattr-2.6.0.tar.gz into a false attr release.
+        pattern = ''[^"<>/[:space:]]+\.tar\.[^"<>/[:space:]]+'';
+        normalise =
+          file:
+          let
+            match = builtins.match "attr-([0-9]+\\.[0-9]+\\.[0-9]+)(\\.src)?\\.tar\\.gz" file;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;

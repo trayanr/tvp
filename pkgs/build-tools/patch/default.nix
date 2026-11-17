@@ -38,25 +38,23 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/patch/";
-      # Older releases use gzip; discover each stable version across formats.
-      # The adapter deduplicates archive/signature matches after normalisation.
-      pattern = "patch-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|bz2|xz|lz|zst|Z)";
-      normalise =
-        file:
-        let
-          match = builtins.match "patch-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|bz2|xz|lz|zst|Z)" file;
-        in
-        if match == null then null else builtins.head match;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/patch/patch-${version}.tar.xz";
-        inherit sha256;
+      archive = "patch-{version}.tar.xz";
+      discovery = {
+
+        # Older releases use gzip; discover each stable version across formats.
+        # The adapter deduplicates archive/signature matches after normalisation.
+        pattern = "patch-[0-9]+(\\.[0-9]+)*\\.tar\\.(gz|bz2|xz|lz|zst|Z)";
+        normalise =
+          file:
+          let
+            match = builtins.match "patch-([0-9]+(\\.[0-9]+)*)\\.tar\\.(gz|bz2|xz|lz|zst|Z)" file;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

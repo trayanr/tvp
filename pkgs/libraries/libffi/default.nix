@@ -160,8 +160,19 @@ let
   pname = "libffi";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz";
+      fetch =
+        { version, sha256 }:
+        pkgs.fetchurl {
+          urls = [
+            "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz"
+            "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz"
+          ];
+          inherit sha256;
+        };
+      discovery = {
         type = "git-tags";
         url = "https://github.com/libffi/libffi";
 
@@ -183,15 +194,6 @@ let
         ];
       };
     };
-    source =
-      { version, sha256 }:
-      pkgs.fetchurl {
-        urls = [
-          "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz"
-          "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz"
-        ];
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       pkgConfig = tvp.packages.pkg-config;

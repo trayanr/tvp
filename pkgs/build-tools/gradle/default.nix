@@ -28,12 +28,11 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://services.gradle.org/distributions/gradle-${version}-all.zip";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://services.gradle.org/distributions/";
+      archive = "gradle-{version}-all.zip";
+      discovery = null;
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

@@ -90,58 +90,7 @@ let
     ar = (selected.environment { }).env.AR;
     runtime = selected.runtimeDirectories;
   };
-  statusFacts = import ../../tools/status/manifest.nix {
-    inherit lib;
-    canonical.fixture_1 = {
-      pname = "fixture";
-      version = "1";
-      specification.base = namedBase;
-      tvp = {
-        base = namedBase.name;
-        deps.bash = namedBase.tools.bash;
-      };
-    };
-    variants = { };
-    source = {
-      path = "/fixture";
-      revision = null;
-    };
-    system = args.platform.system;
-    latest = {
-      measurement = "fixture";
-      families.fixture = {
-        job = "fixture_1";
-        version = "1";
-      };
-      skipped = [ ];
-    };
-    splitReport = {
-      scope = "fixture";
-      status = "PASS";
-      success = true;
-      allSplit = true;
-      errors = [ ];
-      rows = [
-        {
-          id = "canonical/fixture_1";
-          namespace = "canonical";
-          name = "fixture_1";
-          constructor = "owned";
-          compliant = true;
-          failure = null;
-          status.level = "ok";
-        }
-      ];
-      outsideOrdinaryScope.producers = { };
-    };
-  };
   contracts = {
-    statusDoesNotForceUnusedProviders =
-      builtins.attrNames (builtins.head statusFacts.rows).buildContext.usedTools == [ "bash" ];
-    statusProviderFactsRemainRecords =
-      builtins.isAttrs (builtins.head statusFacts.rows).buildContext.gcc
-      && (builtins.head statusFacts.rows).buildContext.usedTools.bash.path == namedBase.shell.outPath;
-
     enrichedBinutilsSurviveNoop =
       let
         selected = namedBase.override {

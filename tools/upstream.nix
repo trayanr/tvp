@@ -23,22 +23,32 @@ let
     && (p.version or "") != ""
     && name == tvpLib.versions.attrName p.pname p.version
     && p ? tvp
-    && p.tvp ? upstream
   ) packages;
 
   byPname = lib.groupBy (p: p.pname) (lib.attrValues canonical);
 
   # normalise/include are functions and cannot be serialised; they are applied
   # by evaluating the flake, so only their inputs travel through this file.
-  describe = pname: ps: {
-    inherit pname;
-    attr = tvpLib.versions.attrName pname (builtins.head ps).version;
-    versions = lib.sort (a: b: builtins.compareVersions a b < 0) (map (p: p.version) ps);
-    upstream = removeAttrs (builtins.head ps).tvp.upstream [
-      "normalise"
-      "include"
-    ];
-  };
+  describe =
+    pname: ps:
+    let
+      ordered = lib.sort (a: b: builtins.compareVersions a.version b.version < 0) ps;
+      latest = lib.last ordered;
+    in
+    {
+      inherit pname;
+      attr = tvpLib.versions.attrName pname latest.version;
+      versions = map (p: p.version) ordered;
+      download = latest.tvp.source.url or null;
+      upstream =
+        if (latest.tvp.upstream or null) == null then
+          null
+        else
+          removeAttrs latest.tvp.upstream [
+            "normalise"
+            "include"
+          ];
+    };
 
   manifest = builtins.toFile "tvp-upstream-manifest.json" (
     builtins.toJSON (lib.mapAttrsToList describe byPname)
@@ -57,13 +67,17 @@ ownedCLI.shell {
   text = ''
     manifest=${manifest}
     flake="."
+    list=0
     filters=()
 
     while [ $# -gt 0 ]; do
       case "$1" in
         --flake) flake="$2"; shift 2 ;;
+        --list) list=1; shift ;;
         -h|--help)
-          echo "usage: tvp-upstream [--flake REF] [PACKAGE...]"
+          echo "usage: tvp-upstream [--flake REF] [--list] [PACKAGE...]"
+          echo "Compare available upstream releases with packaged versions."
+          echo "--list shows every family's configuration without contacting upstream."
           exit 0
           ;;
         -*) echo "tvp-upstream: unknown option '$1'" >&2; exit 2 ;;
@@ -123,6 +137,19 @@ ownedCLI.shell {
       pname=$(jq -r '.pname' <<< "$row")
       attr=$(jq -r '.attr' <<< "$row")
       type=$(jq -r '.upstream.type' <<< "$row")
+      if [ "$list" = 1 ]; then
+        printf '%s — %s packaged; discovery: %s\n' "$pname" \
+          "$(jq '.versions | length' <<< "$row")" \
+          "$(jq -r '.upstream.type // "not configured"' <<< "$row")"
+        continue
+      fi
+      if [ "$type" = null ]; then
+        printf '%s — release discovery not configured\n' "$pname"
+        printf '  packaged: %s\n' "$(jq -r '.versions | join(" ")' <<< "$row")"
+        printf '  download: %s\n' "$(jq -r '.download // "not described"' <<< "$row")"
+        printf '  missing versions: unknown\n\n'
+        continue
+      fi
       url=$(jq -r '.upstream.url' <<< "$row")
       subdir=$(jq -r '.upstream.subdirPattern // ""' <<< "$row")
       pattern=$(jq -r '.upstream.pattern // ""' <<< "$row")

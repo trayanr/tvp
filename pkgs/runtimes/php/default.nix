@@ -879,39 +879,38 @@ let
   pname = "php";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url =
-          if
-            builtins.elem version [
-              "5.0.5"
-              "5.1.6"
-              "5.2.17"
-            ]
-          then
-            "https://museum.php.net/php5/php-${version}.tar.gz"
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        if
+          builtins.elem version [
+            "5.0.5"
+            "5.1.6"
+            "5.2.17"
+          ]
+        then
+          "https://museum.php.net/php5/php-${version}.tar.gz"
+        else
+          "https://www.php.net/distributions/php-${version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/php/php-src";
+        normalise =
+          tag:
+          if pkgs.lib.hasPrefix "php-" tag then
+            pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
           else
-            "https://www.php.net/distributions/php-${version}.tar.gz";
-        inherit sha256;
+            null;
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       autoconf = tvp.packages.autoconf_2;
       automake = tvp.packages.automake_1;
       libtool = tvp.packages.libtool_2;
     };
-    packageMeta.upstream = {
-      type = "git-tags";
-      url = "https://github.com/php/php-src";
-      normalise =
-        tag:
-        if pkgs.lib.hasPrefix "php-" tag then
-          pkgs.lib.removeSuffix "REL" (pkgs.lib.removePrefix "php-" tag)
-        else
-          null;
-      include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+(pl[0-9]+)?" version != null;
-    };
+
   };
   canonical = tvp.lib.packages.mkVersions family;
 in

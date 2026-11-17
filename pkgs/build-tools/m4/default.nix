@@ -37,22 +37,20 @@ let
   pname = "m4";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
+
+    source = tvp.lib.sources.directory {
       url = "https://mirrors.kernel.org/gnu/m4/";
-      pattern = "m4-[0-9][^\"]*\\.tar\\.gz";
-      normalise = tvp.lib.versions.fromArchiveName {
-        prefix = "m4-";
-        suffixes = [ ".tar.gz" ];
+      archive = "m4-{version}.tar.gz";
+      discovery = {
+
+        pattern = "m4-[0-9][^\"]*\\.tar\\.gz";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "m4-";
+          suffixes = [ ".tar.gz" ];
+        };
+        include = version: builtins.match "[0-9].*" version != null;
       };
-      include = version: builtins.match "[0-9].*" version != null;
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/m4/m4-${version}.tar.gz";
-        inherit sha256;
-      };
     # These are test-only choices. They never participate in production defaults.
     testDeps = {
       runtimeShell = tvp.packages.bash_5;

@@ -33,12 +33,11 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${version}-stable.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/";
+      archive = "flutter_linux_{version}-stable.tar.xz";
+      discovery = null;
+    };
     tests = import ./tests/installed.nix;
     testDeps = { };
   };

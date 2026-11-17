@@ -13,14 +13,23 @@ let
   pname = "expat";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/libexpat/libexpat/releases/download/R_${
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/libexpat/libexpat/releases/download/R_${
           pkgs.lib.replaceStrings [ "." ] [ "_" ] version
         }/expat-${version}.tar.xz";
-        inherit sha256;
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/libexpat/libexpat";
+        normalise =
+          tag:
+          if builtins.match "R_[0-9]+(_[0-9]+)+" tag == null then
+            null
+          else
+            builtins.replaceStrings [ "_" ] [ "." ] (builtins.substring 2 (builtins.stringLength tag) tag);
       };
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

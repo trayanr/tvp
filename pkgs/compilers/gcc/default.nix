@@ -120,25 +120,23 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "directory-index";
-      url = "https://gcc.gnu.org/pub/gcc/releases/";
-      # Keep complete links so snapshots, prereleases and suffix junk cannot
-      # contribute a numeric release substring.
-      pattern = "href=\"[^\"]*\"";
-      normalise =
-        href:
-        let
-          match = builtins.match ''href="gcc-([0-9]+(\.[0-9]+)+)/"'' href;
-        in
-        if match == null then null else builtins.head match;
-    };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz";
-        inherit sha256;
+
+    source = tvp.lib.sources.archive {
+      url = version: "https://mirrors.kernel.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz";
+      discovery = {
+        type = "directory-index";
+        url = "https://gcc.gnu.org/pub/gcc/releases/";
+        # Keep complete links so snapshots, prereleases and suffix junk cannot
+        # contribute a numeric release substring.
+        pattern = "href=\"[^\"]*\"";
+        normalise =
+          href:
+          let
+            match = builtins.match ''href="gcc-([0-9]+(\.[0-9]+)+)/"'' href;
+          in
+          if match == null then null else builtins.head match;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps.python3 = tvp.packages.python_3;
   };

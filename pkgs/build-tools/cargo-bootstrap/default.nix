@@ -26,13 +26,17 @@ let
   };
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable testDeps;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://static.rust-lang.org/dist/rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-        name = "rust-${version}-x86_64-unknown-linux-gnu.tar.gz";
-        inherit sha256;
+    source = tvp.lib.sources.directory {
+      url = "https://static.rust-lang.org/dist/";
+      archive = "rust-{version}-x86_64-unknown-linux-gnu.tar.gz";
+      discovery = {
+        # Cargo is bundled in this exact Rust distribution.
+        type = "git-tags";
+        url = "https://github.com/rust-lang/rust";
+        include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
+
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

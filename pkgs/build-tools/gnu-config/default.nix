@@ -15,21 +15,25 @@ let
   pname = "gnu-config";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.upstream = {
-      type = "git-head";
-      # Savannah's direct HTTPS transport for the canonical config.git repository.
+
+    source = tvp.lib.sources.archive {
       url = "https://https.git.savannah.gnu.org/git/config.git";
-      ref = "refs/heads/master";
-      revisions."2026-05-17" = revision;
-    };
-    source =
-      { sha256, ... }:
-      pkgs.fetchgit {
+      fetch =
+        { sha256, ... }:
+        pkgs.fetchgit {
+          url = "https://https.git.savannah.gnu.org/git/config.git";
+          rev = revision;
+          inherit sha256;
+          fetchSubmodules = false;
+        };
+      discovery = {
+        type = "git-head";
+        # Savannah's direct HTTPS transport for the canonical config.git repository.
         url = "https://https.git.savannah.gnu.org/git/config.git";
-        rev = revision;
-        inherit sha256;
-        fetchSubmodules = false;
+        ref = "refs/heads/master";
+        revisions."2026-05-17" = revision;
       };
+    };
     tests = import ./tests;
     testDeps.sentinel = tvp.lib.tests.fixtures.sentinel;
   };

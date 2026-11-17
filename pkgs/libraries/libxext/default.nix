@@ -20,12 +20,10 @@ let
   pname = "libxext";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://www.x.org/releases/individual/lib/libXext-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://www.x.org/releases/individual/lib/";
+      archive = "libXext-{version}.tar.xz";
+    };
     tests = import ./tests/owned.nix;
 
   };

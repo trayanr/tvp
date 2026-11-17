@@ -118,10 +118,12 @@ let
   pname = "autoconf";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta = {
-      upstream = {
-        type = "directory-index";
-        url = "https://mirrors.kernel.org/gnu/autoconf/";
+
+    source = tvp.lib.sources.directory {
+      url = "https://mirrors.kernel.org/gnu/autoconf/";
+      archive = "autoconf-{version}.tar.gz";
+      discovery = {
+
         pattern = "autoconf-[0-9][^\"]*\\.tar\\.gz";
 
         normalise = tvp.lib.versions.fromArchiveName {
@@ -134,12 +136,6 @@ let
         include = version: builtins.match "[0-9].*" version != null;
       };
     };
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://mirrors.kernel.org/gnu/autoconf/autoconf-${version}.tar.gz";
-        inherit sha256;
-      };
     tests = import ./tests;
     testDeps = {
       automake = tvp.packages.automake_1;

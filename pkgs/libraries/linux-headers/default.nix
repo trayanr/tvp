@@ -14,12 +14,10 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.directory {
+      url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/";
+      archive = "linux-{version}.tar.xz";
+    };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;

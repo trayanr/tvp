@@ -57,27 +57,25 @@ let
       releases."2.4.0" = "sha256-c8hTw9ROH2k+WpaphvG9GdPQ2sLH1FPnlhd3dLxOX2o=";
     }
   ];
-  packageMeta.upstream = {
-    type = "directory-index";
-    url = "https://download.savannah.nongnu.org/releases/acl/";
-    # Extract complete archive filenames before applying the strict family parser.
-    pattern = "[^\"<>[:space:]]+\\.tar\\.(gz|xz)[^\"<>[:space:]]*";
-    normalise =
-      filename:
-      let
-        m = builtins.match "acl-([0-9]+\\.[0-9]+\\.[0-9]+)(\\.src)?\\.tar\\.(gz|xz)" filename;
-      in
-      if m == null then null else builtins.head m;
-  };
+
   pname = "acl";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://download.savannah.nongnu.org/releases/acl/acl-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.directory {
+      url = "https://download.savannah.nongnu.org/releases/acl/";
+      archive = "acl-{version}.tar.gz";
+      discovery = {
+
+        # Extract complete archive filenames before applying the strict family parser.
+        pattern = "[^\"<>[:space:]]+\\.tar\\.(gz|xz)[^\"<>[:space:]]*";
+        normalise =
+          filename:
+          let
+            m = builtins.match "acl-([0-9]+\\.[0-9]+\\.[0-9]+)(\\.src)?\\.tar\\.(gz|xz)" filename;
+          in
+          if m == null then null else builtins.head m;
       };
+    };
     tests = import ./tests/installed.nix;
     testDeps = {
       pkg-config = tvp.packages.pkg-config;

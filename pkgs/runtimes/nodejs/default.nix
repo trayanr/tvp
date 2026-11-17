@@ -31,12 +31,9 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.archive {
+      url = version: "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
+    };
     tests = (import ./tests/provider-context.nix { inherit pkgs; });
     testDeps.shell = tvp.packages.bash_5;
   };

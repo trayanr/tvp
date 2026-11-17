@@ -879,3 +879,21 @@ exact arity and a literal filename. Keep other opaque preprocessor interfaces
 rejected and leave the selected host compiler and hardening policy enabled.
 Focused dependency-file generation, execution and RELRO/NOW checks cover this
 repair; it does not require an upstream suite.
+
+### 2026-11-17 — Source-backed release discovery and report cleanup
+
+The owner retired migration-specific status after closeout; ordinary package
+status remains. Remove the dedicated progress renderer, workflow adapter and
+manifest exports while retaining split policy and its independent reports.
+
+Keep immutable downloads and live release discovery in one family source
+definition. Shared directory sources derive their download URL and listing parser
+from one archive template; independent listing locations are explicit. Existing
+version-table hashes, exceptional fetch arguments and historical discovery
+policies remain effective. Reporting metadata must not change source, artifact
+or final production identities.
+
+Every package family appears in the upstream report. A source with no established
+discovery rule reports its packaged versions, download URL and unknown missing
+versions. Do not infer an empty release list or silently drop that family. The
+installed `upstream --list` inventories configuration without contacting upstream.

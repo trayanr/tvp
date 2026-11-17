@@ -1,10 +1,6 @@
 {
   system ? "x86_64-linux",
   config ? { },
-  source ? {
-    path = toString ./.;
-    revision = null;
-  },
   pkgs, # TODO: nixpkgs check and abort if not or auto import channel
 }:
 assert
@@ -94,17 +90,13 @@ let
       tvp
       tvpLib
       canonical
-      packages
       variants
       construction
       legacyBases
       tools
       checks
-      source
-      system
       ;
     inherit (testSet) testBatchEntries;
-    inherit (packageSet) familyEntrypoints;
   };
 
   tvp = {
@@ -120,7 +112,6 @@ let
       tools
       ;
     inherit (reports)
-      migrationStatusManifest
       upstreamIsolationInventory
       upstreamIsolationReport
       upstreamIsolationStrict

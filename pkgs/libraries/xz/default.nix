@@ -56,42 +56,39 @@ let
       };
     }
   ];
-  packageMeta = {
-    upstream = {
-      type = "git-tags";
-      url = "https://github.com/tukaani-project/xz";
 
-      normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
-
-      include =
-        version:
-        builtins.match "[0-9].*" version != null
-        && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
-
-      unavailable = [
-        {
-          versions = [
-            "5.6.0"
-            "5.6.1"
-          ];
-          reason = "Withdrawn by upstream following CVE-2024-3094: the release tarballs carried a build-time backdoor absent from the git tree. Both are 404 on tukaani.org and on GitHub releases, so there is nothing to package and nothing TVP would put in a signed cache.";
-        }
-      ];
-    };
-  };
   pname = "xz";
   family = tvp.lib.packages.mkFamily {
-    inherit pname versionTable packageMeta;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url =
-          if pkgs.lib.versionAtLeast version "5.8.4" then
-            "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz"
-          else
-            "https://tukaani.org/xz/xz-${version}.tar.gz";
-        inherit sha256;
+    inherit pname versionTable;
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        if pkgs.lib.versionAtLeast version "5.8.4" then
+          "https://github.com/tukaani-project/xz/releases/download/v${version}/xz-${version}.tar.gz"
+        else
+          "https://tukaani.org/xz/xz-${version}.tar.gz";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/tukaani-project/xz";
+
+        normalise = tag: if pkgs.lib.hasPrefix "v" tag then pkgs.lib.removePrefix "v" tag else null;
+
+        include =
+          version:
+          builtins.match "[0-9].*" version != null
+          && !(pkgs.lib.hasInfix "alpha" version || pkgs.lib.hasInfix "beta" version);
+
+        unavailable = [
+          {
+            versions = [
+              "5.6.0"
+              "5.6.1"
+            ];
+            reason = "Withdrawn by upstream following CVE-2024-3094: the release tarballs carried a build-time backdoor absent from the git tree. Both are 404 on tukaani.org and on GitHub releases, so there is nothing to package and nothing TVP would put in a signed cache.";
+          }
+        ];
       };
+    };
     testDeps = {
       pkgConfig = tvp.packages.pkg-config;
       referenceOlder = tvp.packages.xz_5_0;

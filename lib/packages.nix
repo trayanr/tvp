@@ -289,6 +289,23 @@ rec {
         patches = checkPatches attr (recipe.patches or [ ]);
         inherit (recipe) base;
 
+        selectedSource = recipe.source or source;
+        sourceDescriptor = builtins.isAttrs selectedSource && (selectedSource.__tvpSource or false);
+        sourceMetadata =
+          assert
+            !(sourceDescriptor && selectedSource.discovery != null && packageMeta ? upstream)
+            || throw "TVP: ${attr} declares discovery in both its source and packageMeta.upstream";
+          packageMeta
+          // lib.optionalAttrs sourceDescriptor {
+            source = selectedSource.describe {
+              inherit version;
+              inherit (entry) sha256;
+            };
+          }
+          // lib.optionalAttrs (sourceDescriptor && selectedSource.discovery != null) {
+            upstream = selectedSource.discovery;
+          };
+
         builder = import recipe.builder;
         currentExtraArgs =
           extraArgs
@@ -334,10 +351,10 @@ rec {
               // {
                 inherit base version;
                 src =
-                  if (recipe.source or source) == null then
+                  if selectedSource == null then
                     throw "TVP: owned definition ${attr} requires a family source factory."
                   else
-                    (recipe.source or source) {
+                    selectedSource {
                       inherit version;
                       inherit (entry) sha256;
                     };
@@ -351,7 +368,7 @@ rec {
             inherit selection;
             testContext = recipe.testContext or null;
             metadata =
-              packageMeta
+              sourceMetadata
               // {
                 inherit status definition;
                 builder = baseNameOf recipe.builder;
@@ -398,7 +415,7 @@ rec {
                   // {
                     tvp =
                       (old.passthru.tvp or { })
-                      // packageMeta
+                      // sourceMetadata
                       // {
                         inherit status;
                         # The name, not the record: passthru is read by tooling, and a

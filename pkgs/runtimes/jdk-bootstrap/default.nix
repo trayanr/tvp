@@ -23,13 +23,11 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    source =
-      { version, sha256 }:
-      import <nix/fetchurl.nix> {
-        url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${version}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
-        name = "OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
-        inherit sha256;
-      };
+    source = tvp.lib.sources.archive {
+      url =
+        version:
+        "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${version}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${version}_9.tar.gz";
+    };
     tests = (import ./tests/installed.nix);
     testDeps.fontArchive =
       let

@@ -4,16 +4,12 @@
   tvp,
   tvpLib,
   canonical,
-  packages,
   variants,
   construction,
   legacyBases,
   tools,
   checks,
   testBatchEntries,
-  source,
-  system,
-  familyEntrypoints,
 }:
 let
   runtimeRegistry = tvpLib.provenance.registry {
@@ -28,23 +24,6 @@ let
 in
 {
   inherit runtimeRegistry;
-  migrationStatusManifest = import ../tools/status/manifest.nix {
-    inherit (pkgs) lib;
-    inherit
-      canonical
-      variants
-      source
-      system
-      ;
-    inherit familyEntrypoints;
-    splitReport = tvp.recipeSplitReport;
-    # Progress observes declared aliases without forcing their test suites.
-    # The real latestSelection/full validation above remains unchanged.
-    latest = import ../tools/status/selectors.nix {
-      inherit (pkgs) lib;
-      inherit canonical packages;
-    };
-  };
   upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
   upstreamIsolationReport =
     (tvpLib.upstreamTestIsolation.validate {
