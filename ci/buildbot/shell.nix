@@ -1,7 +1,10 @@
 # CI infrastructure is borrowed from the repository's pinned Nixpkgs input.
 let
-  flake = builtins.getFlake (toString ../..);
-  pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
+  # Import only the pinned infrastructure input. Deployment roots may be symlinks.
+  lock = builtins.fromJSON (builtins.readFile ../../flake.lock);
+  nixpkgsNode = lock.nodes.${lock.root}.inputs.nixpkgs;
+  nixpkgs = builtins.fetchTree lock.nodes.${nixpkgsNode}.locked;
+  pkgs = import nixpkgs.outPath { system = builtins.currentSystem; };
 in
 pkgs.mkShell {
   packages = [
