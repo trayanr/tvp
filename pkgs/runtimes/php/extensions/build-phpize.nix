@@ -15,14 +15,23 @@
   libraries ? [ ],
   loader ? "extension",
   extensionMeta ? { },
+  sourceMode ? "archive",
+  compression ? "gzip",
 }:
 final:
 let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   compatible =
-    builtins.compareVersions final.php.version final.phpCompatibility.min >= 0
-    && builtins.compareVersions final.php.version final.phpCompatibility.before < 0;
+    if final.phpCompatibility ? exact then
+      final.php.version == final.phpCompatibility.exact
+    else
+      builtins.compareVersions final.php.version final.phpCompatibility.min >= 0
+      && builtins.compareVersions final.php.version final.phpCompatibility.before < 0;
+  unpack = steps.unpack {
+    src = final.src;
+    inherit (final) compression;
+  };
   modulePath = "lib/php/extensions/${final.extensionName}.so";
   command =
     name:
@@ -49,6 +58,8 @@ in
     libraries
     loader
     extensionMeta
+    sourceMode
+    compression
     ;
   inherit (tools) bash coreutils;
   environment = {
@@ -81,7 +92,16 @@ in
 
     assert
       compatible
-      || throw "PHP extension ${final.extensionName} ${final.version} supports PHP ${final.phpCompatibility.min} through versions before ${final.phpCompatibility.before}; selected PHP is ${final.php.version}";
+      || throw (
+        "PHP extension ${final.extensionName} ${final.version} supports "
+        + (
+          if final.phpCompatibility ? exact then
+            "PHP ${final.phpCompatibility.exact}"
+          else
+            "PHP ${final.phpCompatibility.min} through versions before ${final.phpCompatibility.before}"
+        )
+        + "; selected PHP is ${final.php.version}"
+      );
     assert
       builtins.match "[A-Za-z][A-Za-z0-9_]*" final.extensionName != null
       || throw "PHP extension: invalid module name";
@@ -92,10 +112,26 @@ in
       ]
       || throw "PHP extension: unsupported loader directive";
     steps.sequence [
-      (steps.unpack {
-        src = final.src;
-        compression = "gzip";
-      })
+      (
+        if final.sourceMode == "archive" then
+          unpack
+        else if final.sourceMode == "auto" then
+          unpack
+          // {
+            run = ''
+              if [ -d ${lib.escapeShellArg "${final.src}"} ]; then
+                  mkdir source
+                  cp -R ${lib.escapeShellArg "${final.src}/."} source/
+                  chmod -R u+w source
+                  printf '%s\n' 315532800 > source-date-epoch
+                else
+                  ${unpack.run}
+                fi
+            '';
+          }
+        else
+          throw "PHP extension: unsupported source mode"
+      )
       (command "phpize" ''
         export PHP_AUTOCONF=${final.autoconf}/bin/autoconf
         export PHP_AUTOHEADER=${final.autoconf}/bin/autoheader

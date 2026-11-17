@@ -8,16 +8,22 @@ that treated full catalogue or upstream runs as automatic completion gates.
 ## Normal changes
 
 ```sh
-# Small declared smoke selection (no upstream regressions):
+# Declared installed checks, including the PHP extension compatibility matrix:
 nix run .#test -- start --smoke --json
 # Narrow it to the changed subject:
 nix run .#test -- start --only perl_5_30_3
+# Or one PHP/extension pair:
+nix run .#test -- start --only php_8_5_12--redis_6_3_0
 ```
 
-`test start` defaults to this smoke scope. The initial selection in
-[`tests/smoke.nix`](tests/smoke.nix) contains sixteen named checks across eight
-subjects; it is a representative selection, not coverage of every package.
-Update that explicit selection when a different package needs checking.
+`test start` defaults to this smoke scope. The selection in
+[`tests/smoke.nix`](tests/smoke.nix) contains 606 named checks across 303
+subjects: two checks for each of 296 declared compatible PHP/extension pairs,
+plus 14 checks across the four compiler bases, Perl, Ruby and Redis.
+The owner approved the PHP extension matrix as part of standard testing and CI.
+It covers every declared compatible pair, including historical PHP versions,
+with small load and functional checks rather than upstream regression suites.
+Other package families retain their representative smoke selection.
 [`SMOKE.md`](tools/test-runner/SMOKE.md) explains the commands and receipts.
 
 - Reuse existing package outputs and passing checks when their exact derivation
@@ -26,9 +32,11 @@ Update that explicit selection when a different package needs checking.
 - Check the installed result and the behavior affected by the change. Prefer
   existing named test derivations over a whole package batch: a batch may include
   a large upstream suite.
-- Usually test the current release. Add a representative historical boundary
-  only when the changed builder or interface spans different source layouts.
-  Do not compile every version merely because the family has many releases.
+- For focused local work, usually test the current release. Add a representative
+  historical boundary only when the changed builder or interface spans different
+  source layouts.
+  The declared PHP extension matrix above runs in standard CI; do not expand
+  other families to every version merely because they have many releases.
 - Run cheap, relevant source checks when useful. Avoid building a new test
   framework or repeating broad validation for a narrow correction.
 
@@ -46,8 +54,10 @@ check. Keep real failed assertions visible; do not weaken them to obtain a pass.
 
 ## Explicitly requested comprehensive testing
 
-Full upstream regressions, complete package suites, historical matrices and the
-full catalogue are **opt-in**. Do not start them merely to finish migration,
+Full upstream regressions, complete package suites, other historical matrices
+and the full catalogue are **opt-in**. The approved PHP extension matrix above
+is part of standard testing without `--full`; it does not enable upstream
+regressions. Do not start the broader suites merely to finish migration,
 review a recipe, refresh a cache, or merge a smoke-validated change. Perl's
 million-test upstream regression run is an example of work that is not a normal
 package smoke check.

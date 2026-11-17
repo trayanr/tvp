@@ -39,6 +39,7 @@ let
   ) canonical;
 
   testBatchEntries = tvpLib.packages.merge {
+    phpExtensions = tvp.php.extensionTests;
     packages = pkgs.lib.filterAttrs (
       name: _:
       let

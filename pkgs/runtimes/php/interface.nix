@@ -13,6 +13,15 @@ let
     // {
       unwrapped = engine;
       extensions = catalogue.forPHP engine;
+      buildExtension =
+        definition:
+        tvp.lib.php.buildExtension (
+          definition
+          // {
+            inherit tvp;
+            php = engine;
+          }
+        );
       withExtensions =
         {
           extensions ? [ ],

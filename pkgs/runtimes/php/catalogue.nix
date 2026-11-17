@@ -32,6 +32,13 @@ let
       ) (builtins.attrNames (compatibleReleases php))
     ) (builtins.attrNames engines)
   );
+  extensionTests = lib.mapAttrs (
+    name: pair:
+    pair.package.testContext.mkBatch {
+      name = "php-extension-${name}";
+      suite = pair.tests;
+    }
+  ) extensionMatrix;
 in
 {
   profiles.redis = tvp.packages.php.withExtensions {
@@ -40,16 +47,18 @@ in
   inherit extensionMatrix;
   # Independent build and small test handles for an explicit compatibility run.
   extensionPackages = builtins.mapAttrs (_: pair: pair.package) extensionMatrix;
-  extensionTests = lib.mapAttrs (
-    name: pair:
-    pair.package.testContext.mkBatch {
-      name = "php-extension-${name}";
-      suite = pair.tests;
-    }
-  ) extensionMatrix;
+  inherit extensionTests;
+  extensionTestsAll = tvp.lib.tests.compatibility.mkAll {
+    inherit pkgs;
+    batches = extensionTests;
+    checks = { };
+  };
   metadata = {
     schema = "tvp.php-extensions/v1";
     declaredPairs = builtins.length (builtins.attrNames extensionMatrix);
+    namedTests = lib.foldl' (count: pair: count + builtins.length (builtins.attrNames pair.tests)) 0 (
+      builtins.attrValues extensionMatrix
+    );
     phpVersions = builtins.length (builtins.attrNames engines);
     # Initially PHP 5.0 and 5.1 have no declared compatible Redis release.
     unsupportedPHP = builtins.attrNames (

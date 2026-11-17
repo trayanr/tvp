@@ -21,6 +21,7 @@
   php-extensions = pkgs.writeText "tvp-php-extension-contracts" (
     builtins.toJSON (import ../lib/tests/php-extensions.nix { inherit pkgs tvp; })
   );
+  php-extension-custom = import ../lib/tests/php-extension-custom.nix { inherit tvp; };
 
   node-build-python = import ../pkgs/runtimes/nodejs/tests/build-python.nix {
     context = tvp.packages.nodejs.testContext;

@@ -14,6 +14,18 @@ let
   alternate = php.override { base = tvp.bases.gcc_13.full; };
   edited = redis.edit (spec: spec // { php = alternate; });
   overridden = redis.override { php = alternate; };
+  custom = php.buildExtension {
+    name = "tvp_hello";
+    version = "1.0.0";
+    src = ./fixtures/php-extension;
+    meta.description = "Public PHP extension fixture";
+  };
+  compatibleCustom = custom.override {
+    phpCompatibility = {
+      min = "8.2";
+      before = "8.6";
+    };
+  };
   explicitBase = (redis.override { base = tvp.bases.gcc_16.full; }).edit (
     spec: spec // { php = alternate; }
   );
@@ -26,6 +38,52 @@ let
   };
   rejects = package: !(builtins.tryEval package.drvPath).success;
   results = {
+    publicBuilder =
+      custom.php.drvPath == php.drvPath
+      && custom.modulePath == "lib/php/extensions/tvp_hello.so"
+      && custom.meta.description == "Public PHP extension fixture"
+      &&
+        (php.out.buildExtension {
+          name = "tvp_hello";
+          version = "1.0.0";
+          src = ./fixtures/php-extension;
+          meta.description = "Public PHP extension fixture";
+        }).drvPath == custom.drvPath;
+    publicBuilderDefaultsToExactPHP = rejects (custom.override { php = otherPHP; });
+    publicBuilderExplicitCompatibility =
+      (compatibleCustom.override { php = otherPHP; }).php.drvPath == otherPHP.drvPath
+      && builtins.isString (compatibleCustom.override { php = otherPHP; }).drvPath;
+    publicBuilderFollowsEffectiveBase =
+      (custom.edit (spec: spec // { php = alternate; })).specification.base.compiler.drvPath
+      == alternate.specification.base.compiler.drvPath;
+    publicBuilderComposes =
+      (builtins.head
+        (php.withExtensions {
+          extensions = [ custom ];
+        }).enabledExtensions
+      ).drvPath == custom.drvPath;
+    publicFamilyDefaultBuilder =
+      let
+        family = tvp.lib.php.mkExtensionFamily {
+          inherit tvp;
+          name = "tvp_hello";
+          versionTable = tvp.lib.packages.mkTable [
+            {
+              def.opts = {
+                phpCompatibility = {
+                  min = "8.2";
+                  before = "8.6";
+                };
+                sourceMode = "auto";
+              };
+              releases."1.0.0" = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+            }
+          ];
+          source = _: ./fixtures/php-extension;
+          tests = _: { };
+        };
+      in
+      builtins.isString (family.instantiate { version = "1.0.0"; }).drvPath;
     selectedRelease =
       php.extensions.redis.version == "6.3.0"
       && tvp.packages.php_7_3.extensions.redis.version == "6.0.2"
@@ -80,8 +138,20 @@ let
     explicitMatrix =
       tvp.php.metadata.declaredPairs == 296
       && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296
+      && tvp.php.metadata.namedTests == 592
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.metadata.upstreamIncluded == false;
+    matrixInStandardCI =
+      lib.all (
+        name:
+        tvp.smokeTests.metadata.subjects.${name} == [
+          "load"
+          "roundtrip"
+        ]
+        && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
+      ) (builtins.attrNames tvp.php.extensionMatrix)
+      && tvp.smokeTests.metadata.namedTests == 606
+      && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in
 assert lib.all (value: value) (builtins.attrValues results);

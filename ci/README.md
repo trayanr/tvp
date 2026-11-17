@@ -12,12 +12,20 @@ the repository. The service files and `config.example.json` are templates.
 
 ## Testing scope
 
-Default CI runs the explicit small selection in [tests/smoke.nix](../tests/smoke.nix),
-following [TESTING.md](../TESTING.md). It currently checks C/C++ on four full bases
-and two installed-result checks each for Perl, Ruby, Redis and PHPRedis:
-16 named tests in total.
-It does not run upstream regressions, all historical releases, or every repo check.
+Default CI runs the installed checks in [tests/smoke.nix](../tests/smoke.nix),
+following [TESTING.md](../TESTING.md). It includes all 296 declared compatible
+PHP/extension pairs, with two small checks each: module loading and a functional
+Unix-socket Redis roundtrip. Four full compiler bases, Perl, Ruby and Redis add
+14 checks, bringing the selection to 606 named tests across 303 subjects.
+The PHP compatibility matrix includes historical releases and may compile them
+when their outputs are not cached. Other families retain representative checks.
+CI does not run upstream regressions or every repository check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
+
+For local iteration on one pair, use
+`nix run .#test -- start --only php_8_5_12--redis_6_3_0`. The dedicated
+`nix build .#php.extensionTestsAll` target selects only the PHP extension matrix;
+the standard CI command includes it automatically alongside the other subjects.
 
 Promote this reviewed harness and its matching tools revision together before
 admitting a build. Then replace the old required `tvp/full` context with

@@ -23,10 +23,7 @@ let
     redis_8_10_3 = {
       inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
     };
-    php-redis_6_3_0 = {
-      inherit (tvp.canonical.php-redis_6_3_0.tests) load roundtrip;
-    };
-  };
+  } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {

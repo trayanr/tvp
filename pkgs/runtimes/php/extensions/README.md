@@ -17,9 +17,10 @@ packages are also accessible directly as `php_8_5.extensions.redis`.
 Each module is built with the selected engine's `phpize`, headers and
 `php-config`. Loading a module built for a different PHP derivation is rejected
 during evaluation. This also covers PHP builds with different configuration,
-not just different version numbers. Rebind a standalone module explicitly with
-`.override { php = tvp.packages.php_8_2; }` when needed; selecting it through the
-engine's catalogue usually expresses the intent more clearly.
+not just different version numbers. To target another engine within a module's
+declared compatibility range, rebind it with
+`.override { php = tvp.packages.php_8_2; }`; selecting it through the engine's
+catalogue usually expresses the intent more clearly.
 
 The engine, compiled extension and configured runtime have separate producers.
 Changing INI settings or the selected extension list reuses the engine and
@@ -29,6 +30,52 @@ Declare module loaders through `extensions`, rather than INI `extension`,
 `zend_extension` or `extension_dir` settings. The configured CLI commands use
 this configuration; applications embedding PHP need to select configuration
 through their own interface.
+
+## Building your own extension
+
+Use the selected engine's `buildExtension` function for a standalone phpize
+extension, then compose it like any packaged module:
+
+```nix
+let
+  php = tvp.packages.php_8_5;
+  custom = php.buildExtension {
+    name = "my_extension";
+    version = "1.0.0";
+    src = ./my-extension;
+    configureOptions = [ "--enable-my-extension" ];
+  };
+in
+php.withExtensions {
+  extensions = e: [ e.redis custom ];
+}
+```
+
+`src` can be a source directory or an archive; archives use gzip by default,
+with `compression = "xz"` or `"bzip2"` available. The function selects PHP's
+installed SDK, the matching base and the Autotools providers. Additional native
+libraries go in `libraries`; `loader = "zend_extension"` selects a Zend loader
+instead of the default `"extension"`. `meta` supplies package metadata.
+The result supports the ordinary `.override`, `.edit` and `.editSteps` methods.
+
+Without `phpCompatibility`, the builder records the selected PHP version as an
+exact compatibility declaration. That declaration stays in place after an
+override; changing only `php` rejects a different PHP version. Declare broader
+support explicitly when rebinding:
+
+```nix
+custom.override {
+  php = tvp.packages.php_8_2;
+  phpCompatibility = { min = "8.2"; before = "8.6"; };
+}
+```
+
+The range describes your source's intended compatibility; it is not evidence
+that those PHP versions have been tested. Optional `tests` and `testDeps` use
+the same installed-test factory and dependency conventions as extension
+families. A standalone custom extension is not automatically added to the
+repository's version matrix. Use
+`tvp.lib.php.mkExtensionFamily` and a release table for a versioned family.
 
 ## Redis release selection
 
@@ -64,26 +111,42 @@ The [Redis server package](../../../servers/redis/README.md) has its own version
 and Unix-socket roundtrip checks. These checks do not run either project's full
 upstream suite.
 
-Compatibility CI should build each explicitly declared PHP/module pair and run
-these small checks. Keep that matrix distinct from a normal local change,
-which generally checks the current pair and reuses exact passing results.
-Building every declared pair or running full upstream regressions is an
-explicit action under [TESTING.md](../../../../TESTING.md). A source evaluation
-or a passing current pair does not qualify the historical matrix.
+Standard `nix run .#test -- start` and CI include every declared compatible
+PHP/module pair, with these two small checks for each pair. Full upstream
+regression suites remain separate under [TESTING.md](../../../../TESTING.md).
+Local iteration can select one pair and reuse exact passing results. A source
+evaluation or a passing current pair does not qualify the historical matrix.
 
-The catalogue exposes 296 declared pairs across the 190 packaged PHP versions.
-PHP 5.0 and 5.1 are listed as unsupported. Inspect the declarations or build
-one pair explicitly:
+The catalogue exposes 296 declared compatible pairs across the 190 packaged PHP
+versions, with two named checks per pair: 592 checks. It includes every declared
+extension release for each PHP version inside that release's compatibility
+span. PHP 5.0 and 5.1 are listed as unsupported; incompatible combinations are
+excluded rather than attempted.
+
+Inspect the declarations or select the execution scope:
 
 ```sh
 nix eval --json .#php.metadata
+# Standard testing / CI: all compatible pairs plus the other smoke subjects.
+nix run .#test -- start
+# Local iteration: only one pair from that standard plan.
+nix run .#test -- start --only php_8_5_12--redis_6_3_0
+# One pair: build the module and run its two small checks.
 nix build .#php.extensionTests.php_8_5_12--redis_6_3_0
+# PHP extension matrix subset: all 296 pairs / 592 checks, no other subjects.
+nix build .#php.extensionTestsAll
 # Ready-to-run current PHP with Redis:
 nix run .#php.profiles.redis -- -r 'echo phpversion("redis"), PHP_EOL;'
 ```
 
 `php.extensionPackages` contains the module build targets;
-`php.extensionTests` contains the corresponding two-check batches. CI can
-enumerate these attributes without inventing incompatible combinations. They
-are explicit matrix targets; normal CI adds only the current module's two
-checks and the server's two checks to the existing smoke selection.
+`php.extensionTests` contains the corresponding two-check batches. Standard CI
+includes every one of these batches, without inventing incompatible
+combinations. The full selection contains 606 named checks across 303 subjects:
+592 from this matrix and 14 across the four compiler bases, Perl, Ruby and Redis.
+
+Both standard CI and `extensionTestsAll` may compile historical PHP engines and
+extensions that are not cached. They reuse valid outputs and run only the two
+installed checks per pair; they do not run full PHP, Redis or PHPRedis upstream
+suites. The historical matrix has not been executed locally yet; its pairs
+remain unqualified until their actual build and test results pass.
