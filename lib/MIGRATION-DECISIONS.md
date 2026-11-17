@@ -832,6 +832,24 @@ results remain recorded, and do not constitute full qualification.
   Ruby's selected-tools assertion declares its own grep dependency.
 - Tower's normal Nix settings remain the default. Sequence heavy preparation
   separately; do not replace the default with a global concurrency cap.
+- Preserve a host-built GCC plugin's runtime provider when canonicalizing its
+  store-directory aliases, including `lib/../lib64`. Do not replace a newer
+  host C++ runtime with the target compiler's older runtime merely to remove
+  a noncanonical lookup spelling. This is finalization-only repair.
+- Tool-selection fixtures must preserve construction traces in A before the
+  split, then independently check finalization's trace in F. Their build
+  directories are distinct; a missing construction trace in F is not evidence
+  that a provider edit was ignored.
+- Backport the later upstream `close DATA` locale-helper fix only to Perl
+  5.30.3's reconstructed upstream tree. The open helper handle otherwise appends
+  DATA-line context to unrelated warning tests. Keep the original warning
+  expectations and strict acceptance; production A/F and other upstream
+  identities remain unchanged.
+
+The default bind-now failure retained in MIG-033 is still a separate policy gap.
+The GCC9 base suite now reaches that assertion after its finalization repair.
+Do not turn it into an explicit-flags capability test or claim default-policy
+qualification from the focused production and fixture repairs above.
 
 OpenSSL's optional `tsget` network helper still requires `WWW::Curl::Easy`,
 which the selected Perl does not provide. Finalization and preserved warning-flag
