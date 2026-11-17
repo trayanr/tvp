@@ -23,6 +23,20 @@ defaults, explicit caller overrides and concurrent install directory creation.
 The existing build-step runner tests cover forwarding explicit core values and
 the missing-variable fallback.
 
+The PHP/Redis matrix also exposed two independent packaging defects. Historical
+`phpize` copies a read-only `ltmain.sh` into the extension source root; extension
+preparation now makes that regular copy writable alongside the `build/` copies.
+PHP finalization now retains indirect runtime libraries, including XZ's
+`liblzma`, while keeping explicit runtime-provider replacements authoritative.
+These corrections reuse completed PHP compilation artifacts. Focused load and
+roundtrip checks passed for PHP 5.5.38/Redis 2.2.8 and PHP 8.0.0/Redis 6.0.2.
+
+The first matrix request stopped at its RAM guard while other Tower work was
+running. This does not justify changing the configured jobs/cores or attributing
+the separate permission and loader failures to memory pressure. The standard
+`test all` entry point remains an ordinary cached Nix build; no new per-engine
+preparation loop or hidden resource cap was introduced.
+
 ## Intentional controls and remaining constraints
 
 Fixed one/two-worker values remain in fixtures that test GNU Make/Ninja

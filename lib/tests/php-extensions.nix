@@ -37,7 +37,42 @@ let
     ];
   };
   rejects = package: !(builtins.tryEval package.drvPath).success;
+  runtimeSample = tvp.canonical.php_8_0_0;
+  runtimeZlib = runtimeSample.specification.zlib;
+  runtimeLzma = runtimeSample.specification.libxml2.specification.liblzma;
+  replacementZlib = runtimeZlib.editSteps (
+    xs:
+    xs
+    ++ [
+      {
+        name = "php.runtime-zlib-probe";
+        run = "true";
+      }
+    ]
+  );
+  runtimeReplacement = runtimeSample.editRuntime (
+    r:
+    r
+    // {
+      libraries = map (p: if p.pname == runtimeZlib.pname then replacementZlib else p) r.libraries;
+    }
+  );
+  rpathCommand =
+    package: (builtins.head (builtins.filter (s: s.name == "output.rpaths") package.buildSteps)).run;
+  has =
+    needle: haystack:
+    lib.hasInfix (builtins.unsafeDiscardStringContext needle) (
+      builtins.unsafeDiscardStringContext haystack
+    );
   results = {
+    runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
+    runtimeProviderPrecedence =
+      let
+        rpaths = rpathCommand runtimeReplacement;
+      in
+      runtimeReplacement.artifact.drvPath == runtimeSample.artifact.drvPath
+      && has replacementZlib.outPath rpaths
+      && !(has runtimeZlib.outPath rpaths);
     publicBuilder =
       custom.php.drvPath == php.drvPath
       && custom.modulePath == "lib/php/extensions/tvp_hello.so"

@@ -136,8 +136,9 @@ in
         export PHP_AUTOCONF=${final.autoconf}/bin/autoconf
         export PHP_AUTOHEADER=${final.autoconf}/bin/autoheader
         ${final.php}/bin/phpize
-        # phpize copies SDK files from the read-only PHP output.
-        find build -type f -exec chmod u+w {} +
+        # phpize copies SDK files from the read-only PHP output. Historical
+        # versions put ltmain.sh at the source root; newer ones use build/.
+        find . -type f \( -path './build/*' -o -name ltmain.sh \) -exec chmod u+w {} +
       '')
       (steps.prepareAutotools {
         name = "php-extension.prepare-autotools";

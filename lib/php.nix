@@ -34,6 +34,18 @@ let
   phpize = ../pkgs/runtimes/php/extensions/build-phpize.nix;
 in
 {
+  # PHP's configure scripts can link dependencies exported by libxml2 directly.
+  # Match the build environment's expansion, while keeping explicit runtime
+  # replacements authoritative over dependencies of the original providers.
+  runtimeLibraries =
+    { base, libraries }:
+    builtins.filter (
+      provider:
+      !(provider ? pname)
+      || !(builtins.any (selected: (selected.pname or null) == provider.pname) libraries)
+      || builtins.any (selected: selected.outPath == provider.outPath) libraries
+    ) (base.environment { inherit libraries; }).libraries;
+
   # One user-defined extension bound to one selected PHP SDK.
   buildExtension =
     {
