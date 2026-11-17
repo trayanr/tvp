@@ -22,7 +22,7 @@ steps = [
     ('graph', ['eval', '--store', uri, '--show-trace', '--json', args.flake + '#graph']),
     ('check', ['flake', 'check', '--store', uri, '--show-trace', '--no-build', args.flake]),
     ('plan', ['eval', '--store', uri, '--show-trace', '--raw',
-              args.flake + '#testPlans.' + args.system]),
+              args.flake + '#smokeTestPlans.' + args.system]),
 ]
 (area / 'commands.json').write_text(json.dumps(steps, indent=2) + '\n')
 for name, command in steps:

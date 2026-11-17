@@ -103,12 +103,14 @@ let
       selection = latestSelection;
     };
   };
+  smokeTests = import ./smoke.nix { inherit pkgs tvp; };
 in
 {
   # The flattened variants are a private handle shared with the check registry.
   inherit
     testBatches
     latestTests
+    smokeTests
     testBatchEntries
     allVariantPackages
     ;

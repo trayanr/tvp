@@ -5,6 +5,7 @@
   tvp,
   sourceFiles ? [
     ../default.nix
+    ../consumer.nix
     ../retained.nix
     ../compatibility.nix
     ../source-compiler.nix
@@ -14,6 +15,7 @@
     ../gcc-13.3.0.nix
     ../gcc-16.2.0.nix
     ../source-gnu/default.nix
+    ../source-gnu/hardening/default.nix
     ../source-gnu/inputs.nix
     ../tiers/source-gnu.nix
     ../../pkgs/compilers/gcc/build-base-4.9.4.nix
@@ -102,6 +104,29 @@ let
     && a.outPath == b.outPath
     && builtins.getContext a.drvPath == builtins.getContext b.drvPath
     && builtins.getContext a.outPath == builtins.getContext b.outPath;
+  underlyingDriver =
+    driver:
+    if !(driver ? underlyingDriver) then
+      driver
+    else
+      assert
+        owned driver
+        && driver ? hardeningPolicy
+        && sameProducer driver.specification.driver driver.underlyingDriver
+        && sameProducer driver.tvp.declaredDependencies.driver driver.underlyingDriver
+        && driver.version == driver.underlyingDriver.version;
+      underlyingDriver driver.underlyingDriver;
+  underlyingBintools =
+    bintools:
+    if !(bintools ? underlyingBintools) then
+      bintools
+    else
+      assert
+        owned bintools
+        && bintools ? hardeningPolicy
+        && sameProducer bintools.specification.bintools bintools.underlyingBintools
+        && sameProducer bintools.tvp.declaredDependencies.bintools bintools.underlyingBintools;
+      underlyingBintools bintools.underlyingBintools;
   # The pure helper library is part of lowering. Retained source producers use
   # ownedLib; catalogue instantiation can use the supplied pure lib. In either
   # case the exposed A/F must match an actual fresh lowering, including contexts.
@@ -128,13 +153,17 @@ let
   families = lib.filterAttrs (
     name: _: builtins.match "gcc_[0-9]+_[0-9]+_[0-9]+" name != null
   ) tvp.bases;
-  rawCompiler = family: family.full.compiler.tvp.deps.compiler or null;
+  rawCompiler = family: (underlyingDriver family.full.compiler).tvp.deps.compiler or null;
   selectedDrivers = map (family: path family.full.compiler) (builtins.attrValues families);
+  constructionDrivers = map (family: path (underlyingDriver family.full.compiler)) (
+    builtins.attrValues families
+  );
   rows = lib.mapAttrs (
     name: family:
     let
       full = family.full;
       raw = rawCompiler family;
+      driver = underlyingDriver full.compiler;
       ordinaryFloor = builtins.removeAttrs full.tools [ "gcc" ];
       expectedRuntime =
         if package raw then
@@ -152,7 +181,7 @@ let
         owned raw && builtins.elem (path (compilerOf raw.specification.base)) sourceDrivers;
       sourceShell = same full.shell source.base.shell;
       sourceCoreutils = same full.coreutils source.base.coreutils;
-      sourceBinutils = same full.compiler.bintools source.base.compiler.bintools;
+      sourceBinutils = same (underlyingBintools full.compiler.bintools) source.base.compiler.bintools;
       sourceLibc = same full.compiler.libc source.base.compiler.libc;
       nativeSysroot =
         package raw
@@ -162,10 +191,20 @@ let
         && builtins.elem "--with-native-system-header-dir=/include" raw.specification.configureFlags;
       sourceFloor = map path full.baselineTools == map path source.base.baselineTools;
       namedFloor = lib.all (
-        role: !(source.base.tools ? ${role}) || same ordinaryFloor.${role} source.base.tools.${role}
+        role:
+        !(source.base.tools ? ${role})
+        || same (
+          if role == "binutils" then underlyingBintools ordinaryFloor.${role} else ordinaryFloor.${role}
+        ) source.base.tools.${role}
       ) (builtins.attrNames ordinaryFloor);
       runtimeProviders = full.compiler.runtimeDirectories == expectedRuntime;
-      runtimeLibc = package raw && same full.compiler.tvp.deps.libc full.compiler.libc;
+      runtimeLibc = package raw && same driver.tvp.deps.libc full.compiler.libc;
+      consumerPolicy =
+        full.compiler.defaultHardeningFlags == [
+          "bindnow"
+          "relro"
+        ];
+      compilerVersion = full.compiler.version == driver.version;
     }
   ) families;
   # Only active production tools/libraries are traversed. Optional upstream
@@ -186,7 +225,10 @@ let
         allowed =
           known
           || (
-            owned p && builtins.elem (path (compilerOf p.specification.base)) (sourceDrivers ++ selectedDrivers)
+            owned p
+            && builtins.elem (path (compilerOf p.specification.base)) (
+              sourceDrivers ++ selectedDrivers ++ constructionDrivers
+            )
           );
         result = walk (seen // { ${key} = true; }) (
           (lib.optionals (!known && allowed) (productionInputs p)) ++ rest

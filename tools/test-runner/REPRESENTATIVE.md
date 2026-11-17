@@ -15,7 +15,7 @@ selected/omitted job lists. Its `families` map must equal every catalogue family
 alias. `profiles`, `compatibility` and `checks` are lists of `{job, reason}`;
 `omittedOrdinaryVersions` counts eligible versions outside the selected jobs.
 
-Pass each selected exact job name with a separate `start --only JOB`, then use
+Pass each selected exact job name with a separate `start --full --only JOB`, then use
 that run's frozen `wait`. Select `check-package-runtime-ownership-latest` and
 `check-runtime-policy-latest`. The existing `check-package-runtime-ownership`
 exports all historical roots and is deliberately forbidden in this scope.
@@ -31,8 +31,8 @@ selected runtime ownership with unchanged reviewed baseline rows. It never
 requires or certifies the full aggregate. Missing or extra historical jobs,
 wrong aliases, cancelled/retried evidence and partial output sets fail.
 
-The original `verify` remains full-only. A representative certificate cannot
-satisfy a hosted status whose policy still means full catalogue validation.
+The original `verify` remains full-only. A representative certificate is not a full-catalogue certificate. Default hosted
+CI uses the separately declared smoke plan and `tvp/smoke` context.
 Trusted controller and required-context activation are separate reviewed work.
 
 For a reusable Nix selection and separate local latest-first build target, see

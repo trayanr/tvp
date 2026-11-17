@@ -25,6 +25,9 @@ let
   # through public aliases which may depend on the compiler being constructed.
   file = base.tools.file or (import ../bootstrap/source-full-gcc.nix { }).file;
   originalCompiler = base.compiler;
+  underlyingDriver =
+    driver: if driver ? underlyingDriver then underlyingDriver driver.underlyingDriver else driver;
+  constructionCompiler = underlyingDriver originalCompiler;
   originalBinutils = originalCompiler.bintools;
   binutils = originalBinutils // {
     bintools = originalBinutils;
@@ -36,8 +39,8 @@ let
       targetPrefix = originalCompiler.targetPrefix or "";
       isGNU = true;
     }
-    // lib.optionalAttrs (originalCompiler ? cc || originalCompiler ? tvp.deps.compiler) {
-      cc = originalCompiler.cc or originalCompiler.tvp.deps.compiler;
+    // lib.optionalAttrs (constructionCompiler ? cc || constructionCompiler ? tvp.deps.compiler) {
+      cc = constructionCompiler.cc or constructionCompiler.tvp.deps.compiler;
     };
   tools = base.tools // {
     inherit file;

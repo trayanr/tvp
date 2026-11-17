@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trusted worker harness: exact PR head, current target gate, frozen full suite."""
+"""Trusted worker harness: exact PR head, current target gate, frozen smoke checks."""
 import argparse
 import fcntl
 import json
@@ -132,7 +132,7 @@ def validate_owned(args, owner_path):
                 print(f"  {key}: {name}", flush=True)
     check_flake(candidate, evidence)
     start = subprocess.check_output([
-        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--flake", str(candidate),
+        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "start", "--smoke", "--flake", str(candidate),
         "--system", "x86_64-linux", "--state-dir", str(root / "validation"),
         "--owner-lock", str(owner_path), "--json",
     ], text=True)
@@ -140,6 +140,9 @@ def validate_owned(args, owner_path):
     run = Path(launch["run"])
     frozen_runner = Path(launch["runner"])
     (evidence / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
+    if launch.get("validationScope") != "smoke" or launch.get("full") is not False:
+        subprocess.run([str(frozen_runner), "stop", "--run", str(run)], check=False)
+        raise ValueError("CI requires the explicit smoke plan, not a full-suite launch")
     # Never find this run via latest; another request may move that alias.
     waited = wait_for_run(frozen_runner, run)
     result = json.loads(subprocess.check_output([
@@ -147,6 +150,8 @@ def validate_owned(args, owner_path):
     ], text=True))
     result["ciIdentity"] = identity
     result["workerRun"] = str(run)
+    if result.get("validationScope") != "smoke" or result.get("full") is not False:
+        raise ValueError("CI result scope differs from the requested smoke plan")
     (evidence / "status.json").write_text(json.dumps(result, indent=2) + "\n")
     for name in ["nix.log", "prepare.log", "worker.log", "plan.json", "command.json"]:
         if (run / name).is_file():
@@ -166,7 +171,7 @@ def validate_owned(args, owner_path):
 def result_record(result):
     # Buildbot splits long log lines. Keep this protocol record below its line
     # limit; evidence/status.json retains the complete per-job report.
-    compact = {key: result[key] for key in ("phase", "counts", "testCounts") if key in result}
+    compact = {key: result[key] for key in ("phase", "counts", "testCounts", "validationScope", "full") if key in result}
     if "error" in result:
         compact["error"] = result["error"][:256]
     compact["jobs"] = {}

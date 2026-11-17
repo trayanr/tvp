@@ -37,6 +37,7 @@
           out = builtins.unsafeDiscardStringContext kept.outPath;
         };
       };
+      smokeTestPlans.${system} = self.testPlans.${system};
       testPlans.${system} = pkgs.writeText "tvp-cancel-plan.json" (
         builtins.toJSON {
           schema = 1;

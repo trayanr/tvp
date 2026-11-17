@@ -10,6 +10,11 @@ MIG-034 records the final caller cleanup and explicit exceptions. MIG-035 record
 shared mechanical helpers, lazy test fixtures and the compatibility-test boundary.
 
 [MIGRATION-LOG.md](MIGRATION-LOG.md) records completed steps and bounded validation.
+
+The current [testing policy](../TESTING.md) supersedes earlier automatic full-run
+gates in this migration plan: normally use a few focused installed-package smoke
+checks and reuse valid artifacts. Full upstream or catalogue suites require an
+explicit user request.
 [MIGRATION-DECISIONS.md](MIGRATION-DECISIONS.md) records scope exceptions and design
 questions found during implementation. Keep them explicit for later review instead
 of adding a package-specific workaround or silently broadening this rollout.

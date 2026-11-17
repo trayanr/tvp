@@ -2,6 +2,8 @@
 { pkgs, tvp }:
 let
   inherit (pkgs) lib;
+  underlyingDriver =
+    driver: if driver ? underlyingDriver then underlyingDriver driver.underlyingDriver else driver;
   rows =
     lib.genAttrs
       [
@@ -14,7 +16,7 @@ let
         name:
         let
           driver = tvp.bases.${name}.full.compiler;
-          raw = driver.tvp.deps.compiler;
+          raw = (underlyingDriver driver).tvp.deps.compiler;
           base = raw.specification.base;
           previous = if base ? compiler then base.compiler else base.stdenv.cc;
         in

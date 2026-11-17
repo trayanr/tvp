@@ -26,7 +26,7 @@ def directory():
 
 
 class FrozenValidation(unittest.TestCase):
-    def run_validation(self, phase, wait_code, base=""):
+    def run_validation(self, phase, wait_code, base="", scope="smoke", full=False):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
@@ -39,9 +39,9 @@ class FrozenValidation(unittest.TestCase):
                                    "changed": {"packages.consumer_1": {"before": {}, "after": {}}},
                                    "removed": ["packages.old_1"]})
             if "start" in argv:
-                return json.dumps({"run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test"})
+                return json.dumps({"run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test", "validationScope": scope, "full": full})
             if "status" in argv:
-                return json.dumps({"phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": []})
+                return json.dumps({"phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": [], "validationScope": scope, "full": full})
             raise AssertionError(argv)
         def run(argv, **kwargs):
             commands.append(argv)
@@ -73,7 +73,15 @@ class FrozenValidation(unittest.TestCase):
         self.assertEqual(self.run_validation("passed", 1)[0], 1)
 
     def test_only_both_success_signals_pass(self):
-        self.assertEqual(self.run_validation("passed", 0)[0], 0)
+        code, commands = self.run_validation("passed", 0)
+        self.assertEqual(code, 0)
+        start = next(c for c in commands if "start" in c)
+        self.assertIn("--smoke", start)
+        self.assertNotIn("--full", start)
+
+    def test_smoke_ci_rejects_a_full_scope_launch(self):
+        with self.assertRaisesRegex(ValueError, "explicit smoke plan"):
+            self.run_validation("passed", 0, scope="full", full=True)
 
     def test_master_records_producers_before_read_only_checks_with_full_traces(self):
         _, commands = self.run_validation("passed", 0)

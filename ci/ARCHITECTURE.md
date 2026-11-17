@@ -5,11 +5,12 @@ state are maintained separately from the repository.
 
 ## Decisions
 
-- GitHub hosts PRs, reviews, the `ci:build` opt-in label and the `tvp/full` status.
+- GitHub hosts PRs, reviews, the `ci:build` opt-in label and the `tvp/smoke` status.
 - A Buildbot controller on the local Linux builder polls GitHub over outbound HTTPS.
   It owns the durable queue, credentials, history and reporting.
-- TVP's existing frozen-plan runner builds **the entire catalogue and its checks** for
-  every admitted PR and every master update. No changed-package-only shortcut.
+- TVP's existing frozen-plan runner builds the explicitly declared small smoke
+  selection for admitted PRs and master updates. Full catalogue and upstream suites
+  are separate explicit requests; a smoke pass never certifies them.
 - Keep the active Nix store on local SSD and reuse its outputs between builds.
   The private deployment's existing cache operator publishes frozen workstation
   outputs to a signed NAS-backed work cache consumed by the worker. Signing and
@@ -25,7 +26,7 @@ flowchart LR
     developer[Development workstation] -->|push expansion branches| github[GitHub PRs and ci:build labels]
     controller[Local Buildbot controller] -->|poll HTTPS and post statuses| github
     controller -->|durable FIFO queue| worker[Local worker account]
-    worker -->|frozen full test plan| store[Local SSD: Nix store and builds]
+    worker -->|frozen smoke test plan| store[Local SSD: Nix store and builds]
     worker -->|counts, logs, exact identities| controller
     controller -. evidence archive .-> nas[NAS]
     store -. future: passing master closures .-> publisher[Trusted publisher]
@@ -44,14 +45,14 @@ reverse proxy on the host exposes the dashboard on its LAN address.
 3. The next poll resolves the actual target ref, independently of the PR payload's
    possibly stale base SHA, and compares that immutable tip with the full head SHA.
    Only an ahead or identical head is admitted. Behind/diverged branches get a pending
-   `tvp/full` instruction to rebase or merge the target, without a build request.
+   `tvp/smoke` instruction to rebase or merge the target, without a build request.
    Buildbot stores admitted requests in its database and reports **pending**.
-4. One full validation runs per worker; other PRs stay queued. Within that validation,
+4. One smoke validation runs per worker; other PRs stay queued. Within that validation,
    Nix inherits its normal machine-wide job/core settings. CI adds no Nix resource caps.
 5. Read the failing version and test, fix the PR and push. Keeping `ci:build` attached
    automatically schedules its new head; no repeated labelling is needed.
-6. Squash merge a passing PR, with `tvp/full` required and GitHub's up-to-date branch
-   requirement enabled. Master receives its own full validation. Update other labelled
+6. Squash merge a passing PR, with `tvp/smoke` required and GitHub's up-to-date branch
+   requirement enabled. Master receives its own smoke validation. Update other labelled
    branches to include the new target and wait for their updated heads to pass.
 
 Requests contain immutable head and target SHAs. Before any Nix evaluation or builds,
@@ -77,7 +78,7 @@ successful deliveries or blocked reports; failed HTTP lookups or writes are retr
 A crash between delivery and recording may produce a duplicate request or status;
 it must not lose a build. The queue database and controller state stay on local disk.
 
-## What a full validation does
+## What smoke validation does
 
 The controller sends a reviewed worker harness and graph comparator. The harness
 selects the test-runner executable from the controller's pinned TVP revision, rather
@@ -92,28 +93,29 @@ For PRs:
    additions, changes and removals, retaining exact before/after identities in
    `graph-diff.json`. These differences are informational and do not skip builds.
 4. Run `nix flake check --no-build` on the candidate.
-5. Start its full frozen test plan through the trusted test runner, wait using the
+5. Start its explicit smoke frozen test plan through the trusted test runner, wait using the
    returned exact run identity and require both exit success and terminal `passed`.
 6. Collect final suite/test counts, frozen plan, Nix logs and available full failure
    logs. Upload evidence to the controller even on failure.
 
-Master follows the same full validation without a PR graph comparison. Its commit is
+Master follows the same smoke validation without a PR graph comparison. Its commit is
 already exact and reviewed. The per-build checkout/state directory prevents two PRs
 from sharing a mutable source tree. Successful store outputs and test outputs can be
-reused across requests when their derivations match. "Full suite" means all declared
-outputs are realised; it does not force unchanged cached tests to execute again.
+reused across requests when their derivations match. A smoke pass means the selected named outputs are valid. It does not certify the
+omitted suites or force unchanged cached checks to execute again. Full suites
+remain a separate explicit `test start --full` operation.
 
 The graph comparison records what merging the PR would change relative to its pinned
 target master, rather than changes already present since the original branch point.
 Dependency selectors may advance when a release is added; affected consumers then have
-new producer paths. Review those differences and the full validation results together.
+new producer paths. Review those differences and the scoped smoke results together.
 The report does not infer whether a change is compatible or intentional. There is no
 controller-owned allowance gate for changed or removed producers. Invalid snapshots,
 evaluation errors, stale/diverged branches and failed validation still fail the build.
 
 ## GitHub and local communication
 
-GitHub's `tvp/full` commit status shows queued, running, success or failure. Terminal
+GitHub's `tvp/smoke` commit status shows queued, running, success or failure. Terminal
 descriptions include suite/test totals and failing suite names, within GitHub's status
 length limit. This uses the Commit Status API; a GitHub Actions runner or public
 webhook endpoint is not involved.

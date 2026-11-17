@@ -2,8 +2,9 @@
 
 These open items were found while implementing the agreed package model. They do
 not authorize new exceptions or certify untested behavior. Resolve them explicitly
-when their scope is reached; retain the current boundaries meanwhile. CI and NAS
-remain off under the [migration execution policy](AUTHORING-MIGRATION.md).
+when their scope is reached; retain the current boundaries meanwhile. Historical
+execution restrictions below are records of those runs. The current testing scope
+is defined in [TESTING.md](../TESTING.md).
 
 ## MIG-001 — Historical origin/runtime audit protocols
 
@@ -846,10 +847,26 @@ results remain recorded, and do not constitute full qualification.
   expectations and strict acceptance; production A/F and other upstream
   identities remain unchanged.
 
-The default bind-now failure retained in MIG-033 is still a separate policy gap.
-The GCC9 base suite now reaches that assertion after its finalization repair.
-Do not turn it into an explicit-flags capability test or claim default-policy
-qualification from the focused production and fixture repairs above.
+### 2026-11-17 — Consumer defaults and smoke-first validation
+
+The owner approved default bind-now activation and specified that normal checks
+must be a couple of meaningful installed-package probes, not full upstream or
+catalogue suites. [TESTING.md](../TESTING.md) and the repository agent guidance
+record that policy; full suites remain available only on explicit request.
+
+Public full bases now select the existing consumer adapter with bind-now and
+RELRO defaults. Closed raw construction generations stay private and unchanged;
+all four raw compiler A/F identities were compared and remain exact. Compiler
+and Binutils versions, the real raw compiler `.cc` role, and provider ownership
+remain explicit through the adapter. Ordinary consumer identities can change.
+
+The original C/C++ probes pass for each of GCC4/9/13/16, including the unchanged
+default-policy RELRO/NOW assertions. This fixes that specific MIG-033 observation;
+it is not a claim of full compiler conformance or resolution of every historical
+hardening hold. Default smoke validation selects twelve existing leaves, has no
+upstream jobs or repository-wide checks, and reports its scope separately. The
+old comprehensive plan requires `--full`; a smoke result cannot replace a full
+attempt through retry links or be reported as a full-suite pass.
 
 OpenSSL's optional `tsget` network helper still requires `WWW::Curl::Easy`,
 which the selected Perl does not provide. Finalization and preserved warning-flag

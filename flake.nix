@@ -109,6 +109,15 @@
           revision = self.rev or self.dirtyRev or null;
         };
 
+        smokeTestPlans = tvp.lib.tests.compatibility.mkPlan {
+          inherit pkgs;
+          batches = tvp.smokeTests.batches;
+          checks = { };
+          canonical = { };
+          source = self.outPath;
+          revision = self.rev or self.dirtyRev or null;
+        };
+
         testCatalogues = import ./lib/test-catalogue.nix {
           inherit pkgs;
           inherit (tvp) canonical packages variants;
@@ -121,6 +130,7 @@
         # One buildable attribute per CI matrix job.
         testBatches = tvp.testBatches;
         latestTests = tvp.latestTests;
+        smokeTests = tvp.smokeTests;
       }
     );
 }

@@ -31,7 +31,7 @@ with open(os.environ['FAKE_COMMANDS'], 'a') as commands:
     commands.write(json.dumps(args)+'\n')
 link=Path(args[args.index('--out-link')+1])
 plan=json.loads(Path(os.environ['FAKE_PLAN']).read_text())
-if any('#testPlans.' in a for a in args):
+if any('#testPlans.' in a or '#smokeTestPlans.' in a for a in args):
     link.symlink_to(os.environ['FAKE_PLAN'])
     sys.exit(0)
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[plan['jobs'][0]['drv']]}), file=sys.stderr, flush=True)
@@ -118,10 +118,33 @@ class RunnerTests(unittest.TestCase):
         return subprocess.run([sys.executable,str(self.script),*args],env=self.env,text=True,capture_output=True)
 
     def start(self,*args):
-        result=self.cli('start','--state-dir',str(self.state),*args)
+        # These retained lifecycle tests exercise the explicitly requested full
+        # plan; the smoke default is checked separately below.
+        result=self.cli('start','--full','--state-dir',str(self.state),*args)
         self.assertEqual(result.returncode,0,result.stderr)
         self.run=(self.state/'latest').resolve()
         self.addCleanup(self.stop_if_running)
+
+    def test_default_smoke_uses_only_smoke_plan_and_never_full_aggregate(self):
+        result=self.cli('start','--state-dir',str(self.state),'--json')
+        self.assertEqual(result.returncode,0,result.stderr)
+        launch=json.loads(result.stdout)
+        self.run=Path(launch['run'])
+        self.addCleanup(self.stop_if_running)
+        state=self.wait_done()
+        self.assertEqual(state['validationScope'],'smoke')
+        self.assertIs(state['full'],False)
+        self.assertEqual(launch['validationScope'],'smoke')
+        commands=[json.loads(line) for line in self.commands_file.read_text().splitlines()]
+        self.assertTrue(any(any('#smokeTestPlans.' in a for a in c) for c in commands))
+        self.assertFalse(any(any('#testPlans.' in a for a in c) for c in commands))
+        command=json.loads((self.run/'command.json').read_text())
+        self.assertNotIn(self.plan['aggregate']+'^*',command)
+
+    def test_full_and_smoke_flags_are_mutually_exclusive(self):
+        result=self.cli('start','--full','--smoke','--state-dir',str(self.state))
+        self.assertNotEqual(result.returncode,0)
+        self.assertFalse(self.commands_file.exists())
 
     def stop_if_running(self):
         if hasattr(self,'run') and runner.lease_held(self.run/'worker.lock'):
@@ -136,6 +159,15 @@ class RunnerTests(unittest.TestCase):
                 return state
             time.sleep(0.05)
         self.fail('worker did not finish: '+(self.run/'worker.log').read_text())
+
+    def test_retry_cannot_replace_full_results_with_smoke_results(self):
+        self.start()
+        self.wait_done()
+        result=self.cli('start','--state-dir',str(self.root/'retry-state'),
+                        '--only','first','--retry-of',str(self.run))
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('validation scope',result.stderr)
+        self.assertFalse((self.run/'retries.json').exists())
 
     def test_partial_failure_keeps_success_and_reports_failure(self):
         self.env['FAKE_FAILURE']='second'
@@ -327,7 +359,7 @@ class RunnerTests(unittest.TestCase):
         original=self.run
         self.env.pop('FAKE_FAILURE')
         self.env['FAKE_ROOT_FAILURE']='1'
-        result=self.cli('start','--state-dir',str(self.root/'retry-state'),
+        result=self.cli('start','--full','--state-dir',str(self.root/'retry-state'),
                         '--only','second','--retry-of',str(original))
         self.assertEqual(result.returncode,0,result.stderr)
         self.run=(self.root/'retry-state/latest').resolve()
@@ -382,7 +414,7 @@ class RunnerTests(unittest.TestCase):
         self.plan['jobs'][1]['drv']='/fake/second-fixed.drv'
         self.plan['jobs'][1]['outputs']=[str(self.root/'second-fixed.out')]
         self.plan_file.write_text(json.dumps(self.plan))
-        result=self.cli('start','--state-dir',str(self.root/'retry-state'),
+        result=self.cli('start','--full','--state-dir',str(self.root/'retry-state'),
                         '--only','second','--retry-of',str(original))
         self.assertEqual(result.returncode,0,result.stderr)
         self.run=(self.root/'retry-state/latest').resolve()

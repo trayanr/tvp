@@ -30,6 +30,10 @@ def register_retry(parent, retry):
         raise RuntimeError("A retry cannot contain its parent")
     original = json.loads((parent / "plan.json").read_text())
     plan = json.loads((retry / "plan.json").read_text())
+    previous = json.loads((parent / "state.json").read_text())
+    current = json.loads((retry / "state.json").read_text())
+    if previous.get("validationScope", "full") != current.get("validationScope", "full"):
+        raise RuntimeError("A retry must retain its smoke or full validation scope")
     if original.get("system") != plan.get("system"):
         raise RuntimeError("A retry must use the same platform")
     names = {job["name"] for job in original["jobs"]}
@@ -48,6 +52,9 @@ def combine(run, original, snapshot):
     if len(paths) == 1:
         return original
     attempts = [(run, original)] + [(path, snapshot(path)) for path in paths[1:]]
+    if any(state.get("validationScope", "full") != original.get("validationScope", "full")
+           for _, state in attempts):
+        raise RuntimeError("Cannot combine smoke and full validation attempts")
     # Explicit links allow changed recipes; independent runs are never matched
     # just because they happen to contain the same package names.
     attempts.sort(key=lambda item: item[1]["startedAt"])

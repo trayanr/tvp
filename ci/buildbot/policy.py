@@ -3,6 +3,7 @@ import re
 
 SHA = re.compile(r"[0-9a-f]{40}")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+STATUS_CONTEXT = "tvp/smoke"
 
 
 def eligible(pr, repository, label="ci:build", branch="master"):
@@ -26,6 +27,8 @@ def summary(status):
                     if job.get("status") == "failed-or-blocked")
     text = (f"{counts.get('passed', 0)}/{sum(counts.values())} suites; "
             f"{tests.get('passed', 0)}/{sum(tests.values())} tests")
+    if status.get("validationScope"):
+        text = status["validationScope"] + ": " + text
     if failed:
         text += "; failed: " + ", ".join(failed)
     elif status.get("phase") != "passed":

@@ -2,7 +2,7 @@
 
 The [CI architecture](ARCHITECTURE.md) defines the queue, trust boundaries, reporting
 and NAS/cache plan. GitHub is the public PR/status surface; the local PC runs Buildbot
-and TVP's full validation. The PC connects outward to GitHub; there is no public
+and TVP's focused smoke checks. The PC connects outward to GitHub; there is no public
 listener, webhook, port forwarding or discovery requirement.
 
 These files are for TVP maintainers. Using TVP packages does not install or start CI
@@ -10,12 +10,35 @@ services. Buildbot dependencies are loaded only through `ci/buildbot/shell.nix`.
 Keep deployed configuration, credentials, NAS mounts and host setup scripts outside
 the repository. The service files and `config.example.json` are templates.
 
+## Testing scope
+
+Default CI runs the explicit small selection in [tests/smoke.nix](../tests/smoke.nix),
+following [TESTING.md](../TESTING.md). It currently checks C/C++ on four full bases
+and two installed-result checks each for Perl and Ruby: 12 named tests in total.
+It does not run upstream regressions, all historical releases, or every repo check.
+The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
+
+Promote this reviewed harness and its matching tools revision together before
+admitting a build. Then replace the old required `tvp/full` context with
+`tvp/smoke`, preserving the up-to-date branch requirement and other protections.
+Changing the repository scripts alone does not update a deployed controller.
+The internal Buildbot builder identifier remains `tvp-full` to retain its history;
+its active step and posted result explicitly describe smoke validation.
+
+Full suites remain available only when explicitly requested:
+
+```sh
+nix run .#test -- start --full
+# A selected full package suite can still contain expensive upstream tests:
+nix run .#test -- start --full --only perl_5_30_3
+```
+
 ## Migration closeout
 
 The owner declared the builder/base and ordinary package-authoring migration
 complete on 2026-11-16 and authorized committing/merging the final snapshot,
 running validation, and resuming CI/NAS operations. The normal workflow below
-applies after operational restoration. Restore the strict `tvp/full` requirement;
+applies after operational restoration, with the smoke policy above;
 source migration completion does not waive runtime or hardening failures.
 Actual service/protection observations belong in the deployment closeout receipts.
 
@@ -23,6 +46,9 @@ The following temporary exception is retained as historical execution policy.
 It does not authorize future merges without the normal checks.
 
 ## Temporary migration workflow (historical)
+
+The former `tvp/full` restoration target below records that earlier policy; the
+current smoke policy above supersedes its required-context choice.
 
 Owner-approved on 2026-11-14: keep CI execution and NAS/cache synchronization off
 until the owner declares the builder/base and package-authoring migration complete.
@@ -48,17 +74,17 @@ This is the workflow after the temporary migration exception ends.
 Open a non-draft expansion PR from a branch in this repository, targeting master, then
 add `ci:build`. The branch must already contain the **current** target tip: rebase or
 merge master into it before testing. CI tests that exact PR head and never constructs
-a merge commit. A behind or diverged branch gets a pending `tvp/full` instruction
-without a full build. New commits requeue automatically while the label remains. Both PRs and
-master run the full catalogue. The worker reuses its local outputs and its configured
+a merge commit. A behind or diverged branch gets a pending `tvp/smoke` instruction
+without a build. New commits requeue automatically while the label remains. Both PRs and
+master run the explicit smoke selection. The worker reuses its local outputs and its configured
 signed private NAS cache. Fork PRs require a later disposable VM worker pool.
 
-Use squash merge after the exact head passes. Require `tvp/full` and an up-to-date
+Use squash merge after the exact head passes. Require `tvp/smoke` and an up-to-date
 branch in GitHub's merge protection. After another PR lands, update remaining branches
 and wait for their new heads to pass before squash merging them. A target advance
 after admission also stops a queued PR before Nix evaluation; update it and requeue.
 
-On GitHub, inspect the `tvp/full` status for counts and failing versions. The local
+On GitHub, inspect the `tvp/smoke` status for counts and failing versions. The local
 Buildbot UI provides the queue, Rebuild action and complete failure logs. Buildbot binds
 to localhost; a host-managed reverse proxy or SSH tunnel can provide private access.
 
@@ -76,7 +102,7 @@ tvp-cache-lifecycle ready NAME
 Partial runs retain `full=false`. Declare the valid construction and compiler
 outputs needed by the candidate among the run's owned roots: a runtime closure can
 omit build-time bootstrap dependencies. The worker's Nix configuration supplies
-the cache URI and trusted public keys. Full `tvp/full` validation remains required.
+the cache URI and trusted public keys. The required `tvp/smoke` check remains independent of cache publication.
 
 For a large backfill, hold the PR's `ci:build` admission until its cache is ready.
 Cancel only superseded requests through the authenticated operator interface, then
@@ -195,7 +221,7 @@ Visit `http://localhost:8010/` at the builder, or configure a reverse proxy on i
 address. Keep proxy and firewall configuration on the host and set `dashboard_url` in
 the controller's private `config.json` to the address users visit. Control operations
 require the operator login. After the first real GitHub status has appeared,
-`tvp/full` can be made a required branch check. Repository settings are not changed by
+`tvp/smoke` can be made a required branch check. Repository settings are not changed by
 this implementation.
 
 ## Graph changes
@@ -221,7 +247,7 @@ journalctl -u tvp-controller -u tvp-worker -f
 Each Buildbot build has a unique `runs/BUILD_NUMBER` worker directory and controller
 `artifacts/BUILD_NUMBER` evidence directory. Evidence includes the source identities,
 producer graphs, frozen validation plan, final status and available full failure logs.
-The Buildbot full-catalogue log also includes failure logs and progress counts.
+The Buildbot smoke-catalogue log also includes failure logs and progress counts.
 Inside that worker run, the frozen runner can inspect ongoing validation:
 
 ```sh
@@ -247,7 +273,7 @@ stays on SSD and can be backed up to the NAS. Archive completed evidence to the 
 from the controller side; workers do not get NAS write credentials. No archival,
 garbage collection, cache publishing or signing job is enabled in this version.
 
-## Existing full-suite entry point
+## Foreground smoke entry point
 
 The CLI reads runs on the machine where it is invoked. `status` follows `latest` in
 the chosen state directory; it does not query the builder's queue or search other state
