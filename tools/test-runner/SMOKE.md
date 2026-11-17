@@ -24,6 +24,13 @@ terminal result, including the exact `run` and `runner` paths. Interrupting or
 killing the foreground command stops its worker. `start` and `wait` remain
 available for explicitly requested background execution.
 
+New run plans carry display labels with both the PHP and extension versions,
+and distinguish compilation, finalization, runtime composition and actual tests.
+For example: `PHP 8.2.30 / Redis 6.0.2: compiling extension (38s)`.
+Script-generation derivations are grouped under `Build scripts` rather than
+listed as separate packages. These are display changes; package names and store
+identities stay unchanged, and older run plans remain inspectable.
+
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
 and compiled module loading, Ruby's version and standard library, Redis's own

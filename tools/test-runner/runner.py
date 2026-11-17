@@ -370,11 +370,11 @@ def status(run, as_json=False, attempt_only=False, inspect_store=True):
     if as_json:
         print(json.dumps(state, indent=2))
         return state
-    print_status(run, state)
+    print_status(run, state, plan.get("displayLabels", {}))
     return state
 
 
-def print_status(run, state):
+def print_status(run, state, labels=None):
     counts = collections.Counter(state["counts"])
     duration = state["elapsedSeconds"]
     print("Run:", run)
@@ -389,9 +389,26 @@ def print_status(run, state):
     print(f"Cached at start: {sum(x['cachedAtStart'] for x in state['jobs'].values())}; declared broken: {len(state.get('declaredBroken', []))}")
     if state.get("source"):
         print("Snapshot:", state.get("revision") or "uncommitted", Path(state["source"]).name)
+    scripts = collections.Counter()
+    labels = labels or {}
     for activity in state.get("active", {}).values():
         name = Path(activity["drv"]).name[33:].removesuffix(".drv")
-        print(f"  {name}: {activity['phase']} ({int(time.time() - activity['startedAt'])}s)")
+        if (name.startswith("tvp-step-") and name.endswith(".sh")) or name == "tvp-build-step-runner":
+            scripts[activity["phase"]] += 1
+            continue
+        label = labels.get(activity["drv"])
+        if label and activity["phase"] == "fetching":
+            label = label.rsplit(": ", 1)[0] + ": downloading cached result"
+        print(f"  {label or name + ': ' + activity['phase']} ({int(time.time() - activity['startedAt'])}s)")
+    if scripts:
+        parts = []
+        if scripts["building"]:
+            parts.append(f"{scripts['building']} generating")
+        if scripts["fetching"]:
+            parts.append(f"{scripts['fetching']} downloading")
+        parts.extend(f"{count} {phase}" for phase, count in scripts.items()
+                     if phase not in {"building", "fetching"})
+        print("  Build scripts: " + ", ".join(parts))
     if state["phase"] == "running":
         if state.get("operation") == "registering-roots":
             roots = state["rooting"]
@@ -427,13 +444,15 @@ def progress_key(state):
 
 def wait(run, quiet=False):
     previous, printed_at = None, None
+    plan_path = run / "plan.json"
+    labels = json.loads(plan_path.read_text()).get("displayLabels", {}) if plan_path.exists() else {}
     while True:
         # The worker publishes observations and rooting progress. Waiting on its
         # snapshot avoids a second process continually querying the same store.
         state = status(run, as_json=None, inspect_store=False)
         key, now = progress_key(state), time.monotonic()
         if not quiet and key != previous:
-            print_status(run, state)
+            print_status(run, state, labels)
             previous, printed_at = key, now
         elif not quiet and now - printed_at >= 60:
             operation = state.get("operation", state["phase"])

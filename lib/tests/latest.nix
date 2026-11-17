@@ -89,26 +89,21 @@ let
       "validation"
     ];
   };
-  makePlan =
+  planFor =
     check:
-    builtins.fromJSON (
-      plain (
-        builtins.toJSON (
-          tests.compatibility.planManifest {
-            pkgs = {
-              stdenv.hostPlatform.system = "x86_64-linux";
-              linkFarm = _: _: {
-                overrideAttrs = _: { drvPath = "/model/aggregate.drv"; };
-              };
-            };
-            batches = { };
-            checks.fixture = check;
-            canonical = { };
-            source = ./latest.nix;
-          }
-        )
-      )
-    );
+    tests.compatibility.planManifest {
+      pkgs = {
+        stdenv.hostPlatform.system = "x86_64-linux";
+        linkFarm = _: _: {
+          overrideAttrs = _: { drvPath = "/model/aggregate.drv"; };
+        };
+      };
+      batches = { };
+      checks.fixture = check;
+      canonical = { };
+      source = ./latest.nix;
+    };
+  makePlan = check: builtins.fromJSON (plain (builtins.toJSON (planFor check)));
   plan = makePlan (
     primitive
     // {
@@ -120,7 +115,77 @@ let
   );
   planJob = builtins.head plan.jobs;
   plain = builtins.unsafeDiscardStringContext;
+  # Label extraction must use only package metadata and exact drv identities.
+  displayPackage =
+    name: attrs:
+    (leaf name)
+    // {
+      outPath = throw "display metadata demanded a package output";
+      outputs = throw "display metadata enumerated package outputs";
+    }
+    // attrs;
+  engine =
+    version:
+    displayPackage "php-${version}" {
+      pname = "php";
+      inherit version;
+      artifact = displayPackage "php-${version}-artifacts" { };
+    };
+  extension =
+    version:
+    displayPackage "php-${version}-redis" {
+      pname = "php-redis";
+      version = "6.0.2";
+      passthru = {
+        php = engine version;
+        extensionName = "redis";
+      };
+      artifact = displayPackage "php-${version}-redis-artifacts" { };
+    };
+  runtime = displayPackage "php-8.2.30-runtime" {
+    pname = "php-with-extensions";
+    version = "8.2.30";
+    unwrapped = engine "8.2.30";
+    enabledExtensions = [ (extension "8.2.30") ];
+    artifact = displayPackage "php-8.2.30-runtime-artifacts" { };
+  };
+  displayPlan = makePlan (
+    (leaf "display-batch")
+    // {
+      testSuite = {
+        redis82 = (leaf "redis82-load") // {
+          package = extension "8.2.30";
+          testName = "load";
+          specification.tools = [ runtime ];
+        };
+        redis83 = (leaf "redis83-load") // {
+          passthru = {
+            package = extension "8.3.30";
+            testName = "load";
+          };
+        };
+      };
+    }
+  );
+  labels = displayPlan.displayLabels;
   checks = {
+    displayExtensionStages =
+      labels."/model/php-8.2.30-redis-artifacts.drv" == "PHP 8.2.30 / Redis 6.0.2: compiling extension"
+      && labels."/model/php-8.2.30-redis.drv" == "PHP 8.2.30 / Redis 6.0.2: finalizing extension"
+      && labels."/model/php-8.3.30-redis.drv" == "PHP 8.3.30 / Redis 6.0.2: finalizing extension";
+    displayEngineStages =
+      labels."/model/php-8.2.30-artifacts.drv" == "PHP 8.2.30: compiling engine"
+      && labels."/model/php-8.2.30.drv" == "PHP 8.2.30: finalizing engine";
+    displayTest = labels."/model/redis82-load.drv" == "PHP 8.2.30 / Redis 6.0.2: test load";
+    displayRuntime =
+      labels."/model/php-8.2.30-runtime-artifacts.drv" == "PHP 8.2.30 / Redis 6.0.2: composing runtime"
+      && labels."/model/php-8.2.30-runtime.drv" == "PHP 8.2.30 / Redis 6.0.2: finalizing runtime";
+    displayCollecting =
+      labels."/model/display-batch.drv" == "check-fixture: collecting results"
+      && labels."/model/aggregate.drv" == "All tests: collecting results";
+    displayWithoutOutputs = builtins.deepSeq labels true;
+    displayContextFree = !(builtins.hasContext (builtins.toJSON (planFor primitive).displayLabels));
+    displayLegacyFallback = plan.displayLabels.${plain named.drvPath} == "check-fixture: test selected";
     fullPlanImplicitOutput = planJob.outputs == [ (plain primitive.outPath) ];
     fullPlanImplicitTest = (builtins.head planJob.tests).outputs == [ (plain primitive.outPath) ];
     fullPlanNamedTest =

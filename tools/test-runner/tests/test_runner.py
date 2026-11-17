@@ -685,6 +685,39 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(runner.status(run,as_json=None,inspect_store=False)['phase'],'failed')
             observe.assert_not_called()
 
+    def test_status_distinguishes_php_targets_and_groups_script_generation(self):
+        one='/nix/store/'+'a'*32+'-php-redis-6.0.2-artifacts.drv'
+        two='/nix/store/'+'b'*32+'-php-redis-6.0.2-artifacts.drv'
+        script='/nix/store/'+'c'*32+'-tvp-step-output.strip.sh.drv'
+        launcher='/nix/store/'+'d'*32+'-tvp-build-step-runner.drv'
+        labels={one:'PHP 8.1.30 / Redis 6.0.2: compiling extension',
+                two:'PHP 8.2.30 / Redis 6.0.2: finalizing extension'}
+        state={'phase':'running','elapsedSeconds':1,'counts':{},'jobs':{},
+               'active':{str(i):{'drv':drv,'phase':'building','startedAt':0}
+                         for i,drv in enumerate([one,two,script,launcher])}}
+        with mock.patch.object(runner.time,'time',return_value=3), \
+             contextlib.redirect_stdout(io.StringIO()) as console:
+            runner.print_status(self.root,state,labels)
+        text=console.getvalue()
+        self.assertIn(labels[one]+' (3s)',text)
+        self.assertIn(labels[two]+' (3s)',text)
+        self.assertIn('Build scripts: 2 generating',text)
+        self.assertNotIn('tvp-step-output.strip.sh',text)
+        self.assertNotIn('tvp-build-step-runner',text)
+
+    def test_status_describes_cache_download_and_supports_old_plans(self):
+        drv='/nix/store/'+'a'*32+'-php-redis-6.0.2-artifacts.drv'
+        state={'phase':'running','elapsedSeconds':1,'counts':{},'jobs':{},
+               'active':{'one':{'drv':drv,'phase':'fetching','startedAt':0}}}
+        with contextlib.redirect_stdout(io.StringIO()) as console:
+            runner.print_status(self.root,state,{drv:'PHP 8.2.30 / Redis 6.0.2: compiling extension'})
+        text=console.getvalue()
+        self.assertIn('PHP 8.2.30 / Redis 6.0.2: downloading cached result',text)
+        self.assertNotIn('compiling extension',text)
+        with contextlib.redirect_stdout(io.StringIO()) as console:
+            runner.print_status(self.root,state)
+        self.assertIn('php-redis-6.0.2-artifacts: fetching',console.getvalue())
+
     def test_live_failure_is_deduplicated_and_success_wins(self):
         good=self.root/'good.out';good.write_text('passed')
         run,plan,state=self.observe_fixture([
