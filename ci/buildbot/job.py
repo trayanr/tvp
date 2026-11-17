@@ -81,6 +81,16 @@ def validate(args):
         return validate_owned(args, owner_path)
 
 
+def read_result(validation):
+    run = (validation / "latest").resolve(strict=True)
+    if run.parent != (validation / "runs").resolve():
+        raise ValueError("CI receipt is outside this validation's runs directory")
+    result = json.loads((run / "result.json").read_text())
+    if not isinstance(result, dict) or result.get("run") != str(run):
+        raise ValueError("CI receipt identifies a different run")
+    return result
+
+
 def validate_owned(args, owner_path):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
         raise ValueError("Invalid GitHub repository")
@@ -119,13 +129,17 @@ def validate_owned(args, owner_path):
             for name in difference[key]:
                 print(f"  {key}: {name}", flush=True)
     check_flake(candidate, evidence)
+    validation = root / "validation"
+    if validation.exists() or validation.is_symlink():
+        raise ValueError("CI validation needs a fresh state directory")
     completed = subprocess.run([
         "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
-        "--system", "x86_64-linux", "--state-dir", str(root / "validation"),
-        "--owner-lock", str(owner_path), "--json",
-    ], text=True, stdout=subprocess.PIPE)
+        "--system", "x86_64-linux", "--state-dir", str(validation),
+        "--owner-lock", str(owner_path),
+    ])
     # A failing test still returns a terminal receipt and retained evidence.
-    result = json.loads(completed.stdout)
+    # Inherit the console for live progress; consume the separate machine receipt.
+    result = read_result(validation)
     run = Path(result["run"])
     launch = {key: result[key] for key in ("run", "runner", "validationScope", "full")}
     (evidence / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
@@ -134,7 +148,7 @@ def validate_owned(args, owner_path):
     if result.get("validationScope") != "smoke" or result.get("full") is not False:
         raise ValueError("CI result scope differs from the requested smoke plan")
     (evidence / "status.json").write_text(json.dumps(result, indent=2) + "\n")
-    for name in ["nix.log", "prepare.log", "worker.log", "plan.json", "command.json", "result.json"]:
+    for name in ["nix.log", "events.jsonl", "prepare.log", "worker.log", "plan.json", "command.json", "result.json"]:
         if (run / name).is_file():
             shutil.copyfile(run / name, evidence / name)
     failures = evidence / "failure-logs"

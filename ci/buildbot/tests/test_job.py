@@ -26,7 +26,8 @@ def directory():
 
 
 class FrozenValidation(unittest.TestCase):
-    def run_validation(self, phase, exit_code, base="", scope="smoke", full=False):
+    def run_validation(self, phase, exit_code, base="", scope="smoke", full=False,
+                       receipt_mode="normal", receipt_changes=None):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
@@ -45,13 +46,23 @@ class FrozenValidation(unittest.TestCase):
                 kwargs["stdout"].write(b"flake evaluation output\n")
                 self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
             if "all" in argv:
-                self.assertEqual(kwargs["stdout"], subprocess.PIPE)
-                self.assertIs(kwargs["text"], True)
-                return subprocess.CompletedProcess(argv, exit_code, json.dumps({
-                    "run": "/immutable/run-17", "runner": "/immutable/run-17/runner/bin/tvp-test",
+                self.assertNotIn("--json", argv)
+                self.assertIsNone(kwargs.get("stdout"))
+                self.assertIsNone(kwargs.get("stderr"))
+                validation = Path(argv[argv.index("--state-dir") + 1])
+                run_path = validation / "runs/run-17"
+                run_path.mkdir(parents=True)
+                (validation / "latest").symlink_to(run_path)
+                receipt = {
+                    "run": str(run_path), "runner": str(run_path / "runner/bin/tvp-test"),
                     "phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": [],
                     "validationScope": scope, "full": full,
-                }))
+                }
+                receipt.update(receipt_changes or {})
+                if receipt_mode != "missing":
+                    (run_path / "result.json").write_text(
+                        "not valid json" if receipt_mode == "malformed" else json.dumps(receipt))
+                return subprocess.CompletedProcess(argv, exit_code)
             return subprocess.CompletedProcess(argv, 0)
         args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, target_branch="master", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
@@ -65,8 +76,9 @@ class FrozenValidation(unittest.TestCase):
             self.assertEqual(identity['merge'], args.head)
             self.assertFalse(any('merge' in c for c in commands))
             launch = json.loads(Path("evidence/launch.json").read_text())
-            self.assertEqual(launch['run'], '/immutable/run-17')
-            self.assertEqual(launch['runner'], '/immutable/run-17/runner/bin/tvp-test')
+            run_path = Path.cwd() / 'validation/runs/run-17'
+            self.assertEqual(launch['run'], str(run_path))
+            self.assertEqual(launch['runner'], str(run_path / 'runner/bin/tvp-test'))
         return code, commands
 
     def test_exit_success_cannot_hide_failed_suite_results(self):
@@ -90,6 +102,26 @@ class FrozenValidation(unittest.TestCase):
     def test_smoke_ci_rejects_a_full_scope_result(self):
         with self.assertRaisesRegex(ValueError, "requested smoke plan"):
             self.run_validation("passed", 0, scope="full", full=True)
+
+    def test_success_requires_the_current_run_receipt(self):
+        for mode in ["missing", "malformed"]:
+            with self.subTest(mode=mode), self.assertRaises((OSError, ValueError)):
+                self.run_validation("passed", 0, receipt_mode=mode)
+
+    def test_receipt_cannot_name_another_run(self):
+        with self.assertRaises(ValueError):
+            self.run_validation("passed", 0, receipt_changes={"run": "/foreign/run"})
+
+    def test_latest_receipt_cannot_escape_the_validation_directory(self):
+        with directory() as root:
+            validation = root / "validation"
+            validation.mkdir()
+            foreign = root / "foreign-run"
+            foreign.mkdir()
+            (validation / "latest").symlink_to(foreign)
+            (foreign / "result.json").write_text(json.dumps({"run": str(foreign)}))
+            with self.assertRaises(ValueError):
+                job.read_result(validation)
 
     def test_master_records_producers_before_read_only_checks_with_full_traces(self):
         _, commands = self.run_validation("passed", 0)
