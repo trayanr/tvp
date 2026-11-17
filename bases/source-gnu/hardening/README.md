@@ -97,7 +97,10 @@ dynamic selection. Caller arguments still retain their actual linker semantics.
 
 Active-policy inspection rejects unreadable/deep/malformed response files,
 unknown optimization spellings, and opaque specs/plugin/preprocessor interfaces
-(`-specs`, `-wrapper`, `-fplugin`, `-Wp,`, `-Xpreprocessor`, `-imacros`). GCC
+(`-specs`, `-wrapper`, `-fplugin`, `-Wp,`, `-Xpreprocessor`, `-imacros`).
+The dependency-only forms `-Wp,-MD,FILE` and `-Wp,-MMD,FILE` are supported;
+`FILE` must be one nonempty literal filename, not an option or response file.
+Additional forwarded arguments remain rejected. GCC
 response escaping follows libiberty's grammar, including backslash inside quotes;
 this is not shell quoting. Normal headers can still redefine macros; the adapter
 cannot certify arbitrary source, custom pragmas, linker scripts, language

@@ -872,3 +872,10 @@ OpenSSL's optional `tsget` network helper still requires `WWW::Curl::Easy`,
 which the selected Perl does not provide. Finalization and preserved warning-flag
 fixtures do not certify that optional network functionality; keep it deferred and
 visible rather than claiming complete helper qualification.
+
+Linux headers export uses `-Wp,-MMD,FILE` while building its host helper. Permit
+that dependency-only form and `-Wp,-MD,FILE` through the consumer adapter, with
+exact arity and a literal filename. Keep other opaque preprocessor interfaces
+rejected and leave the selected host compiler and hardening policy enabled.
+Focused dependency-file generation, execution and RELRO/NOW checks cover this
+repair; it does not require an upstream suite.
