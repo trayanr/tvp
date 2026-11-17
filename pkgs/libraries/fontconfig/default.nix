@@ -23,6 +23,22 @@ let
       url =
         version:
         "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${version}/fontconfig-${version}.tar.xz";
+      discovery = {
+        type = "git-tags";
+        url = "https://gitlab.freedesktop.org/fontconfig/fontconfig.git";
+        normalise =
+          tag:
+          let
+            numeric = builtins.match "[0-9]+(\\.[0-9]+)+" tag;
+            legacy = builtins.match "(fcpackage_|fc-|v)([0-9]+(_[0-9]+)+)" tag;
+          in
+          if numeric != null then
+            tag
+          else if legacy != null then
+            pkgs.lib.replaceStrings [ "_" ] [ "." ] (builtins.elemAt legacy 1)
+          else
+            null;
+      };
     };
     tests = import ./tests/owned.nix;
 

@@ -37,7 +37,7 @@ source = tvp.lib.sources.archive {
 
 `prefix` strips a declared Git tag prefix; use a `normalise` function for more
 complex spellings. The discovery types are `directory-index`, `git-tags`,
-`git-head`, and `rubygems`, retaining their existing CLI-specific fields. Omit
+`git-head`, `rubygems`, `json-index` and `android-repository`. Omit
 discovery or set it to `null` when unknown; the upstream report must show that
 gap rather than omit the family or claim there are no missing versions.
 
@@ -51,3 +51,26 @@ The family exports the resolved URL as `package.tvp.source` and its discovery as
 the family source. Legacy function sources and `packageMeta.upstream` remain
 readable during transition, but a descriptor's discovery must not also be
 declared in `packageMeta.upstream`.
+
+Structured release indexes describe their selection explicitly:
+
+```nix
+discovery = {
+  type = "json-index";
+  url = "https://example.org/releases.json";
+  selector = ".releases[].version";
+};
+```
+
+The jq selector emits release strings. JSON errors, wrong value types and failed
+requests produce an incomplete-report error. Android's `android-repository`
+adapter selects a `packagePrefix` from the official SDK XML index, retaining
+stable Linux or universal archives and excluding preview revisions. Its default
+`versionScheme = "revision"` preserves explicit revision components; `"platform"`
+uses API level plus package revision, such as `37.2-r2`.
+
+Feeds that publish only a subset of history declare a human-readable `scope`.
+The CLI prints that limit, counts packaged versions within the queried listing,
+and separately shows packaged versions absent from it. For an untagged source,
+`git-head` compares the pinned revision with one explicit branch head and does
+not claim to enumerate releases or commit history.

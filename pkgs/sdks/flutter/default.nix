@@ -36,7 +36,16 @@ let
     source = tvp.lib.sources.directory {
       url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/";
       archive = "flutter_linux_{version}-stable.tar.xz";
-      discovery = null;
+      discovery = {
+        type = "json-index";
+        url = "https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json";
+        selector = ''
+          .releases[]
+          | select(.channel == "stable" and ((.dart_sdk_arch // "x64") == "x64"))
+          | select(.archive | test("^stable/linux/flutter_linux_[0-9]+([.][0-9]+)+-stable[.]tar[.]xz$"))
+          | .version
+        '';
+      };
     };
     tests = import ./tests/installed.nix;
     testDeps = { };

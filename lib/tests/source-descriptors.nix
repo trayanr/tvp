@@ -46,6 +46,42 @@ let
       && !(tags.discovery ? prefix);
     customFetchUnchanged = custom selected == source selected && (custom.describe selected).url == null;
     explicitUnknown = custom.discovery == null;
+    structuredDiscovery =
+      let
+        json = sources.archive {
+          url = "https://example.invalid/archive";
+          discovery = {
+            type = "json-index";
+            url = "https://example.invalid/versions.json";
+            selector = ".[].version";
+          };
+        };
+        android = sources.archive {
+          url = "https://example.invalid/archive";
+          discovery = {
+            type = "android-repository";
+            url = "https://example.invalid/repository.xml";
+            packagePrefix = "ndk;";
+          };
+        };
+      in
+      json.discovery.selector == ".[].version" && android.discovery.packagePrefix == "ndk;";
+    missingStructuredSelector = builtins.all rejects [
+      (sources.archive {
+        url = "https://example.invalid/archive";
+        discovery = {
+          type = "json-index";
+          url = "https://example.invalid/versions.json";
+        };
+      })
+      (sources.archive {
+        url = "https://example.invalid/archive";
+        discovery = {
+          type = "android-repository";
+          url = "https://example.invalid/repository.xml";
+        };
+      })
+    ];
     alternateDiscoveryDoesNotInheritFilenameParser =
       let
         other = sources.directory {

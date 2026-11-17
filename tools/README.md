@@ -82,10 +82,16 @@ source = tvp.lib.sources.archive {
 };
 ```
 
-Discovery supports directory indexes, Git tags, RubyGems version indexes and
-explicit Git branch heads. Source-specific normalization, exclusions and unavailable
+Discovery supports directory indexes, Git tags, JSON indexes, Android SDK XML,
+RubyGems version indexes and explicit Git branch heads. Source-specific normalization, exclusions and unavailable
 release explanations stay with that source. Missing discovery is represented by
 `null`; an arbitrary download URL function is never guessed into a listing rule.
 Exceptional fetchers can supply an explicit `fetch` factory while keeping their
 available URL and discovery description in the same source record. These
 reporting fields do not become compilation inputs.
+
+All 110 current families declare discovery. Android SDK feeds and Go's documented
+C-bootstrap archive have explicitly limited history; the report prints those
+scopes. GN compares an exact pinned commit with its upstream branch head. For
+release feeds, the packaged count is the intersection with the queried feed;
+older packaged versions absent from it are shown separately.

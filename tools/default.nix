@@ -36,6 +36,7 @@ let
     };
     upstream = pkgs.callPackage ./upstream.nix {
       inherit ownedCLI;
+      python3 = tvp.packages.python_3;
       coreutils = tvp.packages.coreutils;
       curl = tvp.packages.curl;
       git = tvp.packages.git;

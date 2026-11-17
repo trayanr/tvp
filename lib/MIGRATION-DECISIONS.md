@@ -897,3 +897,12 @@ Every package family appears in the upstream report. A source with no establishe
 discovery rule reports its packaged versions, download URL and unknown missing
 versions. Do not infer an empty release list or silently drop that family. The
 installed `upstream --list` inventories configuration without contacting upstream.
+
+All remaining families now declare authoritative discovery, including Android's
+SDK repository XML and official JSON release indexes. Match published stable
+Linux/universal SDK archives and preserve each family's version convention.
+Scoped feeds explicitly state that superseded revisions or historical bootstrap
+snapshots may be absent. GN compares the pinned commit with its upstream branch
+head rather than inventing numbered releases. Count the intersection of packaged
+and listed versions, and display packaged versions outside the queried listing
+separately. Metadata requests or parser failures keep the report incomplete.

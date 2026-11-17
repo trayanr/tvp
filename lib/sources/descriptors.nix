@@ -14,12 +14,30 @@ let
         "directory-index"
         "git-tags"
         "git-head"
+        "json-index"
+        "android-repository"
         "rubygems"
       ])
     then
       fail "unsupported discovery type"
     else if !nonemptyString (discovery.url or null) then
       fail "discovery requires a nonempty URL"
+    else if discovery.type == "json-index" && !nonemptyString (discovery.selector or null) then
+      fail "json-index discovery requires a jq selector"
+    else if
+      discovery.type == "android-repository" && !nonemptyString (discovery.packagePrefix or null)
+    then
+      fail "android-repository discovery requires a packagePrefix"
+    else if
+      discovery.type == "android-repository"
+      && !(builtins.elem (discovery.versionScheme or "revision") [
+        "revision"
+        "platform"
+      ])
+    then
+      fail "unsupported Android revision scheme"
+    else if discovery ? scope && !nonemptyString discovery.scope then
+      fail "discovery.scope must be a nonempty description"
     else if discovery ? normalise && !builtins.isFunction discovery.normalise then
       fail "discovery.normalise must be a function"
     else if discovery ? include && !builtins.isFunction discovery.include then

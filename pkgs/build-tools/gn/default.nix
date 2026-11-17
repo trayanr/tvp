@@ -31,6 +31,13 @@ let
           inherit sha256;
           revision = "b8becbd4f7979f63ab3542524b2b4d8db2ce3b52";
         };
+      discovery = {
+        # GN publishes pinned commits rather than numbered releases.
+        type = "git-head";
+        url = "https://gn.googlesource.com/gn";
+        ref = "refs/heads/main";
+        revisions = builtins.mapAttrs (_: release: release.def.opts.revision) versionTable;
+      };
     };
     tests = import ./tests;
   };

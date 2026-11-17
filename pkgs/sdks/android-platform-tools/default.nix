@@ -34,6 +34,12 @@ let
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
       url = version: versionTable.${version}.def.opts.sourceLayout.url;
+      discovery = {
+        type = "android-repository";
+        scope = "Published SDK repository index; superseded revisions may be absent.";
+        url = "https://dl.google.com/android/repository/repository2-3.xml";
+        packagePrefix = "platform-tools";
+      };
     };
     tests = import ./tests/installed.nix;
     testDeps = { };

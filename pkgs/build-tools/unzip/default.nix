@@ -23,6 +23,18 @@ let
     inherit pname versionTable testDeps;
     source = tvp.lib.sources.archive {
       url = "https://downloads.sourceforge.net/infozip/unzip60.tar.gz";
+      discovery = {
+        # Compact source names encode 60 as 6.0 and 552 as 5.52.
+        type = "directory-index";
+        url = "https://sourceforge.net/projects/infozip/rss?path=/";
+        pattern = "/unzip[0-9]{2,3}\\.(tar\\.gz|tgz|zip)/download";
+        normalise =
+          file:
+          let
+            match = builtins.match "/unzip([0-9])([0-9]{1,2})\\.(tar\\.gz|tgz|zip)/download" file;
+          in
+          if match == null then null else "${builtins.elemAt match 0}.${builtins.elemAt match 1}";
+      };
     };
     tests = import ./tests;
   };

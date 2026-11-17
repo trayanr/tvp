@@ -52,6 +52,13 @@ let
         "https://storage.googleapis.com/dart-archive/channels/${
           if pkgs.lib.hasSuffix ".beta" version then "beta" else "stable"
         }/release/${version}/sdk/dartsdk-linux-x64-release.zip";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/dart-lang/sdk.git";
+        # This family supplies both a pinned beta compiler and stable SDK assets.
+        include =
+          version: builtins.match "[0-9]+[.][0-9]+[.][0-9]+(-[0-9]+[.][0-9]+[.]beta)?" version != null;
+      };
     };
     tests = import ./tests/installed.nix;
     testDeps = { };

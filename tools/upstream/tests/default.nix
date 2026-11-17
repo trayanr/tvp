@@ -16,6 +16,7 @@ let
   };
   cli = pkgs.callPackage ../../upstream.nix {
     inherit ownedCLI;
+    python3 = tvp.packages.python_3;
     inherit (tvp.packages)
       coreutils
       curl

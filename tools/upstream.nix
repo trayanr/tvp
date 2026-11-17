@@ -12,6 +12,7 @@
   gnugrep,
   gnused,
   jq,
+  python3,
 
   packages,
   tvpLib,
@@ -63,6 +64,7 @@ ownedCLI.shell {
     gnugrep
     gnused
     jq
+    python3
   ];
   text = ''
     manifest=${manifest}
@@ -106,7 +108,7 @@ ownedCLI.shell {
     ${builtins.readFile ./upstream/git-head.sh}
 
     fetch_raw() {
-      local type=$1 url=$2 subdir=$3 pattern=$4
+      local type=$1 url=$2 subdir=$3 pattern=$4 selector=$5
       case "$type" in
         directory-index)
           if [ -n "$subdir" ] && [ "$subdir" != "null" ]; then
@@ -119,7 +121,17 @@ ownedCLI.shell {
           fi
           ;;
         git-tags)
-          git ls-remote --tags "$url" | sed 's|.*refs/tags/||; s|\^{}$||'
+          GIT_TERMINAL_PROMPT=0 timeout --signal=TERM --kill-after=5 45 \
+            git -c credential.helper= -c core.askPass= ls-remote --tags -- "$url" \
+              | sed 's|.*refs/tags/||; s|\^{}$||'
+          ;;
+        json-index)
+          curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" \
+            | jq -er "($selector) | if type == \"string\" and length > 0 then . else error(\"expected release string\") end"
+          ;;
+        android-repository)
+          curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" \
+            | ${python3}/bin/python3 ${./upstream/android-repository.py} "$row"
           ;;
         rubygems)
           curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" | jq -r '.[].number'
@@ -153,6 +165,8 @@ ownedCLI.shell {
       url=$(jq -r '.upstream.url' <<< "$row")
       subdir=$(jq -r '.upstream.subdirPattern // ""' <<< "$row")
       pattern=$(jq -r '.upstream.pattern // ""' <<< "$row")
+      selector=$(jq -r '.upstream.selector // ""' <<< "$row")
+      scope=$(jq -r '.upstream.scope // ""' <<< "$row")
 
       # Untagged projects have snapshots, not numbered releases. Compare only
       # the declared branch head; do not imply that its history was enumerated.
@@ -164,6 +178,7 @@ ownedCLI.shell {
         fi
         printf '%s — upstream branch head comparison (history not enumerated)\n' "$pname"
         printf '  source: %s %s\n' "$type" "$url"
+        if [ -n "$scope" ]; then printf '  scope: %s\n' "$scope"; fi
         jq -r '"  ref: " + .ref,
                "  remote head: " + .remoteHead,
                (.packagedRevisions[] | "  packaged " + .version + ": " + .revision),
@@ -173,8 +188,9 @@ ownedCLI.shell {
         continue
       fi
 
-      if ! fetch_raw "$type" "$url" "$subdir" "$pattern" | sort -u > "$work/raw"; then
-        printf '%s: SKIPPED (%s)\n\n' "$pname" "$type"
+      if ! fetch_raw "$type" "$url" "$subdir" "$pattern" "$selector" | sort -u > "$work/raw"; then
+        printf '%s — FAILED: could not read upstream listing (%s)\n\n' "$pname" "$type"
+        touch "$work/failed"
         continue
       fi
       jq -R -s 'split("\n") | map(select(length > 0))' < "$work/raw" > "$work/raw.json"
@@ -205,17 +221,25 @@ ownedCLI.shell {
 
       jq -r '.versions[]' <<< "$row" | sort -u > "$work/have"
       jq -r '.upstream.unavailable // [] | .[].versions[]' <<< "$row" | sort -u > "$work/unavailable"
+      comm -12 "$work/upstream" "$work/have" > "$work/packaged-upstream"
+      comm -23 "$work/have" "$work/upstream" > "$work/unlisted-packaged"
       comm -23 "$work/upstream" "$work/have" | comm -23 - "$work/unavailable" > "$work/missing"
 
       printf '%s — %s of %s upstream releases packaged\n' \
-        "$pname" "$(wc -l < "$work/have")" "$(wc -l < "$work/upstream")"
+        "$pname" "$(wc -l < "$work/packaged-upstream")" "$(wc -l < "$work/upstream")"
       printf '  source: %s %s\n' "$type" "$url"
+      if [ -n "$scope" ]; then printf '  scope: %s\n' "$scope"; fi
       if [ -s "$work/missing" ]; then
         printf '  not packaged (%s):\n' "$(wc -l < "$work/missing")"
         tr '\n' ' ' < "$work/missing" | fold -s -w 92 | sed 's/^/    /'
         echo
       else
         echo "  nothing missing"
+      fi
+      if [ -s "$work/unlisted-packaged" ]; then
+        printf '  packaged outside this listing (%s):\n' "$(wc -l < "$work/unlisted-packaged")"
+        tr '\n' ' ' < "$work/unlisted-packaged" | fold -s -w 92 | sed 's/^/    /'
+        echo
       fi
       if [ -s "$work/unavailable" ]; then
         printf '  unavailable (%s) — exists upstream, cannot be packaged:\n' \
