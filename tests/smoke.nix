@@ -20,6 +20,12 @@ let
     ruby_4_0_6 = {
       inherit (tvp.canonical.ruby_4_0_6.tests) version stdlib;
     };
+    redis_8_10_3 = {
+      inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
+    };
+    php-redis_6_3_0 = {
+      inherit (tvp.canonical.php-redis_6_3_0.tests) load roundtrip;
+    };
   };
   batches = pkgs.lib.mapAttrs (
     name: suite:

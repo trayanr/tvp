@@ -123,6 +123,7 @@ let
       graph
       ;
     android = import ./sdks/android.nix { inherit tvp pkgs; };
+    php = import ./pkgs/runtimes/php/catalogue.nix { inherit tvp pkgs; };
     # Internal compatibility only; ordinary packages use the public bases above.
     __legacyBases = legacyBases;
     builder = import ./lib/builder.nix { inherit (pkgs) lib; };

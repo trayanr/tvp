@@ -15,7 +15,7 @@ nix run .#test -- start --only perl_5_30_3
 ```
 
 `test start` defaults to this smoke scope. The initial selection in
-[`tests/smoke.nix`](tests/smoke.nix) contains twelve named checks across six
+[`tests/smoke.nix`](tests/smoke.nix) contains sixteen named checks across eight
 subjects; it is a representative selection, not coverage of every package.
 Update that explicit selection when a different package needs checking.
 [`SMOKE.md`](tools/test-runner/SMOKE.md) explains the commands and receipts.

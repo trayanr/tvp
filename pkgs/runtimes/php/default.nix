@@ -912,7 +912,15 @@ let
     };
 
   };
-  canonical = tvp.lib.packages.mkVersions family;
+  extensionCatalogue = import ./extensions { inherit pkgs tvp; };
+  canonical = builtins.mapAttrs (
+    _: php:
+    import ./interface.nix {
+      inherit tvp php;
+      inherit (pkgs) lib;
+      catalogue = extensionCatalogue;
+    }
+  ) (tvp.lib.packages.mkVersions family);
 in
 {
   recipes.php = family;

@@ -14,7 +14,8 @@ the repository. The service files and `config.example.json` are templates.
 
 Default CI runs the explicit small selection in [tests/smoke.nix](../tests/smoke.nix),
 following [TESTING.md](../TESTING.md). It currently checks C/C++ on four full bases
-and two installed-result checks each for Perl and Ruby: 12 named tests in total.
+and two installed-result checks each for Perl, Ruby, Redis and PHPRedis:
+16 named tests in total.
 It does not run upstream regressions, all historical releases, or every repo check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
 

@@ -162,6 +162,7 @@ rec {
     ) (lib.attrNames construction.variants)
     ++ baseRows
     ++ constructionReferences
+    ++ dependencyRows compositions
     ++ lib.mapAttrsToList (name: p: {
       inherit name;
       kind = "composition";

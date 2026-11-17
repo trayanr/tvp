@@ -52,6 +52,7 @@
             canonical
             variants
             android
+            php
             graph
             dependencyRoots
             dependencyInventory

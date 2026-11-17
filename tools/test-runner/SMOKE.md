@@ -16,8 +16,9 @@ nix run .#test -- start --only perl_5_30_3
 
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
-and compiled module loading, and Ruby's version and standard library. Twelve
-named tests run across six subjects. No upstream test is included. Update this
+and compiled module loading, Ruby's version and standard library, and Redis /
+PHPRedis loading and roundtrips. Sixteen named tests run across eight subjects.
+No upstream test is included. Update this
 explicit selection when the changed package needs different representative checks;
 do not infer a policy from test names or silently include its whole suite.
 

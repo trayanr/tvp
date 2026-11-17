@@ -12,6 +12,11 @@
   testBatchEntries,
 }:
 let
+  compositions =
+    tvp.android.profiles
+    // pkgs.lib.mapAttrs' (
+      name: package: pkgs.lib.nameValuePair "php-${name}" package
+    ) tvp.php.profiles;
   runtimeRegistry = tvpLib.provenance.registry {
     inherit
       canonical
@@ -19,7 +24,7 @@ let
       construction
       ;
     bases = legacyBases;
-    compositions = tvp.android.profiles;
+    inherit compositions;
   };
 in
 {
@@ -81,7 +86,7 @@ in
         construction
         ;
       bases = legacyBases;
-      compositions = tvp.android.profiles;
+      inherit compositions;
     };
     inventory = tvp.dependencyInventory;
     registry = runtimeRegistry;
@@ -97,7 +102,7 @@ in
       variants
       construction
       ;
-    compositions = tvp.android.profiles;
+    inherit compositions;
     buildTestSupport = import ../tests/support.nix { inherit pkgs tvp legacyBases; };
   };
   graph = tvpLib.graph.snapshot {
@@ -107,6 +112,6 @@ in
       construction
       ;
     bases = legacyBases;
-    compositions = tvp.android.profiles;
+    inherit compositions;
   };
 }
