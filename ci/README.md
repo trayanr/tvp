@@ -13,10 +13,12 @@ the repository. The service files and `config.example.json` are templates.
 ## Testing scope
 
 Default CI runs the installed checks in [tests/smoke.nix](../tests/smoke.nix),
-following [TESTING.md](../TESTING.md). It includes all 296 declared compatible
-PHP/extension pairs, with two small checks each: module loading and a functional
-Unix-socket Redis roundtrip. Four full compiler bases, Perl, Ruby and Redis add
-14 checks, bringing the selection to 606 named tests across 303 subjects.
+following [TESTING.md](../TESTING.md). It includes all 479 declared compatible
+PHP/extension pairs (296 Redis and 183 igbinary), with two small checks each:
+module loading and a functional roundtrip. Redis uses a temporary Unix-socket
+server; igbinary serializes and restores PHP values directly. Four full compiler
+bases, Perl, Ruby and Redis add 14 checks, bringing the selection to 972 named
+tests across 486 subjects.
 The PHP compatibility matrix includes historical releases and may compile them
 when their outputs are not cached. Other families retain representative checks.
 CI does not run upstream regressions or every repository check.

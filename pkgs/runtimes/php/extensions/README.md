@@ -94,15 +94,33 @@ initial selection. Selecting an incompatible exact extension version fails
 during evaluation. Optional igbinary, msgpack and compression integrations are
 not enabled in the initial Redis module.
 
-PHP 8.5.12 / PHPRedis 6.3.0 passes both local smoke checks, using Redis 8.10.3.
-Historical pairs remain unqualified until their individual build and
-smoke checks pass. Adding a release means adding its source hash and explicit
+Each declared pair has independent build and smoke results. Adding another
+release does not inherit qualification from an earlier one. Adding a release means adding its source hash and explicit
 PHP span to [redis/default.nix](redis/default.nix); the family shares the
 [phpize builder](build-phpize.nix) and [installed tests](redis/tests.nix).
 
+## Igbinary release selection
+
+`php.extensions.igbinary` selects igbinary 3.2.17RC1 for PHP `>= 7.0`, `< 8.6`.
+The upstream RC label is preserved in the version and exact attribute
+`igbinary_3_2_17RC1`. Upstream’s [release](https://github.com/igbinary/igbinary/releases/tag/3.2.17RC1)
+adds PHP 8.5 support; its [package metadata](https://github.com/igbinary/igbinary/blob/3.2.17RC1/package.xml)
+requires PHP 7.0 or later. PHP 5 is outside this initial igbinary declaration.
+
+```nix
+tvp.packages.php_8_5.withExtensions {
+  extensions = extensions: [ extensions.igbinary ];
+}
+```
+
+The standalone serializer exposes `igbinary_serialize` and `igbinary_unserialize`.
+Its checks load the selected module version, then roundtrip nested values,
+embedded NUL bytes and distinct PHP scalar types. No server dependency is needed.
+The family reuses the existing phpize builder and configured-runtime interface.
+
 ## Checks and CI
 
-The module has two focused installed checks: load it and read its version, then
+The Redis module has two focused installed checks: load it and read its version, then
 connect to a temporary Redis server over a Unix socket and perform SET/GET. No
 TCP port or existing host service is used. `tvp.packages.redis` supplies that
 test server; PHPRedis does not require the Redis server to compile or load.
@@ -111,29 +129,31 @@ The [Redis server package](../../../servers/redis/README.md) has its own version
 and Unix-socket roundtrip checks. These checks do not run either project's full
 upstream suite.
 
-Standard `nix run .#test -- start` and CI include every declared compatible
+Standard `nix run .#test -- all` and CI include every declared compatible
 PHP/module pair, with these two small checks for each pair. Full upstream
 regression suites remain separate under [TESTING.md](../../../../TESTING.md).
 Local iteration can select one pair and reuse exact passing results. A source
 evaluation or a passing current pair does not qualify the historical matrix.
 
-The catalogue exposes 296 declared compatible pairs across the 190 packaged PHP
-versions, with two named checks per pair: 592 checks. It includes every declared
+The catalogue exposes 479 declared compatible pairs across the 190 packaged PHP
+versions: 296 Redis pairs and 183 igbinary pairs. Two named checks per pair
+produce 958 checks. It includes every declared
 extension release for each PHP version inside that release's compatibility
-span. PHP 5.0 and 5.1 are listed as unsupported; incompatible combinations are
-excluded rather than attempted.
+span. Per-family compatibility and unsupported engines are available in
+`php.metadata.families`; incompatible combinations are excluded rather than
+attempted.
 
 Inspect the declarations or select the execution scope:
 
 ```sh
 nix eval --json .#php.metadata
 # Standard testing / CI: all compatible pairs plus the other smoke subjects.
-nix run .#test -- start
+nix run .#test -- all
 # Local iteration: only one pair from that standard plan.
-nix run .#test -- start --only php_8_5_12--redis_6_3_0
+nix run .#test -- all --only php_8_5_12--redis_6_3_0
 # One pair: build the module and run its two small checks.
 nix build .#php.extensionTests.php_8_5_12--redis_6_3_0
-# PHP extension matrix subset: all 296 pairs / 592 checks, no other subjects.
+# PHP extension matrix subset: all 479 pairs / 958 checks, no other subjects.
 nix build .#php.extensionTestsAll
 # Ready-to-run current PHP with Redis:
 nix run .#php.profiles.redis -- -r 'echo phpversion("redis"), PHP_EOL;'
@@ -142,11 +162,11 @@ nix run .#php.profiles.redis -- -r 'echo phpversion("redis"), PHP_EOL;'
 `php.extensionPackages` contains the module build targets;
 `php.extensionTests` contains the corresponding two-check batches. Standard CI
 includes every one of these batches, without inventing incompatible
-combinations. The full selection contains 606 named checks across 303 subjects:
-592 from this matrix and 14 across the four compiler bases, Perl, Ruby and Redis.
+combinations. The full selection contains 972 named checks across 486 subjects:
+958 from this matrix and 14 across the four compiler bases, Perl, Ruby and Redis.
 
 Both standard CI and `extensionTestsAll` may compile historical PHP engines and
 extensions that are not cached. They reuse valid outputs and run only the two
 installed checks per pair; they do not run full PHP, Redis or PHPRedis upstream
-suites. The historical matrix has not been executed locally yet; its pairs
-remain unqualified until their actual build and test results pass.
+suites. The metadata describes the declared jobs; execution receipts record
+which exact builds and checks have passed.

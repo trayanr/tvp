@@ -24,9 +24,10 @@ retained under `.tvp-tests/latest/`; separate preparation and wait commands are
 not needed. `test start` remains available for background execution.
 
 Both commands default to this smoke scope. The selection in
-[`tests/smoke.nix`](tests/smoke.nix) contains 606 named checks across 303
-subjects: two checks for each of 296 declared compatible PHP/extension pairs,
-plus 14 checks across the four compiler bases, Perl, Ruby and Redis.
+[`tests/smoke.nix`](tests/smoke.nix) contains 972 named checks across 486
+subjects: two checks for each of 479 declared compatible PHP/extension pairs
+(296 Redis and 183 igbinary), plus 14 checks across the four compiler bases,
+Perl, Ruby and Redis.
 The owner approved the PHP extension matrix as part of standard testing and CI.
 It covers every declared compatible pair, including historical PHP versions,
 with small load and functional checks rather than upstream regression suites.
