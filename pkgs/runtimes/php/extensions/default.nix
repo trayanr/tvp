@@ -1,6 +1,10 @@
 { pkgs, tvp }:
 let
-  redis = import ./redis { inherit pkgs tvp; };
+  families = {
+    redis = import ./redis { inherit pkgs tvp; };
+    igbinary = import ./igbinary { inherit pkgs tvp; };
+  };
+  versionTables = builtins.mapAttrs (_: family: family.versionTable) families;
   plain = php: php.unwrapped or php;
   compatible =
     php: entry:
@@ -9,13 +13,13 @@ let
     in
     builtins.compareVersions php.version limits.min >= 0
     && builtins.compareVersions php.version limits.before < 0;
-  bind =
-    php:
+  bindFamily =
+    engine: name: family:
     let
-      engine = plain php;
-      eligible = pkgs.lib.filterAttrs (_: entry: compatible engine entry) redis.versionTable;
-      bound = builtins.mapAttrs (_: package: package.override { php = engine; }) redis.canonical;
-      valid = builtins.intersectAttrs (pkgs.lib.genAttrs (map (tvp.lib.versions.attrName "php-redis") (
+      pname = "php-${name}";
+      eligible = pkgs.lib.filterAttrs (_: entry: compatible engine entry) family.versionTable;
+      bound = builtins.mapAttrs (_: package: package.override { php = engine; }) family.canonical;
+      valid = builtins.intersectAttrs (pkgs.lib.genAttrs (map (tvp.lib.versions.attrName pname) (
         builtins.attrNames eligible
       )) (_: null)) bound;
       aliases =
@@ -23,7 +27,7 @@ let
           { }
         else
           tvp.lib.packages.mkAliases {
-            pname = "php-redis";
+            inherit pname;
             versionTable = eligible;
             canonical = valid;
           };
@@ -33,12 +37,17 @@ let
       name: value: pkgs.lib.nameValuePair (pkgs.lib.removePrefix "php-" name) value
     ) choices
     // pkgs.lib.optionalAttrs (eligible == { }) {
-      redis = throw "PHP Redis: no declared compatible extension release for PHP ${engine.version}";
+      ${name} = throw "PHP ${name}: no declared compatible extension release for PHP ${engine.version}";
     };
+  bind =
+    php:
+    pkgs.lib.foldl' (bound: name: bound // bindFamily (plain php) name families.${name}) { } (
+      builtins.attrNames families
+    );
 in
-(tvp.lib.packages.mergeNamespaces { inherit redis; })
+(tvp.lib.packages.mergeNamespaces families)
 // {
   forPHP = bind;
-  inherit compatible;
-  redisVersions = redis.versionTable;
+  inherit compatible versionTables;
+  redisVersions = versionTables.redis;
 }

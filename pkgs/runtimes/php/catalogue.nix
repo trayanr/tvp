@@ -5,31 +5,36 @@ let
   extensions = import ./extensions { inherit pkgs tvp; };
   engines = lib.filterAttrs (name: _: lib.hasPrefix "php_" name) tvp.canonical;
   compatibleReleases =
-    php: lib.filterAttrs (_: release: extensions.compatible php release) extensions.redisVersions;
+    php: family:
+    lib.filterAttrs (_: release: extensions.compatible php release) extensions.versionTables.${family};
   extensionMatrix = builtins.listToAttrs (
     lib.concatMap (
       phpName:
       let
         php = engines.${phpName};
       in
-      map (
-        extensionVersion:
-        let
-          extensionName = tvp.lib.versions.attrName "redis" extensionVersion;
-          package = php.extensions.${extensionName};
-        in
-        lib.nameValuePair "${phpName}--${extensionName}" {
-          phpVersion = php.version;
-          inherit extensionVersion package;
-          runtime = php.withExtensions {
-            extensions = [ package ];
-            settings.memory_limit = "128M";
-          };
-          tests = {
-            inherit (package.tests) load roundtrip;
-          };
-        }
-      ) (builtins.attrNames (compatibleReleases php))
+      lib.concatMap (
+        family:
+        map (
+          extensionVersion:
+          let
+            extensionName = tvp.lib.versions.attrName family extensionVersion;
+            package = php.extensions.${extensionName};
+          in
+          lib.nameValuePair "${phpName}--${extensionName}" {
+            phpVersion = php.version;
+            extensionFamily = family;
+            inherit extensionVersion package;
+            runtime = php.withExtensions {
+              extensions = [ package ];
+              settings.memory_limit = "128M";
+            };
+            tests = {
+              inherit (package.tests) load roundtrip;
+            };
+          }
+        ) (builtins.attrNames (compatibleReleases php family))
+      ) (builtins.attrNames extensions.versionTables)
     ) (builtins.attrNames engines)
   );
   extensionTests = lib.mapAttrs (
@@ -41,9 +46,12 @@ let
   ) extensionMatrix;
 in
 {
-  profiles.redis = tvp.packages.php.withExtensions {
-    extensions = extensions: [ extensions.redis ];
-  };
+  profiles = builtins.mapAttrs (
+    name: _:
+    tvp.packages.php.withExtensions {
+      extensions = extensions: [ extensions.${name} ];
+    }
+  ) extensions.versionTables;
   inherit extensionMatrix;
   # Independent build and small test handles for an explicit compatibility run.
   extensionPackages = builtins.mapAttrs (_: pair: pair.package) extensionMatrix;
@@ -60,10 +68,29 @@ in
       builtins.attrValues extensionMatrix
     );
     phpVersions = builtins.length (builtins.attrNames engines);
-    # Initially PHP 5.0 and 5.1 have no declared compatible Redis release.
+    # Versions with no declared compatible release from any registered family.
     unsupportedPHP = builtins.attrNames (
-      lib.filterAttrs (_: php: compatibleReleases php == { }) engines
+      lib.filterAttrs (
+        _: php:
+        lib.all (family: compatibleReleases php family == { }) (builtins.attrNames extensions.versionTables)
+      ) engines
     );
+    families = builtins.mapAttrs (
+      family: versionTable:
+      let
+        pairs = lib.filterAttrs (_: pair: pair.extensionFamily == family) extensionMatrix;
+      in
+      {
+        declaredPairs = builtins.length (builtins.attrNames pairs);
+        namedTests = lib.foldl' (count: pair: count + builtins.length (builtins.attrNames pair.tests)) 0 (
+          builtins.attrValues pairs
+        );
+        extensionVersions = builtins.attrNames versionTable;
+        unsupportedPHP = builtins.attrNames (
+          lib.filterAttrs (_: php: compatibleReleases php family == { }) engines
+        );
+      }
+    ) extensions.versionTables;
     scope = "declared compatibility; qualification requires individual execution evidence";
     testsPerPair = [
       "load"

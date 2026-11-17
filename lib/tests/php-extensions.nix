@@ -4,6 +4,14 @@ let
   inherit (pkgs) lib;
   php = tvp.packages.php_8_5;
   redis = php.extensions.redis;
+  igbinary = php.extensions.igbinary;
+  igbinaryEngines = lib.filterAttrs (
+    name: engine:
+    lib.hasPrefix "php_" name
+    && builtins.compareVersions engine.version "7.0" >= 0
+    && builtins.compareVersions engine.version "8.6" < 0
+  ) tvp.canonical;
+  igbinaryPairs = builtins.length (builtins.attrNames igbinaryEngines);
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -142,6 +150,23 @@ let
       && tvp.packages.php_5_6.extensions.redis.version == "4.3.0";
     unsupportedEngine = rejects tvp.packages.php_5_1.extensions.redis;
     unsupportedExactRelease = rejects php.extensions.redis_2_2_8;
+    igbinaryReleaseSelection =
+      igbinary.version == "3.2.17RC1"
+      && igbinary.php.drvPath == php.drvPath
+      && tvp.packages.php_7_0.extensions.igbinary.version == "3.2.17RC1"
+      && php.extensions.igbinary_3_2_17RC1.drvPath == igbinary.drvPath;
+    igbinaryUnsupportedPHP = rejects tvp.packages.php_5_6.extensions.igbinary;
+    coexistingExtensionFamilies =
+      map (extension: extension.extensionName)
+        (php.withExtensions {
+          extensions = extensions: [
+            extensions.redis
+            extensions.igbinary
+          ];
+        }).enabledExtensions == [
+        "redis"
+        "igbinary"
+      ];
     engineUnchanged = php.drvPath == php.unwrapped.drvPath && redis.php.drvPath == php.drvPath;
     serverIsTestDependency =
       !(redis.tvp.declaredDependencies ? redis)
@@ -188,10 +213,15 @@ let
       && edited.drvPath == overridden.drvPath
       && explicitBase.specification.base.compiler.drvPath == tvp.bases.gcc_16.full.compiler.drvPath;
     explicitMatrix =
-      tvp.php.metadata.declaredPairs == 296
-      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296
-      && tvp.php.metadata.namedTests == 592
+      tvp.php.metadata.families.redis.declaredPairs == 296
+      && tvp.php.metadata.families.igbinary.declaredPairs == igbinaryPairs
+      && igbinaryPairs > 0
+      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs
+      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + igbinaryPairs
+      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs)
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
+      && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
+      && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
     matrixInStandardCI =
       lib.all (
@@ -202,7 +232,7 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 606
+      && tvp.smokeTests.metadata.namedTests == 606 + 2 * igbinaryPairs
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in
