@@ -14,6 +14,7 @@ Environment=TVP_CI_WORKER_PASSWORD_FILE=/var/lib/tvp-worker/worker-password
 Environment=TVP_CI_WORKER_DIRECTORY=/var/lib/tvp-worker
 Environment=PATH=/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin
 Environment=NIX_BUILD_SHELL=/bin/bash
+Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/nix/var/nix/profiles/default/bin/nix-shell /srv/tvp-ci/current/ci/buildbot/shell.nix --run "twistd --nodaemon --logfile=- --python /srv/tvp-ci/current/ci/buildbot/worker.tac"
 Restart=on-failure
 RestartSec=10
