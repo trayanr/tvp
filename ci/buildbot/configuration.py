@@ -51,6 +51,11 @@ def make_config(settings, source):
         command=validation_command,
         extract_fn=result_properties, haltOnFailure=True,
         timeout=None, maxTime=None, sigtermTime=30,
+        logfiles={
+            "flake-evaluation": "evidence/flake-check.log",
+            "preparation": "validation/latest/prepare.log",
+            "nix": "validation/latest/nix.log",
+        },
     ))
     # Evidence stays in controller history even if a worker checkout is later removed.
     factory.addStep(steps.DirectoryUpload(

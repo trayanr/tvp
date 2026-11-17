@@ -36,6 +36,16 @@ if any('#testPlans.' in a or '#smokeTestPlans.' in a for a in args):
     link.symlink_to(os.environ['FAKE_PLAN'])
     sys.exit(0)
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[plan['jobs'][0]['drv']]}), file=sys.stderr, flush=True)
+if os.environ.get('FAKE_BUILD_LOGS'):
+    assert '--print-build-logs' in args
+    for event in [
+        {'action':'result','id':7,'type':101,'fields':['compiler stdout']},
+        {'action':'result','id':7,'type':101,'fields':['\x1b[31mcompiler stderr\x1b[0m']},
+        {'action':'start','id':88,'type':101,'fields':['http cache-debug-request']},
+        {'action':'result','id':88,'type':101,'fields':['http download-detail']},
+        {'action':'msg','level':6,'msg':'http verbose-debug-detail'},
+    ]:
+        print('@nix '+json.dumps(event), file=sys.stderr, flush=True)
 time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
 targets=set(args)
@@ -162,6 +172,7 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue((self.run/'nix.log').is_file())
         command=json.loads((self.run/'command.json').read_text())
         self.assertIn('--keep-going',command)
+        self.assertIn('--print-build-logs',command)
         self.assertNotIn('--max-jobs',command)
         self.assertNotIn('--cores',command)
         self.assertNotIn(self.plan['aggregate']+'^*',command)
@@ -472,6 +483,44 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(runner.useful_event({'action':'start','type':105},{}))
         self.assertTrue(runner.useful_event({'action':'start','type':108},{}))
         self.assertTrue(runner.useful_event({'action':'stop','id':7},{'7':{}}))
+
+    def test_concurrent_compiler_lines_keep_their_source_without_changing_phase(self):
+        active={};log=io.StringIO()
+        for identifier,name in [(1,'first'),(2,'second')]:
+            runner.apply_event(active,{'action':'start','id':identifier,'type':105,
+                                      'fields':['/fake/'+name+'.drv']},log)
+        events=[
+            {'action':'result','id':1,'type':101,'fields':['cc first.c']},
+            {'action':'result','id':2,'type':101,'fields':['\x1b[31mwarning second.c\x1b[0m']},
+            {'action':'result','id':1,'type':101,'fields':['link first']},
+        ]
+        for event in events:
+            self.assertTrue(runner.useful_event(event,active))
+            runner.apply_event(active,event,log)
+        self.assertEqual(log.getvalue().splitlines()[-3:],[
+            'first.drv> cc first.c','second.drv> warning second.c','first.drv> link first'])
+        self.assertEqual([entry['phase'] for entry in active.values()],['building','building'])
+        self.assertFalse(runner.useful_event({'action':'result','id':88,'type':101,
+                                             'fields':['foreign debug output']},active))
+
+    def test_compiler_output_is_retained_while_the_build_is_still_running(self):
+        self.env.update(FAKE_BUILD_LOGS='1',FAKE_DELAY='2')
+        self.start()
+        deadline=time.monotonic()+5
+        while True:
+            text=(self.run/'nix.log').read_text() if (self.run/'nix.log').exists() else ''
+            if 'compiler stderr' in text:break
+            self.assertLess(time.monotonic(),deadline)
+            time.sleep(0.02)
+        self.assertTrue(runner.lease_held(self.run/'worker.lock'))
+        self.assertIn('first.drv> compiler stdout',text)
+        self.assertIn('first.drv> compiler stderr',text)
+        self.assertNotIn('\x1b[',text)
+        self.assertNotIn('http ',text)
+        self.assertEqual(self.wait_done()['phase'],'passed')
+        events=[json.loads(line[5:]) for line in (self.run/'events.jsonl').read_text().splitlines()]
+        self.assertEqual([e['fields'][0] for e in events if e.get('type')==101],
+                         ['compiler stdout','\x1b[31mcompiler stderr\x1b[0m'])
 
     def test_successful_retry_replaces_old_failure_and_wait_exit_status(self):
         self.env['FAKE_FAILURE']='second'

@@ -24,6 +24,12 @@ when their outputs are not cached. Other families retain representative checks.
 CI does not run upstream regressions or every repository check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
 
+The `smoke-catalogue` step shows suite counts and active builds in `stdio`.
+Its `flake-evaluation`, `preparation`, and `nix` logs stream the corresponding
+worker files, including compiler output from Nix. Buildbot keeps these logs
+with the completed build. The evidence upload retains those files alongside the
+frozen plan, structured Nix events, and terminal test receipt.
+
 For local iteration on one pair, use
 `nix run .#test -- all --only php_8_5_12--redis_6_3_0`. The dedicated
 `nix build .#php.extensionTestsAll` target selects only the PHP extension matrix;

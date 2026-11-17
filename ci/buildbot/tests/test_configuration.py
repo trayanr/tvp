@@ -26,6 +26,11 @@ class Deployment(unittest.TestCase):
             step = next(s for s in config['builders'][0].factory.steps
                         if s.kwargs.get('name') == 'smoke-catalogue')
             self.assertEqual(step.kwargs['sigtermTime'], 30)
+            self.assertEqual(step.kwargs['logfiles'], {
+                'flake-evaluation': 'evidence/flake-check.log',
+                'preparation': 'validation/latest/prepare.log',
+                'nix': 'validation/latest/nix.log',
+            })
 
     def test_enabling_github_requires_a_real_provisioned_credential_file(self):
         with tempfile.TemporaryDirectory() as temporary:

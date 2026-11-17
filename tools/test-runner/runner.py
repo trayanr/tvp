@@ -54,14 +54,19 @@ def apply_event(active, event, log):
         active.pop(identifier, None)
     elif action == "result" and event.get("type") == 104 and identifier in active and fields:
         active[identifier]["phase"] = str(fields[0])
+    elif action == "result" and event.get("type") == 101 and identifier in active and fields and isinstance(fields[0], str):
+        # Nix's resBuildLogLine carries both builder stdout and stderr. Prefix
+        # concurrent output without making it part of the progress/state data.
+        source = Path(active[identifier]["drv"]).name
+        log.write(source + "> " + ANSI.sub("", fields[0]) + "\n")
     elif action == "msg":
         log.write(ANSI.sub("", str(event.get("msg", ""))) + "\n")
 
 
 def useful_event(event, active):
     # internal-json includes debug HTTP traffic even at normal verbosity.
-    # Keep build/fetch lifecycles, phases and user-facing messages, not that
-    # unbounded traffic. Full compiler logs remain available through nix log.
+    # Keep build/fetch lifecycles, phases, compiler output and user-facing
+    # messages, without persisting unbounded HTTP/query/debug traffic.
     if not isinstance(event, dict):
         return False
     action = event.get("action")
@@ -70,7 +75,7 @@ def useful_event(event, active):
     if action == "start":
         return event.get("type") in (105, 108)
     return str(event.get("id")) in active and (
-        action == "stop" or action == "result" and event.get("type") == 104
+        action == "stop" or action == "result" and event.get("type") in (101, 104)
     )
 
 
@@ -138,7 +143,7 @@ def work(run, global_fd, lease_fd):
     # Nix names secondary links with output suffixes. Keep these additional
     # roots together; result remains the stable handle for the first target.
     out_link = run / "roots" / "build" if multioutput else run / "result"
-    command = ["nix", "build", "--show-trace", "--keep-going", "--log-format", "internal-json",
+    command = ["nix", "build", "--show-trace", "--keep-going", "--print-build-logs", "--log-format", "internal-json",
                "--out-link", str(out_link)]
     if state.get("maxJobs") is not None:
         command += ["--max-jobs", str(state["maxJobs"])]
