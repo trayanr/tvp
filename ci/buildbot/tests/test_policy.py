@@ -13,19 +13,30 @@ def pull():
 
 
 class Admission(unittest.TestCase):
-    def test_label_opts_in(self):
+    def test_repository_prs_are_automatic_without_a_label(self):
         self.assertTrue(eligible(pull(), "trayanr/tvp"))
         pr = pull(); pr["labels"] = []
-        self.assertFalse(eligible(pr, "trayanr/tvp"))
+        self.assertTrue(eligible(pr, "trayanr/tvp"))
 
-    def test_drafts_closed_forks_and_wrong_target_are_not_scheduled(self):
-        mutations = [("draft", True), ("state", "closed")]
+    def test_drafts_and_stacked_targets_are_scheduled(self):
+        pr = pull(); pr["labels"] = []; pr["draft"] = True
+        self.assertTrue(eligible(pr, "trayanr/tvp"))
+        pr["base"]["ref"] = "feature/source-release-discovery"
+        self.assertTrue(eligible(pr, "trayanr/tvp"))
+
+    def test_closed_forks_and_malformed_identities_are_not_scheduled(self):
+        mutations = [("state", "closed")]
         for key, value in mutations:
             pr = pull(); pr[key] = value
             self.assertFalse(eligible(pr, "trayanr/tvp"))
         for part, key, value in [("head", "repo", {"full_name": "outsider/tvp"}),
-                                 ("head", "repo", None), ("base", "ref", "other"),
-                                 ("head", "sha", "main"), ("base", "sha", "abc")]:
+                                 ("head", "repo", None),
+                                 ("base", "repo", {"full_name": "outsider/tvp"}),
+                                 ("base", "repo", None),
+                                 ("base", "ref", ""), ("base", "ref", None),
+                                 ("base", "ref", 17),
+                                 ("head", "sha", "main"), ("base", "sha", "abc"),
+                                 ("head", "sha", None), ("base", "sha", 17)]:
             pr = pull(); pr[part][key] = value
             self.assertFalse(eligible(pr, "trayanr/tvp"))
 

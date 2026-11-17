@@ -45,17 +45,43 @@ class Deployment(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     revision.getFromKwargs({revision.fullName: [value]})
 
-    def test_worker_receives_configured_target_independently_of_pr_properties(self):
+    def test_master_and_manual_builds_keep_configured_target(self):
         with tempfile.TemporaryDirectory() as temporary:
             settings = self.settings(temporary, False)
             settings['branch'] = 'release/next'
             config = make_config(settings, Path(__file__).resolve().parents[3])
             step = next(s for s in config['builders'][0].factory.steps
                         if s.kwargs.get('name') == 'smoke-catalogue')
-            properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40, 'target_branch': 'untrusted'}
+            properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40,
+                          'target_branch': 'untrusted', 'tvp_target_branch': 'also-ignored'}
             props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
             command = step.kwargs['command'].fn(props)
             self.assertEqual(command[command.index('--target-branch') + 1], 'release/next')
+
+    def test_worker_receives_admitted_pr_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = make_config(self.settings(temporary, False), Path(__file__).resolve().parents[3])
+            step = next(s for s in config['builders'][0].factory.steps
+                        if s.kwargs.get('name') == 'smoke-catalogue')
+            properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40, 'tvp_pr': 192,
+                          'tvp_target_branch': 'feature/source-release-discovery',
+                          'target_branch': 'untrusted'}
+            props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
+            command = step.kwargs['command'].fn(props)
+            self.assertEqual(command[command.index('--target-branch') + 1],
+                             'feature/source-release-discovery')
+
+    def test_pr_target_property_is_required(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = make_config(self.settings(temporary, False), Path(__file__).resolve().parents[3])
+            step = next(s for s in config['builders'][0].factory.steps
+                        if s.kwargs.get('name') == 'smoke-catalogue')
+            for target in [None, '', 17]:
+                properties = {'revision': 'b' * 40, 'tvp_base': 'c' * 40, 'tvp_pr': 192,
+                              'tvp_target_branch': target}
+                props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
+                with self.assertRaisesRegex(ValueError, 'missing its target branch'):
+                    step.kwargs['command'].fn(props)
 
 
 if __name__ == '__main__':

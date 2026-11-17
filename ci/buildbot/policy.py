@@ -6,17 +6,18 @@ REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 STATUS_CONTEXT = "tvp/smoke"
 
 
-def eligible(pr, repository, label="ci:build", branch="master"):
-    """Initial worker pool accepts labelled, same-repository maintainer PRs."""
+def eligible(pr, repository):
+    """Test every open repository PR, including drafts and stacked branches."""
+    head, base = pr.get("head") or {}, pr.get("base") or {}
+    target = base.get("ref")
+    head_sha, base_sha = head.get("sha"), base.get("sha")
     return (
         pr.get("state") == "open"
-        and not pr.get("draft", False)
-        and label in {item.get("name") for item in pr.get("labels", [])}
-        and pr.get("base", {}).get("ref") == branch
-        and (pr.get("base", {}).get("repo") or {}).get("full_name") == repository
-        and (pr.get("head", {}).get("repo") or {}).get("full_name") == repository
-        and bool(SHA.fullmatch(pr.get("head", {}).get("sha", "")))
-        and bool(SHA.fullmatch(pr.get("base", {}).get("sha", "")))
+        and isinstance(target, str) and bool(target)
+        and (base.get("repo") or {}).get("full_name") == repository
+        and (head.get("repo") or {}).get("full_name") == repository
+        and isinstance(head_sha, str) and bool(SHA.fullmatch(head_sha))
+        and isinstance(base_sha, str) and bool(SHA.fullmatch(base_sha))
     )
 
 

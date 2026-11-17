@@ -23,7 +23,7 @@ def make_config(settings, source):
         return (secrets / name).read_text().strip()
     github_enabled = settings.get("github_enabled", True)
     github_token = secret("github-token") if github_enabled else None
-    allowed = lambda pr: eligible(pr, repository, settings.get("label", "ci:build"), settings.get("branch", "master"))
+    allowed = lambda pr: eligible(pr, repository)
     directory = util.Interpolate("runs/%(prop:buildnumber)s")
     factory = util.BuildFactory()
     factory.addStep(steps.FileDownload(
@@ -34,10 +34,16 @@ def make_config(settings, source):
         workerdest="compare.py", workdir=directory, haltOnFailure=True))
     @util.renderer
     def validation_command(props):
+        target_branch = settings.get("branch", "master")
+        if props.getProperty("tvp_pr") is not None:
+            # Only the controller's admitted PR change supplies this property.
+            target_branch = props.getProperty("tvp_target_branch")
+            if not isinstance(target_branch, str) or not target_branch:
+                raise ValueError("Admitted PR change is missing its target branch")
         command = ["python3", "job.py", "--repository", repository,
                    "--head", props.getProperty("revision"),
                    "--base", props.getProperty("tvp_base", ""),
-                   "--target-branch", settings.get("branch", "master"),
+                   "--target-branch", target_branch,
                    "--tools-ref", tools_ref, "--compare", "compare.py"]
         return command
     factory.addStep(steps.SetPropertyFromCommand(
