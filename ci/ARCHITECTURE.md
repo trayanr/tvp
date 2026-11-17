@@ -216,9 +216,10 @@ administrator's private controller directory, outside the shared source tree.
 
 Root performs the one-time bootstrap: create the isolated worker account and system
 unit, enable the administrator's user-manager linger for startup without a login,
-and install the narrow worker polkit rule. Normal controller operations use
-`systemctl --user`; the rule permits `server` to start, stop, restart and reload only
-`tvp-worker.service` with ordinary `systemctl`. Unit definitions and authorization
+and install the narrow worker sudoers rule. Normal controller operations use
+`systemctl --user`; the rule permits `server` to run four exact passwordless
+`/usr/bin/systemctl` commands for `tvp-worker.service`. The operator CLI invokes
+worker restarts with `sudo -n`, without a credential prompt. Unit definitions and authorization
 remain root-owned. The worker reconnects independently, without depending on the old
 system controller unit.
 

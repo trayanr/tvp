@@ -60,10 +60,11 @@ def main():
     try:
         if args.command.startswith('restart-'):
             target = args.command.removeprefix('restart-')
-            command = ['systemctl', '--no-ask-password']
             if target == 'controller':
-                command.append('--user')
-            return subprocess.run(command + ['restart', f'tvp-{target}.service']).returncode
+                command = ['systemctl', '--user', 'restart', 'tvp-controller.service']
+            else:
+                command = ['sudo', '-n', '/usr/bin/systemctl', 'restart', 'tvp-worker.service']
+            return subprocess.run(command).returncode
         controller = Controller(args.url, args.state)
         if args.command == 'cancel':
             if args.build < 1:

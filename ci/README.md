@@ -249,11 +249,13 @@ over loopback and retries when the controller is unavailable; it has no dependen
 on a system controller unit. Review the Nix executable path against the actual host.
 `worker.tac` reads its password file directly, avoiding a password in process arguments.
 
-Root also installs `buildbot/49-tvp-worker.rules` as
-`/etc/polkit-1/rules.d/49-tvp-worker.rules`. This grants only `server` permission to
-start, stop, restart or reload `tvp-worker.service` without sudo. It grants no unit
-editing, unit enablement or access to other system units. Adapt the account name in
-the rule if the builder uses another administrator. After this bootstrap, ordinary
+Root also installs `buildbot/tvp-worker.sudoers` as
+`/etc/sudoers.d/tvp-worker` (mode `0440`), validating it with `visudo -cf`. This grants
+only `server` passwordless access to four exact `/usr/bin/systemctl` commands for
+`tvp-worker.service`: start, stop, restart and reload. It grants no unit editing,
+unit enablement or access to other system units. Adapt the account name if the
+builder uses another administrator. This works with Server’s older polkit version;
+it does not require broad systemd permissions. After this bootstrap, ordinary
 release promotion, controller configuration and service restarts run as `server`.
 No services or authorization rules are installed by this repository automatically.
 
@@ -274,7 +276,8 @@ tvp-ci restart-worker
 ```
 
 The control command reads the private local operator credential itself; it does
-not require typing it for each cancellation. Service restart permissions do not
+not require typing it for each cancellation. Worker restart uses the exact
+passwordless command internally (`sudo -n`); controller operations need no sudo. Service restart permissions do not
 grant the worker access to controller credentials.
 
 Visit `http://localhost:8010/` at the builder, or configure a reverse proxy on its LAN
@@ -313,7 +316,7 @@ sudo:
 systemctl --user daemon-reload
 systemctl --user enable --now tvp-controller.service
 systemctl --user restart tvp-controller.service
-systemctl restart tvp-worker.service
+tvp-ci restart-worker
 ```
 
 Promote reviewed release copies and update `current` as the administrator, then restart

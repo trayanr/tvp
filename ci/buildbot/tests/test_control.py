@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location('control', Path(__file__).resolve().parents[2] / 'control.py')
 control = importlib.util.module_from_spec(spec)
@@ -51,6 +51,17 @@ class OperatorControl(unittest.TestCase):
             self.assertEqual(request.full_url, 'http://127.0.0.1:8010/api/v2/builds/258')
             self.assertFalse(request.has_header('Authorization'))
             self.assertEqual(json.loads(request.data)['method'], 'stop')
+
+    def test_restarts_use_user_controller_and_exact_worker_permission(self):
+        for target, command in [
+            ('controller', ['systemctl', '--user', 'restart', 'tvp-controller.service']),
+            ('worker', ['sudo', '-n', '/usr/bin/systemctl', 'restart', 'tvp-worker.service']),
+        ]:
+            with self.subTest(target=target), patch.object(control.subprocess, 'run') as run:
+                run.return_value.returncode = 0
+                with patch('sys.argv', ['tvp-ci', 'restart-' + target]):
+                    self.assertEqual(control.main(), 0)
+                run.assert_called_once_with(command)
 
 
 if __name__ == '__main__':
