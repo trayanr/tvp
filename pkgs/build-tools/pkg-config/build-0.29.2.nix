@@ -148,7 +148,7 @@ in
     '')
     (logged "build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'')
     (logged "install" ''
-      ${tools.gnumake}/bin/make SHELL=${tools.bash}/bin/bash  install
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash  install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')

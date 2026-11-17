@@ -175,7 +175,7 @@ in
       cat > fixture-runner.tcl <<'TCL'
       if {[package require -exact sqlite3 ${version}] ne "${version}"} {error "wrong runner SQLite"}
       set argv0 test/testrunner.tcl
-      set argv [list --jobs 8 veryquick]
+      set argv [list --jobs $::env(NIX_BUILD_CORES) veryquick]
       source $argv0
       sqlite3 results testrunner.db
       set jobs [results onecolumn {select count(*) from jobs}]

@@ -18,6 +18,10 @@
   registry = runtimeRegistry;
 })
 // {
+  build-concurrency = pkgs.writeText "tvp-build-concurrency-contracts" (
+    builtins.toJSON (import ../lib/tests/build-concurrency.nix { inherit pkgs tvp; })
+  );
+
   php-extensions = pkgs.writeText "tvp-php-extension-contracts" (
     builtins.toJSON (import ../lib/tests/php-extensions.nix { inherit pkgs tvp; })
   );

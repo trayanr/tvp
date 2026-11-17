@@ -43,32 +43,32 @@ assert c['zlib']+'/lib' in log and c['zlib']+'/include' in log
 assert c['pkgConfig'] in log and c['cmake'] in log
 (evidence/'discovery.log').write_text(log)
 run('compile',[meson,'compile','-C','build','-j',os.environ['NIX_BUILD_CORES']])
-p=run('test',[meson,'test','-C','build','--print-errorlogs']);assert 'Ok:                2' in p.stdout
+p=run('test',[meson,'test','-C','build','--print-errorlogs','--num-processes',os.environ['NIX_BUILD_CORES']]);assert 'Ok:                2' in p.stdout
 info=json.loads(run('introspect',[meson,'introspect','--targets','build']).stdout)
 assert {t['type'] for t in info}>={'shared library','static library','executable'}
 objects=sorted(Path('build').rglob('*.o'));assert len(objects)>=4
 before=[p.stat().st_mtime_ns for p in objects]
-run('noop',[meson,'compile','-C','build']);assert [p.stat().st_mtime_ns for p in objects]==before
+run('noop',[meson,'compile','-C','build','-j',os.environ['NIX_BUILD_CORES']]);assert [p.stat().st_mtime_ns for p in objects]==before
 time.sleep(1.1);(source/'marker.h').write_text('#define MARKER 2\n')
-run('header-rebuild',[meson,'compile','-C','build']);after=[p.stat().st_mtime_ns for p in objects];assert sum(x>y for x,y in zip(after,before))==2
+run('header-rebuild',[meson,'compile','-C','build','-j',os.environ['NIX_BUILD_CORES']]);after=[p.stat().st_mtime_ns for p in objects];assert sum(x>y for x,y in zip(after,before))==2
 before=after;time.sleep(1.1);a.write_text(a.read_text()+'\n/* source rebuild */\n')
-run('source-rebuild',[meson,'compile','-C','build']);assert sum(p.stat().st_mtime_ns>t for p,t in zip(objects,before))==2
+run('source-rebuild',[meson,'compile','-C','build','-j',os.environ['NIX_BUILD_CORES']]);assert sum(p.stat().st_mtime_ns>t for p,t in zip(objects,before))==2
 run('reconfigure',[meson,'setup','--reconfigure','build',source,'-Dproof=true'])
 opts=json.loads(run('options',[meson,'introspect','--buildoptions','build']).stdout);assert next(o for o in opts if o['name']=='proof')['value'] is True
 run('install',[meson,'install','-C','build','--no-rebuild'])
 assert run('installed-env-i',[out/'bin/answer'],env={}).stdout.strip()=='42'
 run('installed-loader',[out/'bin/answer'],env={'LD_DEBUG':'libs'})
 a.write_text(a.read_text()+'\n#error expected_failure_probe\n')
-assert run('expected-failure',[meson,'compile','-C','build'],ok=False).returncode!=0
+assert run('expected-failure',[meson,'compile','-C','build','-j',os.environ['NIX_BUILD_CORES']],ok=False).returncode!=0
 # Launcher preserves explicit variables; all three selected overrides really run.
 shutil.copytree(source,'override-source');p=Path('override-source/answer.c');p.write_text(p.read_text().replace('#error expected_failure_probe',''))
 env=dict(os.environ,NINJA=c['traced']+'/bin/ninja',CMAKE=c['traced']+'/bin/cmake',PKG_CONFIG=c['traced']+'/bin/pkg-config',SHELL=c['shell'],TOOL_TRACE=str((evidence/'tool-trace.log').resolve()))
 run('override-setup',[c['selectedMeson'],'setup','override-build','override-source','--wrap-mode=nodownload'],env=env)
-run('override-compile',[c['selectedMeson'],'compile','-C','override-build'],env=env)
-run('override-test',[c['selectedMeson'],'test','-C','override-build'],env=env)
+run('override-compile',[c['selectedMeson'],'compile','-C','override-build','-j',os.environ['NIX_BUILD_CORES']],env=env)
+run('override-test',[c['selectedMeson'],'test','-C','override-build','--num-processes',os.environ['NIX_BUILD_CORES']],env=env)
 defaults={k:v for k,v in env.items() if k not in ['NINJA','CMAKE','PKG_CONFIG','SHELL']}
 run('defaults-override-setup',[c['selectedMeson'],'setup','defaults-override-build','override-source','--wrap-mode=nodownload'],env=defaults)
-run('defaults-override-compile',[c['selectedMeson'],'compile','-C','defaults-override-build'],env=defaults)
+run('defaults-override-compile',[c['selectedMeson'],'compile','-C','defaults-override-build','-j',os.environ['NIX_BUILD_CORES']],env=defaults)
 trace=(evidence/'tool-trace.log').read_text();assert all(x+' ' in trace for x in ['ninja','cmake','pkg-config'])
 # Keep .tar.xz fixture: no download or uncompressed workaround.
 shutil.copytree(Path(c['fixture'])/'wrap','wrap-project')
@@ -81,8 +81,8 @@ digest=hashlib.sha256(archive.read_bytes()).hexdigest()
 (w/'subprojects/child.wrap').write_text('[wrap-file]\ndirectory = child\nsource_filename = child.tar.xz\nsource_url = https://invalid.example/child.tar.xz\nsource_hash = '+digest+'\n')
 shutil.rmtree(w/'child')
 run('wrap-setup',[meson,'setup','wrap-build',w,'--wrap-mode=nodownload'])
-run('wrap-compile',[meson,'compile','-C','wrap-build'])
-run('wrap-test',[meson,'test','-C','wrap-build','--print-errorlogs'])
+run('wrap-compile',[meson,'compile','-C','wrap-build','-j',os.environ['NIX_BUILD_CORES']])
+run('wrap-test',[meson,'test','-C','wrap-build','--print-errorlogs','--num-processes',os.environ['NIX_BUILD_CORES']])
 assert run('wrap-answer',[Path('wrap-build/answer').resolve()],env={}).stdout.strip()=='42'
 (evidence/'wrap.json').write_text(json.dumps(dict(sha256=digest,compression='xz',mode='nodownload')))
 # Preserve upstream _pathlib injection, and record source versus zip imports.

@@ -69,7 +69,7 @@ in
       ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash check
     '')
     (command "install" ''
-      ${gnumake}/bin/make SHELL=${bash}/bin/bash install
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash install
       "$out/bin/file" --version
       "$out/bin/file" -b ${base.stdenv.cc}/bin/cc | grep -E 'script|ELF|symbolic link'
     '')

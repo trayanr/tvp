@@ -15,7 +15,7 @@
   sqlite,
   cStandard ? null,
   iconvFromBase ? false,
-  parallelBuild ? false,
+  parallelBuild ? true,
   configureProbeFlags ? [ ],
   testFeatures ? { },
   doCheck ? true,

@@ -45,14 +45,14 @@ run('run-forwarded',[out/'forwarded'])
 for generator, tool in [('Unix Makefiles', t['make']+'/bin/make'),('Ninja',t['ninja']+'/bin/ninja')]:
     build = Path('cmake-'+generator.split()[0]); prefix = out/build.name
     run('cmake-configure-'+generator,[t['cmake']+'/bin/cmake','-S',fixtures,'-B',build,'-G',generator,'-DCMAKE_MAKE_PROGRAM='+tool,'-DCMAKE_INSTALL_PREFIX='+str(prefix),'-DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF','-DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF','-DPKG_CONFIG_EXECUTABLE='+pc])
-    run('cmake-build-'+generator,[t['cmake']+'/bin/cmake','--build',build,'--parallel','4'])
+    run('cmake-build-'+generator,[t['cmake']+'/bin/cmake','--build',build,'--parallel',env['NIX_BUILD_CORES']])
     run('cmake-test-'+generator,[t['cmake']+'/bin/ctest','--test-dir',build,'--output-on-failure'])
     run('cmake-install-'+generator,[t['cmake']+'/bin/cmake','--install',build])
     run('cmake-installed-'+generator,[prefix/'bin/json-consumer'])
 # Explicit native tools; Meson never searches for a host Python/pkg-config.
 Path('native.ini').write_text('[binaries]\nc = '+repr(cc)+'\ncpp = '+repr(cxx)+'\npkg-config = '+repr(pc)+'\n')
 run('meson-setup',[t['meson']+'/bin/meson','setup','meson-build',fixtures,'--native-file','native.ini','--prefix',out/'meson','--wrap-mode=nodownload'])
-run('meson-build',[t['ninja']+'/bin/ninja','-C','meson-build','-j4'])
+run('meson-build',[t['ninja']+'/bin/ninja','-C','meson-build','-j'+env['NIX_BUILD_CORES']])
 run('meson-test',[t['meson']+'/bin/meson','test','-C','meson-build','--print-errorlogs'])
 run('meson-install',[t['meson']+'/bin/meson','install','-C','meson-build'])
 for name in ['native-c','native-cxx']: run('installed-'+name,[out/'meson/bin'/name])

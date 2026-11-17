@@ -65,4 +65,5 @@ To reproduce, supply a JSON configuration with `cache` and absolute selected
 the evidence directory must already exist. `guards.py` additionally needs
 `shell`, `diff`, and `pwd` pointing to declared executable store files. No
 environment discovery, network access, compiler bootstrap or Nix settings change
-is involved. Fresh fixture compilation uses at most two Make jobs.
+is involved. Fresh fixture compilation uses `NIX_BUILD_CORES`; standalone invocation without
+that Nix-provided variable falls back to one Make job.

@@ -31,7 +31,7 @@ let
     base = final.base;
     environment = final.environment;
   };
-  make = "${gnumake}/bin/make -j1 SHELL=${bash}/bin/bash";
+  make = "${gnumake}/bin/make -j\"$NIX_BUILD_CORES\" SHELL=${bash}/bin/bash";
 in
 {
   pname = "openssl";

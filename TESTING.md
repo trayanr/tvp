@@ -75,3 +75,11 @@ still selects a complete package suite and can include its upstream tests.
 Use Tower's normal settings for ordinary work. Sequence heavy compilation when
 needed; do not globally reduce normal concurrency. Reuse Tower and the signed NAS
 cache instead of rebuilding valid outputs on the smaller CI machine.
+
+Production build, install and test commands take their concurrency budget from
+`NIX_BUILD_CORES`; Nix controls the number of simultaneous derivations through
+`max-jobs`. Avoid literal worker counts and hidden serial defaults. Fix missing
+prerequisite ordering directly when parallel execution exposes a race. Explicit
+test fixtures may use fixed counts to verify jobserver or override behavior.
+Document genuine early-bootstrap ordering constraints separately. Check actual
+build commands as well as Nix configuration when investigating slow execution.

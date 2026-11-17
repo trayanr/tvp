@@ -81,7 +81,7 @@ directory:
 	@mkdir directory
 MAKEFILE
  printf 'first\n' > first.in; printf 'second\n' > second.in
- env -i PATH="$PATH" EXPECTED_SHELL="$BASH" "$MAKE/bin/make" -j4 all
+ env -i PATH="$PATH" EXPECTED_SHELL="$BASH" "$MAKE/bin/make" -j"$NIX_BUILD_CORES" all
  test "$(cat ordered)" = $'first\nsecond'
  # env-i with PATH absent still proves the compiled default shell for shell syntax.
  printf 'all:\n\t@case "$$BASH_VERSION" in ?*) printf "%%s\\n" owned;; *) exit 1;; esac\n' > Empty.mk

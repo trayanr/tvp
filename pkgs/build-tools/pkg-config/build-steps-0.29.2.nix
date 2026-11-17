@@ -141,7 +141,7 @@ in
         enabled = doCheck;
       }
     )
-    (logged "install" "${gnumake}/bin/make SHELL=${bash}/bin/bash install")
+    (logged "install" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash install'')
     (steps.split "pkg-config.finalize")
     (outputs.copyArtifacts { inherit coreutils; })
     {

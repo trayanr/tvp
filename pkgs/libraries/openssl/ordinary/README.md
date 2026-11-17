@@ -15,8 +15,9 @@ The checkpoint helper and manifest are honest production inputs.
 
 T restores A into a private writable tree, applies `testPatches` through
 `testPatchTool`, adapts test scripts with `testPrepareScript`, and constructs the
-upstream fixtures. R independently restores T and captures the full native serial
-`make -j1 test` workload, with the selected base environment unchanged. R preserves
+upstream fixtures. R independently restores T and captures the full native
+`make -j"$NIX_BUILD_CORES" test` workload, with the selected base environment
+unchanged. R preserves
 both native output bytes and status, including nonzero statuses. Its receipt binds
 the status and output size/hash. Missing, malformed, inconsistent, empty or nonzero
 capture is rejected by U. No failure allowlist, date adjustment, workload filter or
@@ -55,10 +56,14 @@ For 3.x/4.x, production build and install also pass a concrete
 products while excluding the global `provider_internal_test.cnf` fixture.
 Command-line selection propagates to recursive install makes. It changes neither
 the saved Makefile/configdata nor private T/R, which retain unrestricted generation.
-The 4.0.0 procedure uses Nix's core allowance for production compilation and keeps
-installation and upstream tests serial. Its protocol-specific checkpoint manifest
+Production compilation, installation, fixture construction and upstream tests use
+Nix's core allowance; Perl harness jobs inherit the same value. The 4.0.0
+protocol-specific checkpoint manifest
 also retains the generated CMake files and their build/install Perl metadata;
 changing those requirements leaves older release producers unchanged.
+The 0.9.8 line gives the static archive targets their producing build-stage
+dependencies, and orders engines after shared linking. Production and private
+test makes use the same ordering without a fixed global job limit.
 The original unrestricted Makefiles/configuration survive in the checkpoint, so T
 can build the real tests without reconfiguring production or disabling tests in
 Configure. Make may regenerate identified metadata or relink in private T/R;

@@ -16,10 +16,9 @@
   libxcrypt,
   cStandard ? null,
   iconvFromBase ? false,
-  parallelBuild ? false,
+  parallelBuild ? true,
   configureProbeFlags ? [ ],
   compileFlags ? [ ],
-  parallelInstall ? null,
   testFeatures ? { },
   doCheck ? true,
 }:
@@ -55,7 +54,6 @@ in
     parallelBuild
     configureProbeFlags
     compileFlags
-    parallelInstall
     doCheck
     ;
   inherit (tools) bash coreutils;
@@ -174,7 +172,9 @@ in
     (command "install" ''
       mkdir -p "$out/bin"
       export CFLAGS="-g -O2 ${lib.concatStringsSep " " final.productionFlags}"
-      ${make} ${lib.optionalString (final.parallelInstall == false) "-j1"} install
+      # Concurrent CLI/Phar installs share output directories. Use mkdir -p's
+      # atomic directory handling instead of the old shtool helper's check/create.
+      ${make} ${lib.escapeShellArg "mkinstalldirs=${tools.coreutils}/bin/mkdir -p"} install
       chmod -R u+w "$out"
     '')
   ];

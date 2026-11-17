@@ -167,9 +167,10 @@ in
     (command "zlib.check" ''
       export LD_LIBRARY_PATH="$PWD:''${LD_LIBRARY_PATH-}"
       status=0
-      # Upstream example variants share foo.gz. Compile in parallel, test in order.
+      # Upstream test variants share foo.gz. Order this target's prerequisites
+      # while keeping compilation at Nix's selected parallelism.
       ${make} all
-      ${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash check > upstream-check.log 2>&1 || status=$?
+      ${make} --eval='.NOTPARALLEL: test' check > upstream-check.log 2>&1 || status=$?
       cat upstream-check.log >&2
       if test "$status" -ne 0; then exit "$status"; fi
       if ${tools.grep}/bin/grep -E 'FAILED|FAIL|XPASS' upstream-check.log >&2; then exit 1; fi

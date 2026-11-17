@@ -148,7 +148,7 @@ in
       PY
     '')
     (command "cmake.build" ''make -j"$NIX_BUILD_CORES"'')
-    (command "cmake.install" ''make install'')
+    (command "cmake.install" ''make -j"$NIX_BUILD_CORES" install'')
     (outputs.strip {
       inherit python binutils;
       paths = [ "bin" ];

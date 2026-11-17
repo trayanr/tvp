@@ -24,7 +24,7 @@ mesonBuildPhase() {
 }
 mesonCheckPhase() {
     runHook preCheck
-    local -a flagsArray=(--print-errorlogs)
+    local -a flagsArray=(--print-errorlogs --num-processes "$NIX_BUILD_CORES")
     concatTo flagsArray mesonCheckFlags mesonCheckFlagsArray
     meson test "${flagsArray[@]}"
     runHook postCheck

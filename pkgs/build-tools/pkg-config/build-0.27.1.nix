@@ -158,7 +158,7 @@ in
     '')
     (logged "build" ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'')
     (logged "install" ''
-      ${tools.gnumake}/bin/make SHELL=${tools.bash}/bin/bash DESTDIR="$out" install
+      ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash DESTDIR="$out" install
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
@@ -189,7 +189,7 @@ in
   upstreamCheck =
     (command "pkg-config.check" ''
       # Run pkg-config's own discovery suite, not the entire bundled GLib suite.
-      ${tools.gnumake}/bin/make -C check -j1 SHELL=${tools.bash}/bin/bash TESTS_SHELL=${tools.bash}/bin/bash check
+      ${tools.gnumake}/bin/make -C check -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash TESTS_SHELL=${tools.bash}/bin/bash check
       # Exercise the actual vendored object and the path it passes to fopen.
       mapfile -t charsetArchives < <(${tools.findutils}/bin/find glib/glib -type f -name libcharset.a)
       test "''${#charsetArchives[@]}" = 1

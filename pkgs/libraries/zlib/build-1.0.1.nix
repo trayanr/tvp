@@ -175,9 +175,9 @@ in
     (command "zlib.check" ''
       export LD_LIBRARY_PATH="$PWD:''${LD_LIBRARY_PATH-}"
       status=0
-      # Upstream example variants share foo.gz. Compile in parallel, test in order.
+      # The single upstream test recipe preserves its command order.
       ${make} all
-      ${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash test > upstream-check.log 2>&1 || status=$?
+      ${make} test > upstream-check.log 2>&1 || status=$?
       cat upstream-check.log >&2
       if test "$status" -ne 0; then exit "$status"; fi
       if ${tools.grep}/bin/grep -E 'FAILED|FAIL|XPASS' upstream-check.log >&2; then exit 1; fi

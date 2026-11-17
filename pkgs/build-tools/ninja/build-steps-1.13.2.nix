@@ -52,10 +52,9 @@ in
       ${python}/bin/python3 -B - ${lib.escapeShellArg "${bash}/bin/bash"} <<'PY'
       from pathlib import Path
       import sys
-      p = Path('src/subprocess-posix.cc')
-      text = p.read_text()
-      assert text.count('@TVP_SHELL@') == 2
-      p.write_text(text.replace('@TVP_SHELL@', sys.argv[1]))
+      subprocess_source = Path('src/subprocess-posix.cc')
+      subprocess_text = subprocess_source.read_text()
+      assert subprocess_text.count('@TVP_SHELL@') == 2
       # The optional web browser launches Python at runtime. The selected
       # minimal Python is BUILD-only; omit this optional feature explicitly.
       p = Path('configure.py')
@@ -63,6 +62,10 @@ in
       start = text.index('    def supports_ninja_browse(self) -> bool:')
       end = text.index('    def can_rebuild_in_place', start)
       text = text[:start] + '    def supports_ninja_browse(self) -> bool:\n        return False\n\n' + text[end:]
+      assert text.count('subprocess.check_call(rebuild_args)') == 1
+      text = text.replace('subprocess.check_call(rebuild_args)',
+                          'subprocess.check_call(rebuild_args + ["-j", os.environ["NIX_BUILD_CORES"]])')
+      subprocess_source.write_text(subprocess_text.replace('@TVP_SHELL@', sys.argv[1]))
       p.write_text(text)
       PY
     '')

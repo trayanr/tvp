@@ -16,7 +16,7 @@
   sqlite,
   cStandard ? null,
   iconvFromBase ? false,
-  parallelBuild ? false,
+  parallelBuild ? true,
   testFeatures ? { },
   doCheck ? true,
 }:

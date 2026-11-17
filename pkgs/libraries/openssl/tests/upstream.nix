@@ -32,7 +32,12 @@ let
     tools = [ s.python ];
     run = ''${s.python}/bin/python3 -B ${s.testRestoreScript} ${from} "$TVP_SOURCE_ROOT" ${s.stateScript}'';
   };
-  make = ''${s.gnumake}/bin/make -j1 SHELL=${s.bash}/bin/bash PERL=${s.testPerl}/bin/perl'';
+  make =
+    ''${s.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${s.bash}/bin/bash PERL=${s.testPerl}/bin/perl''
+    + lib.optionalString (lib.versionOlder s.version "0.9.8") " --eval='.NOTPARALLEL: build-shared'"
+    +
+      lib.optionalString (protocol == "openssl-0.9.7" && lib.versionAtLeast s.version "0.9.8")
+        " --eval='libcrypto.a: build_crypto' --eval='libssl.a: build_ssl' --eval='build_engines: build_shared'";
   construction = validation "upstream-construction" [
     (restore "${package.artifact}/${s.upstreamIsolation.statePath}")
     (
@@ -82,7 +87,7 @@ let
             lib.mapAttrsToList (n: v: "export ${n}=\"${v}\"") s.testEnvironment
           )}
           ${s.python}/bin/python3 -B ${s.captureScript} "$out/raw" \
-            ${s.bash}/bin/bash ${s.runnerScript} ${s.gnumake}/bin/make ${s.bash}/bin/bash ${s.testPerl}/bin/perl
+            ${s.bash}/bin/bash ${s.runnerScript} ${s.gnumake}/bin/make ${s.bash}/bin/bash ${s.testPerl}/bin/perl ${lib.escapeShellArg s.version}
         '';
       }
     )

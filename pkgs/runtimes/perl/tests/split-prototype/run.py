@@ -158,7 +158,7 @@ def main():
             (xs / 'TVPSplit.pm').write_text("package TVPSplit; our $VERSION='0.01'; require XSLoader; XSLoader::load('TVPSplit',$VERSION); 1;\n")
             (xs / 'TVPSplit.xs').write_text('#include "EXTERN.h"\n#include "perl.h"\n#include "XSUB.h"\nMODULE = TVPSplit PACKAGE = TVPSplit\n\nint\nanswer()\n    CODE:\n        RETVAL = 42;\n    OUTPUT:\n        RETVAL\n')
             run('equal-xs-configure', [perl, 'Makefile.PL', 'CC=' + tools['cc'], 'LD=' + tools['cc']], xs)
-            run('equal-xs-build', [tools['make'], '-j2'], xs)
+            run('equal-xs-build', [tools['make'], '-j' + os.environ.get('NIX_BUILD_CORES', '1')], xs)
             run('equal-xs-load', [perl, '-Iblib/lib', '-Iblib/arch', '-MTVPSplit', '-e', 'print TVPSplit::answer()'], xs, expected=b'42')
             embed = work / 'embed'; embed.mkdir()
             (embed / 'embed.c').write_text('#include <EXTERN.h>\n#include <perl.h>\nEXTERN_C void xs_init(pTHX);\nstatic PerlInterpreter *my_perl;\nint main(int argc,char **argv,char **env) {\nchar *program[]={"","-e","use List::Util qw(sum); print sum(1,2,39)"};\nPERL_SYS_INIT3(&argc,&argv,&env);my_perl=perl_alloc();perl_construct(my_perl);\nint r=perl_parse(my_perl,xs_init,3,program,NULL);if(!r)r=perl_run(my_perl);\nperl_destruct(my_perl);perl_free(my_perl);PERL_SYS_TERM();return r;}\n')

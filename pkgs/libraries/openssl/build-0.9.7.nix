@@ -44,7 +44,12 @@ let
     steps.command {
       environment = final.environment;
     } "openssl.${name}";
-  make = "${tools.gnumake}/bin/make -j1 SHELL=${tools.bash}/bin/bash";
+  make =
+    "${tools.gnumake}/bin/make -j\"$NIX_BUILD_CORES\" SHELL=${tools.bash}/bin/bash"
+    # Earlier shared-library stages clean files before linking and creating aliases.
+    + lib.optionalString (lib.versionOlder final.version "0.9.8") " --eval='.NOTPARALLEL: build-shared'"
+    # 0.9.8's aggregate lists these stages without ordering their archives.
+    + lib.optionalString (lib.versionAtLeast final.version "0.9.8") " --eval='libcrypto.a: build_crypto' --eval='libssl.a: build_ssl' --eval='build_engines: build_shared'";
   productionMake =
     make + (if lib.versionOlder final.version "0.9.8" then " 'DIRS=$(TVP_PRODUCTION_DIRS)'" else "");
   productionTargets =
