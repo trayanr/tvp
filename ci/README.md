@@ -18,10 +18,11 @@ and two installed-result checks each for Perl and Ruby: 12 named tests in total.
 It does not run upstream regressions, all historical releases, or every repo check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
 
-Promote this reviewed harness and its matching tools revision together before
-admitting a build. Then replace the old required `tvp/full` context with
-`tvp/smoke`, preserving the up-to-date branch requirement and other protections.
-Changing the repository scripts alone does not update a deployed controller.
+Promote the reviewed harness and its matching tools revision together. The
+required context is `tvp/smoke`, with up-to-date branches and administrator
+enforcement. Repository settings allow squash merges only; `master` also
+requires linear history. Changing the repository scripts alone does not update
+a deployed controller.
 The internal Buildbot builder identifier remains `tvp-full` to retain its history;
 its active step and posted result explicitly describe smoke validation.
 
@@ -61,23 +62,23 @@ period; all other branch protections stay unchanged. Baseline and follow-up merg
 retain their recorded validation scope, known failures and hardening/historical
 holds. A merge does not establish full-catalogue qualification.
 
-When the owner declares the migration complete, restore the original strict
-`tvp/full` requirement, including the up-to-date branch check, and deliberately
-re-enable CI and NAS operations. Landing the baseline or reaching zero split debt
-does not restart them automatically. See the [rollout plan](../lib/AUTHORING-MIGRATION.md)
-for the remaining work.
+Migration closeout restored CI/NAS operations and the strict `tvp/smoke`
+requirement. The historical `tvp/full` target does not override the current
+installed-result testing policy.
 
 ## Normal developer workflow
 
 This is the workflow after the temporary migration exception ends.
 
-Open a non-draft expansion PR from a branch in this repository, targeting master, then
-add `ci:build`. The branch must already contain the **current** target tip: rebase or
-merge master into it before testing. CI tests that exact PR head and never constructs
-a merge commit. A behind or diverged branch gets a pending `tvp/smoke` instruction
-without a build. New commits requeue automatically while the label remains. Both PRs and
-master run the explicit smoke selection. The worker reuses its local outputs and its configured
-signed private NAS cache. Fork PRs require a later disposable VM worker pool.
+Every open PR from this repository is tested automatically, including drafts
+and stacked PRs targeting another repository branch. No label is required.
+The branch must contain the **current** target tip: rebase or merge that target
+into it before testing. CI tests the exact PR head and never constructs a merge
+commit. A behind or diverged branch gets a pending `tvp/smoke` instruction
+without a build. New commits and target updates are polled automatically.
+Commits to `master` also run the standard installed-result selection. The worker
+reuses its local outputs and configured signed NAS cache. Fork PRs remain outside
+this trusted worker pool.
 
 Use squash merge after the exact head passes. Require `tvp/smoke` and an up-to-date
 branch in GitHub's merge protection. After another PR lands, update remaining branches
@@ -104,9 +105,9 @@ outputs needed by the candidate among the run's owned roots: a runtime closure c
 omit build-time bootstrap dependencies. The worker's Nix configuration supplies
 the cache URI and trusted public keys. The required `tvp/smoke` check remains independent of cache publication.
 
-For a large backfill, hold the PR's `ci:build` admission until its cache is ready.
-Cancel only superseded requests through the authenticated operator interface, then
-restore the label. A push alone leaves older queued and running requests intact.
+Cancel superseded requests through the authenticated operator interface. A push
+alone leaves older queued and running requests intact; polling schedules the new
+head independently.
 Host services, signing credentials, deployment addresses and retention records are
 managed outside this repository.
 

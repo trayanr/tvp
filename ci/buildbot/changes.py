@@ -1,4 +1,4 @@
-"""Label-gated GitHub polling with complete pagination and durable SHA tracking."""
+"""Automatic GitHub PR polling with pagination and durable SHA tracking."""
 from urllib.parse import quote
 
 from twisted.internet import defer
@@ -8,6 +8,7 @@ from policy import SHA, STATUS_CONTEXT
 
 
 class LabelledPullRequests(GitHubPullrequestPoller):
+    # Keep the deployed poller's durable-state identity across policy changes.
     db_class_name = "TVPLabelledPullRequestsV1"
 
     @defer.inlineCallbacks
@@ -92,7 +93,8 @@ class LabelledPullRequests(GitHubPullrequestPoller):
                 category="tvp-pr",
                 comments=f"PR #{number}: {pr['title']}",
                 revlink=pr["html_url"],
-                properties={"tvp_pr": number, "tvp_base": base},
+                properties={"tvp_pr": number, "tvp_base": base,
+                            "tvp_target_branch": branch},
             )
             # Persist after emitting: interruption may duplicate a request, never lose it.
             yield self._setCurrentRev(number, {"identity": identity, "decision": "admitted"})
