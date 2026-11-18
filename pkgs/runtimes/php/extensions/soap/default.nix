@@ -6,11 +6,11 @@ let
     (import ../bundled-releases.nix {
       inherit pkgs tvp;
       minPHP = "8.2";
-      def = php: {
+      def = release: {
         builder = ./build.nix;
         deps.libxml2 = tvp.lib.packages.withConstraint {
           reason = "Use the libxml2 selected by this PHP release.";
-        } php.specification.libxml2;
+        } release.def.deps.libxml2;
       };
     })
     source
