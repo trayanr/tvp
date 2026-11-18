@@ -1283,12 +1283,14 @@ complete ownership. `checks.audit-contracts` exercises these failure cases and g
 comparison behavior; `checks.provenance-declarations` rejects precompiled provenance
 without a declared binary boundary and checks context-free reporting manifests.
 
-`nix run .#provenance -- --json` reports each root's declared `source`, `mixed` or
-`binary` origin separately from registered closure membership. `runtimeBoundaries`
-lists registered binary/mixed components reached at runtime; `foreignPaths` lists
-exact unregistered store paths. The legacy JSON field `owned` measures registration,
-not compilation from source. Private owned-base components are registered rather than
-misreported as foreign packages with matching version names.
+`nix run .#provenance -- --json` lists declared `source`, `mixed` or `binary`
+origins, recipes, bases, source URLs, binary boundaries and registration records.
+The installed command reads the manifests embedded from the evaluated catalogue.
+`nix run .#provenance -- --realized --json` inspects locally available closures.
+Its `runtimeBoundaries` field lists registered binary or mixed components reached
+at runtime, and `foreignPaths` lists exact unregistered store paths. The `owned`
+field counts registered paths in the closure, including registered private base
+components.
 
 ## Producer graph comparison and CI entry points
 
