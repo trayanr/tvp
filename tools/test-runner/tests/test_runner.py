@@ -35,7 +35,17 @@ plan=json.loads(Path(os.environ['FAKE_PLAN']).read_text())
 if any('#testPlans.' in a or '#smokeTestPlans.' in a for a in args):
     link.symlink_to(os.environ['FAKE_PLAN'])
     sys.exit(0)
-print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[plan['jobs'][0]['drv']]}), file=sys.stderr, flush=True)
+drv=plan['jobs'][0]['drv']
+machine=os.environ.get('FAKE_REMOTE','')
+print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[drv,machine]}), file=sys.stderr, flush=True)
+if machine:
+    for event in [
+        {'action':'start','id':8,'type':105,'fields':[drv,'']},
+        {'action':'stop','id':8},
+        {'action':'start','id':9,'type':108,'fields':['/fake/download','https://cache.invalid']},
+        {'action':'stop','id':9},
+    ]:
+        print('@nix '+json.dumps(event), file=sys.stderr, flush=True)
 if os.environ.get('FAKE_BUILD_LOGS'):
     assert '--print-build-logs' in args
     for event in [
@@ -176,6 +186,21 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('--max-jobs',command)
         self.assertNotIn('--cores',command)
         self.assertNotIn(self.plan['aggregate']+'^*',command)
+
+    def test_compact_smoke_reports_fast_remote_work_and_downloads(self):
+        self.env.update(TVP_CI_PROGRESS='1', FAKE_REMOTE='ssh-ng://builder@host:22974?ssh-key=/ignored')
+        result = self.cli('all', '--state-dir', str(self.state))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = result.stdout.splitlines()
+        self.assertTrue(all(line.endswith('s') or ' | ' in line or 'started' in line for line in lines))
+        for line in lines:
+            self.assertRegex(line, r'^\[\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\] ')
+        self.assertIn('Smoke preparation started', lines[0])
+        self.assertIn('Smoke preparation finished in', lines[1])
+        self.assertIn('Smoke passed | checks 2/2 | suites 2/2 (0 cached at start)', lines[-1])
+        self.assertIn('Nix work started local 0, remote host:22974 1, downloads 1', lines[-1])
+        self.assertNotIn('builder@', result.stdout)
+        self.assertNotIn('ssh-key', result.stdout)
 
     def test_all_failure_returns_nonzero_after_independent_checks_finish(self):
         self.env['FAKE_FAILURE']='first'

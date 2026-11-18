@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Trusted worker harness: exact PR head, current target gate, frozen smoke checks."""
 import argparse
+from contextlib import contextmanager
+from datetime import datetime, timezone
 import fcntl
 import json
 import os
@@ -9,22 +11,39 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 
 def execute(argv, **kwargs):
     return subprocess.run(argv, check=True, **kwargs)
 
 
+def note(message, **kwargs):
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    print(f"[{stamp}] {message}", flush=True, **kwargs)
+
+
+@contextmanager
+def timed(label):
+    note(f"{label} started")
+    start = time.monotonic()
+    try:
+        yield
+    finally:
+        note(f"{label} finished in {time.monotonic() - start:.1f}s")
+
+
 def check_flake(candidate, evidence):
     log = evidence / "flake-check.log"
-    print("Checking flake evaluation; full log: evidence/flake-check.log", flush=True)
+    note("Flake evaluation started (flake-evaluation log)")
+    start = time.monotonic()
     try:
         with log.open("wb") as stream:
             execute(["nix", "flake", "check", "--show-trace", "--no-build", str(candidate)],
                     stdout=stream, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
-        print("Flake evaluation failed; last 40 lines (full log: evidence/flake-check.log):",
-              file=sys.stderr, flush=True)
+        note(f"Flake evaluation failed after {time.monotonic() - start:.1f}s "
+             "(last 40 lines of evidence/flake-check.log)", file=sys.stderr)
         with log.open("rb") as stream:
             stream.seek(0, os.SEEK_END)
             stream.seek(max(0, stream.tell() - 16000))
@@ -32,7 +51,7 @@ def check_flake(candidate, evidence):
         if tail:
             print("\n".join(tail), file=sys.stderr, flush=True)
         raise
-    print("Flake evaluation passed; full log: evidence/flake-check.log", flush=True)
+    note(f"Flake evaluation passed in {time.monotonic() - start:.1f}s")
 
 
 def checkout(repository, revision, destination):
@@ -41,8 +60,8 @@ def checkout(repository, revision, destination):
     destination.mkdir(parents=True)
     execute(["git", "init", "--quiet", str(destination)])
     execute(["git", "-C", str(destination), "-c", "core.hooksPath=/dev/null",
-             "fetch", "--no-tags", f"https://github.com/{repository}.git", revision])
-    execute(["git", "-C", str(destination), "checkout", "--detach", revision])
+             "fetch", "--quiet", "--no-tags", f"https://github.com/{repository}.git", revision])
+    execute(["git", "-C", str(destination), "checkout", "--quiet", "--detach", revision])
     actual = subprocess.check_output(["git", "-C", str(destination), "rev-parse", "HEAD"], text=True).strip()
     if actual != revision:
         raise ValueError("Checkout does not match the scheduled commit")
@@ -56,7 +75,7 @@ def require_current_target(repository, candidate, base, head, branch):
     # Validate a literal heads ref, without Git's branch shorthand expansion.
     execute(["git", "check-ref-format", f"refs/heads/{branch}"], stdout=subprocess.DEVNULL)
     execute(["git", "-C", str(candidate), "-c", "core.hooksPath=/dev/null",
-             "fetch", "--no-tags", "--", f"https://github.com/{repository}.git", f"refs/heads/{branch}"])
+             "fetch", "--quiet", "--no-tags", "--", f"https://github.com/{repository}.git", f"refs/heads/{branch}"])
     current = subprocess.check_output([
         "git", "-C", str(candidate), "rev-parse", "--verify", "FETCH_HEAD^{commit}"
     ], text=True).strip()
@@ -98,11 +117,12 @@ def validate_owned(args, owner_path):
     evidence = root / "evidence"
     evidence.mkdir(exist_ok=True)
     candidate, base = root / "candidate", root / "base"
-    checkout(args.repository, args.head, candidate)
     base_sha = args.base or args.head
-    if args.base:
-        require_current_target(args.repository, candidate, base_sha, args.head, args.target_branch)
-    checkout(args.repository, base_sha, base)
+    with timed(f"Checkout {args.head[:12]} (base {base_sha[:12]})"):
+        checkout(args.repository, args.head, candidate)
+        if args.base:
+            require_current_target(args.repository, candidate, base_sha, args.head, args.target_branch)
+        checkout(args.repository, base_sha, base)
     nix_version = subprocess.check_output(["nix", "--version"], text=True).strip()
     print(nix_version, flush=True)
     identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": args.head}
@@ -112,31 +132,36 @@ def validate_owned(args, owner_path):
     # source files which a fresh store's read-only flake check cannot create.
     trees = [("base", base), ("candidate", candidate)] if args.base else [("candidate", candidate)]
     for name, tree in trees:
-        with (evidence / f"{name}-graph.json").open("w") as output:
+        with timed(f"{name.capitalize()} graph evaluation"), (evidence / f"{name}-graph.json").open("w") as output:
             execute(["nix", "eval", "--show-trace", "--json", f"{tree}#graph"], stdout=output)
     if args.base:
-        difference = json.loads(subprocess.check_output([
-            sys.executable, str(Path(args.compare).resolve()),
-            str(evidence / "base-graph.json"), str(evidence / "candidate-graph.json"),
-            "--json", "--report-only",
-        ], text=True))
+        with timed("Graph comparison"):
+            difference = json.loads(subprocess.check_output([
+                sys.executable, str(Path(args.compare).resolve()),
+                str(evidence / "base-graph.json"), str(evidence / "candidate-graph.json"),
+                "--json", "--report-only",
+            ], text=True))
         difference["informational"] = True
         difference["ciIdentity"] = identity
         (evidence / "graph-diff.json").write_text(json.dumps(difference, indent=2) + "\n")
-        print("Graph comparison (informational): " + "; ".join(
-            f"{len(difference[key])} {key}" for key in ("added", "changed", "removed")), flush=True)
-        for key in ("added", "changed", "removed"):
-            for name in difference[key]:
-                print(f"  {key}: {name}", flush=True)
+        categories = ("added", "changed", "removed")
+        summary = ", ".join(f"{len(difference[key])} {key}" for key in categories)
+        with (evidence / "graph-diff.log").open("w") as detail:
+            print(summary, file=detail)
+            for key in categories:
+                for name in difference[key]:
+                    print(f"{key} {name}", file=detail)
+        note(f"Graph comparison: {summary} (graph-diff log)")
     check_flake(candidate, evidence)
     validation = root / "validation"
     if validation.exists() or validation.is_symlink():
         raise ValueError("CI validation needs a fresh state directory")
-    completed = subprocess.run([
-        "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
-        "--system", "x86_64-linux", "--state-dir", str(validation),
-        "--owner-lock", str(owner_path),
-    ])
+    with timed("Smoke runner including preparation"):
+        completed = subprocess.run([
+            "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
+            "--system", "x86_64-linux", "--state-dir", str(validation),
+            "--owner-lock", str(owner_path),
+        ], env={**os.environ, "TVP_CI_PROGRESS": "1"})
     # A failing test still returns a terminal receipt and retained evidence.
     # Inherit the console for live progress; consume the separate machine receipt.
     result = read_result(validation)
@@ -158,8 +183,9 @@ def validate_owned(args, owner_path):
             continue
         log = subprocess.run(["nix", "log", drv], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if log.returncode == 0:
-            (failures / (Path(drv).name + ".log")).write_text(log.stdout)
-            print(f"\nFull failure log: {drv}\n{log.stdout}", flush=True)
+            path = failures / (Path(drv).name + ".log")
+            path.write_text(log.stdout)
+            note(f"Failure log saved to {path.relative_to(root)}")
     return result, 0 if completed.returncode == 0 and result["phase"] == "passed" else 1
 
 

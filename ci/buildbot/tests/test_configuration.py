@@ -27,6 +27,7 @@ class Deployment(unittest.TestCase):
                         if s.kwargs.get('name') == 'smoke-catalogue')
             self.assertEqual(step.kwargs['sigtermTime'], 30)
             self.assertEqual(step.kwargs['logfiles'], {
+                'graph-diff': 'evidence/graph-diff.log',
                 'flake-evaluation': 'evidence/flake-check.log',
                 'preparation': 'validation/latest/prepare.log',
                 'nix': 'validation/latest/nix.log',
