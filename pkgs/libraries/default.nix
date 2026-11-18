@@ -22,6 +22,7 @@ tvp.lib.packages.mergeNamespaces {
   libcups = import ./libcups { inherit pkgs tvp; };
   fontconfig = import ./fontconfig { inherit pkgs tvp; };
   freetype = import ./freetype { inherit pkgs tvp; };
+  freetds = import ./freetds { inherit pkgs tvp; };
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };

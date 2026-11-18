@@ -23,11 +23,11 @@ It uses the machine's Nix concurrency settings. Logs and the terminal result are
 retained under `.tvp-tests/latest/`; separate preparation and wait commands are
 not needed. `test start` remains available for background execution.
 
-Both commands default to this smoke scope. The selection in
-[`tests/smoke.nix`](tests/smoke.nix) contains 972 named checks across 486
-subjects: two checks for each of 479 declared compatible PHP/extension pairs
-(296 Redis and 183 igbinary), plus 14 checks across the four compiler bases,
-Perl, Ruby and Redis.
+Both commands default to the smoke selection in [`tests/smoke.nix`](tests/smoke.nix).
+It runs two checks per declared PHP/extension pair alongside checks for the four
+compiler bases, Perl, Ruby, Redis and FreeTDS. Use
+`nix eval --json .#php.metadata` for current pair counts and
+`nix eval .#smokeTests.x86_64-linux.metadata.namedTests` for the smoke test count.
 The owner approved the PHP extension matrix as part of standard testing and CI.
 It covers every declared compatible pair, including historical PHP versions,
 with small load and functional checks rather than upstream regression suites.
