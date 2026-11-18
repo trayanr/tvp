@@ -6,6 +6,7 @@ from buildbot.reporters.generators.buildrequest import BuildRequestGenerator
 from buildbot.reporters.message import MessageFormatterRenderable
 from changes import LabelledPullRequests
 from policy import REPOSITORY, SHA, STATUS_CONTEXT, eligible, result_properties
+from queue_policy import CATALOGUE, CATALOGUE_REASON, supersedes_queued_pr
 
 
 def make_config(settings, source):
@@ -78,7 +79,7 @@ def make_config(settings, source):
                               pollInterval=60, pollAtLaunch=True),
         ] if github_enabled else [],
         "schedulers": [schedulers.AnyBranchScheduler(
-            name="catalogue", treeStableTimer=None, builderNames=["tvp-full"],
+            name=CATALOGUE, reason=CATALOGUE_REASON, treeStableTimer=None, builderNames=["tvp-full"],
             change_filter=util.ChangeFilter(category=["tvp-pr", "tvp-master"]),
         ), schedulers.ForceScheduler(
             name="build-commit", label="Build commit", builderNames=["tvp-full"],
@@ -92,7 +93,7 @@ def make_config(settings, source):
             )],
         )],
         "builders": [util.BuilderConfig(name="tvp-full", workernames=["tvp-linux"],
-                                         factory=factory, collapseRequests=False)],
+                                         factory=factory, collapseRequests=supersedes_queued_pr)],
         "services": [reporters.GitHubStatusPush(
             token=github_token, context=STATUS_CONTEXT,
             generators=[BuildRequestGenerator(formatter=MessageFormatterRenderable("Queued on local TVP builder")),
