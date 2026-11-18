@@ -49,6 +49,7 @@ class FrozenValidation(unittest.TestCase):
                 self.assertNotIn("--json", argv)
                 self.assertIsNone(kwargs.get("stdout"))
                 self.assertIsNone(kwargs.get("stderr"))
+                self.assertEqual(kwargs["env"]["TVP_CI_PROGRESS"], "1")
                 validation = Path(argv[argv.index("--state-dir") + 1])
                 run_path = validation / "runs/run-17"
                 run_path.mkdir(parents=True)
@@ -72,6 +73,7 @@ class FrozenValidation(unittest.TestCase):
             self.assertTrue(Path("evidence/status.json").exists())
             if base:
                 self.graph_diff = json.loads(Path("evidence/graph-diff.json").read_text())
+                self.assertIn("added packages.new_1", Path("evidence/graph-diff.log").read_text())
             identity = json.loads(Path("evidence/identity.json").read_text())
             self.assertEqual(identity['merge'], args.head)
             self.assertFalse(any('merge' in c for c in commands))

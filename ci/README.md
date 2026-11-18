@@ -22,10 +22,11 @@ when their outputs are not cached. Other families retain representative checks.
 CI does not run upstream regressions or every repository check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
 
-The `smoke-catalogue` step shows compilation, finalization, assembly, suite and
-test progress, along with active Nix builds, in `stdio`.
-Its `flake-evaluation`, `preparation`, and `nix` logs stream the corresponding
-worker files, including compiler output from Nix. Buildbot keeps these logs
+The `smoke-catalogue` step timestamps checkout, graph evaluation, flake checking,
+and smoke progress in `stdio`. The progress lines summarize compilation,
+finalization, assembly, tests, active builds by location, and cache downloads.
+The `graph-diff`, `flake-evaluation`, `preparation`, and `nix` logs carry package
+names and detailed worker output, including compiler output. Buildbot keeps these logs
 with the completed build. The evidence upload retains those files alongside the
 frozen plan, structured Nix events, and terminal test receipt.
 
@@ -298,8 +299,9 @@ this implementation.
 
 PR validation compares the immutable current target admitted by the poller with the
 exact PR head. The worker rechecks that target before evaluating either graph.
-The comparison reports added, changed and removed producers in the build log and saves
-exact before/after identities in `evidence/graph-diff.json`. It is informational:
+The comparison reports producer counts in `stdio` and lists the added, changed,
+and removed producers in the `graph-diff` log. It saves exact before/after
+identities in `evidence/graph-diff.json`. It is informational:
 dependency updates and other graph changes continue into the full validation without
 controller allowances. Review the diff alongside the test results before merging.
 

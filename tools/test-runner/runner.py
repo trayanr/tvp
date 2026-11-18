@@ -2,6 +2,7 @@
 
 import argparse
 import collections
+from datetime import datetime, timezone
 import fcntl
 import json
 import os
@@ -48,8 +49,14 @@ def apply_event(active, event, log):
     if action == "start" and event.get("type") in (105, 108) and fields and isinstance(fields[0], str):
         drv = fields[0]
         phase = "building" if event["type"] == 105 else "fetching"
-        active[identifier] = {"drv": drv, "startedAt": time.time(), "phase": phase}
-        log.write(phase + " " + str(drv) + "\n")
+        # Nix actBuild gives the machine URI as its second field. A local
+        # builder sends an empty string. actSubstitute describes cache work.
+        machine = fields[1] if len(fields) > 1 and isinstance(fields[1], str) else ""
+        location = "cache" if phase == "fetching" else builder_location(machine)
+        active[identifier] = {"drv": drv, "startedAt": time.time(), "phase": phase, "location": location}
+        suffix = " on " + location if location.startswith("remote ") else ""
+        log.write(phase + " " + drv + suffix + "\n")
+        return active[identifier]
     elif action == "stop":
         active.pop(identifier, None)
     elif action == "result" and event.get("type") == 104 and identifier in active and fields:
@@ -61,6 +68,25 @@ def apply_event(active, event, log):
         log.write(source + "> " + ANSI.sub("", fields[0]) + "\n")
     elif action == "msg":
         log.write(ANSI.sub("", str(event.get("msg", ""))) + "\n")
+
+
+def builder_location(machine):
+    if not machine:
+        return "local"
+    # Show the endpoint without the login, query options, or SSH key path.
+    authority = machine.split("://", 1)[-1].split("/", 1)[0].split("?", 1)[0]
+    host = re.sub(r"[^a-zA-Z0-9_.:\[\]-]", "", authority.rsplit("@", 1)[-1])[:64]
+    return "remote " + host if host else "remote builder"
+
+
+def note_activity(item, builds, downloads):
+    """Prefer the outer remote dispatch over the remote daemon's local echo."""
+    location = item.get("location", "cache" if item["phase"] == "fetching" else "local")
+    drv = item["drv"]
+    if location == "cache":
+        downloads.add(drv)
+    elif drv not in builds or location != "local":
+        builds[drv] = location
 
 
 def useful_event(event, active):
@@ -98,12 +124,18 @@ def work(run, global_fd, lease_fd):
     owner_gone = threading.Event()
     child = None
     active = {}
+    compact = os.environ.get("TVP_CI_PROGRESS") == "1"
+    build_locations = {}
+    downloads = set()
     lock = threading.Lock()
     protected = set()
 
     def checkpoint():
         with lock:
             state["active"] = dict(active)
+            if compact:
+                state["activityStarts"] = dict(collections.Counter(build_locations.values()))
+                state["activityStarts"]["cache"] = len(downloads)
         write_json(run / "state.json", state)
 
     def rooting(completed, total):
@@ -177,7 +209,9 @@ def work(run, global_fd, lease_fd):
                                     events.write("@nix " + json.dumps(event) + "\n")
                                 else:
                                     events.write(line)
-                                apply_event(active, event, log)
+                                started = apply_event(active, event, log)
+                                if compact and started:
+                                    note_activity(started, build_locations, downloads)
                     else:
                         events.write(line)
                         log.write(line)
@@ -334,7 +368,18 @@ def run_all(args):
         fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
         launch = argparse.Namespace(**vars(args), parent_owner_lock=parent_owner)
         launch.owner_lock = owner_path
-        run = start(launch, return_run=True)
+        compact = os.environ.get("TVP_CI_PROGRESS") == "1" and not args.json
+        preparing = time.monotonic()
+        if compact:
+            print_ci("Smoke preparation started")
+        try:
+            run = start(launch, return_run=True)
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+            if compact:
+                print_ci(f"Smoke preparation failed after {time.monotonic() - preparing:.1f}s")
+            raise
+        if compact:
+            print_ci(f"Smoke preparation finished in {time.monotonic() - preparing:.1f}s")
         interrupted = None
 
         def stop(signum, _frame):
@@ -346,7 +391,7 @@ def run_all(args):
 
         previous = {sig: signal.signal(sig, stop) for sig in (signal.SIGTERM, signal.SIGINT)}
         try:
-            code = wait(run, quiet=args.json)
+            code = wait(run, quiet=args.json, compact=compact)
         finally:
             for sig, handler in previous.items():
                 signal.signal(sig, handler)
@@ -476,8 +521,70 @@ def progress_key(state):
     return json.dumps(fields, sort_keys=True)
 
 
-def wait(run, quiet=False):
-    previous, printed_at = None, None
+def print_ci(message):
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"[{timestamp}] {message}", flush=True)
+
+
+def ci_work(counts):
+    local = counts.get("local", 0)
+    remote = ", ".join(f"{key} {value}" for key, value in sorted(counts.items()) if key.startswith("remote "))
+    return f"local {local}" + (", " + remote if remote else "") + f", downloads {counts.get('cache', 0)}"
+
+
+def compact_progress(state):
+    scope = state.get("validationScope", "smoke").capitalize()
+    parts = [f"{scope} {state['phase']}"]
+    if state.get("testCounts"):
+        tests = state["testCounts"]
+        parts.append(f"checks {tests['passed']}/{sum(tests.values())}")
+        if tests["failed-or-blocked"]:
+            parts.append(f"{tests['failed-or-blocked']} failed or blocked")
+        if tests["cancelled"]:
+            parts.append(f"{tests['cancelled']} cancelled")
+    parts.append(f"suites {state['counts'].get('passed', 0)}/{len(state['jobs'])}"
+                 f" ({sum(job['cachedAtStart'] for job in state['jobs'].values())} cached at start)")
+    for phase, row in state.get("stageCounts", {}).items():
+        covered = f", {row['bypassed']} covered" if row["bypassed"] else ""
+        parts.append(f"{phase} {row['ready']}/{row['total']} ready{covered}")
+    if state["phase"] in TERMINAL:
+        if "activityStarts" in state:
+            parts.append("Nix work started " + ci_work(state["activityStarts"]))
+    else:
+        builds, downloads = {}, set()
+        for item in state.get("active", {}).values():
+            note_activity(item, builds, downloads)
+        counts = collections.Counter(builds.values())
+        counts["cache"] = len(downloads)
+        parts.append("active " + ci_work(counts))
+        if state.get("operation") == "registering-roots":
+            roots = state["rooting"]
+            parts.append(f"protecting outputs {roots['completed']}/{roots['total']}")
+        elif state.get("operation") == "checking-outputs":
+            parts.append("checking outputs")
+    if state.get("monitorError"):
+        parts.append("progress query failed, see result.json")
+    return " | ".join(parts)
+
+
+def print_ci_failures(run, state, plan):
+    failed_drvs = set(state.get("reportedFailedDerivations", []))
+    failures = []
+    for job in (plan or {}).get("jobs", []):
+        if state["jobs"].get(job["name"], {}).get("status") != "failed-or-blocked":
+            continue
+        tests = [test["name"] for test in job.get("tests", []) if test["drv"] in failed_drvs]
+        failures.extend(f"{job['name']}/{name}" for name in tests or ["blocked or failed"])
+    if failures:
+        extra = f", plus {len(failures) - 10} more" if len(failures) > 10 else ""
+        print_ci("Failed or blocked " + ", ".join(failures[:10]) + extra)
+    if state.get("error"):
+        print_ci("Smoke error " + " ".join(state["error"].split()))
+    print_ci(f"Details {run / 'nix.log'} and {run / 'result.json'}")
+
+
+def wait(run, quiet=False, compact=False):
+    previous, previous_phase, printed_at = None, None, None
     plan_path = run / "plan.json"
     plan = json.loads(plan_path.read_text()) if plan_path.exists() else None
     labels = (plan or {}).get("displayLabels", {})
@@ -485,8 +592,18 @@ def wait(run, quiet=False):
         # The worker publishes observations and rooting progress. Waiting on its
         # snapshot avoids a second process continually querying the same store.
         state = status(run, as_json=None, inspect_store=False, plan=plan)
-        key, now = progress_key(state), time.monotonic()
-        if not quiet and key != previous:
+        key, now = compact_progress(state) if compact else progress_key(state), time.monotonic()
+        phase = state["phase"]
+        if not quiet and compact:
+            if (phase != previous_phase or now - printed_at >= 60
+                    or key != previous and now - printed_at >= 15):
+                duration = max(0, round(state.get("finishedAt", time.time())
+                                        - state.get("buildStartedAt", state["startedAt"])))
+                print_ci(f"+{duration}s | {key}")
+                previous, previous_phase, printed_at = key, phase, now
+            if phase in TERMINAL and phase != "passed":
+                print_ci_failures(run, state, plan)
+        elif not quiet and key != previous:
             print_status(run, state, labels)
             previous, printed_at = key, now
         elif not quiet and now - printed_at >= 60:

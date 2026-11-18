@@ -53,6 +53,7 @@ def make_config(settings, source):
         extract_fn=result_properties, haltOnFailure=True,
         timeout=None, maxTime=None, sigtermTime=30,
         logfiles={
+            "graph-diff": "evidence/graph-diff.log",
             "flake-evaluation": "evidence/flake-check.log",
             "preparation": "validation/latest/prepare.log",
             "nix": "validation/latest/nix.log",
