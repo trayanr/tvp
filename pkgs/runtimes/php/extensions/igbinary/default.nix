@@ -4,6 +4,11 @@ let
     {
       def = {
         deps.php = tvp.packages.php_8_5;
+        phpRequirements = {
+          min = "7.0.0";
+          reason = "igbinary 3.2.17RC1 declares PHP 7.0 or newer in package.xml.";
+          source = "https://pecl.php.net/get/igbinary-3.2.17RC1.tgz";
+        };
         opts = {
           # Upstream requires PHP 7; this release adds PHP 8.5 support.
           phpCompatibility = {

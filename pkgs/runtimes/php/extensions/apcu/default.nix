@@ -5,6 +5,11 @@ let
     {
       def = {
         deps.php = tvp.packages.php_8_5;
+        phpRequirements = {
+          min = "7.0.0-dev";
+          reason = "APCu 5.1.28 declares PHP 7.0 or newer in package.xml.";
+          source = "https://pecl.php.net/get/apcu-5.1.28.tgz";
+        };
         opts = {
           # PECL declares PHP 7.0 as the minimum. TVP currently packages through 8.5.
           phpCompatibility = {

@@ -5,6 +5,12 @@ let
     {
       def = {
         deps.php = tvp.packages.php_8_5;
+        phpRequirements = {
+          min = "8.1.0";
+          max = "8.99.99";
+          reason = "MongoDB 1.21.13 declares PHP 8.1 through 8.x in package.xml.";
+          source = "https://pecl.php.net/get/mongodb-1.21.13.tgz";
+        };
         patches = [
           {
             file = ./php85-interned-string.patch;

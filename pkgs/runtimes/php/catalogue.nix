@@ -99,6 +99,11 @@ in
           builtins.attrValues pairs
         );
         extensionVersions = builtins.attrNames versionTable;
+        coverage = tvp.lib.php.compatibility.report {
+          inherit versionTable;
+          phpVersions = builtins.mapAttrs (_: php: php.version) engines;
+          policy = extensions.phpPolicies.${family};
+        };
         unsupportedPHP = builtins.attrNames (
           lib.filterAttrs (_: php: compatibleReleases php family == { }) engines
         );

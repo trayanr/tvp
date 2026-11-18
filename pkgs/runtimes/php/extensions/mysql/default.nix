@@ -6,6 +6,22 @@
 let
   pname = "php-${name}";
   needsMysqlnd = name != "mysqlnd";
+  introduction =
+    {
+      mysqlnd = {
+        php = "5.3";
+        tag = "5.3.29";
+      };
+      mysqli = {
+        php = "5.0";
+        tag = "5.0.5";
+      };
+      pdo_mysql = {
+        php = "5.1";
+        tag = "5.1.6";
+      };
+    }
+    .${name};
   phpFamily = (import ../.. { inherit pkgs tvp; }).recipes.php;
   releases = pkgs.lib.filterAttrs (
     version: _: pkgs.lib.hasPrefix "8.5." version
@@ -24,6 +40,14 @@ let
   );
   family = tvp.lib.php.mkExtensionFamily {
     inherit tvp name versionTable;
+    phpPolicy = {
+      kind = "bundled";
+      requirements = {
+        min = introduction.php;
+        reason = "${name} first shipped with PHP ${introduction.php}. Each module uses its own PHP release's source and SDK.";
+        source = "https://github.com/php/php-src/tree/php-${introduction.tag}/ext/${name}";
+      };
+    };
     source = phpFamily.source;
     tests = import ./tests.nix { inherit pkgs tvp; };
     testDeps = pkgs.lib.optionalAttrs needsMysqlnd { mariadb = pkgs.mariadb.server; };

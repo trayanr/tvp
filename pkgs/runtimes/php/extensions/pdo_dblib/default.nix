@@ -21,6 +21,14 @@ let
   );
   family = tvp.lib.php.mkExtensionFamily {
     inherit tvp versionTable;
+    phpPolicy = {
+      kind = "bundled";
+      requirements = {
+        min = "5.1";
+        reason = "PDO_DBLIB first shipped with PHP 5.1. Each module uses its own PHP release's source and SDK.";
+        source = "https://github.com/php/php-src/tree/php-5.1.6/ext/pdo_dblib";
+      };
+    };
     name = "pdo_dblib";
     source = phpFamily.source;
     tests = import ./tests.nix { inherit tvp; };

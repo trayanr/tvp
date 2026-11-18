@@ -16,6 +16,7 @@
 
   packages,
   tvpLib,
+  phpCoverage ? { },
 }:
 let
   canonical = lib.filterAttrs (
@@ -38,6 +39,7 @@ let
     in
     {
       inherit pname;
+      php = phpCoverage.${pname} or null;
       attr = tvpLib.versions.attrName pname latest.version;
       versions = map (p: p.version) ordered;
       download = latest.tvp.source.url or null;
@@ -70,16 +72,25 @@ ownedCLI.shell {
     manifest=${manifest}
     flake="."
     list=0
+    php_selector=""
     filters=()
 
     while [ $# -gt 0 ]; do
       case "$1" in
         --flake) flake="$2"; shift 2 ;;
         --list) list=1; shift ;;
+        --php)
+          if [ $# -lt 2 ] || ! [[ "$2" =~ ^[0-9]+([.][0-9]+){0,2}$ ]]; then
+            echo 'tvp-upstream: --php requires a major, minor, or complete version' >&2
+            exit 2
+          fi
+          php_selector="$2"; shift 2 ;;
         -h|--help)
-          echo "usage: tvp-upstream [--flake REF] [--list] [PACKAGE...]"
+          echo "usage: tvp-upstream [--flake REF] [--list] [--php VERSION] [PACKAGE...]"
           echo "Compare available upstream releases with packaged versions."
           echo "--list shows every family's configuration without contacting upstream."
+          echo "PHP extensions also report packaged combinations, packaging gaps, and source-backed hard limits."
+          echo "--php selects an exact PHP version or a major/minor series."
           exit 0
           ;;
         -*) echo "tvp-upstream: unknown option '$1'" >&2; exit 2 ;;
@@ -101,6 +112,18 @@ ownedCLI.shell {
     fi
 
     system=""
+
+    php_coverage() {
+      if [ "$(jq -r '.php != null' <<< "$row")" = true ]; then
+        local php_args=()
+        if [ -n "$php_selector" ]; then php_args+=("$php_selector"); fi
+        jq -c '.php' <<< "$row" | \
+          ${python3}/bin/python3 ${./upstream/php-coverage.py} - "''${php_args[@]}"
+      elif [ -n "$php_selector" ]; then
+        echo "tvp-upstream: --php requires a PHP extension family ($pname)" >&2
+        exit 2
+      fi
+    }
 
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
@@ -143,8 +166,9 @@ ownedCLI.shell {
       esac
     }
 
-    jq -c --argjson select "$select" \
-      '.[] | select($select == null or (.pname as $p | $select | index($p)))' \
+    jq -c --argjson select "$select" --arg php "$php_selector" \
+      '.[] | select(($select == null and ($php == "" or .php != null)) or
+                    (.pname as $p | $select != null and ($select | index($p))))' \
       "$manifest" | while read -r row; do
       pname=$(jq -r '.pname' <<< "$row")
       attr=$(jq -r '.attr' <<< "$row")
@@ -153,6 +177,7 @@ ownedCLI.shell {
         printf '%s — %s packaged; discovery: %s\n' "$pname" \
           "$(jq '.versions | length' <<< "$row")" \
           "$(jq -r '.upstream.type // "not configured"' <<< "$row")"
+        php_coverage
         continue
       fi
       if [ "$type" = null ]; then
@@ -160,6 +185,7 @@ ownedCLI.shell {
         printf '  packaged: %s\n' "$(jq -r '.versions | join(" ")' <<< "$row")"
         printf '  download: %s\n' "$(jq -r '.download // "not described"' <<< "$row")"
         printf '  missing versions: unknown\n\n'
+        php_coverage
         continue
       fi
       url=$(jq -r '.upstream.url' <<< "$row")
@@ -190,6 +216,7 @@ ownedCLI.shell {
 
       if ! fetch_raw "$type" "$url" "$subdir" "$pattern" "$selector" | sort -u > "$work/raw"; then
         printf '%s — FAILED: could not read upstream listing (%s)\n\n' "$pname" "$type"
+        php_coverage
         touch "$work/failed"
         continue
       fi
@@ -215,6 +242,7 @@ ownedCLI.shell {
         printf '%s — FAILED: upstream listing came back empty\n' "$pname"
         printf '  source: %s %s\n' "$type" "$url"
         printf '  Retry, or use a mirror: ftp.gnu.org refuses connections after ~60 requests.\n\n'
+        php_coverage
         touch "$work/failed"
         continue
       fi
@@ -233,6 +261,9 @@ ownedCLI.shell {
         printf '  not packaged (%s):\n' "$(wc -l < "$work/missing")"
         tr '\n' ' ' < "$work/missing" | fold -s -w 92 | sed 's/^/    /'
         echo
+        if [ "$(jq -r '.php != null' <<< "$row")" = true ]; then
+          echo '  PHP compatibility of unregistered releases: unknown (requirements not recorded)'
+        fi
       else
         echo "  nothing missing"
       fi
@@ -248,6 +279,7 @@ ownedCLI.shell {
                | (.versions | join(" ")), "why: " + .reason' <<< "$row" \
           | fold -s -w 88 | sed 's/^/    /'
       fi
+      php_coverage
       echo
     done
 
