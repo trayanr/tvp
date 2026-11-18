@@ -5,6 +5,8 @@ let
     bcmath = import ./bcmath { inherit pkgs tvp; };
     calendar = import ./calendar { inherit pkgs tvp; };
     curl = import ./curl { inherit pkgs tvp; };
+    exif = import ./exif { inherit pkgs tvp; };
+    ftp = import ./ftp { inherit pkgs tvp; };
     gd = import ./gd { inherit pkgs tvp; };
     gettext = import ./gettext { inherit pkgs tvp; };
     gmp = import ./gmp { inherit pkgs tvp; };
@@ -13,9 +15,12 @@ let
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
     mongodb = import ./mongodb { inherit pkgs tvp; };
+    pcntl = import ./pcntl { inherit pkgs tvp; };
     pdo_dblib = import ./pdo_dblib { inherit pkgs tvp; };
     pdo_pgsql = import ./pdo_pgsql { inherit pkgs tvp; };
+    sockets = import ./sockets { inherit pkgs tvp; };
     sodium = import ./sodium { inherit pkgs tvp; };
+    sysvsem = import ./sysvsem { inherit pkgs tvp; };
     xdebug = import ./xdebug { inherit pkgs tvp; };
     zip = import ./zip { inherit pkgs tvp; };
     mysqlnd = import ./mysql {

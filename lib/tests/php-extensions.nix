@@ -50,16 +50,24 @@ let
     "gmp"
     "sodium"
   ];
-  bundledModules = mysqlModules ++ imageAndSystemModules ++ [
-    "bcmath"
-    "calendar"
-    "curl"
-    "intl"
-    "mbstring"
-    "pdo_dblib"
-    "pdo_pgsql"
-    "zip"
-  ];
+  bundledModules =
+    mysqlModules
+    ++ imageAndSystemModules
+    ++ [
+      "bcmath"
+      "calendar"
+      "curl"
+      "exif"
+      "ftp"
+      "intl"
+      "mbstring"
+      "pcntl"
+      "pdo_dblib"
+      "pdo_pgsql"
+      "sockets"
+      "sysvsem"
+      "zip"
+    ];
   extensionPairs =
     296 + 2 * igbinaryPairs + mongodbPairs + xdebugPairs + builtins.length bundledModules * php82Plus;
   otherPHP = tvp.packages.php_8_2;
@@ -142,9 +150,23 @@ let
       && (row "bcmath" "8.1.34" "8.1.34").state == "gap"
       && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
       && (row "gd" "8.1.34" "8.1.34").state == "gap"
-      && (row "sodium" "7.1.33" "7.1.33").source == "https://www.php.net/manual/en/sodium.installation.php"
+      &&
+        (row "sodium" "7.1.33" "7.1.33").source == "https://www.php.net/manual/en/sodium.installation.php"
       && (row "sodium" "7.1.33" "7.1.33").state == "incompatible"
       && (row "sodium" "7.2.34" "7.2.34").state == "gap"
+      &&
+        lib.all
+          (
+            module:
+            (row module "8.1.34" "8.1.34").state == "gap" && (row module "8.2.35" "8.2.35").state == "packaged"
+          )
+          [
+            "exif"
+            "ftp"
+            "pcntl"
+            "sockets"
+            "sysvsem"
+          ]
       && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
@@ -214,6 +236,7 @@ let
         )
         {
           curl = [ "curl" ];
+          ftp = [ "openssl" ];
           gd = [
             "zlib"
             "libpng"
@@ -239,6 +262,55 @@ let
           zip = [ "libzip" ];
         }
     );
+    ftpTLS =
+      let
+        older = tvp.packages.php_8_3.extensions.ftp;
+        newer = tvp.canonical.php_8_4_0.extensions.ftp;
+        configure =
+          package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
+      in
+      has "--enable-ftp" (configure older)
+      && has "--with-openssl-dir" (configure older)
+      && !(has "--with-ftp-ssl" (configure older))
+      && has "--enable-ftp" (configure newer)
+      && has "--with-ftp-ssl" (configure newer)
+      && !(has "--with-openssl-dir" (configure newer))
+      &&
+        newer.tvp.declaredDependencies.openssl.drvPath
+        == newer.php.tvp.declaredDependencies.openssl.drvPath;
+    ftpEffectiveOpenSSL =
+      let
+        ftp = php.extensions.ftp;
+        original = tvp.packages.openssl;
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "openssl.ftp-provider-probe";
+              run = "true";
+            }
+          ]
+        );
+        overridden = ftp.override { openssl = replacement; };
+        edited = ftp.edit (spec: spec // { openssl = replacement; });
+        finalization = ftp.editSteps (
+          map (step: if step.name == "output.rpaths" then step // { run = step.run + "\ntrue\n"; } else step)
+        );
+        runtimeOnly = ftp.editRuntime (spec: spec // { libraries = [ ]; });
+      in
+      ftp.tvp.declaredDependencies.openssl.drvPath == original.drvPath
+      && overridden.tvp.declaredDependencies.openssl.drvPath == replacement.drvPath
+      && overridden.tvp.declaredTestDependencies.opensslCli.drvPath == original.drvPath
+      && !(overridden.tvp.declaredDependencies ? opensslCli)
+      && has (lib.getLib replacement).outPath (rpathCommand overridden)
+      && !(has (lib.getLib original).outPath (rpathCommand overridden))
+      && overridden.artifact.drvPath != ftp.artifact.drvPath
+      && edited.drvPath == overridden.drvPath
+      && finalization.artifact.drvPath == ftp.artifact.drvPath
+      && finalization.drvPath != ftp.drvPath
+      && runtimeOnly.artifact.drvPath == ftp.artifact.drvPath
+      && runtimeOnly.drvPath != ftp.drvPath;
     zipEffectiveLibrary =
       let
         zip = php.extensions.zip;
