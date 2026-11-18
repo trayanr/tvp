@@ -185,7 +185,7 @@ let
         script = writeScript "tvp-step-${step.name}.sh" scriptText;
       };
   active = map render selected;
-  originalText = ''
+  renderRunner = stepCommand: ''
     #!${bash}/bin/bash
     set -euo pipefail
     shopt -s inherit_errexit
@@ -193,7 +193,9 @@ let
     readonly TVP_BASH=${quote "${bash}/bin/bash"}
     readonly TVP_ENV=${quote "${coreutils}/bin/env"}
     ${if temporaryDirectories then temporaryTemplate else template}
-    ${lib.concatMapStringsSep "\n" (s: "tvp_step ${quote s.name} ${quote s.script}") active}
+    ${lib.concatStringsSep "\n" (
+      builtins.genList (index: stepCommand index (builtins.elemAt active index)) (builtins.length active)
+    )}
     # Close cancellation gaps after the last step and during normal exit.
     TVP_FINISHING=1
     tvp_reraise_cancel
@@ -201,7 +203,8 @@ let
   # Only named-output runners replace the single-output binding. Keep the shared
   # shell file and all default/split-singleout script bytes unchanged.
   binding = ''out="''${out:-$TVP_SOURCE_ROOT/result}"'';
-  text =
+  bindOutputs =
+    originalText:
     if multiOutput then
       assert owned || throw "TVP named outputs: requires the owned runner";
       assert lib.hasInfix binding originalText;
@@ -210,9 +213,13 @@ let
       ] originalText
     else
       originalText;
+  text = bindOutputs (renderRunner (_: s: "tvp_step ${quote s.name} ${quote s.script}"));
+  inlineText = bindOutputs (
+    renderRunner (index: s: ''tvp_step ${quote s.name} "$TVP_STEP_DIR/${toString index}"'')
+  );
 in
 {
-  inherit text;
+  inherit text inlineText;
   childScripts = map (s: s.scriptText) active;
   # Active-only dependency projection, useful for inspection without realizing it.
   inputs = lib.concatMap (s: s.tools ++ s.libraries) selected;

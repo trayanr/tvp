@@ -1,6 +1,19 @@
 # Small installed-result checks. Full package and upstream suites stay separate.
 { pkgs, tvp }:
 let
+  # Exercise inline finalization against the existing compiled Calendar artifact.
+  calendarPilot = tvp.php.extensionMatrix.php_8_5_12--calendar_8_5_12.package.edit (
+    spec:
+    spec
+    // {
+      inlineFinalization = true;
+    }
+  );
+  extensionSubjects = builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix // {
+    php_8_5_12--calendar_8_5_12 = {
+      inherit (calendarPilot.tests) load roundtrip;
+    };
+  };
   subjects = {
     base-gcc_4_9_4 = {
       inherit (tvp.__legacyBases.gcc_4_9_4.tests) compile cxx;
@@ -26,7 +39,7 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
-  } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
+  } // extensionSubjects;
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {

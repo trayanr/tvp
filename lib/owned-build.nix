@@ -69,6 +69,7 @@ let
   stage =
     name: commands: artifact:
     let
+      inline = artifact != null && (spec.inlineFinalization or false);
       selected = steps.active commands;
       runner =
         import ./build-step-runner.nix
@@ -115,6 +116,19 @@ let
             owned = true;
             outputs = outputNames;
           };
+      runnerCommand =
+        if inline then
+          ''
+            TVP_STEP_DIR="$NIX_BUILD_TOP/tvp-stage-scripts"
+            ${coreutils}/bin/mkdir -m 0700 "$TVP_STEP_DIR"
+            for TVP_STEP_INDEX in "''${!TVP_STAGE_SCRIPTS[@]}"; do
+              printf '%s' "''${TVP_STAGE_SCRIPTS[$TVP_STEP_INDEX]}" > "$TVP_STEP_DIR/$TVP_STEP_INDEX"
+            done
+            printf '%s' "$TVP_STAGE_RUNNER" > "$TVP_STEP_DIR/runner.sh"
+            TVP_STEP_DIR="$TVP_STEP_DIR" ${bash}/bin/bash "$TVP_STEP_DIR/runner.sh" "$PWD/workspace"
+          ''
+        else
+          ''${bash}/bin/bash ${runner.script} "$PWD/workspace"'';
       drv = builtins.derivation (
         {
           inherit name;
@@ -138,7 +152,7 @@ let
                 lib.optionalString (spec ? exportReferencesGraph) ''
                   ${coreutils}/bin/cp "$NIX_ATTRS_JSON_FILE" workspace/.tvp-reference-graph.json
                 ''
-              }${bash}/bin/bash ${runner.script} "$PWD/workspace"${
+              }${runnerCommand}${
                 lib.optionalString splitNamed (
                   "\n" + lib.concatMapStringsSep "\n" (output: ''test -d "''${outputs[${output}]}"'') outputNames
                 )
@@ -146,6 +160,12 @@ let
             ''
           ];
           outputs = outputNames;
+        }
+        // lib.optionalAttrs inline {
+          # Materialize the stage's shell files inside its sandbox. Keep their
+          # Nix string contexts so command dependencies are still direct inputs.
+          TVP_STAGE_RUNNER = runner.inlineText;
+          TVP_STAGE_SCRIPTS = runner.childScripts;
         }
         // lib.optionalAttrs (spec ? exportReferencesGraph) {
           inherit (spec) exportReferencesGraph;
