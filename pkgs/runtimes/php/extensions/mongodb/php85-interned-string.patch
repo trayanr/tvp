@@ -1,0 +1,5 @@
+--- a/src/contrib/php_array_api.h
++++ b/src/contrib/php_array_api.h
+@@ -353 +353 @@
+-			*pfree = ! IS_INTERNED(Z_STR(c));
++			*pfree = ! ZSTR_IS_INTERNED(Z_STR(c));

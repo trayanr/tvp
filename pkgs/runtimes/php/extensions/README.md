@@ -147,6 +147,20 @@ tvp.packages.php_8_5.withExtensions {
 }
 ```
 
+## MongoDB
+
+`php.extensions.mongodb` selects driver 1.21.13 for PHP `>= 8.1`, `< 8.6`.
+It includes OpenSSL TLS and zlib compression. Snappy, Zstandard, Cyrus SASL,
+and client-side field-level encryption are disabled. The smoke checks load
+the installed module, round-trip BSON, and construct a TLS client without a
+database connection.
+
+```nix
+tvp.packages.php_8_2_35.withExtensions {
+  extensions = e: [ e.mongodb ];
+}
+```
+
 ## MySQL and MariaDB
 
 `php.profiles.mysql` provides the current PHP with `mysqlnd`, `mysqli`, and

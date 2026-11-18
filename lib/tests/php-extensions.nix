@@ -16,6 +16,17 @@ let
     && builtins.compareVersions engine.version "8.6" < 0
   ) tvp.canonical;
   igbinaryPairs = builtins.length (builtins.attrNames igbinaryEngines);
+  mongodb = tvp.canonical.php_8_2_35.extensions.mongodb;
+  mongodbPairs = builtins.length (
+    builtins.attrNames (
+      lib.filterAttrs (
+        name: engine:
+        lib.hasPrefix "php_" name
+        && builtins.compareVersions engine.version "8.1" >= 0
+        && builtins.compareVersions engine.version "8.6" < 0
+      ) tvp.canonical
+    )
+  );
   dblibPairs = builtins.length (
     builtins.attrNames (lib.filterAttrs (name: _: lib.hasPrefix "php_8_5_" name) tvp.canonical)
   );
@@ -25,7 +36,7 @@ let
     "pdo_mysql"
   ];
   mysqlPairs = builtins.length mysqlModules * dblibPairs;
-  nonRedisPairs = 2 * igbinaryPairs + dblibPairs + mysqlPairs;
+  nonRedisPairs = 2 * igbinaryPairs + mongodbPairs + dblibPairs + mysqlPairs;
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -104,6 +115,9 @@ let
     legacyRedisBuilderContract =
       builtins.functionArgs (import ../../pkgs/runtimes/php/extensions/redis/build-2.2.8.nix)
       == builtins.functionArgs (import ../../pkgs/runtimes/php/extensions/build-phpize.nix);
+    mongodbCompatibility =
+      mongodb.php.drvPath == tvp.canonical.php_8_2_35.drvPath
+      && rejects (tvp.canonical.php_8_0_30.extensions.mongodb_1_21_13);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let
@@ -319,18 +333,18 @@ let
       tvp.php.metadata.families.redis.declaredPairs == 296
       && tvp.php.metadata.families.igbinary.declaredPairs == igbinaryPairs
       && tvp.php.metadata.families.apcu.declaredPairs == igbinaryPairs
+      && tvp.php.metadata.families.mongodb.declaredPairs == mongodbPairs
       && tvp.php.metadata.families.pdo_dblib.declaredPairs == dblibPairs
       && igbinaryPairs > 0
       && dblibPairs > 0
       && lib.all (name: tvp.php.metadata.families.${name}.declaredPairs == dblibPairs) mysqlModules
       && tvp.php.metadata.declaredPairs == 296 + nonRedisPairs
-      &&
-        builtins.length (builtins.attrNames tvp.php.extensionTests)
-        == 296 + nonRedisPairs
+      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + nonRedisPairs
       && tvp.php.metadata.namedTests == 2 * (296 + nonRedisPairs)
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--apcu_5_1_28.package.drvPath == apcu.drvPath
+      && tvp.php.extensionMatrix.php_8_2_35--mongodb_1_21_13.package.drvPath == mongodb.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
       && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
