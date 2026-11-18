@@ -134,6 +134,19 @@ and that a refused local connection produces the DB-Library error. A real Sybase
 or SQL Server query needs a database instance. FreeTDS has separate checks for
 the installed C library and `tsql` configuration.
 
+## APCu
+
+`php.extensions.apcu` selects APCu 5.1.28 for PHP `>= 7.0`, `< 8.6`.
+The smoke checks load the module and exercise cache insert, lookup and removal.
+To use the cache in a CLI process, enable `apc.enable_cli` explicitly:
+
+```nix
+tvp.packages.php_8_5.withExtensions {
+  extensions = e: [ e.apcu ];
+  settings."apc.enable_cli" = true;
+}
+```
+
 ## Checks and CI
 
 The Redis module has two focused installed checks: load it and read its version, then
