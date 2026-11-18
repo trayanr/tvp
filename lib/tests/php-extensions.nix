@@ -5,6 +5,9 @@ let
   php = tvp.packages.php_8_5;
   redis = php.extensions.redis;
   igbinary = php.extensions.igbinary;
+  dblib = php.extensions.pdo_dblib;
+  dblibEngine = tvp.canonical.php_8_5_12;
+  dblibOtherRelease = tvp.canonical.php_8_5_11;
   igbinaryEngines = lib.filterAttrs (
     name: engine:
     lib.hasPrefix "php_" name
@@ -12,6 +15,9 @@ let
     && builtins.compareVersions engine.version "8.6" < 0
   ) tvp.canonical;
   igbinaryPairs = builtins.length (builtins.attrNames igbinaryEngines);
+  dblibPairs = builtins.length (
+    builtins.attrNames (lib.filterAttrs (name: _: lib.hasPrefix "php_8_5_" name) tvp.canonical)
+  );
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -156,6 +162,47 @@ let
       && tvp.packages.php_7_0.extensions.igbinary.version == "3.2.17RC1"
       && php.extensions.igbinary_3_2_17RC1.drvPath == igbinary.drvPath;
     igbinaryUnsupportedPHP = rejects tvp.packages.php_5_6.extensions.igbinary;
+    dblibReleaseSelection =
+      dblib.version == dblibEngine.version
+      && dblib.php.drvPath == dblibEngine.drvPath
+      && dblibOtherRelease.extensions.pdo_dblib.version == dblibOtherRelease.version
+      && rejects dblibOtherRelease.extensions.pdo_dblib_8_5_12
+      && rejects tvp.packages.php_8_4.extensions.pdo_dblib;
+    dblibUsesEngineSource =
+      let
+        otherSource = dblibOtherRelease.specification.src;
+        changedPHP = dblibEngine.override { src = otherSource; };
+        rebound = changedPHP.extensions.pdo_dblib;
+        unpack = package: (builtins.head package.buildSteps).run;
+      in
+      has dblibEngine.specification.src.outPath (unpack dblib)
+      && has otherSource.outPath (unpack rebound)
+      && !(has dblibEngine.specification.src.outPath (unpack rebound));
+    dblibUsesEffectiveFreeTDS =
+      let
+        freetds = tvp.packages.freetds_1;
+        alternateFreeTDS = freetds.editSteps (
+          xs:
+          xs
+          ++ [
+            {
+              name = "freetds.dependency-probe";
+              run = "true";
+            }
+          ]
+        );
+        changed = dblib.edit (spec: spec // { freetds = alternateFreeTDS; });
+        configure =
+          package:
+          (lib.findFirst (
+            step: step.name == "php-extension.configure"
+          ) (throw "missing PDO_DBLIB configure step") package.buildSteps).run;
+      in
+      dblib.tvp.declaredDependencies.freetds.drvPath == freetds.drvPath
+      && changed.tvp.declaredDependencies.freetds.drvPath == alternateFreeTDS.drvPath
+      && has "--with-pdo-dblib=${alternateFreeTDS}" (configure changed)
+      && !(has freetds.outPath (configure changed))
+      && has alternateFreeTDS.outPath (rpathCommand changed);
     coexistingExtensionFamilies =
       map (extension: extension.extensionName)
         (php.withExtensions {
@@ -215,12 +262,15 @@ let
     explicitMatrix =
       tvp.php.metadata.families.redis.declaredPairs == 296
       && tvp.php.metadata.families.igbinary.declaredPairs == igbinaryPairs
+      && tvp.php.metadata.families.pdo_dblib.declaredPairs == dblibPairs
       && igbinaryPairs > 0
-      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs
-      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + igbinaryPairs
-      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs)
+      && dblibPairs > 0
+      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs + dblibPairs
+      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + igbinaryPairs + dblibPairs
+      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs + dblibPairs)
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
+      && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
       && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
     matrixInStandardCI =
@@ -232,9 +282,13 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 606 + 2 * igbinaryPairs
+      && tvp.smokeTests.metadata.namedTests == 608 + 2 * (igbinaryPairs + dblibPairs)
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in
-assert lib.all (value: value) (builtins.attrValues results);
+assert
+  lib.all (value: value) (builtins.attrValues results)
+  || throw "PHP extension contracts failed: ${
+    lib.concatStringsSep ", " (builtins.attrNames (lib.filterAttrs (_: passed: !passed) results))
+  }";
 results

@@ -23,6 +23,9 @@ let
     redis_8_10_3 = {
       inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
     };
+    freetds_1_5_21 = {
+      inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
+    };
   } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
   batches = pkgs.lib.mapAttrs (
     name: suite:

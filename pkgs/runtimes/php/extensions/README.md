@@ -118,6 +118,22 @@ Its checks load the selected module version, then roundtrip nested values,
 embedded NUL bytes and distinct PHP scalar types. No server dependency is needed.
 The family reuses the existing phpize builder and configured-runtime interface.
 
+## Sybase and SQL Server
+
+Use the `pdo_dblib` driver with FreeTDS on PHP 8.5:
+
+```nix
+tvp.packages.php_8_5.withExtensions {
+  extensions = extensions: [ extensions.pdo_dblib ];
+}
+```
+
+Each module uses the matching PHP release's `ext/pdo_dblib` source and links
+against TVP's FreeTDS client library. Its checks verify PDO driver registration
+and that a refused local connection produces the DB-Library error. A real Sybase
+or SQL Server query needs a database instance. FreeTDS has separate checks for
+the installed C library and `tsql` configuration.
+
 ## Checks and CI
 
 The Redis module has two focused installed checks: load it and read its version, then
@@ -135,11 +151,9 @@ regression suites remain separate under [TESTING.md](../../../../TESTING.md).
 Local iteration can select one pair and reuse exact passing results. A source
 evaluation or a passing current pair does not qualify the historical matrix.
 
-The catalogue exposes 479 declared compatible pairs across the 190 packaged PHP
-versions: 296 Redis pairs and 183 igbinary pairs. Two named checks per pair
-produce 958 checks. It includes every declared
-extension release for each PHP version inside that release's compatibility
-span. Per-family compatibility and unsupported engines are available in
+The catalogue includes every declared extension release for each PHP version
+inside that release's compatibility span. Per-family counts and unsupported
+engines are available in
 `php.metadata.families`; incompatible combinations are excluded rather than
 attempted.
 
@@ -153,7 +167,7 @@ nix run .#test -- all
 nix run .#test -- all --only php_8_5_12--redis_6_3_0
 # One pair: build the module and run its two small checks.
 nix build .#php.extensionTests.php_8_5_12--redis_6_3_0
-# PHP extension matrix subset: all 479 pairs / 958 checks, no other subjects.
+# PHP extension matrix subset.
 nix build .#php.extensionTestsAll
 # Ready-to-run current PHP with Redis:
 nix run .#php.profiles.redis -- -r 'echo phpversion("redis"), PHP_EOL;'
@@ -161,9 +175,8 @@ nix run .#php.profiles.redis -- -r 'echo phpversion("redis"), PHP_EOL;'
 
 `php.extensionPackages` contains the module build targets;
 `php.extensionTests` contains the corresponding two-check batches. Standard CI
-includes every one of these batches, without inventing incompatible
-combinations. The full selection contains 972 named checks across 486 subjects:
-958 from this matrix and 14 across the four compiler bases, Perl, Ruby and Redis.
+includes every one of these batches alongside the representative checks in
+[`tests/smoke.nix`](../../../../tests/smoke.nix).
 
 Both standard CI and `extensionTestsAll` may compile historical PHP engines and
 extensions that are not cached. They reuse valid outputs and run only the two

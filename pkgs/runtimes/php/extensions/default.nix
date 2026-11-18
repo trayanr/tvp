@@ -3,6 +3,7 @@ let
   families = {
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
+    pdo_dblib = import ./pdo_dblib { inherit pkgs tvp; };
   };
   versionTables = builtins.mapAttrs (_: family: family.versionTable) families;
   plain = php: php.unwrapped or php;
@@ -11,8 +12,11 @@ let
     let
       limits = entry.def.opts.phpCompatibility;
     in
-    builtins.compareVersions php.version limits.min >= 0
-    && builtins.compareVersions php.version limits.before < 0;
+    if limits ? exact then
+      php.version == limits.exact
+    else
+      builtins.compareVersions php.version limits.min >= 0
+      && builtins.compareVersions php.version limits.before < 0;
   bindFamily =
     engine: name: family:
     let
