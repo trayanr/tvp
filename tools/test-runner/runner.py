@@ -13,7 +13,7 @@ import sys
 import threading
 import time
 
-from progress import members, observe, root_path, valid_paths
+from progress import members, observe, observed_paths, production_stages, root_path, stage_counts, valid_paths
 from attempts import combine, register_retry
 
 
@@ -152,6 +152,7 @@ def work(run, global_fd, lease_fd):
     command += [drv + "^*" for drv in targets]
     write_json(run / "command.json", command)
     try:
+        stages = production_stages(members(plan, run))
         if state.get("ownerLock"):
             threading.Thread(target=watch_owner, daemon=True).start()
         with (run / "nix.log").open("w", buffering=1) as log, (run / "events.jsonl").open("w") as events:
@@ -170,7 +171,12 @@ def work(run, global_fd, lease_fd):
                             continue
                         with lock:
                             if useful_event(event, active):
-                                events.write(line)
+                                if event.get("action") in {"start", "stop"}:
+                                    # Retain activity timings for future estimates.
+                                    event["observedAt"] = time.time()
+                                    events.write("@nix " + json.dumps(event) + "\n")
+                                else:
+                                    events.write(line)
                                 apply_event(active, event, log)
                     else:
                         events.write(line)
@@ -182,7 +188,9 @@ def work(run, global_fd, lease_fd):
             reader.start()
             while True:
                 try:
-                    observe(plan, state, run, protected=protected, on_roots=rooting)
+                    with lock:
+                        state["active"] = dict(active)
+                    observe(plan, state, run, protected=protected, on_roots=rooting, stages=stages)
                     state.pop("monitorError", None)
                     state["operation"] = "building"
                 except (OSError, RuntimeError, subprocess.SubprocessError) as error:
@@ -205,7 +213,7 @@ def work(run, global_fd, lease_fd):
         state["cancelled"] = stopped.is_set()
         state["operation"] = "checking-outputs"
         checkpoint()
-        observe(plan, state, run, final=True, protected=protected, on_roots=rooting)
+        observe(plan, state, run, final=True, protected=protected, on_roots=rooting, stages=stages)
         state.pop("monitorError", None)
         all_passed = all(job["status"] == "passed" for job in state["jobs"].values())
         state.update(phase="cancelled" if stopped.is_set() else "passed" if code == 0 and all_passed else "failed",
@@ -277,7 +285,12 @@ def start(args, return_run=False):
                     raise RuntimeError("Empty plan or invalid suite name")
                 write_json(run / "plan.json", plan)
                 jobs = members(plan, run)
-                present = valid_paths(p for job in jobs for test in (job.get("tests") or [job]) for p in test["outputs"])
+                stages = production_stages(jobs)
+                present = valid_paths(observed_paths(jobs, stages))
+                if stages:
+                    state["stageCounts"] = stage_counts(stages, present, state)
+                    for counts in state["stageCounts"].values():
+                        counts["cachedAtStart"] = counts["ready"]
                 state["jobs"] = {job["name"]: {"status": "pending", "cachedAtStart": all(p in present for test in (job.get("tests") or [job]) for p in test["outputs"])} for job in jobs}
                 state["phase"] = "starting"
                 write_json(run / "state.json", state)
@@ -345,7 +358,7 @@ def run_all(args):
         return 128 + interrupted if interrupted else code
 
 
-def status(run, as_json=False, attempt_only=False, inspect_store=True):
+def status(run, as_json=False, attempt_only=False, inspect_store=True, plan=None):
     state = json.loads((run / "state.json").read_text())
     if state["phase"] not in TERMINAL and not lease_held(run / "worker.lock"):
         state["phase"] = "interrupted"
@@ -354,7 +367,9 @@ def status(run, as_json=False, attempt_only=False, inspect_store=True):
     counts = collections.Counter(job["status"] for job in state["jobs"].values())
     state["counts"] = dict(counts)
     state["run"] = str(run)
-    plan = json.loads((run / "plan.json").read_text()) if (run / "plan.json").exists() else {}
+    if plan is None:
+        path = run / "plan.json"
+        plan = json.loads(path.read_text()) if path.exists() else {}
     if inspect_store and plan and state["phase"] not in {"preparing", "starting", "error"}:
         try:
             observe(plan, state, run, final=state["phase"] in TERMINAL, root_completed=False)
@@ -385,6 +400,19 @@ def print_status(run, state, labels=None):
     print("Run:", run)
     print("Scope:", state.get("validationScope", "full" if state.get("full") else "partial"))
     print(f"{state['phase']} | {duration // 3600:02}:{duration // 60 % 60:02}:{duration % 60:02} elapsed")
+    stages = state.get("stageCounts", {})
+    if stages and state.get("stageProgressRun"):
+        print("Production progress for attempt", state["stageProgressRun"])
+    for phase, title in (
+        ("compile", "Compilation"), ("finalize", "Finalization"),
+        ("build", "Unsplit builds"), ("prepare", "Assembly"),
+    ):
+        if phase not in stages:
+            continue
+        row = stages[phase]
+        print(f"{title} {row['ready']}/{row['total']} ready ({row['cachedAtStart']} cached at start), "
+              f"{row['bypassed']} covered by downstream outputs, {row['active']} active, {row['pending']} pending, "
+              f"{row['failed-or-blocked']} failed/blocked, {row['cancelled']} cancelled")
     print(f"Suites: {counts['passed']}/{len(state['jobs'])} passed; {counts['failed-or-blocked']} failed/blocked; {counts['pending']} pending; {counts['cancelled']} cancelled")
     if state.get("testCounts"):
         tests = state["testCounts"]
@@ -438,7 +466,8 @@ def print_status(run, state, labels=None):
 
 def progress_key(state):
     fields = {key: state.get(key) for key in (
-        "phase", "operation", "counts", "testCounts", "rooting", "error", "monitorError",
+        "phase", "operation", "counts", "testCounts", "stageCounts", "stageProgressRun",
+        "rooting", "error", "monitorError",
         "retryErrors", "retrySuites")}
     fields["active"] = sorted((item["drv"], item["phase"]) for item in state.get("active", {}).values())
     fields["failed"] = sorted(name for name, job in state["jobs"].items()
@@ -450,11 +479,12 @@ def progress_key(state):
 def wait(run, quiet=False):
     previous, printed_at = None, None
     plan_path = run / "plan.json"
-    labels = json.loads(plan_path.read_text()).get("displayLabels", {}) if plan_path.exists() else {}
+    plan = json.loads(plan_path.read_text()) if plan_path.exists() else None
+    labels = (plan or {}).get("displayLabels", {})
     while True:
         # The worker publishes observations and rooting progress. Waiting on its
         # snapshot avoids a second process continually querying the same store.
-        state = status(run, as_json=None, inspect_store=False)
+        state = status(run, as_json=None, inspect_store=False, plan=plan)
         key, now = progress_key(state), time.monotonic()
         if not quiet and key != previous:
             print_status(run, state, labels)

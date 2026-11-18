@@ -54,6 +54,22 @@ class VerifierTests(unittest.TestCase):
         self.assertEqual(report['execution']['loggedActivity'], {'status': 'unavailable'})
         self.assertEqual(report['worker']['status'], 'unavailable')
 
+    def test_production_observations_do_not_change_test_certification(self):
+        expected = v.validate_plan(self.plan)
+        job = self.plan['jobs'][0]
+        self.plan['displayLabels'] = {job['drv']: 'fixture: collecting results'}
+        job['stages'] = [{
+            'drv': job['drv'].replace('suite.drv', 'artifact.drv'),
+            'outputs': [job['outputs'][0].replace('suite', 'artifact')],
+            'phase': 'compile',
+            'tests': [job['tests'][0]['drv']],
+            'coveredBy': [job['outputs']],
+        }]
+        self.assertEqual(v.validate_plan(self.plan), expected)
+        job['stages'][0]['tests'] = [self.plan['aggregate']]
+        with self.assertRaisesRegex(ValueError, 'stage consumers'):
+            v.validate_plan(self.plan)
+
     def test_store_adapter_only_queries_and_normalizes_both_formats(self):
         drv = self.plan['aggregate']
         basename = '0'*32+'-all'

@@ -116,6 +116,7 @@ rec {
       canonical,
       source,
       revision ? null,
+      smoke ? false,
     }:
     let
       jobs = suiteJobs { inherit batches checks; };
@@ -128,7 +129,12 @@ rec {
       title = name: value: name + lib.optionalString (value ? version) " ${value.version}";
       friendlyName =
         name:
-        if name == "php" then "PHP" else if name == "redis" then "Redis" else name;
+        if name == "php" then
+          "PHP"
+        else if name == "redis" then
+          "Redis"
+        else
+          name;
       extensionTitle = package: title (friendlyName (metadata package "extensionName")) package;
       subject =
         fallback: package:
@@ -136,11 +142,13 @@ rec {
           fallback
         else if metadata package "php" != null && metadata package "extensionName" != null then
           "${title "PHP" (metadata package "php")} / ${extensionTitle package}"
-        else if (package.pname or null) == "php-with-extensions" && metadata package "unwrapped" != null then
+        else if
+          (package.pname or null) == "php-with-extensions" && metadata package "unwrapped" != null
+        then
           title "PHP" (metadata package "unwrapped")
-          + lib.optionalString (metadata package "enabledExtensions" != null && metadata package "enabledExtensions" != [ ]) (
-            " / " + lib.concatMapStringsSep ", " extensionTitle (metadata package "enabledExtensions")
-          )
+          + lib.optionalString (
+            metadata package "enabledExtensions" != null && metadata package "enabledExtensions" != [ ]
+          ) (" / " + lib.concatMapStringsSep ", " extensionTitle (metadata package "enabledExtensions"))
         else if package ? pname then
           title (friendlyName package.pname) package
         else
@@ -166,13 +174,18 @@ rec {
               else
                 "";
             compiling = if kind == " runtime" then "composing runtime" else "compiling${kind}";
-            engine =
-              if kind == " runtime" then metadata package "unwrapped" else metadata package "php";
+            engine = if kind == " runtime" then metadata package "unwrapped" else metadata package "php";
           in
           label package "${name}: ${if artifact == null then compiling else "finalizing${kind}"}"
           ++ label artifact "${name}: ${compiling}"
           ++ lib.optionals (engine != null) (packageLabels "PHP" engine);
       testSubject = fallback: test: subject fallback (metadata test "package");
+      testInputs =
+        test:
+        (test.specification.tools or [ ])
+        ++ lib.concatMap (step: (step.tools or [ ]) ++ (step.libraries or [ ])) (
+          builtins.filter (step: step.enabled or true) (test.buildSteps or [ ])
+        );
       testLabels =
         fallback: name: test:
         let
@@ -181,9 +194,7 @@ rec {
         label test "${testSubject fallback test}: test ${if testName == null then name else testName}"
         ++ packageLabels fallback (metadata test "package")
         ++ lib.concatMap (packageLabels fallback) (
-          builtins.filter (tool: (tool.pname or null) == "php-with-extensions") (
-            test.specification.tools or [ ]
-          )
+          builtins.filter (tool: (tool.pname or null) == "php-with-extensions") (testInputs test)
         );
       jobLabels =
         name: drv:
@@ -208,6 +219,72 @@ rec {
           );
         in
         [ selected ] ++ builtins.filter (output: output != selected) declared;
+      # A frozen plan carries exact identities for the package stages it can
+      # identify. These are observation targets, never additional build inputs.
+      packageStages =
+        test: artifactConsumed: package:
+        if package == null || !(builtins.isAttrs package && package ? drvPath) then
+          [ ]
+        else
+          let
+            artifact = metadata package "artifact";
+            runtime = (package.pname or null) == "php-with-extensions";
+            engine = if runtime then metadata package "unwrapped" else metadata package "php";
+            modules = if runtime then (metadata package "enabledExtensions") else null;
+            # Both the compatibility wrappers and source-owned full drivers
+            # expose the executable compiler they are constructed from.
+            compiler =
+              if package ? bintools && package ? libc && package ? runtimeDirectories then
+                package.tvp.declaredDependencies.compiler or (metadata package "cc")
+              else
+                null;
+            selectedOutput = [ (plain package.outPath) ];
+            makeStage = phase: producer: outputs: coveredBy: {
+              inherit phase outputs coveredBy;
+              drv = plain producer.drvPath;
+              tests = [ (plain test.drvPath) ];
+            };
+          in
+          [
+            (makeStage (
+              if runtime || compiler != null then
+                "prepare"
+              else if artifact == null then
+                "build"
+              else
+                "finalize"
+            ) package selectedOutput [ ])
+          ]
+          ++ lib.optional (artifact != null) (
+            makeStage (if runtime then "prepare" else "compile") artifact (outputPaths artifact) (
+              lib.optional (smoke && !artifactConsumed) selectedOutput
+            )
+          )
+          ++ packageStages test false engine
+          ++ packageStages test true compiler
+          ++ lib.concatMap (packageStages test false) (if modules == null then [ ] else modules);
+      testStages =
+        test:
+        lib.unique (
+          packageStages test false (metadata test "package")
+          ++ lib.concatMap (packageStages test false) (
+            builtins.filter (tool: builtins.isAttrs tool && tool ? artifact) (testInputs test)
+          )
+        );
+      jobStages =
+        drv:
+        let
+          suite = drv.testSuite or { };
+          stages = lib.concatMap testStages (if suite == { } then [ drv ] else lib.attrValues suite);
+          groups = lib.groupBy (stage: builtins.toJSON (builtins.removeAttrs stage [ "tests" ])) stages;
+        in
+        lib.mapAttrsToList (
+          _: group:
+          (builtins.head group)
+          // {
+            tests = lib.unique (lib.concatMap (stage: stage.tests) group);
+          }
+        ) groups;
     in
     {
       schema = 1;
@@ -231,6 +308,7 @@ rec {
           drv = builtins.unsafeDiscardOutputDependency test.drvPath;
           outputs = outputPaths test;
         }) (drv.testSuite or { });
+        stages = jobStages drv;
       }) jobs;
       skipped = lib.mapAttrsToList (name: p: {
         inherit name;
