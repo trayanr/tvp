@@ -46,6 +46,17 @@ establish neither fresh execution, source approval nor ABI compatibility.
 build surface. `--json` includes every canonical version; the text report expands
 non-OK versions. Migration-specific status has been removed.
 
+`nix run .#provenance` reports declared source origins, recipes, bases, binary
+boundaries, upstream URLs and registered output counts from the evaluated
+catalogue. `--json` includes the full registration records. The installed
+command reads its embedded manifests for this report.
+
+Use `nix run .#provenance -- --realized` to inspect locally available runtime
+closures and build dependencies. `--realized --json` returns the closure report,
+including unbuilt packages, registered membership and exact foreign paths.
+An output in the registration list is an expected output of a declared recipe.
+Its local availability is checked in `--realized` mode.
+
 `nix run .#upstream -- --list` lists every family, its packaged-version count and
 release-discovery configuration. The installed command makes no network requests
 in this mode. Running `nix run` can first realize the CLI and its runtime tools.
