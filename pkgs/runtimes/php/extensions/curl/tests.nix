@@ -17,7 +17,7 @@ context.mkSuite {
   tests = {
     load = {
       script = ''${runtime}/bin/php -r 'echo curl_version()["version"];' '';
-      expected = (builtins.head package.specification.libraries).version;
+      expected = package.specification.curl.version;
     };
     roundtrip = {
       script = ''

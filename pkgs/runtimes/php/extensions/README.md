@@ -56,7 +56,8 @@ with `compression = "xz"` or `"bzip2"` available. The function selects PHP's
 installed SDK, the matching base and the Autotools providers. Additional native
 libraries go in `libraries`; `loader = "zend_extension"` selects a Zend loader
 instead of the default `"extension"`. `meta` supplies package metadata.
-The result supports the ordinary `.override`, `.edit` and `.editSteps` methods.
+The result supports the ordinary `.override`, `.edit`, `.editSteps` and
+`.editRuntime` methods.
 
 Without `phpCompatibility`, the builder records the selected PHP version as an
 exact compatibility declaration. That declaration stays in place after an
@@ -76,6 +77,23 @@ the same installed-test factory and dependency conventions as extension
 families. A standalone custom extension is not automatically added to the
 repository's version matrix. Use
 `tvp.lib.php.mkExtensionFamily` and a release table for a versioned family.
+
+## Adding an extension to TVP
+
+Follow the [ordinary package authoring guide](../../../../lib/NATIVE-RECIPES.md).
+The extension's `default.nix` selects its builder, named package dependencies,
+source and test suite. Use `deps` for build and runtime providers and
+`testDeps` for fixtures such as a database server. Put package-specific
+configure arguments and library wiring in the builder and read them from the
+effective specification. The [ZIP definition](zip/default.nix) names `libzip`
+and its [builder](zip/build.nix) uses `final.libzip`. Callers can replace it
+with `php.extensions.zip.override { libzip = otherLibzip; }`.
+
+Standalone extensions declare their version and source hashes. Bundled
+extensions derive those from the corresponding PHP releases because the module
+uses that release's source and SDK. The bundled release helper supplies that
+mapping. The extension still declares its own builder, dependencies, tests and
+compatibility policy.
 
 ## Redis release selection
 

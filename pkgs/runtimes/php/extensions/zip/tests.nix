@@ -17,7 +17,7 @@ context.mkSuite {
   tests = {
     load = {
       script = "${runtime}/bin/php -r 'echo ZipArchive::LIBZIP_VERSION;' ";
-      expected = (builtins.head package.specification.libraries).version;
+      expected = package.specification.libzip.version;
     };
     roundtrip = {
       script = ''

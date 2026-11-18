@@ -22,22 +22,11 @@ let
       };
     }
     .${name};
-  phpFamily = (import ../.. { inherit pkgs tvp; }).recipes.php;
-  releases = pkgs.lib.filterAttrs (
-    version: _: pkgs.lib.versionAtLeast version "8.2"
-  ) phpFamily.versionTable;
-  versionTable = tvp.lib.packages.mkTable (
-    pkgs.lib.mapAttrsToList (version: release: {
-      def = {
-        builder = ./build.nix;
-        deps.php = tvp.lib.packages.withConstraint {
-          reason = "The bundled ${name} module uses the exact PHP release's source and installed SDK.";
-        } tvp.packages.${tvp.lib.versions.attrName "php" version};
-        opts.phpCompatibility.exact = version;
-      };
-      releases.${version} = release.sha256;
-    }) releases
-  );
+  inherit (import ../bundled-releases.nix {
+    inherit pkgs tvp;
+    minPHP = "8.2";
+    def.builder = ./build.nix;
+  }) source versionTable;
   family = tvp.lib.php.mkExtensionFamily {
     inherit tvp name versionTable;
     phpPolicy = {
@@ -48,7 +37,7 @@ let
         source = "https://github.com/php/php-src/tree/php-${introduction.tag}/ext/${name}";
       };
     };
-    source = phpFamily.source;
+    inherit source;
     tests = import ./tests.nix { inherit pkgs tvp; };
     testDeps = pkgs.lib.optionalAttrs needsMysqlnd { mariadb = pkgs.mariadb.server; };
     meta = {

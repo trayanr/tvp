@@ -1,26 +1,15 @@
 { pkgs, tvp }:
 let
   pname = "php-mongodb";
-  buildOptions = {
-    libraries = [
-      tvp.packages.openssl
-      tvp.packages.zlib
-    ];
-    configureOptions = [
-      "--enable-mongodb"
-      "--with-mongodb-system-libs=no"
-      "--with-mongodb-ssl=openssl"
-      "--with-mongodb-zlib=system"
-      "--with-mongodb-snappy=no"
-      "--with-mongodb-zstd=no"
-      "--with-mongodb-sasl=no"
-      "--with-mongodb-client-side-encryption=no"
-    ];
-  };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        deps.php = tvp.packages.php_8_5;
+        builder = ./build.nix;
+        deps = {
+          php = tvp.packages.php_8_5;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib;
+        };
         phpRequirements = {
           min = "8.1.0";
           max = "8.99.99";
@@ -33,7 +22,7 @@ let
             reason = "Backport upstream #1849 to use the Zend string API available in PHP 8.5.";
           }
         ];
-        opts = buildOptions // {
+        opts = {
           phpCompatibility = {
             min = "8.1";
             before = "8.6";
@@ -44,14 +33,19 @@ let
     }
     {
       def = {
-        deps.php = tvp.packages.php_8_5;
+        builder = ./build.nix;
+        deps = {
+          php = tvp.packages.php_8_5;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib;
+        };
         phpRequirements = {
           min = "8.1.0";
           max = "8.99.99";
           reason = "MongoDB 2.5.7 declares PHP 8.1 through 8.x in package.xml.";
           source = "https://pecl.php.net/get/mongodb-2.5.7.tgz";
         };
-        opts = buildOptions // {
+        opts = {
           phpCompatibility = {
             min = "8.2";
             before = "8.6";

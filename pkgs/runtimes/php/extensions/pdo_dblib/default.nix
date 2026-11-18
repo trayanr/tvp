@@ -1,24 +1,13 @@
 { pkgs, tvp, ... }:
 let
-  phpFamily = (import ../.. { inherit pkgs tvp; }).recipes.php;
-  releases = pkgs.lib.filterAttrs (
-    version: _: pkgs.lib.versionAtLeast version "8.2"
-  ) phpFamily.versionTable;
-  versionTable = tvp.lib.packages.mkTable (
-    pkgs.lib.mapAttrsToList (version: release: {
-      def = {
-        builder = ./build.nix;
-        deps = {
-          php = tvp.lib.packages.withConstraint {
-            reason = "Bundled PDO_DBLIB uses the exact PHP release's source and installed SDK.";
-          } tvp.packages.${tvp.lib.versions.attrName "php" version};
-          freetds = tvp.packages.freetds_1;
-        };
-        opts.phpCompatibility.exact = version;
-      };
-      releases.${version} = release.sha256;
-    }) releases
-  );
+  inherit (import ../bundled-releases.nix {
+    inherit pkgs tvp;
+    minPHP = "8.2";
+    def = {
+      builder = ./build.nix;
+      deps.freetds = tvp.packages.freetds_1;
+    };
+  }) source versionTable;
   family = tvp.lib.php.mkExtensionFamily {
     inherit tvp versionTable;
     phpPolicy = {
@@ -30,7 +19,7 @@ let
       };
     };
     name = "pdo_dblib";
-    source = phpFamily.source;
+    inherit source;
     tests = import ./tests.nix { inherit tvp; };
     meta = {
       description = "PHP PDO driver for Sybase and Microsoft SQL Server via FreeTDS";

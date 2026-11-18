@@ -189,6 +189,73 @@ let
       && mongodb.version == "1.21.13"
       && tvp.canonical.php_8_2_35.extensions.mongodb.version == "2.5.7"
       && rejects (tvp.canonical.php_8_0_30.extensions.mongodb_1_21_13);
+    extensionLibraryDeclarations = lib.all lib.id (
+      lib.mapAttrsToList
+        (
+          extension: providers:
+          let
+            declared = php.extensions.${extension}.tvp.declaredDependencies;
+          in
+          lib.all (name: declared ? ${name}) providers
+        )
+        {
+          curl = [ "curl" ];
+          intl = [ "icu" ];
+          mbstring = [ "oniguruma" ];
+          mongodb = [
+            "openssl"
+            "zlib"
+          ];
+          pdo_pgsql = [
+            "postgresql"
+            "openssl"
+            "krb5"
+            "keyutils"
+          ];
+          xdebug = [ "zlib" ];
+          zip = [ "libzip" ];
+        }
+    );
+    zipEffectiveLibrary =
+      let
+        zip = php.extensions.zip;
+        original = tvp.packages.libzip;
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "libzip.override-probe";
+              run = "true";
+            }
+          ]
+        );
+        overridden = zip.override { libzip = replacement; };
+        edited = zip.edit (spec: spec // { libzip = replacement; });
+        runtimeOnly = zip.editRuntime (spec: spec // { libraries = [ ]; });
+      in
+      overridden.tvp.declaredDependencies.libzip.drvPath == replacement.drvPath
+      && has replacement.outPath (rpathCommand overridden)
+      && !(has original.outPath (rpathCommand overridden))
+      && overridden.artifact.drvPath != zip.artifact.drvPath
+      && edited.drvPath == overridden.drvPath
+      && runtimeOnly.artifact.drvPath == zip.artifact.drvPath
+      && runtimeOnly.drvPath != zip.drvPath;
+    postgresEffectiveLibrary =
+      let
+        driver = php.extensions.pdo_pgsql;
+        original = driver.specification.postgresql;
+        replacement = original.overrideAttrs (_: {
+          pname = "postgresql-extension-probe";
+        });
+        overridden = driver.override { postgresql = replacement; };
+        configure =
+          package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
+      in
+      overridden.tvp.declaredDependencies.postgresql.drvPath == replacement.drvPath
+      && overridden.tvp.declaredTestDependencies.postgresql.drvPath == original.drvPath
+      && has "--with-pdo-pgsql=${replacement}" (configure overridden)
+      && has replacement.lib.outPath (rpathCommand overridden);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let
