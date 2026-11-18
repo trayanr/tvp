@@ -24,6 +24,14 @@ let
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
       url = version: "https://codeload.github.com/uw-imap/imap/tar.gz/refs/tags/imap-${version}_upstream";
+      discovery = {
+        type = "git-tags";
+        url = "https://github.com/uw-imap/imap.git";
+        normalise = tvp.lib.versions.fromArchiveName {
+          prefix = "imap-";
+          suffixes = [ "_upstream" ];
+        };
+      };
     };
     tests = import ./tests.nix;
   };
