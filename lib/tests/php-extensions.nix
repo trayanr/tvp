@@ -44,7 +44,13 @@ let
     "mysqli"
     "pdo_mysql"
   ];
-  bundledModules = mysqlModules ++ [
+  imageAndSystemModules = [
+    "gd"
+    "gettext"
+    "gmp"
+    "sodium"
+  ];
+  bundledModules = mysqlModules ++ imageAndSystemModules ++ [
     "bcmath"
     "calendar"
     "curl"
@@ -135,6 +141,10 @@ let
       && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
       && (row "bcmath" "8.1.34" "8.1.34").state == "gap"
       && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
+      && (row "gd" "8.1.34" "8.1.34").state == "gap"
+      && (row "sodium" "7.1.33" "7.1.33").source == "https://www.php.net/manual/en/sodium.installation.php"
+      && (row "sodium" "7.1.33" "7.1.33").state == "incompatible"
+      && (row "sodium" "7.2.34" "7.2.34").state == "gap"
       && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
@@ -204,6 +214,14 @@ let
         )
         {
           curl = [ "curl" ];
+          gd = [
+            "zlib"
+            "libpng"
+            "libjpeg-turbo"
+            "libwebp"
+            "freetype"
+          ];
+          gmp = [ "gmp" ];
           intl = [ "icu" ];
           mbstring = [ "oniguruma" ];
           mongodb = [
@@ -216,6 +234,7 @@ let
             "krb5"
             "keyutils"
           ];
+          sodium = [ "libsodium" ];
           xdebug = [ "zlib" ];
           zip = [ "libzip" ];
         }
@@ -385,6 +404,38 @@ let
       && has php.specification.src.outPath (builtins.head package.buildSteps).run
       && rejects overridden
     ) mysqlModules;
+    imageAndSystemReleaseSelection = lib.all (
+      module:
+      let
+        package = php.extensions.${module};
+      in
+      package.version == php.version
+      && package.php.drvPath == php.drvPath
+      && has php.specification.src.outPath (builtins.head package.buildSteps).run
+      && rejects (package.override { php = dblibOtherRelease; })
+      && rejects tvp.packages.php_8_1.extensions.${module}
+      && package.tvp.declaredTestDependencies == { }
+    ) imageAndSystemModules;
+    gmpEffectiveLibrary =
+      let
+        gmp = php.extensions.gmp;
+        original = tvp.packages.gmp_6;
+        replacement = tvp.packages.gmp_6_2_1;
+        configured = gmp.override { gmp = replacement; };
+        edited = gmp.edit (spec: spec // { gmp = replacement; });
+        runtimeOnly = gmp.editRuntime (spec: spec // { libraries = [ replacement ]; });
+        configure = lib.findFirst (
+          step: step.name == "php-extension.configure"
+        ) (throw "missing GMP configure step") configured.buildSteps;
+      in
+      configured.tvp.declaredDependencies.gmp.drvPath == replacement.drvPath
+      && has "--with-gmp=${replacement}" configure.run
+      && has replacement.outPath (rpathCommand configured)
+      && !(has original.outPath (rpathCommand configured))
+      && configured.artifact.drvPath != gmp.artifact.drvPath
+      && edited.drvPath == configured.drvPath
+      && runtimeOnly.artifact.drvPath == gmp.artifact.drvPath
+      && runtimeOnly.drvPath != gmp.drvPath;
     mysqlRuntimeOrder =
       let
         names = runtime: map (module: module.extensionName) runtime.enabledExtensions;

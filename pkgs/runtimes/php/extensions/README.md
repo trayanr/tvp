@@ -211,6 +211,9 @@ tvp.packages.php_8_2_35.withExtensions {
     e.bcmath
     e.calendar
     e.curl
+    e.gd
+    e.gettext
+    e.gmp
     e.mbstring
     e.zip
     e.intl
@@ -218,6 +221,7 @@ tvp.packages.php_8_2_35.withExtensions {
     e.mysqlnd
     e.pdo_mysql
     e.pdo_dblib
+    e.sodium
     e.mongodb_1
   ];
 }
@@ -226,6 +230,14 @@ tvp.packages.php_8_2_35.withExtensions {
 BCMath and Calendar use the matching source for every packaged PHP release
 from 8.2 onward. Their checks verify module versions, exact decimal arithmetic,
 and Gregorian date conversion.
+
+GD, Gettext, GMP, and Sodium also use the matching source and SDK for every
+packaged PHP release from 8.2 onward. GD uses PHP's bundled libgd with PNG,
+JPEG, WebP, and FreeType. AVIF and XPM are disabled. The codec libraries and
+libsodium are built from their upstream sources by TVP. libjpeg-turbo uses its
+portable C implementation. Gettext uses the PHP base's GNU libc. The checks
+verify the installed modules with small image round trips, message lookup in
+the C locale, exact integer arithmetic, and a deterministic BLAKE2b digest.
 
 The development shell can add `e.xdebug` for Xdebug 3.5.3 or
 `e.xdebug_3_3_2` for the original pin on PHP 8.2 and 8.3.
