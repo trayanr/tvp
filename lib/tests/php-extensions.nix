@@ -5,6 +5,7 @@ let
   php = tvp.packages.php_8_5;
   redis = php.extensions.redis;
   igbinary = php.extensions.igbinary;
+  apcu = php.extensions.apcu;
   dblib = php.extensions.pdo_dblib;
   dblibEngine = tvp.canonical.php_8_5_12;
   dblibOtherRelease = tvp.canonical.php_8_5_11;
@@ -162,6 +163,12 @@ let
       && tvp.packages.php_7_0.extensions.igbinary.version == "3.2.17RC1"
       && php.extensions.igbinary_3_2_17RC1.drvPath == igbinary.drvPath;
     igbinaryUnsupportedPHP = rejects tvp.packages.php_5_6.extensions.igbinary;
+    apcuReleaseSelection =
+      apcu.version == "5.1.28"
+      && apcu.php.drvPath == php.drvPath
+      && php.extensions.apcu_5_1_28.drvPath == apcu.drvPath
+      && tvp.packages.php_7_0.extensions.apcu.version == apcu.version
+      && rejects tvp.packages.php_5_6.extensions.apcu;
     dblibReleaseSelection =
       dblib.version == dblibEngine.version
       && dblib.php.drvPath == dblibEngine.drvPath
@@ -262,14 +269,17 @@ let
     explicitMatrix =
       tvp.php.metadata.families.redis.declaredPairs == 296
       && tvp.php.metadata.families.igbinary.declaredPairs == igbinaryPairs
+      && tvp.php.metadata.families.apcu.declaredPairs == igbinaryPairs
       && tvp.php.metadata.families.pdo_dblib.declaredPairs == dblibPairs
       && igbinaryPairs > 0
       && dblibPairs > 0
-      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs + dblibPairs
-      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + igbinaryPairs + dblibPairs
-      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs + dblibPairs)
+      && tvp.php.metadata.declaredPairs == 296 + 2 * igbinaryPairs + dblibPairs
+      &&
+        builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + 2 * igbinaryPairs + dblibPairs
+      && tvp.php.metadata.namedTests == 2 * (296 + 2 * igbinaryPairs + dblibPairs)
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
+      && tvp.php.extensionMatrix.php_8_5_12--apcu_5_1_28.package.drvPath == apcu.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
       && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
@@ -282,7 +292,7 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 608 + 2 * (igbinaryPairs + dblibPairs)
+      && tvp.smokeTests.metadata.namedTests == 608 + 2 * (2 * igbinaryPairs + dblibPairs)
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in
