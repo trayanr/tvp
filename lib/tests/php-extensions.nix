@@ -18,6 +18,12 @@ let
   dblibPairs = builtins.length (
     builtins.attrNames (lib.filterAttrs (name: _: lib.hasPrefix "php_8_5_" name) tvp.canonical)
   );
+  mysqlModules = [
+    "mysqlnd"
+    "mysqli"
+    "pdo_mysql"
+  ];
+  mysqlPairs = builtins.length mysqlModules * dblibPairs;
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -203,6 +209,48 @@ let
       && has "--with-pdo-dblib=${alternateFreeTDS}" (configure changed)
       && !(has freetds.outPath (configure changed))
       && has alternateFreeTDS.outPath (rpathCommand changed);
+    mysqlReleaseSelection = lib.all (
+      module:
+      let
+        package = php.extensions.${module};
+        overridden = package.override { php = dblibOtherRelease; };
+      in
+      package.version == php.version
+      && package.php.drvPath == php.drvPath
+      && has php.specification.src.outPath (builtins.head package.buildSteps).run
+      && rejects overridden
+    ) mysqlModules;
+    mysqlRuntimeOrder =
+      let
+        names = runtime: map (module: module.extensionName) runtime.enabledExtensions;
+      in
+      names tvp.php.profiles.mysql == mysqlModules
+      &&
+        lib.all
+          (
+            module:
+            names tvp.php.profiles.${module} == [
+              "mysqlnd"
+              module
+            ]
+          )
+          [
+            "mysqli"
+            "pdo_mysql"
+          ]
+      &&
+        names tvp.php.extensionMatrix.php_8_5_12--pdo_mysql_8_5_12.runtime == [
+          "mysqlnd"
+          "pdo_mysql"
+        ];
+    mysqlServerTestOnly = lib.all (
+      module:
+      let
+        package = php.extensions.${module};
+      in
+      !(package.tvp.declaredDependencies ? mariadb)
+      && (package.tvp.declaredTestDependencies ? mariadb) == (module != "mysqlnd")
+    ) mysqlModules;
     coexistingExtensionFamilies =
       map (extension: extension.extensionName)
         (php.withExtensions {
@@ -265,9 +313,12 @@ let
       && tvp.php.metadata.families.pdo_dblib.declaredPairs == dblibPairs
       && igbinaryPairs > 0
       && dblibPairs > 0
-      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs + dblibPairs
-      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + igbinaryPairs + dblibPairs
-      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs + dblibPairs)
+      && lib.all (name: tvp.php.metadata.families.${name}.declaredPairs == dblibPairs) mysqlModules
+      && tvp.php.metadata.declaredPairs == 296 + igbinaryPairs + dblibPairs + mysqlPairs
+      &&
+        builtins.length (builtins.attrNames tvp.php.extensionTests)
+        == 296 + igbinaryPairs + dblibPairs + mysqlPairs
+      && tvp.php.metadata.namedTests == 2 * (296 + igbinaryPairs + dblibPairs + mysqlPairs)
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
@@ -282,7 +333,7 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 608 + 2 * (igbinaryPairs + dblibPairs)
+      && tvp.smokeTests.metadata.namedTests == 608 + 2 * (igbinaryPairs + dblibPairs + mysqlPairs)
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in

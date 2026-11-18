@@ -134,6 +134,24 @@ and that a refused local connection produces the DB-Library error. A real Sybase
 or SQL Server query needs a database instance. FreeTDS has separate checks for
 the installed C library and `tsql` configuration.
 
+## MySQL and MariaDB
+
+`php.profiles.mysql` provides the current PHP with `mysqlnd`, `mysqli`, and
+`pdo_mysql` in load order. The individual `php.profiles.mysqli` and
+`php.profiles.pdo_mysql` profiles each include the required `mysqlnd` module.
+To compose a different PHP 8.5 release, select the modules in this order:
+
+```nix
+tvp.packages.php_8_5_0.withExtensions {
+  extensions = e: [ e.mysqlnd e.mysqli e.pdo_mysql ];
+}
+```
+
+The three modules use the selected PHP release's own source and SDK. The two
+drivers use PHP's native client. Their tests execute a query over a private
+Unix socket against a temporary MariaDB server from pinned Nixpkgs. A normal
+PHP installation needs only the modules and a connection to your database.
+
 ## Checks and CI
 
 The Redis module has two focused installed checks: load it and read its version, then

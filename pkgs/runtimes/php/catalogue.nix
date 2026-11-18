@@ -26,7 +26,7 @@ let
             extensionFamily = family;
             inherit extensionVersion package;
             runtime = php.withExtensions {
-              extensions = [ package ];
+              extensions = extensions.runtimeModules php package;
               settings.memory_limit = "128M";
             };
             tests = {
@@ -46,12 +46,25 @@ let
   ) extensionMatrix;
 in
 {
-  profiles = builtins.mapAttrs (
-    name: _:
-    tvp.packages.php.withExtensions {
-      extensions = extensions: [ extensions.${name} ];
-    }
-  ) extensions.versionTables;
+  profiles =
+    let
+      php = tvp.packages.php;
+    in
+    builtins.mapAttrs (
+      name: _:
+      php.withExtensions {
+        extensions = extensions.runtimeModules php php.extensions.${name};
+      }
+    ) extensions.versionTables
+    // {
+      mysql = php.withExtensions {
+        extensions = available: [
+          available.mysqlnd
+          available.mysqli
+          available.pdo_mysql
+        ];
+      };
+    };
   inherit extensionMatrix;
   # Independent build and small test handles for an explicit compatibility run.
   extensionPackages = builtins.mapAttrs (_: pair: pair.package) extensionMatrix;
