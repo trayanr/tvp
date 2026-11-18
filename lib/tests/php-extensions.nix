@@ -45,6 +45,7 @@ let
     "pdo_mysql"
   ];
   bundledModules = mysqlModules ++ [
+    "bcmath"
     "curl"
     "intl"
     "mbstring"
@@ -131,6 +132,8 @@ let
       (row "redis" "7.4.33" "4.3.0").state == "gap"
       && (row "mongodb" "7.4.33" "1.21.13").state == "incompatible"
       && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
+      && (row "bcmath" "8.1.34" "8.1.34").state == "gap"
+      && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";

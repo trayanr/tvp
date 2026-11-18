@@ -208,6 +208,7 @@ with the following extensions. The MySQL driver loads after `mysqlnd`.
 ```nix
 tvp.packages.php_8_2_35.withExtensions {
   extensions = e: [
+    e.bcmath
     e.curl
     e.mbstring
     e.zip
@@ -220,6 +221,9 @@ tvp.packages.php_8_2_35.withExtensions {
   ];
 }
 ```
+
+BCMath uses the matching PHP source for every packaged PHP release from 8.2
+onward. Its checks verify the loaded version and exact decimal arithmetic.
 
 The development shell can add `e.xdebug` for Xdebug 3.5.3 or
 `e.xdebug_3_3_2` for the original pin on PHP 8.2 and 8.3.
