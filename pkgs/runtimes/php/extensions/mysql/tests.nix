@@ -15,7 +15,7 @@ let
   };
   php = "${runtime}/bin/php";
   mariadb = package.tvp.declaredTestDependencies.mariadb;
-  shell = package.specification.base.shell;
+  inherit (package.specification.base) shell tools;
   registration = {
     mysqlnd = ''echo phpversion("mysqlnd");'';
     mysqli = ''
@@ -53,6 +53,9 @@ context.mkSuite {
                   throw new RuntimeException("mysqlnd did not register $feature support");
                 }
               }
+              if (!str_contains($info, "auth_plugin_caching_sha2_password")) {
+                throw new RuntimeException("mysqlnd did not register caching_sha2_password");
+              }
               echo "mysqlnd-features-ready";
             '
           '';
@@ -63,6 +66,8 @@ context.mkSuite {
           tools = [
             runtime
             mariadb
+            tools.sed
+            tools.gawk
           ];
           script = ''
             ${shell}/bin/bash ${./with-mariadb.sh} ${mariadb} ${php} ${./query.php} ${lib.escapeShellArg module}

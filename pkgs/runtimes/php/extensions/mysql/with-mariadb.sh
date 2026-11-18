@@ -13,7 +13,7 @@ cleanup() {
         wait "$server_pid" 2>/dev/null || true
     fi
     if (( status != 0 )); then
-        for log in "$fixture/install.log" "$fixture/server.log"; do
+        for log in "$fixture/install.log" "$fixture/server.log" "$fixture/setup.log"; do
             if [[ -f "$log" ]]; then cat "$log" >&2; fi
         done
     fi
@@ -30,7 +30,8 @@ SQL
 
 timeout 60 "$server/bin/mariadb-install-db" --no-defaults \
     --basedir="$server" --datadir="$fixture/data" --skip-test-db --force \
-    --skip-name-resolve --skip-networking --socket="$socket" --extra-file="$fixture/setup.sql" \
+    --skip-name-resolve --skip-networking --socket="$socket" \
+    --auth-root-authentication-method=normal \
     --innodb-buffer-pool-size=16M > "$fixture/install.log" 2>&1
 
 "$server/bin/mariadbd" --no-defaults --basedir="$server" --datadir="$fixture/data" \
@@ -44,7 +45,7 @@ deadline=$((SECONDS + 15))
 while (( SECONDS < deadline )); do
     if [[ -S "$socket" ]] && timeout 2 "$server/bin/mariadb-admin" --no-defaults \
         --protocol=socket --socket="$socket" --connect-timeout=1 \
-        --user=tvp_smoke --password=tvp-local-fixture ping >/dev/null 2>&1; then
+        --user=root ping >/dev/null 2>&1; then
         ready=true
         break
     fi
@@ -55,5 +56,10 @@ if ! "$ready"; then
     echo 'MariaDB fixture did not become ready' >&2
     exit 1
 fi
+
+# Bootstrap runs with grant tables disabled. Create the test account after
+# startup, through the private socket inside the mode-0700 fixture directory.
+timeout 15 "$server/bin/mariadb" --no-defaults --protocol=socket \
+    --socket="$socket" --user=root < "$fixture/setup.sql" > "$fixture/setup.log" 2>&1
 
 TVP_MYSQL_SOCKET="$socket" timeout 30 "$@"

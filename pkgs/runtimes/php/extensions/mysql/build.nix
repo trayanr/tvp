@@ -64,7 +64,22 @@ procedure
 // {
   plan =
     if module == "mysqlnd" then
-      staged
+      steps.insertAfter "php-mysql.select-source" [
+        {
+          name = "php-mysqlnd.include-config";
+          cwd = "source";
+          tools = [ tools.sed ];
+          run = ''
+            # The bundled sources normally get these defines from PHP's config.
+            # For phpize, include the generated module config in each mysqlnd unit.
+            test "$(sed -n '/^#define MYSQLND_H$/p' mysqlnd.h)" = '#define MYSQLND_H'
+            sed -i '/^#define MYSQLND_H$/a\
+            #ifdef HAVE_CONFIG_H\
+            # include "config.h"\
+            #endif' mysqlnd.h
+          '';
+        }
+      ] staged
     else
       steps.replace "php-extension.configure" (
         step:
