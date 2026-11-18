@@ -25,7 +25,31 @@ let
       gnused
       ;
     tvpLib = lib;
+    phpCoverage.php-fixture = {
+      kind = "bundled";
+      rows = [
+        {
+          php = "8.2.35";
+          release = "8.2.35";
+          state = "gap";
+          reason = "Not packaged";
+          source = null;
+        }
+        {
+          php = "8.5.12";
+          release = "8.5.12";
+          state = "packaged";
+          reason = null;
+          source = null;
+        }
+      ];
+    };
     packages = {
+      php-fixture_8_5_12 = {
+        pname = "php-fixture";
+        version = "8.5.12";
+        tvp = { };
+      };
       fixture_2026_05_17 = {
         pname = "fixture";
         version = "2026-05-17";
@@ -102,6 +126,19 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     grep -Fx 'unconfigured — release discovery not configured' "$out/cli-unconfigured.log"
     grep -Fx '  download: https://example.invalid/unconfigured-2.0.tar.gz' "$out/cli-unconfigured.log"
     grep -Fx '  missing versions: unknown' "$out/cli-unconfigured.log"
+
+    ${cli}/bin/tvp-upstream --list php-fixture > "$out/cli-php.log"
+    grep -F 'packaging gaps (1):' "$out/cli-php.log"
+    ${cli}/bin/tvp-upstream --list --php 8.2 php-fixture > "$out/cli-php-filter.log"
+    grep -F '8.2.35' "$out/cli-php-filter.log"
+    if grep -F '8.5.12' "$out/cli-php-filter.log"; then exit 1; fi
+    ${cli}/bin/tvp-upstream --list --php 8.2 > "$out/cli-php-all.log"
+    grep -F 'php-fixture' "$out/cli-php-all.log"
+    if grep -F 'unconfigured' "$out/cli-php-all.log"; then exit 1; fi
+    if ${cli}/bin/tvp-upstream --php; then exit 1; fi
+    if ${cli}/bin/tvp-upstream --list --php 9 php-fixture; then exit 1; fi
+    if ${cli}/bin/tvp-upstream --list --php 8.2 fixture; then exit 1; fi
+    TVP_PHP_COVERAGE_SCRIPT=${../php-coverage.py} ${pkgs.python3}/bin/python3 -B ${./test_php_coverage.py}
 
     git --git-dir=upstream update-ref refs/heads/master "$second"
     upstream_git_head "$row" > "$out/new-head.json"

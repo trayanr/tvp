@@ -32,8 +32,10 @@ let
     libtool = tvp.packages.libtool_2;
   };
   phpize = ../pkgs/runtimes/php/extensions/build-phpize.nix;
+  compatibility = import ./php-compatibility.nix { inherit lib; };
 in
 {
+  inherit compatibility;
   # PHP's configure scripts can link dependencies exported by libxml2 directly.
   # Match the build environment's expansion, while keeping explicit runtime
   # replacements authoritative over dependencies of the original providers.
@@ -126,11 +128,15 @@ in
       tests,
       testDeps ? { },
       meta ? { },
+      phpPolicy ? {
+        kind = "independent";
+      },
     }:
     let
       family = tvp.lib.packages.mkFamily {
         pname = "php-${name}";
         inherit source tests testDeps;
+        packageMeta = { inherit phpPolicy; };
         versionTable = builtins.mapAttrs (
           _: entry:
           entry
@@ -140,11 +146,14 @@ in
               builder = entry.def.builder or phpize;
               deps = {
                 php = tvp.packages.php;
-              } // buildTools tvp // entry.def.deps;
+              }
+              // buildTools tvp
+              // entry.def.deps;
               opts = {
                 extensionName = name;
                 extensionMeta = meta;
-              } // (entry.def.opts or { });
+              }
+              // (entry.def.opts or { });
             };
           }
         ) versionTable;

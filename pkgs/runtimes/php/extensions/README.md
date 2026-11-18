@@ -181,6 +181,12 @@ PHP installation needs only the modules and a connection to your database.
 
 ## Checks and CI
 
+`nix run .#upstream -- --list --php 8.2 php-mongodb` reports declared coverage
+for a PHP series. It prints packaging gaps separately from source-backed hard
+limits. Omit `--list` to also compare available upstream releases. See the
+[repository tool documentation](../../../../tools/README.md) for the metadata
+fields and bundled-module rules.
+
 The Redis module has two focused installed checks: load it and read its version, then
 connect to a temporary Redis server over a Unix socket and perform SET/GET. No
 TCP port or existing host service is used. `tvp.packages.redis` supplies that

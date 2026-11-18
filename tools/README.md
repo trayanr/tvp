@@ -95,3 +95,40 @@ C-bootstrap archive have explicitly limited history; the report prints those
 scopes. GN compares an exact pinned commit with its upstream branch head. For
 release feeds, the packaged count is the intersection with the queried feed;
 older packaged versions absent from it are shown separately.
+
+PHP extension families also show coverage for each registered extension release.
+The report distinguishes declared packages, packaging gaps, and hard compatibility
+limits. Use a PHP series or exact version to narrow the view:
+
+```sh
+nix run .#upstream -- --php 8.2 php-mysqli php-redis
+# Read the declared coverage without contacting upstream:
+nix run .#upstream -- --list --php 8.2 php-mysqli php-redis
+```
+
+Release definitions record their TVP support span in `opts.phpCompatibility`.
+Source-backed restrictions belong in `phpRequirements`, with a reason and an
+upstream URL. A PHP version outside the declared span remains a packaging gap
+unless an explicit hard restriction excludes it. A declared package outside a
+hard restriction fails coverage evaluation. Missing upstream requirements remain
+unknown for releases that have no registered definition.
+
+```nix
+phpRequirements = {
+  min = "8.1.0";
+  max = "8.99.99";
+  reason = "MongoDB 1.21.13 declares PHP 8.1 through 8.x in package.xml.";
+  source = "https://pecl.php.net/get/mongodb-1.21.13.tgz";
+};
+```
+
+Bundled modules declare `phpPolicy.kind = "bundled"`. Coverage then checks for
+the module from each PHP release's own source and SDK. An absent PHP 8.2 module
+is a packaging gap even when the registered PHP 8.5 module requires an exact
+8.5 SDK. Historical source-availability limits carry the same reason and URL
+requirements as independent extensions.
+
+The machine-readable report is available under
+`php.metadata.families.<extension>.coverage`. Each row names the PHP version,
+extension release, and `packaged`, `gap`, or `incompatible` state. Coverage
+describes declarations. Test execution remains recorded by the test runner.

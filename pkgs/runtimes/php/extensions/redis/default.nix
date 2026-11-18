@@ -5,6 +5,12 @@ let
       def = {
         builder = ./build-2.2.8.nix;
         deps.php = tvp.packages.php_5_2;
+        phpRequirements = {
+          min = "5.2.0";
+          before = "6.0.0";
+          reason = "Redis 2.2.8 declares PHP 5.2 through 6.0 and explicitly excludes 6.0 in package.xml.";
+          source = "https://pecl.php.net/get/redis-2.2.8.tgz";
+        };
         opts = {
           phpCompatibility = {
             min = "5.2";
@@ -19,6 +25,12 @@ let
       def = {
         builder = ../build-phpize.nix;
         deps.php = tvp.packages.php_7_3;
+        phpRequirements = {
+          min = "5.3.0";
+          max = "7.9.99";
+          reason = "Redis 4.3.0 declares PHP 5.3 through 7.x in package.xml.";
+          source = "https://pecl.php.net/get/redis-4.3.0.tgz";
+        };
         opts = {
           # Initial TVP span follows upstream CI, below its loose 7.9.99 maximum.
           phpCompatibility = {
@@ -34,6 +46,11 @@ let
       def = {
         builder = ../build-phpize.nix;
         deps.php = tvp.packages.php_8_2;
+        phpRequirements = {
+          min = "7.2.0";
+          reason = "Redis 6.0.2 declares PHP 7.2 or newer in package.xml, with no upper limit stated.";
+          source = "https://pecl.php.net/get/redis-6.0.2.tgz";
+        };
         opts = {
           phpCompatibility = {
             min = "7.2";
@@ -48,6 +65,11 @@ let
       def = {
         builder = ../build-phpize.nix;
         deps.php = tvp.packages.php_8_5;
+        phpRequirements = {
+          min = "7.4.0";
+          reason = "Redis 6.3.0 declares PHP 7.4 or newer in package.xml, with no upper limit stated.";
+          source = "https://pecl.php.net/get/redis-6.3.0.tgz";
+        };
         opts = {
           phpCompatibility = {
             min = "7.4";

@@ -26,11 +26,7 @@ let
     let
       limits = entry.def.opts.phpCompatibility;
     in
-    if limits ? exact then
-      php.version == limits.exact
-    else
-      builtins.compareVersions php.version limits.min >= 0
-      && builtins.compareVersions php.version limits.before < 0;
+    tvp.lib.php.compatibility.matches limits php.version;
   bindFamily =
     engine: name: family:
     let
@@ -73,5 +69,8 @@ in
     in
     map (name: available.${name}) (families.${package.extensionName}.requires or [ ]) ++ [ package ];
   inherit compatible versionTables;
+  phpPolicies = builtins.mapAttrs (
+    name: family: family.recipes."php-${name}".packageMeta.phpPolicy
+  ) families;
   redisVersions = versionTables.redis;
 }

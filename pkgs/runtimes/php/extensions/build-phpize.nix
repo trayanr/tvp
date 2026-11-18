@@ -23,12 +23,7 @@ final:
 let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
-  compatible =
-    if final.phpCompatibility ? exact then
-      final.php.version == final.phpCompatibility.exact
-    else
-      builtins.compareVersions final.php.version final.phpCompatibility.min >= 0
-      && builtins.compareVersions final.php.version final.phpCompatibility.before < 0;
+  compatible = tvp.lib.php.compatibility.matches final.phpCompatibility final.php.version;
   unpack = steps.unpack {
     src = final.src;
     inherit (final) compression;

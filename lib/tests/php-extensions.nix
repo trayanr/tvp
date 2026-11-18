@@ -101,6 +101,57 @@ let
       builtins.unsafeDiscardStringContext haystack
     );
   results = {
+    hardLimitsAndGaps =
+      let
+        row =
+          family: php: release:
+          builtins.head (
+            builtins.filter (
+              r: r.php == php && r.release == release
+            ) tvp.php.metadata.families.${family}.coverage.rows
+          );
+      in
+      (row "redis" "7.4.33" "4.3.0").state == "gap"
+      && (row "mongodb" "7.4.33" "1.21.13").state == "incompatible"
+      && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
+      && (row "mysqli" "8.2.35" "8.2.35").state == "gap"
+      && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
+    hardLimitBoundaries =
+      let
+        matches = tvp.lib.php.compatibility.matches;
+      in
+      matches {
+        min = "8.1";
+        max = "8.99.99";
+      } "8.1.0"
+      && !(matches {
+        min = "8.1";
+        max = "8.99.99";
+      } "9.0.0")
+      && !(matches { before = "6.0"; } "6.0.0");
+    hardLimitEvidenceAndConsistency =
+      let
+        report =
+          requirements:
+          tvp.lib.php.compatibility.report {
+            phpVersions.php_8_0_30 = "8.0.30";
+            versionTable."1.0".def = {
+              opts.phpCompatibility = {
+                min = "8.0";
+                before = "8.6";
+              };
+              phpRequirements = requirements;
+            };
+          };
+        rejectsReport =
+          requirements: !(builtins.tryEval (builtins.deepSeq (report requirements) true)).success;
+      in
+      rejectsReport { min = "8.1"; }
+      && rejectsReport {
+        min = "8.1";
+        reason = "The upstream API requires PHP 8.1";
+        source = "https://example.invalid/package.xml";
+      };
     php52AbsoluteModulePaths =
       let
         legacyPHP = tvp.packages.php_5_2;

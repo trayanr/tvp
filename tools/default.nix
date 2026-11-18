@@ -44,6 +44,9 @@ let
       gnused = tvp.packages.gnused;
       packages = canonical;
       inherit tvpLib;
+      phpCoverage = pkgs.lib.mapAttrs' (
+        name: metadata: pkgs.lib.nameValuePair "php-${name}" metadata.coverage
+      ) tvp.php.metadata.families;
     };
     neutral = pkgs.callPackage ./neutral.nix {
       inherit ownedCLI;
