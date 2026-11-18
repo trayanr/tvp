@@ -48,14 +48,19 @@ let
     "bcmath"
     "calendar"
     "curl"
+    "exif"
+    "ftp"
     "intl"
     "ldap"
     "mbstring"
+    "pcntl"
     "pdo_dblib"
     "pdo_odbc"
     "pdo_pgsql"
     "pgsql"
     "soap"
+    "sockets"
+    "sysvsem"
     "zip"
   ];
   extensionPairs =
@@ -141,6 +146,19 @@ let
       && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
       && (row "pdo_odbc" "5.0.5" "5.0.5").state == "incompatible"
       && (row "pdo_odbc" "8.1.34" "8.1.34").state == "gap"
+      &&
+        lib.all
+          (
+            module:
+            (row module "8.1.34" "8.1.34").state == "gap" && (row module "8.2.35" "8.2.35").state == "packaged"
+          )
+          [
+            "exif"
+            "ftp"
+            "pcntl"
+            "sockets"
+            "sysvsem"
+          ]
       && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
@@ -210,6 +228,7 @@ let
         )
         {
           curl = [ "curl" ];
+          ftp = [ "openssl" ];
           intl = [ "icu" ];
           ldap = [ "openldap" ];
           mbstring = [ "oniguruma" ];
@@ -273,6 +292,55 @@ let
           tvp.canonical.php_8_2_0
           php
         ];
+    ftpTLS =
+      let
+        older = tvp.packages.php_8_3.extensions.ftp;
+        newer = tvp.canonical.php_8_4_0.extensions.ftp;
+        configure =
+          package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
+      in
+      has "--enable-ftp" (configure older)
+      && has "--with-openssl-dir" (configure older)
+      && !(has "--with-ftp-ssl" (configure older))
+      && has "--enable-ftp" (configure newer)
+      && has "--with-ftp-ssl" (configure newer)
+      && !(has "--with-openssl-dir" (configure newer))
+      &&
+        newer.tvp.declaredDependencies.openssl.drvPath
+        == newer.php.tvp.declaredDependencies.openssl.drvPath;
+    ftpEffectiveOpenSSL =
+      let
+        ftp = php.extensions.ftp;
+        original = tvp.packages.openssl;
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "openssl.ftp-provider-probe";
+              run = "true";
+            }
+          ]
+        );
+        overridden = ftp.override { openssl = replacement; };
+        edited = ftp.edit (spec: spec // { openssl = replacement; });
+        finalization = ftp.editSteps (
+          map (step: if step.name == "output.rpaths" then step // { run = step.run + "\ntrue\n"; } else step)
+        );
+        runtimeOnly = ftp.editRuntime (spec: spec // { libraries = [ ]; });
+      in
+      ftp.tvp.declaredDependencies.openssl.drvPath == original.drvPath
+      && overridden.tvp.declaredDependencies.openssl.drvPath == replacement.drvPath
+      && overridden.tvp.declaredTestDependencies.opensslCli.drvPath == original.drvPath
+      && !(overridden.tvp.declaredDependencies ? opensslCli)
+      && has (lib.getLib replacement).outPath (rpathCommand overridden)
+      && !(has (lib.getLib original).outPath (rpathCommand overridden))
+      && overridden.artifact.drvPath != ftp.artifact.drvPath
+      && edited.drvPath == overridden.drvPath
+      && finalization.artifact.drvPath == ftp.artifact.drvPath
+      && finalization.drvPath != ftp.drvPath
+      && runtimeOnly.artifact.drvPath == ftp.artifact.drvPath
+      && runtimeOnly.drvPath != ftp.drvPath;
     zipEffectiveLibrary =
       let
         zip = php.extensions.zip;
