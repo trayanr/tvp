@@ -5,6 +5,18 @@ let
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
     pdo_dblib = import ./pdo_dblib { inherit pkgs tvp; };
+    mysqlnd = import ./mysql {
+      inherit pkgs tvp;
+      name = "mysqlnd";
+    };
+    mysqli = import ./mysql {
+      inherit pkgs tvp;
+      name = "mysqli";
+    };
+    pdo_mysql = import ./mysql {
+      inherit pkgs tvp;
+      name = "pdo_mysql";
+    };
   };
   versionTables = builtins.mapAttrs (_: family: family.versionTable) families;
   plain = php: php.unwrapped or php;
@@ -53,6 +65,12 @@ in
 (tvp.lib.packages.mergeNamespaces families)
 // {
   forPHP = bind;
+  runtimeModules =
+    php: package:
+    let
+      available = bind php;
+    in
+    map (name: available.${name}) (families.${package.extensionName}.requires or [ ]) ++ [ package ];
   inherit compatible versionTables;
   redisVersions = versionTables.redis;
 }
