@@ -46,16 +46,23 @@ establish neither fresh execution, source approval nor ABI compatibility.
 build surface. `--json` includes every canonical version; the text report expands
 non-OK versions. Migration-specific status has been removed.
 
-`nix run .#provenance` reports declared source origins, recipes, bases, binary
-boundaries, upstream URLs and registered output counts from the evaluated
-catalogue. `--json` includes the full registration records. The installed
-command reads its embedded manifests for this report.
+`nix run .#provenance` counts confirmed external package derivations in the
+evaluated build graph of canonical packages, public variants and compositions.
+It follows actual Nix inputs through build steps and compilation artifacts, so
+an input selected through builder options is visible even if omitted from
+`deps`. The graph query reads derivation metadata offline and realizes no
+package outputs. A provider is confirmed by exact derivation identity against
+the evaluated external provider records. Unmatched inputs, including generated
+build steps and fetchers, are listed separately in `--json`, with one route
+back toward a consumer. JSON also includes the consumers and a dependency
+chain for each confirmed provider.
 
-Use `nix run .#provenance -- --realized` to inspect locally available runtime
-closures and build dependencies. `--realized --json` returns the closure report,
-including unbuilt packages, registered membership and exact foreign paths.
-An output in the registration list is an expected output of a declared recipe.
-Its local availability is checked in `--realized` mode.
+Use `--root packages.coreutils_9_5` for a specific package, or `--root @tools`
+or `--root @checks` to inspect those graphs separately. Use `--declared` for
+source origins, recipes, bases, binary boundaries, and registered outputs.
+`--realized` separately checks locally available runtime closures for
+unregistered store paths. JSON also lists unavailable packages and exact
+registered binary or mixed outputs in each closure.
 
 `nix run .#upstream -- --list` lists every family, its packaged-version count and
 release-discovery configuration. The installed command makes no network requests

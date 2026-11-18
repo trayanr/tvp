@@ -1283,14 +1283,16 @@ complete ownership. `checks.audit-contracts` exercises these failure cases and g
 comparison behavior; `checks.provenance-declarations` rejects precompiled provenance
 without a declared binary boundary and checks context-free reporting manifests.
 
-`nix run .#provenance -- --json` lists declared `source`, `mixed` or `binary`
-origins, recipes, bases, source URLs, binary boundaries and registration records.
-The installed command reads the manifests embedded from the evaluated catalogue.
-`nix run .#provenance -- --realized --json` inspects locally available closures.
-Its `runtimeBoundaries` field lists registered binary or mixed components reached
-at runtime, and `foreignPaths` lists exact unregistered store paths. The `owned`
-field counts registered paths in the closure, including registered private base
-components.
+`nix run .#provenance` reports confirmed external providers in the evaluated
+production build graph. The recursive derivation inputs include providers used
+through builder options or commands, even without a `deps` declaration.
+Matching uses exact derivation identity. Unclassified inputs remain visible in
+`--json`. The report uses Nix metadata and requires no realized package outputs.
+
+`--declared --json` lists declared `source`, `mixed` or `binary` origins,
+recipes, bases, source URLs, binary boundaries and registration records.
+`--realized --json` inspects locally available runtime closures, with exact
+unregistered paths and unavailable canonical packages.
 
 ## Producer graph comparison and CI entry points
 

@@ -56,6 +56,7 @@
             graph
             dependencyRoots
             dependencyInventory
+            provenanceDeclarations
             upstreamIsolationInventory
             upstreamIsolationReport
             upstreamIsolationStrict

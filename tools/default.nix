@@ -6,8 +6,6 @@
   canonical,
   bases,
   legacyBases,
-  variantPackages,
-  runtimeRegistry,
 }:
 let
   ownedCLI = import ./lib/owned-cli.nix {
@@ -27,12 +25,7 @@ let
     };
     provenance = pkgs.callPackage ./provenance.nix {
       inherit ownedCLI;
-      coreutils = tvp.packages.coreutils;
-      gawk = tvp.packages.gawk;
-      gnused = tvp.packages.gnused;
-      packages = canonical;
-      inherit tvpLib variantPackages;
-      registry = runtimeRegistry;
+      python3 = tvp.packages.python_3;
     };
     upstream = pkgs.callPackage ./upstream.nix {
       inherit ownedCLI;
