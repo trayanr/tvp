@@ -67,12 +67,11 @@ constructs a synthetic merge. Evidence records head, base and frozen source/plan
 the compatibility field `identity.merge` equals the exact head.
 Two passing sibling PRs are not a guarantee that their later combination passes.
 
-The first queue preserves requests rather than silently collapsing different commits.
-A push does not stop an older running build. Multiple revisions can be queued for one
-PR; each reports only against its own head. Rebuilding the exact same request is
-available through the authenticated Buildbot Rebuild action. Closing a PR stops
-future admissions; already queued/running requests remain until an operator cancels
-or they finish.
+When a new automatic request is admitted, Buildbot marks older unclaimed automatic
+requests for the same PR and target branch as skipped if their head or pinned base
+differs. Claimed, manual, rebuild, and master requests keep their own lifecycle.
+Each run reports against its exact head. The authenticated Buildbot Rebuild action
+can replay an exact request. Closing a PR stops future admissions.
 
 The poller paginates all open PRs and resolves each eligible target branch once per
 poll, even when the PR payload base stays unchanged. No eligible PR means no target
