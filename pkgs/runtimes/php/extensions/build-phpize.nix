@@ -12,6 +12,7 @@
   automake,
   libtool,
   configureOptions ? [ ],
+  patches ? [ ],
   libraries ? [ ],
   loader ? "extension",
   extensionMeta ? { },
@@ -61,6 +62,7 @@ in
     automake
     libtool
     configureOptions
+    patches
     libraries
     loader
     extensionMeta
@@ -138,6 +140,18 @@ in
         else
           throw "PHP extension: unsupported source mode"
       )
+      (lib.optional (final.patches != [ ]) (
+        steps.command
+          {
+            environment.tools = [ tools.patch ];
+          }
+          "php-extension.patch"
+          ''
+            for file in ${lib.escapeShellArgs (map (file: "${file}") final.patches)}; do
+              ${tools.patch}/bin/patch --batch --fuzz=0 -p1 < "$file"
+            done
+          ''
+      ))
       (command "phpize" ''
         export PHP_AUTOCONF=${final.autoconf}/bin/autoconf
         export PHP_AUTOHEADER=${final.autoconf}/bin/autoheader
@@ -198,5 +212,6 @@ in
   meta = {
     description = "PHP ${final.extensionName} extension";
     platforms = [ "x86_64-linux" ];
-  } // final.extensionMeta;
+  }
+  // final.extensionMeta;
 }

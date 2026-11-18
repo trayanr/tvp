@@ -4,6 +4,7 @@ let
     apcu = import ./apcu { inherit pkgs tvp; };
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
+    mongodb = import ./mongodb { inherit pkgs tvp; };
     pdo_dblib = import ./pdo_dblib { inherit pkgs tvp; };
     mysqlnd = import ./mysql {
       inherit pkgs tvp;

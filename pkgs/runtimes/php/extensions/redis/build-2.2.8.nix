@@ -12,6 +12,7 @@ args@{
   automake,
   libtool,
   configureOptions ? [ ],
+  patches ? [ ],
   libraries ? [ ],
   loader ? "extension",
   extensionMeta ? { },
