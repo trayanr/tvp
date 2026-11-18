@@ -9,6 +9,11 @@ context.mkSuite {
   tools = [ package.specification.base.tools.grep ];
   tests = {
     dblib = {
+      # The consumer linker needs FreeTDS's OpenSSL dependency in its search path.
+      libraries = [
+        package
+        package.specification.openssl
+      ];
       script = ''
         cc ${./dblib.c} -lsybdb -o dblib
         ./dblib
