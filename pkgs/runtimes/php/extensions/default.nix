@@ -2,10 +2,16 @@
 let
   families = {
     apcu = import ./apcu { inherit pkgs tvp; };
+    curl = import ./curl { inherit pkgs tvp; };
+    intl = import ./intl { inherit pkgs tvp; };
+    mbstring = import ./mbstring { inherit pkgs tvp; };
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
     mongodb = import ./mongodb { inherit pkgs tvp; };
     pdo_dblib = import ./pdo_dblib { inherit pkgs tvp; };
+    pdo_pgsql = import ./pdo_pgsql { inherit pkgs tvp; };
+    xdebug = import ./xdebug { inherit pkgs tvp; };
+    zip = import ./zip { inherit pkgs tvp; };
     mysqlnd = import ./mysql {
       inherit pkgs tvp;
       name = "mysqlnd";

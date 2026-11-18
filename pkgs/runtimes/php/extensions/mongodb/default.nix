@@ -1,6 +1,22 @@
 { pkgs, tvp }:
 let
   pname = "php-mongodb";
+  buildOptions = {
+    libraries = [
+      tvp.packages.openssl
+      tvp.packages.zlib
+    ];
+    configureOptions = [
+      "--enable-mongodb"
+      "--with-mongodb-system-libs=no"
+      "--with-mongodb-ssl=openssl"
+      "--with-mongodb-zlib=system"
+      "--with-mongodb-snappy=no"
+      "--with-mongodb-zstd=no"
+      "--with-mongodb-sasl=no"
+      "--with-mongodb-client-side-encryption=no"
+    ];
+  };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -17,28 +33,32 @@ let
             reason = "Backport upstream #1849 to use the Zend string API available in PHP 8.5.";
           }
         ];
-        opts = {
+        opts = buildOptions // {
           phpCompatibility = {
             min = "8.1";
             before = "8.6";
           };
-          libraries = [
-            tvp.packages.openssl
-            tvp.packages.zlib
-          ];
-          configureOptions = [
-            "--enable-mongodb"
-            "--with-mongodb-system-libs=no"
-            "--with-mongodb-ssl=openssl"
-            "--with-mongodb-zlib=system"
-            "--with-mongodb-snappy=no"
-            "--with-mongodb-zstd=no"
-            "--with-mongodb-sasl=no"
-            "--with-mongodb-client-side-encryption=no"
-          ];
         };
       };
       releases."1.21.13" = "sha256-MX1uwk6O76dBQFACy/eIuFSa0wLGMMDHsI3URZQNpcY=";
+    }
+    {
+      def = {
+        deps.php = tvp.packages.php_8_5;
+        phpRequirements = {
+          min = "8.1.0";
+          max = "8.99.99";
+          reason = "MongoDB 2.5.7 declares PHP 8.1 through 8.x in package.xml.";
+          source = "https://pecl.php.net/get/mongodb-2.5.7.tgz";
+        };
+        opts = buildOptions // {
+          phpCompatibility = {
+            min = "8.2";
+            before = "8.6";
+          };
+        };
+      };
+      releases."2.5.7" = "sha256-B4dzhW9AZrVnOPwTlQu37ha15m9yf7QdP77GBDx4/TI=";
     }
   ];
   family = tvp.lib.php.mkExtensionFamily {

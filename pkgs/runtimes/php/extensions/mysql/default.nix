@@ -24,7 +24,7 @@ let
     .${name};
   phpFamily = (import ../.. { inherit pkgs tvp; }).recipes.php;
   releases = pkgs.lib.filterAttrs (
-    version: _: pkgs.lib.hasPrefix "8.5." version
+    version: _: pkgs.lib.versionAtLeast version "8.2"
   ) phpFamily.versionTable;
   versionTable = tvp.lib.packages.mkTable (
     pkgs.lib.mapAttrsToList (version: release: {

@@ -1,0 +1,5 @@
+--- a/src/develop/develop.h
++++ b/src/develop/develop.h
+@@ -76 +76 @@
+-void xdebug_develop_minit();
++void xdebug_develop_minit(INIT_FUNC_ARGS);
