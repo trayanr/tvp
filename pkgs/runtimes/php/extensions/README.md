@@ -235,10 +235,15 @@ tvp.packages.php_8_2_35.withExtensions {
     e.bcmath
     e.calendar
     e.curl
+    e.exif
+    e.ftp
     e.mbstring
     e.zip
     e.intl
     e.pdo_pgsql
+    e.pcntl
+    e.sockets
+    e.sysvsem
     e.mysqlnd
     e.pdo_mysql
     e.pdo_dblib
@@ -250,6 +255,15 @@ tvp.packages.php_8_2_35.withExtensions {
 BCMath and Calendar use the matching source for every packaged PHP release
 from 8.2 onward. Their checks verify module versions, exact decimal arithmetic,
 and Gregorian date conversion.
+
+EXIF, FTP, PCNTL, Sockets and SysV semaphore support also use the matching
+source and SDK for each packaged release from PHP 8.2 onward. EXIF can use
+mbstring for optional multibyte decoding when both modules are loaded. FTP
+links the matching PHP release's TVP OpenSSL provider and enables TLS with
+`--with-openssl-dir` on PHP 8.2 and 8.3 or `--with-ftp-ssl` starting with PHP 8.4. Its installed
+checks use a temporary loopback FTP fixture and perform an encrypted login
+and command exchange. The OpenSSL CLI creates the fixture certificate during
+testing.
 
 The development shell can add `e.xdebug` for Xdebug 3.5.3 or
 `e.xdebug_3_3_2` for the original pin on PHP 8.2 and 8.3.

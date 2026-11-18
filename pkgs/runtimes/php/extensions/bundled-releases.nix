@@ -17,20 +17,26 @@ in
 {
   inherit (phpFamily) source;
   versionTable = tvp.lib.packages.mkTable (
-    pkgs.lib.mapAttrsToList (version: release: {
-      def = def // {
-        # A mixed family may give its standalone releases a different source.
-        source = def.source or phpFamily.source;
-        deps = (def.deps or { }) // {
-          php = tvp.lib.packages.withConstraint {
-            reason = "Bundled modules use their PHP release's source and installed SDK.";
-          } tvp.packages.${tvp.lib.versions.attrName "php" version};
+    pkgs.lib.mapAttrsToList (
+      version: release:
+      let
+        definition = if builtins.isFunction def then def release else def;
+      in
+      {
+        def = definition // {
+          # A mixed family may give its standalone releases a different source.
+          source = definition.source or phpFamily.source;
+          deps = (definition.deps or { }) // {
+            php = tvp.lib.packages.withConstraint {
+              reason = "Bundled modules use their PHP release's source and installed SDK.";
+            } tvp.packages.${tvp.lib.versions.attrName "php" version};
+          };
+          opts = (definition.opts or { }) // {
+            phpCompatibility.exact = version;
+          };
         };
-        opts = (def.opts or { }) // {
-          phpCompatibility.exact = version;
-        };
-      };
-      releases.${version} = release.sha256;
-    }) releases
+        releases.${version} = release.sha256;
+      }
+    ) releases
   );
 }
