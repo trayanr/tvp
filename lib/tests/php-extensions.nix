@@ -46,6 +46,7 @@ let
   ];
   bundledModules = mysqlModules ++ [
     "bcmath"
+    "calendar"
     "curl"
     "intl"
     "mbstring"

@@ -3,6 +3,7 @@ let
   families = {
     apcu = import ./apcu { inherit pkgs tvp; };
     bcmath = import ./bcmath { inherit pkgs tvp; };
+    calendar = import ./calendar { inherit pkgs tvp; };
     curl = import ./curl { inherit pkgs tvp; };
     intl = import ./intl { inherit pkgs tvp; };
     mbstring = import ./mbstring { inherit pkgs tvp; };
