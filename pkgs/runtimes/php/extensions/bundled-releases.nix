@@ -3,6 +3,7 @@
   pkgs,
   tvp,
   minPHP,
+  # A definition may select named providers from the matching PHP release.
   def,
 }:
 let
@@ -14,18 +15,25 @@ in
 {
   inherit (phpFamily) source;
   versionTable = tvp.lib.packages.mkTable (
-    pkgs.lib.mapAttrsToList (version: release: {
-      def = def // {
-        deps = (def.deps or { }) // {
-          php = tvp.lib.packages.withConstraint {
-            reason = "Bundled modules use their PHP release's source and installed SDK.";
-          } tvp.packages.${tvp.lib.versions.attrName "php" version};
+    pkgs.lib.mapAttrsToList (
+      version: release:
+      let
+        php = tvp.packages.${tvp.lib.versions.attrName "php" version};
+        definition = if builtins.isFunction def then def php else def;
+      in
+      {
+        def = definition // {
+          deps = (definition.deps or { }) // {
+            php = tvp.lib.packages.withConstraint {
+              reason = "Bundled modules use their PHP release's source and installed SDK.";
+            } php;
+          };
+          opts = (definition.opts or { }) // {
+            phpCompatibility.exact = version;
+          };
         };
-        opts = (def.opts or { }) // {
-          phpCompatibility.exact = version;
-        };
-      };
-      releases.${version} = release.sha256;
-    }) releases
+        releases.${version} = release.sha256;
+      }
+    ) releases
   );
 }

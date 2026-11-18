@@ -49,9 +49,13 @@ let
     "calendar"
     "curl"
     "intl"
+    "ldap"
     "mbstring"
     "pdo_dblib"
+    "pdo_odbc"
     "pdo_pgsql"
+    "pgsql"
+    "soap"
     "zip"
   ];
   extensionPairs =
@@ -135,6 +139,8 @@ let
       && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
       && (row "bcmath" "8.1.34" "8.1.34").state == "gap"
       && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
+      && (row "pdo_odbc" "5.0.5" "5.0.5").state == "incompatible"
+      && (row "pdo_odbc" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
       && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
@@ -205,21 +211,68 @@ let
         {
           curl = [ "curl" ];
           intl = [ "icu" ];
+          ldap = [ "openldap" ];
           mbstring = [ "oniguruma" ];
           mongodb = [
             "openssl"
             "zlib"
           ];
+          pdo_odbc = [ "unixodbc" ];
           pdo_pgsql = [
             "postgresql"
             "openssl"
             "krb5"
             "keyutils"
           ];
+          pgsql = [
+            "postgresql"
+            "openssl"
+            "krb5"
+            "keyutils"
+          ];
+          soap = [ "libxml2" ];
           xdebug = [ "zlib" ];
           zip = [ "libzip" ];
         }
     );
+    bundledReleaseSelection = lib.all (
+      module:
+      let
+        package = php.extensions.${module};
+      in
+      package.version == php.version
+      && package.php.drvPath == php.drvPath
+      && has php.specification.src.outPath (builtins.head package.buildSteps).run
+      && rejects (package.override { php = dblibOtherRelease; })
+      && rejects (tvp.packages.php_8_1.extensions.${module})
+    ) bundledModules;
+    pgsqlReusesClientAndServer =
+      let
+        native = php.extensions.pgsql.tvp;
+        pdo = php.extensions.pdo_pgsql.tvp;
+      in
+      native.declaredDependencies.postgresql.drvPath == pdo.declaredDependencies.postgresql.drvPath
+      &&
+        native.declaredTestDependencies.postgresql.drvPath
+        == pdo.declaredTestDependencies.postgresql.drvPath;
+    odbcDriverIsTestOnly =
+      let
+        odbc = php.extensions.pdo_odbc.tvp;
+      in
+      !(odbc.declaredDependencies ? sqliteodbc)
+      && odbc.declaredTestDependencies.sqliteodbc.drvPath == tvp.packages.sqliteodbc.drvPath
+      && odbc.declaredTestDependencies.unixodbc.drvPath == odbc.declaredDependencies.unixodbc.drvPath;
+    soapUsesReleaseLibxml2 =
+      lib.all
+        (
+          engine:
+          engine.extensions.soap.tvp.declaredDependencies.libxml2.drvPath
+          == engine.specification.libxml2.drvPath
+        )
+        [
+          tvp.canonical.php_8_2_0
+          php
+        ];
     zipEffectiveLibrary =
       let
         zip = php.extensions.zip;
