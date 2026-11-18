@@ -15,6 +15,8 @@ import time
 FAILED_DRV = re.compile(
     r"(?:Cannot build|cannot build|builder for) ['\"](/nix/store/[^'\"\s]+\.drv)['\"]"
 )
+STAGE_PHASES = ("compile", "finalize", "build", "prepare")
+STAGE_RESULTS = ("ready", "bypassed", "active", "pending", "failed-or-blocked", "cancelled")
 
 
 def save(path, value):
@@ -143,11 +145,71 @@ def failures(run):
     return failed
 
 
-def observe(plan, state, run, final=False, root_completed=True, protected=None, on_roots=None):
+def production_stages(jobs):
+    """Group selected production work by exact derivation, retaining each use."""
+    stages = {}
+    for job in jobs:
+        if not job.get("stages"):
+            continue
+        tests = {test["drv"]: test["outputs"] for test in job.get("tests") or [job]}
+        for row in job["stages"]:
+            drv, phase = row["drv"], row["phase"]
+            stage = stages.setdefault(drv, {"phase": phase, "outputs": set(), "uses": set()})
+            # The same artifact can be exposed as a raw, unsplit test subject.
+            # Prefer its explicit role when another use names that boundary.
+            if stage["phase"] == "build" or phase == "compile":
+                stage["phase"] = phase
+            outputs = frozenset(row["outputs"])
+            checked = frozenset(path for test in row.get("tests", tests) for path in tests[test])
+            covers = frozenset(frozenset(group) for group in row.get("coveredBy", []) if group)
+            if checked:
+                covers |= {checked}
+            stage["outputs"].update(outputs)
+            stage["uses"].add((outputs, covers))
+    return stages
+
+
+def observed_paths(jobs, stages):
+    """Read stage and test availability in one store query."""
+    paths = {output for job in jobs for test in job.get("tests") or [job] for output in test["outputs"]}
+    for stage in stages.values():
+        paths.update(stage["outputs"])
+        paths.update(path for _, covers in stage["uses"] for group in covers for path in group)
+    return paths
+
+
+def stage_counts(stages, present, state, failed=(), final=False):
+    active = {item["drv"] for item in state.get("active", {}).values()}
+    previous = state.get("stageCounts", {})
+    counts = {phase: dict.fromkeys(STAGE_RESULTS, 0) | {
+        "total": 0, "cachedAtStart": previous.get(phase, {}).get("cachedAtStart", 0),
+    } for phase in STAGE_PHASES}
+    for drv, stage in stages.items():
+        outputs = stage["outputs"]
+        if outputs <= present:
+            result = "ready"
+        elif not final and (drv in active or outputs & active):
+            result = "active"
+        elif all(paths <= present or any(group <= present for group in covers)
+                 for paths, covers in stage["uses"]):
+            result = "bypassed"
+        elif drv in failed or final:
+            result = "cancelled" if drv not in failed and state.get("cancelled") else "failed-or-blocked"
+        else:
+            result = "pending"
+        counts[stage["phase"]][result] += 1
+        counts[stage["phase"]]["total"] += 1
+    return {phase: row for phase, row in counts.items() if row["total"]}
+
+
+def observe(plan, state, run, final=False, root_completed=True, protected=None, on_roots=None,
+            stages=None):
     jobs = members(plan, run)
-    units = [test for job in jobs for test in (job.get("tests") or [job])]
-    present = valid_paths(output for unit in units for output in unit["outputs"])
+    stages = production_stages(jobs) if stages is None else stages
+    present = valid_paths(observed_paths(jobs, stages))
     failed = failures(run)
+    if stages:
+        state["stageCounts"] = stage_counts(stages, present, state, failed=failed, final=final)
     counts = {"passed": 0, "failed-or-blocked": 0, "pending": 0, "cancelled": 0}
     completed = set()
     for job in jobs:

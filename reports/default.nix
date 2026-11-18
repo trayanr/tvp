@@ -5,6 +5,7 @@
   tvpLib,
   canonical,
   variants,
+  variantPackages,
   construction,
   legacyBases,
   tools,
@@ -29,6 +30,11 @@ let
 in
 {
   inherit runtimeRegistry;
+  provenanceDeclarations = import ./provenance.nix {
+    inherit (pkgs) lib;
+    inherit tvpLib canonical variantPackages;
+    registry = runtimeRegistry;
+  };
   upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
   upstreamIsolationReport =
     (tvpLib.upstreamTestIsolation.validate {
@@ -91,7 +97,19 @@ in
     inventory = tvp.dependencyInventory;
     registry = runtimeRegistry;
     borrowed = {
-      inherit (pkgs) jq shellcheck-minimal;
+      inherit (pkgs)
+        icu
+        oniguruma
+        postgresql_16
+        openssl
+        krb5
+        keyutils
+        tzdata
+        expat
+        jq
+        shellcheck-minimal
+        ;
+      "mariadb.server" = pkgs.mariadb.server;
     };
     borrowedSource = toString pkgs.path;
   };

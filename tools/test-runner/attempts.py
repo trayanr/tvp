@@ -94,6 +94,13 @@ def combine(run, original, snapshot):
     result["testCounts"] = {key: tests[key] for key in ("passed", "failed-or-blocked", "pending", "cancelled")}
     running = any(state["phase"] not in TERMINAL for _, state in attempts)
     contributing = [state for path, state in attempts if path in selected.values()]
+    # Stage counts describe one frozen graph. Linked retries can use different
+    # recipes, so keep the latest participating attempt's counts intact.
+    result.pop("stageCounts", None)
+    for path, state in reversed(attempts):
+        if (path in selected.values() or state["phase"] not in TERMINAL) and state.get("stageCounts"):
+            result.update(stageCounts=state["stageCounts"], stageProgressRun=str(path))
+            break
     if running:
         result["phase"] = "running"
         current = next(state for _, state in reversed(attempts) if state["phase"] not in TERMINAL)

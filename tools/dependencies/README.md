@@ -36,8 +36,9 @@ produce diagnostics, a partial state and exit 1. Unknown static CA output paths
 remain unresolved rather than fabricated. Unknown origin alone is valid and
 can occur in a complete graph. No full-mode truncation is applied.
 
-Registrations distinguish TVP definitions, substrate output controls and two
-explicitly matched pinned Nixpkgs tool attributes (jq and shellcheck-minimal).
+Registrations distinguish TVP definitions, substrate output controls and
+explicitly matched external providers. Matches come from the pinned Nixpkgs
+attributes and evaluated dependencies explicitly marked foreign.
 Output registrations annotate source/binary/mixed evidence without identifying
 a different recipe as canonical. Unregistered nodes remain unclassified: names,
 missing selector tags, installed-output derivers and signature issuers do not

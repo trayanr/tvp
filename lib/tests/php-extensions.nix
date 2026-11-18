@@ -9,34 +9,51 @@ let
   dblib = php.extensions.pdo_dblib;
   dblibEngine = tvp.canonical.php_8_5_12;
   dblibOtherRelease = tvp.canonical.php_8_5_11;
-  igbinaryEngines = lib.filterAttrs (
-    name: engine:
-    lib.hasPrefix "php_" name
-    && builtins.compareVersions engine.version "7.0" >= 0
-    && builtins.compareVersions engine.version "8.6" < 0
-  ) tvp.canonical;
-  igbinaryPairs = builtins.length (builtins.attrNames igbinaryEngines);
-  mongodb = tvp.canonical.php_8_2_35.extensions.mongodb;
-  mongodbPairs = builtins.length (
-    builtins.attrNames (
-      lib.filterAttrs (
-        name: engine:
-        lib.hasPrefix "php_" name
-        && builtins.compareVersions engine.version "8.1" >= 0
-        && builtins.compareVersions engine.version "8.6" < 0
-      ) tvp.canonical
-    )
-  );
-  dblibPairs = builtins.length (
-    builtins.attrNames (lib.filterAttrs (name: _: lib.hasPrefix "php_8_5_" name) tvp.canonical)
-  );
+  engines = lib.filterAttrs (name: _: lib.hasPrefix "php_" name) tvp.canonical;
+  countEngines =
+    range:
+    builtins.length (
+      builtins.filter (engine: tvp.lib.php.compatibility.matches range engine.version) (
+        builtins.attrValues engines
+      )
+    );
+  igbinaryPairs = countEngines {
+    min = "7.0";
+    before = "8.6";
+  };
+  php82Plus = countEngines { min = "8.2"; };
+  php82To85 = countEngines {
+    min = "8.2";
+    before = "8.6";
+  };
+  mongodbPairs =
+    countEngines {
+      min = "8.1";
+      before = "8.6";
+    }
+    + php82To85;
+  xdebugPairs =
+    countEngines {
+      min = "8.2";
+      before = "8.4";
+    }
+    + php82To85;
+  mongodb = tvp.canonical.php_8_2_35.extensions.mongodb_1;
   mysqlModules = [
     "mysqlnd"
     "mysqli"
     "pdo_mysql"
   ];
-  mysqlPairs = builtins.length mysqlModules * dblibPairs;
-  nonRedisPairs = 2 * igbinaryPairs + mongodbPairs + dblibPairs + mysqlPairs;
+  bundledModules = mysqlModules ++ [
+    "curl"
+    "intl"
+    "mbstring"
+    "pdo_dblib"
+    "pdo_pgsql"
+    "zip"
+  ];
+  extensionPairs =
+    296 + 2 * igbinaryPairs + mongodbPairs + xdebugPairs + builtins.length bundledModules * php82Plus;
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -114,7 +131,8 @@ let
       (row "redis" "7.4.33" "4.3.0").state == "gap"
       && (row "mongodb" "7.4.33" "1.21.13").state == "incompatible"
       && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
-      && (row "mysqli" "8.2.35" "8.2.35").state == "gap"
+      && (row "mysqli" "8.1.34" "8.1.34").state == "gap"
+      && (row "mysqli" "8.2.35" "8.2.35").state == "packaged"
       && (row "mysqlnd" "5.2.17" "5.2.17").state == "incompatible";
     hardLimitBoundaries =
       let
@@ -168,7 +186,76 @@ let
       == builtins.functionArgs (import ../../pkgs/runtimes/php/extensions/build-phpize.nix);
     mongodbCompatibility =
       mongodb.php.drvPath == tvp.canonical.php_8_2_35.drvPath
+      && mongodb.version == "1.21.13"
+      && tvp.canonical.php_8_2_35.extensions.mongodb.version == "2.5.7"
       && rejects (tvp.canonical.php_8_0_30.extensions.mongodb_1_21_13);
+    extensionLibraryDeclarations = lib.all lib.id (
+      lib.mapAttrsToList
+        (
+          extension: providers:
+          let
+            declared = php.extensions.${extension}.tvp.declaredDependencies;
+          in
+          lib.all (name: declared ? ${name}) providers
+        )
+        {
+          curl = [ "curl" ];
+          intl = [ "icu" ];
+          mbstring = [ "oniguruma" ];
+          mongodb = [
+            "openssl"
+            "zlib"
+          ];
+          pdo_pgsql = [
+            "postgresql"
+            "openssl"
+            "krb5"
+            "keyutils"
+          ];
+          xdebug = [ "zlib" ];
+          zip = [ "libzip" ];
+        }
+    );
+    zipEffectiveLibrary =
+      let
+        zip = php.extensions.zip;
+        original = tvp.packages.libzip;
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "libzip.override-probe";
+              run = "true";
+            }
+          ]
+        );
+        overridden = zip.override { libzip = replacement; };
+        edited = zip.edit (spec: spec // { libzip = replacement; });
+        runtimeOnly = zip.editRuntime (spec: spec // { libraries = [ ]; });
+      in
+      overridden.tvp.declaredDependencies.libzip.drvPath == replacement.drvPath
+      && has replacement.outPath (rpathCommand overridden)
+      && !(has original.outPath (rpathCommand overridden))
+      && overridden.artifact.drvPath != zip.artifact.drvPath
+      && edited.drvPath == overridden.drvPath
+      && runtimeOnly.artifact.drvPath == zip.artifact.drvPath
+      && runtimeOnly.drvPath != zip.drvPath;
+    postgresEffectiveLibrary =
+      let
+        driver = php.extensions.pdo_pgsql;
+        original = driver.specification.postgresql;
+        replacement = original.overrideAttrs (_: {
+          pname = "postgresql-extension-probe";
+        });
+        overridden = driver.override { postgresql = replacement; };
+        configure =
+          package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
+      in
+      overridden.tvp.declaredDependencies.postgresql.drvPath == replacement.drvPath
+      && overridden.tvp.declaredTestDependencies.postgresql.drvPath == original.drvPath
+      && has "--with-pdo-pgsql=${replacement}" (configure overridden)
+      && has replacement.lib.outPath (rpathCommand overridden);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let
@@ -246,7 +333,8 @@ let
       && dblib.php.drvPath == dblibEngine.drvPath
       && dblibOtherRelease.extensions.pdo_dblib.version == dblibOtherRelease.version
       && rejects dblibOtherRelease.extensions.pdo_dblib_8_5_12
-      && rejects tvp.packages.php_8_4.extensions.pdo_dblib;
+      && tvp.packages.php_8_2.extensions.pdo_dblib.version == tvp.packages.php_8_2.version
+      && rejects tvp.packages.php_8_1.extensions.pdo_dblib;
     dblibUsesEngineSource =
       let
         otherSource = dblibOtherRelease.specification.src;
@@ -385,13 +473,13 @@ let
       && tvp.php.metadata.families.igbinary.declaredPairs == igbinaryPairs
       && tvp.php.metadata.families.apcu.declaredPairs == igbinaryPairs
       && tvp.php.metadata.families.mongodb.declaredPairs == mongodbPairs
-      && tvp.php.metadata.families.pdo_dblib.declaredPairs == dblibPairs
+      && tvp.php.metadata.families.xdebug.declaredPairs == xdebugPairs
       && igbinaryPairs > 0
-      && dblibPairs > 0
-      && lib.all (name: tvp.php.metadata.families.${name}.declaredPairs == dblibPairs) mysqlModules
-      && tvp.php.metadata.declaredPairs == 296 + nonRedisPairs
-      && builtins.length (builtins.attrNames tvp.php.extensionTests) == 296 + nonRedisPairs
-      && tvp.php.metadata.namedTests == 2 * (296 + nonRedisPairs)
+      && php82Plus > 0
+      && lib.all (name: tvp.php.metadata.families.${name}.declaredPairs == php82Plus) bundledModules
+      && tvp.php.metadata.declaredPairs == extensionPairs
+      && builtins.length (builtins.attrNames tvp.php.extensionTests) == extensionPairs
+      && tvp.php.metadata.namedTests == 2 * extensionPairs
       && tvp.php.extensionMatrix.php_8_5_12--redis_6_3_0.package.drvPath == redis.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--apcu_5_1_28.package.drvPath == apcu.drvPath
@@ -408,7 +496,7 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 608 + 2 * nonRedisPairs
+      && tvp.smokeTests.metadata.namedTests == 16 + 2 * extensionPairs
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in

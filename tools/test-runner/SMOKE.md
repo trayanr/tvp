@@ -31,6 +31,18 @@ Script-generation derivations are grouped under `Build scripts` rather than
 listed as separate packages. These are display changes; package names and store
 identities stay unchanged, and older run plans remain inspectable.
 
+Live progress and `status` show separate totals for compilation, finalization,
+unsplit builds, and assembly alongside suites and tests. These totals count
+distinct derivations of package stages the frozen plan identifies from selected
+tests. Other prerequisites can still appear in the active Nix build list.
+Stages with valid outputs are ready. A stage can also be covered by a downstream
+output, for example when a cached final package lets Nix skip its compilation
+artifact. JSON receipts keep these counts in `stageCounts`. For linked retries,
+the stage counts identify the participating attempt they describe.
+
+The event log records when the runner observes Nix activity start and stop.
+Those timestamps provide duration data for future estimates.
+
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
 and compiled module loading, Ruby's version and standard library, Redis's own

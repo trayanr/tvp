@@ -90,8 +90,9 @@ let
     ];
   };
   planFor =
-    check:
+    smoke: check:
     tests.compatibility.planManifest {
+      inherit smoke;
       pkgs = {
         stdenv.hostPlatform.system = "x86_64-linux";
         linkFarm = _: _: {
@@ -103,7 +104,7 @@ let
       canonical = { };
       source = ./latest.nix;
     };
-  makePlan = check: builtins.fromJSON (plain (builtins.toJSON (planFor check)));
+  makePlan = check: builtins.fromJSON (plain (builtins.toJSON (planFor false check)));
   plan = makePlan (
     primitive
     // {
@@ -149,14 +150,14 @@ let
     enabledExtensions = [ (extension "8.2.30") ];
     artifact = displayPackage "php-8.2.30-runtime-artifacts" { };
   };
-  displayPlan = makePlan (
+  displayPlan = planFor false (
     (leaf "display-batch")
     // {
       testSuite = {
         redis82 = (leaf "redis82-load") // {
           package = extension "8.2.30";
           testName = "load";
-          specification.tools = [ runtime ];
+          buildSteps = [ { tools = [ runtime ]; } ];
         };
         redis83 = (leaf "redis83-load") // {
           passthru = {
@@ -168,6 +169,17 @@ let
     }
   );
   labels = displayPlan.displayLabels;
+  stageFixture = primitive // {
+    package = primitive // {
+      artifact = named;
+    };
+  };
+  stagePlan = smoke: fixture: (builtins.head (planFor smoke fixture).jobs).stages;
+  smokeStages = lib.sort (a: b: a.phase > b.phase) (stagePlan true stageFixture);
+  fullArtifact = lib.findFirst (stage: stage.phase == "compile") null (stagePlan false stageFixture);
+  selectedOutputStage = builtins.head (
+    stagePlan false (primitive // { package = named.validation; })
+  );
   checks = {
     displayExtensionStages =
       labels."/model/php-8.2.30-redis-artifacts.drv" == "PHP 8.2.30 / Redis 6.0.2: compiling extension"
@@ -184,7 +196,54 @@ let
       labels."/model/display-batch.drv" == "check-fixture: collecting results"
       && labels."/model/aggregate.drv" == "All tests: collecting results";
     displayWithoutOutputs = builtins.deepSeq labels true;
-    displayContextFree = !(builtins.hasContext (builtins.toJSON (planFor primitive).displayLabels));
+    displayContextFree =
+      !(builtins.hasContext (builtins.toJSON (planFor false primitive).displayLabels));
+    stageContextFree = !(builtins.hasContext (builtins.toJSON smokeStages));
+    stageRecords =
+      smokeStages == [
+        {
+          drv = plain primitive.drvPath;
+          outputs = [ (plain primitive.outPath) ];
+          phase = "finalize";
+          tests = [ (plain primitive.drvPath) ];
+          coveredBy = [ ];
+        }
+        {
+          drv = plain named.drvPath;
+          outputs = [
+            (plain named.outPath)
+            (plain named.validation.outPath)
+          ];
+          phase = "compile";
+          tests = [ (plain primitive.drvPath) ];
+          coveredBy = [ [ (plain primitive.outPath) ] ];
+        }
+      ];
+    fullDoesNotAssumeArtifactPruning = fullArtifact.coveredBy == [ ];
+    stageUsesOnlySelectedFinalOutput =
+      selectedOutputStage.outputs == [ (plain named.validation.outPath) ];
+    stageGroupsIdenticalUses =
+      let
+        grouped = stagePlan false (
+          primitive
+          // {
+            testSuite = {
+              a = stageFixture;
+              b = named // {
+                inherit (stageFixture) package;
+              };
+            };
+          }
+        );
+      in
+      builtins.length grouped == 2
+      && builtins.all (
+        stage:
+        stage.tests == [
+          (plain primitive.drvPath)
+          (plain named.drvPath)
+        ]
+      ) grouped;
     displayLegacyFallback = plan.displayLabels.${plain named.drvPath} == "check-fixture: test selected";
     fullPlanImplicitOutput = planJob.outputs == [ (plain primitive.outPath) ];
     fullPlanImplicitTest = (builtins.head planJob.tests).outputs == [ (plain primitive.outPath) ];

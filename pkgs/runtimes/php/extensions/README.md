@@ -56,7 +56,8 @@ with `compression = "xz"` or `"bzip2"` available. The function selects PHP's
 installed SDK, the matching base and the Autotools providers. Additional native
 libraries go in `libraries`; `loader = "zend_extension"` selects a Zend loader
 instead of the default `"extension"`. `meta` supplies package metadata.
-The result supports the ordinary `.override`, `.edit` and `.editSteps` methods.
+The result supports the ordinary `.override`, `.edit`, `.editSteps` and
+`.editRuntime` methods.
 
 Without `phpCompatibility`, the builder records the selected PHP version as an
 exact compatibility declaration. That declaration stays in place after an
@@ -76,6 +77,23 @@ the same installed-test factory and dependency conventions as extension
 families. A standalone custom extension is not automatically added to the
 repository's version matrix. Use
 `tvp.lib.php.mkExtensionFamily` and a release table for a versioned family.
+
+## Adding an extension to TVP
+
+Follow the [ordinary package authoring guide](../../../../lib/NATIVE-RECIPES.md).
+The extension's `default.nix` selects its builder, named package dependencies,
+source and test suite. Use `deps` for build and runtime providers and
+`testDeps` for fixtures such as a database server. Put package-specific
+configure arguments and library wiring in the builder and read them from the
+effective specification. The [ZIP definition](zip/default.nix) names `libzip`
+and its [builder](zip/build.nix) uses `final.libzip`. Callers can replace it
+with `php.extensions.zip.override { libzip = otherLibzip; }`.
+
+Standalone extensions declare their version and source hashes. Bundled
+extensions derive those from the corresponding PHP releases because the module
+uses that release's source and SDK. The bundled release helper supplies that
+mapping. The extension still declares its own builder, dependencies, tests and
+compatibility policy.
 
 ## Redis release selection
 
@@ -149,7 +167,9 @@ tvp.packages.php_8_5.withExtensions {
 
 ## MongoDB
 
-`php.extensions.mongodb` selects driver 1.21.13 for PHP `>= 8.1`, `< 8.6`.
+`php.extensions.mongodb` selects driver 2.5.7 on PHP 8.2 through 8.5.
+Use `php.extensions.mongodb_1` for Composer projects requiring `ext-mongodb ^1`.
+That selector provides driver 1.21.13 on PHP 8.1 through 8.5.
 It includes OpenSSL TLS and zlib compression. Snappy, Zstandard, Cyrus SASL,
 and client-side field-level encryption are disabled. The smoke checks load
 the installed module, round-trip BSON, and construct a TLS client without a
@@ -157,7 +177,7 @@ database connection.
 
 ```nix
 tvp.packages.php_8_2_35.withExtensions {
-  extensions = e: [ e.mongodb ];
+  extensions = e: [ e.mongodb_1 ];
 }
 ```
 
@@ -166,7 +186,8 @@ tvp.packages.php_8_2_35.withExtensions {
 `php.profiles.mysql` provides the current PHP with `mysqlnd`, `mysqli`, and
 `pdo_mysql` in load order. The individual `php.profiles.mysqli` and
 `php.profiles.pdo_mysql` profiles each include the required `mysqlnd` module.
-To compose a different PHP 8.5 release, select the modules in this order:
+All packaged PHP releases from 8.2 onward have matching MySQL module recipes.
+To compose a pinned PHP release, select the modules in this order:
 
 ```nix
 tvp.packages.php_8_5_0.withExtensions {
@@ -178,6 +199,30 @@ The three modules use the selected PHP release's own source and SDK. The two
 drivers use PHP's native client. Their tests execute a query over a private
 Unix socket against a temporary MariaDB server from pinned Nixpkgs. A normal
 PHP installation needs only the modules and a connection to your database.
+
+## VR2 API
+
+For VR2's PHP 8.2.35 and Composer MongoDB constraint, compose the API runtime
+with the following extensions. The MySQL driver loads after `mysqlnd`.
+
+```nix
+tvp.packages.php_8_2_35.withExtensions {
+  extensions = e: [
+    e.curl
+    e.mbstring
+    e.zip
+    e.intl
+    e.pdo_pgsql
+    e.mysqlnd
+    e.pdo_mysql
+    e.pdo_dblib
+    e.mongodb_1
+  ];
+}
+```
+
+The development shell can add `e.xdebug` for Xdebug 3.5.3 or
+`e.xdebug_3_3_2` for the original pin on PHP 8.2 and 8.3.
 
 ## Checks and CI
 

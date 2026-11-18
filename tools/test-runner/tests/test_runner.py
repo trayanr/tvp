@@ -660,6 +660,83 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(state['testCounts']['passed'],1)
         self.assertIn(str(output),[str(p.readlink()) for p in (run/'roots').iterdir()])
 
+    def test_stage_progress_moves_before_tests_and_deduplicates_shared_builds(self):
+        compiled, installed, tested = [self.root/name for name in ('artifact', 'final', 'test')]
+        leaf = {'name': 'load', 'drv': '/fake/test.drv', 'outputs': [str(tested)]}
+        run, plan, state = self.observe_fixture([leaf])
+        stages = [
+            {'drv': '/fake/artifact.drv', 'outputs': [str(compiled)], 'phase': 'compile',
+             'coveredBy': [[str(installed)]], 'tests': [leaf['drv']]},
+            {'drv': '/fake/final.drv', 'outputs': [str(installed)], 'phase': 'finalize',
+             'tests': [leaf['drv']]},
+        ]
+        # Two labels can reach the same producers.
+        plan['jobs'][0]['stages'] = stages + stages
+        state['active'] = {'a': {'drv': stages[0]['drv'], 'phase': 'building'}}
+        with mock.patch.dict(os.environ, self.env):
+            progress.observe(plan, state, run, root_completed=False)
+            self.assertEqual(state['stageCounts']['compile']['active'], 1)
+            self.assertEqual(state['stageCounts']['finalize']['pending'], 1)
+            before = runner.progress_key(state)
+            compiled.touch()
+            progress.observe(plan, state, run, root_completed=False)
+            self.assertEqual(state['stageCounts']['compile']['ready'], 1)
+            self.assertEqual(state['stageCounts']['compile']['total'], 1)
+            self.assertNotEqual(runner.progress_key(state), before)
+            self.assertEqual(state['testCounts']['pending'], 1)
+            installed.touch()
+            progress.observe(plan, state, run, root_completed=False)
+            self.assertEqual(state['stageCounts']['finalize']['ready'], 1)
+            self.assertEqual(state['testCounts']['passed'], 0)
+
+    def test_downstream_cache_coverage_is_per_use_and_never_counts_as_compilation(self):
+        compiled, final1, final2, test1, test2 = [
+            self.root/name for name in ('artifact', 'final1', 'final2', 'test1', 'test2')
+        ]
+        leaves = [{'name': test.name, 'drv': '/fake/'+test.name+'.drv', 'outputs': [str(test)]}
+                  for test in (test1, test2)]
+        run, plan, state = self.observe_fixture(leaves)
+        plan['jobs'][0]['stages'] = [
+            {'drv': '/fake/artifact.drv', 'outputs': [str(compiled)], 'phase': 'compile',
+             'coveredBy': [[str(final)]], 'tests': [leaf['drv']]}
+            for final, leaf in zip((final1, final2), leaves)
+        ]
+        final1.touch()
+        with mock.patch.dict(os.environ, self.env):
+            progress.observe(plan, state, run, root_completed=False)
+            self.assertEqual(state['stageCounts']['compile']['pending'], 1)
+            # The second use can disappear through a cached test too.
+            test2.touch()
+            progress.observe(plan, state, run, root_completed=False)
+            self.assertEqual(state['stageCounts']['compile']['bypassed'], 1)
+            self.assertEqual(state['stageCounts']['compile']['ready'], 0)
+            self.assertEqual(state['testCounts']['passed'], 1)
+
+    def test_smoke_reports_stage_cache_and_keeps_build_targets_exact(self):
+        first = self.plan['jobs'][0]
+        compiled, installed = [self.root/name for name in ('artifact', 'final')]
+        installed.touch()
+        first['stages'] = [
+            {'drv': '/fake/artifact.drv', 'outputs': [str(compiled)], 'phase': 'compile',
+             'coveredBy': [[str(installed)]], 'tests': [first['drv']]},
+            {'drv': '/fake/final.drv', 'outputs': [str(installed)], 'phase': 'finalize',
+             'tests': [first['drv']]},
+        ]
+        self.plan_file.write_text(json.dumps(self.plan))
+        result = self.cli('all', '--state-dir', str(self.state), '--only', 'first', '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(result.stdout)
+        counts = receipt['stageCounts']
+        self.assertEqual(counts['compile']['bypassed'], 1)
+        self.assertEqual(counts['finalize']['cachedAtStart'], 1)
+        self.assertEqual(receipt['testCounts']['passed'], 1)
+        run = Path(receipt['run'])
+        command = json.loads((run/'command.json').read_text())
+        self.assertEqual([arg for arg in command if arg.endswith('^*')], [first['drv']+'^*'])
+        events = [json.loads(line[5:]) for line in (run/'events.jsonl').read_text().splitlines()]
+        self.assertEqual([event['action'] for event in events], ['start', 'stop'])
+        self.assertLessEqual(events[0]['observedAt'], events[1]['observedAt'])
+
     def test_root_batches_deduplicate_share_and_skip_already_protected_outputs(self):
         run,plan,state=self.observe_fixture([])
         paths=[]

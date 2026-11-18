@@ -131,7 +131,9 @@
         cp ${../tools/dependencies/test_report.py} test_report.py
         cp ${../tools/dependencies/recursive.py} recursive.py
         cp ${../tools/dependencies/test_recursive.py} test_recursive.py
-        python3 -m unittest -v test_report test_recursive >&2
+        cp ${../tools/provenance.py} provenance.py
+        cp ${../tools/dependencies/test_provenance.py} test_provenance.py
+        python3 -m unittest -v test_report test_recursive test_provenance >&2
         printf '%s\n' 'Dependency inventory contracts passed.' > "$out"
       '';
   dependency-policy =

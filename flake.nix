@@ -56,6 +56,7 @@
             graph
             dependencyRoots
             dependencyInventory
+            provenanceDeclarations
             upstreamIsolationInventory
             upstreamIsolationReport
             upstreamIsolationStrict
@@ -110,6 +111,7 @@
           batches = tvp.smokeTests.batches;
           checks = { };
           canonical = { };
+          smoke = true;
           source = self.outPath;
           revision = self.rev or self.dirtyRev or null;
         };

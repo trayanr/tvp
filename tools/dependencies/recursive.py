@@ -246,11 +246,16 @@ def explain(result, target):
     return {"root": result["witnesses"][target]["root"], "chain": list(reversed(chain))}
 
 
-def collect(snapshot, labels, target=None, list_roots=False):
+def evaluate(snapshot, attribute, apply=None):
     command = ["nix", "eval", "--json", "--offline", "--no-write-lock-file",
                "--option", "allow-import-from-derivation", "false",
-               snapshot["flake"] + "#legacyPackages." + snapshot["system"] + ".dependencyRoots"]
-    manifest = json.loads(subprocess.check_output(command, text=True))
+               snapshot["flake"] + "#legacyPackages." + snapshot["system"] + "." + attribute]
+    if apply is not None:
+        command.extend(["--apply", apply])
+    return json.loads(subprocess.check_output(command, text=True))
+
+
+def collect_manifest(manifest, labels, target=None, list_roots=False):
     roots = select_roots(manifest, labels)
     if list_roots:
         return {"schema": 1, "state": "catalogue", "defaultGroup": manifest["defaultGroup"],
@@ -279,6 +284,10 @@ def collect(snapshot, labels, target=None, list_roots=False):
     if target:
         result["explanation"] = explain(result, target)
     return result
+
+
+def collect(snapshot, labels, target=None, list_roots=False):
+    return collect_manifest(evaluate(snapshot, "dependencyRoots"), labels, target, list_roots)
 
 
 def print_human(result, details=False):

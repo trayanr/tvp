@@ -48,9 +48,7 @@ let
       canonical
       bases
       legacyBases
-      variantPackages
       ;
-    runtimeRegistry = reports.runtimeRegistry;
   };
   inherit (toolSet) ownedCLI tools;
 
@@ -91,6 +89,7 @@ let
       tvpLib
       canonical
       variants
+      variantPackages
       construction
       legacyBases
       tools
@@ -120,6 +119,7 @@ let
       recipeSplitStrict
       dependencyRoots
       dependencyInventory
+      provenanceDeclarations
       graph
       ;
     android = import ./sdks/android.nix { inherit tvp pkgs; };

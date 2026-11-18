@@ -71,6 +71,9 @@ let
         evidence = "evaluated repository check definition";
       }
     ) checks;
+  taggedBorrowed = lib.filter (
+    edge: (edge.selection.kind or null) == "foreign" && (edge.resolved.drv or null) != null
+  ) inventory.edges;
 in
 {
   schema = 1;
@@ -95,10 +98,19 @@ in
   );
   defaultGroup = "canonical";
   outputRegistrations = registry;
-  borrowed = lib.mapAttrsToList (attribute: p: {
-    drv = plain p.drvPath;
-    inherit attribute;
-    source = plain borrowedSource;
-    evidence = "explicit attribute from pinned nixpkgs input";
-  }) borrowed;
+  borrowed =
+    lib.mapAttrsToList (attribute: p: {
+      drv = plain p.drvPath;
+      inherit attribute;
+      source = plain borrowedSource;
+      evidence = "explicit attribute from pinned nixpkgs input";
+    }) borrowed
+    ++ lib.unique (
+      map (edge: {
+        drv = edge.resolved.drv;
+        attribute = edge.dependency;
+        source = null;
+        evidence = "evaluated dependency explicitly marked foreign";
+      }) taggedBorrowed
+    );
 }

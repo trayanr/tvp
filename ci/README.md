@@ -22,7 +22,8 @@ when their outputs are not cached. Other families retain representative checks.
 CI does not run upstream regressions or every repository check.
 The status is `tvp/smoke`; a smoke pass is never a full-catalogue pass.
 
-The `smoke-catalogue` step shows suite counts and active builds in `stdio`.
+The `smoke-catalogue` step shows compilation, finalization, assembly, suite and
+test progress, along with active Nix builds, in `stdio`.
 Its `flake-evaluation`, `preparation`, and `nix` logs stream the corresponding
 worker files, including compiler output from Nix. Buildbot keeps these logs
 with the completed build. The evidence upload retains those files alongside the

@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 
 from graph_compare import compare, read_snapshot
+from progress import STAGE_PHASES
 
 SCHEMA = "tvp.validation-report/v1"
 STORE = re.compile(r"/nix/store/[a-z0-9]{32}-[^/\s]+\Z")
@@ -81,29 +82,59 @@ def names(rows, label):
         seen.add(name)
 
 
+def output_paths(outputs):
+    require(isinstance(outputs, list) and outputs and len(set(outputs)) == len(outputs),
+            "Outputs must be a nonempty unique list")
+    for output in outputs:
+        store_path(output)
+
+
+def validate_stage_progress(job):
+    stages = job.get("stages", [])
+    require(isinstance(stages, list), "Invalid production stages")
+    tests = {test["drv"] for test in job["tests"] or [job]}
+    required = {"drv", "outputs", "phase"}
+    for row in stages:
+        require(isinstance(row, dict) and required <= set(row) <= required | {"tests", "coveredBy"},
+                "Invalid production stage fields")
+        store_path(row["drv"], drv=True)
+        output_paths(row["outputs"])
+        require(row["phase"] in STAGE_PHASES, "Invalid production stage phase")
+        if "tests" in row:
+            require(isinstance(row["tests"], list) and row["tests"] and set(row["tests"]) <= tests,
+                    "Invalid production stage consumers")
+        groups = row.get("coveredBy", [])
+        require(isinstance(groups, list), "Invalid production stage coverage")
+        for group in groups:
+            output_paths(group)
+
+
 def validate_plan(plan):
     require(isinstance(plan, dict) and type(plan.get("schema")) is int and plan["schema"] == 1,
             "Unsupported plan schema")
-    require(set(plan) == {"schema", "revision", "source", "system", "aggregate", "jobs", "skipped"},
+    required = {"schema", "revision", "source", "system", "aggregate", "jobs", "skipped"}
+    require(required <= set(plan) <= required | {"displayLabels"},
             "Unsupported plan fields")
     require(isinstance(plan["revision"], str) and SHA.fullmatch(plan["revision"]), "Full frozen revision required")
     require(isinstance(plan["system"], str) and NAME.fullmatch(plan["system"]), "Invalid system")
     store_path(plan["source"])
     store_path(plan["aggregate"], drv=True)
+    labels = plan.get("displayLabels", {})
+    require(isinstance(labels, dict), "Invalid display labels")
+    for drv, label in labels.items():
+        store_path(drv, drv=True)
+        require(isinstance(label, str), "Invalid display label")
     names(plan["jobs"], "suite")
     require(plan["jobs"], "Empty plan")
     for job in plan["jobs"]:
-        require(set(job) == {"name", "drv", "outputs", "tests"}, "Unsupported suite fields")
+        required = {"name", "drv", "outputs", "tests"}
+        require(required <= set(job) <= required | {"stages"}, "Unsupported suite fields")
         names(job["tests"], "test")
         for item in [job] + job["tests"]:
-            require(set(item) == ({"name", "drv", "outputs", "tests"} if item is job else
-                                  {"name", "drv", "outputs"}), "Unsupported test fields")
+            require(item is job or set(item) == {"name", "drv", "outputs"}, "Unsupported test fields")
             store_path(item["drv"], drv=True)
-            outputs = item["outputs"]
-            require(isinstance(outputs, list) and outputs and len(set(outputs)) == len(outputs),
-                    "Outputs must be a nonempty unique list")
-            for output in outputs:
-                store_path(output)
+            output_paths(item["outputs"])
+        validate_stage_progress(job)
     names(plan["skipped"], "exclusion")
     for row in plan["skipped"]:
         require(set(row) == {"name", "reason"} and isinstance(row["reason"], str) and row["reason"].strip(),
