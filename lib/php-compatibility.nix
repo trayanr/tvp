@@ -24,9 +24,10 @@ let
       )
       || throw "PHP hard limits require a version bound, a reason, and an upstream source";
     requirements;
+  isBuiltIn = policy: php: policy ? builtIn && matches (checkRequirements policy.builtIn) php;
 in
 {
-  inherit matches;
+  inherit matches isBuiltIn;
   report =
     {
       versionTable,
@@ -36,7 +37,12 @@ in
       },
     }:
     let
-      bundled = policy.kind == "bundled";
+      mixed = policy.kind == "mixed";
+      bundled =
+        php: policy.kind == "bundled" || (mixed && matches (checkRequirements policy.bundled) php);
+      standalone = lib.filterAttrs (
+        _: entry: !mixed || !(entry.def.opts.phpCompatibility ? exact)
+      ) versionTable;
       classify =
         php: release: declared: rawRequirements:
         let
@@ -68,22 +74,40 @@ in
         };
       rows = lib.concatMap (
         php:
-        if bundled then
+        if isBuiltIn policy php then
+          assert !(versionTable ? ${php}) || throw "PHP ${php} already includes this extension in the engine";
           [
-            (classify php php (
-              if versionTable ? ${php} then versionTable.${php}.def.opts.phpCompatibility else null
-            ) (policy.requirements or { }))
+            (
+              {
+                inherit php;
+                release = php;
+                state = "builtin";
+                inherit (policy.builtIn) reason source;
+              }
+              // lib.optionalAttrs mixed { kind = "bundled"; }
+            )
+          ]
+        else if bundled php then
+          [
+            (
+              classify php php (
+                if versionTable ? ${php} then versionTable.${php}.def.opts.phpCompatibility else null
+              ) (policy.requirements or { })
+              // lib.optionalAttrs mixed { kind = "bundled"; }
+            )
           ]
         else
           lib.mapAttrsToList (
             release: entry:
             classify php release entry.def.opts.phpCompatibility (entry.def.phpRequirements or { })
-          ) versionTable
+            // lib.optionalAttrs mixed { kind = "independent"; }
+          ) standalone
       ) (builtins.attrValues phpVersions);
     in
     assert builtins.elem policy.kind [
       "independent"
       "bundled"
+      "mixed"
     ];
     {
       inherit (policy) kind;

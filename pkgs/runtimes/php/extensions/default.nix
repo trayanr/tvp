@@ -5,8 +5,10 @@ let
     bcmath = import ./bcmath { inherit pkgs tvp; };
     calendar = import ./calendar { inherit pkgs tvp; };
     curl = import ./curl { inherit pkgs tvp; };
+    imap = import ./imap { inherit pkgs tvp; };
     intl = import ./intl { inherit pkgs tvp; };
     mbstring = import ./mbstring { inherit pkgs tvp; };
+    opcache = import ./opcache { inherit pkgs tvp; };
     redis = import ./redis { inherit pkgs tvp; };
     igbinary = import ./igbinary { inherit pkgs tvp; };
     mongodb = import ./mongodb { inherit pkgs tvp; };
@@ -28,6 +30,10 @@ let
     };
   };
   versionTables = builtins.mapAttrs (_: family: family.versionTable) families;
+  phpPolicies = builtins.mapAttrs (
+    name: family: family.recipes."php-${name}".packageMeta.phpPolicy
+  ) families;
+  builtIn = php: name: tvp.lib.php.compatibility.isBuiltIn phpPolicies.${name} php.version;
   plain = php: php.unwrapped or php;
   compatible =
     php: entry:
@@ -59,7 +65,11 @@ let
       name: value: pkgs.lib.nameValuePair (pkgs.lib.removePrefix "php-" name) value
     ) choices
     // pkgs.lib.optionalAttrs (eligible == { }) {
-      ${name} = throw "PHP ${name}: no declared compatible extension release for PHP ${engine.version}";
+      ${name} =
+        if builtIn engine name then
+          throw "PHP ${name}: PHP ${engine.version} already includes this extension in the engine"
+        else
+          throw "PHP ${name}: no declared compatible extension release for PHP ${engine.version}";
     };
   bind =
     php:
@@ -76,9 +86,11 @@ in
       available = bind php;
     in
     map (name: available.${name}) (families.${package.extensionName}.requires or [ ]) ++ [ package ];
-  inherit compatible versionTables;
-  phpPolicies = builtins.mapAttrs (
-    name: family: family.recipes."php-${name}".packageMeta.phpPolicy
-  ) families;
+  inherit
+    builtIn
+    compatible
+    versionTables
+    phpPolicies
+    ;
   redisVersions = versionTables.redis;
 }
