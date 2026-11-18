@@ -144,7 +144,7 @@ ownedCLI.shell {
       | sort -u > "$work/invalid" || true
     comm -23 "$work/outs" "$work/invalid" > "$work/valid"
 
-    awk -F'\t' 'NR == FNR { bad[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { bad[$0] = 1; next }
                 $2 == "canonical" && ($3 in bad) { print $1 }' \
       "$work/invalid" "$manifest" > "$work/unbuilt"
 
@@ -153,10 +153,13 @@ ownedCLI.shell {
     jq -r 'to_entries[] | .key as $k | .value.references[] | select(. != $k) | "\($k)\t\(.)"' \
       "$work/refs.json" > "$work/refs"
 
-    awk -F'\t' 'NR == FNR { ok[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { ok[$0] = 1; next }
                 $2 == "canonical" && ($3 in ok) { print $1 "\t" $3 "\t" $5 }' \
       "$work/valid" "$manifest" > "$work/roots"
 
+    # The traversal emits only nonempty groups. Both empty reports are valid.
+    : > "$work/owned-all"
+    : > "$work/foreign-tally"
     awk -v ownedFile="$work/owned-all" -v tallyFile="$work/foreign-tally" \
       -f ${runtimeAwk} "$work/tvp-paths" "$work/source-kinds" "$work/refs" "$work/roots" > "$work/rows"
 
@@ -181,7 +184,7 @@ ownedCLI.shell {
           if [ -d "$p" ]; then printf '%s\n' "$p"; fi
         done > "$work/candidates"
 
-    awk -F'\t' 'NR == FNR { ok[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { ok[$0] = 1; next }
                 $2 == "canonical" && ($3 in ok) { print $1 "\t" $4 }' \
       "$work/valid" "$manifest" > "$work/build-roots"
 
