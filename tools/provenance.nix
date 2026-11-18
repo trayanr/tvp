@@ -1,5 +1,4 @@
-# Reports how much of each package's runtime closure is built by TVP, and what
-# building the catalogue reaches beyond that.
+# Reports declared package provenance and, on request, realized closure ownership.
 {
   lib,
   ownedCLI,
@@ -15,46 +14,52 @@
   tvpLib,
 }:
 let
-  entry =
+  catalogue = packages // variantPackages;
+  entryKind =
     name: p:
     let
       pname = p.pname or "";
       version = p.version or "";
     in
-    {
-      inherit name pname version;
-      canonical = pname != "" && version != "" && name == tvpLib.versions.attrName pname version;
-      variant = p.tvp.variant or null;
-      source = tvpLib.provenance.sourceKind p;
-      blob = p.tvp.blob or null;
-      base = p.tvp.base or null;
-      # Context discarded, or referencing a path would make this script depend on
-      # building the entire repository.
-      out = builtins.unsafeDiscardStringContext p.outPath;
-      drv = builtins.unsafeDiscardStringContext p.drvPath;
+    if (p.tvp.variant or null) != null then
+      "variant"
+    else if pname != "" && version != "" && name == tvpLib.versions.attrName pname version then
+      "canonical"
+    else
+      "alias";
+  entry = name: p: {
+    package = name;
+    kind = entryKind name p;
+    source = tvpLib.provenance.sourceKind p;
+    sourceUrl = p.tvp.source.url or null;
+    upstreamUrl = p.tvp.upstream.url or null;
+    recipe = {
+      builder = p.tvp.builder or null;
+      definition = p.tvp.definition or null;
     };
+    blob = p.tvp.blob or null;
+    base = p.tvp.base or null;
+    status = p.tvp.status.level or "ok";
+  };
 
   # A broken package has no closure to attribute, and forcing outPath throws.
-  entries = lib.mapAttrsToList entry (
-    lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") (packages // variantPackages)
-  );
+  buildable = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") != "broken") catalogue;
 
   # Trailing newline on every line, or `read` drops the last entry.
   manifest = builtins.toFile "tvp-provenance-manifest" (
-    lib.concatMapStrings (
-      e:
-      "${e.name}\t${
-        if e.variant != null then
-          "variant"
-        else if e.canonical then
-          "canonical"
-        else
-          "alias"
-      }\t${e.out}\t${e.drv}\t${e.source}\n"
-    ) entries
+    builtins.unsafeDiscardStringContext (
+      lib.concatStrings (
+        lib.mapAttrsToList (
+          name: p:
+          "${name}\t${entryKind name p}\t${p.outPath}\t${p.drvPath}\t${tvpLib.provenance.sourceKind p}\n"
+        ) buildable
+      )
+    )
   );
   registration = builtins.toFile "tvp-registration.json" (builtins.toJSON registry);
-  metadata = builtins.toFile "tvp-provenance-metadata.json" (builtins.toJSON entries);
+  metadata = builtins.toFile "tvp-provenance-metadata.json" (
+    builtins.unsafeDiscardStringContext (builtins.toJSON (lib.mapAttrsToList entry catalogue))
+  );
 
   # Every closure below is walked here rather than by a nix invocation per
   # package. The three queries in the script return the whole graph once, and a
@@ -125,9 +130,45 @@ ownedCLI.shell {
     jq
   ];
   text = ''
-    manifest=${manifest}
     json=0
-    [ "''${1:-}" = "--json" ] && json=1
+    realized=0
+    for arg in "$@"; do
+      case "$arg" in
+        --json) json=1 ;;
+        --realized) realized=1 ;;
+        -h|--help)
+          echo 'Usage: tvp-provenance [--json] [--realized]'
+          echo 'Report provenance declarations and output registration from the evaluated TVP catalogue.'
+          echo 'Use --realized to inspect locally available runtime and build closures.'
+          exit 0 ;;
+        *) printf 'tvp-provenance: unknown argument: %s\n' "$arg" >&2; exit 2 ;;
+      esac
+    done
+
+    if [ "$realized" = 0 ]; then
+      if [ "$json" = 1 ]; then
+        jq -n --slurpfile metadata ${metadata} --slurpfile registration ${registration} '
+          { mode: "declared", declarations: $metadata[0], registration: {
+              paths: ($registration[0] | map(.path) | unique | length),
+              entries: $registration[0]
+          } }'
+      else
+        jq -nr --slurpfile metadata ${metadata} --slurpfile registration ${registration} '
+          "DECLARED PACKAGE PROVENANCE (\($metadata[0] | length))",
+          ($metadata[0][] |
+            "\(.package) [\(.kind)] \(.source), \(.status)",
+            ("  recipe \(.recipe.builder // "unknown") (\(.recipe.definition // "unknown")), base \(.base // "none")"),
+            (select(.sourceUrl != null) | "  source URL \(.sourceUrl)"),
+            (select(.upstreamUrl != null and .upstreamUrl != .sourceUrl) | "  upstream URL \(.upstreamUrl)"),
+            (select(.blob != null) | "  binary boundary \(.blob.reason)", "  replacement \(.blob.needs)")),
+          "",
+          "REGISTERED OUTPUT PATHS (\($registration[0] | map(.path) | unique | length) unique)",
+          ($registration[0] | group_by(.kind)[] | "  \(.[0].kind) \(map(.path) | unique | length)")'
+      fi
+      exit 0
+    fi
+
+    manifest=${manifest}
 
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
@@ -144,7 +185,7 @@ ownedCLI.shell {
       | sort -u > "$work/invalid" || true
     comm -23 "$work/outs" "$work/invalid" > "$work/valid"
 
-    awk -F'\t' 'NR == FNR { bad[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { bad[$0] = 1; next }
                 $2 == "canonical" && ($3 in bad) { print $1 }' \
       "$work/invalid" "$manifest" > "$work/unbuilt"
 
@@ -153,10 +194,13 @@ ownedCLI.shell {
     jq -r 'to_entries[] | .key as $k | .value.references[] | select(. != $k) | "\($k)\t\(.)"' \
       "$work/refs.json" > "$work/refs"
 
-    awk -F'\t' 'NR == FNR { ok[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { ok[$0] = 1; next }
                 $2 == "canonical" && ($3 in ok) { print $1 "\t" $3 "\t" $5 }' \
       "$work/valid" "$manifest" > "$work/roots"
 
+    # The traversal emits only nonempty groups. Both empty reports are valid.
+    : > "$work/owned-all"
+    : > "$work/foreign-tally"
     awk -v ownedFile="$work/owned-all" -v tallyFile="$work/foreign-tally" \
       -f ${runtimeAwk} "$work/tvp-paths" "$work/source-kinds" "$work/refs" "$work/roots" > "$work/rows"
 
@@ -181,7 +225,7 @@ ownedCLI.shell {
           if [ -d "$p" ]; then printf '%s\n' "$p"; fi
         done > "$work/candidates"
 
-    awk -F'\t' 'NR == FNR { ok[$0] = 1; next }
+    awk -F'\t' 'FILENAME == ARGV[1] { ok[$0] = 1; next }
                 $2 == "canonical" && ($3 in ok) { print $1 "\t" $4 }' \
       "$work/valid" "$manifest" > "$work/build-roots"
 
@@ -221,7 +265,7 @@ ownedCLI.shell {
                      tvp: (.[3] | words), foreign: (.[4] | words), source: .[7],
                      foreignPaths: (.[8] | words),
                      runtimeBoundaries: {binary: (.[5] | words), mixed: (.[6] | words)} })),
-           declarations: ($metadata[0] | map({package: .name, base, source, blob})),
+           declarations: ($metadata[0] | map(select(.status != "broken") | {package, base, source, blob})),
            registration: {paths: ($registration[0] | map(.path) | unique | length)},
            unbuilt: ($unbuiltRaw | lines),
            foreign: ($rankedRaw | ranked),
