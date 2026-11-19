@@ -138,7 +138,8 @@ let
   rows = builtins.mapAttrs (_: perRow) canonical;
   failures = lib.filterAttrs (_: row: !(builtins.all (x: x) (builtins.attrValues row))) rows;
   publicProfile = tvp.variants.build-steps.fontconfig_2_18_3;
-  publicRuntime = publicProfile.editRuntime (r: r // { libraries = [ pkgs.expat ]; });
+  inherit (tvp.checks.owned-fontconfig.passthru) compatibleExpat;
+  publicRuntime = publicProfile.editRuntime (r: r // { libraries = [ compatibleExpat ]; });
   privateProfile = (import ../../bootstrap/source-gcc-graphviz-tests.nix { }).packages.fontconfig;
   contracts = {
     inherit rows;

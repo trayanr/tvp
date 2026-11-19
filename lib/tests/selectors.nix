@@ -169,6 +169,8 @@ let
     actualTestInputCapture =
       let
         package = consumer before.probe_1;
+        unregistered = release "1";
+        reorderedTool = release "2";
         suite = tvp.lib.tests.compatibility.mkSuite {
           inherit pkgs package;
           tests.projection = {
@@ -176,7 +178,7 @@ let
             expected = "checked";
             extraInputs = [
               (lib.getDev before.probe_1_2)
-              pkgs.coreutils
+              unregistered
               "${pkgs.writeText "derived-test-input" "fixture"}"
             ];
           };
@@ -194,10 +196,10 @@ let
           canonical.fixture = package // {
             tests = {
               projection = suite.projection.overrideAttrs (old: {
-                nativeBuildInputs = [ pkgs.gnumake ] ++ old.nativeBuildInputs;
+                nativeBuildInputs = [ reorderedTool ] ++ old.nativeBuildInputs;
               });
               tools-only = suite.projection.overrideAttrs (_: {
-                nativeBuildInputs = [ pkgs.gnumake ];
+                nativeBuildInputs = [ reorderedTool ];
               });
             };
           };
@@ -228,10 +230,10 @@ let
       && (builtins.elemAt inputs 2).resolved.context != { }
       && !(builtins.hasContext (builtins.toJSON inventory))
       && builtins.length reordered == 5
-      && (builtins.head reordered).resolved.drv == pkgs.gnumake.drvPath
+      && (builtins.head reordered).resolved.drv == reorderedTool.drvPath
       && (builtins.elemAt reordered 1).selection.kind == "minor"
       && (builtins.elemAt reordered 1).resolved.output == "dev"
-      && (builtins.elemAt reordered 4).resolved.drv == pkgs.gnumake.drvPath;
+      && (builtins.elemAt reordered 4).resolved.drv == reorderedTool.drvPath;
     noAliasCycles =
       lazyNames == [
         "lazy"

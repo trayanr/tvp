@@ -329,7 +329,10 @@
     builtins.toJSON (import ../bases/tests/source-gcc13.nix { })
   );
   cli-packaging = import ../tools/lib/tests { inherit pkgs tvp ownedCLI; };
-  test-runner = pkgs.callPackage ../tools/test-runner/tests { python3 = tvp.packages.python_3; };
+  test-runner = pkgs.callPackage ../tools/test-runner/tests {
+    inherit (pkgs) runCommand;
+    python3 = tvp.packages.python_3;
+  };
   native-platform-interface = import ../bases/tests/platform.nix {
     inherit pkgs tvpLib bases;
     inherit legacyBases;

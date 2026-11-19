@@ -107,7 +107,7 @@
     grep = tvp.canonical.fontconfig_2_18_3.specification.base.tools.grep;
     pkgConfig = tvp.canonical.fontconfig_2_18_3.specification.pkg-config;
     fontconfig = tvp.packages.fontconfig_2;
-    compatibleExpat = pkgs.expat;
+    inherit (tvp.checks.owned-fontconfig.passthru) compatibleExpat;
     compiler = tvp.canonical.fontconfig_2_18_3.compiler;
     binutils = tvp.canonical.fontconfig_2_18_3.compiler.bintools;
     libc = tvp.canonical.fontconfig_2_18_3.compiler.libc;

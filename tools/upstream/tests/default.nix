@@ -16,6 +16,7 @@ let
   };
   cli = pkgs.callPackage ../../upstream.nix {
     inherit ownedCLI;
+    inherit (testDeps) jq;
     python3 = tvp.packages.python_3;
     inherit (tvp.packages)
       coreutils
@@ -138,7 +139,7 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     if ${cli}/bin/tvp-upstream --php; then exit 1; fi
     if ${cli}/bin/tvp-upstream --list --php 9 php-fixture; then exit 1; fi
     if ${cli}/bin/tvp-upstream --list --php 8.2 fixture; then exit 1; fi
-    TVP_PHP_COVERAGE_SCRIPT=${../php-coverage.py} ${pkgs.python3}/bin/python3 -B ${./test_php_coverage.py}
+    TVP_PHP_COVERAGE_SCRIPT=${../php-coverage.py} ${tvp.packages.python_3}/bin/python3 -B ${./test_php_coverage.py}
 
     git --git-dir=upstream update-ref refs/heads/master "$second"
     upstream_git_head "$row" > "$out/new-head.json"
