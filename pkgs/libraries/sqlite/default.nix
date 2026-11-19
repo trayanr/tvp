@@ -1437,7 +1437,10 @@ let
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
       url = version: "https://sqlite.org/src/tarball/version-${version}/sqlite-${version}.tar.gz";
-      fetch = import ./source.nix { inherit (pkgs) fetchurl; };
+      fetch = import ./source.nix {
+        inherit (tvp.lib.sources) fetchMirrors;
+        certificates = tvp.packages.ca-certificates;
+      };
       discovery = {
         type = "git-tags";
         url = "https://github.com/sqlite/sqlite";

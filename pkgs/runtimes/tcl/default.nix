@@ -290,7 +290,11 @@ let
 
     source = tvp.lib.sources.archive {
       url = version: "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz";
-      fetch = import ./source.nix { inherit (pkgs) lib fetchurl; };
+      fetch = import ./source.nix {
+        inherit (pkgs) lib;
+        inherit (tvp.lib.sources) fetchMirrors;
+        certificates = tvp.packages.ca-certificates;
+      };
       discovery = {
         type = "git-tags";
         url = "https://github.com/tcltk/tcl";

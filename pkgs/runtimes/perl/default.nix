@@ -80,7 +80,8 @@ let
       url = version: "https://www.cpan.org/src/5.0/perl-${version}.tar.gz";
       fetch =
         { version, sha256 }:
-        pkgs.fetchurl {
+        tvp.lib.sources.fetchMirrors {
+          certificates = tvp.packages.ca-certificates;
           urls = [
             "https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
             "https://cpan.metacpan.org/src/5.0/perl-${version}.tar.gz"

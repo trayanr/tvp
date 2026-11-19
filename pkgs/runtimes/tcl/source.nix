@@ -1,4 +1,8 @@
-{ lib, fetchurl }:
+{
+  lib,
+  fetchMirrors,
+  certificates,
+}:
 { version, sha256 }:
 if
   builtins.elem version [
@@ -11,7 +15,8 @@ then
     inherit sha256;
   }
 else
-  fetchurl {
+  fetchMirrors {
+    inherit certificates;
     urls = [
       "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz"
       "https://prdownloads.sourceforge.net/tcl/tcl${version}.tar.gz"

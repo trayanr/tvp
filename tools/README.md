@@ -109,7 +109,7 @@ Exceptional fetchers can supply an explicit `fetch` factory while keeping their
 available URL and discovery description in the same source record. These
 reporting fields do not become compilation inputs.
 
-All 110 current families declare discovery. Android SDK feeds and Go's documented
+All catalogue families declare discovery. Android SDK feeds and Go's documented
 C-bootstrap archive have explicitly limited history; the report prints those
 scopes. GN compares an exact pinned commit with its upstream branch head. For
 release feeds, the packaged count is the intersection with the queried feed;
