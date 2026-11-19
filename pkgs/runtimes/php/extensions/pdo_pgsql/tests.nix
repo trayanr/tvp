@@ -24,7 +24,7 @@ context.mkSuite {
     };
     roundtrip = {
       script = ''
-        ${bash}/bin/bash ${./with-postgresql.sh} ${postgresql} ${php} ${./roundtrip.php}
+        ${bash}/bin/bash ${../../../../servers/postgresql/with-test-server.sh} ${postgresql} ${php} ${./roundtrip.php}
       '';
       expected = "pdo-pgsql-roundtrip";
     };

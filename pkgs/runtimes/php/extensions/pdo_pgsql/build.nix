@@ -42,13 +42,12 @@ let
       (
         final
         // {
-          libraries = [ final.postgresql.lib ] ++ final.libraries;
+          libraries = [ (lib.getLib final.postgresql) ] ++ final.libraries;
           linkLibraries = [
             final.openssl
             final.krb5
             final.keyutils
-          ]
-          ++ final.linkLibraries;
+          ] ++ final.linkLibraries;
           configureOptions = [ "--with-pdo-pgsql=${final.postgresql}" ] ++ final.configureOptions;
         }
       );
