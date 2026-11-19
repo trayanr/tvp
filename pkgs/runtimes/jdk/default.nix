@@ -56,7 +56,7 @@ let
           if match == null then null else builtins.head match;
       };
     };
-    tests = (import ./tests/provider-context.nix { inherit pkgs; });
+    tests = import ./tests/provider-context.nix { inherit (tvp.__testBuilders) closureInfo; };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in

@@ -40,6 +40,7 @@
         tvp = import ./. {
           inherit pkgs system;
         };
+        testPkgs = pkgs // tvp.__testBuilders;
       in
       {
         inherit (tvp) packages checks;
@@ -99,7 +100,7 @@
         };
 
         testPlans = tvp.lib.tests.compatibility.mkPlan {
-          inherit pkgs;
+          pkgs = testPkgs;
           batches = removeAttrs tvp.testBatches [ "all" ];
           inherit (tvp) checks canonical;
           source = self.outPath;
@@ -107,7 +108,7 @@
         };
 
         smokeTestPlans = tvp.lib.tests.compatibility.mkPlan {
-          inherit pkgs;
+          pkgs = testPkgs;
           batches = tvp.smokeTests.batches;
           checks = { };
           canonical = { };
@@ -117,7 +118,7 @@
         };
 
         testCatalogues = import ./lib/test-catalogue.nix {
-          inherit pkgs;
+          pkgs = testPkgs;
           inherit (tvp) canonical packages variants;
           batches = tvp.testBatches;
           source = self.outPath;
@@ -140,7 +141,8 @@
           joinPlan =
             { parts, references }:
             tvp.lib.tests.compatibility.joinSmokePlan {
-              inherit pkgs parts references;
+              pkgs = testPkgs;
+              inherit parts references;
               inherit (tvp.smokeTests) batches;
               source = self.outPath;
               revision = self.rev or self.dirtyRev or null;

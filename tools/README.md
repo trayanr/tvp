@@ -58,8 +58,9 @@ build steps and fetchers, are listed separately in `--json`, with one route
 back toward a consumer. JSON also includes the consumers and a dependency
 chain for each confirmed provider.
 
-Use `--root packages.coreutils_9_5` for a specific package, or `--root @tools`
-or `--root @checks` to inspect those graphs separately. Use `--declared` for
+Use `--root packages.coreutils_9_5` for a specific package, or `--root @tools`,
+`--root @checks` or `--root @smoke` for CLI tools, repository checks or standard
+CI suites. Use `--declared` for
 source origins, recipes, bases, binary boundaries, and registered outputs.
 `--realized` separately checks locally available runtime closures for
 unregistered store paths. JSON also lists unavailable packages and exact
