@@ -44,6 +44,9 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    oniguruma_6_9_10 = {
+      inherit (tvp.canonical.oniguruma_6_9_10.tests) metadata utf8;
+    };
     postgresql_16_16 = {
       inherit (tvp.canonical.postgresql_16_16.tests) client roundtrip;
     };
