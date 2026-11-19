@@ -243,8 +243,12 @@ tvp.packages.php_8_2_35.withExtensions {
     e.mbstring
     e.zip
     e.intl
+    e.ldap
+    e.pdo_odbc
     e.pdo_pgsql
     e.pcntl
+    e.pgsql
+    e.soap
     e.sockets
     e.sysvsem
     e.mysqlnd
@@ -276,6 +280,15 @@ libsodium are built from their upstream sources by TVP. libjpeg-turbo uses its
 portable C implementation. Gettext uses the PHP base's GNU libc. The checks
 verify the installed modules with small image round trips, message lookup in
 the C locale, exact integer arithmetic, and a deterministic BLAKE2b digest.
+
+LDAP, PDO_ODBC, PostgreSQL, and SOAP also use the matching PHP release from
+8.2 onward. LDAP uses the TVP OpenLDAP client with TLS and exercises LDAP
+options and filter escaping offline. PDO_ODBC uses TVP's unixODBC manager and
+tests a parameterized query against an isolated SQLite database. The SQLite
+ODBC driver is a test dependency. The native PostgreSQL module reuses
+PDO_PGSQL's pinned PostgreSQL client and temporary Unix-socket server fixture.
+SOAP uses the engine's TVP libxml2 and checks a request and response in one
+process.
 
 The development shell can add `e.xdebug` for Xdebug 3.5.3 or
 `e.xdebug_3_3_2` for the original pin on PHP 8.2 and 8.3.

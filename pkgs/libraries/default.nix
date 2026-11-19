@@ -26,6 +26,9 @@ tvp.lib.packages.mergeNamespaces {
   libpng = import ./libpng { inherit pkgs tvp; };
   libsodium = import ./libsodium { inherit pkgs tvp; };
   libwebp = import ./libwebp { inherit pkgs tvp; };
+  openldap = import ./openldap { inherit pkgs tvp; };
+  sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
+  unixodbc = import ./unixodbc { inherit pkgs tvp; };
   freetds = import ./freetds { inherit pkgs tvp; };
   c-client = import ./c-client { inherit pkgs tvp; };
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
