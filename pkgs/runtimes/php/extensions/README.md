@@ -197,7 +197,7 @@ tvp.packages.php_8_5_0.withExtensions {
 
 The three modules use the selected PHP release's own source and SDK. The two
 drivers use PHP's native client. Their tests execute a query over a private
-Unix socket against a temporary MariaDB server from pinned Nixpkgs. A normal
+Unix socket against a temporary TVP MariaDB server. A normal
 PHP installation needs only the modules and a connection to your database.
 
 ## IMAP

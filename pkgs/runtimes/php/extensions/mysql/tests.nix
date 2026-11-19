@@ -70,7 +70,7 @@ context.mkSuite {
             tools.gawk
           ];
           script = ''
-            ${shell}/bin/bash ${./with-mariadb.sh} ${mariadb} ${php} ${./query.php} ${lib.escapeShellArg module}
+            ${shell}/bin/bash ${../../../../servers/mariadb/with-test-server.sh} ${mariadb} ${php} ${./query.php} ${lib.escapeShellArg module}
           '';
           expected = "mysql-smoke-roundtrip";
         };
