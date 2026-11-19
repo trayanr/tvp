@@ -88,8 +88,7 @@ rec {
         in
         packageRows "definition-dependency" overrides ++ referenceRows overrides;
       registeredBases =
-        bases
-        // lib.mapAttrs' (name: b: lib.nameValuePair "bootstrap.${name}" b) construction.bases;
+        bases // lib.mapAttrs' (name: b: lib.nameValuePair "bootstrap.${name}" b) construction.bases;
       baseRows = lib.concatMap (
         name:
         let

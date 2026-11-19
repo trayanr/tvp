@@ -19,15 +19,14 @@ let
     environment
     // {
       inherit name;
-      run =
-        ''
-          export NIX_CFLAGS_COMPILE="${
-            lib.concatStringsSep " " (
-              lib.optionals (builtins.compareVersions final.base.compiler.version "15" >= 0) final.compileFlags
-            )
-          } $NIX_CFLAGS_COMPILE"
-        ''
-        + run;
+      run = ''
+        export NIX_CFLAGS_COMPILE="${
+          lib.concatStringsSep " " (
+            lib.optionals (builtins.compareVersions final.base.compiler.version "15" >= 0) final.compileFlags
+          )
+        } $NIX_CFLAGS_COMPILE"
+      ''
+      + run;
       cwd = "source";
     };
   checkpoint = "nix-support/libxcrypt-build-tree";

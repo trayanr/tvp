@@ -20,6 +20,12 @@ args@{
   compression ? "gzip",
 }:
 final:
-import ../build-bundled.nix (builtins.removeAttrs args [ "libsodium" ]) (final // {
+import ../build-bundled.nix (builtins.removeAttrs args [ "libsodium" ]) (
+  final
+  // {
     libraries = [ final.libsodium ] ++ final.libraries;
-  }) // { inherit libsodium; }
+  }
+)
+// {
+  inherit libsodium;
+}

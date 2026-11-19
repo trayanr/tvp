@@ -39,33 +39,32 @@ let
         version = "1";
         src = null;
         inherit base bash coreutils;
-        plan =
-          [
-            {
-              name = "fixture.prepare";
-              run = ''
-                mkdir source
-                cat > source/Makefile <<'MAKE'
-                SHELL := ${bash}/bin/bash
-                .RECIPEPREFIX := >
-                default:
-                >$(MAKE) child
-                child:
-                >printf 'built\n' > built
-                check:
-                >test -e built
-                install:
-                >mkdir -p $(out)
-                >cp built $(out)/built
-                MAKE
-              '';
-            }
-          ]
-          ++ helpers.make {
-            name = "fixture";
-            inherit make doCheck;
-            env.PROBE = "selected";
-          };
+        plan = [
+          {
+            name = "fixture.prepare";
+            run = ''
+              mkdir source
+              cat > source/Makefile <<'MAKE'
+              SHELL := ${bash}/bin/bash
+              .RECIPEPREFIX := >
+              default:
+              >$(MAKE) child
+              child:
+              >printf 'built\n' > built
+              check:
+              >test -e built
+              install:
+              >mkdir -p $(out)
+              >cp built $(out)/built
+              MAKE
+            '';
+          }
+        ]
+        ++ helpers.make {
+          name = "fixture";
+          inherit make doCheck;
+          env.PROBE = "selected";
+        };
       };
     args = {
       inherit base;
@@ -136,20 +135,20 @@ let
           }
         ]
       )).editSteps
-      (
-        steps.replace "local.marker" (
-          old:
-          old
-          // {
-            run = ''
-              printf 'replaced\n' > "$out/marker"
-              grep -F lib-release "$NIX_BUILD_TOP/make-invocations"
-              grep -F install "$NIX_BUILD_TOP/make-invocations"
-              cp "$NIX_BUILD_TOP/make-invocations" "$out/make-invocations"
-            '';
-          }
+        (
+          steps.replace "local.marker" (
+            old:
+            old
+            // {
+              run = ''
+                printf 'replaced\n' > "$out/marker"
+                grep -F lib-release "$NIX_BUILD_TOP/make-invocations"
+                grep -F install "$NIX_BUILD_TOP/make-invocations"
+                cp "$NIX_BUILD_TOP/make-invocations" "$out/make-invocations"
+              '';
+            }
+          )
         )
-      )
     ).edit
       (
         s:
@@ -274,9 +273,8 @@ let
     replay = selected.drvPath == (edits (fixture.override { inherit make; })).drvPath;
     noOp = (fixture.override { }).drvPath == fixture.drvPath;
     disabledLazy = !(builtins.any (s: s.name == "fixture.check") (steps.active selected.buildSteps));
-    absoluteMake =
-      lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make")
-        (builtins.elemAt selected.buildSteps 1).run;
+    absoluteMake = lib.hasInfix (builtins.unsafeDiscardStringContext "${make}/bin/make") (builtins.elemAt selected.buildSteps 1)
+    .run;
     packageReplay = customized.drvPath == (zstdEdits (selectMake p)).drvPath;
     metadataCurrent = customized.tvp.deps.gnumake.drvPath == make.drvPath;
     featuresCurrent = !customized.tvp.features.doCheck;

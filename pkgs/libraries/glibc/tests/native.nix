@@ -25,27 +25,23 @@ glibc.testContext.mkSuite {
   tools = testTools;
   tests = {
     version = {
-      script = ''${glibc.bin}/bin/getconf GNU_LIBC_VERSION'';
+      script = "${glibc.bin}/bin/getconf GNU_LIBC_VERSION";
       expected = "glibc ${glibc.version}";
     };
     runtime = {
-      script =
-        clean
-        + ''
-          ${gcc}/bin/gcc ${flags} ${./fixtures/runtime.c} -pthread -ldl -lm -o runtime
-          ${binutils}/bin/readelf -l runtime | grep -F '${glibc}/${glibc.platform.dynamicLinker}' >&2
-          ./runtime ${glibc.version}
-        '';
+      script = clean + ''
+        ${gcc}/bin/gcc ${flags} ${./fixtures/runtime.c} -pthread -ldl -lm -o runtime
+        ${binutils}/bin/readelf -l runtime | grep -F '${glibc}/${glibc.platform.dynamicLinker}' >&2
+        ./runtime ${glibc.version}
+      '';
       expected = "ok";
     };
     static = {
-      script =
-        clean
-        + ''
-          ${gcc}/bin/gcc ${flags} -static ${./fixtures/static.c} -o static
-          test -z "$(${binutils}/bin/readelf -l static | grep INTERP)"
-          ./static
-        '';
+      script = clean + ''
+        ${gcc}/bin/gcc ${flags} -static ${./fixtures/static.c} -o static
+        test -z "$(${binutils}/bin/readelf -l static | grep INTERP)"
+        ./static
+      '';
       expected = "42";
     };
     tools = {
@@ -57,34 +53,28 @@ glibc.testContext.mkSuite {
     };
     ldd = {
       tools = testTools ++ [ reboundTools ];
-      script =
-        clean
-        + ''
-          ${gcc}/bin/gcc ${flags} ${./fixtures/static.c} -o dynamic
-          PATH=/no-tools ${reboundTools}/bin/ldd ./dynamic | awk '/libc.so.6 =>/ { print $3 }'
-        '';
+      script = clean + ''
+        ${gcc}/bin/gcc ${flags} ${./fixtures/static.c} -o dynamic
+        PATH=/no-tools ${reboundTools}/bin/ldd ./dynamic | awk '/libc.so.6 =>/ { print $3 }'
+      '';
       expected = "${glibc}/lib/libc.so.6";
     };
     static-pie = {
-      script =
-        clean
-        + ''
-          ${gcc}/bin/gcc ${toolchainFlags} -fPIE -static-pie ${./fixtures/static.c} -o static-pie
-          ${binutils}/bin/readelf -h static-pie | grep -E 'Type:.*DYN' >&2
-          test -z "$(${binutils}/bin/readelf -l static-pie | grep INTERP)"
-          test -z "$(${binutils}/bin/readelf -d static-pie | grep NEEDED)"
-          ./static-pie
-        '';
+      script = clean + ''
+        ${gcc}/bin/gcc ${toolchainFlags} -fPIE -static-pie ${./fixtures/static.c} -o static-pie
+        ${binutils}/bin/readelf -h static-pie | grep -E 'Type:.*DYN' >&2
+        test -z "$(${binutils}/bin/readelf -l static-pie | grep INTERP)"
+        test -z "$(${binutils}/bin/readelf -d static-pie | grep NEEDED)"
+        ./static-pie
+      '';
       expected = "42";
     };
     locale-headers = {
-      script =
-        clean
-        + ''
-          ${gcc}/bin/gcc ${flags} ${./fixtures/locale-headers.c} -o locale-headers
-          ./locale-headers
-          LOCPATH=${glibc}/lib/locale LC_ALL=C.UTF-8 ${glibc.bin}/bin/locale charmap
-        '';
+      script = clean + ''
+        ${gcc}/bin/gcc ${flags} ${./fixtures/locale-headers.c} -o locale-headers
+        ./locale-headers
+        LOCPATH=${glibc}/lib/locale LC_ALL=C.UTF-8 ${glibc.bin}/bin/locale charmap
+      '';
       expected = "ok\nUTF-8";
     };
     loader-hardening = {

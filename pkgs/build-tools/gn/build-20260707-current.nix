@@ -76,7 +76,7 @@ in
     {
       name = "source.copy";
       tools = [ coreutils ];
-      run = ''cp -R ${final.src} source; chmod -R u+w source'';
+      run = "cp -R ${final.src} source; chmod -R u+w source";
     }
     (command "configure" ''
       ${python}/bin/python3 build/gen.py --no-last-commit-position --no-static-libstdc++ --no-strip ${lib.optionalString final.allowWarnings "--allow-warnings"}
@@ -95,7 +95,7 @@ in
     {
       name = "source.copy";
       tools = [ coreutils ];
-      run = ''cp -R ${final.src} source; chmod -R u+w source'';
+      run = "cp -R ${final.src} source; chmod -R u+w source";
     }
     (command "configure" ''
       ${python}/bin/python3 build/gen.py --no-last-commit-position --no-static-libstdc++ --no-strip ${lib.optionalString final.allowWarnings "--allow-warnings"}
@@ -103,7 +103,7 @@ in
     '')
     (command "build" ''${ninja}/bin/ninja -C out -j"$NIX_BUILD_CORES"'')
   ];
-  upstreamCheck = ((command "check" ''out/gn_unittests'') // { enabled = final.doCheck; });
+  upstreamCheck = ((command "check" "out/gn_unittests") // { enabled = final.doCheck; });
   plan = steps.sequence (
     final.artifactPlan
     ++ [

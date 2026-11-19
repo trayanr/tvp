@@ -116,23 +116,22 @@ let
             policy
             ;
           inherit (tools) bash coreutils;
-          passthru =
-            {
-              inherit (final.driver) libc libcTools runtimeDirectories;
-              inherit (final) bintools;
-              hardeningPolicy = import ../../../lib/hardening-policy.nix final.policy;
-              defaultHardeningFlags = (import ../../../lib/hardening-policy.nix final.policy).selected;
-              underlyingDriver = final.driver;
-              underlyingBintools = (final.bintools.underlyingBintools or final.bintools);
-            }
-            // (
-              if final.driver ? cc then
-                { cc = final.driver.cc; }
-              else if final.driver ? tvp.declaredDependencies.compiler then
-                { cc = final.driver.tvp.declaredDependencies.compiler; }
-              else
-                { }
-            );
+          passthru = {
+            inherit (final.driver) libc libcTools runtimeDirectories;
+            inherit (final) bintools;
+            hardeningPolicy = import ../../../lib/hardening-policy.nix final.policy;
+            defaultHardeningFlags = (import ../../../lib/hardening-policy.nix final.policy).selected;
+            underlyingDriver = final.driver;
+            underlyingBintools = (final.bintools.underlyingBintools or final.bintools);
+          }
+          // (
+            if final.driver ? cc then
+              { cc = final.driver.cc; }
+            else if final.driver ? tvp.declaredDependencies.compiler then
+              { cc = final.driver.tvp.declaredDependencies.compiler; }
+            else
+              { }
+          );
           plan = [
             {
               name = "hardening.driver";

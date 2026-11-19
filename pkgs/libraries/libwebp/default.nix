@@ -10,7 +10,9 @@ let
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
-      url = version: "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${version}.tar.gz";
+      url =
+        version:
+        "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${version}.tar.gz";
       discovery = {
         type = "git-tags";
         url = "https://chromium.googlesource.com/webm/libwebp";

@@ -133,16 +133,16 @@ let
           pkg-config = tools.pkgConfig;
           inherit freetype expat gperf;
         }).edit
-        (
-          s:
-          s
-          // {
-            outputs = [
-              "out"
-              "evidence"
-            ];
-          }
-        )
+          (
+            s:
+            s
+            // {
+              outputs = [
+                "out"
+                "evidence"
+              ];
+            }
+          )
       ).editSteps
         (
           plan:

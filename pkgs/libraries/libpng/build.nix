@@ -14,7 +14,12 @@ let
 in
 {
   pname = "libpng";
-  inherit base src version zlib;
+  inherit
+    base
+    src
+    version
+    zlib
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
@@ -55,13 +60,26 @@ in
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })
-    (outputs.strip { paths = [ "bin" "lib" ]; })
+    (outputs.strip {
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
     (outputs.rpaths {
-      paths = [ "bin" "lib" ];
+      paths = [
+        "bin"
+        "lib"
+      ];
       libraries = final.runtime.libraries;
     })
     (outputs.development { libraries = [ final.zlib ]; })
-    (outputs.checkPaths { paths = [ "bin" "lib" ]; })
+    (outputs.checkPaths {
+      paths = [
+        "bin"
+        "lib"
+      ];
+    })
   ];
   meta = {
     description = "Reference library for reading and writing PNG images";

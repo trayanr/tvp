@@ -75,19 +75,18 @@ let
       version = f.compiler.version;
       gnumake = f.prerequisites.tools.make;
       inherit (f.prerequisites) zlib zstd;
-      tools =
-        [
-          f.file
-        ]
-        ++ map (n: f.prerequisites.tools.${n}) [
-          "sed"
-          "grep"
-          "findutils"
-          "diffutils"
-          "gawk"
-          "gzip"
-          "xz"
-        ];
+      tools = [
+        f.file
+      ]
+      ++ map (n: f.prerequisites.tools.${n}) [
+        "sed"
+        "grep"
+        "findutils"
+        "diffutils"
+        "gawk"
+        "gzip"
+        "xz"
+      ];
     };
     dependencyNames = [
       "source"

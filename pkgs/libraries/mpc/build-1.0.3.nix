@@ -53,7 +53,8 @@ in
       "missing"
       "depcomp"
       "test-driver"
-    ] ++ final.additionalSourceScripts;
+    ]
+    ++ final.additionalSourceScripts;
   };
   installedInterface = {
     hasPkgConfig = false;
@@ -134,7 +135,8 @@ in
     (outputs.relocateText {
       paths = [
         "lib/libmpc.la"
-      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpc.pc";
+      ]
+      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpc.pc";
     })
     (outputs.strip {
       paths = elfPaths;

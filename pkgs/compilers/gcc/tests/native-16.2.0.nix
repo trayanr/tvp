@@ -33,19 +33,19 @@ assert
   # Tests name their own raw include/link flags. No consumer driver replaces gcc.
   tests = {
     version = {
-      script = ''${gcc}/bin/gcc -dumpfullversion'';
+      script = "${gcc}/bin/gcc -dumpfullversion";
       expected = gcc.version;
     };
     c = {
-      script = ''${gcc}/bin/gcc ${flags} ${./fixtures/hello.c} -o hello; ./hello'';
+      script = "${gcc}/bin/gcc ${flags} ${./fixtures/hello.c} -o hello; ./hello";
       expected = "42";
     };
     cxx = {
-      script = ''${gcc}/bin/g++ ${flags} ${./fixtures/hello.cc} -o hello; ./hello'';
+      script = "${gcc}/bin/g++ ${flags} ${./fixtures/hello.cc} -o hello; ./hello";
       expected = "42";
     };
     lto = {
-      script = ''${gcc}/bin/gcc ${flags} -flto ${./fixtures/hello.c} -o hello; ./hello'';
+      script = "${gcc}/bin/gcc ${flags} -flto ${./fixtures/hello.c} -o hello; ./hello";
       expected = "42";
     };
     binutils = {

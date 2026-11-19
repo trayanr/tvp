@@ -183,7 +183,8 @@ in
     functionEntryEnd = true;
     digestApi = true;
     sqlite2Api = false;
-  } // final.testFeatures;
+  }
+  // final.testFeatures;
   meta = {
     description = "General-purpose PHP interpreter";
     homepage = "https://www.php.net/";

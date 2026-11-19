@@ -210,9 +210,12 @@ let
     if multiOutput then
       assert owned || throw "TVP named outputs: requires the owned runner";
       assert lib.hasInfix binding originalText;
-      lib.replaceStrings [ binding ] [
-        (lib.concatMapStringsSep " " (name: ''${name}="''${${name}:?missing output ${name}}"'') outputNames)
-      ] originalText
+      lib.replaceStrings
+        [ binding ]
+        [
+          (lib.concatMapStringsSep " " (name: ''${name}="''${${name}:?missing output ${name}}"'') outputNames)
+        ]
+        originalText
     else
       originalText;
   text = bindOutputs (renderRunner (_: s: "tvp_step ${quote s.name} ${quote s.script}"));

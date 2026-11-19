@@ -176,38 +176,36 @@ let
               mkdir -p "$out/bin" "$evidence"
               printf '%s\n' ${lib.escapeShellArg (builtins.toJSON contracts)} > "$evidence/contracts.json"
               ${python}/bin/python3 -B ${./source-prerequisite-consumers.py} "$out" "$evidence" \
-                ${
-                  lib.escapeShellArg (
-                    builtins.toJSON {
-                      packages = builtins.mapAttrs (_: p: toString p) {
-                        inherit (f)
-                          perl
-                          openssl
-                          zlib
-                          bzip2
-                          xz
-                          zstd
-                          ;
-                      };
-                      make = "${b.gnu-tool-floor.gnu-make}/bin/make";
-                      shell = "${bash}/bin/bash";
-                      gzip = "${b.gzip}/bin/gzip";
-                      helperPath = lib.concatStringsSep ":" (
-                        map (p: "${p}/bin") [
-                          f.bzip2
-                          f.xz
-                          bash
-                          coreutils
-                          b.build-grep
-                          b.gnused
-                          b.diffutils
-                        ]
-                      );
-                      codec = ./source-prerequisite-codec.c;
-                      tls = ./source-prerequisite-tls.c;
-                    }
-                  )
-                }
+                ${lib.escapeShellArg (
+                  builtins.toJSON {
+                    packages = builtins.mapAttrs (_: p: toString p) {
+                      inherit (f)
+                        perl
+                        openssl
+                        zlib
+                        bzip2
+                        xz
+                        zstd
+                        ;
+                    };
+                    make = "${b.gnu-tool-floor.gnu-make}/bin/make";
+                    shell = "${bash}/bin/bash";
+                    gzip = "${b.gzip}/bin/gzip";
+                    helperPath = lib.concatStringsSep ":" (
+                      map (p: "${p}/bin") [
+                        f.bzip2
+                        f.xz
+                        bash
+                        coreutils
+                        b.build-grep
+                        b.gnused
+                        b.diffutils
+                      ]
+                    );
+                    codec = ./source-prerequisite-codec.c;
+                    tls = ./source-prerequisite-tls.c;
+                  }
+                )}
             '';
           }
         )

@@ -121,14 +121,14 @@ in
       final.libraries.readline.runtime.libraries or [ ]
     );
     # LC_ALL=C from the base overrides LANG; RDoc needs UTF-8 explicitly.
-    overrides.values =
-      {
-        LANG = "C.UTF-8";
-        LC_ALL = "C.UTF-8";
-        CONFIG_SHELL = "${tools.bash}/bin/bash";
-        lt_cv_deplibs_check_method = "pass_all";
-      }
-      // lib.optionalAttrs
+    overrides.values = {
+      LANG = "C.UTF-8";
+      LC_ALL = "C.UTF-8";
+      CONFIG_SHELL = "${tools.bash}/bin/bash";
+      lt_cv_deplibs_check_method = "pass_all";
+    }
+    //
+      lib.optionalAttrs
         (final.cStandard != null || final.mkmfProbeFlags != [ ] || final.compileFlags != [ ])
         {
           cflags = lib.concatStringsSep " " (
@@ -137,9 +137,9 @@ in
             ++ final.compileFlags
           );
         }
-      // lib.optionalAttrs (final.extraWarnFlags != [ ]) {
-        extra_warnflags = lib.concatStringsSep " " final.extraWarnFlags;
-      };
+    // lib.optionalAttrs (final.extraWarnFlags != [ ]) {
+      extra_warnflags = lib.concatStringsSep " " final.extraWarnFlags;
+    };
   };
   plan = steps.sequence [
     (steps.unpack {
@@ -255,19 +255,25 @@ in
     })
     # Apply only the provider needed by each ELF scope. dlopen users declare
     # their provider too; base and own-library lookups survive the helper.
-    (lookup "ruby" [
-      "bin/ruby"
-      # Upstream switched from API version to release version in Ruby 2.4.
-      "lib/libruby.so.${
-        if lib.versionOlder final.version "2.4" then
-          "${lib.versions.majorMinor final.version}.0"
-        else
-          builtins.head (lib.splitString "-p" final.version)
-      }"
-    ] [ final.runtime.zlib ])
-    (lookup "readline" [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ] [
-      final.runtime.readline
-    ])
+    (lookup "ruby"
+      [
+        "bin/ruby"
+        # Upstream switched from API version to release version in Ruby 2.4.
+        "lib/libruby.so.${
+          if lib.versionOlder final.version "2.4" then
+            "${lib.versions.majorMinor final.version}.0"
+          else
+            builtins.head (lib.splitString "-p" final.version)
+        }"
+      ]
+      [ final.runtime.zlib ]
+    )
+    (lookup "readline"
+      [ "lib/ruby/${final.libDir}/x86_64-linux/readline.so" ]
+      [
+        final.runtime.readline
+      ]
+    )
     (lookup "gdbm" [ "lib/ruby/${final.libDir}/x86_64-linux/gdbm.so" ] [ final.runtime.gdbm ])
     (lookup "openssl" [ "lib/ruby/${final.libDir}/x86_64-linux/openssl.so" ] [ final.runtime.openssl ])
     (lookup "zlib" [ "lib/ruby/${final.libDir}/x86_64-linux/zlib.so" ] [ final.runtime.zlib ])

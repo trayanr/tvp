@@ -19,7 +19,8 @@ else
       providers.coreutils
       providers.sed
       providers.grep
-    ] ++ [ package.specification.gnumake ];
+    ]
+    ++ [ package.specification.gnumake ];
     tests = {
       version = {
         script = "sed -n 's/^Pkg.Revision *= *//p' ${package}/${package.tvp.android.componentPath}/source.properties";

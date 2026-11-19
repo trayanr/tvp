@@ -39,10 +39,12 @@ in
   sourceLayout = {
     archiveRoot = "platform-tools";
     packageMetadata = ./metadata-37.0.1.xml;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     sdkPath = "platform-tools";
-  } // installedInterface;
+  }
+  // installedInterface;
   testsEnabled = true;
   runtime = {
     shell = "${final.bash}/bin/bash";

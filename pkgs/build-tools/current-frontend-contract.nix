@@ -174,7 +174,7 @@ let
               };
             };
         })
-        altered
+          altered
       ).version.package.outPath == altered.outPath;
     ownedContext =
       (withBase.tests.version.compiler or withBase.tests.version.tvp.cc).outPath == sentinel.outPath;

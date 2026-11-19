@@ -54,13 +54,15 @@ in
     shared = true;
     tools = true;
     examples = true;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   # Keep the compiled CMake tree under source, so the shared checkpoint helper
   # saves it and restores the exact original absolute build location.
   sourceLayout = {
     compression = "xz";
     buildDirectory = ".tvp-build";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     elfPaths = lib.optional final.buildFeatures.tools "bin" ++ [ "lib" ];
     relocatedText = [
@@ -68,7 +70,8 @@ in
       "lib/cmake"
     ];
     soname = "libexpat.so.1";
-  } // installedInterface;
+  }
+  // installedInterface;
   environment = {
     tools = [
       tools.cmake

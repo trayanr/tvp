@@ -20,7 +20,7 @@ context.mkSuite {
       expected = package.version;
     };
     roundtrip = {
-      script = ''${runtime}/bin/php ${./roundtrip.php}'';
+      script = "${runtime}/bin/php ${./roundtrip.php}";
       expected = "SOAP: <&>";
     };
   };

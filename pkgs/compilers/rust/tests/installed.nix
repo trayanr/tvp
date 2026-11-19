@@ -16,17 +16,17 @@ context.mkSuite {
       expected = package.version;
     };
     compile = {
-      script = ''rustc ${./fixtures/hello.rs} -o hello; ./hello'';
+      script = "rustc ${./fixtures/hello.rs} -o hello; ./hello";
       expected = "tvp";
       tools = [ cc ];
     };
     edition-2024 = {
-      script = ''rustc --edition 2024 ${./fixtures/edition2024.rs} -o ed; ./ed'';
+      script = "rustc --edition 2024 ${./fixtures/edition2024.rs} -o ed; ./ed";
       expected = "6";
       tools = [ cc ];
     };
     staticlib = {
-      script = ''rustc --crate-type=staticlib ${./fixtures/hello.rs} -o libtvp.a; test -s libtvp.a && echo ok'';
+      script = "rustc --crate-type=staticlib ${./fixtures/hello.rs} -o libtvp.a; test -s libtvp.a && echo ok";
       expected = "ok";
     };
     host-tools = {

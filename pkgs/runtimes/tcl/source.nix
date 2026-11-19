@@ -12,14 +12,13 @@ then
   }
 else
   fetchurl {
-    urls =
-      [
-        "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz"
-        "https://prdownloads.sourceforge.net/tcl/tcl${version}.tar.gz"
-      ]
-      ++ lib.optionals (lib.versionOlder version "8.6.0") [
-        "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}p${lib.versions.patch version}.tar.gz"
-        "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}.tar.gz"
-      ];
+    urls = [
+      "https://prdownloads.sourceforge.net/tcl/tcl${version}-src.tar.gz"
+      "https://prdownloads.sourceforge.net/tcl/tcl${version}.tar.gz"
+    ]
+    ++ lib.optionals (lib.versionOlder version "8.6.0") [
+      "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}p${lib.versions.patch version}.tar.gz"
+      "https://prdownloads.sourceforge.net/tcl/tcl${lib.versions.majorMinor version}.tar.gz"
+    ];
     inherit sha256;
   }

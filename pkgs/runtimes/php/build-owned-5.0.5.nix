@@ -98,7 +98,8 @@ in
   };
   productionFlags = [
     "-fcommon"
-  ] ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}";
+  ]
+  ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}";
   runtime = {
     libraries = final.environment.libraries;
     shell = tools.bash;
@@ -227,7 +228,8 @@ in
     functionEntryEnd = true;
     digestApi = true;
     sqlite2Api = false;
-  } // final.testFeatures;
+  }
+  // final.testFeatures;
   meta = {
     description = "General-purpose PHP interpreter";
     homepage = "https://www.php.net/";

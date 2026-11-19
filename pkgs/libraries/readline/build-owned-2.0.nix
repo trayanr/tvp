@@ -147,7 +147,8 @@ in
             requiredFiles = [ "lib/libreadline.a" ] ++ lib.optional final.features.history "lib/libhistory.a";
             requiredRegular = [
               "lib/libreadline.a"
-            ] ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
+            ]
+            ++ map (m: "lib/pkgconfig/${m}.pc") final.pkgConfigModules;
           }
         )
       }'';

@@ -251,7 +251,8 @@ let
         "bin"
       ];
     })
-  ] ++ selected;
+  ]
+  ++ selected;
   fixture = lower (makeSpec fixturePlan);
   # An unsplit named plan has no artifact map. Non-rebasing operations still work.
   unsplit = lower (
