@@ -39,14 +39,26 @@
     }:
     let
       codec =
-        if compression == "xz" then
-          if xz == null then throw "Owned xz source requires an xz tool" else xz
+        if compression == "xz" || compression == "lzip" then
+          if xz == null then throw "Owned ${compression} source requires an xz tool" else xz
         else if compression == "gzip" then
           if gzip == null then throw "Owned gzip source requires a gzip tool" else gzip
         else if compression == "bzip2" then
           if bzip2 == null then throw "Owned bzip2 source requires a bzip2 tool" else bzip2
         else
           throw "Unsupported owned source compression: ${compression}";
+      extract =
+        if compression == "lzip" then
+          "${codec}/bin/xz --format=lzip --decompress --stdout ${src} | ${tar}/bin/tar -xf -"
+        else
+          ''PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
+            if compression == "xz" then
+              "J"
+            else if compression == "bzip2" then
+              "j"
+            else
+              "z"
+          }f ${src}'';
     in
     {
       name = "source.unpack";
@@ -56,14 +68,7 @@
       ] ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
-        PATH=${lib.escapeShellArg "${codec}/bin"}:"$PATH" ${tar}/bin/tar -x${
-          if compression == "xz" then
-            "J"
-          else if compression == "bzip2" then
-            "j"
-          else
-            "z"
-        }f ${src} --strip-components=1 -C source
+        ${extract} --strip-components=1 -C source
         chmod -R u+w source
         # Match the source epoch policy: regular files, bounded by build start.
         epoch=$(${
