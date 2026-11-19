@@ -2,8 +2,9 @@
 
 All six apps are copied by `tools/lib/owned-cli.nix`, a direct derivation run by
 TVP Bash with TVP coreutils. It installs explicit Bash shebangs and checks each
-script with `bash -n` and ShellCheck (a borrowed build-time validator). It uses
-no stdenv setup, wrapper hooks or compiler. Text manifests use `builtins.toFile`.
+script with `bash -n` and TVP's package of the official static ShellCheck
+release. That validator has an explicit binary origin. The helper uses no stdenv
+setup, wrapper hooks or compiler. Text manifests use `builtins.toFile`.
 
 The four shell commands retain `errexit`, `nounset` and `pipefail`, and prepend
 their declared tools in order to the caller's PATH. The Python entrypoints exec
