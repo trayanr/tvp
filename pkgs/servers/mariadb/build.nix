@@ -25,6 +25,7 @@ let
   };
   cmake = "${tools.cmake}/bin/cmake";
   fmtDirectory = "fmt/fmt-${final.fmtVersion}";
+  cursesHeaders = "${lib.getDev final.ncurses}/include/ncursesw";
   elfPaths = [
     "bin"
     "lib"
@@ -74,7 +75,10 @@ in
     ++ scriptTools;
     inherit libraries;
     # Use the supported language mode on compilers that default to C23.
-    overrides.values.CFLAGS = "-O2 -std=gnu17";
+    overrides.values = {
+      CFLAGS = "-O2 -std=gnu17 -I${cursesHeaders}";
+      CXXFLAGS = "-I${cursesHeaders}";
+    };
   };
   runtime = {
     inherit libraries;
@@ -101,6 +105,8 @@ in
         -DCMAKE_DISABLE_FIND_PACKAGE_LIBAIO=ON -DCMAKE_DISABLE_FIND_PACKAGE_URING=ON \
         -DINSTALL_LAYOUT=STANDALONE -DINSTALL_SCRIPTDIR=bin -DINSTALL_LIBDIR=lib \
         -DINSTALL_MYSQLTESTDIR=OFF -DINSTALL_SQLBENCHDIR=OFF \
+        -DCURSES_NEED_WIDE=ON -DCURSES_INCLUDE_PATH=${cursesHeaders} \
+        -DCURSES_NCURSES_LIBRARY=${lib.getLib final.ncurses}/lib/libncursesw.so \
         -DWITH_LIBFMT=system -DLIBFMT_INCLUDE_DIR="$PWD/${fmtDirectory}/include" \
         -DWITH_SSL=system -DWITH_PCRE=system -DWITH_ZLIB=system \
         -DWITH_SYSTEMD=no -DWITH_NUMA=OFF -DWITH_WSREP=OFF -DWITH_UNIT_TESTS=OFF \
