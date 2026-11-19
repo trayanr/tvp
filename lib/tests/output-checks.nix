@@ -50,22 +50,21 @@ let
     src = null;
     inherit base bash coreutils;
     outputs = shape.names;
-    plan =
-      [
-        {
-          name = "fixture.install";
-          run = lib.concatMapStringsSep "\n" (output: ''
-            mkdir -p "${"$" + output}"
-            printf installed > "${"$" + output}/message"
-          '') shape.names;
-        }
-      ]
-      ++ lib.optionals shape.split [
-        (steps.split "fixture.finalize")
-        (outputs.copyArtifacts (
-          { inherit coreutils; } // lib.optionalAttrs (shape.names != [ "out" ]) { outputs = shape.names; }
-        ))
-      ];
+    plan = [
+      {
+        name = "fixture.install";
+        run = lib.concatMapStringsSep "\n" (output: ''
+          mkdir -p "${"$" + output}"
+          printf installed > "${"$" + output}/message"
+        '') shape.names;
+      }
+    ]
+    ++ lib.optionals shape.split [
+      (steps.split "fixture.finalize")
+      (outputs.copyArtifacts (
+        { inherit coreutils; } // lib.optionalAttrs (shape.names != [ "out" ]) { outputs = shape.names; }
+      ))
+    ];
   }) shapes;
   checkedSpec =
     spec:

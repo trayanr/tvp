@@ -28,15 +28,15 @@ context.mkSuite {
   ];
   tests = {
     upstream = {
-      script = ''test -d ${upstream}; printf passed'';
+      script = "test -d ${upstream}; printf passed";
       expected = "passed";
     };
     version = {
-      script = ''llvm-config --version'';
+      script = "llvm-config --version";
       expected = package.version;
     };
     c = {
-      script = ''clang ${./fixtures/hello.c} -o hello; ./hello'';
+      script = "clang ${./fixtures/hello.c} -o hello; ./hello";
       expected = "42";
     };
     cxx = {
@@ -54,7 +54,7 @@ context.mkSuite {
       expected = "42";
     };
     linker = {
-      script = ''clang -fuse-ld=lld ${./fixtures/hello.c} -o hello; ./hello'';
+      script = "clang -fuse-ld=lld ${./fixtures/hello.c} -o hello; ./hello";
       expected = "42";
     };
     ir = {
@@ -79,7 +79,7 @@ context.mkSuite {
       expected = "42";
     };
     loader = {
-      script = ''clang ${./fixtures/hello.c} -o hello; ${s.patchelf}/bin/patchelf --print-interpreter hello'';
+      script = "clang ${./fixtures/hello.c} -o hello; ${s.patchelf}/bin/patchelf --print-interpreter hello";
       expected = s.runtime.loader;
     };
   };

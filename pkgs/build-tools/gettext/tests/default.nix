@@ -79,16 +79,15 @@ context.mkSuite {
       expected = "ok";
     };
     shell-helpers = {
-      tools =
-        [
-          spec.tools.grep
-          python
-        ]
-        ++ (with package.tvp.declaredTestDependencies; [
-          autoconf
-          automake
-          libtool
-        ]);
+      tools = [
+        spec.tools.grep
+        python
+      ]
+      ++ (with package.tvp.declaredTestDependencies; [
+        autoconf
+        automake
+        libtool
+      ]);
       script = ''
         ${python}/bin/python3 -B ${./prepare.py} ${../native/prepare.py}
         actual=$(

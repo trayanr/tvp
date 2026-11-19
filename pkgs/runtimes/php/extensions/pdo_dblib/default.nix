@@ -1,13 +1,17 @@
 { pkgs, tvp, ... }:
 let
-  inherit (import ../bundled-releases.nix {
-    inherit pkgs tvp;
-    minPHP = "8.2";
-    def = {
-      builder = ./build.nix;
-      deps.freetds = tvp.packages.freetds_1;
-    };
-  }) source versionTable;
+  inherit
+    (import ../bundled-releases.nix {
+      inherit pkgs tvp;
+      minPHP = "8.2";
+      def = {
+        builder = ./build.nix;
+        deps.freetds = tvp.packages.freetds_1;
+      };
+    })
+    source
+    versionTable
+    ;
   family = tvp.lib.php.mkExtensionFamily {
     inherit tvp versionTable;
     phpPolicy = {

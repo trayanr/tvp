@@ -71,7 +71,8 @@ in
   configureFlags = [
     (if final.buildFeatures.shared then "--enable-shared" else "--disable-shared")
     (if final.buildFeatures.static then "--enable-static" else "--disable-static")
-  ] ++ lib.optional final.features.compatLib "--enable-libgdbm-compat";
+  ]
+  ++ lib.optional final.features.compatLib "--enable-libgdbm-compat";
   environment = {
     tools = [
       tools.pkg-config

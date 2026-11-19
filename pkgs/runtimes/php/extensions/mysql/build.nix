@@ -85,12 +85,11 @@ procedure
         step:
         step
         // {
-          run =
-            ''
-              # mysqli and PDO use the matching mysqlnd headers from this source tree.
-              export CPPFLAGS="-I$PWD ''${CPPFLAGS:-}"
-            ''
-            + step.run;
+          run = ''
+            # mysqli and PDO use the matching mysqlnd headers from this source tree.
+            export CPPFLAGS="-I$PWD ''${CPPFLAGS:-}"
+          ''
+          + step.run;
         }
       ) staged;
 }

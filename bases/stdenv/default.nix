@@ -47,7 +47,8 @@ lib.makeOverridable (
           ./hooks/set-source-date-epoch-to-latest.sh
           ./hooks/strip.sh
           cc
-        ] ++ fixupInputs;
+        ]
+        ++ fixupInputs;
         defaultBuildInputs = [ ];
       }
       // {

@@ -47,7 +47,8 @@ import ../build-bundled.nix
         final.libjpeg-turbo
         final.libwebp
         final.freetype
-      ] ++ final.libraries;
+      ]
+      ++ final.libraries;
     }
   )
 // {

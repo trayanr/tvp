@@ -77,24 +77,24 @@ let
         }
       );
       copy = builtins.head (builtins.filter (step: step.name == "output.copy-artifacts") parts.second);
-      checks =
-        {
-          scalarOutput = p.outputs == [ "out" ];
-          scalarTransport =
-            !(lib.hasInfix "TVP_ARTIFACT_OUTPUTS" copy.run) && lib.hasInfix "TVP_ARTIFACT_ROOT" copy.run;
-          copiedFirst = (builtins.head parts.second).name == "output.copy-artifacts";
-          finalEditReusesArtifact =
-            finalOnly.artifact.drvPath == p.artifact.drvPath && finalOnly.drvPath != p.drvPath;
-          buildCommandInvalidatesArtifact = buildOnly.artifact.drvPath != p.artifact.drvPath;
-          sourceInvalidatesArtifact = source.artifact.drvPath != p.artifact.drvPath;
-          overrideIdentity = (p.override { }).drvPath == p.drvPath;
-          editIdentity = (p.edit (s: s)).drvPath == p.drvPath;
-          runtimeIdentity = (p.editRuntime (r: r)).drvPath == p.drvPath;
-          noUpstreamInProduction = builtins.all (
-            step: !(lib.hasSuffix ".check" step.name) && !(lib.hasInfix ".test-" step.name)
-          ) parts.first;
-        }
-        // lib.optionalAttrs
+      checks = {
+        scalarOutput = p.outputs == [ "out" ];
+        scalarTransport =
+          !(lib.hasInfix "TVP_ARTIFACT_OUTPUTS" copy.run) && lib.hasInfix "TVP_ARTIFACT_ROOT" copy.run;
+        copiedFirst = (builtins.head parts.second).name == "output.copy-artifacts";
+        finalEditReusesArtifact =
+          finalOnly.artifact.drvPath == p.artifact.drvPath && finalOnly.drvPath != p.drvPath;
+        buildCommandInvalidatesArtifact = buildOnly.artifact.drvPath != p.artifact.drvPath;
+        sourceInvalidatesArtifact = source.artifact.drvPath != p.artifact.drvPath;
+        overrideIdentity = (p.override { }).drvPath == p.drvPath;
+        editIdentity = (p.edit (s: s)).drvPath == p.drvPath;
+        runtimeIdentity = (p.editRuntime (r: r)).drvPath == p.drvPath;
+        noUpstreamInProduction = builtins.all (
+          step: !(lib.hasSuffix ".check" step.name) && !(lib.hasInfix ".test-" step.name)
+        ) parts.first;
+      }
+      //
+        lib.optionalAttrs
           (
             !(builtins.elem name [
               "ca-certificates_2026_10_20"
@@ -104,56 +104,56 @@ let
           {
             compilerInvalidatesArtifact = compilerOnly.artifact.drvPath != p.artifact.drvPath;
           }
-        // lib.optionalAttrs (name == "libffi_3_8_0") {
-          testProviderReusesProduction =
-            let
-              edited = p.edit (
-                old:
-                old
-                // {
-                  upstreamCheck = old.upstreamCheck // {
-                    harness = s.coreutils;
-                  };
-                }
-              );
-            in
-            edited.artifact.drvPath == p.artifact.drvPath && edited.drvPath == p.drvPath;
-        }
-        // lib.optionalAttrs (s ? upstreamPlan) {
-          registered = p.tests ? upstream;
-          rawProducer =
-            p.tests.upstream.passthru.upstreamExecution.specification.validationRole == "upstream-execution";
-          validationEditsReuseProduction =
-            validation.artifact.drvPath == p.artifact.drvPath && validation.drvPath == p.drvPath;
-          validationEditsChangeRaw =
-            validation.tests.upstream.passthru.upstreamExecution.drvPath
-            != p.tests.upstream.passthru.upstreamExecution.drvPath;
-          doCheckReusesProduction =
-            unchecked.artifact.drvPath == p.artifact.drvPath && unchecked.drvPath == p.drvPath;
-          doCheckUnregisters = !(unchecked.tests ? upstream);
-        }
-        //
-          lib.optionalAttrs
-            (
-              s ? runtime
-              && s.runtime ? libraries
-              && !(builtins.elem name [
-                "linux-headers_6_9"
-                "gradle_9_3_1"
-              ])
-            )
-            {
-              runtimeLibrariesReuseArtifact =
-                runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
-            }
-        // lib.optionalAttrs (s ? artifactName) {
-          equalWidth = builtins.stringLength p.artifact.outPath == builtins.stringLength p.outPath;
-        }
-        // lib.optionalAttrs (s ? finalizeHelper) {
-          finalizerEditReusesArtifact =
-            (p.edit (s: s // { finalizeHelper = builtins.toFile "finalizer-control.py" "# identity control"; }))
-            .artifact.drvPath == p.artifact.drvPath;
-        };
+      // lib.optionalAttrs (name == "libffi_3_8_0") {
+        testProviderReusesProduction =
+          let
+            edited = p.edit (
+              old:
+              old
+              // {
+                upstreamCheck = old.upstreamCheck // {
+                  harness = s.coreutils;
+                };
+              }
+            );
+          in
+          edited.artifact.drvPath == p.artifact.drvPath && edited.drvPath == p.drvPath;
+      }
+      // lib.optionalAttrs (s ? upstreamPlan) {
+        registered = p.tests ? upstream;
+        rawProducer =
+          p.tests.upstream.passthru.upstreamExecution.specification.validationRole == "upstream-execution";
+        validationEditsReuseProduction =
+          validation.artifact.drvPath == p.artifact.drvPath && validation.drvPath == p.drvPath;
+        validationEditsChangeRaw =
+          validation.tests.upstream.passthru.upstreamExecution.drvPath
+          != p.tests.upstream.passthru.upstreamExecution.drvPath;
+        doCheckReusesProduction =
+          unchecked.artifact.drvPath == p.artifact.drvPath && unchecked.drvPath == p.drvPath;
+        doCheckUnregisters = !(unchecked.tests ? upstream);
+      }
+      //
+        lib.optionalAttrs
+          (
+            s ? runtime
+            && s.runtime ? libraries
+            && !(builtins.elem name [
+              "linux-headers_6_9"
+              "gradle_9_3_1"
+            ])
+          )
+          {
+            runtimeLibrariesReuseArtifact =
+              runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
+          }
+      // lib.optionalAttrs (s ? artifactName) {
+        equalWidth = builtins.stringLength p.artifact.outPath == builtins.stringLength p.outPath;
+      }
+      // lib.optionalAttrs (s ? finalizeHelper) {
+        finalizerEditReusesArtifact =
+          (p.edit (s: s // { finalizeHelper = builtins.toFile "finalizer-control.py" "# identity control"; }))
+          .artifact.drvPath == p.artifact.drvPath;
+      };
     in
     {
       inherit checks;

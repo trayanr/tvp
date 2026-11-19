@@ -46,7 +46,8 @@ in
   inherit (tools) bash coreutils;
   installedInterface = {
     libraryDirectory = "lib";
-  } // installedInterface;
+  }
+  // installedInterface;
   outputs = [ "out" ];
   environment = {
     tools = [

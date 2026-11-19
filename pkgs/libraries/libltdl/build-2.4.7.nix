@@ -56,7 +56,8 @@ in
     tools = [
       gnumake
       findutils
-    ] ++ buildTools;
+    ]
+    ++ buildTools;
     libraries = [ ];
   };
   runtime.libraries = [ ];

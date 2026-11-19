@@ -150,7 +150,8 @@ in
   };
   features = {
     inherit (final.buildFeatures) shared static;
-  } // final.installedInterface;
+  }
+  // final.installedInterface;
 
   stateScript = ./ordinary/build-state.py;
   # Only this release's checkpoint changes when its metadata requirements change.
@@ -253,14 +254,13 @@ in
   elfHelper = ./ordinary/elf.py;
   # Shared pure tree/text inspection owns no family mutations or recipe.
   inspectionHelper = ../../../lib/installed-tree.py;
-  configureFlags =
-    [
-      "shared"
-      "--openssldir=etc/ssl"
-    ]
-    ++ [ "--libdir=lib" ]
-    ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
-    ++ final.compileFlags;
+  configureFlags = [
+    "shared"
+    "--openssldir=etc/ssl"
+  ]
+  ++ [ "--libdir=lib" ]
+  ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}"
+  ++ final.compileFlags;
   environment = {
     tools = [
       tools.coreutils

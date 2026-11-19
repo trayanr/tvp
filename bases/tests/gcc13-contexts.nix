@@ -14,30 +14,29 @@ let
     context.mkTest {
       package = base.tools.gcc;
       name = "gcc13-${name}-context";
-      script =
-        ''
-          "$CC" -x c -o context-c - <<'C'
-          #include <stdio.h>
-          int main(void) { puts("C"); return 0; }
-          C
-          test "$(./context-c)" = C
-        ''
-        + (
-          if name == "full" then
-            ''
-              "$CXX" -x c++ -o context-cxx - <<'CXX'
-              #include <iostream>
-              #include <vector>
-              int main() { std::vector<int> xs{1,2,3}; std::cout << xs.size(); }
-              CXX
-              test "$(./context-cxx)" = 3
-            ''
-          else
-            ""
-        )
-        + ''
-          printf '%s\n' context-ok
-        '';
+      script = ''
+        "$CC" -x c -o context-c - <<'C'
+        #include <stdio.h>
+        int main(void) { puts("C"); return 0; }
+        C
+        test "$(./context-c)" = C
+      ''
+      + (
+        if name == "full" then
+          ''
+            "$CXX" -x c++ -o context-cxx - <<'CXX'
+            #include <iostream>
+            #include <vector>
+            int main() { std::vector<int> xs{1,2,3}; std::cout << xs.size(); }
+            CXX
+            test "$(./context-cxx)" = 3
+          ''
+        else
+          ""
+      )
+      + ''
+        printf '%s\n' context-ok
+      '';
       expected = "context-ok";
     }
   ) tvp.bases.gcc_13;

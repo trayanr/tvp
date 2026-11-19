@@ -157,7 +157,7 @@ let
     factory =
       (
         (p.mkTests.override { tests = import (if isAutoconf then ./autoconf/tests else ./automake/tests); })
-        p
+          p
       ).version.package.outPath == p.outPath;
     projections = builtins.all (
       q: q ? buildEnvironment && q.tests.version.package.outPath == p.outPath

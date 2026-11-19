@@ -62,18 +62,18 @@ in
     upstream-filenames = {
       script =
         let
-          cases =
-            [
-              {
-                name = "acl-2.2.48.src.tar.gz";
-                want = "2.2.48";
-              }
-              {
-                name = "acl-2.4.0.tar.xz";
-                want = "2.4.0";
-              }
-            ]
-            ++ map
+          cases = [
+            {
+              name = "acl-2.2.48.src.tar.gz";
+              want = "2.2.48";
+            }
+            {
+              name = "acl-2.4.0.tar.xz";
+              want = "2.4.0";
+            }
+          ]
+          ++
+            map
               (name: {
                 inherit name;
                 want = null;

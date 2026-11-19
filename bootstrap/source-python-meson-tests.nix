@@ -78,13 +78,15 @@ let
       == "${cc}-constructor-test/bin/cc";
     conflictingProviderRejected =
       !(builtins.tryEval (
-        builtins.deepSeq (base.environment {
-          tools = [
-            f.meson
-            tracedPc
-          ];
-          libraries = [ ];
-        }).env true
+        builtins.deepSeq
+          (base.environment {
+            tools = [
+              f.meson
+              tracedPc
+            ];
+            libraries = [ ];
+          }).env
+          true
       )).success;
     reboundProvider =
       (base.environment {

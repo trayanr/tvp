@@ -75,7 +75,7 @@ let
               ../../pkgs/libraries/pcre2/tests/installed.nix
           );
         })
-        (shellEdit q)
+          (shellEdit q)
       ).version.package.outPath == (shellEdit q).outPath;
   };
   result = {

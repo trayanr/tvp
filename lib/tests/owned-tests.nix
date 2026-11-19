@@ -133,7 +133,7 @@ let
             inherit builder coreutils;
             base = base.override { };
           }).mkTest
-          spec
+            spec
         ).drvPath == p.drvPath;
     expectedRequired = (builtins.functionArgs context.mkTest).expected == false;
     expectedType = rejects (context.mkTest (spec // { expected = 42; }));

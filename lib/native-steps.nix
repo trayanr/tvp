@@ -133,7 +133,8 @@ in
         meson
         ninja
         pkg-config
-      ] ++ tools;
+      ]
+      ++ tools;
       # The selected Meson launcher embeds defaults: PATH alone cannot override
       # these programs. Export the supplied arguments in every fresh shell.
       environment = env // {

@@ -96,27 +96,25 @@ bash.runCommand name
       make -j "$NIX_BUILD_CORES" SHELL=${shell} GCC_FOR_TARGET='./xgcc -B./' install-strip-gcc
       rm -rf "$out/libexec/gcc/"*/*/install-tools "$out/lib/gcc/"*/*/install-tools
       rm -rf "$out/share/gcc-"*/python "$out/share/man" "$out/share/info"
-      ${
-        lib.optionalString (runtime != null && cxxRuntime != null) ''
-          rt=${runtime}/lib/gcc/${targetTuple}/16.2.0
-          for file in "$rt"/*; do
-            test -f "$file" || continue
-            ln -sf "$file" "$out/lib/gcc/${targetTuple}/16.2.0/"
-          done
-          # Target runtime public headers belong in the driver's intrinsic include
-          # directory too. Copying only regular runtime files omits unwind.h.
-          for header in "$rt"/include/*; do
-            test -f "$header" || continue
-            ln -s "$header" "$out/lib/gcc/${targetTuple}/16.2.0/include/$(basename "$header")"
-          done
-          "$out/bin/gcc" -dumpspecs > specs
-          # Native raw mode must find the selected target runtime without a wrapper
-          # or ambient environment; old dtags also serve libc's unwinder dlopen.
-          sed -i '/^\*link:$/ { n; s|^|--disable-new-dtags -rpath-link ${sysroot}/lib -rpath-link ${runtime}/lib/gcc/${targetTuple}/16.2.0 -rpath-link ${cxxRuntime}/lib -rpath ${sysroot}/lib -rpath '"$rt"' -rpath ${cxxRuntime}/lib |; }' specs
-          sed -i '/^\*link_libgcc:$/ { n; s|^|-L${cxxRuntime}/lib -L'"$rt"' |; }' specs
-          cp specs "$out/lib/gcc/${targetTuple}/16.2.0/specs"
-        ''
-      }
+      ${lib.optionalString (runtime != null && cxxRuntime != null) ''
+        rt=${runtime}/lib/gcc/${targetTuple}/16.2.0
+        for file in "$rt"/*; do
+          test -f "$file" || continue
+          ln -sf "$file" "$out/lib/gcc/${targetTuple}/16.2.0/"
+        done
+        # Target runtime public headers belong in the driver's intrinsic include
+        # directory too. Copying only regular runtime files omits unwind.h.
+        for header in "$rt"/include/*; do
+          test -f "$header" || continue
+          ln -s "$header" "$out/lib/gcc/${targetTuple}/16.2.0/include/$(basename "$header")"
+        done
+        "$out/bin/gcc" -dumpspecs > specs
+        # Native raw mode must find the selected target runtime without a wrapper
+        # or ambient environment; old dtags also serve libc's unwinder dlopen.
+        sed -i '/^\*link:$/ { n; s|^|--disable-new-dtags -rpath-link ${sysroot}/lib -rpath-link ${runtime}/lib/gcc/${targetTuple}/16.2.0 -rpath-link ${cxxRuntime}/lib -rpath ${sysroot}/lib -rpath '"$rt"' -rpath ${cxxRuntime}/lib |; }' specs
+        sed -i '/^\*link_libgcc:$/ { n; s|^|-L${cxxRuntime}/lib -L'"$rt"' |; }' specs
+        cp specs "$out/lib/gcc/${targetTuple}/16.2.0/specs"
+      ''}
       mkdir -p "$out/${targetTuple}/bin"
     for tool in as ld ar nm ranlib strip objdump readelf; do
       ln -s ${targetBinutils}/bin/"$tool" "$out/${targetTuple}/bin/$tool"

@@ -20,7 +20,8 @@ let
     tools = [
       cmake
       make
-    ] ++ tools;
+    ]
+    ++ tools;
     inherit libraries env run;
   };
 in

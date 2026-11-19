@@ -132,9 +132,7 @@ let
                 grep -F '${final.fontconfig}/share/fontconfig/conf.avail/' configurations
                 # Verify the actual loaded Expat provider through the loader's diagnostics.
                 env -i LD_DEBUG=libs ./consumer ${../../pkgs/libraries/fontconfig/tests/fixtures/font.bdf} 2> loader
-                grep -F 'calling init: ${
-                  lib.getLib (builtins.elemAt final.fontconfig.runtime.libraries 1)
-                }/lib/libexpat.so.1' loader
+                grep -F 'calling init: ${lib.getLib (builtins.elemAt final.fontconfig.runtime.libraries 1)}/lib/libexpat.so.1' loader
                 mkdir "$out"
                 cp consumer headers defaults requirements private-libs configurations loader "$out/"
               '';

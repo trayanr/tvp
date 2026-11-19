@@ -43,7 +43,8 @@ context.mkSuite {
         providers.sed
         providers.diffutils
         providers.binutils
-      ]) ++ [ providers.patchelf ];
+      ])
+      ++ [ providers.patchelf ];
     };
     jit = {
       script = "${setup}; dart ${./fixtures/main.dart}";
@@ -67,7 +68,8 @@ context.mkSuite {
         providers.sed
         providers.diffutils
         providers.binutils
-      ]) ++ [ package.tvp.declaredTestDependencies.nodejs ];
+      ])
+      ++ [ package.tvp.declaredTestDependencies.nodejs ];
     };
     wasm = {
       script = "${setup}; dart compile wasm ${./fixtures/web.dart} -o answer.wasm > compile.log; test -s answer.wasm; test -s answer.mjs; printf compiled";
@@ -83,7 +85,8 @@ context.mkSuite {
         providers.sed
         providers.diffutils
         providers.binutils
-      ]) ++ [ package.specification.llvm ];
+      ])
+      ++ [ package.specification.llvm ];
     };
     pub = {
       script = ''

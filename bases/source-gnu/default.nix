@@ -11,38 +11,37 @@ let
   base = builder.base {
     name = "source-gnu-candidate";
     inherit platform referencePackages;
-    tools =
-      {
-        gcc = toolchain.driver;
-        inherit (tools) bash coreutils;
-      }
-      // (
-        if standardTools != null then
-          standardTools
-        else
-          {
-            bzip2 = tools.bzip2;
-            patch = tools.patch;
-            pkg-config = tools.pkgConfig;
-            gnumake = tools.make;
-            gnutar = tools.tar;
-            inherit (tools)
-              file
-              cmake
-              ninja
-              perl
-              xz
-              gzip
-              python
-              patchelf
-              sed
-              grep
-              gawk
-              diffutils
-              findutils
-              ;
-          }
-      );
+    tools = {
+      gcc = toolchain.driver;
+      inherit (tools) bash coreutils;
+    }
+    // (
+      if standardTools != null then
+        standardTools
+      else
+        {
+          bzip2 = tools.bzip2;
+          patch = tools.patch;
+          pkg-config = tools.pkgConfig;
+          gnumake = tools.make;
+          gnutar = tools.tar;
+          inherit (tools)
+            file
+            cmake
+            ninja
+            perl
+            xz
+            gzip
+            python
+            patchelf
+            sed
+            grep
+            gawk
+            diffutils
+            findutils
+            ;
+        }
+    );
     baselineTools = [
       tools.coreutils
       tools.linker

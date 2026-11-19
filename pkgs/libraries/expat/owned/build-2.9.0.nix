@@ -55,7 +55,8 @@ in
       cmake
       ninja
       python
-    ] ++ buildTools;
+    ]
+    ++ buildTools;
     libraries = [ ];
   };
   runtime.libraries = [ ];
@@ -75,7 +76,7 @@ in
     '')
     (command "build" ''${cmake}/bin/cmake --build build --parallel "$NIX_BUILD_CORES" --verbose'')
     (command "check" ''${cmake}/bin/ctest --test-dir build --output-on-failure --no-tests=error -j "$NIX_BUILD_CORES"'')
-    (command "install" ''${cmake}/bin/cmake --install build'')
+    (command "install" "${cmake}/bin/cmake --install build")
     (outputs.rpaths {
       inherit python binutils patchelf;
       base = final.base;

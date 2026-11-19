@@ -348,18 +348,18 @@ let
           };
         }
       )).edit
-      (
-        s:
-        s
-        // {
-          base = s.base.override {
-            tools = {
-              cmake = traceTool "cmake" p.tvp.deps.cmake;
-              gnumake = traceTool "make" p.tvp.deps.gnumake;
+        (
+          s:
+          s
+          // {
+            base = s.base.override {
+              tools = {
+                cmake = traceTool "cmake" p.tvp.deps.cmake;
+                gnumake = traceTool "make" p.tvp.deps.gnumake;
+              };
             };
-          };
-        }
-      )
+          }
+        )
     ).editSteps
       (
         steps.insertBefore "json-c.finalize" [

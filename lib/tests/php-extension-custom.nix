@@ -11,7 +11,7 @@ let
       context.mkSuite {
         inherit package;
         tests.hello = {
-          script = ''${package.php}/bin/php -n -dextension=${package}/${package.modulePath} -r 'echo tvp_hello();' '';
+          script = "${package.php}/bin/php -n -dextension=${package}/${package.modulePath} -r 'echo tvp_hello();' ";
           expected = "custom-extension-ok";
         };
       };

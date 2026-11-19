@@ -28,7 +28,8 @@ let
   sharedLibraries = [
     final.openssl
     final.libxcrypt
-  ] ++ final.libraries;
+  ]
+  ++ final.libraries;
   builderArgs = builtins.removeAttrs args [
     "bundled"
     "c-client"
@@ -41,7 +42,8 @@ let
       "--with-imap=${final.c-client}"
       "--with-imap-ssl"
       "--without-kerberos"
-    ] ++ final.configureOptions;
+    ]
+    ++ final.configureOptions;
   };
   procedure = import ../build-phpize.nix builderArgs effective;
   bundledProcedure = import ../build-bundled.nix builderArgs effective;

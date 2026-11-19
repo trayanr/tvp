@@ -41,7 +41,8 @@ in
   buildFeatures = {
     automaticCcCo = false;
     installAclocalDirectory = false;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     archiveExt = "tar.gz";
     compression =
@@ -53,14 +54,16 @@ in
         "gzip"
       else
         throw "Automake: unsupported declared archive extension ${final.sourceLayout.archiveExt}";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     dataDirectory = "share/automake";
     versionedAliases = false;
     configuredApi = false;
     headerMacro = "AM_CONFIG_HEADER";
     aclocal = true;
-  } // installedInterface;
+  }
+  // installedInterface;
   environment = {
     tools = [
       final.perl

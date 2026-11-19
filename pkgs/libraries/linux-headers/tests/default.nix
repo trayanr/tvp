@@ -23,7 +23,7 @@ context.mkSuite {
             }
           ]);
         in
-        ''cat ${control}/marker'';
+        "cat ${control}/marker";
       expected = "edited plan executed";
     };
     version = {

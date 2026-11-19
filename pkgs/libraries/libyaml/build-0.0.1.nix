@@ -62,7 +62,8 @@ in
     libtoolAnchors = {
       "config/ltmain.sh" = 1;
     };
-  } // sourceLayout;
+  }
+  // sourceLayout;
   buildFeatures = {
     shared = true;
     static = true;
@@ -195,13 +196,15 @@ in
               "lib/libyaml.a"
               "lib/libyaml.la"
               "include/yaml.h"
-            ] ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
+            ]
+            ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
             libtoolData = [ "lib/libyaml.la" ];
             requiredRegular = [
               "lib/libyaml.a"
               "lib/libyaml.la"
               "include/yaml.h"
-            ] ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
+            ]
+            ++ lib.optional final.installedInterface.pkgConfig "lib/pkgconfig/yaml-0.1.pc";
           }
         )
       }'';

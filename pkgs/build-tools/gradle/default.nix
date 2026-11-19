@@ -34,7 +34,7 @@ let
       discovery = {
         type = "json-index";
         url = "https://services.gradle.org/versions/all";
-        selector = ''.[] | select(.snapshot == false and .broken == false) | .version'';
+        selector = ".[] | select(.snapshot == false and .broken == false) | .version";
         include = version: builtins.match "[0-9]+([.][0-9]+)+" version != null;
       };
     };

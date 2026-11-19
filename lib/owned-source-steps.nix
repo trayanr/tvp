@@ -65,7 +65,8 @@
       tools = [
         tar
         codec
-      ] ++ lib.optional (findutils != null) findutils;
+      ]
+      ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
         ${extract} --strip-components=1 -C source

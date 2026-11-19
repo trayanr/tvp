@@ -222,13 +222,15 @@ in
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             requiredRegular = [
               "lib/libffi.la"
               "${headerDirectory}/ffi.h"
               "${headerDirectory}/ffitarget.h"
               "lib/pkgconfig/libffi.pc"
-            ] ++ lib.optional final.buildFeatures.static "lib/libffi.a";
+            ]
+            ++ lib.optional final.buildFeatures.static "lib/libffi.a";
             libtoolData = [ "lib/libffi.la" ];
           }
         )

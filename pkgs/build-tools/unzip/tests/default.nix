@@ -67,7 +67,8 @@ context.mkSuite {
       tools = [
         zip
         d.python
-      ] ++ tools;
+      ]
+      ++ tools;
     };
     installed-layout = {
       script = ''
@@ -93,7 +94,8 @@ context.mkSuite {
       tools = [
         d.binutils
         d.patchelf
-      ] ++ tools;
+      ]
+      ++ tools;
     };
     helpers = {
       script = ''
