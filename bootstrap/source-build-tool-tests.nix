@@ -160,17 +160,15 @@ let
                 ${pkgConfig}/bin/pkg-config ${ninja}/bin/ninja ${ninja}/share/ninja ${bash}/bin/bash \
                 ${./source-build-tool-project.c} ${./source-build-tool-project.cc} \
                 ${cc.libc}/lib/ld-linux-x86-64.so.2 \
-                ${
-                  lib.escapeShellArg (
-                    lib.concatStringsSep ":" (
-                      map (p: "${p}/lib") [
-                        chain.mpc
-                        chain.mpfr
-                        chain.gmp
-                      ]
-                    )
+                ${lib.escapeShellArg (
+                  lib.concatStringsSep ":" (
+                    map (p: "${p}/lib") [
+                      chain.mpc
+                      chain.mpfr
+                      chain.gmp
+                    ]
                   )
-                }
+                )}
             '';
           }
         )

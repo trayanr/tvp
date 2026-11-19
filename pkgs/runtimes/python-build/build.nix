@@ -79,7 +79,8 @@ in
       "nis"
       "readline"
     ];
-  } // buildFeatures;
+  }
+  // buildFeatures;
   libraries = {
     inherit
       openssl
@@ -88,18 +89,17 @@ in
       xz
       ;
   };
-  dependencyProviders =
-    {
-      inherit (final) file pkg-config;
-    }
-    // {
-      inherit (final.runtime)
-        openssl
-        zlib
-        bzip2
-        xz
-        ;
-    };
+  dependencyProviders = {
+    inherit (final) file pkg-config;
+  }
+  // {
+    inherit (final.runtime)
+      openssl
+      zlib
+      bzip2
+      xz
+      ;
+  };
   environment = {
     tools = [
       tools.gnumake

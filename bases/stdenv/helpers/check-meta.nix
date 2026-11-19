@@ -583,7 +583,8 @@ let
           else
             findFirst hasOutput null outputs
         )
-      ] ++ optional (hasOutput "man") "man";
+      ]
+      ++ optional (hasOutput "man") "man";
     }
     // attrs.meta or { }
     # Fill `meta.position` to identify the source location of the package.

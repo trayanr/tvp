@@ -38,7 +38,7 @@ context.mkSuite {
         assert map toString manuals.tools == [ gzipProvider ];
         assert lib.hasInfix "${gzipProvider}/bin/gzip" manuals.run;
         "providers";
-      script = ''printf providers'';
+      script = "printf providers";
     };
     output-inspection-fail-closed = {
       script = ''

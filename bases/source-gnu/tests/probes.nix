@@ -106,7 +106,7 @@ let
                 outPath = "/missing-selected-compiler";
               };
             }).environment
-            { }
+              { }
           )
           // {
             name = "compiler.poisoned-selection";

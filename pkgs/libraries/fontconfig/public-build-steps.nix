@@ -104,10 +104,8 @@ in
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (steps.split "fontconfig.finalize")
-    (outputs.copyArtifacts
-      {
-      }
-    )
+    (outputs.copyArtifacts {
+    })
     {
       name = "fontconfig.relocate";
       tools = [ tools.python ];

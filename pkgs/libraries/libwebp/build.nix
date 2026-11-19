@@ -17,7 +17,10 @@ in
   environment.tools = [ tools.cmake ];
   runtime.libraries = [ ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.cmake {
       name = "libwebp";
       inherit (environment) tools libraries env;
@@ -56,14 +59,16 @@ in
         tools.patchelf
         tools.python
       ];
-      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${lib.escapeShellArg (
-        builtins.toJSON {
-          paths = [ "lib" ];
-          directories = [ "lib" ];
-          readelf = "${tools.binutils}/bin/readelf";
-          patchelf = "${tools.patchelf}/bin/patchelf";
-        }
-      )} ${../../../lib/native-output}'';
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            paths = [ "lib" ];
+            directories = [ "lib" ];
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
     }
     (outputs.rpaths {
       paths = [ "lib" ];

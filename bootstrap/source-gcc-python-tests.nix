@@ -49,46 +49,82 @@ let
       src = sources.${name};
     };
   packages = rec {
-    json5 = package "json5" "0.9.25" [
-      packages.setuptools
-      packages.wheel
-    ] [ ] { };
-    rfc3987 = package "rfc3987" "1.3.8" [
-      packages.setuptools
-      packages.wheel
-    ] [ ] { };
+    json5 =
+      package "json5" "0.9.25"
+        [
+          packages.setuptools
+          packages.wheel
+        ]
+        [ ]
+        { };
+    rfc3987 =
+      package "rfc3987" "1.3.8"
+        [
+          packages.setuptools
+          packages.wheel
+        ]
+        [ ]
+        { };
     "pygments" = package "pygments" "2.18.0" [ packages.hatchling ] [ ] { };
-    "Cython" = package "Cython" "3.0.11" [
-      packages.setuptools
-      packages.wheel
-    ] [ ] { environmentValues.NO_CYTHON_COMPILE = "true"; };
+    "Cython" =
+      package "Cython" "3.0.11"
+        [
+          packages.setuptools
+          packages.wheel
+        ]
+        [ ]
+        { environmentValues.NO_CYTHON_COMPILE = "true"; };
     "typing_extensions" = package "typing_extensions" "4.12.2" [ packages."flit_core" ] [ ] { };
-    "PyYAML" = package "PyYAML" "6.0.2" [
-      packages.Cython
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { environmentValues.PYYAML_FORCE_LIBYAML = "0"; };
-    "arrow" = package "arrow" "1.3.0" [ packages."flit_core" ] [
-      packages."python-dateutil"
-      packages."types-python-dateutil"
-    ] { };
-    "attrs" = package "attrs" "23.2.0" [
-      packages."hatchling"
-      packages."hatch-vcs"
-      packages."hatch-fancy-pypi-readme"
-    ] [ ] { };
-    "calver" = package "calver" "2022.6.26" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "certifi" = package "certifi" "2024.7.4" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "charset-normalizer" = package "charset-normalizer" "3.3.2" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { environmentValues.CHARSET_NORMALIZER_USE_MYPYC = "0"; };
+    "PyYAML" =
+      package "PyYAML" "6.0.2"
+        [
+          packages.Cython
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { environmentValues.PYYAML_FORCE_LIBYAML = "0"; };
+    "arrow" =
+      package "arrow" "1.3.0"
+        [ packages."flit_core" ]
+        [
+          packages."python-dateutil"
+          packages."types-python-dateutil"
+        ]
+        { };
+    "attrs" =
+      package "attrs" "23.2.0"
+        [
+          packages."hatchling"
+          packages."hatch-vcs"
+          packages."hatch-fancy-pypi-readme"
+        ]
+        [ ]
+        { };
+    "calver" =
+      package "calver" "2022.6.26"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "certifi" =
+      package "certifi" "2024.7.4"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "charset-normalizer" =
+      package "charset-normalizer" "3.3.2"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { environmentValues.CHARSET_NORMALIZER_USE_MYPYC = "0"; };
     "check-jsonschema" =
       package "check-jsonschema" "0.23.3"
         [
@@ -113,22 +149,38 @@ let
         {
           patches = [ ./recipes/python/patches/check-jsonschema-draft-id.patch ];
         };
-    "click" = package "click" "8.1.7" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
+    "click" =
+      package "click" "8.1.7"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
     "flit_core" = package "flit_core" "3.9.0" [ ] [ ] { };
-    "fqdn" = package "fqdn" "1.5.1" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "hatch-fancy-pypi-readme" = package "hatch-fancy-pypi-readme" "24.1.0" [ packages."hatchling" ] [
-      packages."hatchling"
-    ] { };
-    "hatch-vcs" = package "hatch-vcs" "0.4.0" [ packages."hatchling" ] [
-      packages."hatchling"
-      packages."setuptools-scm"
-    ] { };
+    "fqdn" =
+      package "fqdn" "1.5.1"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "hatch-fancy-pypi-readme" =
+      package "hatch-fancy-pypi-readme" "24.1.0"
+        [ packages."hatchling" ]
+        [
+          packages."hatchling"
+        ]
+        { };
+    "hatch-vcs" =
+      package "hatch-vcs" "0.4.0"
+        [ packages."hatchling" ]
+        [
+          packages."hatchling"
+          packages."setuptools-scm"
+        ]
+        { };
     "hatchling" =
       package "hatchling" "1.25.0"
         [
@@ -145,18 +197,30 @@ let
         ]
         { };
     "idna" = package "idna" "3.7" [ packages."flit_core" ] [ ] { };
-    "iniconfig" = package "iniconfig" "2.0.0" [
-      packages."hatchling"
-      packages."hatch-vcs"
-    ] [ ] { };
-    "isoduration" = package "isoduration" "20.11.0" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ packages."arrow" ] { };
-    "jsonpointer" = package "jsonpointer" "3.0.0" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
+    "iniconfig" =
+      package "iniconfig" "2.0.0"
+        [
+          packages."hatchling"
+          packages."hatch-vcs"
+        ]
+        [ ]
+        { };
+    "isoduration" =
+      package "isoduration" "20.11.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ packages."arrow" ]
+        { };
+    "jsonpointer" =
+      package "jsonpointer" "3.0.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
     "jsonschema" =
       package "jsonschema" "4.17.3"
         [
@@ -171,15 +235,23 @@ let
         { };
     "packaging" = package "packaging" "24.1" [ packages."flit_core" ] [ ] { };
     "pathspec" = package "pathspec" "0.12.1" [ packages."flit_core" ] [ ] { };
-    "pluggy" = package "pluggy" "1.5.0" [
-      packages."setuptools"
-      packages."wheel"
-      packages."setuptools-scm"
-    ] [ ] { };
-    "pyrsistent" = package "pyrsistent" "0.19.3" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { environmentValues.PYRSISTENT_SKIP_EXTENSION = "1"; };
+    "pluggy" =
+      package "pluggy" "1.5.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+          packages."setuptools-scm"
+        ]
+        [ ]
+        { };
+    "pyrsistent" =
+      package "pyrsistent" "0.19.3"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { environmentValues.PYRSISTENT_SKIP_EXTENSION = "1"; };
     "pytest" =
       package "pytest" "8.3.2"
         [
@@ -193,11 +265,15 @@ let
           packages."pluggy"
         ]
         { };
-    "python-dateutil" = package "python-dateutil" "2.9.0.post0" [
-      packages."setuptools"
-      packages."wheel"
-      packages."setuptools-scm"
-    ] [ packages."six" ] { };
+    "python-dateutil" =
+      package "python-dateutil" "2.9.0.post0"
+        [
+          packages."setuptools"
+          packages."wheel"
+          packages."setuptools-scm"
+        ]
+        [ packages."six" ]
+        { };
     "requests" =
       package "requests" "2.32.3"
         [
@@ -224,18 +300,30 @@ let
           packages."types-PyYAML"
         ]
         { };
-    "rfc3339-validator" = package "rfc3339-validator" "0.1.4" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ packages."six" ] { };
-    "rfc3986-validator" = package "rfc3986-validator" "0.1.1" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "ruamel.yaml" = package "ruamel.yaml" "0.17.32" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
+    "rfc3339-validator" =
+      package "rfc3339-validator" "0.1.4"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ packages."six" ]
+        { };
+    "rfc3986-validator" =
+      package "rfc3986-validator" "0.1.1"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "ruamel.yaml" =
+      package "ruamel.yaml" "0.17.32"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
     "setuptools" = package "setuptools" "69.5.1" [ packages."wheel" ] [ ] { };
     "setuptools-scm" =
       package "setuptools-scm" "7.1.0"
@@ -251,33 +339,57 @@ let
           packages."typing_extensions"
         ]
         { };
-    "six" = package "six" "1.16.0" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "trove-classifiers" = package "trove-classifiers" "2024.7.2" [
-      packages."setuptools"
-      packages."wheel"
-      packages."calver"
-    ] [ ] { };
-    "types-PyYAML" = package "types-PyYAML" "6.0.12.20240917" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "types-python-dateutil" = package "types-python-dateutil" "2.9.0.20240906" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
-    "uri-template" = package "uri-template" "1.3.0" [
-      packages."setuptools"
-      packages."wheel"
-      packages."setuptools-scm"
-    ] [ ] { };
+    "six" =
+      package "six" "1.16.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "trove-classifiers" =
+      package "trove-classifiers" "2024.7.2"
+        [
+          packages."setuptools"
+          packages."wheel"
+          packages."calver"
+        ]
+        [ ]
+        { };
+    "types-PyYAML" =
+      package "types-PyYAML" "6.0.12.20240917"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "types-python-dateutil" =
+      package "types-python-dateutil" "2.9.0.20240906"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
+    "uri-template" =
+      package "uri-template" "1.3.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+          packages."setuptools-scm"
+        ]
+        [ ]
+        { };
     "urllib3" = package "urllib3" "2.2.2" [ packages."hatchling" ] [ ] { };
-    "webcolors" = package "webcolors" "24.8.0" [
-      packages."setuptools"
-      packages."wheel"
-    ] [ ] { };
+    "webcolors" =
+      package "webcolors" "24.8.0"
+        [
+          packages."setuptools"
+          packages."wheel"
+        ]
+        [ ]
+        { };
     "wheel" = package "wheel" "0.44.0" [ packages."flit_core" ] [ ] { };
   };
   profile = make (

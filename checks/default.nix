@@ -535,8 +535,12 @@
         fileset = fileset.fileFilter (f: f.hasExt "nix") ../.;
       };
     in
-    pkgs.runCommand "tvp-check-formatting" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; } ''
-      nixfmt --check $(find ${src} -name '*.nix') 2>&1 | tee "$out"
-      test ! -s "$out"
-    '';
+    pkgs.runCommand "tvp-check-formatting"
+      {
+        nativeBuildInputs = [ tvp.packages.nixfmt_1_5_0 ];
+      }
+      ''
+        nixfmt --check $(find ${src} -name '*.nix') 2>&1 | tee "$out"
+        test ! -s "$out"
+      '';
 }

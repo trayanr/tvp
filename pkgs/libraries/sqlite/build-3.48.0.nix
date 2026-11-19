@@ -82,16 +82,19 @@ in
   buildFeatures = {
     compileFlags = [ ];
     hardeningDisable = [ ];
-  } // buildFeatures;
+  }
+  // buildFeatures;
   sourceLayout = {
     compression = "gzip";
     configureIsExecutable = true;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     nativeProfile = false;
     reportedVersion = final.version;
     pkgConfigMajorMinor = false;
-  } // installedInterface;
+  }
+  // installedInterface;
   # These names are the existing specialized isolation protocol, not standard tools.
   inherit
     testZlib

@@ -32,11 +32,13 @@ in
   inherit (tools) bash coreutils;
   buildFeatures = {
     cStandard = "gnu89";
-  } // buildFeatures;
+  }
+  // buildFeatures;
   installedInterface = {
     reportedVersion = final.version;
     pkgConfigVersion = final.version;
-  } // installedInterface;
+  }
+  // installedInterface;
   artifactName = "${final.pname}-${final.version}";
   environment = {
     tools = [

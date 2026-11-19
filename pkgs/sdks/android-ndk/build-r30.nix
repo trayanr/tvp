@@ -43,10 +43,12 @@ in
   sourceLayout = {
     archiveRoot = "android-ndk-r30";
     packageMetadata = ./metadata-30.0.16248370.xml;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     sdkPath = "ndk/30.0.16248370";
-  } // installedInterface;
+  }
+  // installedInterface;
   testsEnabled = true;
   runtime = {
     shell = "${final.bash}/bin/bash";
@@ -54,7 +56,8 @@ in
     libraries = [
       final.runtimeLibc
       final.runtimeCompiler
-    ] ++ [ final.zlib ];
+    ]
+    ++ [ final.zlib ];
   };
   environment.tools = [
     final.coreutils

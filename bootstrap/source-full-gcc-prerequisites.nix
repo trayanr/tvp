@@ -108,14 +108,12 @@ let
                     status=0
                     ${bash}/bin/bash -euc ${lib.escapeShellArg old.run} > "$evidence/${old.name}.log" 2>&1 || status=$?
                     printf '%s\n' "$status" > "$evidence/${old.name}.status"
-                    ${
-                      lib.optionalString (old.name == "${name}.check") ''
-                        ${tools.findutils}/bin/find . -type f \( -name '*.log' -o -name '*.trs' \) | while read -r f; do
-                          mkdir -p "$evidence/raw/$(dirname "$f")"
-                          cp "$f" "$evidence/raw/$f"
-                        done
-                      ''
-                    }
+                    ${lib.optionalString (old.name == "${name}.check") ''
+                      ${tools.findutils}/bin/find . -type f \( -name '*.log' -o -name '*.trs' \) | while read -r f; do
+                        mkdir -p "$evidence/raw/$(dirname "$f")"
+                        cp "$f" "$evidence/raw/$f"
+                      done
+                    ''}
                     ${
                       if old.name == "${name}.check" then
                         ""

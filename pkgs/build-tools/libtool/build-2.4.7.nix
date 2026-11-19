@@ -130,7 +130,8 @@ in
       name = "libtool.source-interpreter";
       paths = [
         "libtoolize.in"
-      ] ++ final.additionalTemplates;
+      ]
+      ++ final.additionalTemplates;
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })

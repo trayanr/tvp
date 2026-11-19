@@ -63,7 +63,8 @@ in
       ninja
       python
       pkgConfig
-    ] ++ buildTools;
+    ]
+    ++ buildTools;
     libraries = [
       png
       freetype
@@ -107,7 +108,7 @@ in
       export HOME="$PWD/test-home" XDG_CACHE_HOME="$PWD/test-cache"
       mkdir -p "$HOME" "$XDG_CACHE_HOME"
       ${cmake}/bin/ctest --test-dir build --output-on-failure --no-tests=error -j "$NIX_BUILD_CORES"'')
-    (command "install" ''${cmake}/bin/cmake --install build'')
+    (command "install" "${cmake}/bin/cmake --install build")
     (outputs.shebangs {
       inherit python;
       paths = [ "bin/bdftogd" ];

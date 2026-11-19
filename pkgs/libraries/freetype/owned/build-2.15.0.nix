@@ -59,7 +59,8 @@ in
     tools = [
       gnumake
       pkgConfig
-    ] ++ buildTools;
+    ]
+    ++ buildTools;
     libraries = [
       zlib
       bzip2

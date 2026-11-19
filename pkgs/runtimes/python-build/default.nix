@@ -10,19 +10,18 @@ let
           zlib = tvp.packages.zlib_1;
           bzip2 = tvp.packages.bzip2_1;
         };
-        patches =
-          [
-            {
-              file = ./patches/subprocess-shell.patch;
-              reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/ssl-unexpected-eof.patch;
-              reason = "OpenSSL can append a failed fatal-alert write after unexpected EOF; preserve CPython's strict/suppressed EOF handling instead of reporting the secondary system error.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/subprocess-shell.patch;
+            reason = "Store-layout adaptation: use the declared Bash instead of /bin/sh, which is absent in Nix build sandboxes.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/ssl-unexpected-eof.patch;
+            reason = "OpenSSL can append a failed fatal-alert write after unexpected EOF; preserve CPython's strict/suppressed EOF handling instead of reporting the secondary system error.";
+          }
+        ];
       };
       releases."3.12.5" = "sha256-+oouEsXmILCfU+ZbzYdVDS5aHi4Ev4upkdzFUROHY5c=";
     }

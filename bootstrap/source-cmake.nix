@@ -76,19 +76,19 @@ let
           patches = [ ../pkgs/libraries/json-c/patches/posix-test-byte.patch ];
         }
       )).edit
-      (
-        s:
-        s
-        // {
-          environment = s.environment // {
-            tools = s.environment.tools ++ [
-              b.gnused
-              b.build-grep
-              b.diffutils
-            ];
-          };
-        }
-      )
+        (
+          s:
+          s
+          // {
+            environment = s.environment // {
+              tools = s.environment.tools ++ [
+                b.gnused
+                b.build-grep
+                b.diffutils
+              ];
+            };
+          }
+        )
     ).editSteps
       (
         plan:

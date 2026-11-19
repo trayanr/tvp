@@ -84,21 +84,19 @@ let
           (final.base.environment final.environment)
           // {
             name = "cancellation.build";
-            run =
-              definitions
-              + ''
-                mkdir -p "$out/bin" "$out/lib" "$evidence"
-                cp ${./gnu-cancel.c} cancel.c
-                # Check maps after libc has dynamically loaded the C-only unwinder.
-                ${b.gnused}/bin/sed -i '/puts("GNU C-only/i\    target_maps(0, 1);' cancel.c
-                "$CC" '-DTARGET_LIBC="${profile.libc}"' '-DTARGET_GCC="${rt}"' '-DTARGET_CXX="${profile.libstdcxx}"' \
-                  -include ${./gnu-target-maps.h} -pthread -v -Wl,-Map,link.map cancel.c -o "$out/bin/cancel" > "$evidence/link.log" 2>&1
-                cp link.map "$evidence/"
-                printf '%s\n' 'int output_selector_object(void) { return 0; }' > selector.c
-                "$CC" -c selector.c -o "$out/lib/selector.o"
-                sha256sum "$out/lib/selector.o" > "$evidence/selector-before.sha256"
-                ln -s cancel "$out/bin/cancel-alias"
-              '';
+            run = definitions + ''
+              mkdir -p "$out/bin" "$out/lib" "$evidence"
+              cp ${./gnu-cancel.c} cancel.c
+              # Check maps after libc has dynamically loaded the C-only unwinder.
+              ${b.gnused}/bin/sed -i '/puts("GNU C-only/i\    target_maps(0, 1);' cancel.c
+              "$CC" '-DTARGET_LIBC="${profile.libc}"' '-DTARGET_GCC="${rt}"' '-DTARGET_CXX="${profile.libstdcxx}"' \
+                -include ${./gnu-target-maps.h} -pthread -v -Wl,-Map,link.map cancel.c -o "$out/bin/cancel" > "$evidence/link.log" 2>&1
+              cp link.map "$evidence/"
+              printf '%s\n' 'int output_selector_object(void) { return 0; }' > selector.c
+              "$CC" -c selector.c -o "$out/lib/selector.o"
+              sha256sum "$out/lib/selector.o" > "$evidence/selector-before.sha256"
+              ln -s cancel "$out/bin/cancel-alias"
+            '';
           }
         )
         (builder.outputs.rpaths {
