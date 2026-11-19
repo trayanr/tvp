@@ -4,6 +4,7 @@
   base,
   src,
   version,
+  file,
   sqlite,
   unixodbc,
 }:
@@ -25,6 +26,7 @@ in
     base
     src
     version
+    file
     sqlite
     unixodbc
     ;
@@ -37,6 +39,7 @@ in
       tools.gawk
       tools.diffutils
       tools.pkg-config
+      final.file
     ];
     libraries = [
       final.sqlite
@@ -57,9 +60,11 @@ in
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
       # The release's Autoconf probes use the pre-C23 C dialect.
       export CFLAGS="''${CFLAGS:--g -O2} -std=gnu17"
+      # Keep the SQLite 2 probe inside the selected SQLite 3 prefix.
+      # This configure script treats --without-sqlite as a directory named no.
       ./configure --prefix="$out" --enable-shared --disable-static \
-        --without-sqlite --without-sqlite4 --without-dls \
-        --with-sqlite3=${final.sqlite} --with-odbc=${final.unixodbc}
+        --with-sqlite=${final.sqlite} --with-sqlite3=${final.sqlite} \
+        --with-odbc=${final.unixodbc}
     '')
     (command "sqliteodbc.build" ''
       ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash libsqlite3odbc.la

@@ -6,6 +6,7 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          file = tvp.packages.file;
           sqlite = tvp.packages.sqlite_3;
           unixodbc = tvp.packages.unixodbc;
         };
