@@ -2,13 +2,7 @@
 let
   name = "pgsql";
   pname = "php-${name}";
-  postgresql = pkgs.postgresql_16;
-  borrowed =
-    reason:
-    tvp.lib.packages.withConstraint {
-      kind = "foreign";
-      inherit reason;
-    };
+  postgresql = tvp.packages.postgresql_16;
   inherit
     (import ../bundled-releases.nix {
       inherit pkgs tvp;
@@ -16,10 +10,8 @@ let
       def = {
         builder = ./build.nix;
         deps = {
-          postgresql = borrowed "PGSQL needs the matching PostgreSQL SDK and client library." postgresql;
-          openssl = borrowed "Link against the OpenSSL used by this PostgreSQL client." pkgs.openssl;
-          krb5 = borrowed "Link against the Kerberos library used by this PostgreSQL client." pkgs.krb5;
-          keyutils = borrowed "Resolve the Kerberos client library's link-time dependencies." pkgs.keyutils;
+          inherit postgresql;
+          inherit (postgresql.specification) openssl krb5 keyutils;
         };
       };
     })
@@ -35,7 +27,7 @@ let
       ;
     phpPolicy.kind = "bundled";
     tests = import ./tests.nix { inherit tvp; };
-    testDeps.postgresql = borrowed "Runs the PostgreSQL integration test server." postgresql;
+    testDeps.postgresql = postgresql;
     meta = {
       description = "PHP native client for PostgreSQL";
       homepage = "https://www.php.net/manual/en/book.pgsql.php";

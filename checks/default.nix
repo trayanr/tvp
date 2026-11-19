@@ -112,8 +112,8 @@
         coreutils
         git
         gnugrep
+        jq
         ;
-      inherit (pkgs) jq;
     };
   };
   bootstrap-audit-contracts = import ../bootstrap/check.nix { inherit tvp; };

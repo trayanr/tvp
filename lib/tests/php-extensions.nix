@@ -409,9 +409,16 @@ let
       let
         driver = php.extensions.pdo_pgsql;
         original = driver.specification.postgresql;
-        replacement = original.overrideAttrs (_: {
-          pname = "postgresql-extension-probe";
-        });
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "postgresql.extension-override-probe";
+              run = "true";
+            }
+          ]
+        );
         overridden = driver.override { postgresql = replacement; };
         configure =
           package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
@@ -419,7 +426,7 @@ let
       overridden.tvp.declaredDependencies.postgresql.drvPath == replacement.drvPath
       && overridden.tvp.declaredTestDependencies.postgresql.drvPath == original.drvPath
       && has "--with-pdo-pgsql=${replacement}" (configure overridden)
-      && has replacement.lib.outPath (rpathCommand overridden);
+      && has (lib.getLib replacement).outPath (rpathCommand overridden);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let
@@ -754,7 +761,9 @@ let
           "load"
           "roundtrip"
         ]
-      && tvp.smokeTests.metadata.namedTests == 18 + 2 * extensionPairs
+      &&
+        builtins.filter (lib.hasPrefix "php_") (builtins.attrNames tvp.smokeTests.metadata.subjects)
+        == builtins.attrNames (tvp.php.extensionMatrix // { php_8_5_12--opcache-builtin = null; })
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in

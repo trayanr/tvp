@@ -8,12 +8,7 @@ let
       minPHP = "8.2";
       def = {
         builder = ./build.nix;
-        deps = {
-          oniguruma = tvp.lib.packages.withConstraint {
-            kind = "foreign";
-            reason = "PHP mbregex requires Oniguruma, which TVP does not package yet.";
-          } pkgs.oniguruma;
-        };
+        deps.oniguruma = tvp.packages.oniguruma_6_9;
       };
     })
     source
