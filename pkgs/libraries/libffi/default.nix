@@ -165,7 +165,8 @@ let
       url = version: "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz";
       fetch =
         { version, sha256 }:
-        pkgs.fetchurl {
+        tvp.lib.sources.fetchMirrors {
+          certificates = tvp.packages.ca-certificates;
           urls = [
             "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz"
             "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz"

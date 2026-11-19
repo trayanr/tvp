@@ -46,6 +46,10 @@ the URL and version-table hash. A source needing other fetch arguments can
 provide an explicit `fetch = { version, sha256 }: ...` factory alongside its URL
 and discovery. This preserves existing fetch identities and behavior.
 
+`tvp.lib.sources.fetchMirrors` downloads a pinned archive from an ordered list
+of HTTPS URLs using TVP's bootstrap Python and a declared CA bundle. Keep the
+archive name and hash when changing its fetcher so Nix can reuse the same source.
+
 The family exports the resolved URL as `package.tvp.source` and its discovery as
 `package.tvp.upstream`. An explicit definition-level source takes precedence over
 the family source. Legacy function sources and `packageMeta.upstream` remain
