@@ -25,21 +25,28 @@ flake='''{ inputs.nixpkgs.url = "github:NixOS/nixpkgs/NIXPKGS_REV"; outputs = { 
   script = builtins.path { name = "fixture-builder";
     path = builtins.toFile "tvp-ci-generated-SMOKE_ID" "printf passed > $out\\n"; };
   result = builtins.derivation { name = "tvp-ci-smoke-result"; inherit system; builder = BASH; args = [ script ]; };
-  plan = builtins.derivation { name = "tvp-ci-smoke-plan"; inherit system; builder = BASH; args = [ "-c" "printf '%s' \\\"$manifest\\\" > $out" ];
-    manifest = builtins.toJSON { schema = 1; revision = self.rev or null; source = self.outPath; inherit system;
-      aggregate = builtins.unsafeDiscardOutputDependency result.drvPath;
-      jobs = [{ name = "fixture"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ];
-        tests = [{ name = "run"; drv = builtins.unsafeDiscardOutputDependency result.drvPath; outputs = [ (discard result.outPath) ]; }]; }]; skipped = []; }; };
-in { testPlans.${system} = plan; smokeTestPlans.${system} = plan; checks.${system}.fixture = result;
- graph = { schema = 1; entries.fixture = { drv = discard result.drvPath; out = discard result.outPath; };
+  compatibility = import ./compatibility-tests.nix { inherit (pkgs) lib; };
+  batches = pkgs.lib.genAttrs [ "first" "fixture" "last" "middle" "other" ] (name:
+    compatibility.mkBatch { inherit pkgs; name = "smoke-" + name; suite.run = result; });
+  common = { inherit pkgs batches; source = self.outPath; revision = self.rev or null; };
+  plan = compatibility.mkPlan (common // { checks = {}; canonical = {}; smoke = true; });
+in { smokeTestPlans.${system} = plan; smokeTestPlanParts.${system} = PLAN_EXPORT; checks.${system}.fixture = result;
+ legacyPackages.${system}.graph = { schema = 1; entries.fixture = { drv = discard result.drvPath; out = discard result.outPath; };
  entries.retired = { drv = discard result.drvPath; out = discard result.outPath; }; }; }; }
 '''.replace('NIXPKGS_REV',revision).replace('BASH', '"${pkgs.bash}/bin/bash"').replace('SMOKE_ID',area.name)
-(repository/'flake.nix').write_text(flake);g('add','flake.nix');subprocess.run([realnix,'flake','lock',str(repository)],check=True);g('add','flake.lock');g('commit','--quiet','-m','base');base=g('rev-parse','HEAD');original_base=base
+shutil.copyfile(root/'lib/compatibility-tests.nix', repository/'compatibility-tests.nix')
+(repository/'flake.nix').write_text(flake.replace('PLAN_EXPORT', '{}'))
+g('add','flake.nix','compatibility-tests.nix');subprocess.run([realnix,'flake','lock',str(repository)],check=True);g('add','flake.lock');g('commit','--quiet','-m','base');base=g('rev-parse','HEAD');original_base=base
 g('checkout','--quiet','-b','expansion')
 (repository/'expansion').write_text('new package version\n')
 # Keep the test's result identical, but change its producer and remove a graph
 # entry. The PR must still build without a controller-owned graph allowance.
-(repository/'flake.nix').write_text(flake.replace('printf passed > $out', "printf '%s' passed > $out")
+parallel_plan = '''{
+  planPart = args: compatibility.smokePlanPart (args // { inherit batches; });
+  joinPlan = args: compatibility.joinSmokePlan (common // args);
+}'''
+(repository/'flake.nix').write_text(flake.replace('PLAN_EXPORT', parallel_plan)
+    .replace('printf passed > $out', "printf '%s' passed > $out")
     .replace(' entries.retired = { drv = discard result.drvPath; out = discard result.outPath; };', ''))
 g('add','expansion','flake.nix');g('commit','--quiet','-m','expand');head=g('rev-parse','HEAD')
 # Advance the actual target independently, leaving the PR's payload base stale.
@@ -90,3 +97,17 @@ difference=json.loads((work/'evidence/graph-diff.json').read_text())
 assert list(difference['changed'])==['fixture']
 assert difference['removed']==['retired']
 assert difference['ciIdentity']==result['ciIdentity']
+for directory in (master_work, work):
+    snapshot = directory/'ci-snapshot'
+    assert snapshot.is_symlink()
+    plan = Path(json.loads(snapshot.read_text())['plan'])
+    installed = str(directory/'candidate')
+    assert str(plan) == subprocess.check_output([realnix, 'eval', '--raw', installed + '#smokeTestPlans.x86_64-linux'], text=True)
+    assert (directory/'evidence/candidate-graph.json').read_text().strip() == subprocess.check_output(
+        [realnix, 'eval', '--json', installed + '#graph'], text=True).strip()
+    assert str(plan) in subprocess.check_output(['nix-store', '--query', '--references', str(snapshot.resolve())], text=True).splitlines()
+    assert (directory/'validation/latest/plan').resolve()==plan
+    assert 'Reused CI smoke plan' in (directory/'evidence/prepare.log').read_text()
+calls = (area/'nix-calls').read_text()
+assert '#smokeTestPlans.' not in calls
+assert calls.count('builtins.toFile "tvp-ci-smoke-part.json"') == job.SMOKE_EVALUATORS

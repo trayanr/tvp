@@ -129,6 +129,23 @@
         testBatches = tvp.testBatches;
         latestTests = tvp.latestTests;
         smokeTests = tvp.smokeTests;
+
+        smokeTestPlanParts = {
+          planPart =
+            { index, count }:
+            tvp.lib.tests.compatibility.smokePlanPart {
+              inherit (tvp.smokeTests) batches;
+              inherit index count;
+            };
+          joinPlan =
+            { parts, references }:
+            tvp.lib.tests.compatibility.joinSmokePlan {
+              inherit pkgs parts references;
+              inherit (tvp.smokeTests) batches;
+              source = self.outPath;
+              revision = self.rev or self.dirtyRev or null;
+            };
+        };
       }
     );
 }

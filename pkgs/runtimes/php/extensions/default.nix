@@ -54,12 +54,13 @@ let
       limits = entry.def.opts.phpCompatibility;
     in
     tvp.lib.php.compatibility.matches limits php.version;
+  bindPackage = engine: package: package.override { php = engine; };
   bindFamily =
     engine: name: family:
     let
       pname = "php-${name}";
       eligible = pkgs.lib.filterAttrs (_: entry: compatible engine entry) family.versionTable;
-      bound = builtins.mapAttrs (_: package: package.override { php = engine; }) family.canonical;
+      bound = builtins.mapAttrs (_: bindPackage engine) family.canonical;
       valid = builtins.intersectAttrs (pkgs.lib.genAttrs (map (tvp.lib.versions.attrName pname) (
         builtins.attrNames eligible
       )) (_: null)) bound;
@@ -86,19 +87,27 @@ let
     };
   bind =
     php:
-    pkgs.lib.foldl' (bound: name: bound // bindFamily (plain php) name families.${name}) { } (
+    let
+      engine = plain php;
+    in
+    pkgs.lib.foldl' (bound: name: bound // bindFamily engine name families.${name}) { } (
       builtins.attrNames families
     );
 in
 (tvp.lib.packages.mergeNamespaces families)
 // {
   forPHP = bind;
+  forRelease =
+    php: family: release:
+    bindPackage (plain php)
+      families.${family}.canonical.${tvp.lib.versions.attrName "php-${family}" release};
   runtimeModules =
     php: package:
     let
-      available = bind php;
+      engine = plain php;
+      requiredFamilies = families.${package.extensionName}.requires or [ ];
     in
-    map (name: available.${name}) (families.${package.extensionName}.requires or [ ]) ++ [ package ];
+    map (name: (bindFamily engine name families.${name}).${name}) requiredFamilies ++ [ package ];
   inherit
     builtIn
     compatible

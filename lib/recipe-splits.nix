@@ -224,6 +224,9 @@ in
       rows = inventory.rows;
       debts = builtins.filter (r: !r.compliant) rows;
       ids = map (r: r.id) rows;
+      rowsById =
+        if builtins.all builtins.isString ids then builtins.groupBy (row: plain row.id) rows else null;
+      uniqueIds = if rowsById == null then lib.unique ids else builtins.attrNames rowsById;
       classes = {
         legacy = [ "legacy-no-plan" ];
         native-plan = [
@@ -261,13 +264,22 @@ in
         && !builtins.hasContext e.reason;
       listOK = builtins.isList baseline;
       entriesOK = listOK && builtins.all validEntry baseline;
-      baselineIds = map (e: e.id) baseline;
-      shapeOK = entriesOK && builtins.length baselineIds == builtins.length (lib.unique baselineIds);
-      matched =
+      baselineById = builtins.listToAttrs (map (entry: lib.nameValuePair entry.id entry) baseline);
+      shapeOK =
+        entriesOK && builtins.length baseline == builtins.length (builtins.attrNames baselineById);
+      matchingEntry =
         row:
-        builtins.any (
-          e: e.id == row.id && e.constructor == row.constructor && e.failure == row.failure
-        ) baseline;
+        let
+          entry =
+            if builtins.isString row.id then
+              baselineById.${plain row.id} or null
+            else
+              lib.findFirst (candidate: candidate.id == row.id) null baseline;
+        in
+        if entry != null && entry.constructor == row.constructor && entry.failure == row.failure then
+          entry
+        else
+          null;
       unused =
         if !shapeOK then
           [ ]
@@ -276,13 +288,13 @@ in
             e:
             !(builtins.any (
               r: r.id == e.id && !r.compliant && r.constructor == e.constructor && r.failure == e.failure
-            ) rows)
+            ) (if rowsById == null then rows else rowsById.${e.id} or [ ]))
           ) baseline;
-      newDebt = if !shapeOK then debts else builtins.filter (r: !matched r) debts;
+      newDebt = if !shapeOK then debts else builtins.filter (r: matchingEntry r == null) debts;
       errors =
         lib.optional (!shapeOK)
           "Malformed split baseline: expected unique exact IDs, known classifications and nonblank actionable reasons."
-        ++ lib.optional (builtins.length ids != builtins.length (lib.unique ids)) "Duplicate inventory IDs."
+        ++ lib.optional (builtins.length ids != builtins.length uniqueIds) "Duplicate inventory IDs."
         ++ map (r: "Unbaselined failure ${r.id}: ${r.constructor}/${r.failure}") newDebt
         ++ map (
           e: "Stale or classification-drift baseline entry ${e.id}: ${e.constructor}/${e.failure}"
@@ -307,7 +319,7 @@ in
           publicVariants = builtins.length (builtins.filter (r: r.namespace != "canonical") rows);
           broken = builtins.length (builtins.filter (r: r.status.level == "broken") rows);
           compliant = builtins.length rows - builtins.length debts;
-          existingDebt = if shapeOK then builtins.length (builtins.filter matched debts) else 0;
+          existingDebt = builtins.length debts - builtins.length newDebt;
           unbaselined = builtins.length newDebt;
           remainingDebt = builtins.length debts;
           baselineEntries = if listOK then builtins.length baseline else 0;
@@ -319,11 +331,7 @@ in
           r:
           r
           // {
-            reason =
-              if shapeOK && matched r then
-                (builtins.head (builtins.filter (e: e.id == r.id) baseline)).reason
-              else
-                null;
+            reason = if shapeOK then (matchingEntry r).reason or null else null;
           }
         ) debts;
       };

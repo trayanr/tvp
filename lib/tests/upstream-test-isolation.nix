@@ -217,6 +217,18 @@ let
   };
   row = p: policy.inspect "fixture" p;
   rejects = p: !(row p).compliant;
+  auditInputs = {
+    canonical = {
+      inherit fixture;
+      unknown = {
+        drvPath = abort "An unaudited package's split producer must stay lazy.";
+        outPath = "unused";
+      };
+    };
+    variants.fixture.invalid = fixture // {
+      buildSteps = engineEdit.buildSteps;
+    };
+  };
   reverse =
     target: field:
     fixture.editSteps (
@@ -246,6 +258,8 @@ let
   contracts = {
     positive = (row fixture).compliant;
     unauditedNotCompliant = !(row (removeAttrs fixture [ "specification" ])).compliant;
+    sharedSplitRowsPreserveIsolation =
+      (policy.inventories auditInputs).upstreamIsolation == policy.inventory auditInputs;
     expectedOnly =
       preserves [
         "A"

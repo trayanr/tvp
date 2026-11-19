@@ -187,6 +187,21 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('--cores',command)
         self.assertNotIn(self.plan['aggregate']+'^*',command)
 
+    def test_owned_smoke_run_roots_and_reuses_the_ci_plan(self):
+        self.plan['system'] = 'x86_64-linux'
+        self.plan_file.write_text(json.dumps(self.plan))
+        self.env['TVP_CI_FROZEN_SMOKE_PLAN'] = str(self.plan_file)
+        owner = self.root / 'ci-owner.lock'
+        with owner.open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            result = self.cli('all', '--system', 'x86_64-linux', '--owner-lock', str(owner),
+                              '--state-dir', str(self.state), '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        run = Path(json.loads(result.stdout)['run'])
+        self.assertEqual((run / 'plan').resolve(), self.plan_file)
+        self.assertIn('Reused CI smoke plan', (run / 'prepare.log').read_text())
+        self.assertNotIn('#smokeTestPlans.', self.commands_file.read_text())
+
     def test_compact_smoke_reports_fast_remote_work_and_downloads(self):
         self.env.update(TVP_CI_PROGRESS='1', FAKE_REMOTE='ssh-ng://builder@host:22974?ssh-key=/ignored')
         result = self.cli('all', '--state-dir', str(self.state))

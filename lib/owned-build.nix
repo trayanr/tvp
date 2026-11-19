@@ -69,7 +69,27 @@ let
   stage =
     name: commands: artifact:
     let
-      selected = steps.active commands;
+      preamble =
+        nativeWrapperRole "NIX_CC_WRAPPER_TARGET_HOST" compiler
+        + nativeWrapperRole "NIX_BINTOOLS_WRAPPER_TARGET_HOST" compiler.bintools
+        + ''
+          export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " compiler.defaultHardeningFlags)}
+          export SOURCE_DATE_EPOCH=315532800
+          if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
+            SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
+          fi
+          ${lib.optionalString (
+            artifact != null
+          ) "readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT"}
+        ''
+        + lib.optionalString (splitNamed && artifact != null) (
+          # Bind artifact outputs explicitly in every fresh suffix step.
+          "readonly -A TVP_ARTIFACT_OUTPUTS=(\n"
+          + lib.concatMapStringsSep "\n" (
+            output: "[${output}]=${lib.escapeShellArg (toString artifact.${output})}"
+          ) outputNames
+          + "\n)\n"
+        );
       runner =
         import ./build-step-runner.nix
           {
@@ -81,36 +101,14 @@ let
               ;
           }
           {
-            plan = map (
+            plan = commands;
+            prepareStep =
               step:
               step
               // {
                 tools = lib.unique (step.tools ++ baselineTools);
-                run =
-                  nativeWrapperRole "NIX_CC_WRAPPER_TARGET_HOST" compiler
-                  + nativeWrapperRole "NIX_BINTOOLS_WRAPPER_TARGET_HOST" compiler.bintools
-                  + ''
-                    export NIX_HARDENING_ENABLE=${lib.escapeShellArg (lib.concatStringsSep " " compiler.defaultHardeningFlags)}
-                    export SOURCE_DATE_EPOCH=315532800
-                    if [[ -e "$TVP_SOURCE_ROOT/source-date-epoch" ]]; then
-                      SOURCE_DATE_EPOCH=$(cat "$TVP_SOURCE_ROOT/source-date-epoch")
-                    fi
-                    ${lib.optionalString (
-                      artifact != null
-                    ) "readonly TVP_ARTIFACT_ROOT=${lib.escapeShellArg (toString artifact)}; export TVP_ARTIFACT_ROOT"}
-                  ''
-                  + lib.optionalString (splitNamed && artifact != null) (
-                    # Explicit contextual bindings in every fresh suffix step.
-                    # No output discovery and no final paths in the prefix.
-                    "readonly -A TVP_ARTIFACT_OUTPUTS=(\n"
-                    + lib.concatMapStringsSep "\n" (
-                      output: "[${output}]=${lib.escapeShellArg (toString artifact.${output})}"
-                    ) outputNames
-                    + "\n)\n"
-                  )
-                  + step.run;
-              }
-            ) selected;
+                run = preamble + step.run;
+              };
             temporaryDirectories = true;
             owned = true;
             outputs = outputNames;

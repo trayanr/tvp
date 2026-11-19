@@ -92,13 +92,15 @@ For PRs:
 
 1. Fetch exact head and base commits into separate work directories.
 2. Recheck the current target and ancestry; record the unchanged head's identity.
-3. Evaluate the immutable target and exact-head producer graphs. Report
-   additions, changes and removals, retaining exact before/after identities in
-   `graph-diff.json`. These differences are informational and do not skip builds.
-4. Run `nix flake check --no-build` on the candidate.
-5. Run `test all --smoke --json` through the trusted tools revision. It freezes the
-   smoke test plan and waits on its exact run. Require both exit success and terminal
-   `passed`, retaining the returned run identity.
+3. Evaluate the immutable target producer graph. Four Nix client processes
+   evaluate the candidate's smoke plan in parts, with the first process also
+   evaluating the exact-head graph. Join and root the plan. Older candidates
+   evaluate the candidate graph and plan together in one process. Record
+   before/after producer identities in `graph-diff.json` for review.
+4. Run `nix flake check --no-build` on the candidate in one evaluator.
+5. Run `test all --smoke` through the trusted tools revision using the rooted
+   plan. Require both exit success and terminal `passed`, retaining the run
+   identity and its machine-readable receipt.
 6. Collect final suite/test counts, frozen plan, Nix logs and available full failure
    logs. Upload evidence to the controller even on failure.
 

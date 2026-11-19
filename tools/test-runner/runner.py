@@ -301,14 +301,21 @@ def start(args, return_run=False):
             try:
                 # Keep the executable and its interpreter alive after nix run exits.
                 root_path(run / "runner", Path(__file__).resolve().parents[2])
-                plan_attribute = "testPlans" if args.full else "smokeTestPlans"
-                command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
-                           args.flake + "#" + plan_attribute + "." + args.system]
+                frozen_plan = getattr(args, "frozen_plan", None)
                 with (run / "prepare.log").open("w") as log:
-                    subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
+                    if frozen_plan is None:
+                        plan_attribute = "testPlans" if args.full else "smokeTestPlans"
+                        command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
+                                   args.flake + "#" + plan_attribute + "." + args.system]
+                        subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
+                    else:
+                        root_path(run / "plan", frozen_plan)
+                        print(f"Reused CI smoke plan {frozen_plan}", file=log)
                 plan = json.loads((run / "plan").read_text())
                 if plan.get("schema") != 1:
                     raise RuntimeError("Unsupported test plan schema")
+                if frozen_plan is not None and plan.get("system") != args.system:
+                    raise RuntimeError("Frozen CI smoke plan has a different system")
                 names = {job["name"] for job in plan["jobs"]}
                 unknown = set(args.only or []) - names
                 if unknown:
@@ -362,12 +369,16 @@ def run_all(args):
     parent_owner = args.owner_lock.resolve() if args.owner_lock else None
     if parent_owner and not lease_held(parent_owner):
         raise RuntimeError("The controlling process must hold --owner-lock before starting")
+    frozen_plan = os.environ.get("TVP_CI_FROZEN_SMOKE_PLAN")
+    if frozen_plan and (not parent_owner or args.full or not Path(frozen_plan).is_absolute()):
+        raise RuntimeError("A frozen CI smoke plan requires an absolute path, smoke scope and a controlling process")
     # Reuse the existing worker. Releasing this lock also stops it if the
     # foreground command is killed before it can return a result.
     with owner_path.open("a") as owner:
         fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
         launch = argparse.Namespace(**vars(args), parent_owner_lock=parent_owner)
         launch.owner_lock = owner_path
+        launch.frozen_plan = Path(frozen_plan) if frozen_plan else None
         compact = os.environ.get("TVP_CI_PROGRESS") == "1" and not args.json
         preparing = time.monotonic()
         if compact:

@@ -106,22 +106,9 @@ rec {
       suite = suiteJobs { inherit batches checks; };
     };
 
-  # Keep manifest construction separate from materialization so evaluation
-  # contracts can inspect it without reading generated files in a fresh store.
-  planManifest =
-    {
-      pkgs,
-      batches,
-      checks,
-      canonical,
-      source,
-      revision ? null,
-      smoke ? false,
-    }:
+  planEntries =
+    { jobs, smoke }:
     let
-      jobs = suiteJobs { inherit batches checks; };
-      aggregate = mkAll { inherit pkgs batches checks; };
-      broken = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") == "broken") canonical;
       # Display metadata comes from the selected test objects, without walking
       # their native dependency graph or demanding any package output.
       plain = builtins.unsafeDiscardStringContext;
@@ -286,20 +273,9 @@ rec {
           }
         ) groups;
     in
-    {
-      schema = 1;
-      inherit revision;
-      source = builtins.path {
-        path = source;
-        name = "tvp-test-source";
-      };
-      system = pkgs.stdenv.hostPlatform.system;
-      aggregate = builtins.unsafeDiscardOutputDependency aggregate.drvPath;
-      displayLabels = builtins.listToAttrs (
-        lib.concatLists (lib.mapAttrsToList jobLabels jobs)
-        ++ label aggregate "All tests: collecting results"
-      );
-      jobs = lib.mapAttrsToList (name: drv: {
+    lib.mapAttrs (name: drv: {
+      labels = jobLabels name drv;
+      job = {
         inherit name;
         drv = builtins.unsafeDiscardOutputDependency drv.drvPath;
         outputs = outputPaths drv;
@@ -309,12 +285,137 @@ rec {
           outputs = outputPaths test;
         }) (drv.testSuite or { });
         stages = jobStages drv;
-      }) jobs;
+      };
+    }) jobs;
+
+  manifest =
+    {
+      pkgs,
+      entries,
+      aggregate,
+      canonical,
+      source,
+      revision,
+    }:
+    let
+      ordered = builtins.attrValues entries;
+      aggregateDrv = builtins.unsafeDiscardOutputDependency aggregate.drvPath;
+      broken = lib.filterAttrs (_: p: (p.tvp.status.level or "ok") == "broken") canonical;
+    in
+    {
+      schema = 1;
+      inherit revision;
+      source = builtins.path {
+        path = source;
+        name = "tvp-test-source";
+      };
+      system = pkgs.stdenv.hostPlatform.system;
+      aggregate = aggregateDrv;
+      displayLabels = builtins.listToAttrs (
+        lib.concatMap (entry: entry.labels) ordered
+        ++ [
+          (lib.nameValuePair (builtins.unsafeDiscardStringContext aggregateDrv) "All tests: collecting results")
+        ]
+      );
+      jobs = map (entry: entry.job) ordered;
       skipped = lib.mapAttrsToList (name: p: {
         inherit name;
         inherit (p.tvp.status) reason;
       }) broken;
     };
+
+  # Keep manifest construction separate from materialization so evaluation
+  # contracts can inspect it without reading generated files in a fresh store.
+  planManifest =
+    {
+      pkgs,
+      batches,
+      checks,
+      canonical,
+      source,
+      revision ? null,
+      smoke ? false,
+    }:
+    manifest {
+      inherit
+        pkgs
+        canonical
+        source
+        revision
+        ;
+      aggregate = mkAll { inherit pkgs batches checks; };
+      entries = planEntries {
+        inherit smoke;
+        jobs = suiteJobs { inherit batches checks; };
+      };
+    };
+
+  smokePlanPart =
+    {
+      batches,
+      index,
+      count,
+    }:
+    let
+      names = builtins.listToAttrs (
+        lib.concatLists (
+          lib.imap0 (
+            offset: name: lib.optional (lib.mod offset count == index) (lib.nameValuePair name null)
+          ) (builtins.attrNames batches)
+        )
+      );
+    in
+    planEntries {
+      smoke = true;
+      jobs = builtins.intersectAttrs names batches;
+    };
+
+  joinSmokePlan =
+    {
+      pkgs,
+      batches,
+      source,
+      revision,
+      parts,
+      references,
+    }:
+    let
+      entries = lib.foldl' (all: part: all // part.entries) { } parts;
+      names = builtins.attrNames entries;
+      expectedSystem = pkgs.stdenv.hostPlatform.system;
+      # Every smoke batch is a link farm with a single 'out'. Reuse its
+      # derivation-output context to reproduce the aggregate without reevaluation.
+      aggregate = mkAll {
+        inherit pkgs;
+        checks = { };
+        batches = builtins.mapAttrs (_: entry: {
+          outPath = builtins.appendContext (builtins.head entry.job.outputs) {
+            ${entry.job.drv}.outputs = [ "out" ];
+          };
+        }) entries;
+      };
+      plan = manifest {
+        inherit
+          pkgs
+          entries
+          aggregate
+          source
+          revision
+          ;
+        canonical = { };
+      };
+      # JSON supplies the plan fields. The store references of the rooted
+      # parts supply the opaque batch and test derivation contexts.
+      context = lib.genAttrs references (_: {
+        path = true;
+      });
+    in
+    assert lib.all (part: part.revision == revision && part.system == expectedSystem) parts;
+    assert names == builtins.attrNames batches;
+    assert
+      builtins.length names
+      == lib.foldl' (total: part: total + builtins.length (builtins.attrNames part.entries)) 0 parts;
+    builtins.toFile "tvp-test-plan.json" (builtins.appendContext (builtins.toJSON plan) context);
 
   # Reference derivations without demanding their outputs. Rooting this plan
   # protects the frozen build graph without building the catalogue first.

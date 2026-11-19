@@ -26,7 +26,7 @@ let
   # Direct command/script contexts include tools introduced by interpolated run
   # strings, which stageInputs alone misses. Registered role producers cannot
   # occur even when hidden in a child materializer's payload.
-  consumes = p: q: builtins.hasAttr (plain q.drvPath) (context p);
+  consumes = ctx: p: builtins.hasAttr (plain p.drvPath) ctx;
   fresh = p: same p (lower p.specification);
   sqliteFields = [
     "testZlib"
@@ -97,7 +97,7 @@ let
       )
     );
   inspectAudited =
-    name: p:
+    name: p: split:
     if !(p ? tests.upstream.specification.validation) then
       throw "TVP isolation: missing owned upstream registration"
     else
@@ -110,7 +110,6 @@ let
         t = v.construction;
         r = v.execution;
         changed = perturb p;
-        split = builtins.head (splitPolicy.inventory { canonical.${name} = p; }).rows;
         producerChecks =
           split.compliant
           && fresh t
@@ -164,13 +163,15 @@ let
             }
           )
         );
+        productionContexts = map context [
+          p.artifact
+          p
+        ];
+        acceptanceContext = context u;
         checks = {
-          noTestInputContexts =
-            builtins.all (prod: lib.intersectLists forbidden (builtins.attrNames (context prod)) == [ ])
-              [
-                p.artifact
-                p
-              ];
+          noTestInputContexts = builtins.all (
+            ctx: lib.intersectLists forbidden (builtins.attrNames ctx) == [ ]
+          ) productionContexts;
           splitProducers = producerChecks;
           completeActiveAccounting =
             parts.split
@@ -192,22 +193,17 @@ let
             && policy.statePath == "nix-support/upstream-build-tree"
             && policy.testInputFields == testFields p;
           testInputIndependence = same p changed && same p.artifact changed.artifact;
-          forwardEdges = consumes t p.artifact && consumes r t && consumes u r;
-          noReverseEdges =
-            builtins.all
-              (
-                prod:
-                builtins.all (test: !(consumes prod test)) [
-                  t
-                  r
-                  u
-                ]
-              )
-              [
-                p.artifact
-                p
-              ];
-          modernInspector = policy.protocol != "veryquick" || consumes u p;
+          forwardEdges =
+            consumes (context t) p.artifact && consumes (context r) t && consumes acceptanceContext r;
+          noReverseEdges = builtins.all (
+            ctx:
+            builtins.all (test: !(consumes ctx test)) [
+              t
+              r
+              u
+            ]
+          ) productionContexts;
+          modernInspector = policy.protocol != "veryquick" || consumes acceptanceContext p;
         };
         failed = builtins.filter (n: !checks.${n}) (builtins.attrNames checks);
       in
@@ -242,11 +238,8 @@ let
               )
             );
       };
-in
-rec {
-  inherit identity;
-  inspect =
-    name: p:
+  inspectUsingSplit =
+    name: p: split:
     if !(p ? specification && p.specification ? upstreamIsolation) then
       {
         id = name;
@@ -265,7 +258,8 @@ rec {
       }
     else
       let
-        attempt = builtins.tryEval (builtins.deepSeq (inspectAudited name p) (inspectAudited name p));
+        row = inspectAudited name p split;
+        attempt = builtins.tryEval (builtins.deepSeq row row);
       in
       if attempt.success then
         attempt.value
@@ -277,20 +271,58 @@ rec {
           disposition = "EVALUATION_FAILED";
           failed = [ "evaluated-contract" ];
         };
-  inventory =
+  members =
     {
       canonical,
       variants ? { },
     }:
-    {
-      schema = "tvp.upstream-isolation.inventory/v1";
-      rows =
-        lib.mapAttrsToList (n: inspect "canonical/${n}") canonical
-        ++ lib.concatLists (
-          lib.mapAttrsToList (v: lib.mapAttrsToList (n: inspect "variants.${v}/${n}")) variants
+    let
+      inScope =
+        scope:
+        lib.mapAttrsToList (
+          name: package: {
+            id = "${scope}/${name}";
+            inherit package;
+          }
         );
-      qualification = "source-only; no canonical runtime qualification";
-      outsideOrdinaryScope = "Retained/bootstrap/private/base/composition recipes require separate inspection; UNAUDITED.";
+    in
+    inScope "canonical" canonical
+    ++ lib.concatLists (lib.mapAttrsToList (profile: inScope "variants.${profile}") variants);
+  inventoryFromRows = rows: {
+    schema = "tvp.upstream-isolation.inventory/v1";
+    inherit rows;
+    qualification = "source-only; no canonical runtime qualification";
+    outsideOrdinaryScope = "Retained/bootstrap/private/base/composition recipes require separate inspection; UNAUDITED.";
+  };
+in
+rec {
+  inherit identity;
+  inspect =
+    name: p:
+    inspectUsingSplit name p (builtins.head (splitPolicy.inventory { canonical.${name} = p; }).rows);
+
+  inventory = args: inventoryFromRows (map ({ id, package }: inspect id package) (members args));
+
+  # Both audits consume the same packages. Pair rows lazily, since reading a
+  # split row's ID forces its audit even for packages without an isolation check.
+  inventories =
+    args:
+    let
+      recipeSplits = splitPolicy.inventory args;
+      packages = members args;
+      rows = lib.zipListsWith (
+        { id, package }:
+        split:
+        inspectUsingSplit id package (
+          if split.id == id then split else throw "TVP isolation: mismatched recipe-split row for ${id}"
+        )
+      ) packages recipeSplits.rows;
+    in
+    {
+      inherit recipeSplits;
+      upstreamIsolation =
+        assert builtins.length packages == builtins.length recipeSplits.rows;
+        inventoryFromRows rows;
     };
   validate =
     {

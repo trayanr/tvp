@@ -27,6 +27,7 @@ let
     bases = legacyBases;
     inherit compositions;
   };
+  policyInventories = tvpLib.upstreamTestIsolation.inventories { inherit canonical variants; };
 in
 {
   inherit runtimeRegistry;
@@ -35,7 +36,7 @@ in
     inherit tvpLib canonical variantPackages;
     registry = runtimeRegistry;
   };
-  upstreamIsolationInventory = tvpLib.upstreamTestIsolation.inventory { inherit canonical variants; };
+  upstreamIsolationInventory = policyInventories.upstreamIsolation;
   upstreamIsolationReport =
     (tvpLib.upstreamTestIsolation.validate {
       inventory = tvp.upstreamIsolationInventory;
@@ -49,7 +50,7 @@ in
       strict = true;
     }
   );
-  recipeSplitInventory = tvpLib.recipeSplits.inventory { inherit canonical variants; };
+  recipeSplitInventory = policyInventories.recipeSplits;
   recipeSplitReport =
     (tvpLib.recipeSplits.validate {
       inventory = tvp.recipeSplitInventory;
