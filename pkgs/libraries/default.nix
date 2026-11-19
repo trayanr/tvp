@@ -35,6 +35,8 @@ tvp.lib.packages.mergeNamespaces {
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };
+  keyutils = import ./keyutils { inherit pkgs tvp; };
+  krb5 = import ./krb5 { inherit pkgs tvp; };
   attr = import ./attr { inherit pkgs tvp; };
   acl = import ./acl { inherit pkgs tvp; };
   pcre2 = import ./pcre2 { inherit pkgs tvp; };
@@ -47,6 +49,7 @@ tvp.lib.packages.mergeNamespaces {
   isl = import ./isl { inherit pkgs tvp; };
   openssl = import ./openssl { inherit pkgs tvp; };
   libxml2 = import ./libxml2 { inherit pkgs tvp; };
+  icu = import ./icu { inherit pkgs tvp; };
   libzip = import ./libzip { inherit pkgs tvp; };
   ncurses = import ./ncurses { inherit pkgs tvp; };
   readline = import ./readline { inherit pkgs tvp; };

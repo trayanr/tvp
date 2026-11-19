@@ -26,6 +26,9 @@ let
     base-gcc_16_2_0 = {
       inherit (tvp.__legacyBases.gcc_16_2_0.tests) compile cxx;
     };
+    krb5_1_21_3 = {
+      inherit (tvp.canonical.krb5_1_21_3.tests) gssapi sdk;
+    };
     perl_5_30_3 = {
       inherit (tvp.canonical.perl_5_30_3.tests) version modules;
     };
@@ -35,8 +38,20 @@ let
     redis_8_10_3 = {
       inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
     };
+    keyutils_1_6_3 = {
+      inherit (tvp.canonical.keyutils_1_6_3.tests) cli consumer;
+    };
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
+    };
+    oniguruma_6_9_10 = {
+      inherit (tvp.canonical.oniguruma_6_9_10.tests) metadata utf8;
+    };
+    postgresql_16_16 = {
+      inherit (tvp.canonical.postgresql_16_16.tests) client roundtrip;
+    };
+    tzdata_2026f = {
+      inherit (tvp.canonical.tzdata_2026f.tests) layout transition;
     };
     "php_${builtins.replaceStrings [ "." ] [ "_" ] opcacheEngine.version}--opcache-builtin" =
       opcacheBuiltIn;
