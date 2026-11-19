@@ -5,6 +5,7 @@
   inventory,
   tools,
   checks,
+  smokeBatches,
   registry,
   borrowed,
   borrowedSource,
@@ -70,7 +71,17 @@ let
         outputs = value.outputs or [ "out" ];
         evidence = "evaluated repository check definition";
       }
-    ) checks;
+    ) checks
+    // lib.mapAttrs' (
+      name: value:
+      lib.nameValuePair "smoke.${name}" {
+        scope = "smoke";
+        status = null;
+        drv = plain value.drvPath;
+        outputs = value.outputs or [ "out" ];
+        evidence = "evaluated standard smoke suite";
+      }
+    ) smokeBatches;
   taggedBorrowed = lib.filter (
     edge: (edge.selection.kind or null) == "foreign" && (edge.resolved.drv or null) != null
   ) inventory.edges;
@@ -94,6 +105,7 @@ in
         "bases"
         "tools"
         "checks"
+        "smoke"
       ]
   );
   defaultGroup = "canonical";
