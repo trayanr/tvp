@@ -217,11 +217,25 @@ let
   inlineText = bindOutputs (
     renderRunner (index: s: ''tvp_step ${quote s.name} "$TVP_STEP_DIR/${toString index}"'')
   );
+  childScripts = map (s: s.scriptText) active;
 in
 {
-  inherit text inlineText;
-  childScripts = map (s: s.scriptText) active;
+  inherit text childScripts;
+  scriptAttributes = {
+    TVP_STAGE_RUNNER = inlineText;
+    TVP_STAGE_SCRIPTS = childScripts;
+  };
+  command = ''
+    TVP_STEP_DIR="$PWD/tvp-stage-scripts"
+    ${coreutils}/bin/mkdir -m 0700 "$TVP_STEP_DIR"
+    for TVP_STEP_INDEX in "''${!TVP_STAGE_SCRIPTS[@]}"; do
+      printf '%s' "''${TVP_STAGE_SCRIPTS[$TVP_STEP_INDEX]}" > "$TVP_STEP_DIR/$TVP_STEP_INDEX"
+    done
+    printf '%s' "$TVP_STAGE_RUNNER" > "$TVP_STEP_DIR/runner.sh"
+    TVP_STEP_DIR="$TVP_STEP_DIR" ${bash}/bin/bash "$TVP_STEP_DIR/runner.sh" "$PWD/workspace"
+  '';
   # Active-only dependency projection, useful for inspection without realizing it.
   inputs = lib.concatMap (s: s.tools ++ s.libraries) selected;
+  # Fixtures use this standalone form to exercise the runner directly.
   script = writeScript "tvp-build-step-runner" text;
 }

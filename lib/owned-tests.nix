@@ -4,7 +4,6 @@
   builder,
   base,
   coreutils,
-  inlineScripts ? false,
 }:
 let
   quote = lib.escapeShellArg;
@@ -55,8 +54,6 @@ rec {
           version = "test";
           src = null;
           inherit base coreutils;
-          # Keep checkpoint execution and acceptance derivations reusable.
-          inlineScripts = inlineScripts && !(final ? validationRole || final ? validation);
           bash = final.base.shell;
           passthru = {
             inherit package;
@@ -136,7 +133,7 @@ rec {
         pname = "tvp-tests-${safeName name}";
         version = "1";
         src = null;
-        inherit base coreutils inlineScripts;
+        inherit base coreutils;
         bash = final.base.shell;
         passthru.testSuite = suite;
         plan = [

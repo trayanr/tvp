@@ -102,7 +102,6 @@ let
     // {
       pname = "php-with-extensions";
       version = final.php.version;
-      inlineScripts = true;
       inherit (args) php base settings;
       inherit (tools) bash coreutils;
       src = null;

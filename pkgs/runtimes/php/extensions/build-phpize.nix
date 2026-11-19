@@ -46,7 +46,6 @@ let
 in
 {
   pname = "php-${final.extensionName}";
-  inlineScripts = true;
   inherit
     base
     src
@@ -208,5 +207,6 @@ in
   meta = {
     description = "PHP ${final.extensionName} extension";
     platforms = [ "x86_64-linux" ];
-  } // final.extensionMeta;
+  }
+  // final.extensionMeta;
 }
