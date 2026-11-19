@@ -1,0 +1,8 @@
+--- a/cmake/readline.cmake
++++ b/cmake/readline.cmake
+@@ -68,4 +68,2 @@ MACRO (FIND_CURSES)
+- IF(CURSES_HAVE_CURSES_H)
+-   SET(HAVE_CURSES_H 1 CACHE INTERNAL "")
+- ENDIF()
++ CHECK_INCLUDE_FILE(curses.h HAVE_CURSES_H)
+  IF(CMAKE_SYSTEM_NAME MATCHES "HP")

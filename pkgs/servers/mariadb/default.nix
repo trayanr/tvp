@@ -10,6 +10,12 @@ let
     {
       def = {
         builder = ./build.nix;
+        patches = [
+          {
+            file = ./patches/wide-curses-header.patch;
+            reason = "CMake's FindCurses only sets CURSES_HAVE_CURSES_H in narrow mode. Probe the selected wide header before compiling the client.";
+          }
+        ];
         deps = {
           bison = tvp.packages.bison_3;
           ncurses = tvp.packages.ncurses_6;

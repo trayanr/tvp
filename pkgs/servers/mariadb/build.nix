@@ -15,6 +15,7 @@
   zlib,
   fmtSource,
   fmtVersion,
+  patches,
 }:
 final:
 let
@@ -61,6 +62,7 @@ in
     zlib
     fmtSource
     fmtVersion
+    patches
     ;
   inherit (tools) bash coreutils;
   environment = {
@@ -88,6 +90,14 @@ in
       src = final.src;
       compression = "gzip";
     })
+    {
+      name = "mariadb.patches";
+      cwd = "source";
+      tools = [ tools.patch ];
+      run = lib.concatMapStringsSep "\n" (
+        patch: "patch --batch --fuzz=0 -p1 < ${lib.escapeShellArg "${patch}"}"
+      ) final.patches;
+    }
     {
       name = "mariadb.unpack-fmt";
       tools = [ final.unzip ];
