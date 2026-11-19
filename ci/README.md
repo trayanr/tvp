@@ -30,6 +30,12 @@ names and detailed worker output, including compiler output. Buildbot keeps thes
 with the completed build. The evidence upload retains those files alongside the
 frozen plan, structured Nix events, and terminal test receipt.
 
+Four Nix client processes prepare the candidate graph and smoke plan. The worker
+assembles and roots the plan in the local store, then passes it to the trusted
+smoke runner. The flake check uses one evaluator. Older candidate revisions
+support the single-process preparation path, and older pinned runners prepare
+the plan themselves.
+
 For local iteration on one pair, use
 `nix run .#test -- all --only php_8_5_12--redis_6_3_0`. The dedicated
 `nix build .#php.extensionTestsAll` target selects only the PHP extension matrix;

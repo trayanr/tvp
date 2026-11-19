@@ -96,34 +96,28 @@ in
     plan:
     let
       checked = validate plan;
-      count = builtins.length (builtins.filter (s: (s.kind or "command") == "split") checked);
-      parts =
-        builtins.foldl'
-          (
-            acc: step:
-            if (step.kind or "command") == "split" then
-              acc // { after = true; }
-            else if acc.after then
-              acc // { second = acc.second ++ [ step ]; }
-            else
-              acc // { first = acc.first ++ [ step ]; }
-          )
-          {
-            first = [ ];
-            second = [ ];
-            after = false;
-          }
-          checked;
+      length = builtins.length checked;
+      markers = builtins.filter (i: ((builtins.elemAt checked i).kind or "command") == "split") (
+        builtins.genList (i: i) length
+      );
+      count = builtins.length markers;
+      split = count == 1;
+      boundary = if split then builtins.head markers else length;
+      first = builtins.genList (builtins.elemAt checked) boundary;
+      second =
+        if split then
+          builtins.genList (i: builtins.elemAt checked (boundary + 1 + i)) (length - boundary - 1)
+        else
+          [ ];
       enabled = xs: builtins.any (s: s.enabled or true) xs;
     in
     if count > 1 then
       fail "at most one split is supported"
-    else if !enabled parts.first || (count == 1 && !enabled parts.second) then
+    else if !enabled first || (split && !enabled second) then
       fail "empty active partition"
     else
       {
-        inherit (parts) first second;
-        split = count == 1;
+        inherit first second split;
       };
   # sequence [ record [ record record ] ... ] returns the usual validated plan.
   # Flatten once, preserving records and lazy payloads including string contexts;

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Trusted worker harness: exact PR head, current target gate, frozen smoke checks."""
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import fcntl
@@ -11,7 +12,12 @@ import re
 import shutil
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 import time
+
+
+SYSTEM = "x86_64-linux"
+SMOKE_EVALUATORS = 4
 
 
 def execute(argv, **kwargs):
@@ -52,6 +58,99 @@ def check_flake(candidate, evidence):
             print("\n".join(tail), file=sys.stderr, flush=True)
         raise
     note(f"Flake evaluation passed in {time.monotonic() - start:.1f}s")
+
+
+def build_snapshot(link, expression, *arguments):
+    execute(["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(link),
+             "--expr", expression, *arguments], stdout=sys.stderr)
+    return link.resolve(strict=True)
+
+
+def parallel_snapshot(scope, snapshot, workers):
+    # Each evaluator roots its part before terminating. Keep those roots until
+    # the assembled snapshot protects the original, complete smoke plan.
+    with TemporaryDirectory(prefix="smoke-plan-", dir=snapshot.parent) as temporary:
+        directory = Path(temporary)
+
+        def evaluate(index):
+            expression = scope + f"""
+              builtins.toFile "tvp-ci-smoke-part.json" (builtins.toJSON (
+                {{ revision = candidate.rev; inherit system;
+                   entries = smoke.planPart {{ index = {index}; count = {workers}; }}; }}
+                // (if {index} == 0 then {{ inherit graphJson; }} else {{}})
+              ))
+            """
+            return build_snapshot(directory / f"part-{index}", expression)
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            paths = list(executor.map(evaluate, range(workers)))
+        parts = [json.loads(path.read_bytes()) for path in paths]
+        references = subprocess.check_output(
+            ["nix-store", "--query", "--references", *map(str, paths)], text=True,
+        ).splitlines()
+        payload = directory / "assembly.json"
+        payload.write_text(json.dumps({"graphJson": parts[0].pop("graphJson"),
+                                       "parts": parts, "references": sorted(set(references))}))
+        # Feed JSON as a CLI argument file to keep candidate evaluation pure.
+        # The final expression recreates the reference context of the plan.
+        build_snapshot(snapshot, "{ payload }: " + scope + """
+          { snapshot = let
+              data = builtins.fromJSON payload;
+            in seal data.graphJson (smoke.joinPlan { inherit (data) parts references; });
+          }
+        """, "--arg-from-file", "payload", str(payload), "snapshot")
+
+
+def candidate_snapshot(candidate, revision, evidence, workers=SMOKE_EVALUATORS):
+    reference = f"git+{candidate.as_uri()}?rev={revision}&ref=HEAD"
+    scope = f"""
+      let
+        candidate = builtins.getFlake {json.dumps(reference)};
+        system = {json.dumps(SYSTEM)};
+        smoke = candidate.smokeTestPlanParts.${{system}} or {{}};
+        graph = candidate.legacyPackages.${{system}}.graph or candidate.graph;
+        graphJson = builtins.unsafeDiscardStringContext (builtins.toJSON graph);
+        seal = graph: plan:
+          let planPath = builtins.unsafeDiscardStringContext plan;
+          in builtins.toFile "tvp-ci-snapshot.json" (builtins.toJSON {{
+            schema = 1;
+            inherit (candidate) rev;
+            graphJson = graph;
+            plan = if builtins.isString plan then
+              assert ((builtins.getContext plan).${{planPath}}.path or false);
+              plan
+            else null;
+          }});
+      in
+    """
+    snapshot = candidate.parent / "ci-snapshot"
+    supported = workers > 1 and json.loads(subprocess.check_output(
+        ["nix", "eval", "--json", "--show-trace", "--no-write-lock-file", "--expr",
+         scope + "smoke ? planPart && smoke ? joinPlan"], text=True,
+    ))
+    if supported:
+        note(f"Evaluating the smoke plan with {workers} Nix processes")
+        parallel_snapshot(scope, snapshot, workers)
+    else:
+        # Older candidates expose the single plan. If it is a derivation,
+        # the runner uses its regular preparation path.
+        build_snapshot(snapshot, scope + f'seal graphJson candidate.smokeTestPlans.{SYSTEM}')
+    result = json.loads(snapshot.read_text())
+    if result.get("schema") != 1 or result.get("rev") != revision:
+        raise ValueError("Candidate snapshot does not match the scheduled commit")
+    (evidence / "candidate-graph.json").write_text(result["graphJson"] + "\n")
+    if result["plan"] is None:
+        return None
+    plan = Path(result["plan"])
+    if (plan.parent != Path("/nix/store") or not re.fullmatch(r"[a-z0-9]{32}-.+", plan.name)
+            or plan.is_symlink() or not plan.is_file()):
+        raise ValueError("Candidate snapshot contains an invalid smoke plan path")
+    manifest = json.loads(plan.read_text())
+    if not isinstance(manifest, dict) or (manifest.get("schema"), manifest.get("revision"), manifest.get("system")) != (
+        1, revision, SYSTEM
+    ):
+        raise ValueError("Candidate smoke plan does not match the scheduled commit or system")
+    return plan
 
 
 def checkout(repository, revision, destination):
@@ -128,12 +227,13 @@ def validate_owned(args, owner_path):
     identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": args.head}
     identity["nixVersion"] = nix_version
     (evidence / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
-    # Record producers for master too. Normal evaluation registers generated
-    # source files which a fresh store's read-only flake check cannot create.
-    trees = [("base", base), ("candidate", candidate)] if args.base else [("candidate", candidate)]
-    for name, tree in trees:
-        with timed(f"{name.capitalize()} graph evaluation"), (evidence / f"{name}-graph.json").open("w") as output:
-            execute(["nix", "eval", "--show-trace", "--json", f"{tree}#graph"], stdout=output)
+    if args.base:
+        with timed("Base graph evaluation"), (evidence / "base-graph.json").open("w") as output:
+            execute(["nix", "eval", "--show-trace", "--json", f"{base}#graph"], stdout=output)
+    # Normal evaluation registers generated source files which a fresh
+    # store's read-only flake check cannot create.
+    with timed("Candidate graph and smoke plan evaluation"):
+        plan = candidate_snapshot(candidate, args.head, evidence)
     if args.base:
         with timed("Graph comparison"):
             difference = json.loads(subprocess.check_output([
@@ -156,12 +256,16 @@ def validate_owned(args, owner_path):
     validation = root / "validation"
     if validation.exists() or validation.is_symlink():
         raise ValueError("CI validation needs a fresh state directory")
+    runner_env = {**os.environ, "TVP_CI_PROGRESS": "1"}
+    runner_env.pop("TVP_CI_FROZEN_SMOKE_PLAN", None)
+    if plan is not None:
+        runner_env["TVP_CI_FROZEN_SMOKE_PLAN"] = str(plan)
     with timed("Smoke runner including preparation"):
         completed = subprocess.run([
             "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
-            "--system", "x86_64-linux", "--state-dir", str(validation),
+            "--system", SYSTEM, "--state-dir", str(validation),
             "--owner-lock", str(owner_path),
-        ], env={**os.environ, "TVP_CI_PROGRESS": "1"})
+        ], env=runner_env)
     # A failing test still returns a terminal receipt and retained evidence.
     # Inherit the console for live progress; consume the separate machine receipt.
     result = read_result(validation)

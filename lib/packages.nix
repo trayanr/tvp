@@ -162,8 +162,8 @@ rec {
         ) block.releases
       ) blocks;
 
-      names = map (e: e.name) entries;
-      dupes = lib.unique (lib.filter (n: lib.count (m: m == n) names > 1) names);
+      byName = builtins.groupBy (entry: entry.name) entries;
+      dupes = builtins.attrNames (lib.filterAttrs (_: group: builtins.length group > 1) byName);
     in
     if dupes == [ ] then
       lib.listToAttrs entries
@@ -463,12 +463,11 @@ rec {
   merge =
     sets:
     let
-      owners = lib.foldl' (
-        acc: source:
-        lib.foldl' (a: attr: a // { ${attr} = (a.${attr} or [ ]) ++ [ source ]; }) acc (
-          lib.attrNames sets.${source}
+      owners = builtins.groupBy (entry: entry.name) (
+        lib.concatMap (source: map (name: { inherit name source; }) (lib.attrNames sets.${source})) (
+          lib.attrNames sets
         )
-      ) { } (lib.attrNames sets);
+      );
 
       clashes = lib.filterAttrs (_: srcs: lib.length srcs > 1) owners;
     in
@@ -477,7 +476,9 @@ rec {
     else
       throw "TVP: package names defined more than once: ${
         lib.concatStringsSep ", " (
-          lib.mapAttrsToList (attr: srcs: "${attr} (${lib.concatStringsSep " + " srcs})") clashes
+          lib.mapAttrsToList (
+            attr: entries: "${attr} (${lib.concatMapStringsSep " + " (entry: entry.source) entries})"
+          ) clashes
         )
       }";
 

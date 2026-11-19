@@ -46,13 +46,15 @@ in
 }:
 {
   plan,
+  prepareStep ? null,
   temporaryDirectories ? false,
   owned ? false,
   outputs ? [ "out" ],
 }:
 let
   # The only selection point: never render/serialize the editable full plan.
-  selected = (import ./build-steps.nix).active plan;
+  activeSteps = (import ./build-steps.nix).active plan;
+  selected = if prepareStep == null then activeSteps else map prepareStep activeSteps;
   quote = lib.escapeShellArg;
   outputNames = import ./named-outputs.nix { inherit lib; } outputs;
   multiOutput = outputNames != [ "out" ];

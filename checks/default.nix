@@ -138,6 +138,18 @@
       '';
   dependency-policy =
     let
+      inventory = tvp.dependencyInventory;
+      hasContext = value: builtins.hasContext (builtins.toJSON value);
+      # Check contexts one record at a time to bound temporary JSON memory.
+      inventoryHasContext =
+        hasContext (
+          builtins.removeAttrs inventory [
+            "edges"
+            "support"
+          ]
+        )
+        || builtins.any hasContext inventory.edges
+        || builtins.any hasContext inventory.support;
       unexplained = pkgs.lib.filter (
         edge:
         builtins.elem edge.scope [
@@ -146,9 +158,9 @@
         ]
         && (edge.selection.kind or "unknown") == "exact"
         && (edge.reason == null || edge.reason == "")
-      ) tvp.dependencyInventory.edges;
+      ) inventory.edges;
     in
-    if builtins.hasContext (builtins.toJSON tvp.dependencyInventory) then
+    if inventoryHasContext then
       throw "TVP: dependency inventory must discard build contexts."
     else if unexplained != [ ] then
       throw "TVP: unexplained ordinary exact dependency selections: ${

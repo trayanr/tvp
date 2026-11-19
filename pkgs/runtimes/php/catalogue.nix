@@ -19,7 +19,8 @@ let
           extensionVersion:
           let
             extensionName = tvp.lib.versions.attrName family extensionVersion;
-            package = php.extensions.${extensionName};
+            # The matrix already selected an exact compatible release.
+            package = extensions.forRelease php family extensionVersion;
           in
           lib.nameValuePair "${phpName}--${extensionName}" {
             phpVersion = php.version;

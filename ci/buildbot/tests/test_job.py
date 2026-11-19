@@ -25,6 +25,12 @@ def directory():
             os.chdir(before)
 
 
+def write_snapshot(argv):
+    Path(argv[argv.index("--out-link") + 1]).write_text(json.dumps({
+        "schema": 1, "rev": "a" * 40, "graphJson": '{"schema":1,"entries":{}}', "plan": None,
+    }))
+
+
 class FrozenValidation(unittest.TestCase):
     def run_validation(self, phase, exit_code, base="", scope="smoke", full=False,
                        receipt_mode="normal", receipt_changes=None):
@@ -33,6 +39,8 @@ class FrozenValidation(unittest.TestCase):
             commands.append(argv)
             if argv == ["nix", "--version"]:
                 return "nix (Nix) 2.34.9\n"
+            if argv[:3] == ["nix", "eval", "--json"]:
+                return "false\n"
             if argv[:1] == ["git"]:
                 return base + "\n"
             if "--report-only" in argv:
@@ -42,6 +50,8 @@ class FrozenValidation(unittest.TestCase):
             raise AssertionError(argv)
         def run(argv, **kwargs):
             commands.append(argv)
+            if argv[:2] == ["nix", "build"] and "--expr" in argv:
+                write_snapshot(argv)
             if argv[:3] == ["nix", "flake", "check"]:
                 kwargs["stdout"].write(b"flake evaluation output\n")
                 self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
@@ -50,6 +60,7 @@ class FrozenValidation(unittest.TestCase):
                 self.assertIsNone(kwargs.get("stdout"))
                 self.assertIsNone(kwargs.get("stderr"))
                 self.assertEqual(kwargs["env"]["TVP_CI_PROGRESS"], "1")
+                self.assertNotIn("TVP_CI_FROZEN_SMOKE_PLAN", kwargs["env"])
                 validation = Path(argv[argv.index("--state-dir") + 1])
                 run_path = validation / "runs/run-17"
                 run_path.mkdir(parents=True)
@@ -127,12 +138,13 @@ class FrozenValidation(unittest.TestCase):
 
     def test_master_records_producers_before_read_only_checks_with_full_traces(self):
         _, commands = self.run_validation("passed", 0)
-        graph = next(c for c in commands if c[:2] == ['nix', 'eval'])
+        snapshot = next(c for c in commands if c[:2] == ['nix', 'build'])
         check = next(c for c in commands if c[:3] == ['nix', 'flake', 'check'])
-        self.assertTrue(graph[-1].endswith('/candidate#graph'))
-        self.assertLess(commands.index(graph), commands.index(check))
+        self.assertIn('/candidate?rev=' + 'a' * 40, snapshot[-1])
+        self.assertIn('smokeTestPlans', snapshot[-1])
+        self.assertLess(commands.index(snapshot), commands.index(check))
         for command in commands:
-            if command[:1] == ['nix'] and command[1] in ['eval', 'flake', 'run']:
+            if command[:1] == ['nix'] and command[1] in ['build', 'eval', 'flake', 'run']:
                 self.assertIn('--show-trace', command)
 
     def test_foreground_command_inherits_the_worker_owner_lock(self):
@@ -256,17 +268,19 @@ class PreflightLogging(unittest.TestCase):
             commands.append(argv)
             if argv[:3] == ["nix", "flake", "check"]:
                 return self.execute_check(argv, **kwargs)
-            kwargs["stdout"].write("{}")
+            write_snapshot(argv)
             return subprocess.CompletedProcess(argv, 0)
         args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base="",
                                target_branch="master", tools_ref="pinned", compare="compare.py")
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=execute), \
-             patch.object(job.subprocess, "check_output", return_value="nix (Nix) 2.34.9\n") as output, \
+             patch.object(job.subprocess, "check_output", side_effect=["nix (Nix) 2.34.9\n", "false\n"]) as output, \
              patch("sys.stdout", new_callable=StringIO), patch("sys.stderr", new_callable=StringIO):
             with self.assertRaises(subprocess.CalledProcessError):
                 job.validate(args)
             self.assertTrue(Path("evidence/flake-check.log").is_file())
-            self.assertEqual(output.call_args_list, [unittest.mock.call(["nix", "--version"], text=True)])
+            self.assertEqual(output.call_count, 2)
+            self.assertEqual(output.call_args_list[0], unittest.mock.call(["nix", "--version"], text=True))
+            self.assertIn("smoke ? planPart", output.call_args_list[1].args[0][-1])
             self.assertFalse(Path("evidence/launch.json").exists())
 
     def test_early_failure_still_writes_error_evidence_and_bounded_protocol(self):
