@@ -70,7 +70,8 @@ in
       tools.pkg-config
       tools.findutils
       tools.perl
-    ] ++ scriptTools;
+    ]
+    ++ scriptTools;
     inherit libraries;
     # Use the supported language mode on compilers that default to C23.
     overrides.values.CFLAGS = "-O2 -std=gnu17";
