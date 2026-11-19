@@ -237,6 +237,9 @@ tvp.packages.php_8_2_35.withExtensions {
     e.curl
     e.exif
     e.ftp
+    e.gd
+    e.gettext
+    e.gmp
     e.mbstring
     e.zip
     e.intl
@@ -251,6 +254,7 @@ tvp.packages.php_8_2_35.withExtensions {
     e.mysqlnd
     e.pdo_mysql
     e.pdo_dblib
+    e.sodium
     e.mongodb_1
   ];
 }
@@ -268,6 +272,14 @@ links the matching PHP release's TVP OpenSSL provider and enables TLS with
 checks use a temporary loopback FTP fixture and perform an encrypted login
 and command exchange. The OpenSSL CLI creates the fixture certificate during
 testing.
+
+GD, Gettext, GMP, and Sodium also use the matching source and SDK for every
+packaged PHP release from 8.2 onward. GD uses PHP's bundled libgd with PNG,
+JPEG, WebP, and FreeType. AVIF and XPM are disabled. The codec libraries and
+libsodium are built from their upstream sources by TVP. libjpeg-turbo uses its
+portable C implementation. Gettext uses the PHP base's GNU libc. The checks
+verify the installed modules with small image round trips, message lookup in
+the C locale, exact integer arithmetic, and a deterministic BLAKE2b digest.
 
 LDAP, PDO_ODBC, PostgreSQL, and SOAP also use the matching PHP release from
 8.2 onward. LDAP uses the TVP OpenLDAP client with TLS and exercises LDAP

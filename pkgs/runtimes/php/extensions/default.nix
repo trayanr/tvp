@@ -7,6 +7,9 @@ let
     curl = import ./curl { inherit pkgs tvp; };
     exif = import ./exif { inherit pkgs tvp; };
     ftp = import ./ftp { inherit pkgs tvp; };
+    gd = import ./gd { inherit pkgs tvp; };
+    gettext = import ./gettext { inherit pkgs tvp; };
+    gmp = import ./gmp { inherit pkgs tvp; };
     imap = import ./imap { inherit pkgs tvp; };
     intl = import ./intl { inherit pkgs tvp; };
     ldap = import ./ldap { inherit pkgs tvp; };
@@ -22,6 +25,7 @@ let
     pgsql = import ./pgsql { inherit pkgs tvp; };
     soap = import ./soap { inherit pkgs tvp; };
     sockets = import ./sockets { inherit pkgs tvp; };
+    sodium = import ./sodium { inherit pkgs tvp; };
     sysvsem = import ./sysvsem { inherit pkgs tvp; };
     xdebug = import ./xdebug { inherit pkgs tvp; };
     zip = import ./zip { inherit pkgs tvp; };
