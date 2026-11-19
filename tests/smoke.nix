@@ -35,6 +35,9 @@ let
     redis_8_10_3 = {
       inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
     };
+    keyutils_1_6_3 = {
+      inherit (tvp.canonical.keyutils_1_6_3.tests) cli consumer;
+    };
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
