@@ -145,7 +145,7 @@
       gnugrep
       gnused
       ;
-    jq = pkgs.jq;
+    jq = tvp.packages.jq;
   };
   cli-runtime = {
     bash = tvp.packages.bash;
