@@ -16,7 +16,8 @@ context.mkSuite {
     consumer = {
       tools = [ package.specification.base.tools.pkg-config ];
       script = ''
-        test "$(pkg-config --variable=prefix libkeyutils)" = "${package}"
+        test "$(pkg-config --variable=libdir libkeyutils)" = "${package}/lib"
+        test "$(pkg-config --variable=includedir libkeyutils)" = "${package}/include"
         "$CC" ${./consumer.c} $(pkg-config --cflags --libs libkeyutils) -o consumer
         ./consumer
       '';

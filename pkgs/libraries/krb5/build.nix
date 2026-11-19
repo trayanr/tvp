@@ -26,6 +26,7 @@ let
     "lib"
     "sbin"
   ];
+  keyutilsLibraryDirectory = "${lib.getLib final.keyutils}/lib";
 in
 {
   pname = "krb5";
@@ -41,6 +42,8 @@ in
   environment = {
     tools = [
       final.bison
+      tools.diffutils
+      tools.findutils
       tools.gawk
       tools.gnumake
       tools.grep
@@ -121,11 +124,31 @@ in
         done
       '';
     }
+    {
+      name = "output.krb5-sdk-link-flags";
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        # GNU ld with a sysroot needs explicit link-time search paths for
+        # the dependencies of the shared Kerberos libraries.
+        for module in mit-krb5 mit-krb5-gssapi; do
+          metadata="$out/lib/pkgconfig/$module.pc"
+          test "$(grep -c '^Libs: ' "$metadata")" = 1
+          sed -i "s|^Libs: |Libs: -Wl,-rpath-link,$out/lib:${keyutilsLibraryDirectory} |" "$metadata"
+        done
+        config="$out/bin/krb5-config"
+        test "$(grep -Fxc '    echo $lib_flags' "$config")" = 1
+        sed -i '/^    echo \$lib_flags$/s|$| -Wl,-rpath-link,"$libdir":${keyutilsLibraryDirectory}|' "$config"
+      '';
+    }
     (outputs.strip { paths = elfPaths; })
     (outputs.rpaths {
       paths = elfPaths;
       libraries = final.runtime.libraries;
     })
+    (outputs.development { libraries = [ final.keyutils ]; })
     (outputs.checkPaths { paths = elfPaths; })
   ];
   meta = {
