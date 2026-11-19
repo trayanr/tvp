@@ -44,6 +44,7 @@ rec {
     (forBase {
       inherit builder base;
       coreutils = spec.coreutils;
+      inlineScripts = spec.inlineScripts or false;
     })
     // {
       fixtures = fixtures.forBase {

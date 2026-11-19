@@ -6,6 +6,11 @@ factories select this context explicitly. Retained factories and aggregate test
 infrastructure explicitly use `tvp.lib.tests.compatibility`; selecting this context does not
 rewrite those callers.
 
+`fromPackage` takes the script transport from the package's `inlineScripts`
+setting. With it enabled, owned installed tests and their batches write the
+runner and step scripts inside the result derivation's sandbox. Upstream
+checkpoint execution and acceptance keep their current script transport.
+
 From the repository root, with the qualified `base`, `coreutils` and `mpc` selected:
 
 ```nix

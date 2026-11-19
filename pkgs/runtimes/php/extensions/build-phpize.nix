@@ -46,7 +46,7 @@ let
 in
 {
   pname = "php-${final.extensionName}";
-  inlineFinalization = true;
+  inlineScripts = true;
   inherit
     base
     src

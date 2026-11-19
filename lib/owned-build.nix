@@ -69,7 +69,8 @@ let
   stage =
     name: commands: artifact:
     let
-      inline = artifact != null && (spec.inlineFinalization or false);
+      # Final and single-stage outputs can inline scripts without changing a split artifact.
+      inline = (spec.inlineScripts or false) && (artifact != null || !parts.split);
       selected = steps.active commands;
       runner =
         import ./build-step-runner.nix
