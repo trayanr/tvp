@@ -5,6 +5,7 @@ let
 in
 {
   inherit (descriptors) archive directory;
+  fetchMirrors = import ./fetch-mirrors.nix;
 
   fetchArchive =
     {

@@ -38,7 +38,8 @@ let
       url = version: "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz";
       fetch =
         { version, sha256 }:
-        pkgs.fetchurl {
+        tvp.lib.sources.fetchMirrors {
+          certificates = tvp.packages.ca-certificates;
           urls = [
             "https://mirrors.kernel.org/gnu/gettext/gettext-${version}.tar.xz"
             "https://ftp.gnu.org/gnu/gettext/gettext-${version}.tar.xz"

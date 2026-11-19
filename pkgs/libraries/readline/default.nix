@@ -192,7 +192,8 @@ let
       url = version: "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz";
       fetch =
         { version, sha256 }:
-        pkgs.fetchurl {
+        tvp.lib.sources.fetchMirrors {
+          certificates = tvp.packages.ca-certificates;
           urls = [
             "https://mirrors.kernel.org/gnu/readline/readline-${version}.tar.gz"
             "https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
