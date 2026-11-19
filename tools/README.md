@@ -146,7 +146,17 @@ is a packaging gap even when the registered PHP 8.5 module requires an exact
 8.5 SDK. Historical source-availability limits carry the same reason and URL
 requirements as independent extensions.
 
+Mixed-source families declare `phpPolicy.kind = "mixed"` and a source-backed
+`phpPolicy.bundled` range. Coverage tracks matching PHP source inside that
+range and standalone releases outside it. Upstream release discovery follows
+the standalone project.
+
+When the engine includes a bundled module, `phpPolicy.builtIn` records the
+applicable PHP versions with a reason and upstream URL. Coverage displays
+these versions as built into PHP.
+
 The machine-readable report is available under
 `php.metadata.families.<extension>.coverage`. Each row names the PHP version,
-extension release, and `packaged`, `gap`, or `incompatible` state. Coverage
-describes declarations. Test execution remains recorded by the test runner.
+extension release, and `packaged`, `gap`, `incompatible`, or `builtin` state.
+Mixed-source rows also record `kind`. Coverage describes declarations.
+Test execution remains recorded by the test runner.

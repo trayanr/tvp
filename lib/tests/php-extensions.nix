@@ -26,6 +26,10 @@ let
     min = "8.2";
     before = "8.6";
   };
+  opcachePairs = countEngines {
+    min = "8.2";
+    before = "8.5";
+  };
   mongodbPairs =
     countEngines {
       min = "8.1";
@@ -69,7 +73,13 @@ let
       "zip"
     ];
   extensionPairs =
-    296 + 2 * igbinaryPairs + mongodbPairs + xdebugPairs + builtins.length bundledModules * php82Plus;
+    296
+    + 2 * igbinaryPairs
+    + mongodbPairs
+    + xdebugPairs
+    + builtins.length bundledModules * php82Plus
+    + php82To85
+    + opcachePairs;
   otherPHP = tvp.packages.php_8_2;
   runtime = php.withExtensions {
     extensions = extensions: [ extensions.redis ];
@@ -154,6 +164,12 @@ let
         (row "sodium" "7.1.33" "7.1.33").source == "https://www.php.net/manual/en/sodium.installation.php"
       && (row "sodium" "7.1.33" "7.1.33").state == "incompatible"
       && (row "sodium" "7.2.34" "7.2.34").state == "gap"
+      && (row "imap" "8.1.34" "8.1.34").state == "gap"
+      && (row "imap" "8.3.35" "8.3.35").kind == "bundled"
+      && (row "imap" "8.4.27" "1.0.3").kind == "independent"
+      && (row "imap" "8.5.12" "1.0.3").state == "packaged"
+      && (row "opcache" "8.4.27" "8.4.27").state == "packaged"
+      && (row "opcache" "8.5.12" "8.5.12").state == "builtin"
       &&
         lib.all
           (
@@ -554,6 +570,61 @@ let
     serverIsTestDependency =
       !(redis.tvp.declaredDependencies ? redis)
       && redis.tvp.declaredTestDependencies.redis.drvPath == tvp.packages.redis.drvPath;
+    imapReleaseSelection =
+      let
+        php83 = tvp.packages.php_8_3;
+        bundled = php83.extensions.imap;
+        pecl = php.extensions.imap;
+        unpack = package: (builtins.head package.buildSteps).run;
+      in
+      bundled.version == php83.version
+      && has php83.specification.src.outPath (unpack bundled)
+      && pecl.version == "1.0.3"
+      && pecl.php.drvPath == php.drvPath
+      && pecl.tvp.source.url == "https://pecl.php.net/get/imap-1.0.3.tgz"
+      && rejects php83.extensions.imap_1_0_3
+      && rejects (bundled.override { php = php; });
+    imapProviderEdits =
+      let
+        package = php.extensions.imap;
+        original = tvp.packages.c-client;
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "c-client.provider-probe";
+              run = "true";
+            }
+          ]
+        );
+        overridden = package.override { c-client = replacement; };
+        edited = package.edit (spec: spec // { c-client = replacement; });
+        runtimeOnly = package.editRuntime (spec: spec // { libraries = [ ]; });
+        configure =
+          module: (lib.findFirst (step: step.name == "php-extension.configure") null module.buildSteps).run;
+      in
+      package.tvp.declaredDependencies.c-client.drvPath == original.drvPath
+      && overridden.tvp.declaredDependencies.c-client.drvPath == replacement.drvPath
+      && has "--with-imap=${replacement}" (configure overridden)
+      && !(has original.outPath (configure overridden))
+      && edited.drvPath == overridden.drvPath
+      && runtimeOnly.artifact.drvPath == package.artifact.drvPath
+      && runtimeOnly.drvPath != package.drvPath;
+    opcacheLoadBoundary =
+      let
+        php84 = tvp.canonical.php_8_4_27;
+        module = php84.extensions.opcache;
+        shared = php84.withExtensions { extensions = [ module ]; };
+        builtinRuntime = tvp.php.profiles.opcache;
+      in
+      module.version == php84.version
+      && module.loader == "zend_extension"
+      && has "zend_extension=" (runtimeCommand shared)
+      && builtinRuntime.enabledExtensions == [ ]
+      && rejects php.extensions.opcache
+      && rejects (module.override { php = php; })
+      && !(builtins.elem "php_8_5_12" tvp.php.metadata.families.opcache.unsupportedPHP);
     runtimeConfigurationOnly =
       runtime.artifact.drvPath == configured.artifact.drvPath
       && runtime.artifact.drvPath == empty.artifact.drvPath
@@ -601,6 +672,8 @@ let
       && tvp.php.metadata.families.apcu.declaredPairs == igbinaryPairs
       && tvp.php.metadata.families.mongodb.declaredPairs == mongodbPairs
       && tvp.php.metadata.families.xdebug.declaredPairs == xdebugPairs
+      && tvp.php.metadata.families.imap.declaredPairs == php82To85
+      && tvp.php.metadata.families.opcache.declaredPairs == opcachePairs
       && igbinaryPairs > 0
       && php82Plus > 0
       && lib.all (name: tvp.php.metadata.families.${name}.declaredPairs == php82Plus) bundledModules
@@ -623,7 +696,12 @@ let
         ]
         && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
       ) (builtins.attrNames tvp.php.extensionMatrix)
-      && tvp.smokeTests.metadata.namedTests == 16 + 2 * extensionPairs
+      &&
+        tvp.smokeTests.metadata.subjects.php_8_5_12--opcache-builtin == [
+          "load"
+          "roundtrip"
+        ]
+      && tvp.smokeTests.metadata.namedTests == 18 + 2 * extensionPairs
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in

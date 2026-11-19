@@ -47,6 +47,23 @@ class PHPCoverageTests(unittest.TestCase):
         self.assertIn('packaged (1): 8.5.12', result)
         self.assertIn('packaging gaps (1):\n        8.2.35', result)
 
+    def test_mixed_source_coverage_uses_its_own_release_groups(self):
+        result = coverage.render({'kind': 'mixed', 'rows': [
+            dict(row('8.3.35', release='8.3.35'), kind='bundled'),
+            dict(row('8.4.27', release='1.0.3'), kind='independent'),
+        ]})
+        self.assertIn('bundled releases matching PHP\n      packaged (1): 8.3.35', result)
+        self.assertIn('release 1.0.3\n      packaged (1): 8.4.27', result)
+
+    def test_built_in_coverage_keeps_its_source_and_is_not_a_gap(self):
+        result = coverage.render({'kind': 'bundled', 'rows': [
+            row('8.5.12', release='8.5.12', state='builtin',
+                reason='PHP always loads OPcache', source='https://www.php.net/opcache.installation'),
+        ]})
+        self.assertIn('built into PHP (1):\n        8.5.12', result)
+        self.assertIn('source: https://www.php.net/opcache.installation', result)
+        self.assertIn('packaging gaps: none', result)
+
     def test_selector_matches_component_boundaries(self):
         data = {'kind': 'independent', 'rows': [row('8.2.35'), row('8.20.0')]}
         self.assertNotIn('8.20.0', coverage.render(data, '8.2'))
