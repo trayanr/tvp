@@ -35,6 +35,7 @@ let
       git = tvp.packages.git;
       gnugrep = tvp.packages.gnugrep;
       gnused = tvp.packages.gnused;
+      jq = tvp.packages.jq;
       packages = canonical;
       inherit tvpLib;
       phpCoverage = pkgs.lib.mapAttrs' (
