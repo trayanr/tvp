@@ -22,8 +22,8 @@ def php_summary(rows):
 def render(coverage, selector=None):
     if selector is not None and not re.fullmatch(r'[0-9]+(?:\.[0-9]+){0,2}', selector):
         raise ValueError('PHP selector must be a major, minor, or complete version')
-    if not isinstance(coverage, dict) or coverage.get('kind') not in ('independent', 'bundled'):
-        raise ValueError('expected independent or bundled PHP coverage')
+    if not isinstance(coverage, dict) or coverage.get('kind') not in ('independent', 'bundled', 'mixed'):
+        raise ValueError('expected independent, bundled, or mixed PHP coverage')
     rows = coverage.get('rows')
     if not isinstance(rows, list):
         raise ValueError('PHP coverage rows must be a list')
@@ -35,14 +35,16 @@ def render(coverage, selector=None):
             raise ValueError('PHP coverage row needs a complete PHP version')
         if not isinstance(row.get('release'), str) or not row['release']:
             raise ValueError('PHP coverage row needs an extension release')
-        if row.get('state') not in ('packaged', 'gap', 'incompatible'):
+        if coverage['kind'] == 'mixed' and row.get('kind') not in ('bundled', 'independent'):
+            raise ValueError('mixed PHP coverage rows need a source kind')
+        if row.get('state') not in ('packaged', 'gap', 'incompatible', 'builtin'):
             raise ValueError('unknown PHP coverage state')
         for field in ('reason', 'source'):
             value = row.get(field)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f'PHP coverage {field} must be a nonempty string')
-            if row['state'] == 'incompatible' and value is None:
-                raise ValueError(f'hard compatibility limit needs {field}')
+            if row['state'] in ('incompatible', 'builtin') and value is None:
+                raise ValueError(f'{row["state"]} PHP coverage needs {field}')
         pair = row['php'], row['release']
         if pair in seen:
             raise ValueError('duplicate PHP and extension release pair')
@@ -54,17 +56,24 @@ def render(coverage, selector=None):
 
     releases = defaultdict(list)
     for row in rows:
-        release = 'bundled releases matching PHP' if coverage['kind'] == 'bundled' else 'release ' + row['release']
+        kind = row['kind'] if coverage['kind'] == 'mixed' else coverage['kind']
+        release = 'bundled releases matching PHP' if kind == 'bundled' else 'release ' + row['release']
         releases[release].append(row)
     lines = ['  PHP coverage (declared):']
     if not releases:
         lines.append('    no PHP versions declared')
     for release, release_rows in sorted(releases.items(), key=lambda item: version_key(item[0])):
         lines.append('    ' + release)
-        for state, label in (('packaged', 'packaged'), ('gap', 'packaging gaps'), ('incompatible', 'hard limits')):
+        for state, label in (
+            ('packaged', 'packaged'),
+            ('builtin', 'built into PHP'),
+            ('gap', 'packaging gaps'),
+            ('incompatible', 'hard limits'),
+        ):
             matches = [row for row in release_rows if row['state'] == state]
             if not matches:
-                lines.append(f'      {label}: none')
+                if state != 'builtin':
+                    lines.append(f'      {label}: none')
             elif state == 'packaged':
                 lines.append(f'      {label} ({len(matches)}): ' + php_summary(matches))
             else:

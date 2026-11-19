@@ -200,6 +200,30 @@ drivers use PHP's native client. Their tests execute a query over a private
 Unix socket against a temporary MariaDB server from pinned Nixpkgs. A normal
 PHP installation needs only the modules and a connection to your database.
 
+## IMAP
+
+`php.extensions.imap` uses each PHP 8.2–8.3 release's own IMAP source and SDK.
+PHP moved IMAP to PECL in 8.4. TVP uses PECL IMAP 1.0.3 with the selected PHP
+8.4 or 8.5 SDK. [PHP IMAP installation](https://www.php.net/manual/en/imap.installation.php)
+[PECL IMAP 1.0.3](https://pecl.php.net/package/imap/1.0.3)
+
+IMAP requires a non-thread-safe PHP build. It links TVP's UW c-client
+with OpenSSL, with Kerberos disabled. Its installed checks load the expected
+module version and read a message from a temporary local mailbox.
+
+## OPcache
+
+On PHP 8.2–8.4, select `e.opcache` in `withExtensions` to load the Zend module
+built from that PHP release's source. When using Xdebug, list OPcache first.
+PHP 8.5 always loads OPcache from the engine. Use `withExtensions` settings
+to configure it, with `"opcache.enable_cli" = true` if you need caching in
+CLI processes. The current `php.profiles.opcache` uses the built-in Zend module.
+[PHP OPcache installation](https://www.php.net/opcache.installation)
+
+The installed checks verify the Zend module version and compile a local PHP
+fixture into the bytecode cache. Standard smoke testing also exercises the
+built-in path on the current PHP 8.5 release.
+
 ## VR2 API
 
 For VR2's PHP 8.2.35 and Composer MongoDB constraint, compose the API runtime

@@ -53,7 +53,8 @@ in
     builtins.mapAttrs (
       name: _:
       php.withExtensions {
-        extensions = extensions.runtimeModules php php.extensions.${name};
+        extensions =
+          if extensions.builtIn php name then [ ] else extensions.runtimeModules php php.extensions.${name};
       }
     ) extensions.versionTables
     // {
@@ -85,7 +86,9 @@ in
     unsupportedPHP = builtins.attrNames (
       lib.filterAttrs (
         _: php:
-        lib.all (family: compatibleReleases php family == { }) (builtins.attrNames extensions.versionTables)
+        lib.all (family: compatibleReleases php family == { } && !(extensions.builtIn php family)) (
+          builtins.attrNames extensions.versionTables
+        )
       ) engines
     );
     families = builtins.mapAttrs (
@@ -105,7 +108,9 @@ in
           policy = extensions.phpPolicies.${family};
         };
         unsupportedPHP = builtins.attrNames (
-          lib.filterAttrs (_: php: compatibleReleases php family == { }) engines
+          lib.filterAttrs (
+            _: php: compatibleReleases php family == { } && !(extensions.builtIn php family)
+          ) engines
         );
       }
     ) extensions.versionTables;
