@@ -27,15 +27,14 @@
     compiler = legacyBases.gcc_16_2_0.stdenv.cc;
     python = tvp.packages.python_3;
   };
-  named-outputs =
-    {
-      inherit (tvp.packages) bash coreutils;
-    }
-    // pkgs.lib.listToAttrs (
-      pkgs.lib.imap0 (
-        i: p: pkgs.lib.nameValuePair "floor${toString i}" p
-      ) legacyBases.gcc_16_2_0.stdenv.initialPath
-    );
+  named-outputs = {
+    inherit (tvp.packages) bash coreutils;
+  }
+  // pkgs.lib.listToAttrs (
+    pkgs.lib.imap0 (
+      i: p: pkgs.lib.nameValuePair "floor${toString i}" p
+    ) legacyBases.gcc_16_2_0.stdenv.initialPath
+  );
   reusable-output = {
     inherit (tvp.packages) bash;
     python = tvp.packages.python_3;

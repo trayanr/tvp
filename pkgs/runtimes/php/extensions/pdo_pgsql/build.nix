@@ -47,7 +47,8 @@ let
             final.openssl
             final.krb5
             final.keyutils
-          ] ++ final.linkLibraries;
+          ]
+          ++ final.linkLibraries;
           configureOptions = [ "--with-pdo-pgsql=${final.postgresql}" ] ++ final.configureOptions;
         }
       );

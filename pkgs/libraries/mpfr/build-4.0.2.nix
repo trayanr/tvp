@@ -123,7 +123,8 @@ in
     (outputs.relocateText {
       paths = [
         "lib/libmpfr.la"
-      ] ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
+      ]
+      ++ lib.optional final.installedInterface.hasPkgConfig "lib/pkgconfig/mpfr.pc";
     })
     (outputs.strip {
       paths = elfPaths;

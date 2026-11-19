@@ -97,7 +97,7 @@ in
   package = execution;
   name = "upstream";
   tools = [ s.python ];
-  script = ''${s.python}/bin/python3 -B ${s.classifyScript} ${execution}/raw'';
+  script = "${s.python}/bin/python3 -B ${s.classifyScript} ${execution}/raw";
   expected = s.upstreamExpected;
 }).edit
   (

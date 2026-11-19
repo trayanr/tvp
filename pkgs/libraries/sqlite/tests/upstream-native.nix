@@ -20,33 +20,32 @@ let
         test
         // {
           validationRole = "upstream-execution";
-          plan =
-            [
-              {
-                name = "upstream.initialize";
-                run = ''mkdir -p "$out"'';
-              }
-            ]
-            ++ s.upstreamPlan
-            ++ [
-              (
-                check
-                // {
-                  name = "upstream.capture";
-                  enabled = true;
-                  run = ''
-                    mkdir -p "$out/raw"
-                    cat > "$TVP_SOURCE_ROOT/upstream-check.sh" <<'TVP_UPSTREAM_CHECK'
-                    ${check.run}
-                    TVP_UPSTREAM_CHECK
-                    status=0
-                    ${s.bash}/bin/bash -euo pipefail "$TVP_SOURCE_ROOT/upstream-check.sh" > "$out/raw/log" 2>&1 || status=$?
-                    printf '%s\n' "$status" > "$out/raw/status"
+          plan = [
+            {
+              name = "upstream.initialize";
+              run = ''mkdir -p "$out"'';
+            }
+          ]
+          ++ s.upstreamPlan
+          ++ [
+            (
+              check
+              // {
+                name = "upstream.capture";
+                enabled = true;
+                run = ''
+                  mkdir -p "$out/raw"
+                  cat > "$TVP_SOURCE_ROOT/upstream-check.sh" <<'TVP_UPSTREAM_CHECK'
+                  ${check.run}
+                  TVP_UPSTREAM_CHECK
+                  status=0
+                  ${s.bash}/bin/bash -euo pipefail "$TVP_SOURCE_ROOT/upstream-check.sh" > "$out/raw/log" 2>&1 || status=$?
+                  printf '%s\n' "$status" > "$out/raw/status"
 
-                  '';
-                }
-              )
-            ];
+                '';
+              }
+            )
+          ];
         }
       );
 in

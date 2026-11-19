@@ -49,7 +49,8 @@ let
     "php"
     "base"
     "settings"
-  ] ++ builtins.attrNames moduleArgs;
+  ]
+  ++ builtins.attrNames moduleArgs;
   recipe = lib.setFunctionArgs (
     args: final:
     let
@@ -162,7 +163,8 @@ tvp.builder {
   args = {
     php = engine;
     inherit settings;
-  } // moduleArgs;
+  }
+  // moduleArgs;
   argumentDefaults =
     { specification, ... }:
     {

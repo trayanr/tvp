@@ -29,9 +29,7 @@ let
         mkdir "$out"
         printf '/* TVP custom skeleton */\n' > "$out/custom.skl"
         ${d.sed}/bin/sed 's/4_/a4_/g; s/m4preproc_/m4_/g' src/flex.skl |
-          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=2 -DFLEX_MINOR_VERSION=6 -DFLEX_SUBMINOR_VERSION=${
-            builtins.elemAt (lib.splitString "." p.version) 2
-          } |
+          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=2 -DFLEX_MINOR_VERSION=6 -DFLEX_SUBMINOR_VERSION=${builtins.elemAt (lib.splitString "." p.version) 2} |
           ${d.sed}/bin/sed '/^%#/d; s/m4_/m4preproc_/g; s/a4_/4_/g' >> "$out/custom.skl"
       '';
     }

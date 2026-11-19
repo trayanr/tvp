@@ -943,19 +943,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.11";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.11-install-before-relink.patch;
-              reason = "install depends on the libsqlite3.la build target rather than lib_install, so tcl_install relinks libtclsqlite3 against an -lsqlite3 that is not in libdir yet. Upstream made the same substitution in 3.6.12.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.11-install-before-relink.patch;
+            reason = "install depends on the libsqlite3.la build target rather than lib_install, so tcl_install relinks libtclsqlite3 against an -lsqlite3 that is not in libdir yet. Upstream made the same substitution in 3.6.12.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.11" = "sha256-rfWJJgWKbYqvF4feAFpm5eGncFpiTlOj/IfVS3nzjag=";
@@ -1014,19 +1013,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.14";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.14-stale-configure-version.patch;
-              reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.14-stale-configure-version.patch;
+            reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.14" = "sha256-WfqczGYq2jFfuNa+dXrVtEc2joKfhjctmoUsfKTG8Qo=";
@@ -1049,19 +1047,18 @@ let
           };
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.16.1";
         };
-        patches =
-          [
-            {
-              file = ./patches/3.6.16.1-stale-configure-version.patch;
-              reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
-            }
-          ]
-          ++ [
-            {
-              file = ./patches/legacy-serial-width-assignment.patch;
-              reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
-            }
-          ];
+        patches = [
+          {
+            file = ./patches/3.6.16.1-stale-configure-version.patch;
+            reason = "Upstream bumped VERSION without regenerating configure, and configure aborts when the two disagree. Sets the two version strings regeneration would have set.";
+          }
+        ]
+        ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
       };
       releases = {
         "3.6.16.1" = "sha256-D3fW5/JvDofWa+Ts8NYiP2HsWa2/5RZ1lN29Lx9LCfM=";

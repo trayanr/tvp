@@ -40,65 +40,64 @@ context.mkSuite {
   ];
   libraries = [ package ];
 
-  tests =
-    {
-      call = {
-        script = ''
-          cc ${./fixtures/call.c} ${inc}-lffi -o call
-          ./call
-        '';
-        expected = "42";
+  tests = {
+    call = {
+      script = ''
+        cc ${./fixtures/call.c} ${inc}-lffi -o call
+        ./call
+      '';
+      expected = "42";
 
-      };
-
-      # The other direction: a native pointer that dispatches into libffi.
-      closure = {
-        script = ''
-          cc ${./fixtures/closure.c} ${inc}-lffi -o closure
-          ./closure
-        '';
-        expected = "42";
-
-      };
-
-      pkg-config = {
-        script = ''
-          export PKG_CONFIG_LIBDIR=${libffi}/lib/pkgconfig:${libffi}/share/pkgconfig
-          pkg-config --modversion libffi
-        '';
-        expected = libffi.version;
-
-      };
-    }
-
-    // lib.optionalAttrs features.static {
-      static = {
-        script = "cc ${./fixtures/call.c} ${inc}${package}/lib/libffi.a -o static-call; ./static-call";
-        expected = "42";
-      };
-    }
-
-    // lib.optionalAttrs (features.variadic or false) {
-      variadic = {
-        script = ''
-          cc ${./fixtures/variadic.c} ${inc}-lffi -o variadic
-          ./variadic
-        '';
-        expected = "42";
-
-      };
-    }
-
-    // lib.optionalAttrs (features.versionFunction or false) {
-      version = {
-        script = ''
-          cc ${./fixtures/version.c} ${inc}-lffi -o version
-          ./version
-        '';
-        expected = reported;
-
-      };
     };
+
+    # The other direction: a native pointer that dispatches into libffi.
+    closure = {
+      script = ''
+        cc ${./fixtures/closure.c} ${inc}-lffi -o closure
+        ./closure
+      '';
+      expected = "42";
+
+    };
+
+    pkg-config = {
+      script = ''
+        export PKG_CONFIG_LIBDIR=${libffi}/lib/pkgconfig:${libffi}/share/pkgconfig
+        pkg-config --modversion libffi
+      '';
+      expected = libffi.version;
+
+    };
+  }
+
+  // lib.optionalAttrs features.static {
+    static = {
+      script = "cc ${./fixtures/call.c} ${inc}${package}/lib/libffi.a -o static-call; ./static-call";
+      expected = "42";
+    };
+  }
+
+  // lib.optionalAttrs (features.variadic or false) {
+    variadic = {
+      script = ''
+        cc ${./fixtures/variadic.c} ${inc}-lffi -o variadic
+        ./variadic
+      '';
+      expected = "42";
+
+    };
+  }
+
+  // lib.optionalAttrs (features.versionFunction or false) {
+    version = {
+      script = ''
+        cc ${./fixtures/version.c} ${inc}-lffi -o version
+        ./version
+      '';
+      expected = reported;
+
+    };
+  };
 }
 
 // import ../../ffi-decimal-contracts.nix { inherit package lib context; }

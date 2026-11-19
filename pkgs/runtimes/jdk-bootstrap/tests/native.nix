@@ -10,7 +10,7 @@ package.testContext.mkSuite {
       expected = package.version;
     };
     compiler = {
-      script = ''cp ${./fixtures/Hello.java} Hello.java; javac Hello.java -d .; java Hello'';
+      script = "cp ${./fixtures/Hello.java} Hello.java; javac Hello.java -d .; java Hello";
       expected = "42";
     };
     headless = {

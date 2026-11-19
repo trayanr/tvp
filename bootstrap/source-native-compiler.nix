@@ -104,15 +104,14 @@ in
     ;
   inherit (consumers) gmp mpfr mpc;
   binutils = b.gnu-binutils;
-  tools =
-    {
-      inherit (prior.tools) ninja pkgConfig;
-    }
-    // {
-      inherit (prior) python meson;
-      cmake = prior.prior.cmake;
-      make = b.gnu-tool-floor.gnu-make;
-    };
+  tools = {
+    inherit (prior.tools) ninja pkgConfig;
+  }
+  // {
+    inherit (prior) python meson;
+    cmake = prior.prior.cmake;
+    make = b.gnu-tool-floor.gnu-make;
+  };
   # Reconstruct the captured environment closure with the selected compiler.
   composition = import ./source-base.nix {
     inherit bootstrap;

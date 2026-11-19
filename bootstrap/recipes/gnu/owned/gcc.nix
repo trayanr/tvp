@@ -60,7 +60,8 @@ in
   environment.tools = [
     binutils
     gnumake
-  ] ++ tools;
+  ]
+  ++ tools;
   plan = [
     {
       name = "gcc.prepare";

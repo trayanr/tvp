@@ -32,7 +32,7 @@ let
           };
         }
       )).editRuntime
-      (runtime: runtime // { libraries = [ ]; })
+        (runtime: runtime // { libraries = [ ]; })
     ).editSteps
       (
         plan:

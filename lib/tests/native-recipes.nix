@@ -124,15 +124,15 @@ let
           }
         ]
       )).editSteps
-      (
-        steps.replace "fixture.log" (
-          old:
-          old
-          // {
-            run = old.run + ''; test "$(wc -l < "$out/log")" = 1'';
-          }
+        (
+          steps.replace "fixture.log" (
+            old:
+            old
+            // {
+              run = old.run + ''; test "$(wc -l < "$out/log")" = 1'';
+            }
+          )
         )
-      )
     ).override
       { inherit gmp; };
   runtimeContext = tvp.lib.tests.forBase {
@@ -189,7 +189,8 @@ let
               touch "$out/bin/.tool-wrapped"
             '';
           }
-        ] ++ (import ../native-steps.nix { inherit lib; }).finalize { };
+        ]
+        ++ (import ../native-steps.nix { inherit lib; }).finalize { };
       };
   auditControl = tvp.__legacyBases.gcc_16_2_0.stdenv.mkDerivation {
     name = "native-shared-build-path-audit-control";
@@ -208,16 +209,15 @@ let
     fixture.editSteps (_: [
       {
         name = "epoch.prepare";
-        run =
-          ''
-            mkdir -p "$out"
-          ''
-          + lib.optionalString (mode == "valid") ''
-            printf '%s\n' 1700000000 > source-date-epoch
-          ''
-          + lib.optionalString (mode == "invalid") ''
-            mkdir source-date-epoch
-          '';
+        run = ''
+          mkdir -p "$out"
+        ''
+        + lib.optionalString (mode == "valid") ''
+          printf '%s\n' 1700000000 > source-date-epoch
+        ''
+        + lib.optionalString (mode == "invalid") ''
+          mkdir source-date-epoch
+        '';
       }
       {
         name = "epoch.read";

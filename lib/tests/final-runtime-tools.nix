@@ -77,100 +77,99 @@ let
         }
       );
       tests = builtins.mapAttrs (_: t: plain t.drvPath) p.tests;
-      contracts =
-        {
-          noop = (p.override { }).drvPath == p.drvPath;
-          split = p.artifact.drvPath != p.drvPath;
-          singleOutput = p.outputs == [ "out" ] && p.artifact.outputs == [ "out" ];
-          copy = builtins.any (
-            x:
-            x.name == "output.copy-artifacts"
-            && lib.hasInfix "TVP_ARTIFACT_ROOT" x.run
-            && !(lib.hasInfix "TVP_ARTIFACT_OUTPUTS" x.run)
-          ) p.buildSteps;
-          finalReusesA = f.artifact.drvPath == p.artifact.drvPath && f.drvPath != p.drvPath;
-          constructionChangesA = construction.artifact.drvPath != p.artifact.drvPath;
-          noCheckReusesAandF = noCheck.artifact.drvPath == p.artifact.drvPath && noCheck.drvPath == p.drvPath;
-          runtimeClassification =
-            if
-              builtins.elem name [
-                "go_1_27_3"
-                "nodejs_26_13_0"
-              ]
-            then
-              runtime.artifact.drvPath != p.artifact.drvPath
-            else
-              runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
-          lookupLibrariesReuseA = finalLibraries.artifact.drvPath == p.artifact.drvPath;
-          productionIndependent =
-            !(consumes p raw)
-            && !(consumes p.artifact raw)
-            && !(consumes p upstream)
-            && !(consumes p.artifact upstream);
-          upstreamRegistered = upstream.package.drvPath == p.drvPath;
-          validationTargetPolicy =
-            if name == "less_710" then
-              builtins.any (
-                x: lib.hasInfix "LESSTEST=1" (x.run or "") && lib.hasInfix "../less_t lt" (x.run or "")
-              ) raw.buildSteps
-            else
-              consumes raw p;
-          noCheckChangesValidation = name == "go_1_27_3" || upstreamEdited.drvPath != upstream.drvPath;
-          factoryRegistration =
-            if name == "go_1_27_3" then
-              p.tests.standard-library.package.drvPath == p.drvPath
-            else
-              upstream.specification.validation.factory == "owned.mkTest"
-              && upstream.specification.validation.production.drvPath == p.artifact.drvPath;
-        }
-        // lib.optionalAttrs (name == "go_1_27_3") {
-          cxxChangesA =
-            (p.editRuntime (r: r // { cxx = r.cxx + "-contract"; })).artifact.drvPath != p.artifact.drvPath;
-          loaderChangesA =
-            (p.editRuntime (r: r // { loader = "${r.libc}/lib/contract-loader"; })).artifact.drvPath
-            != p.artifact.drvPath;
-          compilerChangesA =
-            (p.editRuntime (
-              r: r // { compiler = (import ../../bases/source-gnu/tests/probes.nix { }).sentinel; }
-            )).artifact.drvPath != p.artifact.drvPath;
-          incoherentLibcRejected =
-            !(builtins.tryEval (p.editRuntime (r: r // { libc = bump r.libc; })).artifact.drvPath).success;
-        }
-        //
-          lib.optionalAttrs
-            (builtins.elem name [
-              "git_2_56_0"
+      contracts = {
+        noop = (p.override { }).drvPath == p.drvPath;
+        split = p.artifact.drvPath != p.drvPath;
+        singleOutput = p.outputs == [ "out" ] && p.artifact.outputs == [ "out" ];
+        copy = builtins.any (
+          x:
+          x.name == "output.copy-artifacts"
+          && lib.hasInfix "TVP_ARTIFACT_ROOT" x.run
+          && !(lib.hasInfix "TVP_ARTIFACT_OUTPUTS" x.run)
+        ) p.buildSteps;
+        finalReusesA = f.artifact.drvPath == p.artifact.drvPath && f.drvPath != p.drvPath;
+        constructionChangesA = construction.artifact.drvPath != p.artifact.drvPath;
+        noCheckReusesAandF = noCheck.artifact.drvPath == p.artifact.drvPath && noCheck.drvPath == p.drvPath;
+        runtimeClassification =
+          if
+            builtins.elem name [
+              "go_1_27_3"
               "nodejs_26_13_0"
-            ])
-            {
-              configurePrefixChangesA =
-                (p.edit (x: x // { configurePrefix = "/tvp/contract"; })).artifact.drvPath != p.artifact.drvPath;
-              storeConfigurePrefixRejected =
-                !(builtins.tryEval (p.edit (x: x // { configurePrefix = toString p; })).artifact.drvPath).success;
-              escapingConfigurePrefixRejected =
-                !(builtins.tryEval (p.edit (x: x // { configurePrefix = "/tvp/../../escape"; })).artifact.drvPath)
-                .success;
-            }
-        // lib.optionalAttrs (name == "git_2_56_0") {
-          cvsserverEntryPathsRegistered =
-            p.tests.cvsserver-entry-paths.tvp.kind == "owned-test"
-            && p.tests.cvsserver-entry-paths.package.drvPath == p.drvPath;
-          privatePreparationReusesAandF =
-            let
-              q = p.edit (
-                x:
-                x
-                // {
-                  upstreamPreparation = x.upstreamPreparation // {
-                    run = x.upstreamPreparation.run + "\n# private test preparation\n";
-                  };
-                }
-              );
-            in
-            q.artifact.drvPath == p.artifact.drvPath
-            && q.drvPath == p.drvPath
-            && q.tests.upstream.drvPath != p.tests.upstream.drvPath;
-        };
+            ]
+          then
+            runtime.artifact.drvPath != p.artifact.drvPath
+          else
+            runtime.artifact.drvPath == p.artifact.drvPath && runtime.drvPath != p.drvPath;
+        lookupLibrariesReuseA = finalLibraries.artifact.drvPath == p.artifact.drvPath;
+        productionIndependent =
+          !(consumes p raw)
+          && !(consumes p.artifact raw)
+          && !(consumes p upstream)
+          && !(consumes p.artifact upstream);
+        upstreamRegistered = upstream.package.drvPath == p.drvPath;
+        validationTargetPolicy =
+          if name == "less_710" then
+            builtins.any (
+              x: lib.hasInfix "LESSTEST=1" (x.run or "") && lib.hasInfix "../less_t lt" (x.run or "")
+            ) raw.buildSteps
+          else
+            consumes raw p;
+        noCheckChangesValidation = name == "go_1_27_3" || upstreamEdited.drvPath != upstream.drvPath;
+        factoryRegistration =
+          if name == "go_1_27_3" then
+            p.tests.standard-library.package.drvPath == p.drvPath
+          else
+            upstream.specification.validation.factory == "owned.mkTest"
+            && upstream.specification.validation.production.drvPath == p.artifact.drvPath;
+      }
+      // lib.optionalAttrs (name == "go_1_27_3") {
+        cxxChangesA =
+          (p.editRuntime (r: r // { cxx = r.cxx + "-contract"; })).artifact.drvPath != p.artifact.drvPath;
+        loaderChangesA =
+          (p.editRuntime (r: r // { loader = "${r.libc}/lib/contract-loader"; })).artifact.drvPath
+          != p.artifact.drvPath;
+        compilerChangesA =
+          (p.editRuntime (
+            r: r // { compiler = (import ../../bases/source-gnu/tests/probes.nix { }).sentinel; }
+          )).artifact.drvPath != p.artifact.drvPath;
+        incoherentLibcRejected =
+          !(builtins.tryEval (p.editRuntime (r: r // { libc = bump r.libc; })).artifact.drvPath).success;
+      }
+      //
+        lib.optionalAttrs
+          (builtins.elem name [
+            "git_2_56_0"
+            "nodejs_26_13_0"
+          ])
+          {
+            configurePrefixChangesA =
+              (p.edit (x: x // { configurePrefix = "/tvp/contract"; })).artifact.drvPath != p.artifact.drvPath;
+            storeConfigurePrefixRejected =
+              !(builtins.tryEval (p.edit (x: x // { configurePrefix = toString p; })).artifact.drvPath).success;
+            escapingConfigurePrefixRejected =
+              !(builtins.tryEval (p.edit (x: x // { configurePrefix = "/tvp/../../escape"; })).artifact.drvPath)
+              .success;
+          }
+      // lib.optionalAttrs (name == "git_2_56_0") {
+        cvsserverEntryPathsRegistered =
+          p.tests.cvsserver-entry-paths.tvp.kind == "owned-test"
+          && p.tests.cvsserver-entry-paths.package.drvPath == p.drvPath;
+        privatePreparationReusesAandF =
+          let
+            q = p.edit (
+              x:
+              x
+              // {
+                upstreamPreparation = x.upstreamPreparation // {
+                  run = x.upstreamPreparation.run + "\n# private test preparation\n";
+                };
+              }
+            );
+          in
+          q.artifact.drvPath == p.artifact.drvPath
+          && q.drvPath == p.drvPath
+          && q.tests.upstream.drvPath != p.tests.upstream.drvPath;
+      };
     in
     {
       inherit contracts tests;

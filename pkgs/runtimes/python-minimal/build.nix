@@ -78,7 +78,8 @@ in
       "readline"
       "zlib"
     ];
-  } // buildFeatures;
+  }
+  // buildFeatures;
   dependencyProviders = {
     inherit (final) file;
   };

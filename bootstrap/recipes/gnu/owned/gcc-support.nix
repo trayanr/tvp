@@ -55,54 +55,54 @@ in
   environment.tools = [
     binutils
     gnumake
-  ] ++ tools;
-  plan =
-    [
-      {
-        name = "${component}.prepare";
-        run = ''
-          cp -pr ${final.src} source
-          chmod -R u+w source
-          mkdir build
-        '';
+  ]
+  ++ tools;
+  plan = [
+    {
+      name = "${component}.prepare";
+      run = ''
+        cp -pr ${final.src} source
+        chmod -R u+w source
+        mkdir build
+      '';
+    }
+    (command "configure" ''
+      ${bash}/bin/bash ../source/${component}/configure --prefix="$out" \
+        --build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu \
+        ${lib.optionalString (component == "libiberty") "--enable-install-libiberty enable_host_pie=yes"}
+      cp config.log "$evidence/"
+    '')
+    (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'')
+    # Raw statuses are evidence, never an allowance or a conformance PASS.
+    (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash check'')
+  ]
+  ++ lib.optional supportedCheck (
+    command "supported-check" ''
+      # Upstream HAVE_ELF/NATIVE unconditionally adds btest_lto, although this
+      # compiler explicitly disables LTO. Remove only those generated variables.
+      ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash am__EXEEXT_6= am__append_10= check
+    ''
+  )
+  ++ [
+    (command "install" ''
+      mkdir -p "$out/lib" "$out/include"
+      ${
+        if component == "libiberty" then
+          ''
+            cp pic/libiberty.a "$out/lib/libiberty.a"
+            cp pic/libiberty.a "$out/lib/libiberty_pic.a"
+            cp ../source/include/*.h "$out/include/"
+          ''
+        else
+          ''
+            cp .libs/libbacktrace.a libbacktrace.la "$out/lib/"
+            cp backtrace-supported.h ../source/libbacktrace/backtrace.h "$out/include/"
+            find . -name '*.log' -o -name '*.trs' | while read -r f; do
+              mkdir -p "$evidence/raw/$(dirname "$f")"
+              cp "$f" "$evidence/raw/$f"
+            done
+          ''
       }
-      (command "configure" ''
-        ${bash}/bin/bash ../source/${component}/configure --prefix="$out" \
-          --build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu \
-          ${lib.optionalString (component == "libiberty") "--enable-install-libiberty enable_host_pie=yes"}
-        cp config.log "$evidence/"
-      '')
-      (command "build" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash'')
-      # Raw statuses are evidence, never an allowance or a conformance PASS.
-      (command "check" ''${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash check'')
-    ]
-    ++ lib.optional supportedCheck (
-      command "supported-check" ''
-        # Upstream HAVE_ELF/NATIVE unconditionally adds btest_lto, although this
-        # compiler explicitly disables LTO. Remove only those generated variables.
-        ${gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${bash}/bin/bash am__EXEEXT_6= am__append_10= check
-      ''
-    )
-    ++ [
-      (command "install" ''
-        mkdir -p "$out/lib" "$out/include"
-        ${
-          if component == "libiberty" then
-            ''
-              cp pic/libiberty.a "$out/lib/libiberty.a"
-              cp pic/libiberty.a "$out/lib/libiberty_pic.a"
-              cp ../source/include/*.h "$out/include/"
-            ''
-          else
-            ''
-              cp .libs/libbacktrace.a libbacktrace.la "$out/lib/"
-              cp backtrace-supported.h ../source/libbacktrace/backtrace.h "$out/include/"
-              find . -name '*.log' -o -name '*.trs' | while read -r f; do
-                mkdir -p "$evidence/raw/$(dirname "$f")"
-                cp "$f" "$evidence/raw/$f"
-              done
-            ''
-        }
-      '')
-    ];
+    '')
+  ];
 }

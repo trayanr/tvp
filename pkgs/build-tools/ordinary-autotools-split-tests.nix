@@ -39,47 +39,46 @@ in
 context.mkSuite {
   package = p;
   tools = [ tools.grep ];
-  tests =
-    {
-      helper-confinement-and-frontends = {
-        script = ''
-          ${tools.python}/bin/python3 -B ${./ordinary-autotools-safety-tests.py} \
-            ${./ordinary-autotools-source.py} ${./automake/prepare-api.py} \
-            ${./ordinary-autotools-output.py}
-        '';
-        expected = "helper-contracts";
-      };
-      artifact-finalization = {
-        expected =
-          assert lib.all (x: x) (builtins.attrValues contracts);
-          "split";
-        script = ''
-          test -s ${finalizer}/finalizer-control
-          head -1 ${runtime}/bin/${p.pname} | grep -Fq '${
-            if
-              p.specification ? perl
-              && (p.specification.installedInterface.frontends.autoconf or "perl") == "perl"
-            then
-              "${runtime.runtime.perl}/bin/perl"
-            else
-              "${runtime.runtime.shell}/bin/bash"
-          }'
-          env -i PATH=/absent ${runtime}/bin/${p.pname} --version >&2
-          printf split
-        '';
-      };
-    }
-    // lib.optionalAttrs (p.pname == "automake" && (p.tvp.features.configuredApi or false)) {
-      effective-version-layout = {
-        script = ''
-          test -s ${api}/share/automake-1.88/depcomp
-          test -d ${api}/share/aclocal-1.88
-          test "$(readlink ${api}/bin/automake-1.88)" = automake
-          env -i PATH=/absent ${api}/bin/automake-1.88 --version | head -1 | grep -Fq 1.88.4
-          env -i PATH=/absent ${runtime}/share/automake-${p.specification.apiVersion}/test-driver --help | grep -Fq Usage
-          printf layout
-        '';
-        expected = "layout";
-      };
+  tests = {
+    helper-confinement-and-frontends = {
+      script = ''
+        ${tools.python}/bin/python3 -B ${./ordinary-autotools-safety-tests.py} \
+          ${./ordinary-autotools-source.py} ${./automake/prepare-api.py} \
+          ${./ordinary-autotools-output.py}
+      '';
+      expected = "helper-contracts";
     };
+    artifact-finalization = {
+      expected =
+        assert lib.all (x: x) (builtins.attrValues contracts);
+        "split";
+      script = ''
+        test -s ${finalizer}/finalizer-control
+        head -1 ${runtime}/bin/${p.pname} | grep -Fq '${
+          if
+            p.specification ? perl
+            && (p.specification.installedInterface.frontends.autoconf or "perl") == "perl"
+          then
+            "${runtime.runtime.perl}/bin/perl"
+          else
+            "${runtime.runtime.shell}/bin/bash"
+        }'
+        env -i PATH=/absent ${runtime}/bin/${p.pname} --version >&2
+        printf split
+      '';
+    };
+  }
+  // lib.optionalAttrs (p.pname == "automake" && (p.tvp.features.configuredApi or false)) {
+    effective-version-layout = {
+      script = ''
+        test -s ${api}/share/automake-1.88/depcomp
+        test -d ${api}/share/aclocal-1.88
+        test "$(readlink ${api}/bin/automake-1.88)" = automake
+        env -i PATH=/absent ${api}/bin/automake-1.88 --version | head -1 | grep -Fq 1.88.4
+        env -i PATH=/absent ${runtime}/share/automake-${p.specification.apiVersion}/test-driver --help | grep -Fq Usage
+        printf layout
+      '';
+      expected = "layout";
+    };
+  };
 }

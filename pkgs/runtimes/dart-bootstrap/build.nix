@@ -31,10 +31,12 @@ in
   inherit (tools) bash coreutils;
   sourceLayout = {
     channel = "stable";
-  } // sourceLayout;
+  }
+  // sourceLayout;
   buildFeatures = {
     startupSmoke = true;
-  } // buildFeatures;
+  }
+  // buildFeatures;
   runtime = {
     loader = "${final.runtimeLibc}/lib/ld-linux-x86-64.so.2";
     libraries = [

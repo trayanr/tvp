@@ -96,7 +96,7 @@ in
     '')
     (command "fontconfig.build" "source/build" ''${meson}/bin/meson compile -j "$NIX_BUILD_CORES"'')
     (
-      (command "fontconfig.check" "source/build" ''${meson}/bin/meson test --print-errorlogs'')
+      (command "fontconfig.check" "source/build" "${meson}/bin/meson test --print-errorlogs")
       // {
         enabled = doCheck;
       }

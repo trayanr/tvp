@@ -82,7 +82,7 @@ let
             helpers = "selected";
             tests = { package, ... }: package.testConfiguration.helpers;
           })
-          p
+            p
         ) == "selected";
       srcOverride =
         changedSrc.drvPath != p.drvPath

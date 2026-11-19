@@ -20,7 +20,7 @@ package.testContext.mkSuite {
       expected = package.tvp.reportedVersion;
     };
     compile = {
-      script = setup + ''go build -o hello ${./fixtures/hello.go}; ./hello'';
+      script = setup + "go build -o hello ${./fixtures/hello.go}; ./hello";
       expected = "42";
     };
     formatting = {
@@ -33,34 +33,30 @@ package.testContext.mkSuite {
       expected = "formatted";
     };
     cgo = {
-      script = ''CGO_ENABLED=1 go env CGO_ENABLED'';
+      script = "CGO_ENABLED=1 go env CGO_ENABLED";
       expected = if package.tvp.features.cgo then "1" else "0";
     };
     nested-bootstrap = {
-      script =
-        setup
-        + ''
-          export GOROOT_BOOTSTRAP="${package}/share/go"
-          export GOROOT="$TMPDIR/unrelated-next-stage-source"
-          test "$("$GOROOT_BOOTSTRAP/bin/go" version)" = "$(go version)"
-          test "$("$GOROOT_BOOTSTRAP/bin/go" env GOROOT)" = "$GOROOT_BOOTSTRAP"
-          "$GOROOT_BOOTSTRAP/bin/go" build -o hello ${./fixtures/hello.go}
-          ./hello
-        '';
+      script = setup + ''
+        export GOROOT_BOOTSTRAP="${package}/share/go"
+        export GOROOT="$TMPDIR/unrelated-next-stage-source"
+        test "$("$GOROOT_BOOTSTRAP/bin/go" version)" = "$(go version)"
+        test "$("$GOROOT_BOOTSTRAP/bin/go" env GOROOT)" = "$GOROOT_BOOTSTRAP"
+        "$GOROOT_BOOTSTRAP/bin/go" build -o hello ${./fixtures/hello.go}
+        ./hello
+      '';
       expected = "42";
     };
     final-root = {
-      script =
-        setup
-        + ''
-            test "$(go env GOROOT)" = "${package}/share/go"
-            test "$(go env GOTOOLDIR)" = "${package}/share/go/pkg/tool/${s.goOS}_${s.goArch}"
-            test "$(go run ${./fixtures/root.go})" = "${package}/share/go"
-          go build -o root ${./fixtures/root.go}
-            # Go 1.4's supported runtime interface is the GOROOT environment;
-            # next-stage processes inherit it from the nested launcher.
-            GOROOT="$(go env GOROOT)" ./root
-        '';
+      script = setup + ''
+          test "$(go env GOROOT)" = "${package}/share/go"
+          test "$(go env GOTOOLDIR)" = "${package}/share/go/pkg/tool/${s.goOS}_${s.goArch}"
+          test "$(go run ${./fixtures/root.go})" = "${package}/share/go"
+        go build -o root ${./fixtures/root.go}
+          # Go 1.4's supported runtime interface is the GOROOT environment;
+          # next-stage processes inherit it from the nested launcher.
+          GOROOT="$(go env GOROOT)" ./root
+      '';
       expected = "${package}/share/go";
     };
     runtime-paths = {

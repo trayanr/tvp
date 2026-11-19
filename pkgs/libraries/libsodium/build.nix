@@ -25,7 +25,10 @@ in
   ];
   runtime.libraries = [ ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.prepareAutotools { name = "libsodium.prepare"; })
     (command "libsodium.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -36,7 +39,10 @@ in
     (steps.split "libsodium.finalize")
     (outputs.copyArtifacts { })
     (outputs.relocateText {
-      paths = [ "lib/libsodium.la" "lib/pkgconfig/libsodium.pc" ];
+      paths = [
+        "lib/libsodium.la"
+        "lib/pkgconfig/libsodium.pc"
+      ];
     })
     (outputs.strip { paths = [ "lib" ]; })
     (outputs.rpaths {

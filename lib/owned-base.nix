@@ -234,29 +234,28 @@ let
             }
           )
         );
-      base =
-        {
-          inherit
-            name
-            platform
-            compiler
-            shell
-            referencePackages
-            ;
-          inherit baselineTools;
-          tools = catalogue;
-          libc = compiler.libc;
-          runtimeDirectories = compiler.runtimeDirectories;
-          # Temporary compatibility for retained helpers; no second provider record.
-          standardTools = builtins.removeAttrs catalogue reserved;
-          environment = composeEnvironment;
-          override =
-            replacements:
-            replace false (if builtins.isFunction replacements then replacements inputs else replacements);
-          edit = transform: makeEdited (transform inputs);
-        }
-        // lib.optionalAttrs (coreutils != null) { inherit coreutils; }
-        // lib.optionalAttrs (construction != null) { inherit construction; };
+      base = {
+        inherit
+          name
+          platform
+          compiler
+          shell
+          referencePackages
+          ;
+        inherit baselineTools;
+        tools = catalogue;
+        libc = compiler.libc;
+        runtimeDirectories = compiler.runtimeDirectories;
+        # Temporary compatibility for retained helpers; no second provider record.
+        standardTools = builtins.removeAttrs catalogue reserved;
+        environment = composeEnvironment;
+        override =
+          replacements:
+          replace false (if builtins.isFunction replacements then replacements inputs else replacements);
+        edit = transform: makeEdited (transform inputs);
+      }
+      // lib.optionalAttrs (coreutils != null) { inherit coreutils; }
+      // lib.optionalAttrs (construction != null) { inherit construction; };
       makeEdited =
         edited:
         let

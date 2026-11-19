@@ -107,7 +107,7 @@ let
           };
           metadata = {
             tools = [ package.specification.coreutils ];
-            script = ''cat ${package}/share/name'';
+            script = "cat ${package}/share/name";
             expected = package.pname;
           };
         };

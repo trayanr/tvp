@@ -17,7 +17,10 @@ in
   environment.tools = [ tools.cmake ];
   runtime.libraries = [ ];
   plan = steps.sequence [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.cmake {
       name = "libjpeg-turbo";
       inherit (environment) tools libraries env;
@@ -36,7 +39,10 @@ in
     (steps.split "libjpeg-turbo.finalize")
     (outputs.copyArtifacts { })
     (outputs.relocateText {
-      paths = [ "lib/pkgconfig/libjpeg.pc" "lib/pkgconfig/libturbojpeg.pc" ];
+      paths = [
+        "lib/pkgconfig/libjpeg.pc"
+        "lib/pkgconfig/libturbojpeg.pc"
+      ];
     })
     (outputs.strip { paths = [ "lib" ]; })
     (outputs.rpaths {
@@ -48,7 +54,11 @@ in
   meta = {
     description = "JPEG codec with libjpeg and TurboJPEG interfaces";
     homepage = "https://libjpeg-turbo.org/";
-    license = with lib.licenses; [ ijg bsd3 zlib ];
+    license = with lib.licenses; [
+      ijg
+      bsd3
+      zlib
+    ];
     platforms = [ "x86_64-linux" ];
   };
 }

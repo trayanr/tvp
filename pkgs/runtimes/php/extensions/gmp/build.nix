@@ -20,7 +20,13 @@ args@{
   compression ? "gzip",
 }:
 final:
-import ../build-bundled.nix (builtins.removeAttrs args [ "gmp" ]) (final // {
+import ../build-bundled.nix (builtins.removeAttrs args [ "gmp" ]) (
+  final
+  // {
     configureOptions = final.configureOptions ++ [ "--with-gmp=${final.gmp}" ];
     libraries = [ final.gmp ] ++ final.libraries;
-  }) // { inherit gmp; }
+  }
+)
+// {
+  inherit gmp;
+}

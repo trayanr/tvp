@@ -200,7 +200,7 @@ in
       ${final.bash}/bin/bash ./configure --prefix=${lib.escapeShellArg configurePrefix} \
         --with-curl=${curl} --with-openssl=${openssl} --with-expat=${expat} --with-zlib=${zlib}
     '')
-    (command "build" ''${make}'')
+    (command "build" "${make}")
     (command "install" ''
       ${make} DESTDIR="$TVP_SOURCE_ROOT/stage" install
       mkdir -p "$out"

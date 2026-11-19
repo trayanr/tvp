@@ -10,7 +10,9 @@ let
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
-      url = version: "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}.tar.gz";
+      url =
+        version:
+        "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}.tar.gz";
       discovery = {
         type = "git-tags";
         url = "https://github.com/libjpeg-turbo/libjpeg-turbo.git";

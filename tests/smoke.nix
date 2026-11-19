@@ -53,6 +53,9 @@ let
     jq_1_8_2 = {
       inherit (tvp.canonical.jq_1_8_2.tests) filter regex version;
     };
+    nixfmt_1_5_0 = {
+      inherit (tvp.canonical.nixfmt_1_5_0.tests) version format;
+    };
     oniguruma_6_9_10 = {
       inherit (tvp.canonical.oniguruma_6_9_10.tests) metadata utf8;
     };
@@ -67,7 +70,8 @@ let
     };
     "php_${builtins.replaceStrings [ "." ] [ "_" ] opcacheEngine.version}--opcache-builtin" =
       opcacheBuiltIn;
-  } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
+  }
+  // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {

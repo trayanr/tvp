@@ -67,7 +67,7 @@
             ;
         };
 
-        formatter = pkgs.nixfmt-rfc-style;
+        formatter = tvp.packages.nixfmt_1_5_0;
 
         apps.dependencies = {
           type = "app";

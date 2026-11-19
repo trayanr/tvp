@@ -43,10 +43,12 @@ in
   sourceLayout = {
     archiveRoot = "cmdline-tools";
     packageMetadata = ./metadata-23.0.xml;
-  } // sourceLayout;
+  }
+  // sourceLayout;
   installedInterface = {
     sdkPath = "cmdline-tools/23.0";
-  } // installedInterface;
+  }
+  // installedInterface;
   testsEnabled = true;
   runtime = {
     shell = "${final.bash}/bin/bash";

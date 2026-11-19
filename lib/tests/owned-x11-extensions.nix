@@ -175,7 +175,7 @@ let
               helpers = "selected";
               tests = { package, ... }: package.testConfiguration.helpers;
             })
-            p
+              p
           ) == "selected";
         bothRoutes = overridden.drvPath == edited.drvPath && overridden.drvPath != p.drvPath;
         sourceCommand = has (toString source) (builtins.head overridden.buildSteps).run;
@@ -307,5 +307,6 @@ assert passed || throw "X11 extension contracts failed: ${builtins.toJSON contra
   support = {
     controlTools = wrappers;
     controlX11 = library;
-  } // lib.mapAttrs' (name: c: lib.nameValuePair "${name}-control-source" c.overridden.src) controls;
+  }
+  // lib.mapAttrs' (name: c: lib.nameValuePair "${name}-control-source" c.overridden.src) controls;
 }

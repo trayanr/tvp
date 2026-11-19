@@ -59,7 +59,8 @@ in
       gnumake
       m4
       bison
-    ] ++ buildTools;
+    ]
+    ++ buildTools;
     libraries = [ ];
   };
   runtime.libraries = [ ];
