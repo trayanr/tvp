@@ -44,6 +44,12 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    git_2_56_0 = {
+      inherit (tvp.canonical.git_2_56_0.tests) http;
+    };
+    gnu-config_2026_05_17 = {
+      inherit (tvp.canonical.gnu-config_2026_05_17.tests) layout native;
+    };
     jq_1_8_2 = {
       inherit (tvp.canonical.jq_1_8_2.tests) filter regex version;
     };
