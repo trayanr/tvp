@@ -35,6 +35,9 @@ let
     ruby_4_0_6 = {
       inherit (tvp.canonical.ruby_4_0_6.tests) version stdlib;
     };
+    mariadb_10_11_20 = {
+      inherit (tvp.canonical.mariadb_10_11_20.tests) version roundtrip;
+    };
     redis_8_10_3 = {
       inherit (tvp.canonical.redis_8_10_3.tests) version roundtrip;
     };

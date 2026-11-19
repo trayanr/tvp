@@ -43,7 +43,7 @@ let
     };
     inherit source;
     tests = import ./tests.nix { inherit pkgs tvp; };
-    testDeps = pkgs.lib.optionalAttrs needsMysqlnd { mariadb = pkgs.mariadb.server; };
+    testDeps = pkgs.lib.optionalAttrs needsMysqlnd { mariadb = tvp.packages.mariadb_10_11; };
     meta = {
       homepage = "https://www.php.net/manual/en/${
         if name == "pdo_mysql" then "ref.pdo-mysql" else "book.${name}"
