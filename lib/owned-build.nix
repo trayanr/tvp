@@ -138,7 +138,7 @@ let
                 lib.optionalString (spec ? exportReferencesGraph) ''
                   ${coreutils}/bin/cp "$NIX_ATTRS_JSON_FILE" workspace/.tvp-reference-graph.json
                 ''
-              }${bash}/bin/bash ${runner.script} "$PWD/workspace"${
+              }${runner.command}${
                 lib.optionalString splitNamed (
                   "\n" + lib.concatMapStringsSep "\n" (output: ''test -d "''${outputs[${output}]}"'') outputNames
                 )
@@ -147,6 +147,7 @@ let
           ];
           outputs = outputNames;
         }
+        // runner.scriptAttributes
         // lib.optionalAttrs (spec ? exportReferencesGraph) {
           inherit (spec) exportReferencesGraph;
         }
