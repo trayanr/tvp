@@ -25,6 +25,7 @@ tvp.lib.packages.mergeNamespaces {
   libjpeg-turbo = import ./libjpeg-turbo { inherit pkgs tvp; };
   libpng = import ./libpng { inherit pkgs tvp; };
   libsodium = import ./libsodium { inherit pkgs tvp; };
+  oniguruma = import ./oniguruma { inherit pkgs tvp; };
   libwebp = import ./libwebp { inherit pkgs tvp; };
   openldap = import ./openldap { inherit pkgs tvp; };
   sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
@@ -34,6 +35,8 @@ tvp.lib.packages.mergeNamespaces {
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };
+  keyutils = import ./keyutils { inherit pkgs tvp; };
+  krb5 = import ./krb5 { inherit pkgs tvp; };
   attr = import ./attr { inherit pkgs tvp; };
   acl = import ./acl { inherit pkgs tvp; };
   pcre2 = import ./pcre2 { inherit pkgs tvp; };
@@ -46,6 +49,7 @@ tvp.lib.packages.mergeNamespaces {
   isl = import ./isl { inherit pkgs tvp; };
   openssl = import ./openssl { inherit pkgs tvp; };
   libxml2 = import ./libxml2 { inherit pkgs tvp; };
+  icu = import ./icu { inherit pkgs tvp; };
   libzip = import ./libzip { inherit pkgs tvp; };
   ncurses = import ./ncurses { inherit pkgs tvp; };
   readline = import ./readline { inherit pkgs tvp; };

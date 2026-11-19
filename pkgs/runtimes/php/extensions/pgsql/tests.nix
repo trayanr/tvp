@@ -23,7 +23,7 @@ context.mkSuite {
     };
     roundtrip = {
       script = ''
-        ${bash}/bin/bash ${../pdo_pgsql/with-postgresql.sh} ${postgresql} ${runtime}/bin/php ${./roundtrip.php}
+        ${bash}/bin/bash ${../../../../servers/postgresql/with-test-server.sh} ${postgresql} ${runtime}/bin/php ${./roundtrip.php}
       '';
       expected = "pgsql-roundtrip";
     };

@@ -12,8 +12,8 @@ TVP Python, forward every argument, and set `TVP_DEPENDENCIES_SYSTEM` or
 `TVP_TEST_SYSTEM` from the selected native platform. They leave PATH alone.
 The helper supports these scripts only; it is not a general packaging API.
 
-Explicit runtime utilities and interpreters are TVP packages except jq, which
-has no TVP recipe. Commands that query Nix use the caller's host Nix API.
+Explicit runtime utilities and interpreters, including jq, are TVP packages.
+Commands that query Nix use the caller's host Nix API.
 Inherited bootstrap closures and the test runner's external strace boundary
 remain separate from this packaging change. Ruby's extension tests retain an
 owned GCC 13 consumer compiler as a control against GCC 16-built Ruby.

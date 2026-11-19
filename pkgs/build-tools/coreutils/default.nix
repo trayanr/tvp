@@ -12,8 +12,8 @@ let
           acl = tvp.packages.acl_2;
           timezoneData = tvp.lib.packages.withConstraint {
             category = "artifact";
-            reason = "Build-only zoneinfo data oracle for upstream gnulib Europe/Paris tests; no executable or runtime ownership claim.";
-          } pkgs.tzdata;
+            reason = "Zoneinfo data oracle for upstream gnulib Europe/Paris tests.";
+          } tvp.packages.tzdata;
         };
       };
       releases = {

@@ -22,6 +22,7 @@ tvp.lib.packages.mergeNamespaces {
   less = import ./less { inherit pkgs tvp; };
   bzip2 = import ./bzip2 { inherit pkgs tvp; };
   gnumake = import ./gnumake { inherit pkgs tvp; };
+  jq = import ./jq { inherit pkgs tvp; };
   patch = import ./patch { inherit pkgs tvp; };
   file = import ./file { inherit pkgs tvp; };
   autoconf = import ./autoconf { inherit pkgs tvp; };

@@ -35,6 +35,7 @@ let
       git = tvp.packages.git;
       gnugrep = tvp.packages.gnugrep;
       gnused = tvp.packages.gnused;
+      jq = tvp.packages.jq;
       packages = canonical;
       inherit tvpLib;
       phpCoverage = pkgs.lib.mapAttrs' (
@@ -45,6 +46,7 @@ let
       inherit ownedCLI;
       coreutils = tvp.packages.coreutils;
       gawk = tvp.packages.gawk;
+      jq = tvp.packages.jq;
       python3 = tvp.packages.python_3;
       packages = canonical;
       inherit tvpLib;
@@ -65,6 +67,7 @@ let
         coreutils = tooling.coreutils;
         gnugrep = tooling.grep;
         gnused = tooling.sed;
+        jq = tvp.packages.jq;
         packages = canonical;
         inherit tvpLib;
         bases = legacyBases;

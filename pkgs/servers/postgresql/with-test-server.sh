@@ -22,4 +22,4 @@ timeout 30 "$postgresql/bin/initdb" -D "$fixture/data" --no-locale -E UTF8 \
 "$postgresql/bin/pg_ctl" -D "$fixture/data" -l "$fixture/server.log" -w -t 15 \
     -o "-c listen_addresses='' -k '$fixture'" start >&2
 
-TVP_POSTGRES_SOCKET="$fixture" timeout 15 "$@"
+TVP_POSTGRES_SOCKET="$fixture" PGHOST="$fixture" timeout 15 "$@"
