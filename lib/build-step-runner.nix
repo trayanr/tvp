@@ -185,7 +185,7 @@ let
         script = writeScript "tvp-step-${step.name}.sh" scriptText;
       };
   active = map render selected;
-  originalText = ''
+  renderRunner = stepCommand: ''
     #!${bash}/bin/bash
     set -euo pipefail
     shopt -s inherit_errexit
@@ -193,7 +193,9 @@ let
     readonly TVP_BASH=${quote "${bash}/bin/bash"}
     readonly TVP_ENV=${quote "${coreutils}/bin/env"}
     ${if temporaryDirectories then temporaryTemplate else template}
-    ${lib.concatMapStringsSep "\n" (s: "tvp_step ${quote s.name} ${quote s.script}") active}
+    ${lib.concatStringsSep "\n" (
+      builtins.genList (index: stepCommand index (builtins.elemAt active index)) (builtins.length active)
+    )}
     # Close cancellation gaps after the last step and during normal exit.
     TVP_FINISHING=1
     tvp_reraise_cancel
@@ -201,7 +203,8 @@ let
   # Only named-output runners replace the single-output binding. Keep the shared
   # shell file and all default/split-singleout script bytes unchanged.
   binding = ''out="''${out:-$TVP_SOURCE_ROOT/result}"'';
-  text =
+  bindOutputs =
+    originalText:
     if multiOutput then
       assert owned || throw "TVP named outputs: requires the owned runner";
       assert lib.hasInfix binding originalText;
@@ -210,11 +213,29 @@ let
       ] originalText
     else
       originalText;
+  text = bindOutputs (renderRunner (_: s: "tvp_step ${quote s.name} ${quote s.script}"));
+  inlineText = bindOutputs (
+    renderRunner (index: s: ''tvp_step ${quote s.name} "$TVP_STEP_DIR/${toString index}"'')
+  );
+  childScripts = map (s: s.scriptText) active;
 in
 {
-  inherit text;
-  childScripts = map (s: s.scriptText) active;
+  inherit text childScripts;
+  scriptAttributes = {
+    TVP_STAGE_RUNNER = inlineText;
+    TVP_STAGE_SCRIPTS = childScripts;
+  };
+  command = ''
+    TVP_STEP_DIR="$PWD/tvp-stage-scripts"
+    ${coreutils}/bin/mkdir -m 0700 "$TVP_STEP_DIR"
+    for TVP_STEP_INDEX in "''${!TVP_STAGE_SCRIPTS[@]}"; do
+      printf '%s' "''${TVP_STAGE_SCRIPTS[$TVP_STEP_INDEX]}" > "$TVP_STEP_DIR/$TVP_STEP_INDEX"
+    done
+    printf '%s' "$TVP_STAGE_RUNNER" > "$TVP_STEP_DIR/runner.sh"
+    TVP_STEP_DIR="$TVP_STEP_DIR" ${bash}/bin/bash "$TVP_STEP_DIR/runner.sh" "$PWD/workspace"
+  '';
   # Active-only dependency projection, useful for inspection without realizing it.
   inputs = lib.concatMap (s: s.tools ++ s.libraries) selected;
+  # Fixtures use this standalone form to exercise the runner directly.
   script = writeScript "tvp-build-step-runner" text;
 }

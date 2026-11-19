@@ -407,6 +407,12 @@ fresh workspace, receiving readonly `TVP_ARTIFACT_ROOT`. Copying the artifact an
 relocating its installed paths are recipe steps. Stripping, runtime search paths,
 interpreters, launchers and final output checks belong after the boundary.
 
+The shared builder carries the runner and step bodies as derivation data.
+Each stage writes its scripts in its own sandbox and runs the named steps
+in separate Bash subprocesses. A split recipe has an artifact derivation
+and a final package derivation, with sources, tools and libraries declared
+as inputs. Tests keep separate result derivations.
+
 Raw JDK installation remains in A. Reassembly of JMODs and images over retained
 compiled classes and native products is F packaging: native JMOD hash generation,
 jlink, image metadata and image-only CDS generation may run there. Native or Java
