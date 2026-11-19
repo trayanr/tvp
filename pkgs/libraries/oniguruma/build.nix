@@ -53,9 +53,13 @@ in
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })
-    (command "oniguruma.bind-config-tools" ''
-      ${tools.sed}/bin/sed -i '2i export PATH=${tools.sed}/bin:${tools.coreutils}/bin' "$out/bin/onig-config"
-    '')
+    {
+      name = "oniguruma.bind-config-tools";
+      tools = [ tools.sed ];
+      run = ''
+        ${tools.sed}/bin/sed -i '2i export PATH=${tools.sed}/bin:${tools.coreutils}/bin' "$out/bin/onig-config"
+      '';
+    }
     (outputs.strip { paths = [ "lib" ]; })
     (outputs.rpaths {
       paths = [ "lib" ];
