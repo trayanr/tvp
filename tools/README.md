@@ -76,6 +76,24 @@ no discovery configuration remains visible with its packaged versions, download
 URL and `missing versions: unknown`. Failed remote listings remain errors rather
 than being presented as an empty release list or nothing missing.
 
+Use `nix run .#upstream -- --json --flake REF FAMILY` for a machine-readable
+report. The command reads the catalogue and release rules from one frozen
+`REF`. The version 1 report includes `schemaVersion`, the clean Git
+`revision` (or null for a dirty or unversioned source), and `families`.
+Each family records its discovery status, source, releases or commit
+identities, and any declared PHP coverage. A failed lookup returns a
+nonzero exit and a partial report. Treat that report as diagnostic data.
+`--list --json` reads declarations without querying the upstream feeds.
+
+For numbered releases, `candidate` means that a stable numeric
+`MAJOR.MINOR.PATCH` advances an already packaged major/minor series. Older
+missing releases are `historical-gap`. A fresh series or version scheme
+needs its own update policy. Prereleases and source-declared unavailable
+releases are reported separately, as is unknown PHP compatibility. An
+unpackaged Git branch head is identified by its full commit and has a
+separate `kind`. Automation should apply its own family and series policy
+before acting on candidates.
+
 Download and discovery metadata belong together in the family source definition:
 
 ```nix

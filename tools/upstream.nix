@@ -83,13 +83,20 @@ ownedCLI.shell {
     manifest=${manifest}
     flake="."
     list=0
+    json=0
     php_selector=""
     filters=()
 
     while [ $# -gt 0 ]; do
       case "$1" in
-        --flake) flake="$2"; shift 2 ;;
+        --flake)
+          if [ $# -lt 2 ] || [ -z "$2" ]; then
+            echo 'tvp-upstream: --flake requires a reference' >&2
+            exit 2
+          fi
+          flake="$2"; shift 2 ;;
         --list) list=1; shift ;;
+        --json) json=1; shift ;;
         --php)
           if [ $# -lt 2 ] || ! [[ "$2" =~ ^[0-9]+([.][0-9]+){0,2}$ ]]; then
             echo 'tvp-upstream: --php requires a major, minor, or complete version' >&2
@@ -97,9 +104,10 @@ ownedCLI.shell {
           fi
           php_selector="$2"; shift 2 ;;
         -h|--help)
-          echo "usage: tvp-upstream [--flake REF] [--list] [--php VERSION] [PACKAGE...]"
+          echo "usage: tvp-upstream [--flake REF] [--list] [--json] [--php VERSION] [PACKAGE...]"
           echo "Compare available upstream releases with packaged versions."
           echo "--list shows every family's configuration without contacting upstream."
+          echo "--json reports discovery and release status for a frozen flake revision."
           echo "PHP extensions also report packaged combinations, packaging gaps, and source-backed hard limits."
           echo "--php selects an exact PHP version or a major/minor series."
           exit 0
@@ -108,6 +116,20 @@ ownedCLI.shell {
         *) filters+=("$1"); shift ;;
       esac
     done
+
+    system=""
+    revision=""
+    if [ "$json" = 1 ]; then
+      metadata=$(nix flake metadata --json --no-write-lock-file "$flake")
+      source=$(jq -er '.path | select(type == "string" and startswith("/nix/store/"))' <<< "$metadata")
+      revision=$(jq -r '
+        .revision | if type == "string" and test("^[0-9a-f]{40}$") then . else "" end
+      ' <<< "$metadata")
+      flake="path:$source"
+      system=$(nix eval --raw --impure --expr 'builtins.currentSystem')
+      manifest=$(nix eval --raw --offline --no-write-lock-file --option allow-import-from-derivation false \
+        "$flake#legacyPackages.$system.upstreamManifest")
+    fi
 
     known=$(jq -r '.[].pname' "$manifest" | sort)
     if [ ''${#filters[@]} -gt 0 ]; then
@@ -121,8 +143,6 @@ ownedCLI.shell {
     else
       select=null
     fi
-
-    system=""
 
     php_coverage() {
       if [ "$(jq -r '.php != null' <<< "$row")" = true ]; then
@@ -139,19 +159,39 @@ ownedCLI.shell {
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
 
+    if [ "$json" = 1 ]; then
+      : > "$work/families.jsonl"
+    fi
+
+    record_family() {
+      jq -c --arg status "$1" --arg error "''${2:-}" \
+        --slurpfile listing "$work/listing.json" --slurpfile head "$work/head.json" '
+        {row: ., status: $status, error: $error, listing: $listing[0], head: $head[0]}
+      ' <<< "$row" >> "$work/families.jsonl"
+    }
+
     ${builtins.readFile ./upstream/git-head.sh}
+
+    grep_matches() {
+      grep "$@" || [ "$?" = 1 ]
+    }
 
     fetch_raw() {
       local type=$1 url=$2 subdir=$3 pattern=$4 selector=$5
       case "$type" in
         directory-index)
+          if ! curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused -- "$url" > "$work/index"; then
+            return 1
+          fi
           if [ -n "$subdir" ] && [ "$subdir" != "null" ]; then
-            curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" \
-              | grep -oE "href=\"[^\"]*\"" | sed 's|href="||;s|"$||' \
-              | grep -oE "$subdir" | sort -u \
-              | while read -r d; do curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url$d/" | grep -oE "$pattern" || true; done
+            grep_matches -oE "href=\"[^\"]*\"" < "$work/index" | sed 's|href="||;s|"$||' \
+              | grep_matches -oE -- "$subdir" | sort -u \
+              | while read -r d; do
+                curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused -- "$url$d/" \
+                  | grep_matches -oE -- "$pattern" || return 1
+              done
           else
-            curl -sfL --connect-timeout 10 --max-time 90 --retry 2 --retry-connrefused "$url" | grep -oE "$pattern" || true
+            grep_matches -oE -- "$pattern" < "$work/index"
           fi
           ;;
         git-tags)
@@ -184,6 +224,17 @@ ownedCLI.shell {
       pname=$(jq -r '.pname' <<< "$row")
       attr=$(jq -r '.attr' <<< "$row")
       type=$(jq -r '.upstream.type' <<< "$row")
+      if [ "$json" = 1 ]; then
+        : > "$work/listing.json"
+        : > "$work/head.json"
+        if [ "$type" = null ]; then
+          record_family unconfigured
+          continue
+        elif [ "$list" = 1 ]; then
+          record_family not-queried
+          continue
+        fi
+      fi
       if [ "$list" = 1 ]; then
         scope_label=""
         if [ "$(jq -r '.php.kind' <<< "$row")" = mixed ]; then scope_label=" standalone"; fi
@@ -212,8 +263,17 @@ ownedCLI.shell {
       # the declared branch head; do not imply that its history was enumerated.
       if [ "$type" = git-head ]; then
         if ! upstream_git_head "$row" > "$work/head.json"; then
-          printf '%s — FAILED: commit head comparison failed\n\n' "$pname"
+          if [ "$json" = 1 ]; then
+            : > "$work/head.json"
+            record_family error "commit head comparison failed"
+          else
+            printf '%s — FAILED: commit head comparison failed\n\n' "$pname"
+          fi
           touch "$work/failed"
+          continue
+        fi
+        if [ "$json" = 1 ]; then
+          record_family ok
           continue
         fi
         printf '%s — upstream branch head comparison (history not enumerated)\n' "$pname"
@@ -229,8 +289,12 @@ ownedCLI.shell {
       fi
 
       if ! fetch_raw "$type" "$url" "$subdir" "$pattern" "$selector" | sort -u > "$work/raw"; then
-        printf '%s — FAILED: could not read upstream listing (%s)\n\n' "$pname" "$type"
-        php_coverage
+        if [ "$json" = 1 ]; then
+          record_family error "could not read upstream listing ($type)"
+        else
+          printf '%s — FAILED: could not read upstream listing (%s)\n\n' "$pname" "$type"
+          php_coverage
+        fi
         touch "$work/failed"
         continue
       fi
@@ -240,24 +304,44 @@ ownedCLI.shell {
       if [ -z "$system" ]; then
         system=$(nix eval --raw --impure --expr 'builtins.currentSystem') || exit 1
       fi
-      nix eval --impure --json --apply "
+      if ! nix eval --impure --json --no-write-lock-file --option allow-import-from-derivation false --apply "
         u: let
              raw  = builtins.fromJSON (builtins.readFile \"$work/raw.json\");
              norm = builtins.map (r: (u.normalise or (x: x)) r) raw;
              real = builtins.filter (v: v != null) norm;
-           in builtins.filter (u.include or (_: true)) real
-      " "$flake#packages.$system.$attr.tvp.upstream" 2>/dev/null \
-        | jq -r '.[]' | sort -u > "$work/upstream" || true
+             include = u.include or (_: true);
+           in {
+             included = builtins.filter include real;
+             excluded = if $json == 1 then builtins.filter (v: !(include v)) real else [];
+           }
+      " "$flake#packages.$system.$attr.tvp.upstream" > "$work/listing.json" 2>/dev/null; then
+        : > "$work/listing.json"
+        if [ "$json" = 1 ]; then
+          record_family error "could not evaluate the upstream release rules"
+          touch "$work/failed"
+          continue
+        fi
+      fi
+      jq -r '.included[]' < "$work/listing.json" | sort -u > "$work/upstream"
 
       # A package always has at least one upstream release, so an empty listing is a
       # fetch failure, not a report. Reporting it as "N of 0 - nothing missing" turns a
       # rate-limited mirror into a clean bill of health.
       if ! [ -s "$work/upstream" ]; then
+        if [ "$json" = 1 ]; then
+          record_family error "upstream listing came back empty"
+          touch "$work/failed"
+          continue
+        fi
         printf '%s — FAILED: upstream listing came back empty\n' "$pname"
         printf '  source: %s %s\n' "$type" "$url"
         printf '  Retry, or use a mirror: ftp.gnu.org refuses connections after ~60 requests.\n\n'
         php_coverage
         touch "$work/failed"
+        continue
+      fi
+      if [ "$json" = 1 ]; then
+        record_family ok
         continue
       fi
 
@@ -297,9 +381,15 @@ ownedCLI.shell {
       echo
     done
 
+    if [ "$json" = 1 ]; then
+      ${python3}/bin/python3 ${./upstream/report.py} "$revision" "$php_selector" < "$work/families.jsonl"
+    fi
     if [ -e "$work/failed" ]; then
       echo "tvp-upstream: at least one upstream listing failed; the report above is incomplete" >&2
       exit 1
     fi
   '';
+}
+// {
+  inherit manifest;
 }

@@ -65,6 +65,7 @@
             recipeSplitReport
             recipeSplitStrict
             ;
+          upstreamManifest = tvp.tools.upstream.manifest;
         };
 
         formatter = tvp.packages.nixfmt_1_5_0;

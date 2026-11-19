@@ -140,6 +140,38 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     if ${cli}/bin/tvp-upstream --list --php 9 php-fixture; then exit 1; fi
     if ${cli}/bin/tvp-upstream --list --php 8.2 fixture; then exit 1; fi
     TVP_PHP_COVERAGE_SCRIPT=${../php-coverage.py} ${tvp.packages.python_3}/bin/python3 -B ${./test_php_coverage.py}
+    TVP_UPSTREAM_REPORT_SCRIPT=${../report.py} ${tvp.packages.python_3}/bin/python3 -B ${./test_report.py}
+
+    # Bind metadata, manifest and the recorded result to the same source.
+    # Nix itself is unavailable inside the test build sandbox.
+    mkdir mock-nix
+    cat > mock-nix/nix <<'EOF'
+    #!${testDeps.bash}/bin/bash
+    set -eu
+    case "$*" in
+      'flake metadata --json --no-write-lock-file fixture-ref')
+        printf '%s\n' '{"path":"/nix/store/fixture-source", "revision":"${old}"}'
+        ;;
+      'eval --raw --impure --expr builtins.currentSystem')
+        echo x86_64-linux
+        ;;
+      'eval --raw --offline --no-write-lock-file --option allow-import-from-derivation false path:/nix/store/fixture-source#legacyPackages.x86_64-linux.upstreamManifest')
+        echo ${cli.manifest}
+        ;;
+      *)
+        printf 'unexpected Nix invocation: %s\n' "$*" >&2
+        exit 42
+        ;;
+    esac
+    EOF
+    chmod +x mock-nix/nix
+    export PATH="$PWD/mock-nix:$PATH"
+    ${cli}/bin/tvp-upstream --flake fixture-ref --json --list > "$out/cli-inventory.json"
+    jq -e --arg old ${old} '
+      .schemaVersion == 1 and .revision == $old and (.families | length) == 3
+      and any(.families[]; .family == "fixture" and .discoveryStatus == "not-queried")
+      and any(.families[]; .family == "unconfigured" and .discoveryStatus == "unconfigured")
+    ' "$out/cli-inventory.json"
 
     git --git-dir=upstream update-ref refs/heads/master "$second"
     upstream_git_head "$row" > "$out/new-head.json"
@@ -149,6 +181,11 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     ${cli}/bin/tvp-upstream fixture > "$out/cli-new.log"
     grep -Fx '  head packaged: false' "$out/cli-new.log"
     grep -Fx '  missing revision: ${new}' "$out/cli-new.log"
+    ${cli}/bin/tvp-upstream --flake fixture-ref --json fixture > "$out/cli-new.json"
+    jq -e --arg new ${new} '
+      .families | length == 1 and .[0].discoveryStatus == "ok"
+      and any(.[0].releases[]; .kind == "commit" and .version == $new and .status == "candidate")
+    ' "$out/cli-new.json"
     # A date is a display label. Distinct snapshots remain exact revisions.
     both=$(jq --arg new "$second" '
       .versions += ["2026-05-18"] | .upstream.revisions["2026-05-18"] = $new
@@ -212,5 +249,13 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     fi
     grep -F 'FAILED: commit head comparison failed' "$out/cli-missing.log"
     grep -F 'report above is incomplete' "$out/cli-missing.log"
+    if ${cli}/bin/tvp-upstream --flake fixture-ref --json fixture > "$out/cli-error.json"; then
+      echo 'structured report incorrectly accepted a missing branch' >&2
+      exit 1
+    fi
+    jq -e '
+      .families[0] | .discoveryStatus == "error" and .error == "commit head comparison failed"
+      and all(.releases[]; .status == "packaged")
+    ' "$out/cli-error.json"
     echo 'Local Git head, new revision, metadata, malformed response and failure fixtures passed.' > "$out/status"
   ''
