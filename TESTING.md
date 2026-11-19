@@ -80,9 +80,9 @@ still selects a complete package suite and can include its upstream tests.
 
 ## Build resources
 
-Use Tower's normal settings for ordinary work. Sequence heavy compilation when
-needed; do not globally reduce normal concurrency. Reuse Tower and the signed NAS
-cache instead of rebuilding valid outputs on the smaller CI machine.
+Use Nix's normal concurrency for ordinary work and reuse valid outputs from
+configured signed caches. Sequence heavy compilation when resource constraints
+call for it. CI uses the configured Nix builders.
 
 Production build, install and test commands take their concurrency budget from
 `NIX_BUILD_CORES`; Nix controls the number of simultaneous derivations through
