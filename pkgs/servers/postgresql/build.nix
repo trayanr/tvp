@@ -36,6 +36,8 @@ let
     final.libxml2
     final.openssl
     final.readline
+    # Configure's Readline link probe also needs its selected terminal library.
+    final.readline.tvp.deps.ncurses
     final.zlib
     final.zstd
   ];
