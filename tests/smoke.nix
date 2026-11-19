@@ -59,6 +59,9 @@ let
     postgresql_16_16 = {
       inherit (tvp.canonical.postgresql_16_16.tests) client roundtrip;
     };
+    shellcheck_0_10_0 = {
+      inherit (tvp.canonical.shellcheck_0_10_0.tests) version lint;
+    };
     tzdata_2026f = {
       inherit (tvp.canonical.tzdata_2026f.tests) layout transition;
     };
