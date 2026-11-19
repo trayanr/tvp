@@ -44,6 +44,9 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    postgresql_16_16 = {
+      inherit (tvp.canonical.postgresql_16_16.tests) client roundtrip;
+    };
     tzdata_2026f = {
       inherit (tvp.canonical.tzdata_2026f.tests) layout transition;
     };
