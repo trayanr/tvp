@@ -72,7 +72,7 @@ in
   extensionPackages = builtins.mapAttrs (_: pair: pair.package) extensionMatrix;
   inherit extensionTests;
   extensionTestsAll = tvp.lib.tests.compatibility.mkAll {
-    inherit pkgs;
+    pkgs = pkgs // tvp.__testBuilders;
     batches = extensionTests;
     checks = { };
   };

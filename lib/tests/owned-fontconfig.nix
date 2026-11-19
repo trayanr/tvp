@@ -4,7 +4,9 @@ let
   inherit (tvp.builder) steps;
   p = tvp.canonical.fontconfig_2_18_3;
   variant = tvp.variants.build-steps.fontconfig_2_18_3;
-  compatible = pkgs.expat;
+  # The source-built construction Expat gives the runtime edit a distinct
+  # provider with the same installed SONAME as canonical Expat.
+  compatible = (import ../../bootstrap/source-gcc-graphviz-tests.nix { }).packages.expat;
   substituted = p.editRuntime (
     r:
     r
@@ -178,6 +180,7 @@ assert failed == [ ] || throw "Owned Fontconfig contracts: ${lib.concatStringsSe
 })
 // {
   passthru = {
+    compatibleExpat = compatible;
     inherit
       contracts
       consumer

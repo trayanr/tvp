@@ -52,9 +52,15 @@ let
   };
   inherit (toolSet) ownedCLI tools;
 
+  testBuilders = import ./tests/builders.nix {
+    inherit pkgs tvp;
+    base = bases.default;
+    legacyBase = legacyBases.default;
+  };
+  testPkgs = pkgs // testBuilders;
   checks = import ./checks {
+    pkgs = testPkgs;
     inherit
-      pkgs
       tvp
       tvpLib
       canonical
@@ -68,8 +74,8 @@ let
     runtimeRegistry = reports.runtimeRegistry;
   };
   testSet = import ./tests {
+    pkgs = testPkgs;
     inherit
-      pkgs
       tvp
       tvpLib
       canonical
@@ -126,6 +132,7 @@ let
     php = import ./pkgs/runtimes/php/catalogue.nix { inherit tvp pkgs; };
     # Internal compatibility only; ordinary packages use the public bases above.
     __legacyBases = legacyBases;
+    __testBuilders = testBuilders;
     builder = import ./lib/builder.nix { inherit (pkgs) lib; };
     lib = tvpLib;
   };
