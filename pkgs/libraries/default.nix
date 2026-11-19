@@ -35,6 +35,7 @@ tvp.lib.packages.mergeNamespaces {
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };
   keyutils = import ./keyutils { inherit pkgs tvp; };
+  krb5 = import ./krb5 { inherit pkgs tvp; };
   attr = import ./attr { inherit pkgs tvp; };
   acl = import ./acl { inherit pkgs tvp; };
   pcre2 = import ./pcre2 { inherit pkgs tvp; };
