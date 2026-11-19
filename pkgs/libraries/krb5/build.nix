@@ -42,6 +42,7 @@ in
     tools = [
       final.bison
       tools.diffutils
+      tools.findutils
       tools.gawk
       tools.gnumake
       tools.grep
