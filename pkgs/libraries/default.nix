@@ -34,6 +34,7 @@ tvp.lib.packages.mergeNamespaces {
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };
+  keyutils = import ./keyutils { inherit pkgs tvp; };
   attr = import ./attr { inherit pkgs tvp; };
   acl = import ./acl { inherit pkgs tvp; };
   pcre2 = import ./pcre2 { inherit pkgs tvp; };
