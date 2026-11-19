@@ -21,22 +21,12 @@ in
   ];
 
   plan = steps.sequence [
-    {
-      name = "source.unpack";
-      tools = [
-        tools.gnutar
-        tools.xz
-      ];
-      run = ''
-        mkdir source
-        xz --format=lzip --decompress --stdout ${final.src} |
-          tar -xf - --strip-components=1 -C source
-        test "$(cat source/version)" = "${final.version}"
-        updateSourceDateEpoch source
-        printf '%s\n' "$SOURCE_DATE_EPOCH" > source-date-epoch
-      '';
-    }
+    (steps.unpack {
+      src = final.src;
+      compression = "lzip";
+    })
     (command "tzdata.build" ''
+      test "$(cat version)" = "${final.version}"
       make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash CC="$CC" zic tzdata.zi leapseconds
     '')
     (command "tzdata.install" ''
