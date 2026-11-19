@@ -130,11 +130,11 @@
   cli-packaging = {
     inherit (tvp.packages) bash coreutils gnused;
     python = tvp.packages.python_3;
-    shellcheck = pkgs.shellcheck-minimal;
+    shellcheck = tvp.packages.shellcheck_0_10;
   };
   cli-builders = {
     inherit (tvp.packages) bash coreutils;
-    shellcheck = pkgs.shellcheck-minimal;
+    shellcheck = tvp.packages.shellcheck_0_10;
   };
   upstream-tracking = {
     inherit (tvp.packages)

@@ -11,7 +11,7 @@ let
   ownedCLI = import ./lib/owned-cli.nix {
     inherit (pkgs) lib;
     inherit (tvp.packages) bash coreutils;
-    shellcheck = pkgs.shellcheck-minimal;
+    shellcheck = tvp.packages.shellcheck_0_10;
     platform = bases.default.platform;
   };
   tools = {
@@ -61,7 +61,7 @@ let
         ownedCLI = import ./lib/owned-cli.nix {
           inherit (pkgs) lib;
           inherit (tooling) bash coreutils;
-          shellcheck = pkgs.shellcheck-minimal;
+          shellcheck = tvp.packages.shellcheck_0_10;
           platform = bases.default.platform;
         };
         coreutils = tooling.coreutils;

@@ -16,6 +16,7 @@ tvp.lib.packages.mergeNamespaces {
   gnused = import ./gnused { inherit pkgs tvp; };
   gnugrep = import ./gnugrep { inherit pkgs tvp; };
   gawk = import ./gawk { inherit pkgs tvp; };
+  shellcheck = import ./shellcheck { inherit pkgs tvp; };
   gnutar = import ./gnutar { inherit pkgs tvp; };
   gzip = import ./gzip { inherit pkgs tvp; };
   less = import ./less { inherit pkgs tvp; };
