@@ -754,7 +754,9 @@ let
           "load"
           "roundtrip"
         ]
-      && tvp.smokeTests.metadata.namedTests == 18 + 2 * extensionPairs
+      &&
+        builtins.filter (lib.hasPrefix "php_") (builtins.attrNames tvp.smokeTests.metadata.subjects)
+        == builtins.attrNames (tvp.php.extensionMatrix // { php_8_5_12--opcache-builtin = null; })
       && tvp.smokeTests.metadata.upstreamIncluded == false;
   };
 in

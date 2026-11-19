@@ -38,6 +38,9 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    tzdata_2026f = {
+      inherit (tvp.canonical.tzdata_2026f.tests) layout transition;
+    };
     "php_${builtins.replaceStrings [ "." ] [ "_" ] opcacheEngine.version}--opcache-builtin" =
       opcacheBuiltIn;
   } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
