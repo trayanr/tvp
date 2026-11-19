@@ -409,9 +409,16 @@ let
       let
         driver = php.extensions.pdo_pgsql;
         original = driver.specification.postgresql;
-        replacement = original.overrideAttrs (_: {
-          pname = "postgresql-extension-probe";
-        });
+        replacement = original.editSteps (
+          steps:
+          steps
+          ++ [
+            {
+              name = "postgresql.extension-override-probe";
+              run = "true";
+            }
+          ]
+        );
         overridden = driver.override { postgresql = replacement; };
         configure =
           package: (lib.findFirst (step: step.name == "php-extension.configure") null package.buildSteps).run;
@@ -419,7 +426,7 @@ let
       overridden.tvp.declaredDependencies.postgresql.drvPath == replacement.drvPath
       && overridden.tvp.declaredTestDependencies.postgresql.drvPath == original.drvPath
       && has "--with-pdo-pgsql=${replacement}" (configure overridden)
-      && has replacement.lib.outPath (rpathCommand overridden);
+      && has (lib.getLib replacement).outPath (rpathCommand overridden);
     runtimeLibraryDependencies = has runtimeLzma.outPath (rpathCommand runtimeSample);
     runtimeProviderPrecedence =
       let
