@@ -41,6 +41,7 @@ in
   environment = {
     tools = [
       final.bison
+      tools.diffutils
       tools.gawk
       tools.gnumake
       tools.grep

@@ -26,6 +26,9 @@ let
     base-gcc_16_2_0 = {
       inherit (tvp.__legacyBases.gcc_16_2_0.tests) compile cxx;
     };
+    krb5_1_21_3 = {
+      inherit (tvp.canonical.krb5_1_21_3.tests) gssapi sdk;
+    };
     perl_5_30_3 = {
       inherit (tvp.canonical.perl_5_30_3.tests) version modules;
     };
