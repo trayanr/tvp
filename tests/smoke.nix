@@ -44,6 +44,9 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    jq_1_8_2 = {
+      inherit (tvp.canonical.jq_1_8_2.tests) filter regex version;
+    };
     oniguruma_6_9_10 = {
       inherit (tvp.canonical.oniguruma_6_9_10.tests) metadata utf8;
     };
