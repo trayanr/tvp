@@ -8,12 +8,7 @@ let
       minPHP = "8.2";
       def = {
         builder = ./build.nix;
-        deps = {
-          icu = tvp.lib.packages.withConstraint {
-            kind = "foreign";
-            reason = "PHP intl requires ICU, which TVP does not package yet.";
-          } pkgs.icu;
-        };
+        deps.icu = tvp.packages.icu_74;
       };
     })
     source
