@@ -1,5 +1,5 @@
 # Retained test-only capability; never an A/F construction input.
-{ pkgs }:
+{ closureInfo }:
 {
   package,
   lib,
@@ -8,6 +8,6 @@
 import ./installed.nix {
   inherit package lib;
   context = context // {
-    closureInfo = (package.testConfiguration.pkgs or pkgs).closureInfo;
+    closureInfo = package.testConfiguration.pkgs.closureInfo or closureInfo;
   };
 }

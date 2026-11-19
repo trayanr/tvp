@@ -71,17 +71,20 @@ rec {
       name,
       suite,
     }:
-    (pkgs.linkFarm "tvp-tests-${name}" (
-      lib.mapAttrsToList (name: drv: {
-        inherit name;
-        path = drv;
-      }) suite
-    )).overrideAttrs
-      (old: {
-        passthru = (old.passthru or { }) // {
-          testSuite = suite;
-        };
-      });
+    if pkgs ? tvpTestBatch then
+      pkgs.tvpTestBatch { inherit name suite; }
+    else
+      (pkgs.linkFarm "tvp-tests-${name}" (
+        lib.mapAttrsToList (name: drv: {
+          inherit name;
+          path = drv;
+        }) suite
+      )).overrideAttrs
+        (old: {
+          passthru = (old.passthru or { }) // {
+            testSuite = suite;
+          };
+        });
 
   suiteJobs =
     { batches, checks }:

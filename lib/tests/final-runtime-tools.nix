@@ -66,15 +66,14 @@ let
       finalLibraries = if name == "go_1_27_3" then f else p.editRuntime (r: r // { libraries = [ ]; });
       # Tiny fixtures select cached validation tools through the public edit API;
       # canonical production providers are never built for a source contract.
+      fixtureTools = (import ../../bases/source-gnu { }).tools;
       fixture = runtime.edit (
         x:
         x
         // {
-          coreutils = (import ../../bases/source-gnu { }).tools.coreutils;
-          helperPython = pkgs.python3;
-          toolPython = pkgs.python3;
-          python = pkgs.python3;
-          binutils = (import ../../bases/source-gnu { }).tools.binutils;
+          inherit (fixtureTools) coreutils python binutils;
+          helperPython = fixtureTools.python;
+          toolPython = fixtureTools.python;
         }
       );
       tests = builtins.mapAttrs (_: t: plain t.drvPath) p.tests;

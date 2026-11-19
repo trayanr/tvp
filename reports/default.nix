@@ -85,6 +85,7 @@ in
   dependencyRoots = import ../lib/dependency-roots.nix {
     inherit (pkgs) lib;
     inherit tools checks;
+    smokeBatches = tvp.smokeTests.batches;
     graph = tvpLib.graph.snapshot {
       includeRootMetadata = true;
       inherit
@@ -99,7 +100,18 @@ in
     registry = runtimeRegistry;
     borrowed = {
       inherit (pkgs)
+        bash
+        coreutils
+        diffutils
+        findutils
+        gawk
+        gcc
+        gnugrep
+        gnumake
+        gnused
+        gnutar
         icu
+        nixfmt-rfc-style
         oniguruma
         postgresql_16
         openssl
@@ -108,7 +120,10 @@ in
         tzdata
         expat
         jq
+        python3
         shellcheck-minimal
+        stdenv
+        stdenvNoCC
         ;
       "mariadb.server" = pkgs.mariadb.server;
     };

@@ -18,7 +18,7 @@ def package_manifest(snapshot, labels):
     # Keep package/base registrations for identification. Evaluating every
     # check and tool eagerly would expand unrelated test graphs.
     omitted = [
-        scope for scope in ("tools", "checks")
+        scope for scope in ("tools", "checks", "smoke")
         if not any(label == "@" + scope or label.startswith(scope + ".") for label in labels)
     ]
     apply = """
