@@ -21,23 +21,10 @@ of adding a package-specific workaround or silently broadening this rollout.
 
 ## Migration execution policy
 
-The owner closed the ordinary authoring migration on 2026-11-16 and authorized
-landing the final snapshot, running validation and restoring CI/NAS. Operational
-restoration is a deployment task; service state is recorded in the closeout receipts.
-The temporary policy below describes migration execution, not a continuing exception
-for subsequent package changes. Runtime/historical/hardening limits remain explicit.
-
-On 2026-11-14 the owner approved suspending the required `tvp/full` merge check
-until this migration is complete. Other branch protections stay unchanged. Keep
-CI execution and NAS/cache synchronization off; use scoped Tower-local validation
-and cached outputs, with no synthetic passing CI status. Merging the baseline or
-later cleanup does not waive qualification limits, hardening holds or historical
-failures.
-
-When the owner declares completion, restore strict `tvp/full` protection and
-explicitly re-enable CI and NAS operations. The [CI migration workflow](../ci/README.md#temporary-migration-workflow)
-records the exception and restoration policy; the normal CI workflow remains
-documented for use afterward.
+The ordinary authoring migration closed on 2026-11-16. Its temporary merge-check
+exception has ended. Follow the [current CI workflow](../ci/README.md) and its
+required `tvp/smoke` check for package changes. Runtime qualification limits,
+hardening holds and historical test failures remain recorded in the migration log.
 
 ## What is already done
 

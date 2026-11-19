@@ -1318,12 +1318,8 @@ available only for deliberately requested comprehensive runs. CI reports
 `tvp/smoke`, without certifying the unrun full catalogue.
 `all --json` returns the terminal status and exact frozen run identity, waiting on
 that identity rather than following a movable `latest` alias. Final machine-readable
-status is retained as `result.json` in the run directory. `ci/builder-preflight.sh`
-performs read-only Linux inventory and
-prints selected Nix settings without dumping configuration tokens. See
-[the builder handoff](ci/README.md) for the existing-distribution setup and deployment
-boundaries. Host provisioning, repository CI activation and publishing remain separate
-from the local validation entry points.
+status is retained as `result.json` in the run directory. The [CI guide](ci/README.md)
+describes local validation and the required check for package changes.
 
 Current source-backed compiler base suites use the exact-release keys:
 `testBatches.x86_64-linux.base-gcc_4_9_4`, `base-gcc_9_5_0`,
