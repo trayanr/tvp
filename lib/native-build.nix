@@ -53,9 +53,16 @@ base.stdenv.mkDerivation {
     meta
     ;
   outputs = [ "out" ];
+  # Supply the same runner payload to the retained stdenv setup protocol.
+  passAsFile = [ "tvpStageScripts" ];
+  tvpStageScripts = ''
+    TVP_STAGE_RUNNER=${lib.escapeShellArg runner.scriptAttributes.TVP_STAGE_RUNNER}
+    TVP_STAGE_SCRIPTS=(${lib.escapeShellArgs runner.scriptAttributes.TVP_STAGE_SCRIPTS})
+  '';
   buildCommand = ''
+    source "$tvpStageScriptsPath"
     mkdir workspace
-    ${bash}/bin/bash ${runner.script} "$PWD/workspace"
+    ${runner.command}
   '';
   passthru = passthru // {
     inherit tvp runtime;
