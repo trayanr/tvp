@@ -1,6 +1,18 @@
 # Small installed-result checks. Full package and upstream suites stay separate.
 { pkgs, tvp }:
 let
+  opcacheEngine = tvp.packages.php_8_5;
+  opcacheBuiltIn =
+    import ../pkgs/runtimes/php/extensions/opcache/tests.nix
+      {
+        inherit tvp;
+        builtIn = true;
+      }
+      {
+        inherit (pkgs) lib;
+        package = opcacheEngine;
+        context = opcacheEngine.testContext;
+      };
   subjects = {
     base-gcc_4_9_4 = {
       inherit (tvp.__legacyBases.gcc_4_9_4.tests) compile cxx;
@@ -26,6 +38,8 @@ let
     freetds_1_5_21 = {
       inherit (tvp.canonical.freetds_1_5_21.tests) dblib tsql;
     };
+    "php_${builtins.replaceStrings [ "." ] [ "_" ] opcacheEngine.version}--opcache-builtin" =
+      opcacheBuiltIn;
   } // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
   batches = pkgs.lib.mapAttrs (
     name: suite:

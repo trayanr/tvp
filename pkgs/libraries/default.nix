@@ -26,6 +26,7 @@ tvp.lib.packages.mergeNamespaces {
   sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
   unixodbc = import ./unixodbc { inherit pkgs tvp; };
   freetds = import ./freetds { inherit pkgs tvp; };
+  c-client = import ./c-client { inherit pkgs tvp; };
   alsa-lib = import ./alsa-lib { inherit pkgs tvp; };
   expat = import ./expat { inherit pkgs tvp; };
   libxcrypt = import ./libxcrypt { inherit pkgs tvp; };

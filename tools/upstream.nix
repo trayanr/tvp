@@ -34,12 +34,23 @@ let
   describe =
     pname: ps:
     let
-      ordered = lib.sort (a: b: builtins.compareVersions a.version b.version < 0) ps;
+      php = phpCoverage.${pname} or null;
+      # Mixed families discover standalone releases under their own upstream project.
+      listed =
+        if php != null && php.kind == "mixed" then
+          let
+            standalone = map (row: row.release) (
+              builtins.filter (row: (row.kind or null) == "independent") php.rows
+            );
+          in
+          builtins.filter (p: builtins.elem p.version standalone) ps
+        else
+          ps;
+      ordered = lib.sort (a: b: builtins.compareVersions a.version b.version < 0) listed;
       latest = lib.last ordered;
     in
     {
-      inherit pname;
-      php = phpCoverage.${pname} or null;
+      inherit pname php;
       attr = tvpLib.versions.attrName pname latest.version;
       versions = map (p: p.version) ordered;
       download = latest.tvp.source.url or null;
@@ -174,8 +185,11 @@ ownedCLI.shell {
       attr=$(jq -r '.attr' <<< "$row")
       type=$(jq -r '.upstream.type' <<< "$row")
       if [ "$list" = 1 ]; then
-        printf '%s — %s packaged; discovery: %s\n' "$pname" \
+        scope_label=""
+        if [ "$(jq -r '.php.kind' <<< "$row")" = mixed ]; then scope_label=" standalone"; fi
+        printf '%s — %s%s packaged; discovery: %s\n' "$pname" \
           "$(jq '.versions | length' <<< "$row")" \
+          "$scope_label" \
           "$(jq -r '.upstream.type // "not configured"' <<< "$row")"
         php_coverage
         continue
