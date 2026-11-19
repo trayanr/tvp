@@ -150,7 +150,10 @@ pkgs.runCommand "tvp-upstream-git-head-tests"
     set -eu
     case "$*" in
       'flake metadata --json --no-write-lock-file fixture-ref')
-        printf '%s\n' '{"path":"/nix/store/fixture-source", "revision":"${old}"}'
+        printf '%s\n' '{"path":"/nix/store/fixture-source", "url":"locked-ref", "revision":"${old}"}'
+        ;;
+      'flake prefetch --json locked-ref')
+        printf '%s\n' '{"storePath":"/nix/store/fixture-source"}'
         ;;
       'eval --raw --impure --expr builtins.currentSystem')
         echo x86_64-linux

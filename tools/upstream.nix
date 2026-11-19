@@ -125,6 +125,15 @@ ownedCLI.shell {
       revision=$(jq -r '
         .revision | if type == "string" and test("^[0-9a-f]{40}$") then . else "" end
       ' <<< "$metadata")
+      # Nix can resolve a GitHub tree lazily without realising its store path.
+      if [ ! -d "$source" ]; then
+        locked_ref=$(jq -er '.url | select(type == "string" and length > 0)' <<< "$metadata")
+        prefetched=$(nix flake prefetch --json "$locked_ref")
+        if ! jq -e --arg source "$source" '.storePath == $source' <<< "$prefetched" >/dev/null; then
+          echo 'tvp-upstream: prefetched source differs from the resolved flake' >&2
+          exit 1
+        fi
+      fi
       flake="path:$source"
       system=$(nix eval --raw --impure --expr 'builtins.currentSystem')
       manifest=$(nix eval --raw --offline --no-write-lock-file --option allow-import-from-derivation false \
