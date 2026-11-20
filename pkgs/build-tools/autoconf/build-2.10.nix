@@ -72,7 +72,8 @@ in
       tools.sed
       tools.grep
       tools.bash
-    ] ++ lib.optional final.installedInterface.usesGawk tools.gawk;
+    ]
+    ++ lib.optional final.installedInterface.usesGawk tools.gawk;
   };
   productionPlan = steps.sequence [
     (steps.unpack {

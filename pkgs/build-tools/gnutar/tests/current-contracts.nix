@@ -9,10 +9,13 @@ let
   s = package.specification;
   setup = builtins.concatStringsSep "\n" (
     map (step: step.run) (
-      builtins.filter (step: builtins.elem step.name [
-        "output.copy-artifacts"
-        "gnutar.drop-build-tree"
-      ]) package.buildSteps
+      builtins.filter (
+        step:
+        builtins.elem step.name [
+          "output.copy-artifacts"
+          "gnutar.drop-build-tree"
+        ]
+      ) package.buildSteps
     )
   );
   suffix =
