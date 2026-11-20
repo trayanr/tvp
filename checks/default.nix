@@ -252,7 +252,7 @@
     builtins.toJSON (import ../lib/tests/gzip-bzip2-families.nix { inherit pkgs tvp; })
   );
   autotools-family = pkgs.writeText "tvp-autotools-family-contracts" (
-    builtins.toJSON (import ../lib/tests/autotools-family.nix { inherit pkgs tvp; })
+    builtins.toJSON (import ../lib/tests/autotools-family.nix { inherit pkgs recipes tvp; })
   );
   bzip2-source = import ../lib/tests/bzip2-source.nix { inherit tvp; };
   automake-family = pkgs.writeText "tvp-automake-family-contracts" (

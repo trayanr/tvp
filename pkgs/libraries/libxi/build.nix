@@ -107,6 +107,10 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (xorg.indexArchives {
+      libraryDirectory = final.installedInterface.libraryDirectory;
+      archives = [ "libXi.a" ];
+    })
     (steps.split "libxi.finalize")
     (outputs.copyArtifacts {
       outputs = final.outputs;

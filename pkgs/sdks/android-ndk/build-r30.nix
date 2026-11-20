@@ -78,7 +78,8 @@ in
       }
     )
     (steps.split "android-ndk.finalize")
-    (outputs.copyArtifacts { })
+    # The two host yasm paths share an inode. Relocate private copies.
+    (outputs.copyArtifacts { preserveHardlinks = false; })
     (command "android-ndk.metadata" ''
       component="$out/libexec/android-sdk/${final.installedInterface.sdkPath}"
       cp ${final.sourceLayout.packageMetadata} "$component/package.xml"

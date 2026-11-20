@@ -1,0 +1,13 @@
+--- a/crypto/Makefile.ssl
++++ b/crypto/Makefile.ssl
+@@ -68 +68 @@
+-subdirs:
++subdirs: lib
+@@ -99 +99 @@
+-shared:
++shared: subdirs
+--- a/ssl/Makefile.ssl
++++ b/ssl/Makefile.ssl
+@@ -65 +65 @@
+-shared:
++shared: lib

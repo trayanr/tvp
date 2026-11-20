@@ -1,0 +1,13 @@
+--- a/Makefile.org
++++ b/Makefile.org
+@@ -340 +340 @@
+-build_apps:
++build_apps: build_libs
+@@ -342 +342 @@
+-build_tests:
++build_tests: build_libs
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -80 +80 @@
+-subdirs:
++subdirs: $(LIB)

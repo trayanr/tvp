@@ -15,6 +15,7 @@ final:
 let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
+  xorg = import ../../../lib/xorg-library-steps.nix { inherit lib context; };
   command =
     name:
     steps.command {
@@ -71,6 +72,10 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (xorg.indexArchives {
+      libraryDirectory = "lib";
+      archives = [ "libSM.a" ];
+    })
     (steps.split "libsm.finalize")
     (outputs.copyArtifacts {
       outputs = final.outputs;

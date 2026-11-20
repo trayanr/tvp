@@ -1,7 +1,25 @@
 # Small installed-result checks. Full package and upstream suites stay separate.
 { pkgs, tvp }:
 let
-  opcacheEngine = tvp.packages.php_8_5;
+  inherit (pkgs) lib;
+  php = tvp.packages.php;
+  phpName = tvp.lib.versions.attrName "php" php.version;
+  extensions = import ../pkgs/runtimes/php/extensions { inherit pkgs tvp; };
+  compatibleFamilies = lib.filterAttrs (
+    family: releases:
+    !(extensions.builtIn php family)
+    && builtins.any (
+      release: (release.status.level or "ok") != "broken" && extensions.compatible php release
+    ) (builtins.attrValues releases)
+  ) extensions.versionTables;
+  phpSubjects = lib.mapAttrs' (
+    family: _:
+    let
+      extension = php.extensions.${family};
+      name = tvp.lib.versions.attrName family extension.version;
+    in
+    lib.nameValuePair "${phpName}--${name}" { inherit (extension.tests) load roundtrip; }
+  ) compatibleFamilies;
   opcacheBuiltIn =
     import ../pkgs/runtimes/php/extensions/opcache/tests.nix
       {
@@ -10,8 +28,8 @@ let
       }
       {
         inherit (pkgs) lib;
-        package = opcacheEngine;
-        context = opcacheEngine.testContext;
+        package = php;
+        context = php.testContext;
       };
   subjects = {
     base-gcc_4_9_4 = {
@@ -71,10 +89,11 @@ let
     tzdata_2026f = {
       inherit (tvp.canonical.tzdata_2026f.tests) layout transition;
     };
-    "php_${builtins.replaceStrings [ "." ] [ "_" ] opcacheEngine.version}--opcache-builtin" =
-      opcacheBuiltIn;
   }
-  // builtins.mapAttrs (_: pair: pair.tests) tvp.php.extensionMatrix;
+  // phpSubjects
+  // lib.optionalAttrs (extensions.builtIn php "opcache") {
+    "${phpName}--opcache-builtin" = opcacheBuiltIn;
+  };
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {

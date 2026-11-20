@@ -1,0 +1,17 @@
+--- a/Makefile.org
++++ b/Makefile.org
+@@ -281 +281 @@
+-build_ssl:
++build_ssl: build_crypto
+@@ -283 +283 @@
+-build_engines:
++build_engines: build_crypto
+@@ -285 +285 @@
+-build_apps:
++build_apps: build_libs
+@@ -287 +287 @@
+-build_tests:
++build_tests: build_libs
+@@ -289 +289 @@
+-build_tools:
++build_tools: build_libs
