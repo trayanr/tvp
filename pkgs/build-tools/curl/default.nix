@@ -37,6 +37,15 @@ let
     source = tvp.lib.sources.directory {
       url = "https://curl.se/download/";
       archive = "curl-{version}.tar.gz";
+      discovery = rec {
+        pattern = ''href="(/download/)?curl-([0-9][A-Za-z0-9.+_-]*)\.tar\.gz"'';
+        normalise =
+          raw:
+          let
+            match = builtins.match pattern raw;
+          in
+          if match == null then null else builtins.elemAt match 1;
+      };
     };
     tests = import ./tests;
   };
