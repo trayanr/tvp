@@ -7,7 +7,7 @@ release and PHP extension pair. Full upstream suites remain opt-in.
 
 ```sh
 nix run .#test -- all
-# Terminal JSON for automation; the same standard scope is used by CI:
+# Terminal JSON for automation:
 nix run .#test -- all --json
 nix run .#test -- status
 # Narrow within the smoke selection:
@@ -80,7 +80,6 @@ contain only the declared smoke leaves. With `--full`, a package job can include
 its entire upstream suite. `latest` also retains all selected packages' own tests;
 it does not mean a couple of checks.
 
-The trusted Buildbot harness in `tvp-infra` pins this runner and checks each
-terminal receipt. In catalogue mode it uses `smokeTests.<system>.all` as the
-early check and reports `tvp/catalogue` after catalogue and NAS verification.
-Smoke-only deployments report `tvp/smoke`.
+The trusted Buildbot harness in `tvp-infra` schedules the frozen
+`catalogueTestPlans.<system>` plan. It reports `tvp/catalogue` after the
+installed checks and signed NAS verification.
