@@ -96,12 +96,44 @@ let
     inherit canonical;
     variants = variantPackages;
   };
+  # These installed interfaces are tested outside the ordinary package suites.
+  baseConsumerSubjects = pkgs.lib.mapAttrs' (
+    name: base:
+    pkgs.lib.nameValuePair "base-${name}" {
+      package = base.ownedBase.compiler;
+      tests = { inherit (base.tests) compile cxx; };
+    }
+  ) (pkgs.lib.filterAttrs (name: base: base.name == name) legacyBases);
+  builtinOpcacheSubjects =
+    let
+      php = packages.php;
+      phpName = tvpLib.versions.attrName "php" php.version;
+      extensions = import ../pkgs/runtimes/php/extensions { inherit pkgs tvp; };
+    in
+    pkgs.lib.optionalAttrs (extensions.builtIn php "opcache") {
+      "${phpName}--opcache-builtin" = {
+        package = php;
+        tests =
+          import ../pkgs/runtimes/php/extensions/opcache/tests.nix
+            {
+              inherit tvp;
+              builtIn = true;
+            }
+            {
+              inherit (pkgs) lib;
+              package = php;
+              context = php.testContext;
+            };
+      };
+    };
+  interfaceSubjects = baseConsumerSubjects // builtinOpcacheSubjects;
   catalogueSubjects = tvpLib.packages.merge {
     packages = builtins.mapAttrs (_: package: {
       inherit package;
       tests = package.tests or { };
     }) (supported cataloguePackages);
     phpExtensions = tvp.php.extensionMatrix;
+    installedInterfaces = interfaceSubjects;
   };
   # Older tests use named upstream leaves. Newer checkpoints also expose the
   # separate raw execution. Keep installed checks which exercise upstream data.
@@ -211,7 +243,7 @@ let
       selection = latestSelection;
     };
   };
-  smokeTests = import ./smoke.nix { inherit pkgs tvp; };
+  smokeTests = import ./smoke.nix { inherit pkgs tvp interfaceSubjects; };
 in
 {
   # The flattened variants are a private handle shared with the check registry.
