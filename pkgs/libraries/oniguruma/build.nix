@@ -4,6 +4,7 @@
   base,
   src,
   version,
+  cStandard ? null,
 }:
 final:
 let
@@ -13,7 +14,7 @@ let
 in
 {
   pname = "oniguruma";
-  inherit base src version;
+  inherit base src version cStandard;
   inherit (tools) bash coreutils;
   environment.tools = [
     tools.gnumake
@@ -31,7 +32,10 @@ in
     })
     (steps.prepareAutotools { name = "oniguruma.prepare"; })
     (command "oniguruma.configure" ''
-      export CONFIG_SHELL=${tools.bash}/bin/bash
+      export CONFIG_SHELL=${tools.bash}/bin/bash${lib.optionalString (final.cStandard != null) ''
+
+        export CFLAGS="-g -O2 -std=${final.cStandard}"
+      ''}
       ./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static
     '')
     (command "oniguruma.build" make)

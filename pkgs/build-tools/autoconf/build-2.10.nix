@@ -9,6 +9,7 @@
   perl,
   modernInit ? true,
   consumerCStandard ? null,
+  installedInterface ? { },
   configureFlags ? [ ],
   doCheck ? true,
 }:
@@ -37,6 +38,7 @@ in
   inherit (tools) bash coreutils;
   installedInterface = {
     knownFrontends = false;
+    usesGawk = false;
     frontends = {
       autoconf = "shipped";
       autoheader = "shipped";
@@ -46,7 +48,8 @@ in
       autoupdate = "shipped";
       ifnames = "shipped";
     };
-  };
+  }
+  // installedInterface;
   environment = {
     tools = [
       final.perl
@@ -69,7 +72,7 @@ in
       tools.sed
       tools.grep
       tools.bash
-    ];
+    ] ++ lib.optional final.installedInterface.usesGawk tools.gawk;
   };
   productionPlan = steps.sequence [
     (steps.unpack {

@@ -32,6 +32,8 @@ in
   inherit (tools) bash coreutils;
   buildFeatures = {
     cStandard = "gnu89";
+    # These generated Makefiles replace the CFLAGS selected by configure.
+    makeOverridesCFlags = lib.versionOlder final.version "8.3.4";
   }
   // buildFeatures;
   installedInterface = {
@@ -92,7 +94,13 @@ in
       export CFLAGS="-g -O2 ${
         lib.optionalString (final.buildFeatures.cStandard != null) "-std=${final.buildFeatures.cStandard}"
       }"
-      ${final.bash}/bin/bash ./configure --prefix="$out"
+      ${final.bash}/bin/bash ./configure --prefix="$out"${lib.optionalString
+        (final.buildFeatures.makeOverridesCFlags && final.buildFeatures.cStandard != null) ''
+
+          grep -Eq '^CFLAGS[[:space:]]*=' Makefile
+          printf '\nCFLAGS += %s\n' "-std=${final.buildFeatures.cStandard}" >> Makefile
+        ''
+      }
     '')
     (command "build" "${make}")
     (command "install" ''
