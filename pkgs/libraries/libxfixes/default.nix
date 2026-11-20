@@ -14,7 +14,10 @@ let
           libxdmcp = tvp.packages.libxdmcp_1;
         };
       };
-      releases."6.0.2" = "sha256-OfEV1y2cX4ER5GhBZNPWjMH9Ifmyf/JAGwj938D0Cbo=";
+      releases = {
+        "6.0.1" = "sha256-tpX5PNJJlCGrAtInREWOZQzMiMHUyBMNYCACE6vALVg=";
+        "6.0.2" = "sha256-OfEV1y2cX4ER5GhBZNPWjMH9Ifmyf/JAGwj938D0Cbo=";
+      };
     }
   ];
   pname = "libxfixes";
