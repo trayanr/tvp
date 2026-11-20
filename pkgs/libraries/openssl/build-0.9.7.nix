@@ -21,6 +21,7 @@
   upstreamExpected ? "OpenSSL upstream raw result accepted",
   hardeningDisable ? [ ],
   forceGccName ? false,
+  removeUnbuiltFipsAliases ? false,
   installTarget ? (if lib.versionAtLeast version "0.9.7e" then "install_sw" else "install"),
   installedInterface ? {
     sha256 = false;
@@ -127,6 +128,7 @@ in
     upstreamExpected
     hardeningDisable
     forceGccName
+    removeUnbuiltFipsAliases
     installTarget
     sourceEncoding
     ;
@@ -196,6 +198,9 @@ in
     finalSteps = [
       "output.copy-artifacts"
       "openssl.drop-build-state"
+    ]
+    ++ lib.optional final.removeUnbuiltFipsAliases "openssl.remove-unbuilt-fips-aliases"
+    ++ [
       "openssl.relocate"
       "output.strip"
       "output.strip-archives"
@@ -257,7 +262,8 @@ in
       tools.diffutils
       tools.findutils
       tools.python
-    ] ++ lib.optional (final.patches != [ ]) tools.patch;
+    ]
+    ++ lib.optional (final.patches != [ ]) tools.patch;
     libraries = [ ];
   };
   dependencyProviders = {
@@ -332,6 +338,20 @@ in
           name = "openssl.drop-build-state";
           tools = [ tools.coreutils ];
           run = ''rm -rf -- "$out/${final.upstreamIsolation.statePath}"'';
+        }
+        {
+          name = "openssl.remove-unbuilt-fips-aliases";
+          enabled = final.removeUnbuiltFipsAliases;
+          tools = [ tools.coreutils ];
+          run = ''
+            alias="$out/lib/libfips.so"
+            test "$(readlink -- "$alias")" = libfips.so.0
+            test "$(readlink -- "$alias.0")" = libfips.so.0.9.7
+            test ! -e "$alias.0.9.7"
+            test ! -L "$alias.0.9.7"
+            unlink "$alias"
+            unlink "$alias.0"
+          '';
         }
         {
           name = "openssl.relocate";

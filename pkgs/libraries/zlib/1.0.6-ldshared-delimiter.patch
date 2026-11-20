@@ -1,0 +1,9 @@
+--- a/configure
++++ b/configure
+@@ -111,5 +111,5 @@
+ /^CC *=/s,=.*,=$CC,
+ /^CFLAGS *=/s/=.*/=$CFLAGS/
+-/^LDSHARED *=/s,=.*,=$LDSHARED,
++/^LDSHARED *=/s%=.*%=$LDSHARED%
+ /^LIBS *=/s,=.*,=$LIBS,
+ /^SHAREDLIB *=/s,=.*,=$SHAREDLIB,
