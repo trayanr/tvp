@@ -1,5 +1,9 @@
 # Small installed-result checks. Full package and upstream suites stay separate.
-{ pkgs, tvp }:
+{
+  pkgs,
+  tvp,
+  interfaceSubjects,
+}:
 let
   inherit (pkgs) lib;
   php = tvp.packages.php;
@@ -20,30 +24,7 @@ let
     in
     lib.nameValuePair "${phpName}--${name}" { inherit (extension.tests) load roundtrip; }
   ) compatibleFamilies;
-  opcacheBuiltIn =
-    import ../pkgs/runtimes/php/extensions/opcache/tests.nix
-      {
-        inherit tvp;
-        builtIn = true;
-      }
-      {
-        inherit (pkgs) lib;
-        package = php;
-        context = php.testContext;
-      };
   subjects = {
-    base-gcc_4_9_4 = {
-      inherit (tvp.__legacyBases.gcc_4_9_4.tests) compile cxx;
-    };
-    base-gcc_9_5_0 = {
-      inherit (tvp.__legacyBases.gcc_9_5_0.tests) compile cxx;
-    };
-    base-gcc_13_3_0 = {
-      inherit (tvp.__legacyBases.gcc_13_3_0.tests) compile cxx;
-    };
-    base-gcc_16_2_0 = {
-      inherit (tvp.__legacyBases.gcc_16_2_0.tests) compile cxx;
-    };
     krb5_1_21_3 = {
       inherit (tvp.canonical.krb5_1_21_3.tests) gssapi sdk;
     };
@@ -91,9 +72,7 @@ let
     };
   }
   // phpSubjects
-  // lib.optionalAttrs (extensions.builtIn php "opcache") {
-    "${phpName}--opcache-builtin" = opcacheBuiltIn;
-  };
+  // builtins.mapAttrs (_: subject: subject.tests) interfaceSubjects;
   batches = pkgs.lib.mapAttrs (
     name: suite:
     tvp.lib.tests.compatibility.mkBatch {
