@@ -29,6 +29,32 @@ let
       };
       releases."37.0.1" = "sha256-0jDxOEL2D3gqhkX5yBP4+EW/NgiepyifKMSPF5eTE/E=";
     }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
+          } tvp.bases.gcc_16.full.compiler.libc;
+          runtimeCompiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
+          } tvp.bases.gcc_16.full.compiler.cc;
+          unzip = tvp.packages.unzip;
+        };
+        opts.sourceLayout = {
+          url = "https://dl.google.com/android/repository/platform-tools_r37.0.3-linux.zip";
+          packageMetadata = ./metadata-37.0.3.xml;
+        };
+        blob = {
+          reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
+          needs = "A source Android toolchain and component build graph.";
+          blocked.package = "android-sdk-from-source";
+        };
+      };
+      releases."37.0.3" = "sha256-IUVIFGytsso1CBQ9ih1L5MWd5buDclPj7eie10z0UNE=";
+    }
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
