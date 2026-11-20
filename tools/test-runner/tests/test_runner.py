@@ -37,6 +37,15 @@ if any(any(attr in a for attr in ('#testPlans.', '#smokeTestPlans.', '#catalogue
     sys.exit(0)
 drv=plan['jobs'][0]['drv']
 machine=os.environ.get('FAKE_REMOTE','')
+if os.environ.get('FAKE_PLANNING'):
+    for event in [
+        {'action':'start','id':3,'type':109,'fields':['/fake/cache-path','https://cache.invalid/private']},
+        {'action':'stop','id':3},
+        {'action':'msg','level':3,'msg':'these 42 derivations will be built:'},
+        {'action':'msg','level':3,'msg':'this path will be fetched:'},
+    ]:
+        print('@nix '+json.dumps(event), file=sys.stderr, flush=True)
+    time.sleep(1)
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[drv,machine]}), file=sys.stderr, flush=True)
 if machine:
     for event in [
@@ -264,6 +273,20 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('Nix work started local 0, remote host:22974 1, downloads 1', lines[-1])
         self.assertNotIn('builder@', result.stdout)
         self.assertNotIn('ssh-key', result.stdout)
+
+    def test_nix_planning_telemetry_is_retained_without_cache_request_details(self):
+        self.env.update(TVP_CI_PROGRESS='1', FAKE_PLANNING='1')
+        process = self.cli('all', '--state-dir', str(self.state))
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertIn('Nix planning and checking substituters', process.stdout)
+        self.assertIn('Nix plan: builds 42, fetches 1', process.stdout)
+        self.run = (self.state / 'latest').resolve()
+        result = json.loads((self.run / 'result.json').read_text())
+        progress = result['nixProgress']
+        self.assertEqual(progress['cacheLookupsFinished'], 1)
+        self.assertEqual(progress['buildActivitiesFinished'], 1)
+        self.assertGreaterEqual(progress['firstWorkSeconds'], 1)
+        self.assertNotIn('cache.invalid/private', (self.run / 'events.jsonl').read_text())
 
     def test_all_failure_returns_nonzero_after_independent_checks_finish(self):
         self.env['FAKE_FAILURE']='first'

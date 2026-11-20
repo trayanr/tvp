@@ -42,6 +42,10 @@ the stage counts identify the participating attempt they describe.
 
 The event log records when the runner observes Nix activity start and stop.
 Those timestamps provide duration data for future estimates.
+The heartbeat shows Nix planning before the first build or transfer, lookup
+and copy counts when Nix reports them, and outstanding work grouped by kind.
+Outstanding remote activities can exceed the builder's concurrent slots.
+Output-ready and passed counts still use Server store validity.
 
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
