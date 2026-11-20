@@ -25,7 +25,7 @@ def public_url(value):
         parts = urlsplit(value)
     except ValueError:
         return None
-    if parts.scheme not in ("https", "http") or not parts.netloc or "@" in parts.netloc:
+    if parts.scheme not in ("https", "http", "git") or not parts.netloc or "@" in parts.netloc:
         return None
     return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
