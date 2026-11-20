@@ -102,6 +102,8 @@ in
   };
   productionFlags = [
     "-fcommon"
+    # Keep the compiled php.ini path contiguous for final prefix relocation.
+    "-fno-builtin-strcat"
   ]
   ++ lib.optional (final.cStandard != null) "-std=${final.cStandard}";
   runtime = {
