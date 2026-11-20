@@ -149,6 +149,15 @@ def production_stages(jobs):
     """Group selected production work by exact derivation, retaining each use."""
     stages = {}
     for job in jobs:
+        for producer in job.get("productions", []):
+            role = producer["role"]
+            phase = "compile" if role == "artifact" else "finalize" if len(job["productions"]) > 1 else "build"
+            stage = stages.setdefault(producer["drv"], {"phase": phase, "outputs": set(), "uses": set()})
+            outputs = frozenset(producer["outputs"].values())
+            stage["phase"] = phase
+            stage["outputs"].update(outputs)
+            # Catalogue production is required even when every check is cached.
+            stage["uses"].add((outputs, frozenset()))
         if not job.get("stages"):
             continue
         tests = {test["drv"]: test["outputs"] for test in job.get("tests") or [job]}
@@ -167,6 +176,10 @@ def production_stages(jobs):
             stage["outputs"].update(outputs)
             stage["uses"].add((outputs, covers))
     return stages
+
+
+def production_paths(job):
+    return {path for producer in job.get("productions", []) for path in producer["outputs"].values()}
 
 
 def observed_paths(jobs, stages):
@@ -215,6 +228,7 @@ def observe(plan, state, run, final=False, root_completed=True, protected=None, 
     for job in jobs:
         entry = state["jobs"][job["name"]]
         tests = job.get("tests") or [job]
+        required = production_paths(job)
         results = []
         for test in tests:
             if all(output in present for output in test["outputs"]):
@@ -229,16 +243,19 @@ def observe(plan, state, run, final=False, root_completed=True, protected=None, 
             results.append(result)
             if result == "passed":
                 completed.update(test["outputs"])
-        if all(result == "passed" for result in results):
+        if required <= present and all(result == "passed" for result in results):
             entry.update(status="passed")
             entry.setdefault("completedAt", time.time())
-        elif job["drv"] in failed or "failed-or-blocked" in results:
+        elif (job["drv"] in failed or "failed-or-blocked" in results
+              or any(producer["drv"] in failed for producer in job.get("productions", []))
+              or (final and not state.get("cancelled") and not required <= present)):
             entry["status"] = "failed-or-blocked"
-        elif "cancelled" in results:
+        elif "cancelled" in results or (final and state.get("cancelled") and not required <= present):
             entry["status"] = "cancelled"
         else:
             entry["status"] = "pending"
         entry["tests"] = {key: results.count(key) for key in counts}
+        completed.update(required & present)
     state["testCounts"] = counts
     state["reportedFailedDerivations"] = sorted(failed)
     state["updatedAt"] = time.time()

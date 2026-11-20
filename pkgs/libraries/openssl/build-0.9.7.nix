@@ -17,9 +17,11 @@
   compileFlags ? [ ],
   testPatches ? [ ],
   testCompileFlags ? [ ],
+  patches ? [ ],
   upstreamExpected ? "OpenSSL upstream raw result accepted",
   hardeningDisable ? [ ],
   forceGccName ? false,
+  removeUnbuiltFipsAliases ? false,
   installTarget ? (if lib.versionAtLeast version "0.9.7e" then "install_sw" else "install"),
   installedInterface ? {
     sha256 = false;
@@ -122,9 +124,11 @@ in
     compileFlags
     testPatches
     testCompileFlags
+    patches
     upstreamExpected
     hardeningDisable
     forceGccName
+    removeUnbuiltFipsAliases
     installTarget
     sourceEncoding
     ;
@@ -194,6 +198,9 @@ in
     finalSteps = [
       "output.copy-artifacts"
       "openssl.drop-build-state"
+    ]
+    ++ lib.optional final.removeUnbuiltFipsAliases "openssl.remove-unbuilt-fips-aliases"
+    ++ [
       "openssl.relocate"
       "output.strip"
       "output.strip-archives"
@@ -255,7 +262,8 @@ in
       tools.diffutils
       tools.findutils
       tools.python
-    ];
+    ]
+    ++ lib.optional (final.patches != [ ]) tools.patch;
     libraries = [ ];
   };
   dependencyProviders = {
@@ -298,9 +306,12 @@ in
 
           compression = "gzip";
         })
-        (command "prepare" ''
-          ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
-        '')
+        (command "prepare" (
+          lib.concatMapStrings (p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}\n") final.patches
+          + ''
+            ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
+          ''
+        ))
         (command "configure" ''
           export PERL=${final.buildPerl}/bin/perl HASHBANGPERL=${final.buildPerl}/bin/perl
           ${lib.optionalString final.forceGccName "export CC=gcc"}
@@ -327,6 +338,20 @@ in
           name = "openssl.drop-build-state";
           tools = [ tools.coreutils ];
           run = ''rm -rf -- "$out/${final.upstreamIsolation.statePath}"'';
+        }
+        {
+          name = "openssl.remove-unbuilt-fips-aliases";
+          enabled = final.removeUnbuiltFipsAliases;
+          tools = [ tools.coreutils ];
+          run = ''
+            alias="$out/lib/libfips.so"
+            test "$(readlink -- "$alias")" = libfips.so.0
+            test "$(readlink -- "$alias.0")" = libfips.so.0.9.7
+            test ! -e "$alias.0.9.7"
+            test ! -L "$alias.0.9.7"
+            unlink "$alias"
+            unlink "$alias.0"
+          '';
         }
         {
           name = "openssl.relocate";

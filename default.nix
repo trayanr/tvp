@@ -133,6 +133,7 @@ let
     # Internal compatibility only; ordinary packages use the public bases above.
     __legacyBases = legacyBases;
     __testBuilders = testBuilders;
+    inherit (testSet) cataloguePlan;
     builder = import ./lib/builder.nix { inherit (pkgs) lib; };
     lib = tvpLib;
   };

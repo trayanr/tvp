@@ -302,6 +302,9 @@ let
           libxcrypt = tvp.packages.libxcrypt_4;
         };
         opts = {
+          # Distutils emits bare -R with the base's cc driver. The base already
+          # supplies the OpenSSL runtime search path through LDFLAGS.
+          sourceLayout.opensslRpath = false;
           upstreamPolicy = {
             modules = [
               "test_ssl"

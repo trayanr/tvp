@@ -36,6 +36,7 @@
       bzip2 ? null,
       findutils ? null,
       compression ? "xz",
+      stripComponents ? 1,
     }:
     let
       codec =
@@ -69,7 +70,7 @@
       ++ lib.optional (findutils != null) findutils;
       run = ''
         mkdir source
-        ${extract} --strip-components=1 -C source
+        ${extract} --strip-components=${toString stripComponents} -C source
         chmod -R u+w source
         # Match the source epoch policy: regular files, bounded by build start.
         epoch=$(${
