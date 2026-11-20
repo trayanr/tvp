@@ -80,7 +80,11 @@ context.mkSuite {
           cc -std=gnu89 ${./fixtures/version.c} $(cat flags) -o pc-version
           ./pc-version
         '';
-        expected = if package.version == "8.2.13" then "8.2" else package.version;
+        expected =
+          if builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" package.version != null then
+            lib.versions.majorMinor package.version
+          else
+            package.version;
       };
     }
   else

@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 
-from progress import members, observe, observed_paths, production_stages, root_path, stage_counts, valid_paths
+from progress import members, observe, observed_paths, production_paths, production_stages, root_path, stage_counts, valid_paths
 from attempts import combine, register_retry
 
 
@@ -105,6 +105,45 @@ def useful_event(event, active):
     )
 
 
+def record_nix_progress(state, pending_io, active, event, started_at, now):
+    """Summarize Nix events without logging individual cache requests."""
+    action, kind = event.get("action"), event.get("type")
+    key = str(event.get("id"))
+    if action == "msg" and event.get("level", 0) in range(4):
+        message = ANSI.sub("", str(event.get("msg", "")))
+        for name, pattern in (
+            ("plannedBuilds", r"these (\d+) derivations will be built|this derivation will be built"),
+            ("plannedFetches", r"these (\d+) paths will be fetched|this path will be fetched"),
+        ):
+            match = re.match(pattern, message)
+            if match:
+                state[name] = int(match.group(1) or 1)
+    elif action == "start":
+        channel = {100: "copies", 109: "cacheLookups"}.get(kind)
+        if channel and key not in pending_io:
+            pending_io[key] = channel
+            state[channel + "Started"] += 1
+        if kind in (100, 105, 108):
+            state.setdefault("firstWorkSeconds", round(max(0, now - started_at)))
+    elif action == "stop":
+        channel = pending_io.pop(key, None)
+        if channel:
+            state[channel + "Finished"] += 1
+        elif key in active and active[key]["location"] != "cache":
+            state["buildActivitiesFinished"] += 1
+
+
+def build_work_kind(drv, stages, tests):
+    name = Path(drv).name[33:].removesuffix(".drv")
+    if name.startswith("tvp-tests-"):
+        return "batch links"
+    if name.startswith("tvp-step-") or name == "tvp-build-step-runner":
+        return "build scripts"
+    if drv in stages:
+        return stages[drv]["phase"]
+    return "checks" if drv in tests else "dependencies"
+
+
 def build_targets(plan, full):
     targets = [plan["aggregate"]] if full else [job["drv"] for job in plan["jobs"]]
     # A cached suite retains only the output selected by each installed link.
@@ -117,13 +156,17 @@ def build_targets(plan, full):
 def work(run, global_fd, lease_fd):
     plan = json.loads((run / "plan.json").read_text())
     state = json.loads((run / "state.json").read_text())
-    state.update(phase="running", pid=os.getpid(), buildStartedAt=time.time(), active={})
+    state.update(phase="running", pid=os.getpid(), buildStartedAt=time.time(),
+                 operation="nix-planning", active={})
     stopped = threading.Event()
     wake = threading.Event()
     finished = threading.Event()
     owner_gone = threading.Event()
     child = None
     active = {}
+    nix_progress = dict.fromkeys(("copiesStarted", "copiesFinished", "cacheLookupsStarted",
+                                  "cacheLookupsFinished", "buildActivitiesFinished"), 0)
+    pending_io = {}
     compact = os.environ.get("TVP_CI_PROGRESS") == "1"
     build_locations = {}
     downloads = set()
@@ -133,6 +176,7 @@ def work(run, global_fd, lease_fd):
     def checkpoint():
         with lock:
             state["active"] = dict(active)
+            state["nixProgress"] = dict(nix_progress)
             if compact:
                 state["activityStarts"] = dict(collections.Counter(build_locations.values()))
                 state["activityStarts"]["cache"] = len(downloads)
@@ -185,6 +229,7 @@ def work(run, global_fd, lease_fd):
     write_json(run / "command.json", command)
     try:
         stages = production_stages(members(plan, run))
+        tests = {test["drv"] for job in plan["jobs"] for test in job.get("tests", [])}
         if state.get("ownerLock"):
             threading.Thread(target=watch_owner, daemon=True).start()
         with (run / "nix.log").open("w", buffering=1) as log, (run / "events.jsonl").open("w") as events:
@@ -202,6 +247,9 @@ def work(run, global_fd, lease_fd):
                             log.write(line)
                             continue
                         with lock:
+                            if isinstance(event, dict):
+                                record_nix_progress(nix_progress, pending_io, active, event,
+                                                    state["buildStartedAt"], time.time())
                             if useful_event(event, active):
                                 if event.get("action") in {"start", "stop"}:
                                     # Retain activity timings for future estimates.
@@ -210,8 +258,10 @@ def work(run, global_fd, lease_fd):
                                 else:
                                     events.write(line)
                                 started = apply_event(active, event, log)
-                                if compact and started:
-                                    note_activity(started, build_locations, downloads)
+                                if started:
+                                    started["workKind"] = build_work_kind(started["drv"], stages, tests)
+                                    if compact:
+                                        note_activity(started, build_locations, downloads)
                     else:
                         events.write(line)
                         log.write(line)
@@ -226,7 +276,7 @@ def work(run, global_fd, lease_fd):
                         state["active"] = dict(active)
                     observe(plan, state, run, protected=protected, on_roots=rooting, stages=stages)
                     state.pop("monitorError", None)
-                    state["operation"] = "building"
+                    state["operation"] = "building" if "firstWorkSeconds" in nix_progress else "nix-planning"
                 except (OSError, RuntimeError, subprocess.SubprocessError) as error:
                     # Progress queries must not cancel a valid long-running build.
                     state["monitorError"] = str(error)
@@ -250,6 +300,10 @@ def work(run, global_fd, lease_fd):
         observe(plan, state, run, final=True, protected=protected, on_roots=rooting, stages=stages)
         state.pop("monitorError", None)
         all_passed = all(job["status"] == "passed" for job in state["jobs"].values())
+        if state.get("validationScope") == "catalogue" and state["full"] and code == 0:
+            expected = set(plan["aggregateOutputs"])
+            if valid_paths(expected) != expected:
+                raise RuntimeError("Catalogue aggregate output is missing")
         state.update(phase="cancelled" if stopped.is_set() else "passed" if code == 0 and all_passed else "failed",
                      returnCode=code, finishedAt=time.time(), active={})
     except Exception as error:
@@ -286,9 +340,9 @@ def start(args, return_run=False):
         (run / "roots").mkdir(parents=True)
         with (run / "worker.lock").open("a") as lease:
             fcntl.flock(lease, fcntl.LOCK_EX)
-            scope = "full" if args.full else "smoke"
+            scope = validation_scope(args)
             state = {"phase": "preparing", "startedAt": time.time(), "maxJobs": args.jobs,
-                     "cores": args.cores, "jobs": {}, "full": args.full and not bool(args.only),
+                     "cores": args.cores, "jobs": {}, "full": scope != "smoke" and not bool(args.only),
                      "validationScope": scope}
             if args.owner_lock:
                 state["ownerLock"] = str(args.owner_lock)
@@ -304,7 +358,8 @@ def start(args, return_run=False):
                 frozen_plan = getattr(args, "frozen_plan", None)
                 with (run / "prepare.log").open("w") as log:
                     if frozen_plan is None:
-                        plan_attribute = "testPlans" if args.full else "smokeTestPlans"
+                        plan_attribute = {"full": "testPlans", "catalogue": "catalogueTestPlans",
+                                          "smoke": "smokeTestPlans"}[scope]
                         command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
                                    args.flake + "#" + plan_attribute + "." + args.system]
                         subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
@@ -314,6 +369,12 @@ def start(args, return_run=False):
                 plan = json.loads((run / "plan").read_text())
                 if plan.get("schema") != 1:
                     raise RuntimeError("Unsupported test plan schema")
+                if scope == "catalogue":
+                    if plan.get("validationScope") != scope or plan.get("system") != args.system:
+                        raise RuntimeError("Catalogue plan has a different scope or system")
+                    if not plan.get("aggregateOutputs") or any(not job.get("productions") or not job.get("tests")
+                                                              for job in plan["jobs"]):
+                        raise RuntimeError("Catalogue plan is missing production output or installed check metadata")
                 if frozen_plan is not None and plan.get("system") != args.system:
                     raise RuntimeError("Frozen CI smoke plan has a different system")
                 names = {job["name"] for job in plan["jobs"]}
@@ -332,7 +393,15 @@ def start(args, return_run=False):
                     state["stageCounts"] = stage_counts(stages, present, state)
                     for counts in state["stageCounts"].values():
                         counts["cachedAtStart"] = counts["ready"]
-                state["jobs"] = {job["name"]: {"status": "pending", "cachedAtStart": all(p in present for test in (job.get("tests") or [job]) for p in test["outputs"])} for job in jobs}
+                state["jobs"] = {
+                    job["name"]: {
+                        "status": "pending",
+                        "cachedAtStart": production_paths(job) <= present and all(
+                            p in present for test in (job.get("tests") or [job]) for p in test["outputs"]
+                        ),
+                    }
+                    for job in jobs
+                }
                 state["phase"] = "starting"
                 write_json(run / "state.json", state)
                 if args.retry_of:
@@ -362,6 +431,12 @@ def start(args, return_run=False):
     return 0
 
 
+def validation_scope(args):
+    if getattr(args, "catalogue", False):
+        return "catalogue"
+    return "full" if args.full else "smoke"
+
+
 def run_all(args):
     directory = args.state_dir.resolve()
     directory.mkdir(parents=True, exist_ok=True)
@@ -370,7 +445,8 @@ def run_all(args):
     if parent_owner and not lease_held(parent_owner):
         raise RuntimeError("The controlling process must hold --owner-lock before starting")
     frozen_plan = os.environ.get("TVP_CI_FROZEN_SMOKE_PLAN")
-    if frozen_plan and (not parent_owner or args.full or not Path(frozen_plan).is_absolute()):
+    scope = validation_scope(args)
+    if frozen_plan and (not parent_owner or scope != "smoke" or not Path(frozen_plan).is_absolute()):
         raise RuntimeError("A frozen CI smoke plan requires an absolute path, smoke scope and a controlling process")
     # Reuse the existing worker. Releasing this lock also stops it if the
     # foreground command is killed before it can return a result.
@@ -382,15 +458,15 @@ def run_all(args):
         compact = os.environ.get("TVP_CI_PROGRESS") == "1" and not args.json
         preparing = time.monotonic()
         if compact:
-            print_ci("Smoke preparation started")
+            print_ci(f"{scope.capitalize()} preparation started")
         try:
             run = start(launch, return_run=True)
         except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
             if compact:
-                print_ci(f"Smoke preparation failed after {time.monotonic() - preparing:.1f}s")
+                print_ci(f"{scope.capitalize()} preparation failed after {time.monotonic() - preparing:.1f}s")
             raise
         if compact:
-            print_ci(f"Smoke preparation finished in {time.monotonic() - preparing:.1f}s")
+            print_ci(f"{scope.capitalize()} preparation finished in {time.monotonic() - preparing:.1f}s")
         interrupted = None
 
         def stop(signum, _frame):
@@ -504,8 +580,13 @@ def print_status(run, state, labels=None):
             print(f"Registering GC roots: {roots['completed']}/{roots['total']} outputs protected")
         elif state.get("operation") == "checking-outputs":
             print("Checking completed outputs.")
+        elif state.get("operation") == "nix-planning":
+            print("Nix is planning and checking substituters before build or copy activity.")
         elif not state.get("active"):
             print("Waiting for Nix to finish.")
+    nix_details = nix_progress_details(state.get("nixProgress", {}))
+    if nix_details:
+        print("Nix:", " | ".join(nix_details))
     failed = [name for name, job in state["jobs"].items() if job["status"] == "failed-or-blocked"]
     for name in failed[:10]:
         print("  failed/blocked:", name)
@@ -523,7 +604,7 @@ def print_status(run, state, labels=None):
 def progress_key(state):
     fields = {key: state.get(key) for key in (
         "phase", "operation", "counts", "testCounts", "stageCounts", "stageProgressRun",
-        "rooting", "error", "monitorError",
+        "rooting", "nixProgress", "error", "monitorError",
         "retryErrors", "retrySuites")}
     fields["active"] = sorted((item["drv"], item["phase"]) for item in state.get("active", {}).values())
     fields["failed"] = sorted(name for name, job in state["jobs"].items()
@@ -541,6 +622,21 @@ def ci_work(counts):
     local = counts.get("local", 0)
     remote = ", ".join(f"{key} {value}" for key, value in sorted(counts.items()) if key.startswith("remote "))
     return f"local {local}" + (", " + remote if remote else "") + f", downloads {counts.get('cache', 0)}"
+
+
+def nix_progress_details(progress):
+    parts = []
+    if "firstWorkSeconds" in progress:
+        parts.append(f"first build or transfer at +{progress['firstWorkSeconds']}s")
+    if "plannedBuilds" in progress or "plannedFetches" in progress:
+        parts.append(f"Nix plan: builds {progress.get('plannedBuilds', 0)}, fetches {progress.get('plannedFetches', 0)}")
+    for key, label in (("cacheLookups", "cache lookups"), ("copies", "store copies")):
+        started = progress.get(key + "Started", 0)
+        if started:
+            parts.append(f"{label} {progress[key + 'Finished']}/{started} finished")
+    if progress.get("buildActivitiesFinished"):
+        parts.append(f"{progress['buildActivitiesFinished']} build activities ended")
+    return parts
 
 
 def compact_progress(state):
@@ -562,12 +658,19 @@ def compact_progress(state):
         if "activityStarts" in state:
             parts.append("Nix work started " + ci_work(state["activityStarts"]))
     else:
-        builds, downloads = {}, set()
+        builds, downloads, kinds = {}, set(), {}
         for item in state.get("active", {}).values():
             note_activity(item, builds, downloads)
+            if item.get("workKind") and item.get("location") != "cache":
+                kinds[item["drv"]] = item["workKind"]
         counts = collections.Counter(builds.values())
         counts["cache"] = len(downloads)
-        parts.append("active " + ci_work(counts))
+        if state.get("operation") == "nix-planning":
+            parts.append("Nix planning and checking substituters")
+        else:
+            parts.append("outstanding Nix activities " + ci_work(counts))
+            if kinds:
+                parts.append(", ".join(f"{count} {kind}" for kind, count in sorted(collections.Counter(kinds.values()).items())))
         if state.get("operation") == "registering-roots":
             roots = state["rooting"]
             parts.append(f"protecting outputs {roots['completed']}/{roots['total']}")
@@ -575,6 +678,7 @@ def compact_progress(state):
             parts.append("checking outputs")
     if state.get("monitorError"):
         parts.append("progress query failed, see result.json")
+    parts.extend(nix_progress_details(state.get("nixProgress", {})))
     return " | ".join(parts)
 
 
@@ -590,7 +694,8 @@ def print_ci_failures(run, state, plan):
         extra = f", plus {len(failures) - 10} more" if len(failures) > 10 else ""
         print_ci("Failed or blocked " + ", ".join(failures[:10]) + extra)
     if state.get("error"):
-        print_ci("Smoke error " + " ".join(state["error"].split()))
+        scope = state.get("validationScope", "smoke").capitalize()
+        print_ci(scope + " error " + " ".join(state["error"].split()))
     print_ci(f"Details {run / 'nix.log'} and {run / 'result.json'}")
 
 
@@ -656,6 +761,7 @@ def main():
         launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
         scope = launch.add_mutually_exclusive_group()
         scope.add_argument("--smoke", action="store_true", help="select the standard installed-result plan explicitly")
+        scope.add_argument("--catalogue", action="store_true", help="build all package outputs and run installed checks across releases")
         scope.add_argument("--full", action="store_true", help="explicitly run the full catalogue, including upstream suites")
         launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
         launch.add_argument("--json", action="store_true", help="return the frozen run identity (all returns its terminal result)")

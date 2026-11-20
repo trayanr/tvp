@@ -17,6 +17,7 @@ final:
 let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
+  xorg = import ../../../lib/xorg-library-steps.nix { inherit lib context; };
   command =
     name:
     steps.command {
@@ -82,6 +83,36 @@ in
       mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
+    (xorg.indexArchives {
+      libraryDirectory = "lib";
+      archives = [
+        "libxcb-composite.a"
+        "libxcb-damage.a"
+        "libxcb-dbe.a"
+        "libxcb-dpms.a"
+        "libxcb-dri2.a"
+        "libxcb-dri3.a"
+        "libxcb-glx.a"
+        "libxcb-present.a"
+        "libxcb-randr.a"
+        "libxcb-record.a"
+        "libxcb-render.a"
+        "libxcb-res.a"
+        "libxcb-screensaver.a"
+        "libxcb-shape.a"
+        "libxcb-shm.a"
+        "libxcb-sync.a"
+        "libxcb-xf86dri.a"
+        "libxcb-xfixes.a"
+        "libxcb-xinerama.a"
+        "libxcb-xinput.a"
+        "libxcb-xkb.a"
+        "libxcb-xtest.a"
+        "libxcb-xv.a"
+        "libxcb-xvmc.a"
+        "libxcb.a"
+      ];
+    })
     (steps.split "libxcb.finalize")
     (outputs.copyArtifacts {
       outputs = final.outputs;

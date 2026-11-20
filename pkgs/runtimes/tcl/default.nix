@@ -32,23 +32,44 @@ let
       };
       releases = {
         "8.0.3" = "sha256-Vvii/yXpZlTYvlxAqmoYJKgeAyGO4hRKzmvMpzdwWKM=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-8.0.2.nix;
+        # Tar counts the leading "./" as a path component.
+        opts.sourceLayout.stripComponents = 2;
+        patches = [
+          {
+            file = ./patches/8.0.3-eopnotsupp-duplicate-case.patch;
+            reason = "Backport the upstream 8.0.5 guard for equal ENOTSUP and EOPNOTSUPP values.";
+          }
+        ];
+      };
+      releases = {
         "8.0.4" = "sha256-2imuap0hQ5D3OqirUbBmtBkttOntwIqXb0DD88MEp9c=";
       };
     }
     {
       def = {
         builder = ./build-8.0.2.nix;
+        opts.sourceLayout.stripComponents = 2;
       };
       releases = {
         "8.0.5" = "sha256-BAK+UakozBWRBJsC4yVlq8zk9MBvN7j+0PJXPuFrR54=";
         "8.1.1" = "sha256-jSx63Dr4/xeHz7hudAwkCR1HYRE+Cq6m4MBul67oUxQ=";
-        "8.2.0" = "sha256-EfF6smgolyYgDFYcBbI8x05X8GyFq73orEgIN07q32c=";
         "8.2.1" = "sha256-46y4bteQNgYNI1jHoSBSXQdNZEPzFVlZ2Vw5cu6KsIs=";
         "8.2.2" = "sha256-IGm5ftB/UvKiYfLztvBfHIl0q/mKELqGFXWcGcwuQbo=";
         "8.2.3" = "sha256-4NNU54SksSkkShPHnWeLSBfVEE5ctPnBPYdHCszGdPs=";
         "8.3.0" = "sha256-y2sjoQI9W3XwhpTevzsEmPpZZsNoVTlL9qqTUed9V4o=";
         "8.3.1" = "sha256-6+WXBwSvQyQ0HyHCcOXYrxznGPA3jSi6cjDQpr3wFG8=";
         "8.3.2" = "sha256-a2wY9mqdkCNPW6GxH+YrNo6h4l5XDwuQEmF9E7gx+Lo=";
+      };
+    }
+    {
+      def.builder = ./build-8.0.2.nix;
+      releases = {
+        "8.2.0" = "sha256-EfF6smgolyYgDFYcBbI8x05X8GyFq73orEgIN07q32c=";
         "8.3.3" = "sha256-M6jlEtI6ZhMYolu+BVyM1pwWpjunribnJBoGovr3mAg=";
         "8.3.4" = "sha256-Qovze0v+KgVr7o9EOK7GMKpvWFq+Pk6r1lXIB/0Ls0E=";
         "8.3.5" = "sha256-UT1Lgk2lUbSS2O5SmxDYdaLQYQxzlya8aM2etwaLoP4=";

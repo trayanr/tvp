@@ -108,6 +108,11 @@
           revision = self.rev or self.dirtyRev or null;
         };
 
+        catalogueTestPlans = tvp.cataloguePlan {
+          source = self.outPath;
+          revision = self.rev or self.dirtyRev or null;
+        };
+
         smokeTestPlans = tvp.lib.tests.compatibility.mkPlan {
           pkgs = testPkgs;
           batches = tvp.smokeTests.batches;

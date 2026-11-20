@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 source_helper, output_helper, shell, perl, readelf, patchelf = sys.argv[1:7]
-copy_script, suffix_script, artifact = sys.argv[7:]
+setup_script, suffix_script, artifact = sys.argv[7:]
 base = Path.cwd()
 
 def digest(root):
@@ -97,13 +97,12 @@ for case in cases:
     assert p.returncode and before==digest(root) and external.read_bytes()==outside, (case,p.stdout,p.stderr)
     print('PASS',case, file=sys.stderr)
 
-# Run the actual copy record, then all remaining finalization records against a
-# public alias fixture. Copying legitimately writes; relocation must reject the
-# copied tree before any further changes, regardless of later audit behavior.
+# Copy the artifact and drop the upstream checkpoint before installing the
+# fixture. Relocation must reject the alias before any further mutations.
 root = base / 'complete-suffix-alias'
 env = {**os.environ, 'out': str(root), 'TVP_ARTIFACT_ROOT': artifact,
        'TVP_SOURCE_ROOT': str(base)}
-subprocess.run([shell, '-euo', 'pipefail', copy_script], env=env, check=True)
+subprocess.run([shell, '-euo', 'pipefail', setup_script], env=env, check=True)
 (root/'bin').mkdir(exist_ok=True)
 (root/'share').mkdir(exist_ok=True)
 (root/'share/hidden').write_text('#!/bin/sh\n: ${SHELL:=/bin/sh}\n')

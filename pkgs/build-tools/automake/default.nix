@@ -266,6 +266,18 @@ let
         "1.19" = "sha256-4+LC46vzeJgTjbW2wdHcNckWDFl4vnlH0sdBcFJR1EU=";
       };
     }
+    {
+      def = {
+        builder = ./build-1.12.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          perl = tvp.packages.perl_5;
+        };
+        # Automake switched to GPLv3 or later in 1.20.
+        opts.license = pkgs.lib.licenses.gpl3Plus;
+      };
+      releases."1.20" = "sha256-9vNNrUy+OVcVdisHEPfFEeOb1c93fmuVgYzL7PdxQkg=";
+    }
   ];
 
   pname = "automake";

@@ -6,6 +6,7 @@
   src,
   version,
   buildFeatures ? { },
+  sourceLayout ? { },
   installedInterface ? { },
   patches ? [ ],
 }:
@@ -32,8 +33,14 @@ in
   inherit (tools) bash coreutils;
   buildFeatures = {
     cStandard = "gnu89";
+    # These generated Makefiles replace the CFLAGS selected by configure.
+    makeOverridesCFlags = lib.versionOlder final.version "8.3.4";
   }
   // buildFeatures;
+  sourceLayout = {
+    stripComponents = 1;
+  }
+  // sourceLayout;
   installedInterface = {
     reportedVersion = final.version;
     pkgConfigVersion = final.version;
@@ -62,6 +69,7 @@ in
     (steps.unpack {
       src = final.src;
       compression = "gzip";
+      inherit (final.sourceLayout) stripComponents;
     })
     {
       name = "tcl.patch";
@@ -92,11 +100,23 @@ in
       export CFLAGS="-g -O2 ${
         lib.optionalString (final.buildFeatures.cStandard != null) "-std=${final.buildFeatures.cStandard}"
       }"
-      ${final.bash}/bin/bash ./configure --prefix="$out"
+      ${final.bash}/bin/bash ./configure --prefix="$out"${
+        lib.optionalString
+          (final.buildFeatures.makeOverridesCFlags && final.buildFeatures.cStandard != null)
+          ''
+
+            grep -Eq '^CFLAGS[[:space:]]*=' Makefile
+            printf '\nCFLAGS += %s\n' "-std=${final.buildFeatures.cStandard}" >> Makefile
+          ''
+      }
     '')
     (command "build" "${make}")
     (command "install" ''
-      export LD_LIBRARY_PATH="$PWD"
+      export LD_LIBRARY_PATH="$PWD"${lib.optionalString final.buildFeatures.makeOverridesCFlags ''
+
+        # Historical install targets create children with plain mkdir.
+        mkdir -p "$out"/{bin,lib,include,man}
+      ''}
       ${make} install
       mkdir -p "$out/nix-support"
       ln -s "$(basename "$out"/bin/tclsh*)" "$out/bin/tclsh"

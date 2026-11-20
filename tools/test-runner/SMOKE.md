@@ -2,8 +2,8 @@
 
 Default testing answers whether the selected installed results work. Follow the
 repository [testing policy](../../TESTING.md): a couple of useful checks per
-package or representative builder, including every declared compatible PHP
-extension pair in standard testing and CI. Full upstream suites remain opt-in.
+package or representative builder. Catalogue mode covers every supported
+release and PHP extension pair. Full upstream suites remain opt-in.
 
 ```sh
 nix run .#test -- all
@@ -12,7 +12,7 @@ nix run .#test -- all --json
 nix run .#test -- status
 # Narrow within the smoke selection:
 nix run .#test -- all --only perl_5_30_3
-nix run .#test -- all --only php_8_5_12--redis_6_3_0
+nix run .#test -- all --catalogue --only php_8_5_12--redis_6_3_0
 ```
 
 `all` waits in the foreground and exits zero only if every selected check passes.
@@ -42,19 +42,23 @@ the stage counts identify the participating attempt they describe.
 
 The event log records when the runner observes Nix activity start and stop.
 Those timestamps provide duration data for future estimates.
+The heartbeat shows Nix planning before the first build or transfer, lookup
+and copy counts when Nix reports them, and outstanding work grouped by kind.
+Outstanding remote activities can exceed the builder's concurrent slots.
+Output-ready and passed counts still use Server store validity.
 
 The exact selection lives in [tests/smoke.nix](../../tests/smoke.nix). It reuses
 existing named test derivations: C/C++ for GCC4/9/13/16 full bases, Perl's version
 and compiled module loading, Ruby's version and standard library, Redis's own
 checks, FreeTDS's client library and configuration checks, and two checks for
-each declared compatible PHP/extension pair. The plan metadata reports the
+the newest compatible extension per family on the latest PHP. The plan metadata reports the
 actual counts for the selected checkout.
 No upstream regression test is included. Update this
 explicit selection when the changed package needs different representative checks;
 do not infer a policy from test names or silently include its whole suite.
 
-Standard CI runs the complete declared PHP extension matrix. Local work can use
-`--only` to select one pair. Missing cached outputs may require compilation of
+Catalogue validation runs the complete declared PHP extension matrix. Local work can use
+`--catalogue --only` to select one pair. Missing cached outputs may require compilation of
 historical PHP engines and extensions; valid builds and test results are reused.
 
 `smokeTests.<system>.metadata` describes the selection;
@@ -76,7 +80,7 @@ contain only the declared smoke leaves. With `--full`, a package job can include
 its entire upstream suite. `latest` also retains all selected packages' own tests;
 it does not mean a couple of checks.
 
-CI explicitly requests `--smoke` and posts `tvp/smoke`. The trusted harness rejects
-launch or terminal scope mismatches. Deploy the reviewed harness and matching tools
-revision, then change the protected context from `tvp/full` to `tvp/smoke` while
-keeping strict up-to-date and other branch protections. Never fabricate a full pass.
+The trusted Buildbot harness in `tvp-infra` pins this runner and checks each
+terminal receipt. In catalogue mode it uses `smokeTests.<system>.all` as the
+early check and reports `tvp/catalogue` after catalogue and NAS verification.
+Smoke-only deployments report `tvp/smoke`.

@@ -79,7 +79,10 @@ package.testContext.mkSuite {
   };
 }
 
-// import ./ordinary-contract.nix { inherit package; }
+// import ./ordinary-contract.nix {
+  inherit package;
+  inherit (pkgs) lib;
+}
 // pkgs.lib.optionalAttrs features.shared {
   line-edit-history = import ./ordinary-terminal.nix { inherit package; };
 }

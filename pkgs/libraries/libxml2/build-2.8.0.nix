@@ -9,6 +9,7 @@
   liblzma,
   cStandard ? "gnu89",
   cFlags ? [ ],
+  patches ? [ ],
   installedInterface ? {
     sonameMajor = "2";
   },
@@ -41,6 +42,7 @@ in
     liblzma
     cStandard
     cFlags
+    patches
     installedInterface
     doCheck
     ;
@@ -77,11 +79,31 @@ in
   productionPlan = steps.sequence [
     (steps.unpack { src = final.src; })
     (
-      (command "prepare" ''
-        ${tools.python}/bin/python3 -B ${./ordinary/prepare.py} ${tools.bash}/bin/bash
-      '')
+      (command "prepare" (
+        lib.optionalString (final.patches != [ ]) ''
+          # Patch the shipped generator input and output together without
+          # making Automake regenerate otherwise unchanged release files.
+          timestamps="$(mktemp -d)"
+          touch -r configure.ac "$timestamps/configure.ac"
+          touch -r configure "$timestamps/configure"
+          ${lib.concatMapStringsSep "\n" (
+            p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}"
+          ) final.patches}
+          touch -r "$timestamps/configure.ac" configure.ac
+          touch -r "$timestamps/configure" configure
+        ''
+        + ''
+          ${tools.python}/bin/python3 -B ${./ordinary/prepare.py} ${tools.bash}/bin/bash
+        ''
+      ))
       // {
-        tools = environment.tools ++ [ tools.python ];
+        tools =
+          environment.tools
+          ++ [ tools.python ]
+          ++ lib.optionals (final.patches != [ ]) [
+            tools.coreutils
+            tools.patch
+          ];
       }
     )
     (command "configure" ''
@@ -156,6 +178,22 @@ in
         cp ${./ordinary/finalize.py} finalize-helper/finalize.py
         cp ${./ordinary/elf.py} finalize-helper/elf.py
         ${tools.python}/bin/python3 -B finalize-helper/finalize.py "$out" "$TVP_ARTIFACT_ROOT" ${tools.binutils}/bin/readelf ${tools.patchelf}/bin/patchelf
+      '';
+    }
+    {
+      name = "libxml2.repair-static-pkg-config";
+      enabled = final.installedInterface.repairPrivateLzma or false;
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        pc="$out/lib/pkgconfig/libxml-2.0.pc"
+        test "$(grep -c '^Libs\.private:' "$pc")" = 1
+        test "$(grep -c '^Libs\.private:.*[[:space:]]-llzma\([[:space:]]\|$\)' "$pc" || true)" = 0
+        lzma_libs="$(sed -n 's/^LZMA_LIBS = //p' "$TVP_ARTIFACT_ROOT/${checkpoint}/source/Makefile")"
+        test "$lzma_libs" = ${lib.escapeShellArg "-L${lib.getDev final.liblzma}/lib -llzma"}
+        sed -i "/^Libs\\.private:/s|$| $lzma_libs|" "$pc"
       '';
     }
     (outputs.shebangs {

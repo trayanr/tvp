@@ -76,7 +76,7 @@ let
     else
       "build-1.12.nix";
   results = {
-    allSeventyFiveReleases = builtins.length versions == 75;
+    includesHistoricalInventory = builtins.length versions >= 75;
     threeActualEras = builtins.all (
       version: builtins.baseNameOf table.${version}.def.builder == expectedBuilder version
     ) versions;

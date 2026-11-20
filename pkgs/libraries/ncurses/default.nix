@@ -43,6 +43,8 @@ let
       def = {
         builder = ./build-owned-4.2.nix;
         deps.gnu-config = tvp.packages.gnu-config;
+        # The historical install rule marks the static C++ archive executable.
+        opts.normalizeCxxArchiveMode = true;
         patches = [
           {
             file = ./patches/const-user-getters-5.3.patch;
@@ -60,6 +62,7 @@ let
       def = {
         builder = ./build-owned-4.2.nix;
         deps.gnu-config = tvp.packages.gnu-config;
+        opts.normalizeCxxArchiveMode = true;
         patches = [
           {
             file = ./patches/const-user-getters-5.5.patch;
@@ -71,6 +74,21 @@ let
       releases = {
         "5.5" = "sha256-J6Y/OirJ0Twe2aCjPuRJfBmmtYELj5c452VKDhIiW5M=";
         "5.6" = "sha256-+crCsxaDo31lvDcRlZl1IZigaR5GLQ0aJSz5gV9XJNU=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-4.2.nix;
+        deps.gnu-config = tvp.packages.gnu-config;
+        patches = [
+          {
+            file = ./patches/const-user-getters-5.5.patch;
+            reason = "Preserve const UserData observational getters with the selected compiler; retain the existing source repair.";
+          }
+        ];
+        deps.perl = preparationPerl;
+      };
+      releases = {
         "5.7" = "sha256-Cpvepcfeje1ckyftZCkV8sw4B1PxLUrRIO99o+o0mPQ=";
       };
     }
