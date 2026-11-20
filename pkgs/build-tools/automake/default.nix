@@ -209,8 +209,20 @@ let
       releases = {
         "1.11" = "sha256-Karye+I1WQAqwAP1Oec8iFjO+tovHvPwW21E8oNAqsA=";
         "1.11.1" = "sha256-WxWdPA4KH4fecbaLy58aHEnp5xdJybcj8X4uHgKVx64=";
-        "1.11.2" = "sha256-T0bR+TgMijUGKAdQ9jDp/JFcsaQ1tyS+VrSZ0BY2hxg=";
       };
+    }
+    {
+      def = {
+        builder = ./build-1.6.nix;
+        deps = {
+          autoconf = tvp.packages.autoconf_2;
+          perl = tvp.packages.perl_5;
+        };
+        opts.buildFeatures.installAclocalDirectory = true;
+        # Preserve the verified checkpoint's Makefile prerequisite ordering.
+        opts.sourceLayout.checkpointNormalizer = ./checkpoint-1.11.2.py;
+      };
+      releases."1.11.2" = "sha256-T0bR+TgMijUGKAdQ9jDp/JFcsaQ1tyS+VrSZ0BY2hxg=";
     }
     {
       def = {
