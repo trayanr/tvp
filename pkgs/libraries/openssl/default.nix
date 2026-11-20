@@ -61,6 +61,12 @@ let
             cmake = false;
           };
         };
+        patches = [
+          {
+            file = ./ordinary/0.9.8-build-order.patch;
+            reason = "Before 0.9.8j, the archive submakes re-enter top-level shared linking. Separate the archive and shared targets and order writers to libcrypto.a.";
+          }
+        ];
       };
       releases = {
         "0.9.8" = "sha256-wRVLimpFFodA7MnzjUbfrUDrJ65Rq9doM6GNTJpktR0=";
@@ -73,6 +79,37 @@ let
         "0.9.8g" = "sha256-DiaIaEXelXFsnxubdcDgbp1AddK9yeEVBOql9+6QHPA=";
         "0.9.8h" = "sha256-Ik4co67tqKzHLlxIs0hDkEudWFqq201aFVJMJfbGoc4=";
         "0.9.8i" = "sha256-6Pxfz7cV/+klspgqqcooeDKpNJXX//A/F/ZEnwcycYw=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.9.7.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+        opts = {
+          hardeningDisable = [ "format" ];
+          installedInterface = {
+            sha256 = true;
+            pbkdf2 = false;
+            providers = false;
+            engines = true;
+            engineModules = true;
+            splitPkgConfig = true;
+            rehash = true;
+            tlsMethod = false;
+            modernCli = false;
+            cmake = false;
+          };
+        };
+      };
+      releases = {
         "0.9.8j" = "sha256-cTEkIELb1jH72DQ29CrqF3Xnwy9Yf6StpaAd9MOujos=";
       };
     }

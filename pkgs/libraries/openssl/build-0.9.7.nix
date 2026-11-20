@@ -17,6 +17,7 @@
   compileFlags ? [ ],
   testPatches ? [ ],
   testCompileFlags ? [ ],
+  patches ? [ ],
   upstreamExpected ? "OpenSSL upstream raw result accepted",
   hardeningDisable ? [ ],
   forceGccName ? false,
@@ -122,6 +123,7 @@ in
     compileFlags
     testPatches
     testCompileFlags
+    patches
     upstreamExpected
     hardeningDisable
     forceGccName
@@ -255,7 +257,7 @@ in
       tools.diffutils
       tools.findutils
       tools.python
-    ];
+    ] ++ lib.optional (final.patches != [ ]) tools.patch;
     libraries = [ ];
   };
   dependencyProviders = {
@@ -298,9 +300,12 @@ in
 
           compression = "gzip";
         })
-        (command "prepare" ''
-          ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
-        '')
+        (command "prepare" (
+          lib.concatMapStrings (p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}\n") final.patches
+          + ''
+            ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
+          ''
+        ))
         (command "configure" ''
           export PERL=${final.buildPerl}/bin/perl HASHBANGPERL=${final.buildPerl}/bin/perl
           ${lib.optionalString final.forceGccName "export CC=gcc"}
