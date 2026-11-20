@@ -24,6 +24,9 @@ def make_config(settings, source):
         return (secrets / name).read_text().strip()
     github_enabled = settings.get("github_enabled", True)
     github_token = secret("github-token") if github_enabled else None
+    publication = settings.get("catalogue_publication")
+    catalogue = publication is not None
+    status_context = "tvp/catalogue" if catalogue else STATUS_CONTEXT
     allowed = lambda pr: eligible(pr, repository)
     directory = util.Interpolate("runs/%(prop:buildnumber)s")
     factory = util.BuildFactory()
@@ -46,9 +49,9 @@ def make_config(settings, source):
                    "--base", props.getProperty("tvp_base", ""),
                    "--target-branch", target_branch,
                    "--tools-ref", tools_ref, "--compare", "compare.py"]
-        return command
+        return command + (["--catalogue"] if catalogue else [])
     factory.addStep(steps.SetPropertyFromCommand(
-        name="smoke-catalogue", workdir=directory,
+        name="validate-catalogue" if catalogue else "smoke-catalogue", workdir=directory,
         command=validation_command,
         extract_fn=result_properties, haltOnFailure=True,
         timeout=None, maxTime=None, sigtermTime=30,
@@ -65,20 +68,55 @@ def make_config(settings, source):
         masterdest=util.Interpolate("artifacts/%(prop:buildnumber)s"),
         alwaysRun=True, flunkOnFailure=True,
     ))
+    if catalogue:
+        publisher = Path(publication["script"])
+        evidence_root = Path(publication["evidence_root"])
+        signing_key = Path(publication["signing_key"])
+        if not all(path.is_absolute() for path in (publisher, evidence_root, signing_key)):
+            raise ValueError("Catalogue publication requires absolute controller-side paths")
+
+        @util.renderer
+        def publish_command(props):
+            number = str(props.getProperty("buildnumber"))
+            if not number.isdecimal():
+                raise ValueError("Catalogue publication requires a Buildbot build number")
+            head = props.getProperty("revision")
+            base = props.getProperty("tvp_base") or head
+            evidence = evidence_root / number
+            return [
+                "python3", str(publisher), "--evidence", str(evidence),
+                "--head", head, "--base", base, "--repository", repository,
+                "--cache-uri", publication["cache_uri"],
+                "--signing-key", str(signing_key),
+                "--cache-public-key", publication["cache_public_key"],
+                "--receipt", str(evidence / "nas-publication.json"),
+            ]
+
+        factory.addStep(steps.MasterShellCommand(
+            name="publish-and-verify-nas", command=publish_command,
+            haltOnFailure=True, flunkOnFailure=True,
+        ))
+    change_source = []
+    if github_enabled:
+        pull_requests = LabelledPullRequests(
+            owner=owner, repo=repo, token=github_token,
+            pullrequest_filter=allowed, pollInterval=60, pollAtLaunch=True,
+        )
+        pull_requests.status_context = status_context
+        change_source = [
+            pull_requests,
+            changes.GitPoller(repourl=f"https://github.com/{repository}.git",
+                              branches=[settings.get("branch", "master")],
+                              category="tvp-master", project=repository,
+                              pollInterval=60, pollAtLaunch=True),
+        ]
     return {
         "title": "TVP", "titleURL": f"https://github.com/{repository}",
         "buildbotURL": settings.get("dashboard_url", "http://localhost:8010/"),
         "db": {"db_url": "sqlite:///state.sqlite"},
         "protocols": {"pb": {"port": "tcp:9989:interface=127.0.0.1"}},
         "workers": [worker.Worker("tvp-linux", secret("worker-password"), max_builds=1)],
-        "change_source": [
-            LabelledPullRequests(owner=owner, repo=repo, token=github_token,
-                                 pullrequest_filter=allowed, pollInterval=60, pollAtLaunch=True),
-            changes.GitPoller(repourl=f"https://github.com/{repository}.git",
-                              branches=[settings.get("branch", "master")],
-                              category="tvp-master", project=repository,
-                              pollInterval=60, pollAtLaunch=True),
-        ] if github_enabled else [],
+        "change_source": change_source,
         "schedulers": [schedulers.AnyBranchScheduler(
             name=CATALOGUE, reason=CATALOGUE_REASON, treeStableTimer=None, builderNames=["tvp-full"],
             change_filter=util.ChangeFilter(category=["tvp-pr", "tvp-master"]),
@@ -96,10 +134,12 @@ def make_config(settings, source):
         "builders": [util.BuilderConfig(name="tvp-full", workernames=["tvp-linux"],
                                          factory=factory, collapseRequests=supersedes_queued_pr)],
         "services": [reporters.GitHubStatusPush(
-            token=github_token, context=STATUS_CONTEXT,
+            token=github_token, context=status_context,
             generators=[BuildRequestGenerator(formatter=MessageFormatterRenderable("Queued on local TVP builder")),
                         BuildStartEndStatusGenerator(
-                            start_formatter=MessageFormatterRenderable("Checking package smoke tests locally"),
+                            start_formatter=MessageFormatterRenderable(
+                                "Validating catalogue and NAS publication" if catalogue else "Checking package smoke tests locally"
+                            ),
                             end_formatter=MessageFormatterRenderable(util.Property("ci_summary", default="Validation stopped before its final report")),
                         )],
         )] if github_enabled else [],

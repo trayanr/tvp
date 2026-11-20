@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 
-from progress import members, observe, observed_paths, production_stages, root_path, stage_counts, valid_paths
+from progress import members, observe, observed_paths, production_paths, production_stages, root_path, stage_counts, valid_paths
 from attempts import combine, register_retry
 
 
@@ -250,6 +250,10 @@ def work(run, global_fd, lease_fd):
         observe(plan, state, run, final=True, protected=protected, on_roots=rooting, stages=stages)
         state.pop("monitorError", None)
         all_passed = all(job["status"] == "passed" for job in state["jobs"].values())
+        if state.get("validationScope") == "catalogue" and state["full"] and code == 0:
+            expected = set(plan["aggregateOutputs"])
+            if valid_paths(expected) != expected:
+                raise RuntimeError("Catalogue aggregate output is missing")
         state.update(phase="cancelled" if stopped.is_set() else "passed" if code == 0 and all_passed else "failed",
                      returnCode=code, finishedAt=time.time(), active={})
     except Exception as error:
@@ -286,9 +290,9 @@ def start(args, return_run=False):
         (run / "roots").mkdir(parents=True)
         with (run / "worker.lock").open("a") as lease:
             fcntl.flock(lease, fcntl.LOCK_EX)
-            scope = "full" if args.full else "smoke"
+            scope = validation_scope(args)
             state = {"phase": "preparing", "startedAt": time.time(), "maxJobs": args.jobs,
-                     "cores": args.cores, "jobs": {}, "full": args.full and not bool(args.only),
+                     "cores": args.cores, "jobs": {}, "full": scope != "smoke" and not bool(args.only),
                      "validationScope": scope}
             if args.owner_lock:
                 state["ownerLock"] = str(args.owner_lock)
@@ -304,7 +308,8 @@ def start(args, return_run=False):
                 frozen_plan = getattr(args, "frozen_plan", None)
                 with (run / "prepare.log").open("w") as log:
                     if frozen_plan is None:
-                        plan_attribute = "testPlans" if args.full else "smokeTestPlans"
+                        plan_attribute = {"full": "testPlans", "catalogue": "catalogueTestPlans",
+                                          "smoke": "smokeTestPlans"}[scope]
                         command = ["nix", "build", "--show-trace", "--no-write-lock-file", "--out-link", str(run / "plan"),
                                    args.flake + "#" + plan_attribute + "." + args.system]
                         subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
@@ -314,6 +319,12 @@ def start(args, return_run=False):
                 plan = json.loads((run / "plan").read_text())
                 if plan.get("schema") != 1:
                     raise RuntimeError("Unsupported test plan schema")
+                if scope == "catalogue":
+                    if plan.get("validationScope") != scope or plan.get("system") != args.system:
+                        raise RuntimeError("Catalogue plan has a different scope or system")
+                    if not plan.get("aggregateOutputs") or any(not job.get("productions") or not job.get("tests")
+                                                              for job in plan["jobs"]):
+                        raise RuntimeError("Catalogue plan is missing production output or installed check metadata")
                 if frozen_plan is not None and plan.get("system") != args.system:
                     raise RuntimeError("Frozen CI smoke plan has a different system")
                 names = {job["name"] for job in plan["jobs"]}
@@ -332,7 +343,15 @@ def start(args, return_run=False):
                     state["stageCounts"] = stage_counts(stages, present, state)
                     for counts in state["stageCounts"].values():
                         counts["cachedAtStart"] = counts["ready"]
-                state["jobs"] = {job["name"]: {"status": "pending", "cachedAtStart": all(p in present for test in (job.get("tests") or [job]) for p in test["outputs"])} for job in jobs}
+                state["jobs"] = {
+                    job["name"]: {
+                        "status": "pending",
+                        "cachedAtStart": production_paths(job) <= present and all(
+                            p in present for test in (job.get("tests") or [job]) for p in test["outputs"]
+                        ),
+                    }
+                    for job in jobs
+                }
                 state["phase"] = "starting"
                 write_json(run / "state.json", state)
                 if args.retry_of:
@@ -362,6 +381,12 @@ def start(args, return_run=False):
     return 0
 
 
+def validation_scope(args):
+    if getattr(args, "catalogue", False):
+        return "catalogue"
+    return "full" if args.full else "smoke"
+
+
 def run_all(args):
     directory = args.state_dir.resolve()
     directory.mkdir(parents=True, exist_ok=True)
@@ -370,7 +395,8 @@ def run_all(args):
     if parent_owner and not lease_held(parent_owner):
         raise RuntimeError("The controlling process must hold --owner-lock before starting")
     frozen_plan = os.environ.get("TVP_CI_FROZEN_SMOKE_PLAN")
-    if frozen_plan and (not parent_owner or args.full or not Path(frozen_plan).is_absolute()):
+    scope = validation_scope(args)
+    if frozen_plan and (not parent_owner or scope != "smoke" or not Path(frozen_plan).is_absolute()):
         raise RuntimeError("A frozen CI smoke plan requires an absolute path, smoke scope and a controlling process")
     # Reuse the existing worker. Releasing this lock also stops it if the
     # foreground command is killed before it can return a result.
@@ -382,15 +408,15 @@ def run_all(args):
         compact = os.environ.get("TVP_CI_PROGRESS") == "1" and not args.json
         preparing = time.monotonic()
         if compact:
-            print_ci("Smoke preparation started")
+            print_ci(f"{scope.capitalize()} preparation started")
         try:
             run = start(launch, return_run=True)
         except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
             if compact:
-                print_ci(f"Smoke preparation failed after {time.monotonic() - preparing:.1f}s")
+                print_ci(f"{scope.capitalize()} preparation failed after {time.monotonic() - preparing:.1f}s")
             raise
         if compact:
-            print_ci(f"Smoke preparation finished in {time.monotonic() - preparing:.1f}s")
+            print_ci(f"{scope.capitalize()} preparation finished in {time.monotonic() - preparing:.1f}s")
         interrupted = None
 
         def stop(signum, _frame):
@@ -590,7 +616,8 @@ def print_ci_failures(run, state, plan):
         extra = f", plus {len(failures) - 10} more" if len(failures) > 10 else ""
         print_ci("Failed or blocked " + ", ".join(failures[:10]) + extra)
     if state.get("error"):
-        print_ci("Smoke error " + " ".join(state["error"].split()))
+        scope = state.get("validationScope", "smoke").capitalize()
+        print_ci(scope + " error " + " ".join(state["error"].split()))
     print_ci(f"Details {run / 'nix.log'} and {run / 'result.json'}")
 
 
@@ -656,6 +683,7 @@ def main():
         launch.add_argument("--only", action="append", help="run only this exact suite name (repeatable)")
         scope = launch.add_mutually_exclusive_group()
         scope.add_argument("--smoke", action="store_true", help="select the standard installed-result plan explicitly")
+        scope.add_argument("--catalogue", action="store_true", help="build all package outputs and run installed checks across releases")
         scope.add_argument("--full", action="store_true", help="explicitly run the full catalogue, including upstream suites")
         launch.add_argument("--retry-of", type=Path, help="link this run's results to an earlier run")
         launch.add_argument("--json", action="store_true", help="return the frozen run identity (all returns its terminal result)")

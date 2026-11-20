@@ -10,6 +10,7 @@ from policy import SHA, STATUS_CONTEXT
 class LabelledPullRequests(GitHubPullrequestPoller):
     # Keep the deployed poller's durable-state identity across policy changes.
     db_class_name = "TVPLabelledPullRequestsV1"
+    status_context = STATUS_CONTEXT
 
     @defer.inlineCallbacks
     def _getPulls(self):
@@ -53,6 +54,8 @@ class LabelledPullRequests(GitHubPullrequestPoller):
                 targets[branch] = ref["object"]["sha"]
             base = targets[branch]
             identity = [head, base, branch]
+            if self.status_context != STATUS_CONTEXT:
+                identity.append(self.status_context)
             previous = yield self._getCurrentRev(number)
             if (isinstance(previous, dict) and previous.get("identity") == identity
                     and previous.get("decision") in ("admitted", "blocked")):
@@ -73,14 +76,14 @@ class LabelledPullRequests(GitHubPullrequestPoller):
                 raise ValueError("Invalid GitHub compare response")
             if comparison["status"] in ("behind", "diverged"):
                 response = yield self._http.post(f"{prefix}/statuses/{head}", json={
-                    "state": "pending", "context": STATUS_CONTEXT,
+                    "state": "pending", "context": self.status_context,
                     "description": "Rebase or merge the current target branch into this PR before testing.",
                 })
                 if response.code != 201:
                     raise RuntimeError(f"GitHub blocked status failed: HTTP {response.code}")
                 status = yield response.json()
                 if (not isinstance(status, dict) or status.get("state") != "pending"
-                        or status.get("context") != STATUS_CONTEXT):
+                        or status.get("context") != self.status_context):
                     raise ValueError("Invalid GitHub blocked status response")
                 yield self._setCurrentRev(number, {"identity": identity, "decision": "blocked"})
                 continue

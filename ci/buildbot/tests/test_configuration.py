@@ -38,6 +38,26 @@ class Deployment(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 make_config(self.settings(temporary, True), Path(__file__).resolve().parents[3])
 
+    def test_catalogue_publication_is_a_required_controller_step_after_upload(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            settings = self.settings(temporary, False)
+            settings['catalogue_publication'] = {
+                'script': '/trusted/publish_catalogue.py', 'evidence_root': '/srv/evidence',
+                'signing_key': '/private/cache.key', 'cache_uri': 'file:///srv/cache',
+                'cache_public_key': 'cache:test',
+            }
+            config = make_config(settings, Path(__file__).resolve().parents[3])
+            steps = config['builders'][0].factory.steps
+            self.assertEqual([s.kwargs['name'] for s in steps][-3:],
+                             ['validate-catalogue', 'collect-evidence', 'publish-and-verify-nas'])
+            properties = {'revision': 'b' * 40, 'buildnumber': 51}
+            props = SimpleNamespace(getProperty=lambda key, default=None: properties.get(key, default))
+            self.assertIn('--catalogue', steps[-3].kwargs['command'].fn(props))
+            self.assertTrue(steps[-1].kwargs['flunkOnFailure'])
+            command = steps[-1].kwargs['command'].fn(props)
+            self.assertEqual(command[command.index('--base') + 1], 'b' * 40)
+            self.assertEqual(command[command.index('--evidence') + 1], '/srv/evidence/51')
+
     def test_manual_build_requires_an_exact_commit_in_the_configured_repository(self):
         with tempfile.TemporaryDirectory() as temporary:
             config = make_config(self.settings(temporary, False), Path(__file__).resolve().parents[3])

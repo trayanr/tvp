@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from changes import LabelledPullRequests
-from policy import eligible
+from policy import STATUS_CONTEXT, eligible
 
 
 HEAD, OLD_BASE, BASE, NEXT_BASE = (c * 40 for c in 'abcd')
@@ -54,14 +54,14 @@ class HTTP:
         return self.request('POST', path, **kwargs)
 
 
-def source(state, emitted, http, fail=False):
+def source(state, emitted, http, fail=False, status_context=STATUS_CONTEXT):
     def emit(**change):
         if fail:
             raise RuntimeError("temporary DB failure")
         emitted.append(change)
         return defer.succeed(None)
     return SimpleNamespace(
-        owner="trayanr", repo="tvp", _http=http,
+        owner="trayanr", repo="tvp", _http=http, status_context=status_context,
         pullrequest_filter=lambda pr: eligible(pr, "trayanr/tvp"),
         _getCurrentRev=lambda number: defer.succeed(deepcopy(state.get(number))),
         _setCurrentRev=lambda number, revision: state.update({number: deepcopy(revision)}),
@@ -74,6 +74,15 @@ def poll(state, emitted, http, pulls=None, **kwargs):
 
 
 class Delivery(TestCase):
+    @defer.inlineCallbacks
+    def test_catalogue_cutover_requeues_an_already_admitted_head(self):
+        state, emitted, http = {}, [], HTTP()
+        yield poll(state, emitted, http)
+        yield poll(state, emitted, http, status_context="tvp/catalogue")
+        yield poll(state, emitted, http, status_context="tvp/catalogue")
+        self.assertEqual(len(emitted), 2)
+        self.assertEqual(state[1]["identity"], [HEAD, BASE, "master", "tvp/catalogue"])
+
     @defer.inlineCallbacks
     def test_restart_and_repeated_polls_do_not_repeat_builds(self):
         state, emitted, http = {}, [], HTTP()

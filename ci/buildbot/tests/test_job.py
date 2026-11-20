@@ -33,7 +33,7 @@ def write_snapshot(argv):
 
 class FrozenValidation(unittest.TestCase):
     def run_validation(self, phase, exit_code, base="", scope="smoke", full=False,
-                       receipt_mode="normal", receipt_changes=None):
+                       receipt_mode="normal", receipt_changes=None, catalogue=False):
         commands = []
         def output(argv, **kwargs):
             commands.append(argv)
@@ -52,6 +52,8 @@ class FrozenValidation(unittest.TestCase):
             commands.append(argv)
             if argv[:2] == ["nix", "build"] and "--expr" in argv:
                 write_snapshot(argv)
+            if argv[-1].endswith("#smokeTests.x86_64-linux.all"):
+                Path(argv[argv.index("--out-link") + 1]).touch()
             if argv[:3] == ["nix", "flake", "check"]:
                 kwargs["stdout"].write(b"flake evaluation output\n")
                 self.assertEqual(kwargs["stderr"], subprocess.STDOUT)
@@ -65,6 +67,10 @@ class FrozenValidation(unittest.TestCase):
                 run_path = validation / "runs/run-17"
                 run_path.mkdir(parents=True)
                 (validation / "latest").symlink_to(run_path)
+                if catalogue:
+                    (run_path / "plan.json").write_text(json.dumps({
+                        "revision": "a" * 40, "system": "x86_64-linux", "validationScope": scope,
+                    }))
                 receipt = {
                     "run": str(run_path), "runner": str(run_path / "runner/bin/tvp-test"),
                     "phase": phase, "counts": {"passed": 1}, "reportedFailedDerivations": [],
@@ -77,6 +83,7 @@ class FrozenValidation(unittest.TestCase):
                 return subprocess.CompletedProcess(argv, exit_code)
             return subprocess.CompletedProcess(argv, 0)
         args = SimpleNamespace(repository="trayanr/tvp", head="a" * 40, base=base, target_branch="master", tools_ref="github:trayanr/tvp/" + "b" * 40, compare="compare.py")
+        args.catalogue = catalogue
         with directory(), patch.object(job, "checkout"), patch.object(job, "execute", side_effect=run), \
              patch.object(job.subprocess, "check_output", side_effect=output), \
              patch.object(job.subprocess, "run", side_effect=run):
@@ -115,6 +122,20 @@ class FrozenValidation(unittest.TestCase):
     def test_smoke_ci_rejects_a_full_scope_result(self):
         with self.assertRaisesRegex(ValueError, "requested smoke plan"):
             self.run_validation("passed", 0, scope="full", full=True)
+
+    def test_catalogue_runs_direct_smoke_before_evaluating_catalogue(self):
+        code, commands = self.run_validation("passed", 0, scope="catalogue", full=True, catalogue=True)
+        self.assertEqual(code, 0)
+        smoke = next(c for c in commands if c[-1].endswith("#smokeTests.x86_64-linux.all"))
+        catalogue = next(c for c in commands if "--catalogue" in c)
+        graph = next(c for c in commands if c[-1].endswith("#graph"))
+        self.assertLess(commands.index(smoke), commands.index(graph))
+        self.assertLess(commands.index(graph), commands.index(catalogue))
+        self.assertFalse(any("--expr" in command for command in commands))
+
+    def test_catalogue_rejects_a_smoke_scope_receipt(self):
+        with self.assertRaisesRegex(ValueError, "requested catalogue plan"):
+            self.run_validation("passed", 0, catalogue=True)
 
     def test_success_requires_the_current_run_receipt(self):
         for mode in ["missing", "malformed"]:

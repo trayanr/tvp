@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trusted worker harness: exact PR head, current target gate, frozen smoke checks."""
+"""Validate the exact PR head against its admitted target."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -209,6 +209,16 @@ def read_result(validation):
     return result
 
 
+def run_smoke(candidate, evidence):
+    link = evidence.parent / "smoke-result"
+    with timed("Smoke checks"):
+        execute([
+            "nix", "build", "--show-trace", "--no-write-lock-file", "--print-build-logs",
+            "--out-link", str(link), f"{candidate}#smokeTests.{SYSTEM}.all",
+        ])
+    (evidence / "smoke.json").write_text(json.dumps({"output": str(link.resolve(strict=True))}) + "\n")
+
+
 def validate_owned(args, owner_path):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
         raise ValueError("Invalid GitHub repository")
@@ -227,13 +237,21 @@ def validate_owned(args, owner_path):
     identity = {"repository": args.repository, "head": args.head, "base": base_sha, "merge": args.head}
     identity["nixVersion"] = nix_version
     (evidence / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
+    catalogue = getattr(args, "catalogue", False)
+    if catalogue:
+        run_smoke(candidate, evidence)
     if args.base:
         with timed("Base graph evaluation"), (evidence / "base-graph.json").open("w") as output:
             execute(["nix", "eval", "--show-trace", "--json", f"{base}#graph"], stdout=output)
     # Normal evaluation registers generated source files which a fresh
     # store's read-only flake check cannot create.
-    with timed("Candidate graph and smoke plan evaluation"):
-        plan = candidate_snapshot(candidate, args.head, evidence)
+    plan = None
+    if catalogue:
+        with timed("Candidate graph evaluation"), (evidence / "candidate-graph.json").open("w") as output:
+            execute(["nix", "eval", "--show-trace", "--json", f"{candidate}#graph"], stdout=output)
+    else:
+        with timed("Candidate graph and smoke plan evaluation"):
+            plan = candidate_snapshot(candidate, args.head, evidence)
     if args.base:
         with timed("Graph comparison"):
             difference = json.loads(subprocess.check_output([
@@ -260,9 +278,10 @@ def validate_owned(args, owner_path):
     runner_env.pop("TVP_CI_FROZEN_SMOKE_PLAN", None)
     if plan is not None:
         runner_env["TVP_CI_FROZEN_SMOKE_PLAN"] = str(plan)
-    with timed("Smoke runner including preparation"):
+    scope = "catalogue" if catalogue else "smoke"
+    with timed(f"{scope.capitalize()} runner including preparation"):
         completed = subprocess.run([
-            "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", "--smoke", "--flake", str(candidate),
+            "nix", "run", "--show-trace", args.tools_ref + "#test", "--", "all", f"--{scope}", "--flake", str(candidate),
             "--system", SYSTEM, "--state-dir", str(validation),
             "--owner-lock", str(owner_path),
         ], env=runner_env)
@@ -274,8 +293,14 @@ def validate_owned(args, owner_path):
     (evidence / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
     result["ciIdentity"] = identity
     result["workerRun"] = str(run)
-    if result.get("validationScope") != "smoke" or result.get("full") is not False:
-        raise ValueError("CI result scope differs from the requested smoke plan")
+    if result.get("validationScope") != scope or result.get("full") is not catalogue:
+        raise ValueError(f"CI result scope differs from the requested {scope} plan")
+    if catalogue:
+        manifest = json.loads((run / "plan.json").read_text())
+        if (manifest.get("revision"), manifest.get("system"), manifest.get("validationScope")) != (
+            args.head, SYSTEM, scope
+        ):
+            raise ValueError("Catalogue manifest differs from the scheduled commit, system or scope")
     (evidence / "status.json").write_text(json.dumps(result, indent=2) + "\n")
     for name in ["nix.log", "events.jsonl", "prepare.log", "worker.log", "plan.json", "command.json", "result.json"]:
         if (run / name).is_file():
@@ -318,6 +343,7 @@ def main():
     parser.add_argument("--target-branch", default="master")
     parser.add_argument("--tools-ref", required=True)
     parser.add_argument("--compare", required=True)
+    parser.add_argument("--catalogue", action="store_true")
     args = parser.parse_args()
     try:
         result, code = validate(args)
