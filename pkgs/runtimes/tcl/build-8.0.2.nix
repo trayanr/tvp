@@ -6,6 +6,7 @@
   src,
   version,
   buildFeatures ? { },
+  sourceLayout ? { },
   installedInterface ? { },
   patches ? [ ],
 }:
@@ -36,6 +37,10 @@ in
     makeOverridesCFlags = lib.versionOlder final.version "8.3.4";
   }
   // buildFeatures;
+  sourceLayout = {
+    stripComponents = 1;
+  }
+  // sourceLayout;
   installedInterface = {
     reportedVersion = final.version;
     pkgConfigVersion = final.version;
@@ -64,6 +69,7 @@ in
     (steps.unpack {
       src = final.src;
       compression = "gzip";
+      inherit (final.sourceLayout) stripComponents;
     })
     {
       name = "tcl.patch";
