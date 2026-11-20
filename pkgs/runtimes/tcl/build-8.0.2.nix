@@ -104,7 +104,11 @@ in
     '')
     (command "build" "${make}")
     (command "install" ''
-      export LD_LIBRARY_PATH="$PWD"
+      export LD_LIBRARY_PATH="$PWD"${lib.optionalString final.buildFeatures.makeOverridesCFlags ''
+
+        # Historical install targets create children with plain mkdir.
+        mkdir -p "$out"/{bin,lib,include,man}
+      ''}
       ${make} install
       mkdir -p "$out/nix-support"
       ln -s "$(basename "$out"/bin/tclsh*)" "$out/bin/tclsh"

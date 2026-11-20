@@ -189,6 +189,10 @@ in
             }
           )
         }
+        ${lib.optionalString (final.installedInterface.repairPthreadLibs or false) ''
+          ${tools.python}/bin/python3 -B ${./repair-pkgconfig.py} \
+            "$TVP_ARTIFACT_ROOT/${checkpoint}/source/src/liblzma/Makefile" "$out/lib/pkgconfig/liblzma.pc"
+        ''}
         ${lib.optionalString final.buildFeatures.boundLess ''${tools.python}/bin/python3 -B ${./bind-less.py} "$out" ${final.runtime.less}/bin/less''}
       '';
     }

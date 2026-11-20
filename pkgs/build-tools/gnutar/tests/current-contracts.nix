@@ -7,17 +7,22 @@
 }:
 let
   s = package.specification;
-  copy =
-    (builtins.head (builtins.filter (step: step.name == "output.copy-artifacts") package.buildSteps))
-    .run;
+  setup = builtins.concatStringsSep "\n" (
+    map (step: step.run) (
+      builtins.filter (step: builtins.elem step.name [
+        "output.copy-artifacts"
+        "gnutar.drop-build-tree"
+      ]) package.buildSteps
+    )
+  );
   suffix =
     (builtins.foldl'
       (acc: step: {
-        copied = acc.copied || step.name == "output.copy-artifacts";
-        steps = acc.steps ++ (if acc.copied then [ step ] else [ ]);
+        prepared = acc.prepared || step.name == "gnutar.drop-build-tree";
+        steps = acc.steps ++ (if acc.prepared then [ step ] else [ ]);
       })
       {
-        copied = false;
+        prepared = false;
         steps = [ ];
       }
       package.buildSteps
@@ -132,16 +137,16 @@ context.mkSuite {
     };
     confinement = {
       script = ''
-        cat > copy.sh <<'TVP_COPY'
-        ${copy}
-        TVP_COPY
+        cat > setup.sh <<'TVP_SETUP'
+        ${setup}
+        TVP_SETUP
         cat > suffix.sh <<'TVP_SUFFIX'
         ${commands}
         TVP_SUFFIX
         ${s.python}/bin/python3 -B ${../ordinary/safety-tests.py} \
           ${../ordinary/source.py} ${../ordinary/output.py} \
           ${s.bash}/bin/bash ${s.perl}/bin/perl ${s.binutils}/bin/readelf ${s.patchelf}/bin/patchelf \
-          "$PWD/copy.sh" "$PWD/suffix.sh" ${package.artifact}
+          "$PWD/setup.sh" "$PWD/suffix.sh" ${package.artifact}
       '';
       expected = "ok";
     };
