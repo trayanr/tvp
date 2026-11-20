@@ -16,24 +16,22 @@ let
           } tvp.bases.gcc_16.full.compiler.cc;
 
         };
-        opts = {
-          sourceLayout = {
-            url = "https://dl.google.com/android/cli/1.1.16717390/linux_x86_64/android-cli";
-          };
-        };
         blob = {
           reason = "Pinned Android CLI executable; replaces the command-line tools launcher which otherwise downloads an unpinned latest binary.";
           needs = "A source build of Android CLI and its dependency graph.";
           blocked.package = "android-cli-from-source";
         };
       };
-      releases."1.1.16717390" = "sha256-s07Quu7/oqruJyDYJJG5dYNWluLlaEBEkHi+yIVDZWQ=";
+      releases = {
+        "1.1.16717390" = "sha256-s07Quu7/oqruJyDYJJG5dYNWluLlaEBEkHi+yIVDZWQ=";
+        "1.1.16919734" = "sha256-mAN4Td8k1GmZKe7OUZ/6iwZq+pork71YdJs8bSyq7uw=";
+      };
     }
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
-      url = version: versionTable.${version}.def.opts.sourceLayout.url;
+      url = version: "https://dl.google.com/android/cli/${version}/linux_x86_64/android-cli";
       discovery = {
         type = "directory-index";
         url = "https://developer.android.com/tools/agents/android-cli/release-notes";
