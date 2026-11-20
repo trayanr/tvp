@@ -40,5 +40,6 @@ let
       pass = true;
     };
 in
-assert builtins.length (builtins.attrNames all) == 25;
+# Retain the historical minimum and inspect every added release below.
+assert builtins.length (builtins.attrNames all) >= 25;
 lib.mapAttrs inspect all

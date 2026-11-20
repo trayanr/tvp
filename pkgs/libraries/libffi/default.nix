@@ -154,23 +154,34 @@ let
       };
       releases = {
         "3.8.0" = "sha256-faPi2aFx6woDj1kuytP/K7JVDzSW2Hs7Ka0M9EMMDbQ=";
+        "3.8.1" = "sha256-geh5wJTMXsMYbEhRDGOFrGs+hmGS6Lxxo1JFcDdX7kA=";
       };
     }
   ];
   pname = "libffi";
+  sourcewareUrl = version: "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz";
+  releaseUrl =
+    version: "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz";
+  sourceUrls =
+    version:
+    # Upstream published the 3.8.1 tarball on GitHub only.
+    if version == "3.8.1" then
+      [ (releaseUrl version) ]
+    else
+      [
+        (sourcewareUrl version)
+        (releaseUrl version)
+      ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
 
     source = tvp.lib.sources.archive {
-      url = version: "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz";
+      url = version: builtins.head (sourceUrls version);
       fetch =
         { version, sha256 }:
         tvp.lib.sources.fetchMirrors {
           certificates = tvp.packages.ca-certificates;
-          urls = [
-            "https://sourceware.org/pub/libffi/libffi-${version}.tar.gz"
-            "https://github.com/libffi/libffi/releases/download/v${version}/libffi-${version}.tar.gz"
-          ];
+          urls = sourceUrls version;
           inherit sha256;
         };
       discovery = {
