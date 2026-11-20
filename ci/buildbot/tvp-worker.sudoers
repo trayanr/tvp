@@ -1,3 +1,0 @@
-# Install as root: /etc/sudoers.d/tvp-worker, mode 0440. Validate with visudo -cf.
-# Exact verbs and arguments only; no unit editing or control of other services.
-server ALL=(root) NOPASSWD: /usr/bin/systemctl start tvp-worker.service, /usr/bin/systemctl stop tvp-worker.service, /usr/bin/systemctl restart tvp-worker.service, /usr/bin/systemctl reload tvp-worker.service

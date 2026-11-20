@@ -32,7 +32,7 @@ with open(os.environ['FAKE_COMMANDS'], 'a') as commands:
     commands.write(json.dumps(args)+'\n')
 link=Path(args[args.index('--out-link')+1])
 plan=json.loads(Path(os.environ['FAKE_PLAN']).read_text())
-if any('#testPlans.' in a or '#smokeTestPlans.' in a for a in args):
+if any(any(attr in a for attr in ('#testPlans.', '#smokeTestPlans.', '#catalogueTestPlans.')) for a in args):
     link.symlink_to(os.environ['FAKE_PLAN'])
     sys.exit(0)
 drv=plan['jobs'][0]['drv']
@@ -60,6 +60,10 @@ time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
 targets=set(args)
 for job in plan['jobs']:
+    for producer in job.get('productions', []):
+        for output in producer['outputs'].values():
+            if output != os.environ.get('FAKE_SKIP_PRODUCTION'):
+                Path(output).write_text('produced')
     if all(Path(out).exists() for item in [job]+job.get('tests',[]) for out in item['outputs']):
         continue
     if job['name']==os.environ.get('FAKE_FAILURE'):
@@ -168,6 +172,50 @@ class RunnerTests(unittest.TestCase):
         result=self.cli('start','--full','--smoke','--state-dir',str(self.state))
         self.assertNotEqual(result.returncode,0)
         self.assertFalse(self.commands_file.exists())
+
+    def catalogue_fixture(self):
+        outputs = {name: str(self.root / f'package.{name}') for name in ('out', 'dev')}
+        self.plan['validationScope'] = 'catalogue'
+        self.plan['system'] = 'x86_64-linux'
+        self.plan['aggregateOutputs'] = [str(self.root / 'aggregate')]
+        self.plan['jobs'][0]['productions'] = [
+            {'role': 'package', 'drv': '/fake/package.drv', 'outputs': outputs},
+            {'role': 'artifact', 'drv': '/fake/artifact.drv',
+             'outputs': {'out': str(self.root / 'artifact.out')}},
+        ]
+        self.plan['jobs'][1]['productions'] = [
+            {'role': 'package', 'drv': '/fake/other.drv',
+             'outputs': {'out': str(self.root / 'other.out')}},
+        ]
+        for job in self.plan['jobs']:
+            job['tests'] = [{'name': 'installed', 'drv': job['drv'], 'outputs': job['outputs']}]
+        self.plan_file.write_text(json.dumps(self.plan))
+        return outputs
+
+    def test_catalogue_uses_the_aggregate_and_counts_production_separately(self):
+        outputs = self.catalogue_fixture()
+        result = self.cli('all', '--catalogue', '--state-dir', str(self.state), '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        terminal = json.loads(result.stdout)
+        self.assertEqual(terminal['validationScope'], 'catalogue')
+        self.assertIs(terminal['full'], True)
+        self.assertEqual(terminal['testCounts']['passed'], 2)
+        self.assertEqual(terminal['stageCounts']['finalize']['ready'], 1)
+        self.assertEqual(terminal['stageCounts']['compile']['ready'], 1)
+        command = json.loads((Path(terminal['run']) / 'command.json').read_text())
+        self.assertIn(self.plan['aggregate'] + '^*', command)
+        self.assertIn('#catalogueTestPlans.', self.commands_file.read_text())
+        self.assertTrue(all(Path(path).is_file() for path in outputs.values()))
+
+    def test_catalogue_rejects_missing_named_output_even_when_checks_are_valid(self):
+        outputs = self.catalogue_fixture()
+        self.env['FAKE_SKIP_PRODUCTION'] = outputs['dev']
+        result = self.cli('all', '--catalogue', '--state-dir', str(self.state), '--json')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        terminal = json.loads(result.stdout)
+        self.assertEqual(terminal['returnCode'], 0)
+        self.assertEqual(terminal['testCounts']['passed'], 2)
+        self.assertEqual(terminal['jobs']['first']['status'], 'failed-or-blocked')
 
     def test_all_waits_for_standard_checks_and_retains_logs_and_result(self):
         result=self.cli('all','--state-dir',str(self.state),'--json')

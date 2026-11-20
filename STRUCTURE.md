@@ -1311,11 +1311,12 @@ keeps before/after values for reviewed changes. `--out` compares outputs for ver
 transport changes; the original canonical-only text commands remain available.
 
 `nix run .#test -- all` runs the standard focused plan in the foreground and returns
-success or failure. `ci/validate.sh` adds graph and flake evaluation before invoking
-that command; Buildbot uses it through its pinned trusted tools revision.
-The explicit small selection lives in `tests/smoke.nix`; `test start --full` is
-available only for deliberately requested comprehensive runs. CI reports
-`tvp/smoke`, without certifying the unrun full catalogue.
+success or failure. `ci/validate.sh` adds graph and flake evaluation for local
+validation. Buildbot configuration in `tvp-infra` pins the TVP runner separately.
+The explicit small selection lives in `tests/smoke.nix`. `test all --catalogue`
+selects all supported releases and installed checks. `test start --full`
+also runs the declared upstream suites. CI reports its configured scope in the
+GitHub status and retains evidence for the exact revision.
 `all --json` returns the terminal status and exact frozen run identity, waiting on
 that identity rather than following a movable `latest` alias. Final machine-readable
 status is retained as `result.json` in the run directory. The [CI guide](ci/README.md)
