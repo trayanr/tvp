@@ -393,6 +393,44 @@ let
         "3.1.6" = "sha256-DNOGafiXNHJ6zlaWFty1j6z9EK+9KJz6GanGNg39/LA=";
         "3.2.0" = "sha256-gh59UHdwP34uYd+lIoiljpHnSPmhFdyRhEZgAIJPtiM=";
         "3.2.1" = "sha256-GGbT/IXoZWcAPMe/MLTIo68+rd4zHvNCe2g8A6rG6lg=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-3.0.0.nix;
+        deps = {
+          tcl = tvp.packages.tcl_8;
+          readline = tvp.packages.readline_8;
+          testZlib = tvp.packages.zlib_1;
+        };
+        opts = {
+          buildFeatures = {
+            compileFlags = [
+              "-std=gnu17"
+              "-Wno-error=implicit-function-declaration"
+              "-DUSE_INTERP_RESULT"
+              "-fcommon"
+            ];
+            hardeningDisable = [ "format" ];
+          };
+          sourceLayout = {
+            configureIsExecutable = false;
+          };
+          installedInterface = {
+            pkgConfigMajorMinor = true;
+          };
+          testFixtureRelinks = true;
+          testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.1.2";
+        };
+        # This release already uses a conservative bound for six-byte integers.
+        patches = [
+          {
+            file = ./patches/legacy-serial-width-declaration.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
+      };
+      releases = {
         "3.2.2" = "sha256-jp4poZYKvuVQvPRUHTXaidZnlNumWwcKVc134oJMdLc=";
       };
     }
