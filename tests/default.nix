@@ -89,6 +89,113 @@ let
     };
   };
 
+  compatibility = tvpLib.tests.compatibility;
+  plain = builtins.unsafeDiscardStringContext;
+  supported = pkgs.lib.filterAttrs (_: package: (package.tvp.status.level or "ok") != "broken");
+  cataloguePackages = tvpLib.packages.merge {
+    inherit canonical;
+    variants = variantPackages;
+  };
+  catalogueSubjects = tvpLib.packages.merge {
+    packages = builtins.mapAttrs (_: package: {
+      inherit package;
+      tests = package.tests or { };
+    }) (supported cataloguePackages);
+    phpExtensions = tvp.php.extensionMatrix;
+  };
+  # Older tests use named upstream leaves. Newer checkpoints also expose the
+  # separate raw execution. Keep installed checks which exercise upstream data.
+  installedChecks = pkgs.lib.filterAttrs (
+    name: test:
+    !(builtins.elem name [
+      "upstream"
+      "upstream-audit"
+      "upstream-basic"
+      "upstream-evidence"
+      "upstream-profile"
+      "upstream-python"
+      "upstream-record"
+      "upstream-shipped"
+      "upstream-ssl"
+    ])
+    && !(test ? upstreamExecution || test ? passthru.upstreamExecution)
+  );
+  outputSet = producer: pkgs.lib.genAttrs (producer.outputs or [ "out" ]) (name: producer.${name});
+  catalogueJobs = builtins.mapAttrs (
+    name: subject:
+    let
+      checks = installedChecks subject.tests;
+      producers = {
+        package = subject.package;
+      }
+      // pkgs.lib.optionalAttrs (subject.package ? artifact) {
+        inherit (subject.package) artifact;
+      };
+      # Link each selected output, including split compilation products whose
+      # paths deliberately do not survive in the final package.
+      builds = builtins.listToAttrs (
+        builtins.concatLists (
+          pkgs.lib.mapAttrsToList (
+            role: producer:
+            pkgs.lib.mapAttrsToList (output: value: pkgs.lib.nameValuePair "produce-${role}-${output}" value) (
+              outputSet producer
+            )
+          ) producers
+        )
+      );
+      batch = compatibility.mkBatch {
+        inherit pkgs;
+        name = "catalogue-${name}";
+        suite = tvpLib.packages.merge { inherit builds checks; };
+      };
+    in
+    assert checks != { } || throw "TVP catalogue: ${name} has no installed checks";
+    {
+      # Production dependencies are real links in the batch. Keep the result
+      # counts and the named test metadata specific to installed checks.
+      batch = batch // {
+        testSuite = checks;
+      };
+      productions = pkgs.lib.mapAttrsToList (role: producer: {
+        inherit role;
+        drv = builtins.unsafeDiscardOutputDependency producer.drvPath;
+        outputs = builtins.mapAttrs (_: output: plain output.outPath) (outputSet producer);
+      }) producers;
+    }
+  ) catalogueSubjects;
+  cataloguePlan =
+    { source, revision }:
+    let
+      batches = builtins.mapAttrs (_: entry: entry.batch) catalogueJobs;
+      aggregate = compatibility.mkAll {
+        inherit pkgs batches;
+        checks = { };
+      };
+      plan = compatibility.manifest {
+        inherit
+          pkgs
+          aggregate
+          source
+          revision
+          ;
+        entries = compatibility.planEntries {
+          jobs = batches;
+          smoke = false;
+        };
+        canonical = cataloguePackages;
+      };
+    in
+    builtins.toFile "tvp-catalogue-plan.json" (
+      builtins.toJSON (
+        plan
+        // {
+          validationScope = "catalogue";
+          aggregateOutputs = [ (plain aggregate.outPath) ];
+          jobs = map (job: job // { inherit (catalogueJobs.${job.name}) productions; }) plan.jobs;
+        }
+      )
+    );
+
   # Separate from testBatches: the full plan enumerates every entry but `all`.
   # Reuse each package's existing testContext batch without reconstructing it.
   latestSelection = tvpLib.tests.selectLatest {
@@ -114,5 +221,6 @@ in
     smokeTests
     testBatchEntries
     allVariantPackages
+    cataloguePlan
     ;
 }

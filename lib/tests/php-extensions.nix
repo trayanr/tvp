@@ -747,24 +747,52 @@ let
       && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
       && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
-    matrixInStandardCI =
-      lib.all (
+    matrixInCatalogue = lib.all (
+      name: tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
+    ) (builtins.attrNames tvp.php.extensionMatrix);
+    smokeSelectsLatestPairs =
+      let
+        latestPhp = tvp.packages.php.version;
+        latestPairs = lib.filterAttrs (
+          _: pair: pair.phpVersion == latestPhp && (pair.package.tvp.status.level or "ok") != "broken"
+        ) tvp.php.extensionMatrix;
+        groupedPairs = builtins.groupBy (name: latestPairs.${name}.extensionFamily) (
+          builtins.attrNames latestPairs
+        );
+        newest =
+          names:
+          builtins.head (
+            lib.sort (
+              a: b: lib.versionOlder latestPairs.${b}.extensionVersion latestPairs.${a}.extensionVersion
+            ) names
+          );
+        opcacheBuiltIn = lib.any (row: row.php == latestPhp && row.state == "builtin") (
+          tvp.php.metadata.families.opcache.coverage.rows
+        );
+        selectedPairs = map newest (builtins.attrValues groupedPairs);
+        selected =
+          selectedPairs
+          ++ lib.optional opcacheBuiltIn "${tvp.lib.versions.attrName "php" latestPhp}--opcache-builtin";
+        smokeSubjects = tvp.smokeTests.metadata.subjects;
+      in
+      builtins.filter (lib.hasPrefix "php_") (builtins.attrNames smokeSubjects)
+      == lib.sort builtins.lessThan selected
+      && lib.all (
         name:
-        tvp.smokeTests.metadata.subjects.${name} == [
+        smokeSubjects.${name} == [
           "load"
           "roundtrip"
         ]
-        && tvp.testBatches.${name}.drvPath == tvp.php.extensionTests.${name}.drvPath
-      ) (builtins.attrNames tvp.php.extensionMatrix)
-      &&
-        tvp.smokeTests.metadata.subjects.php_8_5_12--opcache-builtin == [
-          "load"
-          "roundtrip"
-        ]
-      &&
-        builtins.filter (lib.hasPrefix "php_") (builtins.attrNames tvp.smokeTests.metadata.subjects)
-        == builtins.attrNames (tvp.php.extensionMatrix // { php_8_5_12--opcache-builtin = null; })
-      && tvp.smokeTests.metadata.upstreamIncluded == false;
+      ) selected
+      && lib.all (
+        name:
+        lib.all (
+          testName:
+          tvp.smokeTests.batches.${name}.testSuite.${testName}.drvPath
+          == latestPairs.${name}.tests.${testName}.drvPath
+        ) smokeSubjects.${name}
+      ) selectedPairs
+      && !tvp.smokeTests.metadata.upstreamIncluded;
   };
 in
 assert

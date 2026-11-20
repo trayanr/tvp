@@ -1,16 +1,23 @@
 # Production/test separation across the four complete ordinary tool families.
-{ pkgs, tvp }:
+{
+  pkgs,
+  recipes,
+  tvp,
+}:
 let
   inherit (pkgs) lib;
-  names = builtins.filter (
-    name:
-    builtins.any (prefix: lib.hasPrefix prefix name) [
-      "autoconf_"
-      "automake_"
-      "libtool_"
-      "gnu-config_"
-    ]
-  ) (builtins.attrNames tvp.canonical);
+  families = [
+    "autoconf"
+    "automake"
+    "libtool"
+    "gnu-config"
+  ];
+  names = builtins.filter (name: builtins.any (family: lib.hasPrefix "${family}_" name) families) (
+    builtins.attrNames tvp.canonical
+  );
+  declaredNames = lib.concatMap (
+    family: map (tvp.lib.versions.attrName family) (builtins.attrNames recipes.${family}.versionTable)
+  ) families;
   packages = map (name: tvp.canonical.${name}) names;
   checks = map (
     p:
@@ -36,15 +43,14 @@ let
     }
   ) packages;
   result = {
-    allRows = builtins.length names == 114;
+    # Keep the original inventory as a minimum and include every added release.
+    allRows = builtins.length names >= 114 && names == builtins.sort builtins.lessThan declaredNames;
     allSplit = builtins.all (x: x.split) checks;
     allUpstreamIsIndependent = builtins.all (
       x: x.noUpstreamInProduction && x.independentUpstream
     ) checks;
     allTestPoliciesReuseProduction = builtins.all (x: x.testPolicyReusesProduction) checks;
-    gnuConfigDateLabel =
-      (import ../../pkgs/build-tools/gnu-config { inherit pkgs tvp; })
-      .recipes.gnu-config.versionTable."2026-05-17".def.name == "2026-05-17";
+    gnuConfigDateLabel = recipes.gnu-config.versionTable."2026-05-17".def.name == "2026-05-17";
     oldPerlConstraint =
       tvp.canonical.autoconf_2_53.tvp.deps.perl.drvPath == tvp.packages.perl_5_24.drvPath;
   };

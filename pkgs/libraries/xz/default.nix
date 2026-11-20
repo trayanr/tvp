@@ -13,10 +13,18 @@ let
         "5.0.3" = "sha256-EOtN9y3/svsUw9LYK0UOcigv/LnuOQio5bOSuPCWgb8=";
         "5.0.4" = "sha256-1nQFeY2tZFll/lHPTkDCPRIB+yNDeNPET1o3hxQrg7Y=";
         "5.0.5" = "sha256-Xc/+ajcm0j0XEaZSiN4uIVtJYNpQkiSM5jyZ1QCTuTo=";
-        "5.0.6" = "sha256-ts9M3BMTVWoAhI5yJiW85A0s1VLAUrBGV5HGTJICw/E=";
         "5.0.7" = "sha256-9NIWVVO50Ngv0IvC6s3etI6+uGKlaGpgP4wESi5SyT8=";
         "5.0.8" = "sha256-yscbMe0yKkh/HaHxDfz0f4hV+X/ywjuSaAx6575Yurs=";
       };
+    }
+    {
+      def = {
+        builder = ./build-5.0.0.nix;
+        deps.less = tvp.packages.less;
+        # This release's generator omits the PTHREAD_LIBS substitution.
+        opts.installedInterface.repairPthreadLibs = true;
+      };
+      releases."5.0.6" = "sha256-ts9M3BMTVWoAhI5yJiW85A0s1VLAUrBGV5HGTJICw/E=";
     }
     {
       def = {
