@@ -94,7 +94,7 @@ def make_config(settings, source):
 
         factory.addStep(steps.MasterShellCommand(
             name="publish-and-verify-nas", command=publish_command,
-            haltOnFailure=True, flunkOnFailure=True,
+            haltOnFailure=True, flunkOnFailure=True, logEnviron=False,
         ))
     change_source = []
     if github_enabled:
