@@ -47,6 +47,7 @@ let
       def = {
         builder = ./build-owned-2.1.nix;
         deps.ncurses = tvp.packages.ncurses_6;
+        deps.gnu-config = tvp.packages.gnu-config;
         patches = [
           {
             file = ./patches/2.2-install-clobbers-libreadline.patch;
@@ -72,6 +73,7 @@ let
       def = {
         builder = ./build-owned-2.1.nix;
         deps.ncurses = tvp.packages.ncurses_6;
+        deps.gnu-config = tvp.packages.gnu-config;
         deps.perl = preparationPerl;
       };
       status = {

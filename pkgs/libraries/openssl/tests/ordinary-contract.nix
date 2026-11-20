@@ -12,6 +12,25 @@ let
   };
   testDeps = package.tvp.declaredTestDependencies;
   features = package.tvp.features;
+  pkgConfigPrefix = ''test "$(pkg-config --variable=prefix "$module")" = ${package}'';
+  pkgConfigLibdir = ''test "$(pkg-config --variable=libdir "$module")" = ${package}/lib'';
+  pkgConfigIncludedir = ''test "$(pkg-config --variable=includedir "$module")" = ${package}/include'';
+  # OpenSSL 3.3.0 and 3.3.1 published absolute directories without a prefix variable.
+  pkgConfigPaths =
+    indentation:
+    if features.pkgConfigPrefix or true then
+      pkgConfigPrefix
+    else
+      pkgConfigLibdir + "\n" + indentation + pkgConfigIncludedir;
+  # Keep the 3.0.4 rehash check independent of its known RSA key generation failure.
+  rehashCertificate =
+    if package.version == "3.0.4" then
+      "cp ${./fixtures/rehash-cert.pem} certs/ca.pem"
+    else
+      lib.removeSuffix "\n" ''
+        openssl req -config ${./fixtures/req.cnf} -new -x509 -newkey rsa:2048 -nodes -sha1 \
+          -keyout key.pem -out certs/ca.pem -days 1 -subj /CN=rehash >cert.log 2>&1
+      '';
   engineDirectory =
     if features.providers then
       "engines-3"
@@ -84,7 +103,7 @@ context.mkSuite {
         openssl version -d > directory
         grep -F '${package}/etc/ssl' directory >/dev/null
         for module in openssl; do
-          test "$(pkg-config --variable=prefix "$module")" = ${package}
+          ${pkgConfigPaths "  "}
           test "$(pkg-config --modversion "$module")" = ${package.version}
         done
         printf paths-ok
@@ -116,8 +135,7 @@ context.mkSuite {
         c-rehash = {
           script = ''
             mkdir certs
-            openssl req -config ${./fixtures/req.cnf} -new -x509 -newkey rsa:2048 -nodes -sha1 \
-              -keyout key.pem -out certs/ca.pem -days 1 -subj /CN=rehash >cert.log 2>&1
+            ${rehashCertificate}
             test "$(head -n1 ${package}/bin/c_rehash)" = '#!${package.runtime.perl}/bin/perl'
             unset OPENSSL
             PATH= ${package}/bin/c_rehash certs >rehash.log
@@ -187,7 +205,7 @@ context.mkSuite {
         split-pkg-config = {
           script = ''
             for module in libssl libcrypto; do
-              test "$(pkg-config --variable=prefix "$module")" = ${package}
+              ${pkgConfigPaths "  "}
               test "$(pkg-config --modversion "$module")" = ${package.version}
             done
             printf split-pkg-config-ok

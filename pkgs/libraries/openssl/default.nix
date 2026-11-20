@@ -41,10 +41,29 @@ let
           runtimeFindutils = tvp.packages.findutils;
         };
         opts.cStandard = "gnu17";
+        # This release installs dangling aliases even in a non-FIPS build.
+        opts.removeUnbuiltFipsAliases = true;
+      };
+      releases = {
+        "0.9.7e" = "sha256-JRIbXb0rgwkpUZMl4DMIbORYYc/y0AANko9IJhseC3w=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.9.7.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+        opts.cStandard = "gnu17";
       };
       releases = {
         "0.9.7d" = "sha256-Bf39B+iBz+tYTneRnt3HTaw/laziOsvqAIwq+Ut2wUc=";
-        "0.9.7e" = "sha256-JRIbXb0rgwkpUZMl4DMIbORYYc/y0AANko9IJhseC3w=";
         "0.9.7f" = "sha256-Nn2z7nXmMySyCQB0sSqBcCGLps7ziydWOQ0IlBwWJgg=";
         "0.9.7g" = "sha256-5+GihxQd0b5/S0/t1U7Cn6kEZV7XahOsh65po/x2sGI=";
         "0.9.7h" = "sha256-tjjDhTEtK9ao8BdsJgW9YTyXjlVdPS14AnDhYIfyDeE=";
@@ -129,6 +148,12 @@ let
             cmake = false;
           };
         };
+        patches = [
+          {
+            file = ./ordinary/0.9.8j-build-order.patch;
+            reason = "The new shared-link targets must precede the applications, and crypto subdirectories must wait for the top-level archive writer.";
+          }
+        ];
       };
       releases = {
         "0.9.8j" = "sha256-cTEkIELb1jH72DQ29CrqF3Xnwy9Yf6StpaAd9MOujos=";
@@ -160,10 +185,46 @@ let
             cmake = false;
           };
         };
+        patches = [
+          {
+            file = ./ordinary/0.9.8j-build-order.patch;
+            reason = "The new shared-link targets must precede the applications, and crypto subdirectories must wait for the top-level archive writer.";
+          }
+        ];
       };
       releases = {
         "0.9.8k" = "sha256-fnzU85dBmbcp5uOgrwi9Qnn94DcKESDBo7NRqwkMYQE=";
         "0.9.8l" = "sha256-7NBU6e7S6cFiC6FSV+b8TYgsmkrqZj0jt2niE43oyRo=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.9.7.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+        opts = {
+          installedInterface = {
+            sha256 = true;
+            pbkdf2 = false;
+            providers = false;
+            engines = true;
+            engineModules = true;
+            splitPkgConfig = true;
+            rehash = true;
+            tlsMethod = false;
+            modernCli = false;
+            cmake = false;
+          };
+        };
+      };
+      releases = {
         "0.9.8m" = "sha256-NgNxYCgc9Jd9lk5APSvAaA+8oKf/n2XjMTbXX64Sy1s=";
         "0.9.8n" = "sha256-sBq8KDdrhmUV31jxsATahFMWYpF4PU50d82omwAMHwE=";
         "0.9.8o" = "sha256-vvraGsOBmx0xffgZe16C7HaLOdJQ/L74Hisct/Fl1Eg=";
@@ -462,13 +523,53 @@ let
           runtimeGawk = tvp.packages.gawk;
           runtimeFindutils = tvp.packages.findutils;
         };
+        # This generated frontend leaves the Perl path assignments unquoted.
+        opts.quoteRehashPaths = true;
       };
       releases = {
         "1.1.0h" = "sha256-WDVibN6emWVlhfx6qiMCpzp+E0C/jBT9Y1pixmgCpRc=";
-        "1.1.0i" = "sha256-67/IRKjIzA6l3BC4bJzpf0AYN/P6CMF7LNrcEYJTz5k=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.1.0.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+        patches = [
+          {
+            file = ./ordinary/1.1.0j-install-order.patch;
+            reason = "Use direct build targets during install after the initial make all. Concurrent recursive depend targets rewrite the same Makefile.new.";
+          }
+        ];
+      };
+      releases = {
         "1.1.0j" = "sha256-Mb7GwgPOGo6T1ZlPTtMExjzPB2dhGLZjTt3tEq0bMkY=";
         "1.1.0k" = "sha256-76SWX093NXTWy9oc+HTbvkVascDU+QYRX4Z9MEREcLE=";
         "1.1.0l" = "sha256-dKL3VsZP1zhqKRhNwDRPSDEZLWHcJIGpOkxd1yf0EUg=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.1.0.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+      };
+      releases = {
+        "1.1.0i" = "sha256-67/IRKjIzA6l3BC4bJzpf0AYN/P6CMF7LNrcEYJTz5k=";
       };
     }
     {
@@ -707,6 +808,7 @@ let
             engines = true;
             engineModules = true;
             splitPkgConfig = true;
+            pkgConfigPrefix = false;
             rehash = true;
             tlsMethod = true;
             modernCli = true;
@@ -717,6 +819,36 @@ let
       releases = {
         "3.3.0" = "sha256-U+ZrBDMipgar8Ah+dpmg4DOjf6E/65dC3zXDozsY+wI=";
         "3.3.1" = "sha256-d3zVlihMiDN1oqehG/XSeG/FQTJV76sgxQ1v/m0CC34=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-3.0.0.nix;
+        deps = {
+          buildPerl = tvp.packages.perl_5;
+          perl = tvp.packages.perl_5;
+          runtimeCoreutils = tvp.packages.coreutils;
+          runtimeSed = tvp.packages.gnused;
+          runtimeGrep = tvp.packages.gnugrep;
+          runtimeGawk = tvp.packages.gawk;
+          runtimeFindutils = tvp.packages.findutils;
+        };
+        opts = {
+          installedInterface = {
+            sha256 = true;
+            pbkdf2 = true;
+            providers = true;
+            engines = true;
+            engineModules = true;
+            splitPkgConfig = true;
+            rehash = true;
+            tlsMethod = true;
+            modernCli = true;
+            cmake = true;
+          };
+        };
+      };
+      releases = {
         "3.3.2" = "sha256-LopAsBl5r+i+C7+z3l3BxnCf7bRtbInBDaEUq1/D0oE=";
         "3.3.3" = "sha256-cSWQ/SCqpg7HXXeP5bgQ1rgpyn+x5TBXeRehMfkQVTk=";
         "3.3.4" = "sha256-jRpfwyPT/TUdwFRYRX/Uj3hlLSpJjh1w/+oHtNDrP6g=";
