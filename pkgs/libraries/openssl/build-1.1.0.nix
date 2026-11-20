@@ -17,10 +17,12 @@
   compileFlags ? [ ],
   testPatches ? [ ],
   testCompileFlags ? [ ],
+  patches ? [ ],
   upstreamExpected ? "OpenSSL upstream raw result accepted",
   hardeningDisable ? [ ],
   forceGccName ? false,
   installTarget ? "install_sw",
+  quoteRehashPaths ? false,
   installedInterface ? {
     sha256 = true;
     pbkdf2 = false;
@@ -111,10 +113,12 @@ in
     compileFlags
     testPatches
     testCompileFlags
+    patches
     upstreamExpected
     hardeningDisable
     forceGccName
     installTarget
+    quoteRehashPaths
     sourceEncoding
     ;
   inherit (tools)
@@ -183,6 +187,9 @@ in
       "output.copy-artifacts"
       "openssl.drop-build-state"
       "openssl.relocate"
+    ]
+    ++ lib.optional final.quoteRehashPaths "openssl.quote-rehash-paths"
+    ++ [
       "output.strip"
       "output.strip-archives"
       "openssl.self-runtime"
@@ -243,7 +250,8 @@ in
       tools.diffutils
       tools.findutils
       tools.python
-    ];
+    ]
+    ++ lib.optional (final.patches != [ ]) tools.patch;
     libraries = [ ];
   };
   dependencyProviders = {
@@ -288,9 +296,12 @@ in
 
             compression = "gzip";
           })
-          (command "prepare" ''
-            ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
-          '')
+          (command "prepare" (
+            lib.concatMapStrings (p: "${tools.patch}/bin/patch --batch --fuzz=0 -p1 < ${p}\n") final.patches
+            + ''
+              ${tools.python}/bin/python3 -B ${final.sourceHelper} ${tools.bash}/bin/bash ${final.buildPerl}/bin/perl ${tools.coreutils} ${lib.escapeShellArg final.sourceEncoding}
+            ''
+          ))
           (command "configure" ''
             export PERL=${final.buildPerl}/bin/perl HASHBANGPERL=${final.buildPerl}/bin/perl
 
@@ -348,6 +359,27 @@ in
                 }
               )
             } ${final.elfHelper} ${final.manualHelper}'';
+          }
+          {
+            name = "openssl.quote-rehash-paths";
+            enabled = final.quoteRehashPaths;
+            tools = [ tools.python ];
+            run = ''
+              ${tools.python}/bin/python3 -B - "$out" <<'PY'
+              from pathlib import Path
+              import sys
+
+              path = Path(sys.argv[1]) / "bin/c_rehash"
+              script = path.read_bytes()
+              for variable, value in ((b"dir", b"etc/ssl"), (b"prefix", sys.argv[1].encode())):
+                  assignment = b"\nmy $" + variable + b" = "
+                  original = assignment + value + b";\n"
+                  if script.count(original) != 1:
+                      raise ValueError("unexpected unquoted c_rehash assignment", variable)
+                  script = script.replace(original, assignment + b'"' + value + b'";\n')
+              path.write_bytes(script)
+              PY
+            '';
           }
           (outputs.strip {
 

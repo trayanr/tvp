@@ -32,11 +32,20 @@ with open(os.environ['FAKE_COMMANDS'], 'a') as commands:
     commands.write(json.dumps(args)+'\n')
 link=Path(args[args.index('--out-link')+1])
 plan=json.loads(Path(os.environ['FAKE_PLAN']).read_text())
-if any('#testPlans.' in a or '#smokeTestPlans.' in a for a in args):
+if any(any(attr in a for attr in ('#testPlans.', '#smokeTestPlans.', '#catalogueTestPlans.')) for a in args):
     link.symlink_to(os.environ['FAKE_PLAN'])
     sys.exit(0)
 drv=plan['jobs'][0]['drv']
 machine=os.environ.get('FAKE_REMOTE','')
+if os.environ.get('FAKE_PLANNING'):
+    for event in [
+        {'action':'start','id':3,'type':109,'fields':['/fake/cache-path','https://cache.invalid/private']},
+        {'action':'stop','id':3},
+        {'action':'msg','level':3,'msg':'these 42 derivations will be built:'},
+        {'action':'msg','level':3,'msg':'this path will be fetched:'},
+    ]:
+        print('@nix '+json.dumps(event), file=sys.stderr, flush=True)
+    time.sleep(1)
 print('@nix '+json.dumps({'action':'start','id':7,'type':105,'fields':[drv,machine]}), file=sys.stderr, flush=True)
 if machine:
     for event in [
@@ -60,6 +69,10 @@ time.sleep(float(os.environ.get('FAKE_DELAY','0')))
 failed=False
 targets=set(args)
 for job in plan['jobs']:
+    for producer in job.get('productions', []):
+        for output in producer['outputs'].values():
+            if output != os.environ.get('FAKE_SKIP_PRODUCTION'):
+                Path(output).write_text('produced')
     if all(Path(out).exists() for item in [job]+job.get('tests',[]) for out in item['outputs']):
         continue
     if job['name']==os.environ.get('FAKE_FAILURE'):
@@ -169,6 +182,50 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(result.returncode,0)
         self.assertFalse(self.commands_file.exists())
 
+    def catalogue_fixture(self):
+        outputs = {name: str(self.root / f'package.{name}') for name in ('out', 'dev')}
+        self.plan['validationScope'] = 'catalogue'
+        self.plan['system'] = 'x86_64-linux'
+        self.plan['aggregateOutputs'] = [str(self.root / 'aggregate')]
+        self.plan['jobs'][0]['productions'] = [
+            {'role': 'package', 'drv': '/fake/package.drv', 'outputs': outputs},
+            {'role': 'artifact', 'drv': '/fake/artifact.drv',
+             'outputs': {'out': str(self.root / 'artifact.out')}},
+        ]
+        self.plan['jobs'][1]['productions'] = [
+            {'role': 'package', 'drv': '/fake/other.drv',
+             'outputs': {'out': str(self.root / 'other.out')}},
+        ]
+        for job in self.plan['jobs']:
+            job['tests'] = [{'name': 'installed', 'drv': job['drv'], 'outputs': job['outputs']}]
+        self.plan_file.write_text(json.dumps(self.plan))
+        return outputs
+
+    def test_catalogue_uses_the_aggregate_and_counts_production_separately(self):
+        outputs = self.catalogue_fixture()
+        result = self.cli('all', '--catalogue', '--state-dir', str(self.state), '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        terminal = json.loads(result.stdout)
+        self.assertEqual(terminal['validationScope'], 'catalogue')
+        self.assertIs(terminal['full'], True)
+        self.assertEqual(terminal['testCounts']['passed'], 2)
+        self.assertEqual(terminal['stageCounts']['finalize']['ready'], 1)
+        self.assertEqual(terminal['stageCounts']['compile']['ready'], 1)
+        command = json.loads((Path(terminal['run']) / 'command.json').read_text())
+        self.assertIn(self.plan['aggregate'] + '^*', command)
+        self.assertIn('#catalogueTestPlans.', self.commands_file.read_text())
+        self.assertTrue(all(Path(path).is_file() for path in outputs.values()))
+
+    def test_catalogue_rejects_missing_named_output_even_when_checks_are_valid(self):
+        outputs = self.catalogue_fixture()
+        self.env['FAKE_SKIP_PRODUCTION'] = outputs['dev']
+        result = self.cli('all', '--catalogue', '--state-dir', str(self.state), '--json')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        terminal = json.loads(result.stdout)
+        self.assertEqual(terminal['returnCode'], 0)
+        self.assertEqual(terminal['testCounts']['passed'], 2)
+        self.assertEqual(terminal['jobs']['first']['status'], 'failed-or-blocked')
+
     def test_all_waits_for_standard_checks_and_retains_logs_and_result(self):
         result=self.cli('all','--state-dir',str(self.state),'--json')
         self.assertEqual(result.returncode,0,result.stderr)
@@ -216,6 +273,20 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('Nix work started local 0, remote host:22974 1, downloads 1', lines[-1])
         self.assertNotIn('builder@', result.stdout)
         self.assertNotIn('ssh-key', result.stdout)
+
+    def test_nix_planning_telemetry_is_retained_without_cache_request_details(self):
+        self.env.update(TVP_CI_PROGRESS='1', FAKE_PLANNING='1')
+        process = self.cli('all', '--state-dir', str(self.state))
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertIn('Nix planning and checking substituters', process.stdout)
+        self.assertIn('Nix plan: builds 42, fetches 1', process.stdout)
+        self.run = (self.state / 'latest').resolve()
+        result = json.loads((self.run / 'result.json').read_text())
+        progress = result['nixProgress']
+        self.assertEqual(progress['cacheLookupsFinished'], 1)
+        self.assertEqual(progress['buildActivitiesFinished'], 1)
+        self.assertGreaterEqual(progress['firstWorkSeconds'], 1)
+        self.assertNotIn('cache.invalid/private', (self.run / 'events.jsonl').read_text())
 
     def test_all_failure_returns_nonzero_after_independent_checks_finish(self):
         self.env['FAKE_FAILURE']='first'

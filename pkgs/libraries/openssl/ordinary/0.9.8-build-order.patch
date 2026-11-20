@@ -1,0 +1,22 @@
+--- a/Makefile.org
++++ b/Makefile.org
+@@ -228 +228,5 @@
+-build_libs: build_crypto build_ssl build_engines
++build_libs: build_crypto build_ssl build_engines
++
++build_shared: $(SHARED_LIBS)
++
++build_apps: build_libs
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -50 +50 @@
+-all: shared
++all: buildinf.h subdirs
+@@ -84 +84 @@
+-subdirs:
++subdirs: lib
+--- a/ssl/Makefile
++++ b/ssl/Makefile
+@@ -56 +56 @@
+-all:	shared
++all:	lib

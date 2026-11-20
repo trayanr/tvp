@@ -13,6 +13,8 @@ let
   steps = import ../../../../lib/build-steps.nix;
   defaultOverride = package.override { cStandard = s.cStandard; };
   library = "libz.so.${s.installedInterface.libraryVersion}";
+  hasVersionFunction = s.installedInterface.versionFunction or true;
+  runtimeProbe = if hasVersionFunction then ./fixtures/version.c else ./fixtures/crc.c;
   copy =
     (builtins.head (builtins.filter (step: step.name == "output.copy-artifacts") package.buildSteps))
     .run
@@ -123,11 +125,11 @@ context.mkSuite {
     runtime-provider = {
       script = ''
         ${tools.patchelf}/bin/patchelf --print-rpath ${runtime}/lib/${library} | tr : '\n' | grep -Fx '${provider}/lib' >&2
-        "$CC" ${./fixtures/version.c} -I${runtime}/include -L${runtime}/lib -Wl,-rpath,${runtime}/lib -lz -o runtime-consumer
+        "$CC" ${runtimeProbe} -I${runtime}/include -L${runtime}/lib -Wl,-rpath,${runtime}/lib -lz -o runtime-consumer
         ${s.coreutils}/bin/env -i ./runtime-consumer
         echo ok
       '';
-      expected = "${s.installedInterface.reportedVersion}\nok";
+      expected = "${if hasVersionFunction then s.installedInterface.reportedVersion else "85d9b6d2"}\nok";
     };
   }
   // (

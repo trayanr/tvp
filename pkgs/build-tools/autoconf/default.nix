@@ -41,8 +41,19 @@ let
       };
       releases = {
         "2.50" = "sha256-JqECa7ZMvsosSJnzUj8lUW9z1390jzrHlSP9ULZAOkM=";
-        "2.52" = "sha256-U06ZthuB55MnttCPGj7bB1WsJG4SSQCbDhv1iHtg16k=";
       };
+    }
+    {
+      def = {
+        builder = ./build-2.10.nix;
+        deps = {
+          m4 = tvp.packages.m4;
+          perl = tvp.packages.perl_5;
+        };
+        # The shipped autoconf frontend invokes gawk to process its trace output.
+        opts.installedInterface.usesGawk = true;
+      };
+      releases."2.52" = "sha256-U06ZthuB55MnttCPGj7bB1WsJG4SSQCbDhv1iHtg16k=";
     }
     {
       def = {

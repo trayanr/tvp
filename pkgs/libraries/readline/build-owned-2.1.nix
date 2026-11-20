@@ -7,6 +7,7 @@
   version,
   ncurses,
   perl,
+  gnu-config ? null,
   doCheck ? true,
   patches ? [ ],
   commonSymbols ? false,
@@ -37,6 +38,7 @@ in
     cStandard
     pkgConfigModules
     ncurses
+    gnu-config
     ;
   inherit (tools) bash coreutils;
   buildFeatures = { };
@@ -85,9 +87,15 @@ in
         ${tools.patch}/bin/patch -p1 < "$file"
       done
     '')
-    (command "prepare" ''
-      ${tools.python}/bin/python3 -B ${../ncurses/terminal-production-source.py} ${tools.bash}/bin/bash ${final.perl}/bin/perl '["configure", "support"]'
-    '')
+    (command "prepare" (
+      lib.optionalString (final.gnu-config != null) ''
+        cp ${final.gnu-config}/config.{guess,sub} support/
+        chmod +w support/config.guess support/config.sub
+      ''
+      + ''
+        ${tools.python}/bin/python3 -B ${../ncurses/terminal-production-source.py} ${tools.bash}/bin/bash ${final.perl}/bin/perl '["configure", "support"]'
+      ''
+    ))
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash FORCE_UNSAFE_CONFIGURE=1
       export CFLAGS="-O2 -std=${final.cStandard}${lib.optionalString final.commonSymbols " -fcommon"} -I${lib.getDev final.ncurses}/include/ncursesw"

@@ -9,6 +9,7 @@
   perl,
   patches ? [ ],
   configureFlags ? [ ],
+  license ? lib.licenses.gpl2Plus,
   doCheck ? true,
   buildFeatures ? { },
   sourceLayout ? { },
@@ -229,7 +230,7 @@ in
   meta = {
     description = "GNU Makefile generator and aclocal macro collector";
     homepage = "https://www.gnu.org/software/automake/";
-    license = lib.licenses.gpl2Plus;
+    inherit license;
     mainProgram = "automake";
   };
   tvp.headerMacro = final.installedInterface.headerMacro;

@@ -64,6 +64,9 @@ changing those requirements leaves older release producers unchanged.
 The 0.9.8 line gives the static archive targets their producing build-stage
 dependencies, and orders engines after shared linking. Production and private
 test makes use the same ordering without a fixed global job limit.
+The 0.9.8 through 0.9.8i archives receive a source patch that separates archive
+creation from top-level shared linking, as 0.9.8j does upstream. Crypto subdirectory
+writes follow the initial archive and applications wait for the libraries.
 The original unrestricted Makefiles/configuration survive in the checkpoint, so T
 can build the real tests without reconfiguring production or disabling tests in
 Configure. Make may regenerate identified metadata or relink in private T/R;
@@ -73,8 +76,8 @@ Production compatibility includes cStandard for real historic C identifiers,
 forceGccName for domd, shared/library layout, existing feature data and hardening
 policy. The three warning suppressions for 0.9.8s/1.0.0f ECDSA fixtures and
 1.1.1q/r v3ext fixtures are `testCompileFlags`, applied through the selected compiler
-wrapper only in T/R. There are no definition patches in this ordinary family.
-`sourceHelper` remains the production patch/preparation seam. `testPatches` is an
+wrapper only in T/R. Definition patches apply during production preparation and
+are retained in the checkpoint. `testPatches` is an
 independent validated patch/reason list. Test Perl, extra tools, compile flags,
 preparation, restore, capture, runner, environment, classifier and expectation are
 independent effective specification fields. An unused patch-tool edit with an

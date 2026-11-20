@@ -116,7 +116,13 @@ c.mkSuite {
     };
     magic-override = {
       script = ''
-        printf '0 string TVP! tvp-custom-magic\n' > custom
+        printf '0 string TVP! tvp-custom-magic\n' > custom${
+          lib.optionalString (p.version == "5.46") ''
+
+            # The 5.46 compiled database loader requires at least two rules.
+            printf '0 string ABCD tvp-other-magic\n' >> custom
+          ''
+        }
         file -C -m custom
         printf 'TVP!data' > data
         test "$(MAGIC="$PWD/custom.mgc" file -b data)" = tvp-custom-magic

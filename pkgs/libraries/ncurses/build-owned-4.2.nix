@@ -13,6 +13,7 @@
   cxxBinding ? true,
   cStandard ? "gnu89",
   cxxStandard ? "gnu++98",
+  normalizeCxxArchiveMode ? false,
 }:
 final:
 let
@@ -58,6 +59,7 @@ in
     cxxStandard = final.cxxStandard;
   };
   installedInterface = {
+    inherit normalizeCxxArchiveMode;
     finalizationContracts = false;
     modernInterfaces = false;
     widec = true;
@@ -184,6 +186,23 @@ in
       name = "ncurses.drop-build-tree";
       tools = [ tools.coreutils ];
       run = ''${tools.coreutils}/bin/rm -rf -- "$out/${checkpoint}"'';
+    }
+    {
+      name = "ncurses.normalize-cxx-archive-mode";
+      enabled = final.installedInterface.normalizeCxxArchiveMode && final.features.cxx;
+      tools = [
+        tools.coreutils
+        tools.binutils
+      ];
+      run = ''
+        archive="$out/lib/libncurses++w.a"
+        [[ -d "$out/lib" && ! -L "$out/lib" ]]
+        [[ -f "$archive" && ! -L "$archive" ]]
+        test "$(stat -c %h -- "$archive")" = 1
+        test "$(head -c 8 -- "$archive")" = '!<arch>'
+        ${tools.binutils}/bin/ar t "$archive" >/dev/null
+        chmod a-x -- "$archive"
+      '';
     }
     {
       name = "ncurses.relocate";

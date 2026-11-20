@@ -22,12 +22,47 @@ let
           zlib = tvp.packages.zlib_1;
           liblzma = tvp.packages.xz_5;
         };
+        # The released libxml-2.0.pc template omits the configured LZMA_LIBS.
+        opts.installedInterface = {
+          sonameMajor = "2";
+          repairPrivateLzma = true;
+        };
       };
       releases = {
         "2.8.0" = "sha256-fhQlyPwedRR3FEdXTTgAFLafHWLkL4POJSw+tMfT+lQ=";
         "2.9.0" = "sha256-l9PZq84toO2pt6WLP9a0pt4BLTIjVRUedpOw1+2YxjQ=";
         "2.9.1" = "sha256-AijfriZkdUFTOBPy1Y2ROMORDyulfp5oPYHIgEuPrnw=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          liblzma = tvp.packages.xz_5;
+        };
+        patches = [
+          {
+            file = ./ordinary/2.9.2-lzma-header.patch;
+            reason = "Backport 2.9.3's lzma.h check after successful pkg-config detection so that 2.9.2 actually compiles its XZ reader.";
+          }
+        ];
+      };
+      releases = {
         "2.9.2" = "sha256-7dei/tLrgyoJSZKuxh8cQRZ6CV3Yzn8+KdtCxTnrT/I=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          liblzma = tvp.packages.xz_5;
+        };
+      };
+      releases = {
         "2.9.3" = "sha256-h5BiryYmkq/e5WPjUfbnJedx1XwYXn3cYkfrMyivTSA=";
         "2.9.4" = "sha256-IbKCT5zlanIpb2eBA+7VqERkF8B+kE5hdIr/ojDskHI=";
 
