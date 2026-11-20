@@ -96,6 +96,10 @@ class UpstreamReportTests(unittest.TestCase):
             {"kind": "commit", "version": old, "status": "packaged"},
             {"kind": "commit", "version": new, "status": "candidate"},
         ])
+        current["row"]["upstream"]["url"] = "git://mirror.example/config.git"
+        self.assertEqual(
+            describe(current, "")["source"]["url"], "git://mirror.example/config.git",
+        )
 
     def test_missing_discovery_never_creates_candidates(self):
         missing = describe(self.observation(status="unconfigured"), "")

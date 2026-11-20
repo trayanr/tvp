@@ -33,8 +33,8 @@ let
         };
       discovery = {
         type = "git-head";
-        # Savannah's direct HTTPS transport for the canonical config.git repository.
-        url = repository;
+        # Savannah's anonymous Git mirror serves the canonical branch head.
+        url = "git://git.git.savannah.gnu.org/config.git";
         ref = "refs/heads/master";
         revisions."2026-05-17" = revision;
       };
