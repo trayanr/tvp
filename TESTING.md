@@ -18,7 +18,7 @@ nix run .#test -- all --only perl_5_30_3
 nix run .#test -- all --catalogue --only php_8_5_12--redis_6_3_0
 ```
 
-`test all` is the standard foreground command, also used by CI. It submits the
+`test all` is the standard foreground command. It submits the
 declared checks to Nix, reuses valid local or substituted results, waits for
 independent checks even after a failure, and exits zero only when they all pass.
 It uses the machine's Nix concurrency settings. Logs and the terminal result are
@@ -31,11 +31,13 @@ alongside checks for the four
 compiler bases, Perl, Ruby, Redis and FreeTDS. Use
 `nix eval --json .#php.metadata` for current pair counts and
 `nix eval .#smokeTests.x86_64-linux.metadata.namedTests` for the smoke test count.
-Catalogue CI runs after smoke. It covers every supported release and public
-variant, including all PHP extension pairs. It requests named package and artifact
-outputs explicitly. A release without installed tests fails plan evaluation.
+CI schedules the frozen catalogue plan for the exact commit. It covers every
+supported release and public variant, including all PHP extension pairs. It
+requests named package and artifact outputs explicitly. A release without
+installed tests fails plan evaluation.
 Declared-broken releases are reported separately. The required catalogue CI
-result also includes verified publication to the signed NAS cache.
+check, `tvp/catalogue`, also requires verified publication to the signed NAS
+cache.
 [`SMOKE.md`](tools/test-runner/SMOKE.md) explains the commands and receipts.
 
 - Reuse existing package outputs and passing checks when their exact derivation
