@@ -1,0 +1,27 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -448 +448,4 @@
+-    fi
++    else
++	# Check lzma.h when pkg-config found the library.
++	AC_CHECK_HEADERS([lzma.h])
++    fi
+--- a/configure
++++ b/configure
+@@ -12781 +12781,15 @@
+-    fi
++    else
++	# Check lzma.h when pkg-config found the library.
++	for ac_header in lzma.h
++do :
++  ac_fn_c_check_header_mongrel "$LINENO" "lzma.h" "ac_cv_header_lzma_h" "$ac_includes_default"
++if test "x$ac_cv_header_lzma_h" = xyes; then :
++  cat >>confdefs.h <<_ACEOF
++#define HAVE_LZMA_H 1
++_ACEOF
++
++fi
++
++done
++
++    fi

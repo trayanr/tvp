@@ -124,7 +124,8 @@ in
       ) ''export CXXFLAGS="''${CXXFLAGS:--O2} -std=${final.cxxStandard}"''}
       export PKG_CONFIG_LIBDIR="$out/lib/pkgconfig"
       mkdir -p "$PKG_CONFIG_LIBDIR"
-      ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags} --without-debug --without-tests
+      # Keep the original test Makefile for the isolated upstream consumer.
+      ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags} --without-debug
     '')
     # Configure emits headers.sh with a literal /bin/sh interpreter.
     (steps.shebangs {

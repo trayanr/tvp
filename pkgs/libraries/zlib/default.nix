@@ -18,9 +18,21 @@ let
       releases = {
         "1.0.4" = "sha256-5cJgzT2xNw+z4MGT6cvZ8SepvQVdYis/tVuCdH9uWyQ=";
         "1.0.5" = "sha256-eAS+jm7aKXmoJd4l2GNG3Wpy5eNjuUZ6fIoyZNwiFaw=";
-        "1.0.6" = "sha256-O2E0wqZo0NiMbhP3OfgS9tqzUBpbziRs9Eq7B7Ur3L0=";
         "1.0.7" = "sha256-1w7+BtqpCGYYd6llEri3b93b93f1M4Z1cUYrQCwdkQ8=";
       };
+    }
+    {
+      def = {
+        builder = ./build-1.0.1.nix;
+        opts.versionFunction = true;
+        patches = [
+          {
+            file = ./1.0.6-ldshared-delimiter.patch;
+            reason = "LDSHARED contains commas in the linker's SONAME option.";
+          }
+        ];
+      };
+      releases."1.0.6" = "sha256-O2E0wqZo0NiMbhP3OfgS9tqzUBpbziRs9Eq7B7Ur3L0=";
     }
     {
       def = {
