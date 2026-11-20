@@ -710,6 +710,10 @@ let
         };
         patches = [ ] ++ [
           {
+            file = ./patches/tcl-conflict-compare.patch;
+            reason = "Use the public libc comparison as in SQLite 3.5.8. The separately linked Tcl module cannot call the private sqlite3StrICmp in the amalgamation.";
+          }
+          {
             file = ./patches/legacy-serial-width-assignment.patch;
             reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
           }
@@ -717,6 +721,40 @@ let
       };
       releases = {
         "3.5.7" = "sha256-kD7fWwjUZrqR6cWVgtBclCYvBe2tMRG6bRT8T4XQl4E=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-3.0.0.nix;
+        deps = {
+          tcl = tvp.packages.tcl_8;
+          readline = tvp.packages.readline_8;
+          testZlib = tvp.packages.zlib_1;
+        };
+        opts = {
+          buildFeatures = {
+            compileFlags = [
+              "-std=gnu17"
+              "-DUSE_INTERP_RESULT"
+            ];
+            hardeningDisable = [ "format" ];
+          };
+          sourceLayout = {
+            configureIsExecutable = false;
+          };
+          installedInterface = {
+            pkgConfigMajorMinor = true;
+          };
+          testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.5.7";
+        };
+        patches = [ ] ++ [
+          {
+            file = ./patches/legacy-serial-width-assignment.patch;
+            reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
+          }
+        ];
+      };
+      releases = {
         "3.5.8" = "sha256-hUaWXBAJFHG03dIV63YSd/faHKIUObXCMeh9HWxFLsw=";
       };
     }
@@ -818,6 +856,10 @@ let
           testPatches = (import ./tests/patches.nix { inherit (pkgs) lib; }) "3.6.3";
         };
         patches = [ ] ++ [
+          {
+            file = ./patches/tcl-conflict-compare.patch;
+            reason = "Use the public libc comparison as in SQLite 3.5.8. The separately linked Tcl module cannot call the private sqlite3StrICmp in the amalgamation.";
+          }
           {
             file = ./patches/legacy-serial-width-assignment.patch;
             reason = "Avoid signed INT64_MIN negation when choosing integer serialization width; defined unsigned magnitude preserves the original result for all other values and the width required for INT64_MIN.";
