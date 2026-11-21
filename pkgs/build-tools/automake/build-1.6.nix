@@ -23,6 +23,15 @@ let
     environment = final.environment;
   };
   checkpoint = "nix-support/automake-build-tree";
+  defaultCheckpointWriter = ../../../lib/build-checkpoint.py;
+  checkpointWriter =
+    if final.sourceLayout ? checkpointNormalizer then
+      let
+        mode = if final.patches == [ ] && final.configureFlags == [ ] then "normalize" else "preserve";
+      in
+      "${final.sourceLayout.checkpointNormalizer} ${defaultCheckpointWriter} ${mode}"
+    else
+      "${defaultCheckpointWriter}";
 in
 {
   pname = "automake";
@@ -122,7 +131,7 @@ in
     '')
     (
       (command "automake.save-build-tree" ''
-        ${tools.python}/bin/python3 -B ${../../../lib/build-checkpoint.py} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"
+        ${tools.python}/bin/python3 -B ${checkpointWriter} "$TVP_SOURCE_ROOT" "$out/${checkpoint}"
       '')
       // {
         tools = environment.tools ++ [ tools.python ];
