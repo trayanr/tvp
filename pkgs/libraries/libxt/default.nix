@@ -15,6 +15,29 @@ let
           libxau = tvp.packages.libxau_1;
           libxdmcp = tvp.packages.libxdmcp_1;
         };
+        patches = [
+          {
+            file = ./patches/1.3.0-c23-boolean.patch;
+            reason = "Backport upstream 56875344b2a6 to avoid using the C23 keyword true as a variable.";
+          }
+        ];
+      };
+      releases."1.3.0" = "sha256-UoILPNuCfQjckL39GwAio62JGbV6OYCLElkZc7Mxv5E=";
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          pkgConfig = tvp.packages.pkg-config;
+          libsm = tvp.packages.libsm_1;
+          libice = tvp.packages.libice_1;
+          libx11 = tvp.packages.libx11_1;
+          xorgproto = tvp.packages.xorgproto;
+          xtrans = tvp.packages.xtrans_1;
+          libxcb = tvp.packages.libxcb_1;
+          libxau = tvp.packages.libxau_1;
+          libxdmcp = tvp.packages.libxdmcp_1;
+        };
       };
       releases."1.3.1" = "sha256-4Kd0szMk9NTAWxmepFBQ+HIGWG2BZV+L7026Q02TEog=";
     }
