@@ -9,7 +9,10 @@ let
           xorgproto = tvp.packages.xorgproto;
         };
       };
-      releases."1.1.5" = "sha256-2KUiKCjDratwrfaaVYPx0y617OBDBPf4OStqNTqiIow=";
+      releases = {
+        "1.1.4" = "sha256-Lc5cwxf48LSE7DR9h9gdVSzb67F4vRPF2Bk7a3zWrQA=";
+        "1.1.5" = "sha256-2KUiKCjDratwrfaaVYPx0y617OBDBPf4OStqNTqiIow=";
+      };
     }
   ];
   pname = "libxdmcp";
