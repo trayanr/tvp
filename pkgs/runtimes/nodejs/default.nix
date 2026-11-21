@@ -8,7 +8,8 @@ let
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
-          python = tvp.packages.python_3;
+          # Upstream configure accepts Python 3.14 and rejects Python 3.15.
+          python = tvp.packages.python_3_14;
           # Exact previous runtime shell; independent of public Bash's bashbug.
           runtimeBash = tvp.lib.packages.withConstraint {
             category = "construction";
@@ -53,6 +54,33 @@ let
         "26.10.0" = "sha256-ezpUbTPLfhWkO916V+C+XV/V/8VT5uTBIAM+ZvC6IMU=";
         "26.11.0" = "sha256-qq2SQnBFJBCeiNSL57t7eUNIbZMedAo1LALpfhB/GMk=";
         "26.11.1" = "sha256-LHmjwQlcfaTFSchOkLLSjfVHkxWrbQr/m8cdz0yd8eA=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-25.4.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          python = tvp.packages.python_3;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
         "26.12.0" = "sha256-zln5A43aDmN2VvscNs9SwHxjeSL9gdQZ27ouwSmvvTU=";
         "26.12.1" = "sha256-BT47KWhZttjZP5nvl/qc7BxO4XHHKWgQDGSZeMHb04w=";
         "26.13.0" = "sha256-Jj9jns+noXtJQ412zb+a/3MXnjx8t4naabkAcYQn+i4=";
