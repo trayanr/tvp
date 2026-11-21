@@ -50,6 +50,41 @@ let
             reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
           } tvp.bases.gcc_16.full.compiler.cc;
           unzip = tvp.packages.unzip;
+          jdk = tvp.lib.packages.withConstraint {
+            reason = "Exact JDK21 provider of the released Android36 SDK profile; keep its launcher/runtime selection explicit.";
+          } tvp.packages.jdk_21_0_13;
+        };
+        opts = {
+          sourceLayout = {
+            url = "https://dl.google.com/android/repository/build-tools_r36.1_linux.zip";
+            archiveRoot = "android-16";
+            packageMetadata = ./metadata-36.1.0.xml;
+          };
+          installedInterface = {
+            sdkPath = "build-tools/36.1.0";
+          };
+        };
+        blob = {
+          reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
+          needs = "A source Android toolchain and component build graph.";
+          blocked.package = "android-sdk-from-source";
+        };
+      };
+      releases."36.1.0" = "sha256-p7WInkp5/POwl2vvQNQB9CQPse7YkdnZEWnaERHhHXg=";
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
+          } tvp.bases.gcc_16.full.compiler.libc;
+          runtimeCompiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
+          } tvp.bases.gcc_16.full.compiler.cc;
+          unzip = tvp.packages.unzip;
           jdk = tvp.packages.jdk_21;
         };
         opts = {
