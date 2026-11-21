@@ -23,13 +23,13 @@ let
       name = "libcups.${name}";
       cwd = "source";
       run = ''
-          mkdir -p "$evidence"
-          status=0
+        mkdir -p "$evidence"
         export TVP_SOURCE_ROOT
-          ${final.bash}/bin/bash -euo pipefail -c ${lib.escapeShellArg run} > "$evidence/${name}.log" 2>&1 || status=$?
-          cat "$evidence/${name}.log"
-          printf '%s\n' "$status" > "$evidence/${name}.status"
-          test "$status" = 0
+        status=0
+        # Keep diagnostics in the Nix log because parallel output can vary.
+        ${final.bash}/bin/bash -euo pipefail -c ${lib.escapeShellArg run} || status=$?
+        printf '%s\n' "$status" > "$evidence/${name}.status"
+        test "$status" = 0
       '';
     };
   productionPatches = builtins.filter (p: !(builtins.elem p final.testPatches)) final.patches;
