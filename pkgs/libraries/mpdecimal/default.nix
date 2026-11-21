@@ -3,6 +3,13 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
+        builder = ./build-2.5.1.nix;
+        deps.file = tvp.packages.file;
+      };
+      releases."2.5.1" = "sha256-n5zUwEH5m1xJ/7e1nZ8S2VtoPYhYVgiqVqYwdmeysh8=";
+    }
+    {
+      def = {
         builder = ./build-4.0.0.nix;
         deps.file = tvp.packages.file;
       };
