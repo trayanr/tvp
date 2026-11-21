@@ -33,6 +33,38 @@ let
     }
     {
       def = {
+        builder = ./build-r28.nix;
+        deps = {
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
+          } tvp.bases.gcc_16.full.compiler.libc;
+          runtimeCompiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
+          } tvp.bases.gcc_16.full.compiler.cc;
+          unzip = tvp.packages.unzip;
+          zlib = tvp.packages.zlib_1;
+          gnumake = tvp.packages.gnumake;
+        };
+        opts = {
+          sourceLayout = {
+            url = "https://dl.google.com/android/repository/android-ndk-r29-linux.zip";
+            archiveRoot = "android-ndk-r29";
+            packageMetadata = ./metadata-29.0.14206865.xml;
+          };
+          installedInterface.sdkPath = "ndk/29.0.14206865";
+        };
+        blob = {
+          reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
+          needs = "A source Android toolchain and component build graph.";
+          blocked.package = "android-sdk-from-source";
+        };
+      };
+      releases."29.0.14206865" = "sha256-Sru83IQvPUh5IG6WldUnCWA+Ut1o08H/8Es7Xnowjs8=";
+    }
+    {
+      def = {
         builder = ./build-r30.nix;
         deps = {
           runtimeLibc = tvp.lib.packages.withConstraint {
