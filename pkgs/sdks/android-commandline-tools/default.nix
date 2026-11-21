@@ -18,6 +18,40 @@ let
           jdk = tvp.packages.jdk_21;
           androidCli = tvp.lib.packages.withConstraint {
             category = "artifact";
+            reason = "Pinned Android CLI payload replaces the download launcher in this SDK archive.";
+          } tvp.canonical.android-cli_1_1_16717390;
+        };
+        opts = {
+          sourceLayout = {
+            url = "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip";
+            packageMetadata = ./metadata-22.0.xml;
+          };
+          installedInterface.sdkPath = "cmdline-tools/22.0";
+        };
+        blob = {
+          reason = "Pinned upstream Android SDK component distribution, with host tools adapted to the owned runtime.";
+          needs = "A source Android toolchain and component build graph.";
+          blocked.package = "android-sdk-from-source";
+        };
+      };
+      releases."22.0" = "sha256-TkxGTxRadRK1fQiKxsJ4wDye6mEIhrNaXggE507t9YM=";
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          runtimeLibc = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host libc selected by the released SDK adapter; preserve this generation independently of public compiler aliases.";
+          } tvp.bases.gcc_16.full.compiler.libc;
+          runtimeCompiler = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Exact earlier source-GNU host compiler runtime selected by the released SDK adapter; preserve its overridable runtime-payload role.";
+          } tvp.bases.gcc_16.full.compiler.cc;
+          unzip = tvp.packages.unzip;
+          jdk = tvp.packages.jdk_21;
+          androidCli = tvp.lib.packages.withConstraint {
+            category = "artifact";
             reason = "Matched pinned Android CLI payload for the released command-line tools.";
           } tvp.canonical.android-cli_1_1_16717390;
         };
