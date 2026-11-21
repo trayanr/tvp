@@ -4,7 +4,7 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ./build-owned-26.12.1.nix;
+        builder = ./build-owned-26.12.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -27,6 +27,7 @@ let
         ];
       };
       releases = {
+        "26.12.0" = "sha256-zln5A43aDmN2VvscNs9SwHxjeSL9gdQZ27ouwSmvvTU=";
         "26.12.1" = "sha256-BT47KWhZttjZP5nvl/qc7BxO4XHHKWgQDGSZeMHb04w=";
         "26.13.0" = "sha256-Jj9jns+noXtJQ412zb+a/3MXnjx8t4naabkAcYQn+i4=";
         "26.13.1" = "sha256-p/YgT/Y7aizSdNSJAyhau4btU6mQcOUy1ML9eHRX2eY=";
