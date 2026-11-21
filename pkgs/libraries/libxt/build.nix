@@ -1,4 +1,4 @@
-# Complete libxt 1.3.1 procedure; earlier providers stay explicit.
+# Complete libxt 1.3.x procedure; earlier providers stay explicit.
 {
   tvp,
   lib,
@@ -14,6 +14,7 @@
   pkgConfig,
   xorgproto,
   xtrans,
+  patches ? [ ],
   installedInterface ? { },
   doCheck ? true,
 }:
@@ -36,6 +37,7 @@ in
     base
     src
     version
+    patches
     doCheck
     pkgConfig
     libsm
@@ -93,6 +95,14 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
+    })
+    (lib.optional (final.patches != [ ]) {
+      name = "source.patch";
+      cwd = "source";
+      tools = [ tools.patch ];
+      run = lib.concatMapStringsSep "\n" (
+        patch: "${tools.patch}/bin/patch --batch --forward --fuzz=0 -p1 < ${lib.escapeShellArg "${patch}"}"
+      ) final.patches;
     })
     (steps.prepareAutotools {
       name = "libxt.prepare";
