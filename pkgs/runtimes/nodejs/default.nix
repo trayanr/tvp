@@ -17,7 +17,8 @@ let
           } tvp.bases.gcc_16.full.shell;
           rustc = tvp.packages.rustc_1;
           cargo = tvp.packages.cargo-bootstrap_1;
-          openssl = tvp.packages.openssl;
+          # OpenSSL 4 makes the ASN.1 types used by ncrypto opaque.
+          openssl = tvp.packages.openssl_3_5;
           zlib = tvp.packages.zlib_1;
         };
         patches = [
@@ -36,7 +37,65 @@ let
         "25.8.0" = "sha256-XQBCnLhWzHIgDsbAjozdp16pYYJW3o2Jn6BJwj9KLu4=";
         "25.8.1" = "sha256-CyWytfq4Dqi0P9qnRR9QBlVx4L/aJSTKQr3ouY/k0tk=";
         "25.8.2" = "sha256-PvsZ51fcWbshYyUHIA0t54I2nVImpolV6Tcskl/fJHE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-25.4.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Upstream configure accepts Python 3.14 and rejects Python 3.15.
+          python = tvp.packages.python_3_14;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+        # This release defaults to Temporal off; the opt-in V8 build fails.
+        opts.temporal = false;
+      };
+      releases = {
         "25.9.0" = "sha256-j3ivPuVfsnhmi1+AHbWL0aOOoWExjrXOISjdvJzYE6o=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-25.4.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Upstream configure accepts Python 3.14 and rejects Python 3.15.
+          python = tvp.packages.python_3_14;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
         "26.0.0" = "sha256-/LXlwGpcLsnmaYASSGV6r6oikfh2Dax7+2Ofh4MYxZI=";
         "26.1.0" = "sha256-d5oTZIiVddROAhWtw4GAa70NlDdVe1mJPhcvW501qZA=";
         "26.2.0" = "sha256-6oK+fbQY9Us+8VOgLUTU9nSEZvR2WugLxITzSvQN9hA=";
@@ -47,13 +106,45 @@ let
         "26.5.1" = "sha256-33dwqamTRvi3O6bTGtib1vhotRxzh8NifctEygZfSUg=";
         "26.6.0" = "sha256-7LbuyBJQXJKSUpCHokNuxsiR/+DjqJeDNBbl10NtZZ8=";
         "26.7.0" = "sha256-5rGCy+6rAy0QgspKxP4V46V95pHTveeOz4p2H9Vu41Y=";
-        "26.8.0" = "sha256-IodhPKpx+auN/0y+x9oy8Prj6IB6aHand2SswW1Mykw=";
         "26.8.1" = "sha256-0WmIMqGhDwUM3aBEo+PWp0gkaBHi57yJupqL1pPcRfI=";
         "26.8.2" = "sha256-NrN79e5NCSudnf8tGpCxRE+LRT7d9v+Wyr3ruX0y9B0=";
         "26.9.0" = "sha256-R7lw2IURtCnlh7dA+nMxdpCdKiAFopZi8BsFIF9YRos=";
         "26.10.0" = "sha256-ezpUbTPLfhWkO916V+C+XV/V/8VT5uTBIAM+ZvC6IMU=";
         "26.11.0" = "sha256-qq2SQnBFJBCeiNSL57t7eUNIbZMedAo1LALpfhB/GMk=";
         "26.11.1" = "sha256-LHmjwQlcfaTFSchOkLLSjfVHkxWrbQr/m8cdz0yd8eA=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-25.4.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Upstream configure accepts Python 3.14 and rejects Python 3.15.
+          python = tvp.packages.python_3_14;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/release-tag-26.8.0.patch;
+            reason = "Match the published stable release by removing its stale alpha macros, as in 26.8.1.";
+          }
+        ];
+      };
+      releases = {
+        "26.8.0" = "sha256-IodhPKpx+auN/0y+x9oy8Prj6IB6aHand2SswW1Mykw=";
       };
     }
     {

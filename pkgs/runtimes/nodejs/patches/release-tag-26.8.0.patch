@@ -1,0 +1,13 @@
+--- a/src/node_version.h
++++ b/src/node_version.h
+@@ -30,10 +30,6 @@
+ #define NODE_VERSION_LTS_CODENAME ""
+
+ #define NODE_VERSION_IS_RELEASE 1
+-
+-#define NODE_ALPHA_MAJOR_VERSION 0
+-#define NODE_ALPHA_MINOR_VERSION 0
+-#define NODE_ALPHA_PATCH_VERSION 0
+
+ #ifndef NODE_STRINGIFY
+ #define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)
