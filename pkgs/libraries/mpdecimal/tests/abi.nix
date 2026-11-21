@@ -43,7 +43,16 @@ context.mkSuite {
           !package.specification.buildFeatures.static
         ) "test ! -e ${package}/lib/libmpdec.a; test ! -e ${package}/lib/libmpdec++.a"}
         printf context-ok
-      '';
+      ''
+      + lib.optionalString (package.specification.installedInterface ? sonameMajor) (
+        let
+          major = toString package.specification.installedInterface.sonameMajor;
+          check = name: ''
+            readelf -d "${package}/lib/${name}.so" | grep -F 'Library soname: [${name}.so.${major}]' >&2
+          '';
+        in
+        check "libmpdec" + lib.optionalString package.specification.buildFeatures.cxx (check "libmpdec++")
+      );
       expected = "context-ok";
     };
   };
