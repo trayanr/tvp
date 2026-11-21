@@ -68,7 +68,9 @@ in
       }
     )
     (steps.split "android-build-tools.finalize")
-    (outputs.copyArtifacts { })
+    # Nix store optimisation can hardlink the identical SDK linker placeholders.
+    # Host ELF repair requires private files in the final output.
+    (outputs.copyArtifacts { preserveHardlinks = false; })
     (command "android-build-tools.metadata" ''
       component="$out/libexec/android-sdk/${final.installedInterface.sdkPath}"
       cp ${final.sourceLayout.packageMetadata} "$component/package.xml"
