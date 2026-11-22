@@ -21,6 +21,8 @@ let
           openssl = tvp.packages.openssl_3_5;
           zlib = tvp.packages.zlib_1;
         };
+        # Upstream defaults to Temporal off; the opt-in V8 build fails in this era.
+        opts.temporal = false;
         patches = [
           {
             file = ./patches/store-shell.patch;

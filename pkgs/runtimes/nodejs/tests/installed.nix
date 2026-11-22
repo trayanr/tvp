@@ -153,7 +153,7 @@ in
       expected = "v${package.version}";
     };
     runtime = {
-      script = "node ${./fixtures/runtime.js}";
+      script = "node ${if package.tvp.features.temporal then ./fixtures/runtime.js else ./fixtures/runtime-without-temporal.js}";
       expected = "runtime-ok";
     };
     shell = {
