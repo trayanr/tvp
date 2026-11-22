@@ -14,6 +14,7 @@
   openssl,
   zlib,
   doCheck ? true,
+  temporal ? true,
 }@args:
 final:
 let
@@ -98,6 +99,7 @@ in
     ninja
     ;
   doCheck = args.doCheck or true;
+  inherit temporal;
 
   environment = {
     tools = [
@@ -168,7 +170,7 @@ in
     (command "configure" ''
       export CARGO_NET_OFFLINE=true
       export CARGO_HOME="$TMPDIR/cargo-home"
-      ${python}/bin/python3 configure --prefix=${lib.escapeShellArg configurePrefix} --ninja --v8-enable-temporal-support \
+      ${python}/bin/python3 configure --prefix=${lib.escapeShellArg configurePrefix} --ninja${lib.optionalString final.temporal " --v8-enable-temporal-support"} \
         --with-intl=full-icu --shared-openssl --shared-openssl-includes=${lib.getDev openssl}/include \
         --shared-openssl-libpath=${lib.getLib openssl}/lib --shared-zlib \
         --shared-zlib-includes=${lib.getDev zlib}/include --shared-zlib-libpath=${lib.getLib zlib}/lib
@@ -259,11 +261,11 @@ in
   tvp.features = {
     npm = true;
     fullIcu = true;
-    temporal = true;
+    inherit (final) temporal;
     sqlite = true;
   };
   meta = {
-    description = "Node.js with npm, full ICU, Temporal and SQLite";
+    description = "Node.js with npm, full ICU${lib.optionalString final.temporal ", Temporal"} and SQLite";
     homepage = "https://nodejs.org/";
     license = lib.licenses.mit;
     platforms = [ "x86_64-linux" ];
