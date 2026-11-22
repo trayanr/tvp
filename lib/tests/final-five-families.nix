@@ -13,7 +13,7 @@ let
     perl = 10;
     jdk = 1;
     jdk-bootstrap = 1;
-    nodejs = 82;
+    nodejs = 120;
     glibc = 1;
   };
   selected = lib.foldl' (out: name: out // modules.${name}.canonical) { } (
