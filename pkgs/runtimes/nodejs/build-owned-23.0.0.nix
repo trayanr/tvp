@@ -15,6 +15,7 @@
   zlib,
   doCheck ? true,
   temporal ? true,
+  sqliteRequiresFlag ? false,
 }@args:
 final:
 let
@@ -99,7 +100,7 @@ in
     ninja
     ;
   doCheck = args.doCheck or true;
-  inherit temporal;
+  inherit temporal sqliteRequiresFlag;
 
   environment = {
     tools = [
@@ -261,7 +262,7 @@ in
   tvp.features = {
     npm = true;
     fullIcu = true;
-    inherit (final) temporal;
+    inherit (final) temporal sqliteRequiresFlag;
     sqlite = true;
   };
   meta = {

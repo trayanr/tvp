@@ -4,7 +4,85 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 23 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Upstream ships OpenSSL 3.0 throughout this release line.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        # The built-in SQLite module is gated by its CLI flag before 23.4.0.
+        opts.sqliteRequiresFlag = true;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "23.0.0" = "sha256-ecgAssl8SXv33iGsdDXcX1h8fUc191AFasYxDUO3nso=";
+        "23.1.0" = "sha256-V8v9PdUfkwDqK45gqO0hWx6qcfveTDkDp9MaRDpKRCM=";
+        "23.2.0" = "sha256-PPeoo2aCd1aTaR8d6QG7WXOtPAriqoexrdneUV57L8c=";
+        "23.3.0" = "sha256-Qqa1YRruxnI/S2+Y8cIF/B+jI5nfQdvtaicIOv1IxcE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-23.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 23 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Upstream ships OpenSSL 3.0 throughout this release line.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "23.4.0" = "sha256-S7FL8/r3kLsSKlN7Bde/QAb8UeeHYbFXzkU7Y/p+M3E=";
+        "23.5.0" = "sha256-Mud7NsB3TGi6q0G8fCrMWGY8oKK3xNPpvsb3YcFf2sA=";
+        "23.6.0" = "sha256-1vPxNtwm1hvRuvriqfwNXn9xOm8AZ8XhA1G8fKZXTc0=";
+        "23.6.1" = "sha256-/vpJ3t6HMwGK2k4w+IWAjMTiIWe4rjIzxtaiNzev928=";
+        "23.7.0" = "sha256-jeGS7y/uLuiiMN2NDpruGC7pyYVszbX9lRiKvoT3ckI=";
+        "23.8.0" = "sha256-bsXVTQ6EI/xZhvbvpPZh6DcGWYGLFPRYzcnRufddO4g=";
+        "23.9.0" = "sha256-xrQgvtuwSaZTjDOvKKuviQEczIefDw+BeRZ1Jjwjj5c=";
+        "23.10.0" = "sha256-s55fvT3ruDGN3qavPomwfa+4kUIft8qZ++Gcma2r5f0=";
+        "23.11.0" = "sha256-8sXbIfxdPD14x+iCO/93DO8NqAeMO1rE+m0X1aQb6Z0=";
+        "23.11.1" = "sha256-rvbGc5XDKDdrZlvO78nRegailh+akrkwGd/zmFTVsu8=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -43,7 +121,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -79,7 +157,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -130,7 +208,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -174,7 +252,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -205,7 +283,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -249,7 +327,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -282,7 +360,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-24.0.0.nix;
+        builder = ./build-owned-23.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
