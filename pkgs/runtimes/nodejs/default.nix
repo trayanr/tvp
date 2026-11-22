@@ -4,7 +4,133 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ./build-owned-25.0.0.nix;
+        builder = ./build-owned-24.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 24 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Match the OpenSSL minor line shipped in these upstream releases.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "24.0.0" = "sha256-kU8/GwP4SgmU1zV/GQ/xPAOIAMaTtsBtoikOtYjIJ2E=";
+        "24.0.1" = "sha256-cCcQJpcYCECaftZEQ2DV/j70FGwcpT8sopDGDSFL6E4=";
+        "24.0.2" = "sha256-FZcHWvwG5cYUXQv7134gcsLsCrcaxJUM8AiyZBN0zXE=";
+        "24.1.0" = "sha256-yBcbKuzLKMjFNH8nOiWtrhcvsqZbyMl1vCLsWJSdDq8=";
+        "24.2.0" = "sha256-QBQ9Q++97rlTeZX1MhJsSU1jox2jMqy1Ai928Ar8Yqs=";
+        "24.3.0" = "sha256-62iO+KY/2p68C1+QdgmkbibbbZrO78CDIAmpg3Hpku0=";
+        "24.4.0" = "sha256-QvqAedolqSYBPNibnTRn0JEQ5PuwxDk0Lr5N1uzCa7s=";
+        "24.4.1" = "sha256-rbecoJh0hu1mE2IT2hn/F+9nJNyzQMMg4BDJRCEBZS8=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-24.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 24 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Match the OpenSSL minor line shipped in these upstream releases.
+          openssl = tvp.packages.openssl_3_5;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "24.5.0" = "sha256-8bqWIEckvRxt53WOCLNxi6C0XYf7O+vX4wCXh0zMgTA=";
+        "24.6.0" = "sha256-itXDh7XVXY87eDsPGyG64Do7OxCsiaJdJmz/p7eV6EI=";
+        "24.7.0" = "sha256-z3Snd1O2Kf/r0uOPsVOiEAGyt6PDZcDsczKxILmMclE=";
+        "24.8.0" = "sha256-HAOzYuv0dA1HWLmj0wh+PemJ9UgjZQ7IC0cJDvQUsuA=";
+        "24.9.0" = "sha256-8XvEywH1kJjDSiiMG7EJp3iGfBTusOu9YI0GF7EZO78=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-24.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 24 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Match the OpenSSL minor line shipped in these upstream releases.
+          openssl = tvp.packages.openssl_3_5;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "24.10.0" = "sha256-8X42yyzIw0qSFbpXtVznkbEC4pNDLtR61jy68V94Z48=";
+        "24.11.0" = "sha256-z5yQbUZEZHH5VbHyxqzopGFQHYLSfhroWV3LOw4sMSo=";
+        "24.11.1" = "sha256-6k2jXxyco3bsaDfh4wzuMNSRhH/hUqPwN43BFW2VS70=";
+        "24.12.0" = "sha256-bT6JGgFrkPbGoZ6ly8nJDFfu+RmGcLqT8E+oKvAldK4=";
+        "24.13.0" = "sha256-Mg/pCcuzR9z1FiAeSWTvF3uBON+af4ENDVSVBIGzFYs=";
+        "24.13.1" = "sha256-sie8ho+16eyGcGIOKyVTDrEsF9Q+bHvFG7OKZgaEGS0=";
+        "24.14.0" = "sha256-n+Al70Aoq6ldFueBBRi/Sl6Kv7C9wH2KP9uwr9U4138=";
+        "24.14.1" = "sha256-eCJQdxPyAs8qVRiZ0lAllkP0d7ZxcG20Iab7VcSqCZE=";
+        "24.15.0" = "sha256-pPZT157RQKqtkh6MIqO1hcqFz9q4DUAw9jCeRmOoocg=";
+        "24.16.0" = "sha256-L/hKbecLYWUpARGw/GVt7RrSB6eZgW/nIMx8MSMt8w8=";
+        "24.17.0" = "sha256-p6tWLtI2minGi3L6AOMQO83+NwY9/3mcasyOQE4nX80=";
+        "24.18.0" = "sha256-6Ur94k2wjgxWTucRCi1aq1HuAFk4LJ/YIzxU7sR7KPk=";
+        "24.18.1" = "sha256-htQNWUu9/PaQCaYv30PLGa5ytstYItK92DScWhsvpig=";
+        "24.19.0" = "sha256-9tleEKBDHuEGf8aqvp92KQi0cW3TUyTh3bSxRmt2ZZ8=";
+        "24.20.0" = "sha256-JzL8P1iN0zXNZ3nAaGT3zUJLsbX/mhdDBZpmxU+cpKE=";
+        "24.21.0" = "sha256-pvVN77b9fIT0HboT1h546bTglhcSz2HylxXAX1ztlPw=";
+        "24.22.0" = "sha256-Qfl8/yxmbx+Ck9xfhcZejdYFwWtD/Z/r1J7eMu4eAyk=";
+        "24.22.1" = "sha256-T1N5eWKAza6wwvNY/QS2oWzE+336g7WoyRqdljtDUjE=";
+        "24.22.2" = "sha256-j+LsFyO7n40LaDkHyCcI3rvtpkryHLKqIUxCQe7QoGE=";
+        "24.22.3" = "sha256-SMo6qKmwITM1aSLvT8gCAOAFmMgKTvRG98OaRZIiWT0=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-24.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -48,7 +174,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.0.0.nix;
+        builder = ./build-owned-24.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -79,7 +205,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.0.0.nix;
+        builder = ./build-owned-24.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -123,7 +249,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.0.0.nix;
+        builder = ./build-owned-24.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -156,7 +282,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.0.0.nix;
+        builder = ./build-owned-24.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
