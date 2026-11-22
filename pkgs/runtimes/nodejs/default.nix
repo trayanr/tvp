@@ -4,7 +4,7 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ./build-owned-25.4.0.nix;
+        builder = ./build-owned-25.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -31,6 +31,11 @@ let
         ];
       };
       releases = {
+        "25.0.0" = "sha256-KCLNe1EMlV+MTUSPpIPwHSg5JRd0Igo1amubwqsgOa4=";
+        "25.1.0" = "sha256-7ndBGQ5HQC38YhVHrCPT9Y5kY6hoeNwYefuejeHOMiY=";
+        "25.2.0" = "sha256-i/e6+1qJ09IO77yxWUAeKrzOoM+FvvZeMUtiZzDFJaE=";
+        "25.2.1" = "sha256-qnxKwQdtwpmolJuNg0JjZZskCOwOW7pIRnOozgdmyLk=";
+        "25.3.0" = "sha256-l5OQme3QNaDBotH8hJysAY7Co4wMKN2Ogkb9iDzbnp4=";
         "25.4.0" = "sha256-BONlqtzXv0zxpgAXI+pBA1v7EY14+KjuIFSzf8XLZ9Y=";
         "25.5.0" = "sha256-fjXvr2PI/nc3uMYnkuxUflqVpp8fgT/PuihWauzJ/ZI=";
         "25.6.0" = "sha256-nbaEjIArGYHA+utxpbjMeZE/gqdH9/HVAmDG0veB734=";
@@ -43,7 +48,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.4.0.nix;
+        builder = ./build-owned-25.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -74,7 +79,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.4.0.nix;
+        builder = ./build-owned-25.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -118,7 +123,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.4.0.nix;
+        builder = ./build-owned-25.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
@@ -151,7 +156,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-25.4.0.nix;
+        builder = ./build-owned-25.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
           # deliberately omits it. Keep this requirement local to Node.
