@@ -26,6 +26,7 @@ tvp.lib.packages.mergeNamespaces {
   libpng = import ./libpng { inherit pkgs tvp; };
   libsodium = import ./libsodium { inherit pkgs tvp; };
   oniguruma = import ./oniguruma { inherit pkgs tvp; };
+  numactl = import ./numactl { inherit pkgs tvp; };
   libwebp = import ./libwebp { inherit pkgs tvp; };
   openldap = import ./openldap { inherit pkgs tvp; };
   sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
