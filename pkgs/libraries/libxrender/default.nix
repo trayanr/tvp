@@ -14,7 +14,11 @@ let
           libxdmcp = tvp.packages.libxdmcp_1;
         };
       };
-      releases."0.9.13" = "sha256-P+iMYJ32eC4eevLk3jayVj1wzXD/fcsc2lYa1kkSu2Q=";
+      releases = {
+        "0.9.11" = "sha256-vFN1mjqD0f9wL7WWQbPS98VuBQUfoM+pNQEWb6eC3CQ=";
+        "0.9.12" = "sha256-uDISjaSLOcjWCCJEgXQ0A60Wkb9OVU5L6cF03xcdG5c=";
+        "0.9.13" = "sha256-P+iMYJ32eC4eevLk3jayVj1wzXD/fcsc2lYa1kkSu2Q=";
+      };
     }
   ];
   pname = "libxrender";
