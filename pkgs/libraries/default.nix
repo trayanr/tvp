@@ -49,6 +49,7 @@ tvp.lib.packages.mergeNamespaces {
   isl = import ./isl { inherit pkgs tvp; };
   openssl = import ./openssl { inherit pkgs tvp; };
   libxml2 = import ./libxml2 { inherit pkgs tvp; };
+  libxslt = import ./libxslt { inherit pkgs tvp; };
   icu = import ./icu { inherit pkgs tvp; };
   libzip = import ./libzip { inherit pkgs tvp; };
   ncurses = import ./ncurses { inherit pkgs tvp; };
