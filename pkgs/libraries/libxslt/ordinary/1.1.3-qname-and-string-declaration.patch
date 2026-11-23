@@ -1,0 +1,21 @@
+--- a/libxslt/preproc.c
++++ b/libxslt/preproc.c
+@@ -635 +635 @@
+-	URI = xsltGetQNameURI(inst, &prop);
++	URI = xsltGetQNameURI(inst, (xmlChar **)&prop);
+@@ -824 +824 @@
+-	URI = xsltGetQNameURI(inst, &prop);
++	URI = xsltGetQNameURI(inst, (xmlChar **)&prop);
+@@ -868 +868 @@
+-	URI = xsltGetQNameURI(inst, &prop);
++	URI = xsltGetQNameURI(inst, (xmlChar **)&prop);
+@@ -1053 +1053 @@
+-	URI = xsltGetQNameURI(inst, &prop);
++	URI = xsltGetQNameURI(inst, (xmlChar **)&prop);
+@@ -1117 +1117 @@
+-	URI = xsltGetQNameURI(inst, &prop);
++	URI = xsltGetQNameURI(inst, (xmlChar **)&prop);
+--- a/libxslt/xsltutils.c
++++ b/libxslt/xsltutils.c
+@@ -25,0 +26 @@
++#include <string.h>

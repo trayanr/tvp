@@ -8,6 +8,7 @@
   gnu-config ? null,
   compression,
   configureOptions ? [ ],
+  patches ? [ ],
   license ? lib.licenses.mit,
   pkgconfig ? true,
 }:
@@ -31,6 +32,7 @@ in
     gnu-config
     compression
     configureOptions
+    patches
     license
     ;
   inherit (tools) bash coreutils;
@@ -49,7 +51,8 @@ in
     overrides.values.CFLAGS = "-O2 -std=gnu17 -fcommon";
   };
   runtime = {
-    libraries = [ final.libxml2 ];
+    # xml2-config --libs links the selected libxml2 compression providers directly.
+    libraries = [ final.libxml2 ] ++ final.libxml2.specification.runtime.libraries;
     shell = tools.bash;
   };
   installedInterface = { inherit pkgconfig; };
@@ -58,6 +61,13 @@ in
       src = final.src;
       compression = final.compression;
     })
+    (lib.optional (final.patches != [ ]) (
+      steps.command { environment.tools = [ tools.patch ]; } "libxslt.patch" ''
+        for patch in ${lib.escapeShellArgs (map (file: "${file}") final.patches)}; do
+          ${tools.patch}/bin/patch --batch --fuzz=0 -p1 < "$patch"
+        done
+      ''
+    ))
     (lib.optional (final.gnu-config != null) {
       name = "libxslt.gnu-config";
       cwd = "source";
@@ -72,6 +82,13 @@ in
       test "$(grep -c -- '--libs print' configure)" -eq 1
       sed -i 's/--libs print/--libs/g' configure
     '')
+    (lib.optional (lib.versionOlder final.version "1.0.23") (
+      command "libxslt.type-compiler-probe" ''
+        # The shipped Autoconf probes relied on pre-C99 implicit int.
+        test "$(grep -Fxc 'main(){return(0);}' configure)" -ge 1
+        sed -i 's/^main(){return(0);}$/int main(void){return(0);}/' configure
+      ''
+    ))
     (command "libxslt.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all

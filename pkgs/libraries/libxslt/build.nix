@@ -5,6 +5,7 @@
   src,
   version,
   libxml2,
+  patches ? [ ],
 }:
 final:
 let
@@ -23,6 +24,7 @@ in
     src
     version
     libxml2
+    patches
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
@@ -45,6 +47,13 @@ in
   installedInterface.pkgconfig = true;
   plan = steps.sequence [
     (steps.unpack { src = final.src; })
+    (lib.optional (final.patches != [ ]) (
+      steps.command { environment.tools = [ tools.patch ]; } "libxslt.patch" ''
+        for patch in ${lib.escapeShellArgs (map (file: "${file}") final.patches)}; do
+          ${tools.patch}/bin/patch --batch --fuzz=0 -p1 < "$patch"
+        done
+      ''
+    ))
     (steps.prepareAutotools { name = "libxslt.prepare"; })
     (command "libxslt.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash

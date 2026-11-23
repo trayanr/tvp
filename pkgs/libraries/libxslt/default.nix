@@ -3,6 +3,10 @@ let
   inherit (pkgs) lib;
   pname = "libxslt";
   upstream = "https://download.gnome.org/sources/libxslt/";
+  extensionsStdlibPatch = {
+    file = ./ordinary/extensions-include-stdlib.patch;
+    reason = "Backport 1.1.39's explicit stdlib.h include so getenv has its declaration on Unix.";
+  };
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -105,20 +109,100 @@ let
         "1.0.25" = "sha256-O/x8BixZ25SN5z2RRHLjBS/x19ANN03ds5A+oVxfeMw=";
         "1.0.26" = "sha256-Eqc+jt72gt+PLxTjuWc1Sb5lQJQWKxw9NHT6whZ9UFE=";
         "1.0.27" = "sha256-6oCTgDDO32XWo5hfjV+ld08bBwk06cTeOBJuFWS9rCM=";
-        "1.0.28" = "sha256-qjDzIxqDX8dGA3lfN/Bs5BA8cxJ9a66Izlqq5tpTDG8=";
-        "1.0.29" = "sha256-e1WuxCjWJXRSvgJURs0EYHHitL+lgVbSiesZTjaD1Kg=";
-        "1.0.30" = "sha256-cR9XuP82naP+IH23Y0NIV77GZXOV6S0FR823A/MDRHI=";
-        "1.0.31" = "sha256-jojZo+yv5G7R6ub6HqIdRU/OdDh57q6QeNaxHI7GTZg=";
         "1.0.32" = "sha256-PFpJ8tZSGYF2VxnQR88AXSmn8OMQBciQ46qyekDt+wo=";
         "1.0.33" = "sha256-MjUwRCHaQWKBh81i8Fx02KXeJjEUOSBcZRllUq7J/ls=";
         "1.1.0" = "sha256-rQOPBpKl5S/Tw8R7d67AkReHiITi7tRbeR/s8Wo9758=";
         "1.1.1" = "sha256-VgHTanXSxOqDEeO4yiyJ5UjcPLPJ8AKwy9aMfbYthfQ=";
         "1.1.2" = "sha256-X5BEPqgxa5L9/rZZUQ+AaTOLCtG0eHWc1vmL8vvFduU=";
-        "1.1.3" = "sha256-4OLzYFrRxiqUDFrolwft6DizBcaalMTJNQMj/MTCp3s=";
         "1.1.4" = "sha256-b+1HJBBsfslDHB6P/yv8+mQGWYFc3taZsNbtmVRqTrE=";
         "1.1.5" = "sha256-E8DqJZEjPrnDFG+xD2k11QtF7A2lpEfMd364Y5pKxgo=";
         "1.1.6" = "sha256-iEpATeuPA75p6DBQ6B+BIaibkhaLWoaxGlK7psQRBrw=";
         "1.1.8" = "sha256-wSWbTSK55iO1Ep0ckiWAAirvMAL6+z6NX0+GMgwN4d0=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.1.0.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These early libxslt sources use the legacy xml2-config and libxml2 API from the 2.7 line.";
+        } tvp.packages.libxml2_2_7_8;
+        opts = {
+          compression = "bzip2";
+          configureOptions = [ "--without-python" ];
+        };
+        patches = [
+          {
+            file = ./ordinary/1.0.28-value-tree.patch;
+            reason = "Backport 1.0.30's conversion of document pointers passed to xmlXPathNewValueTree.";
+          }
+        ];
+      };
+      releases = {
+        "1.0.28" = "sha256-qjDzIxqDX8dGA3lfN/Bs5BA8cxJ9a66Izlqq5tpTDG8=";
+        "1.0.29" = "sha256-e1WuxCjWJXRSvgJURs0EYHHitL+lgVbSiesZTjaD1Kg=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.1.0.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These early libxslt sources use the legacy xml2-config and libxml2 API from the 2.7 line.";
+        } tvp.packages.libxml2_2_7_8;
+        opts = {
+          compression = "bzip2";
+          configureOptions = [ "--without-python" ];
+        };
+        patches = [
+          {
+            file = ./ordinary/1.0.30-parameter-lookup.patch;
+            reason = "Backport 1.0.31's pointer-typed hash-table lookup for global parameters.";
+          }
+        ];
+      };
+      releases = {
+        "1.0.30" = "sha256-cR9XuP82naP+IH23Y0NIV77GZXOV6S0FR823A/MDRHI=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.1.0.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These early libxslt sources use the legacy xml2-config and libxml2 API from the 2.7 line.";
+        } tvp.packages.libxml2_2_7_8;
+        opts = {
+          compression = "bzip2";
+          configureOptions = [ "--without-python" ];
+        };
+        patches = [
+          {
+            file = ./ordinary/1.0.31-copy-namespace.patch;
+            reason = "Backport 1.0.32's conversion of the namespace node before xsltCopyNamespace.";
+          }
+        ];
+      };
+      releases = {
+        "1.0.31" = "sha256-jojZo+yv5G7R6ub6HqIdRU/OdDh57q6QeNaxHI7GTZg=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-0.1.0.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These early libxslt sources use the legacy xml2-config and libxml2 API from the 2.7 line.";
+        } tvp.packages.libxml2_2_7_8;
+        opts = {
+          compression = "bzip2";
+          configureOptions = [ "--without-python" ];
+        };
+        patches = [
+          {
+            file = ./ordinary/1.1.3-qname-and-string-declaration.patch;
+            reason = "Backport 1.1.4's QName argument conversion and explicit string.h include.";
+          }
+        ];
+      };
+      releases = {
+        "1.1.3" = "sha256-4OLzYFrRxiqUDFrolwft6DizBcaalMTJNQMj/MTCp3s=";
       };
     }
     {
@@ -155,8 +239,8 @@ let
       def = {
         builder = ./build-0.1.0.nix;
         deps.libxml2 = tvp.lib.packages.withConstraint {
-          reason = "These sources require the legacy xml2-config interface, removed upstream in libxml2 2.14.";
-        } tvp.packages.libxml2_2_9_14;
+          reason = "These sources use the public xmlBuffer layout and non-const xmlHashScanner callback from before libxml2 2.9.";
+        } tvp.packages.libxml2_2_8_0;
         opts = {
           compression = "xz";
           configureOptions = [
@@ -181,17 +265,45 @@ let
         deps.libxml2 = tvp.lib.packages.withConstraint {
           reason = "These libxslt releases precede the libxml2 2.13 API removals.";
         } tvp.packages.libxml2_2_12_10;
+        patches = [
+          extensionsStdlibPatch
+          {
+            file = ./ordinary/extensions-hash-callback.patch;
+            reason = "Backport 1.1.33's const-correct xmlHashScanner signature for libxml2 2.12.";
+          }
+        ];
       };
       releases = {
         "1.1.30" = "sha256-2x5OJursR9APiFutGah0nrEAiQm4F9ZQEBNl8GjuOyQ=";
         "1.1.31" = "sha256-Z4AMZqq/7e1W9EmGKEEJ+1MndqwJYJh+dUU93ic1Obg=";
         "1.1.32" = "sha256-t9qQ6qaw2unpo3aeKadXNC7vDtuae0MUJIFDdUFEIq8=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These libxslt releases precede the libxml2 2.13 API removals.";
+        } tvp.packages.libxml2_2_12_10;
+        patches = [ extensionsStdlibPatch ];
+      };
+      releases = {
         "1.1.33" = "sha256-OUTTp0tMprQPWZZ+Klh6vGmU9pNdaX2fobjt1yJRPpA=";
         "1.1.34" = "sha256-KMR9szq02u+mIy8xzLPGUmDIJRUeyG7EYTVSR/P1aCQ=";
         "1.1.35" = "sha256-gkfzPpqHLGrIWapFAYvExNALl+L+rJ7rwQyTzh803Xk=";
         "1.1.36" = "sha256-EoSPCkQI9ltTDTlizZ/2cLaueWGRz+/zdSK1dy3o3I4=";
         "1.1.37" = "sha256-Oksn3IAnzNYUZyWVAzbx7FIJKPMg8UTrX6eZCuYSOrQ=";
         "1.1.38" = "sha256-HzJFBCWBmgmsr/Krelp/ii7HlW5QXXvutF6EPQ4eyrE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These libxslt releases precede the libxml2 2.13 API removals.";
+        } tvp.packages.libxml2_2_12_10;
+      };
+      releases = {
         "1.1.39" = "sha256-KiCtYhFIM5sHWcTU6WcZNi3uZMmgltu6YlugU4RjSfA=";
         "1.1.40" = "sha256-GUcV2wIwNfZftWZALyrSteq0wp1UH1ETBcQLKbH0jRM=";
         "1.1.41" = "sha256-OtOSr5ERW3dA97UNIozBxfwTr8HafxbLAhORejf3G9o=";
