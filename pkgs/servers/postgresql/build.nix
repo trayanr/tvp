@@ -13,7 +13,7 @@
   readline,
   tzdata,
   zlib,
-  zstd,
+  zstd ? null,
 }:
 final:
 let
@@ -39,8 +39,7 @@ let
     # Configure's Readline link probe also needs its selected terminal library.
     final.readline.tvp.deps.ncurses
     final.zlib
-    final.zstd
-  ];
+  ] ++ lib.optional (final.zstd != null) final.zstd;
 in
 {
   pname = "postgresql";
@@ -92,7 +91,7 @@ in
       export CONFIG_SHELL=${tools.bash}/bin/bash
       "$CONFIG_SHELL" ./configure --prefix="$out" --libdir="$out/lib" \
         CFLAGS="''${CFLAGS:--O2} -std=gnu17" \
-        --with-ssl=openssl --with-gssapi --with-icu --with-libxml --with-zstd \
+        --with-ssl=openssl --with-gssapi --with-icu --with-libxml${lib.optionalString (final.zstd != null) " --with-zstd"} \
         --with-system-tzdata=${final.tzdata}/share/zoneinfo
     '')
     (command "postgresql.build" "${make} world-bin")
@@ -132,7 +131,7 @@ in
     gssapi = true;
     icu = true;
     libxml2 = true;
-    zstd = true;
+    zstd = final.zstd != null;
     lz4 = false;
     pam = false;
     systemd = false;
