@@ -74,6 +74,7 @@ let
       };
       releases = {
         "2.6.4" = "sha256-6HquAyvwfCb4WsDtMlCZjDdiHZX4vXSLMfFbM8Re6ZU=";
+        "2.7.3" = "sha256-sYu8NiKyuevs0EI/ThEK362NtR0MWto/JmYMfLfHNew=";
       };
     }
   ];

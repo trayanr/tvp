@@ -47,5 +47,5 @@ let
       pass = true;
     };
 in
-assert builtins.length (builtins.attrNames all) == 15;
+assert builtins.length (builtins.attrNames all) == 16;
 lib.mapAttrs inspect all
