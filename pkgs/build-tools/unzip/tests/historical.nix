@@ -5,6 +5,7 @@
 }:
 let
   zip = package.tvp.declaredTestDependencies.zip;
+  inherit (package.specification.base.tools) diffutils grep sed;
 in
 context.mkSuite {
   inherit package;
@@ -20,24 +21,32 @@ context.mkSuite {
       expected = package.version;
     };
     roundtrip = {
-      tools = [ zip ];
+      tools = [
+        zip
+        diffutils
+        grep
+      ];
       script = ''
-        printf 'preserved\n' > payload
-        zip -q -P secret archive.zip payload
+        # Exercise encrypted Deflate. UnZip 5.51 warns about the encryption
+        # header when comparing sizes for the separate Stored method.
+        printf 'preserved\n%.0s' {1..128} > payload
+        zip -q -Z deflate -P secret archive.zip payload
+        unzip -lv archive.zip | grep -F 'Defl:' >&2
         unzip -P secret -t archive.zip >&2
         unzip -P secret -p archive.zip payload > restored
         cmp payload restored
         if unzip -P incorrect -p archive.zip payload > wrong 2> wrong.log; then exit 1; fi
         test ! -s wrong
-        cat restored
+        printf preserved
       '';
       expected = "preserved";
     };
     helpers = {
       tools = [
         zip
-        package.specification.base.tools.grep
-        package.specification.base.tools.sed
+        diffutils
+        grep
+        sed
       ];
       script = ''
         for cmd in unzip funzip unzipsfx zipgrep zipinfo; do
