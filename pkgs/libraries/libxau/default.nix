@@ -9,7 +9,11 @@ let
           xorgproto = tvp.packages.xorgproto;
         };
       };
-      releases."1.0.12" = "sha256-dNDk36PTmtiTnpm9o39ZZ6ulKCEQdoKEZNJ3fUd/wPs=";
+      releases = {
+        "1.0.10" = "sha256-i+bykjNNL4fluRnAAeFJqf3CcAXWs+BThirG678aDAo=";
+        "1.0.11" = "sha256-8/oygvVXDD9r1iAkRDjb+91YD8gPAvVJWHoPirMpu+s=";
+        "1.0.12" = "sha256-dNDk36PTmtiTnpm9o39ZZ6ulKCEQdoKEZNJ3fUd/wPs=";
+      };
     }
   ];
   pname = "libxau";
