@@ -153,7 +153,7 @@ in
       expected = "v${package.version}";
     };
     runtime = {
-      script = "node ${if package.tvp.features.temporal then ./fixtures/runtime.js else ./fixtures/runtime-without-temporal.js}";
+      script = "node${lib.optionalString package.tvp.features.sqliteRequiresFlag " --experimental-sqlite"} ${if package.tvp.features.temporal then ./fixtures/runtime.js else if package.tvp.features.sqlite then ./fixtures/runtime-without-temporal.js else ./fixtures/runtime-without-sqlite.js}";
       expected = "runtime-ok";
     };
     shell = {

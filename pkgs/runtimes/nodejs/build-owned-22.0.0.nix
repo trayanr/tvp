@@ -15,6 +15,8 @@
   zlib,
   doCheck ? true,
   temporal ? true,
+  sqlite ? true,
+  sqliteRequiresFlag ? false,
 }@args:
 final:
 let
@@ -99,7 +101,7 @@ in
     ninja
     ;
   doCheck = args.doCheck or true;
-  inherit temporal;
+  inherit temporal sqlite sqliteRequiresFlag;
 
   environment = {
     tools = [
@@ -261,11 +263,10 @@ in
   tvp.features = {
     npm = true;
     fullIcu = true;
-    inherit (final) temporal;
-    sqlite = true;
+    inherit (final) temporal sqlite sqliteRequiresFlag;
   };
   meta = {
-    description = "Node.js with npm, full ICU${lib.optionalString final.temporal ", Temporal"} and SQLite";
+    description = "Node.js with npm, full ICU${lib.optionalString final.temporal ", Temporal"}${lib.optionalString final.sqlite " and SQLite"}";
     homepage = "https://nodejs.org/";
     license = lib.licenses.mit;
     platforms = [ "x86_64-linux" ];

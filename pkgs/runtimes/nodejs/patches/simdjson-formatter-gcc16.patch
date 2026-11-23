@@ -1,0 +1,20 @@
+Backport the formatter dispatch fix to Node's bundled simdjson.
+https://github.com/simdjson/simdjson/commit/5d35e7ca
+
+--- a/deps/simdjson/simdjson.h
++++ b/deps/simdjson/simdjson.h
+@@ -6262,3 +6262,3 @@
+   simdjson_inline void call_print_newline() {
+-      this->print_newline();
++      static_cast<formatter*>(this)->print_newline();
+   }
+@@ -6266,3 +6266,3 @@
+   simdjson_inline void call_print_indents(size_t depth) {
+-      this->print_indents(depth);
++      static_cast<formatter*>(this)->print_indents(depth);
+   }
+@@ -6270,3 +6270,3 @@
+   simdjson_inline void call_print_space() {
+-      this->print_space();
++      static_cast<formatter*>(this)->print_space();
+   }
