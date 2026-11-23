@@ -16,7 +16,11 @@ let
           libxdmcp = tvp.packages.libxdmcp_1;
         };
       };
-      releases."1.5.5" = "sha256-crkiwudlQ06enwlgFIBwvUUEsogmPihopMzOG3zydno=";
+      releases = {
+        "1.5.3" = "sha256-iXY5AUp44Ul3BNZpxd1WgtchkxpEUsiae6YmdgZOtCg=";
+        "1.5.4" = "sha256-GtWwZTdfSoWRWqYGEcxkB8BgSSohTX+dryFL51LDtNM=";
+        "1.5.5" = "sha256-crkiwudlQ06enwlgFIBwvUUEsogmPihopMzOG3zydno=";
+      };
     }
   ];
   pname = "libxrandr";
