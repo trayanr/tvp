@@ -31,6 +31,9 @@ nix eval --raw github:trayanr/tvp#packages.x86_64-linux \
 
 or `nix flake show github:trayanr/tvp` for the full output tree.
 
+To see which TVP packages your project's dev shell selects, or preview a TVP
+input update, use the [downstream TVP commands](tools/README.md#downstream-tvp-selections).
+
 To inspect evaluated dependency choices without building the catalogue:
 
 ```sh
