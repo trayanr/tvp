@@ -12,6 +12,7 @@
   pkgConfig,
   xorgproto,
   xtrans,
+  patches ? [ ],
   installedInterface ? { },
   doCheck ? true,
 }:
@@ -34,6 +35,7 @@ in
     base
     src
     version
+    patches
     doCheck
     pkgConfig
     libx11
@@ -85,6 +87,14 @@ in
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
+    })
+    (lib.optional (final.patches != [ ]) {
+      name = "source.patch";
+      cwd = "source";
+      tools = [ tools.patch ];
+      run = lib.concatMapStringsSep "\n" (
+        patch: "${tools.patch}/bin/patch --batch --forward --fuzz=0 -p1 < ${lib.escapeShellArg "${patch}"}"
+      ) final.patches;
     })
     (steps.prepareAutotools {
       name = "libxrender.prepare";
