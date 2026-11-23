@@ -14,6 +14,9 @@ let
     ])
     // p.tvp.deps;
   steps = import ../../../../lib/build-steps.nix;
+  # The 2.6.5 backend split moved the default C/C++ template to cpp-flex.skl.
+  skeletonSource = if lib.versionAtLeast p.version "2.6.5" then "src/cpp-flex.skl" else "src/flex.skl";
+  versionParts = lib.splitString "." p.version;
   skeleton = (p.edit (s: removeAttrs s [ "artifactName" ])).editSteps (plan: [
     (builtins.head plan)
     {
@@ -28,8 +31,8 @@ let
       run = ''
         mkdir "$out"
         printf '/* TVP custom skeleton */\n' > "$out/custom.skl"
-        ${d.sed}/bin/sed 's/4_/a4_/g; s/m4preproc_/m4_/g' src/flex.skl |
-          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=2 -DFLEX_MINOR_VERSION=6 -DFLEX_SUBMINOR_VERSION=${builtins.elemAt (lib.splitString "." p.version) 2} |
+        ${d.sed}/bin/sed 's/4_/a4_/g; s/m4preproc_/m4_/g' ${skeletonSource} |
+          ${d.m4}/bin/m4 -P -I src -DFLEX_MAJOR_VERSION=${builtins.elemAt versionParts 0} -DFLEX_MINOR_VERSION=${builtins.elemAt versionParts 1} -DFLEX_SUBMINOR_VERSION=${builtins.elemAt versionParts 2} |
           ${d.sed}/bin/sed '/^%#/d; s/m4_/m4preproc_/g; s/a4_/4_/g' >> "$out/custom.skl"
       '';
     }
