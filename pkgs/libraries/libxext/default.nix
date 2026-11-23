@@ -14,7 +14,11 @@ let
           libxdmcp = tvp.packages.libxdmcp_1;
         };
       };
-      releases."1.3.7" = "sha256-bGQ8cDXNrPZ6/WjyXQG5DviJ1UbJ/NfArffCz5Hjoy0=";
+      releases = {
+        "1.3.5" = "sha256-2xTAyJXFfqM6hVnejLK5PcdsQupKOeKU0XWTihM9e8o=";
+        "1.3.6" = "sha256-7bWfojmU5AX9xbQAr99YIK5hYLlPNePcPaRFehbol1M=";
+        "1.3.7" = "sha256-bGQ8cDXNrPZ6/WjyXQG5DviJ1UbJ/NfArffCz5Hjoy0=";
+      };
     }
   ];
   pname = "libxext";
