@@ -70,6 +70,11 @@
 
         formatter = tvp.packages.nixfmt_1_5_0;
 
+        apps.tvp = {
+          type = "app";
+          program = "${tvp.tools.consumer}/bin/tvp";
+        };
+
         apps.dependencies = {
           type = "app";
           program = "${tvp.tools.dependencies}/bin/tvp-dependencies";

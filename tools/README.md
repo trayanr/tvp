@@ -41,6 +41,35 @@ policy data without changing CI policy. `--log` and `--prepare-log` attach execu
 observations; missing logs mean unknown. Cached outputs and a successful report
 establish neither fresh execution, source approval nor ABI compatibility.
 
+## Downstream TVP selections
+
+Run the `tvp` app from the consumer flake directory after it has a `flake.lock`.
+It defaults to `devShells.x86_64-linux.default` and the top-level `tvp` input.
+Use `--attr` to select another shell or package output and `--input` if the
+input has a different name.
+
+```sh
+nix run github:trayanr/tvp#tvp -- used
+nix run github:trayanr/tvp#tvp -- diff /tmp/before.lock /tmp/after.lock
+nix run github:trayanr/tvp#tvp -- update --preview
+```
+
+`diff` evaluates the same project output with both existing lockfiles. Its second
+argument defaults to the project's current `flake.lock`. `update --preview` asks
+Nix to update only the chosen input into a temporary lockfile, then uses the same
+comparison. Use `nix flake update tvp` to apply an update. Use `--json` for CI
+reports. These commands evaluate derivations without building package outputs.
+
+Reports cover a selected package or direct inputs exposed by a selected shell.
+TVP selection metadata identifies observed packages, including the engine
+and modules of a directly selected TVP PHP composition. Version changes and
+same-version derivation changes are reported separately. Transitive dependencies
+and attribution among multiple TVP inputs are outside this inspection scope.
+For a PHP composition, the engine row describes the resolved engine. It may
+show a canonical engine even when the project chose a moving PHP alias.
+
+The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
+
 ## Package reports
 
 `nix run .#status` reports declared package status, gaps and the locally measured

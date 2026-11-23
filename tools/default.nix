@@ -15,6 +15,10 @@ let
     platform = bases.default.platform;
   };
   tools = {
+    consumer = pkgs.callPackage ./consumer {
+      python3 = tvp.packages.python_3;
+      inherit ownedCLI;
+    };
     dependencies = pkgs.callPackage ./dependencies {
       python3 = tvp.packages.python_3;
       inherit ownedCLI;
