@@ -1,7 +1,18 @@
-{ tvp, ... }:
+{ pkgs, tvp, ... }:
 let
   pname = "postgresql";
   releaseDirectory = "https://ftp.postgresql.org/pub/source/";
+  archivePool = "https://apt-archive.postgresql.org/pub/repos/apt/pool/main/p";
+  archiveURL =
+    version:
+    let
+      series =
+        if builtins.compareVersions version "10" < 0 then
+          pkgs.lib.versions.majorMinor version
+        else
+          pkgs.lib.versions.major version;
+    in
+    "${archivePool}/postgresql-${series}/postgresql-${series}_${version}.orig.tar.bz2";
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -240,7 +251,15 @@ let
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
-      url = version: "${releaseDirectory}v${version}/postgresql-${version}.tar.bz2";
+      url = archiveURL;
+      fetch =
+        { version, sha256 }:
+        import <nix/fetchurl.nix> {
+          url = archiveURL version;
+          inherit sha256;
+          # Preserve the existing fixed-output store path despite the APT filename.
+          name = "postgresql-${version}.tar.bz2";
+        };
       discovery = {
         type = "directory-index";
         url = releaseDirectory;
