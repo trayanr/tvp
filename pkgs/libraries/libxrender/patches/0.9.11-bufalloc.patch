@@ -1,0 +1,11 @@
+--- a/src/Glyph.c
++++ b/src/Glyph.c
+@@ -483 +483 @@
+-	    BufAlloc (xGlyphElt *, elt, SIZEOF(xGlyphElt))
++	    BufAlloc (xGlyphElt *, elt, SIZEOF (xGlyphElt));
+@@ -597 +597 @@
+-	    BufAlloc (xGlyphElt *, elt, SIZEOF(xGlyphElt))
++	    BufAlloc (xGlyphElt *, elt, SIZEOF (xGlyphElt));
+@@ -706 +706 @@
+-	    BufAlloc (xGlyphElt *, elt, SIZEOF(xGlyphElt))
++	    BufAlloc (xGlyphElt *, elt, SIZEOF (xGlyphElt));
