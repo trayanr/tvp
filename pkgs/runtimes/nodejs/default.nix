@@ -34,12 +34,61 @@ let
             file = ./patches/v8-type-hints-stdint.patch;
             reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
           }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
+          {
+            file = ./patches/simdjson-formatter-gcc16.patch;
+            reason = "Backport simdjson's explicit CRTP formatter dispatch for GCC 16.";
+          }
         ];
       };
       releases = {
         "22.0.0" = "sha256-IuKPv/MfaQc7gCTLQnReUQX4QEHzR1smC5fVoUEDnRo=";
         "22.1.0" = "sha256-nX1fQNnb1iYMmbXklLX5vHVejw/6xw4SGtzl+0QvI8s=";
         "22.2.0" = "sha256-iJkIqIKNFISRDX5lm2qlet6NUo/w45Dpp372WadihHQ=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-22.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.12 is accepted throughout the Node.js 22 line.
+          python = tvp.packages.python_3_12;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Match the upstream OpenSSL minor line.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        # Built-in SQLite first shipped in Node.js 22.5.0.
+        opts.sqlite = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/v8-type-hints-stdint.patch;
+            reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
+          }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
+        ];
+      };
+      releases = {
         "22.3.0" = "sha256-v7hb0dylF3YfkEbWFgD4MNGZNdbWw27e0BV4oZMmEEw=";
         "22.4.0" = "sha256-KStDAITy8ykT3H2k6y+8iWklJ3Kp0b/ormxLSpjKOtM=";
         "22.4.1" = "sha256-ZfyFf1qoJWqvyQCzRMARXJrq4loCVB/Vzg29Tf0cX7k=";
@@ -76,6 +125,10 @@ let
           {
             file = ./patches/v8-type-hints-stdint.patch;
             reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
+          }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
           }
         ];
       };
@@ -121,11 +174,50 @@ let
             file = ./patches/v8-type-hints-stdint.patch;
             reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
           }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
         ];
       };
       releases = {
         "22.13.0" = "sha256-5Q22cwcWuirpU8+Z0QyAKVvTO7ctPIKdnpn2r1bWJsc=";
         "22.13.1" = "sha256-z84oIRk5D34MIiBBCSRCjpDa3LLfF0TAxKDnuq44fMI=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-22.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.12 is accepted throughout the Node.js 22 line.
+          python = tvp.packages.python_3_12;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Match the upstream OpenSSL minor line.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/v8-type-hints-stdint.patch;
+            reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
+          }
+        ];
+      };
+      releases = {
         "22.14.0" = "sha256-xgmUa/eTtVx5VMJlgnYICNVMFhhdecsvuIBl5S3iGRQ=";
         "22.15.0" = "sha256-58QibR2S8zrYVNbaT35RnndpC45z+TSWiB+MU5F02d8=";
         "22.15.1" = "sha256-wZ8Bd9IcYhdGYl5fN1kL0NeacgQ7d7U3hMul8UXnJj4=";
@@ -251,6 +343,10 @@ let
             file = ./patches/v8-type-hints-stdint.patch;
             reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
           }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
         ];
       };
       releases = {
@@ -290,6 +386,10 @@ let
             file = ./patches/v8-type-hints-stdint.patch;
             reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
           }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
         ];
       };
       releases = {
@@ -297,6 +397,41 @@ let
         "23.5.0" = "sha256-Mud7NsB3TGi6q0G8fCrMWGY8oKK3xNPpvsb3YcFf2sA=";
         "23.6.0" = "sha256-1vPxNtwm1hvRuvriqfwNXn9xOm8AZ8XhA1G8fKZXTc0=";
         "23.6.1" = "sha256-/vpJ3t6HMwGK2k4w+IWAjMTiIWe4rjIzxtaiNzev928=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-owned-22.0.0.nix;
+        deps = {
+          # GYP's Ninja generator imports ctypes; the base's small helper Python
+          # deliberately omits it. Keep this requirement local to Node.
+          # Python 3.13 is accepted throughout the Node.js 23 line.
+          python = tvp.packages.python_3_13;
+          # Exact previous runtime shell; independent of public Bash's bashbug.
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the existing compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          rustc = tvp.packages.rustc_1;
+          cargo = tvp.packages.cargo-bootstrap_1;
+          # Upstream ships OpenSSL 3.0 throughout this release line.
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        # This release line has no Temporal configure flag.
+        opts.temporal = false;
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/v8-type-hints-stdint.patch;
+            reason = "Include the declaration of uint8_t used in this V8 header, as in newer V8.";
+          }
+        ];
+      };
+      releases = {
         "23.7.0" = "sha256-jeGS7y/uLuiiMN2NDpruGC7pyYVszbX9lRiKvoT3ckI=";
         "23.8.0" = "sha256-bsXVTQ6EI/xZhvbvpPZh6DcGWYGLFPRYzcnRufddO4g=";
         "23.9.0" = "sha256-xrQgvtuwSaZTjDOvKKuviQEczIefDw+BeRZ1Jjwjj5c=";
