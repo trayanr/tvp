@@ -24,6 +24,7 @@ tvp.lib.packages.mergeNamespaces {
   freetype = import ./freetype { inherit pkgs tvp; };
   libjpeg-turbo = import ./libjpeg-turbo { inherit pkgs tvp; };
   libpng = import ./libpng { inherit pkgs tvp; };
+  imagemagick = import ./imagemagick { inherit pkgs tvp; };
   libsodium = import ./libsodium { inherit pkgs tvp; };
   oniguruma = import ./oniguruma { inherit pkgs tvp; };
   numactl = import ./numactl { inherit pkgs tvp; };
