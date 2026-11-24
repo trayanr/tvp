@@ -33,6 +33,18 @@ let
       "6.9.11.17"
       "7.1.0.52"
     ];
+  needsCompileRepair =
+    lib.versionOlder final.version "6.7.4.10"
+    || lib.elem final.version [
+      "6.9.12.9"
+      "6.9.12.98"
+      "7.0.8.17"
+      "7.1.1.20"
+    ];
+  needsInstallRepair = lib.elem final.version [
+    "6.8.3.10"
+    "6.9.10.54"
+  ];
   elfPaths = [
     "bin"
     "lib"
@@ -98,6 +110,12 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${./source-compat.py} ${lib.escapeShellArg final.version}'';
     })
+    (lib.optional needsCompileRepair {
+      name = "imagemagick.compile-repair";
+      cwd = "source";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./compile-compat.py} ${lib.escapeShellArg final.version}'';
+    })
     (steps.prepareAutotools { name = "imagemagick.prepare"; })
     (command "imagemagick.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
@@ -113,6 +131,14 @@ in
     (command "imagemagick.install" "${make} install")
     (steps.split "imagemagick.finalize")
     (outputs.copyArtifacts { })
+    (lib.optional needsInstallRepair {
+      name = "imagemagick.install-repair";
+      tools = [ tools.python ];
+      run = ''
+        ${tools.python}/bin/python3 -B ${./installed-compat.py} \
+          ${lib.escapeShellArg final.version} "$out" "$TVP_ARTIFACT_ROOT"
+      '';
+    })
     {
       name = "imagemagick.relocate";
       tools = [
