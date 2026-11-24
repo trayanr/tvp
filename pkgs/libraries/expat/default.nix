@@ -7,6 +7,7 @@ let
       };
       releases = {
         "2.9.0" = "sha256-HmNxhizDGZmzaMO4m0mZTwZ34bq18bK4WuN0H12AMFE=";
+        "2.11.0" = "sha256-YedhS2AiAcKKGJ2v7nj1vOruGSu95GqTB1L/Cc9VQvo=";
       };
     }
   ];
