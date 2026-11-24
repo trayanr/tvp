@@ -129,6 +129,10 @@ let
             file = ./ordinary/1.0.1-document-pointer.patch;
             reason = "Return the document pointer from the cache lookup, as corrected upstream.";
           }
+          {
+            file = ./ordinary/1.0.1-exslt-function-headers.patch;
+            reason = "Backport the 1.0.2 headers for memset and xsltApplyOneTemplate.";
+          }
         ];
       };
       releases = {
