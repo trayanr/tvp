@@ -13,13 +13,19 @@
   readline,
   tzdata,
   zlib,
-  zstd,
+  zstd ? null,
+  bison ? null,
+  flex ? null,
+  perl ? null,
 }:
 final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
-  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  # The selected binutils can put wall-clock timestamps in archives and their indexes.
+  make = ''
+    ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash \
+      AROPT=crsD RANLIB="$RANLIB -D"'';
   elfPaths = [
     "bin"
     "lib"
@@ -39,8 +45,7 @@ let
     # Configure's Readline link probe also needs its selected terminal library.
     final.readline.tvp.deps.ncurses
     final.zlib
-    final.zstd
-  ];
+  ] ++ lib.optional (final.zstd != null) final.zstd;
 in
 {
   pname = "postgresql";
@@ -58,6 +63,9 @@ in
     tzdata
     zlib
     zstd
+    bison
+    flex
+    perl
     ;
   inherit (tools) bash coreutils;
   environment = {
@@ -69,7 +77,7 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ];
+    ] ++ lib.filter (tool: tool != null) [ final.bison final.flex final.perl ];
     libraries = buildLibraries;
   };
   runtime.libraries = buildLibraries;
@@ -92,7 +100,7 @@ in
       export CONFIG_SHELL=${tools.bash}/bin/bash
       "$CONFIG_SHELL" ./configure --prefix="$out" --libdir="$out/lib" \
         CFLAGS="''${CFLAGS:--O2} -std=gnu17" \
-        --with-ssl=openssl --with-gssapi --with-icu --with-libxml --with-zstd \
+        --with-ssl=openssl --with-gssapi --with-icu --with-libxml${lib.optionalString (final.zstd != null) " --with-zstd"} \
         --with-system-tzdata=${final.tzdata}/share/zoneinfo
     '')
     (command "postgresql.build" "${make} world-bin")
@@ -132,7 +140,7 @@ in
     gssapi = true;
     icu = true;
     libxml2 = true;
-    zstd = true;
+    zstd = final.zstd != null;
     lz4 = false;
     pam = false;
     systemd = false;

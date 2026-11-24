@@ -8,6 +8,15 @@ context.mkSuite {
   tools = [ package ];
   libraries = [ package ];
   tests = {
+    cli = {
+      script = ''
+        for tool in psql pg_dump pg_restore; do
+          test "$("$tool" --version)" = "$tool (PostgreSQL) ${package.version}"
+        done
+        printf cli-ok
+      '';
+      expected = "cli-ok";
+    };
     client = {
       tools = [ tools.pkg-config ];
       script = ''
