@@ -1,0 +1,9 @@
+--- a/libxslt/extensions.c
++++ b/libxslt/extensions.c
+@@ -12,4 +12,6 @@
+ #define IN_LIBXSLT
+ #include "libxslt.h"
++
++#include <stdlib.h>
+
+ #include <string.h>

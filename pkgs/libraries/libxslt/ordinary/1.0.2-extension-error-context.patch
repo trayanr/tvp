@@ -1,0 +1,9 @@
+--- a/libxslt/extensions.c
++++ b/libxslt/extensions.c
+@@ -973,5 +973,5 @@
+     cur = (xsltElemPreCompPtr) xmlMalloc (sizeof(xsltElemPreComp));
+     if (cur == NULL) {
+-	xsltPrintErrorContext(style, NULL, NULL);
++	xsltPrintErrorContext(NULL, style, NULL);
+         xsltGenericError(xsltGenericErrorContext,
+                          "xsltNewExtElement : malloc failed\n");

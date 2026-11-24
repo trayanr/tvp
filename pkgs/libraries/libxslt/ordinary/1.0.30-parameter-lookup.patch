@@ -1,0 +1,9 @@
+--- a/libxslt/variables.c
++++ b/libxslt/variables.c
+@@ -854,0 +855 @@
++    void *res_ptr;
+@@ -904,2 +905,2 @@
+-    res = xmlHashLookup2(ctxt->globalVars, ncname, href);
+-    if (res != 0) {
++    res_ptr = xmlHashLookup2(ctxt->globalVars, ncname, href);
++    if (res_ptr != 0) {

@@ -1,0 +1,5 @@
+--- a/libxslt/transform.c
++++ b/libxslt/transform.c
+@@ -3321,1 +3321,1 @@
+-	xmlNodePtr cur = doc->intSubset;
++	xmlNodePtr cur = (xmlNodePtr) doc->intSubset;

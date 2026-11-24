@@ -1,0 +1,9 @@
+--- a/libxslt/extensions.c
++++ b/libxslt/extensions.c
+@@ -2248,5 +2248,5 @@
+ xsltHashScannerModuleFree(void *payload ATTRIBUTE_UNUSED,
+                           void *data ATTRIBUTE_UNUSED,
+-                          xmlChar * name ATTRIBUTE_UNUSED)
++                          const xmlChar *name ATTRIBUTE_UNUSED)
+ {
+ #ifdef WITH_MODULES

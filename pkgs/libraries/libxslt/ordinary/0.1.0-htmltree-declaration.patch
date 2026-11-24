@@ -1,0 +1,8 @@
+--- a/libxslt/xsltutils.c
++++ b/libxslt/xsltutils.c
+@@ -18,4 +18,5 @@
+ #include <libxml/xmlmemory.h>
+ #include <libxml/tree.h>
++#include <libxml/HTMLtree.h>
+ #include <libxml/xmlerror.h>
+ #include <libxml/xmlIO.h>

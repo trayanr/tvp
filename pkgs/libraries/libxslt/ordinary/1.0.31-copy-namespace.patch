@@ -1,0 +1,5 @@
+--- a/libxslt/transform.c
++++ b/libxslt/transform.c
+@@ -2331 +2331 @@
+-                xsltCopyNamespace(ctxt, ctxt->insert, node);
++                xsltCopyNamespace(ctxt, ctxt->insert, (xmlNsPtr)node);

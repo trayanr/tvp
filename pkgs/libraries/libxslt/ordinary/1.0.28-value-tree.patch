@@ -1,0 +1,8 @@
+--- a/libxslt/variables.c
++++ b/libxslt/variables.c
+@@ -382 +382 @@
+-	    result = xmlXPathNewValueTree(container);
++	    result = xmlXPathNewValueTree((xmlNodePtr) container);
+@@ -519 +519 @@
+-	    result = xmlXPathNewValueTree(container);
++	    result = xmlXPathNewValueTree((xmlNodePtr) container);

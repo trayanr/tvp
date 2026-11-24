@@ -1,0 +1,8 @@
+--- a/libxslt/attributes.c
++++ b/libxslt/attributes.c
+@@ -620,1 +620,4 @@
+-	attr = xmlHasNsProp(ctxt->insert, name, ns);
++	if (URL != NULL)
++	    attr = xmlHasNsProp(ctxt->insert, name, URL);
++	else
++	    attr = xmlHasProp(ctxt->insert, name);

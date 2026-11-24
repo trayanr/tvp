@@ -1,0 +1,6 @@
+--- a/libexslt/date.c
++++ b/libexslt/date.c
+@@ -48,1 +48,2 @@
+-#include <string.h>
++#include <stdlib.h>
++#include <string.h>

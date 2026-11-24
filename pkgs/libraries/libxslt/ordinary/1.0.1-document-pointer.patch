@@ -1,0 +1,7 @@
+--- a/libxslt/documents.c
++++ b/libxslt/documents.c
+@@ -241,2 +241,2 @@
+-    if (doc==ctxt->style->doc)
+-	return ctxt->style;
++    if (doc == ctxt->style->doc)
++	return(ctxt->document);
