@@ -6,6 +6,8 @@
   src,
   version,
   zlib,
+  icu ? null,
+  bindingPython ? null,
   liblzma,
   cStandard ? "gnu89",
   cFlags ? [ ],
@@ -27,6 +29,12 @@ let
     } "libxml2.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libxml2-build-tree";
+  pythonEnabled = final.bindingPython != null;
+  pythonLayout = "lib/python${lib.versions.majorMinor final.bindingPython.version}/site-packages";
+  # Automake's bytecode rules otherwise embed the temporary install prefix.
+  pythonMakeFlags = lib.optionalString pythonEnabled (
+    " " + ''pythondir="$out/${pythonLayout}" pyexecdir="$out/${pythonLayout}" am__py_compile=:''
+  );
   elfPaths = [
     "bin"
     "lib"
@@ -39,6 +47,8 @@ in
     src
     version
     zlib
+    icu
+    bindingPython
     liblzma
     cStandard
     cFlags
@@ -49,10 +59,13 @@ in
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
   configureFlags = [
-    "--without-python"
+    (if pythonEnabled then "--with-python=${final.bindingPython}/bin/python3" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
     "--with-lzma=${lib.getDev final.liblzma}"
-  ];
+  ] ++ lib.optional (final.icu != null) "--with-icu";
+  development = output: lib.optionalAttrs pythonEnabled {
+    pythonModuleDirectory = "${output}/${pythonLayout}";
+  };
   environment = {
     tools = [
       tools.gnumake
@@ -62,18 +75,18 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ];
+    ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
     libraries = [
       final.zlib
       final.liblzma
-    ];
+    ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
     overrides.values.CFLAGS = "-O2 -std=${final.cStandard} ${lib.concatStringsSep " " final.cFlags}";
   };
   runtime = {
     libraries = [
       final.zlib
       final.liblzma
-    ];
+    ] ++ lib.optional (final.icu != null) final.icu;
     shell = tools.bash;
   };
   productionPlan = steps.sequence [
@@ -106,18 +119,38 @@ in
           ];
       }
     )
+    (lib.optional (pythonEnabled && lib.versionOlder final.version "2.9.8") (
+      command "python-fd-compatibility" ''
+        test "$(grep -Fxc '    if (!_PyVerify_fd(fd))' python/types.c)" = 1
+        sed -i 's/if (!_PyVerify_fd(fd))/if (fd < 0)/' python/types.c
+      ''
+    ))
+    (lib.optional (final.icu != null) (
+      command "icu-boolean-compatibility" ''
+        # ICU no longer exports the TRUE macro used by these converters.
+        sed -i 's/0, TRUE, \&err);/0, 1, \&err);/' encoding.c
+      ''
+    ))
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
-      ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+      ${lib.optionalString pythonEnabled "export PYTHON=${final.bindingPython}/bin/python3\n"}./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "build" "${make} libxml2.la xmllint xmlcatalog")
+    (command "build" (
+      "${make} libxml2.la xmllint xmlcatalog"
+      + lib.optionalString pythonEnabled ("\n" + ''
+        ${make} -C python${pythonMakeFlags}
+      '')
+    ))
     (command "install" ''
       # The root install target in 2.10 also generates testapi.c. Enter the
       # generated recursive installer directly; retain all installed directories.
       # Noninstalled programs/libraries are test/example targets, restored for U.
-      ${make} noinst_PROGRAMS= noinst_LTLIBRARIES= install-recursive
-      mkdir -p "$out/nix-support"
+      ${make} noinst_PROGRAMS= noinst_LTLIBRARIES= install-recursive${pythonMakeFlags}
+      ${lib.optionalString pythonEnabled ''
+        test -f "$out/${pythonLayout}/libxml2.py"
+        test -f "$out/${pythonLayout}/libxml2mod.so"
+      ''}mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (
@@ -233,8 +266,8 @@ in
     lzma = true;
     shared = true;
     static = true;
-    python = false;
-    icu = false;
+    python = pythonEnabled;
+    icu = final.icu != null;
     iconv = true;
     http = true;
   };

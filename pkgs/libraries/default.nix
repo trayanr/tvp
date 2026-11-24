@@ -62,5 +62,13 @@ tvp.lib.packages.mergeNamespaces {
   libyaml = import ./libyaml { inherit pkgs tvp; };
   libffi = import ./libffi { inherit pkgs tvp; };
   xz = import ./xz { inherit pkgs tvp; };
+  lz4 = import ./lz4 { inherit pkgs tvp; };
+  libgpg-error = import ./libgpg-error { inherit pkgs tvp; };
+  libgcrypt = import ./libgcrypt { inherit pkgs tvp; };
+  libtiff = import ./libtiff { inherit pkgs tvp; };
+  lcms2 = import ./lcms2 { inherit pkgs tvp; };
+  openjpeg = import ./openjpeg { inherit pkgs tvp; };
+  libpam = import ./libpam { inherit pkgs tvp; };
+  libuuid = import ./libuuid { inherit pkgs tvp; };
   sqlite = import ./sqlite { inherit pkgs tvp; };
 }

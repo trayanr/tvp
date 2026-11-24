@@ -4,7 +4,14 @@
   context,
 }:
 let
-  inherit (package.specification.installedInterface) cli wandHeader;
+  inherit (package.specification.installedInterface)
+    cli
+    delegates
+    perlModuleDirectory
+    wandHeader
+    ;
+  inherit (package.specification) buildFeatures;
+  inherit (package.specification.base.tools) binutils grep;
   imageFormat = if package.specification.buildFeatures.png then "PNG" else "PPM";
   imageExtension = lib.toLower imageFormat;
   # These releases identify PPM by the enclosing PNM family name.
@@ -49,6 +56,7 @@ context.mkSuite {
               || !MagickNewImage(wand, 3, 2, pixel)
               || MagickGetImageWidth(wand) != 3 || MagickGetImageHeight(wand) != 2)
             return 1;
+          ${lib.optionalString buildFeatures.hdri "if (!((Quantum) -0.5 < 0)) return 2;"}
           DestroyPixelWand(pixel);
           DestroyMagickWand(wand);
           MagickWandTerminus();
@@ -60,6 +68,57 @@ context.mkSuite {
         printf wand-ok
       '';
       expected = "wand-ok";
+    };
+  }
+  // lib.optionalAttrs (delegates != [ ] || buildFeatures.openmp || buildFeatures.x11) {
+    delegates = {
+      tools = [ binutils grep ];
+      script = ''
+        ${lib.optionalString (builtins.elem "xml" delegates) ''
+          cat > shape.svg <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="3" height="2">
+            <rect x="0" y="0" width="3" height="2" fill="red"/>
+          </svg>
+          SVG
+          ${cli} shape.svg shape.miff
+          test "$(identify -format '%wx%h' shape.miff)" = 3x2
+        ''}
+        ${lib.optionalString (builtins.elem "tiff" delegates) ''
+          ${cli} -size 8x8 xc:red shape.tiff
+          test "$(identify -format '%m %wx%h' shape.tiff)" = 'TIFF 8x8'
+        ''}
+        ${lib.optionalString (builtins.elem "webp" delegates) ''
+          ${cli} -size 8x8 xc:red shape.webp
+          test "$(identify -format '%m %wx%h' shape.webp)" = 'WEBP 8x8'
+        ''}
+        ${lib.optionalString (builtins.elem "openjp2" delegates) ''
+          ${cli} -size 128x128 xc:red shape.jp2
+          test "$(identify -format '%m %wx%h' shape.jp2)" = 'JP2 128x128'
+        ''}
+        ${lib.optionalString (buildFeatures.openmp || buildFeatures.x11) ''
+          readelf -d "${package}"/lib/libMagickCore*.so > needed
+          ${lib.optionalString buildFeatures.openmp "grep -F 'Shared library: [libgomp.so.1]' needed >&2"}
+          ${lib.optionalString buildFeatures.x11 "grep -F 'Shared library: [libX11.so.6]' needed >&2"}
+        ''}
+        printf delegates-ok
+      '';
+      expected = "delegates-ok";
+    };
+  }
+  // lib.optionalAttrs (perlModuleDirectory != null) {
+    perl = {
+      tools = [ package.specification.perl ];
+      script = ''
+        export PERL5LIB="${package}/${perlModuleDirectory}"
+        perl -MImage::Magick -e '
+          my $image = Image::Magick->new(size => "3x2");
+          my $error = $image->Read("xc:red");
+          die $error if $error;
+          die "unexpected dimensions" unless $image->Get("width") == 3 && $image->Get("height") == 2;
+          print "perl-ok";
+        '
+      '';
+      expected = "perl-ok";
     };
   };
 }

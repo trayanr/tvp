@@ -5,12 +5,20 @@
   base,
   src,
   version,
+  gettext,
   icu,
   keyutils,
   krb5,
+  libpam,
+  libuuid,
   libxml2,
+  libxslt,
+  openldap,
   openssl,
+  perl,
+  python,
   readline,
+  tcl,
   tzdata,
   zlib,
 }:
@@ -38,16 +46,23 @@ let
     final.openssl
     final.krb5
     final.keyutils
+    final.openldap
   ];
   buildLibraries = [
     final.icu
     final.krb5
     final.keyutils
+    final.libpam
+    final.libuuid
     final.libxml2
+    final.libxslt
+    final.openldap
     final.openssl
+    final.python
     final.readline
     # Configure's Readline link probe also needs its selected terminal library.
     final.readline.tvp.deps.ncurses
+    final.tcl
     final.zlib
   ];
 in
@@ -58,12 +73,20 @@ in
     base
     src
     version
+    gettext
     icu
     keyutils
     krb5
+    libpam
+    libuuid
     libxml2
+    libxslt
+    openldap
     openssl
+    perl
+    python
     readline
+    tcl
     tzdata
     zlib
     ;
@@ -77,10 +100,18 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
+      final.gettext
+      final.perl
+      final.python
+      final.tcl
     ] ++ lib.optional needsXml2Config final.libxml2;
     libraries = buildLibraries;
   };
-  runtime.libraries = buildLibraries;
+  runtime = {
+    libraries = buildLibraries;
+    # PL/Perl's shared library lives in Perl's architecture-specific CORE directory.
+    dlopenDirectories = [ "${final.perl}/lib/${final.perl.version}/x86_64-linux/CORE" ];
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -123,9 +154,15 @@ in
     '')
     (command "postgresql.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
+      export PERL=${final.perl}/bin/perl PYTHON=${final.python}/bin/python3
+      # OpenLDAP 2.5 merged the threaded libldap_r implementation into libldap.
+      grep -Fq -- '-lldap_r' configure
+      sed -i 's/-lldap_r\>/-lldap/g' configure
       "$CONFIG_SHELL" ./configure --prefix="$out" --libdir="$out/lib" \
         CFLAGS="''${CFLAGS:--O2} -std=gnu17" \
-        --with-openssl --with-gssapi --with-icu --with-libxml \
+        --enable-nls --with-openssl --with-gssapi --with-icu --with-libxml --with-libxslt \
+        --with-ldap --with-pam --with-uuid=e2fs --with-perl --with-python \
+        --with-tcl --with-tclconfig=${final.tcl}/lib \
         --with-system-tzdata=${final.tzdata}/share/zoneinfo
     '')
     (command "postgresql.build" ''
@@ -157,6 +194,7 @@ in
       paths = elfPaths;
       elfKinds = [ "runtime" ];
       libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories;
     })
     (outputs.development { libraries = developmentLibraries; })
     (outputs.checkPaths {
@@ -169,11 +207,20 @@ in
     gssapi = true;
     icu = true;
     libxml2 = true;
+    libxslt = true;
+    ldap = true;
+    nls = true;
+    plperl = true;
+    plpython = true;
+    pltcl = true;
+    jit = false;
+    numa = false;
     zstd = false;
     lz4 = false;
-    pam = false;
+    pam = true;
     systemd = false;
     osspUuid = false;
+    uuidOsspExtension = true;
   };
   meta = {
     description = "PostgreSQL database server, client tools, and development libraries";

@@ -7,6 +7,24 @@
   jpeg,
   png ? null,
   zlib,
+  bzip2 ? null,
+  fontconfig ? null,
+  freetype ? null,
+  lcms2 ? null,
+  libice ? null,
+  libsm ? null,
+  libtiff ? null,
+  libwebp ? null,
+  libx11 ? null,
+  libxext ? null,
+  libxml2 ? null,
+  libxt ? null,
+  libzip ? null,
+  openjpeg ? null,
+  perl ? null,
+  xz ? null,
+  zstd ? null,
+  buildFeatures ? { },
   sourceCompression ? "xz",
 }:
 final:
@@ -14,6 +32,39 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  isMagick7 = lib.versionAtLeast final.version "7";
+  # The lower bounds are the first packaged releases with each configure probe.
+  atLeast = magick6: magick7: lib.versionAtLeast final.version (if isMagick7 then magick7 else magick6);
+  delegates = {
+    bzlib = final.bzip2;
+    fontconfig = final.fontconfig;
+    freetype = final.freetype;
+    tiff = final.libtiff;
+    xml = final.libxml2;
+  }
+  // lib.optionalAttrs (atLeast "6.6.0.10" "7.0.1.0") { lcms = final.lcms2; }
+  // lib.optionalAttrs (atLeast "6.6.6.10" "7.0.1.0") { lzma = final.xz; }
+  // lib.optionalAttrs (atLeast "6.6.8.10" "7.0.1.0") { webp = final.libwebp; }
+  // lib.optionalAttrs (atLeast "6.8.8.10" "7.0.1.0") { openjp2 = final.openjpeg; }
+  // lib.optionalAttrs (atLeast "6.9.10.13" "7.0.8.13") { zstd = final.zstd; }
+  // lib.optionalAttrs (isMagick7 && lib.versionAtLeast final.version "7.0.10.62") { zip = final.libzip; };
+  delegateFlag = name:
+    if name == "lcms" && lib.versionAtLeast final.version "6.6.2.10" && lib.versionOlder final.version "6.9.1.10"
+    then "lcms2"
+    else name;
+  delegateMacro = name: if name == "openjp2" then "LIBOPENJP2_DELEGATE" else "${lib.toUpper name}_DELEGATE";
+  enabledDelegates = lib.filterAttrs (_: provider: provider != null) delegates;
+  xLibraries = lib.optionals (final.libx11 != null) (lib.filter (provider: provider != null) [
+    final.libx11
+    final.libxext
+    final.libxt
+    final.libice
+    final.libsm
+  ]);
+  enabledMacros =
+    map delegateMacro (builtins.attrNames enabledDelegates)
+    ++ lib.optional (xLibraries != [ ]) "X11_DELEGATE";
+  toggle = flag: enabled: "--${if enabled then "enable" else "disable"}-${flag}";
   # These are the first releases with the upstream libjpeg-turbo guards.
   needsJpegGuards =
     lib.versionOlder final.version "6.9.12.76"
@@ -61,20 +112,43 @@ in
     jpeg
     png
     zlib
+    bzip2
+    fontconfig
+    freetype
+    lcms2
+    libice
+    libsm
+    libtiff
+    libwebp
+    libx11
+    libxext
+    libxml2
+    libxt
+    libzip
+    openjpeg
+    perl
+    xz
+    zstd
     ;
   inherit (tools) bash coreutils;
   buildFeatures = {
     jpeg = true;
     png = final.png != null;
+    # Link the same coders into MagickCore instead of loading them as modules.
     modules = false;
     quantumDepth = 16;
-    hdri = false;
-  };
+    hdri = true;
+    openmp = true;
+    x11 = xLibraries != [ ];
+  }
+  // buildFeatures;
   sourceLayout.compression = sourceCompression;
   installedInterface = {
-    cli = if lib.versionAtLeast final.version "7" then "magick" else "convert";
+    cli = if isMagick7 then "magick" else "convert";
     wandHeader =
-      if lib.versionAtLeast final.version "7" then "MagickWand/MagickWand.h" else "wand/MagickWand.h";
+      if isMagick7 then "MagickWand/MagickWand.h" else "wand/MagickWand.h";
+    perlModuleDirectory = if final.perl != null then "lib/perl5" else null;
+    delegates = builtins.attrNames enabledDelegates;
   };
   environment = {
     tools = [
@@ -85,12 +159,17 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
-    ];
+    ]
+    ++ lib.optional (final.perl != null) final.perl
+    # Older configure scripts call xml2-config for its include directory.
+    ++ lib.optional (final.libxml2 != null) final.libxml2;
     libraries = [
       final.jpeg
       final.zlib
     ]
-    ++ lib.optional (final.png != null) final.png;
+    ++ lib.optional (final.png != null) final.png
+    ++ builtins.attrValues enabledDelegates
+    ++ xLibraries;
   };
   runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
@@ -135,16 +214,34 @@ in
     (steps.prepareAutotools { name = "imagemagick.prepare"; })
     (command "imagemagick.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
+      set -- ${lib.escapeShellArgs (lib.mapAttrsToList (
+        name: provider: "--${if provider != null then "with" else "without"}-${delegateFlag name}"
+      ) delegates)}
+      ${lib.optionalString (xLibraries != [ ]) ''
+        set -- "$@" --with-x --x-includes=${final.libx11}/include --x-libraries=${final.libx11}/lib
+      ''}
+      ${lib.optionalString (final.perl != null) ''
+        export PERL=${final.perl}/bin/perl
+        set -- "$@" --with-perl "--with-perl-options=INSTALL_BASE=$out"
+      ''}
       ${lib.optionalString needsOpenclDisabled "ax_cv_check_cl_libcl=no "}./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static \
-        --disable-openmp --without-x --without-perl${lib.optionalString needsOpenclDisabled " --disable-opencl"} \
+        ${toggle "openmp" final.buildFeatures.openmp}${lib.optionalString needsOpenclDisabled " --disable-opencl"} \
+        ${lib.optionalString (xLibraries == [ ]) "--without-x"} ${lib.optionalString (final.perl == null) "--without-perl"} \
         --with-quantum-depth=${toString final.buildFeatures.quantumDepth} \
-        ${if final.buildFeatures.hdri then "--enable-hdri" else "--disable-hdri"} \
-        ${if final.buildFeatures.modules then "--with-modules" else "--without-modules"} \
+        ${toggle "hdri" final.buildFeatures.hdri} --without-modules \
         ${if final.buildFeatures.jpeg then "--with-jpeg" else "--without-jpeg"} \
-        ${if final.buildFeatures.png then "--with-png" else "--without-png"} --with-zlib
+        ${if final.buildFeatures.png then "--with-png" else "--without-png"} --with-zlib "$@"
+      for macro in ${lib.escapeShellArgs enabledMacros}; do
+        grep -E "^#define $macro 1$" config/config.h
+      done
     '')
     (command "imagemagick.build" make)
-    (command "imagemagick.install" "${make} install")
+    (command "imagemagick.install" ''
+      ${make} install
+      ${lib.optionalString (final.perl != null) ''
+        test -n "$(find "$out/${final.installedInterface.perlModuleDirectory}" -path '*/Image/Magick.pm' -print -quit)"
+      ''}
+    '')
     (steps.split "imagemagick.finalize")
     (outputs.copyArtifacts { })
     (lib.optional needsInstallRepair {
@@ -177,6 +274,22 @@ in
       inherit base;
       paths = elfPaths;
       libraries = final.runtime.libraries;
+    })
+    (lib.optional (final.perl != null) {
+      name = "imagemagick.perl-runtime";
+      tools = [ tools.patchelf tools.grep ];
+      run = ''
+        perlArchlib=$(${final.perl}/bin/perl -MConfig -e 'print $Config{archlibexp}')
+        shopt -s globstar nullglob
+        modules=("$out/${final.installedInterface.perlModuleDirectory}"/**/auto/Image/**/*.so)
+        test "''${#modules[@]}" -gt 0
+        for module in "''${modules[@]}"; do
+          ${tools.patchelf}/bin/patchelf --add-rpath "$out/lib" "$module"
+          if ${tools.patchelf}/bin/patchelf --print-needed "$module" | grep -q '^libperl\.so'; then
+            ${tools.patchelf}/bin/patchelf --add-rpath "$perlArchlib/CORE" "$module"
+          fi
+        done
+      '';
     })
     (outputs.development { libraries = final.environment.libraries; })
     (outputs.checkPaths { paths = elfPaths; })

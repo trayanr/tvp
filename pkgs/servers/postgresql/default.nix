@@ -18,15 +18,27 @@ let
       def = {
         builder = ./build-10.0.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.lib.packages.withConstraint {
             reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
           } tvp.packages.libxml2_2_11_9;
+          libxslt = tvp.lib.packages.withConstraint {
+            reason = "PostgreSQL and its XSLT module must link the same libxml2 ABI.";
+          } (tvp.packages.libxslt_1_1_34.override { libxml2 = tvp.packages.libxml2_2_11_9; });
           # These source lines support the OpenSSL 1.1 interface.
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_1_1;
+          perl = tvp.packages.perl;
+          python = tvp.lib.packages.withConstraint {
+            reason = "Historical PL/Python configuration still uses Python's distutils and legacy embedding APIs.";
+          } tvp.packages.python_3_9;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
         };
@@ -117,13 +129,23 @@ let
       def = {
         builder = ./build-10.0.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.packages.libxml2_2;
+          libxslt = tvp.packages.libxslt;
           # These source lines support the OpenSSL 1.1 interface.
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_1_1;
+          perl = tvp.packages.perl;
+          python = tvp.lib.packages.withConstraint {
+            reason = "Historical PL/Python configuration still uses Python's distutils and legacy embedding APIs.";
+          } tvp.packages.python_3_9;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
         };
@@ -150,15 +172,29 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.lib.packages.withConstraint {
             reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
           } tvp.packages.libxml2_2_11_9;
+          libxslt = tvp.lib.packages.withConstraint {
+            reason = "PostgreSQL and its XSLT module must link the same libxml2 ABI.";
+          } (tvp.packages.libxslt_1_1_34.override { libxml2 = tvp.packages.libxml2_2_11_9; });
           # These source lines support the OpenSSL 1.1 interface.
+          llvm = tvp.packages.llvm_23;
+          lz4 = tvp.packages.lz4;
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_1_1;
+          perl = tvp.packages.perl;
+          python = tvp.lib.packages.withConstraint {
+            reason = "Historical PL/Python configuration still uses Python's distutils and legacy embedding APIs.";
+          } tvp.packages.python_3_9;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
         };
@@ -181,13 +217,25 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.packages.libxml2_2;
+          libxslt = tvp.packages.libxslt;
           # These source lines support the OpenSSL 1.1 interface.
+          llvm = tvp.packages.llvm_23;
+          lz4 = tvp.packages.lz4;
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_1_1;
+          perl = tvp.packages.perl;
+          python = tvp.lib.packages.withConstraint {
+            reason = "Historical PL/Python configuration still uses Python's distutils and legacy embedding APIs.";
+          } tvp.packages.python_3_9;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
         };
@@ -214,14 +262,26 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.lib.packages.withConstraint {
             reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
           } tvp.packages.libxml2_2_11_9;
+          libxslt = tvp.lib.packages.withConstraint {
+            reason = "PostgreSQL and its XSLT module must link the same libxml2 ABI.";
+          } (tvp.packages.libxslt_1_1_34.override { libxml2 = tvp.packages.libxml2_2_11_9; });
+          llvm = tvp.packages.llvm_23;
+          lz4 = tvp.packages.lz4;
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_3_0;
+          perl = tvp.packages.perl;
+          python = tvp.packages.python_3_11;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
           zstd = tvp.packages.zstd_1;
@@ -242,12 +302,22 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.packages.libxml2_2;
+          libxslt = tvp.packages.libxslt;
+          llvm = tvp.packages.llvm_23;
+          lz4 = tvp.packages.lz4;
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_3_0;
+          perl = tvp.packages.perl;
+          python = tvp.packages.python_3_11;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
           zstd = tvp.packages.zstd_1;
@@ -292,13 +362,23 @@ let
         deps = {
           bison = tvp.packages.bison;
           flex = tvp.packages.flex;
+          gettext = tvp.packages.gettext;
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
+          libpam = tvp.packages.libpam;
+          libuuid = tvp.packages.libuuid;
           libxml2 = tvp.packages.libxml2_2;
+          libxslt = tvp.packages.libxslt;
+          llvm = tvp.packages.llvm_23;
+          lz4 = tvp.packages.lz4;
+          numactl = tvp.packages.numactl;
+          openldap = tvp.packages.openldap;
           openssl = tvp.packages.openssl_3_0;
           perl = tvp.packages.perl;
+          python = tvp.packages.python_3_11;
           readline = tvp.packages.readline_8;
+          tcl = tvp.packages.tcl_8;
           tzdata = tvp.packages.tzdata;
           zlib = tvp.packages.zlib_1;
           zstd = tvp.packages.zstd_1;

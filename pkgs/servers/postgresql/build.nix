@@ -1,22 +1,32 @@
-# PostgreSQL 16 core, bundled contrib modules, and the installed libpq/PGXS SDK.
+# PostgreSQL 14 and later use the world-bin target for core and contrib.
 {
   tvp,
   lib,
   base,
   src,
   version,
+  gettext,
   icu,
   keyutils,
   krb5,
+  libpam,
+  libuuid,
   libxml2,
+  libxslt,
+  llvm,
+  lz4,
+  numactl ? null,
+  openldap,
   openssl,
+  perl,
+  python,
   readline,
+  tcl,
   tzdata,
   zlib,
   zstd ? null,
   bison ? null,
   flex ? null,
-  perl ? null,
 }:
 final:
 let
@@ -30,22 +40,45 @@ let
     "bin"
     "lib"
   ];
+  # These releases backport the ORC allocation interface required by LLVM 22+.
+  firstLLVM22 = {
+    "14" = "14.23";
+    "15" = "15.18";
+    "16" = "16.14";
+    "17" = "17.10";
+    "18" = "18.4";
+    "19" = "19.0";
+  };
+  major = lib.versions.major final.version;
+  withLLVM = lib.versionAtLeast final.version (firstLLVM22.${major} or final.version);
+  withNUMA = final.numactl != null && lib.versionAtLeast final.version "18";
   developmentLibraries = [
     final.openssl
     final.krb5
     final.keyutils
+    final.openldap
   ];
   buildLibraries = [
     final.icu
     final.krb5
     final.keyutils
+    final.libpam
+    final.libuuid
     final.libxml2
+    final.libxslt
+    final.lz4
+    final.openldap
     final.openssl
+    final.python
     final.readline
     # Configure's Readline link probe also needs its selected terminal library.
     final.readline.tvp.deps.ncurses
+    final.tcl
     final.zlib
-  ] ++ lib.optional (final.zstd != null) final.zstd;
+  ]
+  ++ lib.optional (final.zstd != null) final.zstd
+  ++ lib.optional withNUMA final.numactl
+  ++ lib.optional withLLVM final.llvm;
 in
 {
   pname = "postgresql";
@@ -54,12 +87,22 @@ in
     base
     src
     version
+    gettext
     icu
     keyutils
     krb5
+    libpam
+    libuuid
     libxml2
+    libxslt
+    llvm
+    lz4
+    numactl
+    openldap
     openssl
+    python
     readline
+    tcl
     tzdata
     zlib
     zstd
@@ -77,10 +120,20 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ] ++ lib.filter (tool: tool != null) [ final.bison final.flex final.perl ];
+      final.gettext
+      final.perl
+      final.python
+      final.tcl
+    ]
+    ++ lib.filter (tool: tool != null) [ final.bison final.flex ]
+    ++ lib.optional withLLVM final.llvm;
     libraries = buildLibraries;
   };
-  runtime.libraries = buildLibraries;
+  runtime = {
+    libraries = buildLibraries;
+    # PL/Perl's shared library lives in Perl's architecture-specific CORE directory.
+    dlopenDirectories = [ "${final.perl}/lib/${final.perl.version}/x86_64-linux/CORE" ];
+  };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -98,9 +151,19 @@ in
     '')
     (command "postgresql.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
+      export PERL=${final.perl}/bin/perl PYTHON=${final.python}/bin/python3
+      ${lib.optionalString withLLVM ''
+        export LLVM_CONFIG=${final.llvm}/bin/llvm-config CLANG=${final.llvm}/bin/clang
+      ''}
+      # OpenLDAP 2.5 merged the threaded libldap_r implementation into libldap.
+      grep -Fq -- '-lldap_r' configure
+      sed -i 's/-lldap_r\>/-lldap/g' configure
       "$CONFIG_SHELL" ./configure --prefix="$out" --libdir="$out/lib" \
         CFLAGS="''${CFLAGS:--O2} -std=gnu17" \
-        --with-ssl=openssl --with-gssapi --with-icu --with-libxml${lib.optionalString (final.zstd != null) " --with-zstd"} \
+        --enable-nls --with-ssl=openssl --with-gssapi --with-icu --with-libxml --with-libxslt \
+        --with-ldap --with-pam --with-uuid=e2fs --with-perl --with-python \
+        --with-tcl --with-tclconfig=${final.tcl}/lib \
+        --with-lz4${lib.optionalString (final.zstd != null) " --with-zstd"}${lib.optionalString withLLVM " --with-llvm"}${lib.optionalString withNUMA " --with-libnuma"} \
         --with-system-tzdata=${final.tzdata}/share/zoneinfo
     '')
     (command "postgresql.build" "${make} world-bin")
@@ -128,6 +191,7 @@ in
       paths = elfPaths;
       elfKinds = [ "runtime" ];
       libraries = final.runtime.libraries;
+      dlopenDirectories = final.runtime.dlopenDirectories;
     })
     (outputs.development { libraries = developmentLibraries; })
     (outputs.checkPaths {
@@ -140,11 +204,20 @@ in
     gssapi = true;
     icu = true;
     libxml2 = true;
+    libxslt = true;
+    ldap = true;
+    nls = true;
+    plperl = true;
+    plpython = true;
+    pltcl = true;
+    jit = withLLVM;
+    numa = withNUMA;
     zstd = final.zstd != null;
-    lz4 = false;
-    pam = false;
+    lz4 = true;
+    pam = true;
     systemd = false;
     osspUuid = false;
+    uuidOsspExtension = true;
   };
   meta = {
     description = "PostgreSQL database server, client tools, and development libraries";

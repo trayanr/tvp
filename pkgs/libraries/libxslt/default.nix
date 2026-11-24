@@ -346,6 +346,21 @@ let
         "1.1.4" = "sha256-b+1HJBBsfslDHB6P/yv8+mQGWYFc3taZsNbtmVRqTrE=";
         "1.1.5" = "sha256-E8DqJZEjPrnDFG+xD2k11QtF7A2lpEfMd364Y5pKxgo=";
         "1.1.6" = "sha256-iEpATeuPA75p6DBQ6B+BIaibkhaLWoaxGlK7psQRBrw=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-1.0.11.nix;
+        deps.libxml2 = tvp.lib.packages.withConstraint {
+          reason = "These early libxslt sources use the legacy xml2-config and libxml2 API from the 2.7 line.";
+        } tvp.packages.libxml2_2_7_8;
+        opts = {
+          compression = "bzip2";
+          configureOptions = [ "--without-python" ];
+        };
+        deps.libgcrypt = tvp.packages.libgcrypt;
+      };
+      releases = {
         "1.1.8" = "sha256-wSWbTSK55iO1Ep0ckiWAAirvMAL6+z6NX0+GMgwN4d0=";
       };
     }
@@ -442,11 +457,9 @@ let
         } tvp.packages.libxml2_2_7_8;
         opts = {
           compression = "bzip2";
-          configureOptions = [
-            "--without-python"
-            "--without-crypto"
-          ];
+          configureOptions = [ "--without-python" ];
         };
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.9" = "sha256-rVwHWkkDdlmnRr9kL1kHXLj7r67xc970pTO/6lk4D7A=";
@@ -472,11 +485,9 @@ let
         } tvp.packages.libxml2_2_8_0;
         opts = {
           compression = "xz";
-          configureOptions = [
-            "--without-python"
-            "--without-crypto"
-          ];
+          configureOptions = [ "--without-python" ];
         };
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.23" = "sha256-jLCMbT6ugjx8CGJ4Wrqj21A4EbmslG1XB2mCHXBHr1A=";
@@ -503,6 +514,7 @@ let
             reason = "Backport 1.1.33's const-correct xmlHashScanner signature for libxml2 2.12.";
           }
         ];
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.30" = "sha256-2x5OJursR9APiFutGah0nrEAiQm4F9ZQEBNl8GjuOyQ=";
@@ -521,6 +533,7 @@ let
           extensionsStdlibPatch
           dateStdlibPatch
         ];
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.33" = "sha256-OUTTp0tMprQPWZZ+Klh6vGmU9pNdaX2fobjt1yJRPpA=";
@@ -537,6 +550,7 @@ let
           extensionsStdlibPatch
           dateStdlibPatch
         ];
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.35" = "sha256-gkfzPpqHLGrIWapFAYvExNALl+L+rJ7rwQyTzh803Xk=";
@@ -551,6 +565,7 @@ let
         deps.libxml2 = tvp.lib.packages.withConstraint {
           reason = "These libxslt releases precede the libxml2 2.13 API removals.";
         } tvp.packages.libxml2_2_12_10;
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.39" = "sha256-KiCtYhFIM5sHWcTU6WcZNi3uZMmgltu6YlugU4RjSfA=";
@@ -564,6 +579,7 @@ let
       def = {
         builder = ./build.nix;
         deps.libxml2 = tvp.packages.libxml2_2;
+        deps.libgcrypt = tvp.packages.libgcrypt;
       };
       releases = {
         "1.1.45" = "sha256-ms/mhBnE0GpFxVAyGzISdi2S9BRlBiyk6hnmMu5dIW4=";
