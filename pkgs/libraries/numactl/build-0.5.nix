@@ -69,6 +69,13 @@ in
         sed -i -e 's/struct stat64 st;/struct stat st;/' -e 's/fstat64(/fstat(/' shm.c
       ''
     ))
+    (lib.optional (lib.versionAtLeast final.version "0.6" && lib.versionOlder final.version "2.0.6") (
+      command "numactl.declare-fstat" ''
+        # These releases lack the fstat declaration in their shared-memory code.
+        test "$(grep -Fxc '#include <unistd.h>' shm.c)" = 1
+        sed -i '/^#include <unistd.h>$/a #include <sys/stat.h>' shm.c
+      ''
+    ))
     (lib.optional (lib.versionAtLeast final.version "2.0.8") (
       command "numactl.device-number-headers" ''
         test "$(grep -Fxc '#include <sys/stat.h>' affinity.c)" = 1
