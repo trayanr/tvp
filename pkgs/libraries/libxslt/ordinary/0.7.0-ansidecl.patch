@@ -1,9 +1,7 @@
 --- a/libxslt/xsltconfig.h.in
 +++ b/libxslt/xsltconfig.h.in
-@@ -23,4 +23,6 @@
- #ifdef __GNUC__
+@@ -24,1 +24,3 @@
+-#include <ansidecl.h>
 +#ifdef HAVE_ANSIDECL_H
- #include <ansidecl.h>
++#include <ansidecl.h>
 +#endif
- #ifndef ATTRIBUTE_UNUSED
- #define ATTRIBUTE_UNUSED

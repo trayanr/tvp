@@ -6,6 +6,7 @@
   version,
   libxml2,
   patches ? [ ],
+  linkLibxml2Compression ? false,
 }:
 final:
 let
@@ -25,6 +26,7 @@ in
     version
     libxml2
     patches
+    linkLibxml2Compression
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
@@ -41,7 +43,9 @@ in
     libraries = [ final.libxml2 ];
   };
   runtime = {
-    libraries = [ final.libxml2 ];
+    # Older configure scripts use xml2-config --libs and link its compression
+    # providers directly. Include those providers when finalizing their ELF files.
+    libraries = [ final.libxml2 ] ++ lib.optionals final.linkLibxml2Compression final.libxml2.specification.runtime.libraries;
     shell = tools.bash;
   };
   installedInterface.pkgconfig = true;

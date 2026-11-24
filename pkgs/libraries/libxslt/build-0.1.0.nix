@@ -7,9 +7,13 @@
   libxml2,
   gnu-config ? null,
   compression,
+  legacyXslAttributes ? false,
+  withBreakpoint ? false,
   withExslt ? false,
   patches ? [ ],
   license ? lib.licenses.mit,
+  pkgconfig ? false,
+  repairPkgconfigRequires ? false,
 }:
 final:
 let
@@ -30,9 +34,12 @@ in
     libxml2
     gnu-config
     compression
+    legacyXslAttributes
+    withBreakpoint
     withExslt
     patches
     license
+    repairPkgconfigRequires
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
@@ -54,7 +61,7 @@ in
     libraries = [ final.libxml2 ] ++ final.libxml2.specification.runtime.libraries;
     shell = tools.bash;
   };
-  installedInterface.pkgconfig = false;
+  installedInterface = { inherit pkgconfig; };
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -65,6 +72,22 @@ in
         for patch in ${lib.escapeShellArgs (map (file: "${file}") final.patches)}; do
           ${tools.patch}/bin/patch --batch --fuzz=0 -p1 < "$patch"
         done
+      ''
+    ))
+    (lib.optional final.legacyXslAttributes (
+      command "libxslt.legacy-xsl-attributes" ''
+        found=0
+        for source in libxslt/*.c; do
+          if grep -Fq 'xmlGetNsProp(' "$source"; then
+            test "$(grep -Fxc '#include "xsltutils.h"' "$source")" -eq 1
+            sed -i \
+              -e 's/\<xmlGetNsProp\>/tvpXsltGetNsProp/g' \
+              -e '/^#include "xsltutils.h"$/a #include "${./ordinary/legacy-xsl-attributes.h}"' \
+              "$source"
+            found=1
+          fi
+        done
+        test "$found" -eq 1
       ''
     ))
     (lib.optional (final.gnu-config != null) {
@@ -95,24 +118,37 @@ in
     '')
     # These release makefiles couple the recursive target to upstream tests
     # and documentation generation. Build the shipped production targets.
-    (command "libxslt.build" ''
-      ${make} -C libxslt libxslt.la
-      ${make} -C libxslt all
-      ${lib.optionalString final.withExslt ''
-        ${make} -C libexslt all
-        ${make} -C xsltproc all
-      ''}
-    '')
-    (command "libxslt.install" ''
-      ${make} -C libxslt install
-      ${lib.optionalString final.withExslt ''
-        ${make} -C libexslt install
-        ${make} -C xsltproc install
-      ''}
-      ${make} install-am
-      test -x "$out/bin/xsltproc"
-      test -f "$out/include/libxslt/xslt.h"
-    '')
+    (command "libxslt.build" (
+      lib.optionalString final.withBreakpoint ''
+        ${make} -C breakpoint all
+      ''
+      + ''
+        ${make} -C libxslt libxslt.la
+        ${make} -C libxslt all
+        ${lib.optionalString final.withExslt ''
+          ${make} -C libexslt all
+          ${make} -C xsltproc all
+        ''}
+      ''
+    ))
+    (command "libxslt.install" (
+      lib.optionalString final.withBreakpoint ''
+        ${make} -C breakpoint install
+      ''
+      + ''
+        ${make} -C libxslt install
+        ${lib.optionalString final.withExslt ''
+          ${make} -C libexslt install
+          ${make} -C xsltproc install
+        ''}
+        ${make} install-am
+        test -x "$out/bin/xsltproc"
+        test -f "$out/include/libxslt/xslt.h"
+      ''
+      + lib.optionalString final.installedInterface.pkgconfig ''
+        test -f "$out/lib/pkgconfig/libxslt.pc"
+      ''
+    ))
     (steps.split "libxslt.finalize")
     (outputs.copyArtifacts { })
     {
@@ -120,6 +156,18 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT"'';
     }
+    (lib.optional final.repairPkgconfigRequires {
+      name = "libxslt.pkgconfig-requires";
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        pc="$out/lib/pkgconfig/libxslt.pc"
+        test "$(grep -Fxc 'Requires:' "$pc")" -eq 1
+        sed -i 's/^Requires:$/Requires: libxml-2.0/' "$pc"
+      '';
+    })
     (outputs.shebangs {
       paths = [ "bin/xslt-config" ];
       names = [ "sh" ];
