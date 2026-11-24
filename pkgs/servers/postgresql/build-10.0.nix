@@ -84,6 +84,14 @@ in
       compression = "bzip2";
     })
     (steps.prepareAutotools { name = "postgresql.prepare"; })
+    (lib.optional (lib.versionOlder final.version "10.2") (
+      command "postgresql.rename-rewind-copy-file-range" ''
+        # Backport PostgreSQL 10.2's rename to avoid the glibc declaration.
+        file=src/bin/pg_rewind/copy_fetch.c
+        test "$(grep -Fc 'copy_file_range(' "$file")" = 4
+        sed -i 's/\<copy_file_range(/rewind_copy_file_range(/g' "$file"
+      ''
+    ))
     (lib.optional (lib.versionOlder final.version "11") (
       command "postgresql.preserve-c-bool" ''
         # ICU includes stdbool.h. Load it first and retain PostgreSQL 10's
