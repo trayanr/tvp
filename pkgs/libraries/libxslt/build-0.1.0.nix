@@ -7,10 +7,9 @@
   libxml2,
   gnu-config ? null,
   compression,
-  configureOptions ? [ ],
+  withExslt ? false,
   patches ? [ ],
   license ? lib.licenses.mit,
-  pkgconfig ? true,
 }:
 final:
 let
@@ -31,7 +30,7 @@ in
     libxml2
     gnu-config
     compression
-    configureOptions
+    withExslt
     patches
     license
     ;
@@ -55,7 +54,7 @@ in
     libraries = [ final.libxml2 ] ++ final.libxml2.specification.runtime.libraries;
     shell = tools.bash;
   };
-  installedInterface = { inherit pkgconfig; };
+  installedInterface.pkgconfig = false;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -92,15 +91,27 @@ in
     (command "libxslt.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
-      ./configure --prefix="$out" --with-libxml-prefix=${final.libxml2} --disable-static \
-        ${lib.escapeShellArgs final.configureOptions}
+      ./configure --prefix="$out" --with-libxml-prefix=${final.libxml2} --disable-static
     '')
-    (command "libxslt.build" make)
+    # These release makefiles couple the recursive target to upstream tests
+    # and documentation generation. Build the shipped production targets.
+    (command "libxslt.build" ''
+      ${make} -C libxslt libxslt.la
+      ${make} -C libxslt all
+      ${lib.optionalString final.withExslt ''
+        ${make} -C libexslt all
+        ${make} -C xsltproc all
+      ''}
+    '')
     (command "libxslt.install" ''
-      ${make} install
+      ${make} -C libxslt install
+      ${lib.optionalString final.withExslt ''
+        ${make} -C libexslt install
+        ${make} -C xsltproc install
+      ''}
+      ${make} install-am
       test -x "$out/bin/xsltproc"
       test -f "$out/include/libxslt/xslt.h"
-      ${lib.optionalString final.installedInterface.pkgconfig ''test -f "$out/lib/pkgconfig/libxslt.pc"''}
     '')
     (steps.split "libxslt.finalize")
     (outputs.copyArtifacts { })
