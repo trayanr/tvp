@@ -128,6 +128,7 @@ let
         deps = {
           autoconf = tvp.packages.autoconf_2;
           automake = tvp.packages.automake_1;
+          file = tvp.packages.file_5;
           libtool = tvp.packages.libtool_2;
         };
         opts.pkgconfig = false;
@@ -139,6 +140,7 @@ let
     {
       def = {
         builder = ./build-2.0.10.nix;
+        deps.file = tvp.packages.file_5;
         opts.pkgconfig = false;
       };
       releases = {
@@ -148,6 +150,7 @@ let
     {
       def = {
         builder = ./build-2.0.10.nix;
+        deps.file = tvp.packages.file_5;
       };
       releases = {
         "2.0.12" = "sha256-VbvaNj9bMqvQV7b7tFUd1xMj9du2YzW6dYupPeKtpyk=";
@@ -159,6 +162,7 @@ let
     {
       def = {
         builder = ./build-2.0.10.nix;
+        deps.file = tvp.packages.file_5;
         opts.cliVersion = true;
       };
       releases = {

@@ -5,6 +5,7 @@
   base,
   src,
   version,
+  file,
   autoconf ? null,
   automake ? null,
   libtool ? null,
@@ -16,9 +17,7 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   regenerate = final.autoconf != null;
-  make = ''
-    ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash
-  '';
+  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
 in
 {
   pname = "numactl";
@@ -26,6 +25,7 @@ in
     base
     src
     version
+    file
     autoconf
     automake
     libtool
@@ -45,6 +45,7 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
+      final.file
     ]
     ++ lib.optionals regenerate [
       final.autoconf
@@ -65,9 +66,19 @@ in
         export CONFIG_SHELL=${tools.bash}/bin/bash
         export ACLOCAL_PATH=${final.libtool}/share/aclocal
         ${final.autoconf}/bin/autoreconf --install --force
+        # libtoolize can install a read-only helper from the Nix store.
+        cp -pL build-aux/ltmain.sh build-aux/ltmain.sh.local
+        chmod u+w build-aux/ltmain.sh.local
+        mv -f build-aux/ltmain.sh.local build-aux/ltmain.sh
       ''
     ))
     (steps.prepareAutotools { name = "numactl.prepare"; })
+    (lib.optional (lib.versionOlder final.version "2.0.12") (
+      command "numactl.device-number-header" ''
+        test "$(grep -Fxc '#include <sys/stat.h>' affinity.c)" = 1
+        sed -i '/^#include <sys\/stat.h>$/a #include <sys/sysmacros.h>' affinity.c
+      ''
+    ))
     (command "numactl.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       ./configure --prefix="$out" --libdir="$out/lib" --enable-shared --enable-static

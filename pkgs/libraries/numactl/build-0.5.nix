@@ -23,8 +23,7 @@ let
   ++ final.extraPrograms;
   make = ''
     ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash \
-      CC="$CC" AR="$AR" prefix="$out" libdir="$out/lib"
-  '';
+      CC="$CC" AR="$AR" prefix="$out" libdir="$out/lib"'';
 in
 {
   pname = "numactl";
@@ -45,10 +44,15 @@ in
     cliVersion = false;
   };
   environment = {
-    tools = [ tools.gnumake ];
+    tools = [
+      tools.gnumake
+      tools.grep
+      tools.sed
+    ];
     overrides.flags.NIX_CFLAGS_COMPILE = [
       "-std=gnu17"
       "-fcommon"
+      "-D_FILE_OFFSET_BITS=64"
     ];
   };
   runtime.libraries = [ ];
@@ -57,6 +61,20 @@ in
       src = final.src;
       inherit (final) compression;
     })
+    (lib.optional (lib.versionAtLeast final.version "0.6") (
+      command "numactl.large-file-api" ''
+        # Keep 64-bit offsets using the standard stat interface.
+        test "$(grep -Fc 'struct stat64 st;' shm.c)" = 1
+        test "$(grep -Fc 'fstat64(shmfd, &st)' shm.c)" = 1
+        sed -i -e 's/struct stat64 st;/struct stat st;/' -e 's/fstat64(/fstat(/' shm.c
+      ''
+    ))
+    (lib.optional (lib.versionAtLeast final.version "2.0.8") (
+      command "numactl.device-number-headers" ''
+        test "$(grep -Fxc '#include <sys/stat.h>' affinity.c)" = 1
+        sed -i '/^#include <sys\/stat.h>$/a #include <sys/sysmacros.h>' affinity.c
+      ''
+    ))
     (command "numactl.build" ''
       # 0.8 ships a precompiled distance.o. 2.0.8 ships an old numastat
       # alongside its C source. All installed native code must be built here.
