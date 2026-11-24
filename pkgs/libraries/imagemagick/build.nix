@@ -14,6 +14,25 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  # These are the first releases with the upstream libjpeg-turbo guards.
+  needsJpegGuards =
+    lib.versionOlder final.version "6.9.12.76"
+    || (lib.versionAtLeast final.version "7" && lib.versionOlder final.version "7.1.0.61");
+  # These configure scripts treat an unset OpenCL probe as a found library.
+  needsOpenclDisabled = lib.elem final.version [
+    "6.9.10.66"
+    "7.0.8.66"
+  ];
+  needsSourceFixes =
+    lib.versionOlder final.version "6.7.5.10"
+    || (lib.versionAtLeast final.version "6.8.7.10" && lib.versionOlder final.version "6.9.2.10")
+    || (lib.versionAtLeast final.version "6.9.13.53" && lib.versionOlder final.version "6.9.13.62")
+    || lib.elem final.version [
+      "6.9.9.1"
+      "6.9.10.81"
+      "6.9.11.17"
+      "7.1.0.52"
+    ];
   elfPaths = [
     "bin"
     "lib"
@@ -67,11 +86,23 @@ in
       src = final.src;
       inherit (final.sourceLayout) compression;
     })
+    (lib.optional needsJpegGuards {
+      name = "imagemagick.jpeg-compatibility";
+      cwd = "source";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./jpeg-compat.py}'';
+    })
+    (lib.optional needsSourceFixes {
+      name = "imagemagick.source-compatibility";
+      cwd = "source";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./source-compat.py} ${lib.escapeShellArg final.version}'';
+    })
     (steps.prepareAutotools { name = "imagemagick.prepare"; })
     (command "imagemagick.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
-      ./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static \
-        --disable-openmp --without-x --without-perl \
+      ${lib.optionalString needsOpenclDisabled "ax_cv_check_cl_libcl=no "}./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static \
+        --disable-openmp --without-x --without-perl${lib.optionalString needsOpenclDisabled " --disable-opencl"} \
         --with-quantum-depth=${toString final.buildFeatures.quantumDepth} \
         ${if final.buildFeatures.hdri then "--enable-hdri" else "--disable-hdri"} \
         ${if final.buildFeatures.modules then "--with-modules" else "--without-modules"} \
