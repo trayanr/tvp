@@ -116,6 +116,22 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${./compile-compat.py} ${lib.escapeShellArg final.version}'';
     })
+    (lib.optional (lib.versionAtLeast final.version "6.5.6.10" && lib.versionOlder final.version "6.6.2.10") (
+      command "imagemagick.remap-dither" ''
+        # Match the 6.6.2 fix and assign the flag to the dither member.
+        file=Magick++/lib/Magick++/STL.h
+        test "$(grep -Fc 'quantizeInfo = dither_' "$file")" = 1
+        sed -i 's/quantizeInfo = dither_/quantizeInfo.dither = dither_/' "$file"
+      ''
+    ))
+    (lib.optional (final.version == "6.7.0.10") (
+      command "imagemagick.png-filter" ''
+        # The 6.7.1 branch makes these libpng filter choices exclusive.
+        file=coders/png.c
+        test "$(grep -Fxc '  if (mng_info->write_png_compression_filter == 7 ||' "$file")" = 1
+        sed -i '/^  if (mng_info->write_png_compression_filter == 7 ||$/s/^  if/  else if/' "$file"
+      ''
+    ))
     (steps.prepareAutotools { name = "imagemagick.prepare"; })
     (command "imagemagick.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash

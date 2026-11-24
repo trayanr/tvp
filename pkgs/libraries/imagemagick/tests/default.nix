@@ -7,6 +7,9 @@ let
   inherit (package.specification.installedInterface) cli wandHeader;
   imageFormat = if package.specification.buildFeatures.png then "PNG" else "PPM";
   imageExtension = lib.toLower imageFormat;
+  # These releases identify PPM by the enclosing PNM family name.
+  reportsPnm = imageFormat == "PPM";
+  reportedImageFormat = if reportsPnm then "PNM" else imageFormat;
   parts = lib.splitString "." package.version;
   upstreamVersion = lib.concatStringsSep "." (lib.take 3 parts) + "-" + lib.last parts;
 in
@@ -26,11 +29,11 @@ context.mkSuite {
     };
     images = {
       script = ''
-        ${cli} -size 3x2 xc:red example.${imageExtension}
+        ${cli} -size 3x2 xc:red example.${imageExtension}${lib.optionalString reportsPnm ''; case "$(head -c2 example.ppm)" in P3|P6) ;; *) exit 1 ;; esac''}
         ${cli} example.${imageExtension} example.jpg
         identify -format '%m %wx%h\n' example.${imageExtension} example.jpg
       '';
-      expected = "${imageFormat} 3x2\nJPEG 3x2";
+      expected = "${reportedImageFormat} 3x2\nJPEG 3x2";
     };
     wand = {
       tools = [ package.specification.base.tools.pkg-config ];
