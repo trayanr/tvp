@@ -22,7 +22,10 @@ final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
-  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  # The selected binutils can put wall-clock timestamps in archives and their indexes.
+  make = ''
+    ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash \
+      AROPT=crsD RANLIB="$RANLIB -D"'';
   elfPaths = [
     "bin"
     "lib"

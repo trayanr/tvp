@@ -26,7 +26,10 @@ let
     (lib.versionAtLeast final.version "11" && lib.versionOlder final.version "11.11")
     || (lib.versionAtLeast final.version "12" && lib.versionOlder final.version "12.6")
     || (lib.versionAtLeast final.version "13" && lib.versionOlder final.version "13.2");
-  make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  # The selected binutils can put wall-clock timestamps in archives and their indexes.
+  make = ''
+    ${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash \
+      AROPT=crsD RANLIB="$RANLIB -D"'';
   elfPaths = [
     "bin"
     "lib"
