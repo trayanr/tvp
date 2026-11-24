@@ -29,6 +29,55 @@ UPSTREAM = """{
         };
       php = mkPackage "packages" "php_8_2" "minor" "php" "@PHP@" "same";
       ruby = mkPackage "canonical" "ruby_2_7_0" "exact" "ruby" "2.7.0" "@RECIPE@";
+      postgresql = mkPackage "packages" "postgresql_16" "major" "postgresql" "@NATIVE@" "same";
+      mkGem = gemName: version: recipe:
+        (builtins.derivation {
+          inherit system ruby gemName version recipe;
+          nativeInputs = if gemName == "tvp-native" then [ postgresql ] else [ ];
+          name = "ruby-${gemName}-${version}";
+          pname = "ruby-${gemName}";
+          builder = "/bin/false";
+        }) // {
+          inherit gemName ruby;
+          nativeProviders = if gemName == "tvp-native" then { inherit postgresql; } else { };
+          __tvpSelection.kind = "custom";
+        };
+      pure = mkGem "tvp-pure" "@GEM@" "same";
+      native = mkGem "tvp-native" "1.0.0" "@RECIPE@";
+      boundBundler = (builtins.derivation {
+        inherit system ruby;
+        name = "bundler-@MANAGER@";
+        pname = "bundler";
+        version = "@MANAGER@";
+        builder = "/bin/false";
+      }) // {
+        inherit ruby;
+        __tvpSelection.kind = "override";
+      };
+      rubyBundle = (builtins.derivation {
+        inherit system ruby pure native boundBundler;
+        name = "synthetic-bundle-${ruby.version}";
+        pname = "synthetic-bundle";
+        version = ruby.version;
+        builder = "/bin/false";
+      }) // {
+        inherit ruby;
+        bundler = boundBundler;
+        gems = { tvp-pure = pure; tvp-native = native; };
+        tvp.kind = "ruby-bundle";
+        __tvpSelection.kind = "composition";
+      };
+      rubyApplication = (builtins.derivation {
+        inherit system rubyBundle;
+        name = "synthetic-application-1.0.0";
+        pname = "synthetic-application";
+        version = "1.0.0";
+        builder = "/bin/false";
+      }) // {
+        bundle = rubyBundle;
+        tvp.kind = "ruby-application";
+        __tvpSelection.kind = "composition";
+      };
       redis = (builtins.derivation {
         inherit system php;
         name = "redis-@REDIS@-for-${php.version}";
@@ -55,7 +104,8 @@ UPSTREAM = """{
     in {
       packages.${system} = {
         php_8_2 = php;
-        inherit phpWithExtensions;
+        inherit phpWithExtensions rubyBundle rubyApplication;
+        bundler = mkPackage "packages" "bundler" "latest" "bundler" "4.0.0" "unbound";
       };
       legacyPackages.${system}.canonical.ruby_2_7_0 = ruby;
     };
@@ -73,12 +123,23 @@ PROJECT = """{
         builder = "/bin/false";
       };
     in {
-      devShells.${system}.default = builtins.derivation {
-        inherit system;
-        name = "consumer-shell";
-        builder = "/bin/false";
-        buildInputs = [ tvp.packages.${system}.phpWithExtensions unrelated ];
-        nativeBuildInputs = [ tvp.legacyPackages.${system}.canonical.ruby_2_7_0 ];
+      packages.${system} = {
+        inherit (tvp.packages.${system}) rubyBundle rubyApplication;
+      };
+      devShells.${system} = {
+        ruby = builtins.derivation {
+          inherit system;
+          name = "ruby-consumer-shell";
+          builder = "/bin/false";
+          buildInputs = [ tvp.packages.${system}.rubyBundle ];
+        };
+        default = builtins.derivation {
+          inherit system;
+          name = "consumer-shell";
+          builder = "/bin/false";
+          buildInputs = [ tvp.packages.${system}.phpWithExtensions unrelated ];
+          nativeBuildInputs = [ tvp.legacyPackages.${system}.canonical.ruby_2_7_0 ];
+        };
       };
     };
 }
@@ -111,9 +172,15 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, f"{args}\n{result.stdout}{result.stderr}")
         return result.stdout
 
-    def commit_upstream(self, php_version, redis_version, recipe):
+    def commit_upstream(
+        self, php_version, redis_version, recipe,
+        gem_version="1.0.0", manager_version="1.17.3",
+        native_version="16.16",
+    ):
         source = (UPSTREAM.replace("@PHP@", php_version)
-                  .replace("@REDIS@", redis_version).replace("@RECIPE@", recipe))
+                  .replace("@REDIS@", redis_version).replace("@RECIPE@", recipe)
+                  .replace("@GEM@", gem_version).replace("@MANAGER@", manager_version)
+                  .replace("@NATIVE@", native_version))
         (self.upstream / "flake.nix").write_text(source)
         self.command("git", "add", "flake.nix", cwd=self.upstream)
         self.command(
@@ -122,10 +189,10 @@ class ConsumerIntegrationTests(unittest.TestCase):
             cwd=self.upstream,
         )
 
-    def tvp(self, command, *args):
+    def tvp(self, command, *args, attribute=None):
         return json.loads(self.command(
             sys.executable, "-B", str(CLI), command, *args, "--flake", str(self.project),
-            "--attr", f"devShells.{SYSTEM}.default", "--json", cwd=self.root,
+            "--attr", attribute or f"devShells.{SYSTEM}.default", "--json", cwd=self.root,
         ))
 
     def test_preview_matches_lockfile_diff_and_preserves_the_worktree(self):
@@ -161,6 +228,80 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertEqual(changes["ruby"]["after"]["version"], "2.7.0")
         self.assertFalse(changes["ruby"]["versionChanged"])
         self.assertTrue(changes["ruby"]["derivationChanged"])
+
+    def test_ruby_bundle_reports_bound_components_and_gem_changes(self):
+        attribute = f"packages.{SYSTEM}.rubyBundle"
+        inventory = self.tvp("used", attribute=attribute)
+        components = {
+            row["role"]: row for row in inventory["packages"]
+            if row["role"] not in ("ruby-gem", "ruby-native-package")
+        }
+        self.assertEqual(set(components), {"ruby-bundle", "ruby-engine", "ruby-manager"})
+        self.assertEqual(components["ruby-engine"]["version"], "2.7.0")
+        self.assertEqual(components["ruby-manager"]["version"], "1.17.3")
+        self.assertEqual(components["ruby-manager"]["kind"], "override")
+        gems = {row["gemName"]: row for row in inventory["packages"] if row["role"] == "ruby-gem"}
+        self.assertEqual(set(gems), {"tvp-pure", "tvp-native"})
+        self.assertEqual(gems["tvp-pure"]["version"], "1.0.0")
+        native_packages = [row for row in inventory["packages"] if row["role"] == "ruby-native-package"]
+        self.assertEqual(len(native_packages), 1)
+        self.assertEqual(native_packages[0]["providerName"], "postgresql")
+        self.assertEqual(native_packages[0]["version"], "16.16")
+        shell_inventory = self.tvp("used", attribute=f"devShells.{SYSTEM}.ruby")
+        self.assertEqual(len(shell_inventory["packages"]), len(inventory["packages"]))
+        self.assertTrue(all(
+            row["location"].startswith("buildInputs[0]")
+            for row in shell_inventory["packages"]
+        ))
+        application_attribute = f"packages.{SYSTEM}.rubyApplication"
+        application_inventory = self.tvp("used", attribute=application_attribute)
+        self.assertEqual(len(application_inventory["packages"]), len(inventory["packages"]) + 1)
+        application = application_inventory["packages"][0]
+        self.assertEqual(application["role"], "ruby-application")
+        self.assertEqual(application["version"], "1.0.0")
+        self.assertEqual(
+            {row["gemName"] for row in application_inventory["packages"] if row["role"] == "ruby-gem"},
+            set(gems),
+        )
+
+        self.commit_upstream(
+            "8.2.1", "6.2.0", "revised",
+            gem_version="1.1.0", manager_version="2.1.2",
+            native_version="16.17",
+        )
+        comparison = self.tvp("update", "--preview", attribute=attribute)
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+        self.assertEqual({entry["change"] for entry in comparison["changes"]}, {"changed"})
+        changes = {
+            entry["after"]["role"]: entry for entry in comparison["changes"]
+            if entry["after"]["role"] != "ruby-gem"
+        }
+        self.assertTrue(changes["ruby-manager"]["versionChanged"])
+        self.assertEqual(changes["ruby-manager"]["after"]["version"], "2.1.2")
+        self.assertFalse(changes["ruby-engine"]["versionChanged"])
+        self.assertTrue(changes["ruby-native-package"]["versionChanged"])
+        self.assertEqual(changes["ruby-native-package"]["after"]["version"], "16.17")
+        gem_changes = {
+            entry["after"]["gemName"]: entry for entry in comparison["changes"]
+            if entry["after"]["role"] == "ruby-gem"
+        }
+        self.assertTrue(gem_changes["tvp-pure"]["versionChanged"])
+        self.assertEqual(gem_changes["tvp-pure"]["before"]["version"], "1.0.0")
+        self.assertEqual(gem_changes["tvp-pure"]["after"]["version"], "1.1.0")
+        self.assertFalse(gem_changes["tvp-native"]["versionChanged"])
+        self.assertTrue(gem_changes["tvp-native"]["derivationChanged"])
+        application_preview = self.tvp("update", "--preview", attribute=application_attribute)
+        application_change = next(
+            row for row in application_preview["changes"] if row["after"]["role"] == "ruby-application"
+        )
+        self.assertFalse(application_change["versionChanged"])
+        self.assertTrue(application_change["derivationChanged"])
+        self.assertEqual(
+            {row["after"]["gemName"] for row in application_preview["changes"]
+             if row["after"]["role"] == "ruby-gem"},
+            set(gem_changes),
+        )
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
 
 
 if __name__ == "__main__":

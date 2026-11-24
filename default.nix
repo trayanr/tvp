@@ -8,6 +8,7 @@ assert
   || throw "TVP: requested system ${system} differs from the supplied package context ${pkgs.stdenv.hostPlatform.system}";
 let
   tvpLib = import ./lib {
+    inherit pkgs;
     inherit (pkgs) lib;
     familyContext = {
       base = bases.default;

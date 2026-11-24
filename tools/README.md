@@ -62,11 +62,19 @@ reports. These commands evaluate derivations without building package outputs.
 
 Reports cover a selected package or direct inputs exposed by a selected shell.
 TVP selection metadata identifies observed packages, including the engine
-and modules of a directly selected TVP PHP composition. Version changes and
-same-version derivation changes are reported separately. Transitive dependencies
-and attribution among multiple TVP inputs are outside this inspection scope.
+and modules of a directly selected TVP PHP composition, and the Ruby, bound
+Bundler and locked gems of a directly selected TVP Ruby bundle or application.
+Application reports include their underlying bundle. Version changes and
+same-version derivation changes are reported separately. Dependencies exposed by
+these compositions are included. General derivation-graph traversal and attribution
+among multiple TVP inputs are outside this inspection scope.
 For a PHP composition, the engine row describes the resolved engine. It may
 show a canonical engine even when the project chose a moving PHP alias.
+Ruby gem rows include `gemName`, which preserves gem identity across version
+updates and rebuilds of a gem at the same version.
+Named native package rows include their owning `gemName` and `providerName`, so
+a changed PostgreSQL, Curl or ImageMagick provider is visible even when the gem
+version stays locked.
 
 The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
 

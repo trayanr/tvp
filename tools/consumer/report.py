@@ -25,6 +25,28 @@ let
     };
   observe = location: package:
     if !isPackage package then [ ]
+    else if (package.tvp.kind or null) == "ruby-application" && package ? bundle then
+      [ (record "ruby-application" location package) ]
+      ++ observe "${location}.bundle" package.bundle
+    else if (package.tvp.kind or null) == "ruby-bundle"
+        && package ? ruby && package ? bundler && package ? gems then
+      [ (record "ruby-bundle" location package)
+        (record "ruby-engine" ("${location}.ruby") package.ruby)
+        (record "ruby-manager" ("${location}.bundler") package.bundler)
+      ]
+      ++ builtins.concatMap (name:
+        let
+          gem = package.gems.${name};
+          gemName = gem.gemName or name;
+          providers = gem.nativeProviders or { };
+          gemLocation = "${location}.gems.${name}";
+        in
+          [ ((record "ruby-gem" gemLocation gem) // { inherit gemName; }) ]
+          ++ map (providerName:
+            (record "ruby-native-package" "${gemLocation}.nativeProviders.${providerName}" providers.${providerName})
+            // { inherit gemName providerName; }
+          ) (builtins.attrNames providers)
+      ) (builtins.attrNames package.gems)
     else if (package.tvp.kind or null) == "php-runtime"
         && package ? unwrapped && package ? enabledExtensions then
       [ (record "php-runtime" location package)
@@ -105,9 +127,8 @@ def package_key(package):
         location = location.split("[", 1)[0]
         identity = [package["namespace"], package["selector"] or package["pname"]]
     else:
-        # Composed PHP engines can carry only their underlying canonical selector.
-        # Match the engine and extensions by their role in that composition.
-        identity = [package["pname"]]
+        # Runtime compositions retain their component roles across selector updates.
+        identity = [package.get("gemName") or package["pname"]]
     return (location, package["role"], *(value or "" for value in identity), package["outputName"])
 
 
