@@ -18,6 +18,14 @@ final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
+  needsXml2Config =
+    lib.versionOlder final.version "10.13"
+    || (lib.versionAtLeast final.version "11" && lib.versionOlder final.version "11.8")
+    || (lib.versionAtLeast final.version "12" && lib.versionOlder final.version "12.3");
+  needsIcuTrue =
+    (lib.versionAtLeast final.version "11" && lib.versionOlder final.version "11.11")
+    || (lib.versionAtLeast final.version "12" && lib.versionOlder final.version "12.6")
+    || (lib.versionAtLeast final.version "13" && lib.versionOlder final.version "13.2");
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   elfPaths = [
     "bin"
@@ -66,7 +74,7 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ];
+    ] ++ lib.optional needsXml2Config final.libxml2;
     libraries = buildLibraries;
   };
   runtime.libraries = buildLibraries;
@@ -76,6 +84,23 @@ in
       compression = "bzip2";
     })
     (steps.prepareAutotools { name = "postgresql.prepare"; })
+    (lib.optional (lib.versionOlder final.version "11") (
+      command "postgresql.preserve-c-bool" ''
+        # ICU includes stdbool.h. Load it first and retain PostgreSQL 10's
+        # char-sized bool consistently in headers and source files.
+        file=src/include/c.h
+        test "$(grep -Fxc '#ifndef bool' "$file")" = 1
+        sed -i '/^#ifndef bool$/i #include <stdbool.h>\n#undef bool\n#undef true\n#undef false' "$file"
+      ''
+    ))
+    (lib.optional needsIcuTrue (
+      command "postgresql.icu-true" ''
+        # Later minor releases use the language boolean with newer ICU.
+        file=src/backend/commands/collationcmds.c
+        test "$(grep -Fc 'uloc_toLanguageTag(localename, buf, sizeof(buf), TRUE, &status);' "$file")" = 1
+        sed -i '/uloc_toLanguageTag(localename, buf, sizeof(buf), TRUE, \&status);/s/TRUE/true/' "$file"
+      ''
+    ))
     (command "postgresql.bind-shell" ''
       # The Unix pg_ctl path directly executes a shell; use the selected
       # libc's pathname, just like its existing system and popen calls.

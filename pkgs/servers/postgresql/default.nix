@@ -21,7 +21,9 @@ let
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
-          libxml2 = tvp.packages.libxml2_2;
+          libxml2 = tvp.lib.packages.withConstraint {
+            reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
+          } tvp.packages.libxml2_2_11_9;
           # These source lines support the OpenSSL 1.1 interface.
           openssl = tvp.packages.openssl_1_1;
           readline = tvp.packages.readline_8;
@@ -95,11 +97,6 @@ let
         "12.15" = "sha256-u1IG4oZMHEV5k4uW6mCW0VXyKr8tLMKqV1cePEyxKzY=";
         "12.16" = "sha256-xfH/96D5Ph7DdGQXsFlCkOzmF7SZXtlbjVJ68LoOOPM=";
         "12.17" = "sha256-k+jhsjmB1fA8bFdj93soGEwc5NtxlPpGbi7bZdnBxfY=";
-        "12.18" = "sha256-T5kZcl2UHOmGjgf+HtHTqGdIWZtIM4ZUdYOSi3TDkYo=";
-        "12.19" = "sha256-YX495Swi6CL09X0B1bIkBQPhmKnsyvWYqFEQm9GOb7s=";
-        "12.20" = "sha256-LVQ68wCf7H/VrzX3pwyVCF0+72tQjlF6qUk+mbFenqk=";
-        "12.21" = "sha256-bHEVUKwcx4KIZeWCPZ9Ffjva1vQyAXcWn5DkGb4MJ/I=";
-        "12.22" = "sha256-jfPAR0eCWJ08bzdLUTOxvRTRaAhu28E8bnLmfdRSejs=";
         "13.0" = "sha256-gOdQvo1Da1QZdjagJjb4/TJjumd5v4ZbBIMklepZIpY=";
         "13.1" = "sha256-EjRcg7iaopgIVol39SANbaAPiKA1UX+SUpM1VDL/5h8=";
         "13.2" = "sha256-X9f80I24b1sq7Sj8+vmuCsqOlChWGsVHdkwqKw9Brfw=";
@@ -114,6 +111,29 @@ let
         "13.11" = "sha256-SZL/ZHIDVmtnDU5U3FMXSZomhWyTV20OqVG99r7lC/s=";
         "13.12" = "sha256-DaHtzuNRS3vHum268MAEmeisFZBmjoeJxQJTpiSfIYs=";
         "13.13" = "sha256-ivacJZkEeirSRlZ9aOxBMa7xFpVNjD5GnpeJCAs3pHQ=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-10.0.nix;
+        deps = {
+          icu = tvp.packages.icu_74;
+          keyutils = tvp.packages.keyutils_1;
+          krb5 = tvp.packages.krb5_1;
+          libxml2 = tvp.packages.libxml2_2;
+          # These source lines support the OpenSSL 1.1 interface.
+          openssl = tvp.packages.openssl_1_1;
+          readline = tvp.packages.readline_8;
+          tzdata = tvp.packages.tzdata;
+          zlib = tvp.packages.zlib_1;
+        };
+      };
+      releases = {
+        "12.18" = "sha256-T5kZcl2UHOmGjgf+HtHTqGdIWZtIM4ZUdYOSi3TDkYo=";
+        "12.19" = "sha256-YX495Swi6CL09X0B1bIkBQPhmKnsyvWYqFEQm9GOb7s=";
+        "12.20" = "sha256-LVQ68wCf7H/VrzX3pwyVCF0+72tQjlF6qUk+mbFenqk=";
+        "12.21" = "sha256-bHEVUKwcx4KIZeWCPZ9Ffjva1vQyAXcWn5DkGb4MJ/I=";
+        "12.22" = "sha256-jfPAR0eCWJ08bzdLUTOxvRTRaAhu28E8bnLmfdRSejs=";
         "13.14" = "sha256-uN8HhVGJiWC9UA3F04oXfpkFN234H+fytmChQH+mpe0=";
         "13.15" = "sha256-Qu3UFURtM7jCQr520a0FdTGyJksuhpOTObcHXG5OySU=";
         "13.16" = "sha256-ycu7YSnwIyggSCgGa7N4XACoXIyo/TKcKopTwfXNiGU=";
@@ -133,7 +153,9 @@ let
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
-          libxml2 = tvp.packages.libxml2_2;
+          libxml2 = tvp.lib.packages.withConstraint {
+            reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
+          } tvp.packages.libxml2_2_11_9;
           # These source lines support the OpenSSL 1.1 interface.
           openssl = tvp.packages.openssl_1_1;
           readline = tvp.packages.readline_8;
@@ -153,6 +175,24 @@ let
         "14.8" = "sha256-OdOPADBzftA4Nd6+7+47N9M1RizkmV4kl7w41iHr5Fo=";
         "14.9" = "sha256-sf47qbGn86ljfdFlbf2tKIkBYHP9TTXxO1AUPLu2qO8=";
         "14.10" = "sha256-yZQxxI6dRwsNCrlG6yFBo80ZEwwvtNxLMoSnd07Mg5k=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          icu = tvp.packages.icu_74;
+          keyutils = tvp.packages.keyutils_1;
+          krb5 = tvp.packages.krb5_1;
+          libxml2 = tvp.packages.libxml2_2;
+          # These source lines support the OpenSSL 1.1 interface.
+          openssl = tvp.packages.openssl_1_1;
+          readline = tvp.packages.readline_8;
+          tzdata = tvp.packages.tzdata;
+          zlib = tvp.packages.zlib_1;
+        };
+      };
+      releases = {
         "14.11" = "sha256-pnC9fc4i3K1Cl7JhE2s7HUoJpvVBcZViqhTKY78paKg=";
         "14.12" = "sha256-YRjQj53cwb2Dzyt8x007WDvc7C835iRaisADuPqoCSM=";
         "14.13" = "sha256-Wao8S0lasmqexp860KAijFHw/m+s82NN+tTRGX1hOlY=";
@@ -177,7 +217,9 @@ let
           icu = tvp.packages.icu_74;
           keyutils = tvp.packages.keyutils_1;
           krb5 = tvp.packages.krb5_1;
-          libxml2 = tvp.packages.libxml2_2;
+          libxml2 = tvp.lib.packages.withConstraint {
+            reason = "These releases use a mutable structured error callback. Libxml2 2.12 made the callback argument const.";
+          } tvp.packages.libxml2_2_11_9;
           openssl = tvp.packages.openssl_3_0;
           readline = tvp.packages.readline_8;
           tzdata = tvp.packages.tzdata;
@@ -192,6 +234,26 @@ let
         "15.3" = "sha256-/8fUiR8A/79cP06rf7vO2EYLjA7mPFpRZxM7nmWZ2TI=";
         "15.4" = "sha256-uuxaS9xENzNmU7bLXZ7Ym+W9XAxYuU4L7O4KmZ5jyPk=";
         "15.5" = "sha256-j1OqldeOuOglNupGtoGHeTtCu6O09lqjQvVAsjybEKY=";
+        "16.0" = "sha256-356CPrIjMEROHUjlLMZRNaZSpv2zzjJePwhUkzn1G5k=";
+        "16.1" = "sha256-zjxNhdGbASH+DT+O8fpgH3GYnob4pm99w61UbdVWT+w=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          icu = tvp.packages.icu_74;
+          keyutils = tvp.packages.keyutils_1;
+          krb5 = tvp.packages.krb5_1;
+          libxml2 = tvp.packages.libxml2_2;
+          openssl = tvp.packages.openssl_3_0;
+          readline = tvp.packages.readline_8;
+          tzdata = tvp.packages.tzdata;
+          zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
+        };
+      };
+      releases = {
         "15.6" = "sha256-hFUUbtnGnJOlfelUrq0DAsr60DXCskIXXWqh4X68svs=";
         "15.7" = "sha256-pG/klIWrY4Xjnau7tlT10wSSBvds1pXiJCaHKVIJmPc=";
         "15.8" = "sha256-RANRX5pp7rPv68mPMLjGlhIr/fiV6Ss7I/W452nty2o=";
@@ -207,8 +269,6 @@ let
         "15.18" = "sha256-Ed8N+X/j6kupp5H6rznO4dL+Vx54iFtbVdhRfSfDI7Q=";
         "15.19" = "sha256-4aZKh6RrgluIwILkUYFhpHqrU8RWlJZPi6HfKPeFn4k=";
         "15.20" = "sha256-MOZcu7dxo5tVPtLffmViLmVkeu1V28Gb0P6FP/CghEI=";
-        "16.0" = "sha256-356CPrIjMEROHUjlLMZRNaZSpv2zzjJePwhUkzn1G5k=";
-        "16.1" = "sha256-zjxNhdGbASH+DT+O8fpgH3GYnob4pm99w61UbdVWT+w=";
         "16.2" = "sha256-RG6IKU28LJCFq0twYaZG+mBLS+wDUh1epnHC5a2bKVI=";
         "16.3" = "sha256-Mxlj1dPcTK9CFqBJ+kC2bWvLjHMGFYWUEblRh2TmBYU=";
         "16.4" = "sha256-lxdm1kWqc+k7nvTjvkQgG09FtUdwlbBJElQD+fM4bW8=";
@@ -224,6 +284,27 @@ let
         "16.14" = "sha256-9tB3FCc3kghYzpWMzbdcbuE3pjtbCFPHBpPUAax+NHE=";
         "16.15" = "sha256-wVdTQfp71A9SdOpGWzQ5D03GTN0HcK8ycAXKrrn2t+0=";
         "16.16" = "sha256-nVzYYzBDt1dA1dWXSca3Nl5q61PEcJixpegLsY+HiBo=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
+          bison = tvp.packages.bison;
+          flex = tvp.packages.flex;
+          icu = tvp.packages.icu_74;
+          keyutils = tvp.packages.keyutils_1;
+          krb5 = tvp.packages.krb5_1;
+          libxml2 = tvp.packages.libxml2_2;
+          openssl = tvp.packages.openssl_3_0;
+          perl = tvp.packages.perl;
+          readline = tvp.packages.readline_8;
+          tzdata = tvp.packages.tzdata;
+          zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
+        };
+      };
+      releases = {
         "17.0" = "sha256-fidhMcD91rYliNutmzuyS4w0mNUAkyjbpZrxboGRCd4=";
         "17.1" = "sha256-eEnbdO9qhVXQcj+H6BU5MBQi+pyOnyHM5h/cFOkZnc0=";
         "17.2" = "sha256-gu8nwK83UWldf2Ti2WNYMAX7tqDD32PQ5LQiEdcCEWQ=";

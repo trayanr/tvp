@@ -14,6 +14,9 @@
   tzdata,
   zlib,
   zstd ? null,
+  bison ? null,
+  flex ? null,
+  perl ? null,
 }:
 final:
 let
@@ -57,6 +60,9 @@ in
     tzdata
     zlib
     zstd
+    bison
+    flex
+    perl
     ;
   inherit (tools) bash coreutils;
   environment = {
@@ -68,7 +74,7 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ];
+    ] ++ lib.filter (tool: tool != null) [ final.bison final.flex final.perl ];
     libraries = buildLibraries;
   };
   runtime.libraries = buildLibraries;
