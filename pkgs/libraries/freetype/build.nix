@@ -65,7 +65,8 @@ in
     libraries = [
       final.zlib
       final.bzip2
-    ] ++ lib.optional withPng final.png;
+    ]
+    ++ lib.optional withPng final.png;
   };
   runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
