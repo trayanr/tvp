@@ -3,6 +3,31 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
+        builder = ./build-2.7.18.nix;
+        deps = rec {
+          runtimeBash = tvp.packages.bash_5;
+          openssl = tvp.lib.packages.withConstraint {
+            reason = "CPython 2.7's _ssl and _hashlib modules use the OpenSSL 1.1 compatibility interfaces.";
+          } tvp.packages.openssl_1_1;
+          zlib = tvp.packages.zlib_1;
+          bzip2 = tvp.packages.bzip2_1;
+          libffi = tvp.packages.libffi_3;
+          sqlite = tvp.packages.sqlite_3;
+          gdbm = tvp.packages.gdbm_1;
+          ncurses = tvp.lib.packages.withConstraint {
+            reason = "CPython 2.7's _cursesmodule reads WINDOW._flags, which the 6.5 and 6.6 headers make opaque.";
+          } tvp.packages.ncurses_6_4;
+          readline = tvp.lib.packages.withConstraint {
+            reason = "Use the same Ncurses provider for Readline and the Python curses extension.";
+            parameters.ncurses = ncurses.__tvpSelection;
+          } (tvp.packages.readline_8.override { inherit ncurses; });
+          libxcrypt = tvp.packages.libxcrypt_4;
+        };
+      };
+      releases."2.7.18" = "sha256-tiwOeTdVHQzAK4/Vyw9UT5QFuvyaVNOAjtRZSBLt70M=";
+    }
+    {
+      def = {
         builder = ./build-3.5.10.nix;
         deps = rec {
 
@@ -502,7 +527,12 @@ let
         include = version: builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null;
       };
     };
-    tests = import ./tests/installed.nix;
+    tests =
+      args:
+      if pkgs.lib.versions.major args.package.version == "2" then
+        import ./tests/installed-2.7.nix args
+      else
+        import ./tests/installed.nix args;
     # Suite-only support. Meson/Ninja can depend on this full Python.
     testDeps = {
       patch = tvp.packages.patch;
