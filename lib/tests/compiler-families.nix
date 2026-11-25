@@ -11,7 +11,7 @@ let
   };
   expected = {
     gcc = 2;
-    llvm = 1;
+    llvm = 3;
     go = 5;
     go-bootstrap = 1;
     rustc = 1;
@@ -24,6 +24,11 @@ let
     p:
     let
       s = p.specification;
+      host =
+        if p.pname == "llvm" && builtins.elem p.version [ "11.1.0" "14.0.6" ] then
+          tvp.bases.gcc_9.full
+        else
+          full;
       parts = tvp.builder.steps.partition p.buildSteps;
       finalOnly = p.editSteps (
         plan:
@@ -44,7 +49,7 @@ let
       sourceOwnedConstructor = !(p ? overrideAttrs);
       split = parts.split && parts.first != [ ] && parts.second != [ ];
       oneSplit = builtins.length (builtins.filter (step: (step.kind or "") == "split") p.buildSteps) == 1;
-      explicitClosedHostCompiler = s.base.compiler.drvPath == full.compiler.drvPath;
+      explicitClosedHostCompiler = s.base.compiler.drvPath == host.compiler.drvPath;
       noPublicCompilerBootstrap = s.base.compiler.drvPath != tvp.canonical.gcc_16_2_0.drvPath;
       sourceInvalidatesA = source.artifact.drvPath != p.artifact.drvPath;
       noOpOverride = (p.override { }).drvPath == p.drvPath;
@@ -61,7 +66,11 @@ let
       "13.3.0"
       "16.2.0"
     ];
-    llvm = [ "23.1.4" ];
+    llvm = [
+      "11.1.0"
+      "14.0.6"
+      "23.1.4"
+    ];
     go = [
       "1.17.13"
       "1.20.14"
