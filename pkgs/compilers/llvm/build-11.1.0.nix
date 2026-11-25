@@ -277,6 +277,40 @@ in
       paths = elfPaths;
       libraries = final.runtime.libraries;
     })
+    {
+      name = "llvm.sdk-link-flags";
+      tools = [
+        coreutils
+        patchelf
+      ];
+      run = ''
+        # GNU ld prefixes shared-library RUNPATHs with the Clang sysroot.
+        # Export the actual libLLVM dependency paths as link-only flags.
+        link_paths=$(${patchelf}/bin/patchelf --print-rpath "$out/lib/libLLVM.so")
+        test -n "$link_paths"
+        IFS=: read -r -a directories <<< "$link_paths"
+        for directory in "''${directories[@]}"; do
+          [[ "$directory" == /nix/store/* && -d "$directory" ]]
+        done
+
+        config="$out/bin/llvm-config"
+        unwrapped="$out/bin/.llvm-config-unwrapped"
+        test -f "$config"
+        test ! -L "$config"
+        test ! -e "$unwrapped"
+        test ! -L "$unwrapped"
+        [[ "$("$config" --ldflags)" == "-L$out/lib "* ]]
+        mv -- "$config" "$unwrapped"
+        {
+          printf '#!%s\n' ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"}
+          printf 'llvm_config=%q\n' "$unwrapped"
+          printf 'llvm_libdir=%q\n' "$out/lib"
+          printf 'llvm_link_flag=%q\n' "-Wl,-rpath-link,$link_paths"
+          cat ${./native/llvm-config-link-flags.sh}
+        } > "$config"
+        chmod +x "$config"
+      '';
+    }
     (
       (outputs.shebangs {
         python = helperPython;

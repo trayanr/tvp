@@ -14,6 +14,9 @@ The released LLVM sources have known GCC 13 header-compatibility gaps,
 so they use the source-owned GCC 9.5 construction base. The installed
 Clang selects its independent GCC 13 target runtime through the
 explicit GCC toolchain layout.
+For shared-library consumers, `llvm-config --ldflags` supplies the installed
+`libLLVM` dependency directories as link-time search paths. GNU ld needs
+these when the Clang driver uses its empty sysroot.
 
 Both source tarballs were checked with Tom Stellard's signing key from
 the [LLVM release keyring](https://releases.llvm.org/release-keys.asc).
