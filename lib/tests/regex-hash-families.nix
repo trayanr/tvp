@@ -95,14 +95,15 @@ let
     noHashExtraDeps = builtins.all (e: e.def.deps == { }) (
       builtins.attrValues hash.recipes.gperf.versionTable
     );
-    explicitPcre2Providers = builtins.all (e: builtins.attrNames e.def.deps == [
-      "bzip2"
-      "pkgConfig"
-      "readline"
-      "zlib"
-    ]) (
-      builtins.attrValues regex.recipes.pcre2.versionTable
-    );
+    explicitPcre2Providers = builtins.all (
+      e:
+      builtins.attrNames e.def.deps == [
+        "bzip2"
+        "pkgConfig"
+        "readline"
+        "zlib"
+      ]
+    ) (builtins.attrValues regex.recipes.pcre2.versionTable);
     effectiveDefaultCxxRuntime = g.specification.libstdcxx == null && g.runtime.libraries == [ ];
     cxxRuntimeOverrideReusesArtifact =
       cxx.artifact.drvPath == g.artifact.drvPath && cxx.drvPath != g.drvPath;

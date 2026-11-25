@@ -30,19 +30,18 @@ context.mkSuite {
   }
   // lib.optionalAttrs hasCompressedInput {
     compressed-input = {
-      script =
-        ''
-          printf 'ignored\nmessage-42\n' > plain
-        ''
-        + lib.optionalString features.grepGzip ''
-          gzip -c plain > input.gz
-          test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.gz)" = message-42
-        ''
-        + lib.optionalString features.grepBzip2 ''
-          bzip2 -c plain > input.bz2
-          test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.bz2)" = message-42
-        ''
-        + "echo compressed-input";
+      script = ''
+        printf 'ignored\nmessage-42\n' > plain
+      ''
+      + lib.optionalString features.grepGzip ''
+        gzip -c plain > input.gz
+        test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.gz)" = message-42
+      ''
+      + lib.optionalString features.grepBzip2 ''
+        bzip2 -c plain > input.bz2
+        test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.bz2)" = message-42
+      ''
+      + "echo compressed-input";
       expected = "compressed-input";
     };
   }
