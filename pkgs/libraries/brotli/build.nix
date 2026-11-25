@@ -58,6 +58,25 @@ in
       libraries = final.runtime.libraries;
       elfKinds = [ "runtime" ];
     })
+    {
+      name = "brotli.self-runtime";
+      tools = [
+        tools.binutils
+        tools.patchelf
+        tools.python
+      ];
+      # The CLI and the encoder and decoder libraries link Brotli's own libraries.
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths;
+            directories = [ "lib" ];
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
+    }
     (outputs.checkPaths {
       inherit paths;
       elfKinds = [ "runtime" ];

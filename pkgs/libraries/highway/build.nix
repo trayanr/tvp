@@ -11,6 +11,7 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   environment = final.base.environment final.environment;
   paths = [ "lib" ];
+  oldAssembler = lib.versionOlder (lib.getVersion final.base.compiler.bintools) "2.44";
 in
 {
   pname = "highway";
@@ -28,6 +29,23 @@ in
       src = final.src;
       compression = "gzip";
     })
+    (lib.optional oldAssembler (
+      steps.command
+        {
+          environment.tools = [
+            tools.grep
+            tools.sed
+          ];
+        }
+        "highway.avx10-assembler"
+        ''
+          # Upstream's AVX10.2 blocklist checks GCC but also requires GNU as 2.44.
+          # Keep the restriction in the installed header for downstream dispatch.
+          probe='#if (HWY_COMPILER_CLANG < 2300) && (HWY_COMPILER_GCC_ACTUAL < 1502)'
+          test "$(grep -Fxc "$probe" hwy/detect_targets.h)" -eq 1
+          sed -i "s|^$probe\$|#if 1  // Selected GNU assembler predates AVX10.2.|" hwy/detect_targets.h
+        ''
+    ))
     (steps.cmake {
       name = "highway";
       inherit (environment) tools libraries env;
@@ -66,6 +84,25 @@ in
       inherit paths;
       libraries = final.runtime.libraries;
       elfKinds = [ "runtime" ];
+    })
+    (lib.optional final.buildFeatures.shared {
+      name = "highway.self-runtime";
+      tools = [
+        tools.binutils
+        tools.patchelf
+        tools.python
+      ];
+      # The contrib and test libraries both load the sibling libhwy.
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths;
+            directories = paths;
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
     })
     (outputs.checkPaths {
       inherit paths;
