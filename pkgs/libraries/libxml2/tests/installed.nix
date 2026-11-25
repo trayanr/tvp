@@ -127,8 +127,9 @@ mkSuite {
   // lib.optionalAttrs (features.icu or false) {
     icu = {
       script = ''
-        xmllint --version > features 2>&1
-        grep -qw ICU features
+        LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/xmllint > libraries
+        test "$(awk '/^[[:space:]]*libicuuc\.so\./ { print $3 }' libraries)" = \
+          "${lib.getLib specification.icu}/lib/libicuuc.so.${lib.versions.major specification.icu.version}"
         printf icu
       '';
       expected = "icu";

@@ -279,6 +279,22 @@ in
         sed -i "/^Libs\\.private:/s|$| $lzma_libs|" "$pc"
       '';
     }
+    {
+      name = "libxml2.repair-static-icu-pkg-config";
+      enabled = (final.installedInterface.repairPrivateIcu or false) && final.icu != null;
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        pc="$out/lib/pkgconfig/libxml-2.0.pc"
+        test "$(grep -c '^Libs\.private:' "$pc")" = 1
+        test "$(grep -c '^Libs\.private:.*[[:space:]]-licu' "$pc" || true)" = 0
+        icu_libs="$(sed -n 's/^LDFLAGS = *//p' "$TVP_ARTIFACT_ROOT/${checkpoint}/source/Makefile")"
+        test "$icu_libs" = ${lib.escapeShellArg "-L${lib.getLib final.icu}/lib -licui18n -licuuc -licudata"}
+        sed -i "/^Libs\\.private:/s|$| $icu_libs|" "$pc"
+      '';
+    }
     (outputs.shebangs {
       paths = [ "bin/xml2-config" ];
       names = [

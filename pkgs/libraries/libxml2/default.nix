@@ -28,6 +28,30 @@ let
             icuConfigLinkFlags = true;
             icuTrueArgument = "with-error";
           };
+          # The released libxml-2.0.pc template omits the configured LZMA and ICU flags.
+          installedInterface = {
+            sonameMajor = "2";
+            repairPrivateLzma = true;
+            repairPrivateIcu = true;
+          };
+        };
+      };
+      releases."2.8.0" = "sha256-fhQlyPwedRR3FEdXTTgAFLafHWLkL4POJSw+tMfT+lQ=";
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+        };
+        opts = {
+          sourceLayout = {
+            icuConfigLinkFlags = true;
+            icuTrueArgument = "with-error";
+          };
           # The released libxml-2.0.pc template omits the configured LZMA_LIBS.
           installedInterface = {
             sonameMajor = "2";
@@ -35,10 +59,7 @@ let
           };
         };
       };
-      releases = {
-        "2.8.0" = "sha256-fhQlyPwedRR3FEdXTTgAFLafHWLkL4POJSw+tMfT+lQ=";
-        "2.9.0" = "sha256-l9PZq84toO2pt6WLP9a0pt4BLTIjVRUedpOw1+2YxjQ=";
-      };
+      releases."2.9.0" = "sha256-l9PZq84toO2pt6WLP9a0pt4BLTIjVRUedpOw1+2YxjQ=";
     }
 
     {
