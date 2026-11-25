@@ -4,18 +4,36 @@
   base,
   src,
   version,
+  jpeg,
+  png,
 }:
 final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   environment = final.base.environment final.environment;
+  binaryPaths = [
+    "bin"
+    "lib"
+  ];
 in
 {
   pname = "libwebp";
-  inherit base src version;
+  inherit
+    base
+    src
+    version
+    jpeg
+    png
+    ;
   inherit (tools) bash coreutils;
-  environment.tools = [ tools.cmake ];
-  runtime.libraries = [ ];
+  environment = {
+    tools = [ tools.cmake ];
+    libraries = [
+      final.jpeg
+      final.png
+    ];
+  };
+  runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -29,14 +47,21 @@ in
       doCheck = false;
       cmakeFlags = [
         "-DBUILD_SHARED_LIBS=ON"
+        "-DCMAKE_REQUIRE_FIND_PACKAGE_JPEG=ON"
+        "-DCMAKE_REQUIRE_FIND_PACKAGE_PNG=ON"
+        # GIF conversion and animation diagnostics require giflib. TIFF
+        # input and the viewer require libtiff and OpenGL/GLUT respectively.
+        "-DCMAKE_DISABLE_FIND_PACKAGE_GIF=ON"
+        "-DCMAKE_DISABLE_FIND_PACKAGE_TIFF=ON"
+        "-DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=ON"
         "-DWEBP_BUILD_ANIM_UTILS=OFF"
-        "-DWEBP_BUILD_CWEBP=OFF"
-        "-DWEBP_BUILD_DWEBP=OFF"
+        "-DWEBP_BUILD_CWEBP=ON"
+        "-DWEBP_BUILD_DWEBP=ON"
         "-DWEBP_BUILD_GIF2WEBP=OFF"
-        "-DWEBP_BUILD_IMG2WEBP=OFF"
+        "-DWEBP_BUILD_IMG2WEBP=ON"
         "-DWEBP_BUILD_VWEBP=OFF"
-        "-DWEBP_BUILD_WEBPINFO=OFF"
-        "-DWEBP_BUILD_WEBPMUX=OFF"
+        "-DWEBP_BUILD_WEBPINFO=ON"
+        "-DWEBP_BUILD_WEBPMUX=ON"
         "-DWEBP_BUILD_EXTRAS=OFF"
       ];
     })
@@ -51,7 +76,7 @@ in
         "lib/pkgconfig/libwebpmux.pc"
       ];
     })
-    (outputs.strip { paths = [ "lib" ]; })
+    (outputs.strip { paths = binaryPaths; })
     {
       name = "libwebp.self-runtime";
       tools = [
@@ -62,7 +87,7 @@ in
       run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
         lib.escapeShellArg (
           builtins.toJSON {
-            paths = [ "lib" ];
+            paths = binaryPaths;
             directories = [ "lib" ];
             readelf = "${tools.binutils}/bin/readelf";
             patchelf = "${tools.patchelf}/bin/patchelf";
@@ -71,13 +96,13 @@ in
       } ${../../../lib/native-output}'';
     }
     (outputs.rpaths {
-      paths = [ "lib" ];
+      paths = binaryPaths;
       libraries = final.runtime.libraries;
     })
-    (outputs.checkPaths { paths = [ "lib" ]; })
+    (outputs.checkPaths { paths = binaryPaths; })
   ];
   meta = {
-    description = "WebP codec and container libraries";
+    description = "WebP codec and container libraries and command-line tools";
     homepage = "https://developers.google.com/speed/webp";
     license = lib.licenses.bsd3;
     platforms = [ "x86_64-linux" ];

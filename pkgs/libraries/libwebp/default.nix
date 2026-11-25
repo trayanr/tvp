@@ -3,7 +3,13 @@ let
   pname = "libwebp";
   versionTable = tvp.lib.packages.mkTable [
     {
-      def.builder = ./build.nix;
+      def = {
+        builder = ./build.nix;
+        deps = {
+          jpeg = tvp.packages.libjpeg-turbo;
+          png = tvp.packages.libpng_1;
+        };
+      };
       releases."1.6.0" = "sha256-5KtwCb8GKf0RmC1MKqg5ZM8kTP+6c0fs05AZqeOMRWQ=";
     }
   ];

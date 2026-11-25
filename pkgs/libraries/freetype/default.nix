@@ -8,6 +8,7 @@ let
           pkg-config = tvp.packages.pkg-config;
           zlib = tvp.packages.zlib_1;
           bzip2 = tvp.packages.bzip2_1;
+          png = tvp.packages.libpng_1;
         };
       };
       releases."2.15.0" = "sha256-k81H63GcMlEH8tPPCH0GKZ6UTDtIpAtVU3MCME3qHdU=";
