@@ -29,6 +29,8 @@ tvp.lib.packages.mergeNamespaces {
   oniguruma = import ./oniguruma { inherit pkgs tvp; };
   numactl = import ./numactl { inherit pkgs tvp; };
   libwebp = import ./libwebp { inherit pkgs tvp; };
+  brotli = import ./brotli { inherit pkgs tvp; };
+  highway = import ./highway { inherit pkgs tvp; };
   openldap = import ./openldap { inherit pkgs tvp; };
   sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
   unixodbc = import ./unixodbc { inherit pkgs tvp; };
