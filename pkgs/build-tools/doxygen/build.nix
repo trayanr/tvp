@@ -13,6 +13,7 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   cmake = "${tools.cmake}/bin/cmake";
+  gcc = final.base.compiler.cc;
   paths = [ "bin" ];
 in
 {
@@ -27,6 +28,8 @@ in
       ${cmake} -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$out" \
         -DCMAKE_MAKE_PROGRAM=${tools.ninja}/bin/ninja \
+        -DCMAKE_C_COMPILER_AR=${gcc}/bin/gcc-ar -DCMAKE_CXX_COMPILER_AR=${gcc}/bin/gcc-ar \
+        -DCMAKE_C_COMPILER_RANLIB=${gcc}/bin/gcc-ranlib -DCMAKE_CXX_COMPILER_RANLIB=${gcc}/bin/gcc-ranlib \
         -DBISON_EXECUTABLE=${final.bison}/bin/bison \
         -DFLEX_EXECUTABLE=${final.flex}/bin/flex \
         -DPython_EXECUTABLE=${final.python}/bin/python3

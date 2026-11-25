@@ -30,6 +30,12 @@ in
   runtime.libraries = libraries;
   plan = [
     (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.command { environment.tools = [ tools.grep tools.sed ]; } "openjpeg.cli-scalar-math" ''
+      # The CLI's color-conversion loops use exp(). The selected libc does not
+      # expose the vector libm ABI emitted for these loops under fast-math.
+      test "$(grep -Ec '^[[:space:]]*set\(OPENJP2_COMPILE_OPTIONS .*:-ffast-math>' CMakeLists.txt)" -eq 1
+      sed -i '/^[[:space:]]*set(OPENJP2_COMPILE_OPTIONS /s/ "\$<\$<CONFIG:Release>:-ffast-math>"//' CMakeLists.txt
+    '')
     (command "openjpeg.configure" ''
       ${cmake} -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
