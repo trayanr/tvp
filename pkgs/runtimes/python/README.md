@@ -1,6 +1,6 @@
 # Public Python family
 
-The 11 general-purpose releases and two reduced public profiles use inline
+The general-purpose releases and two reduced public profiles use inline
 nameless definitions and the implicit family constructor/base/helper/test model.
 Tcl/SQLite/OpenSSL and every other actual dependency stay explicit TVP selections.
 Earlier standard tools come from the effective base, including `pkg-config` and
@@ -14,6 +14,15 @@ Six complete general-purpose procedures preserve real profile boundaries:
 3.15 required external Mpdecimal. Stable facts are grouped in `buildFeatures`,
 `sourceLayout` and `installedInterface`; narrow release exceptions are in the
 table. Upstream module choices are a separate test-only `upstreamPolicy`.
+
+Python 2.7.18 uses its own procedure for the Python 2 development ABI and
+setup.py's extension detection. The `python_2_7` selector provides the legacy
+interpreter, shared libpython, headers, `python2.7-config` and `python-2.7.pc`.
+It builds against TVP's OpenSSL 1.1, Libffi, SQLite, GDBM, Readline, Ncurses,
+Libxcrypt, Zlib and Bzip2. The Unicode build uses UCS-4. The bundled
+ensurepip installs the release's own Pip and Setuptools wheels offline.
+The Tk, NIS and Berkeley DB extensions need additional TVP providers.
+The default `python` alias selects Python 3.
 
 `python-minimal/build.nix` and `python-build/build.nix` are complete independent
 public reduced-profile procedures. The direct `python-build/owned` bootstrap
