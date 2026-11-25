@@ -13,12 +13,26 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
-  libraries = [ final.jpeg final.zlib ] ++ lib.optional (final.lcms2 != null) final.lcms2;
-  paths = [ "bin" "lib" ];
+  libraries = [
+    final.jpeg
+    final.zlib
+  ]
+  ++ lib.optional (final.lcms2 != null) final.lcms2;
+  paths = [
+    "bin"
+    "lib"
+  ];
 in
 {
   pname = "libraw";
-  inherit base src version jpeg zlib lcms2;
+  inherit
+    base
+    src
+    version
+    jpeg
+    zlib
+    lcms2
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
@@ -40,7 +54,10 @@ in
     lcms = final.lcms2 != null;
   };
   plan = [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.prepareAutotools { name = "libraw.prepare"; })
     (command "libraw.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -69,18 +86,37 @@ in
     (steps.split "libraw.finalize")
     (outputs.copyArtifacts { })
     (outputs.libtool { paths = [ "lib" ]; })
-    (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.relocateText {
+      paths = [
+        "lib/pkgconfig"
+        "lib/libraw.la"
+        "lib/libraw_r.la"
+      ];
+    })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
     (outputs.stripArchives { paths = [ "lib" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
     (outputs.development { libraries = final.runtime.libraries; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "Camera RAW image decoding libraries and tools";
     homepage = "https://www.libraw.org/";
     mainProgram = "raw-identify";
-    license = [ lib.licenses.lgpl21Only lib.licenses.cddl ];
+    license = [
+      lib.licenses.lgpl21Only
+      lib.licenses.cddl
+    ];
     platforms = [ "x86_64-linux" ];
   };
 }

@@ -10,7 +10,10 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
-  paths = [ "bin" "lib" ];
+  paths = [
+    "bin"
+    "lib"
+  ];
   precisions = {
     double = [ ];
     single = [ "--enable-single" ];
@@ -55,7 +58,10 @@ in
   ];
   runtime.libraries = [ ];
   plan = [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.prepareAutotools { name = "fftw.prepare"; })
     (command "fftw.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -82,16 +88,48 @@ in
     (steps.split "fftw.finalize")
     (outputs.copyArtifacts { })
     (outputs.libtool { paths = [ "lib" ]; })
-    (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })
+    (outputs.relocateText {
+      paths = [
+        "lib/pkgconfig"
+        "lib/cmake/fftw3"
+      ]
+      # Libtool retains metadata for the shipped static archives.
+      ++
+        lib.concatMap
+          (
+            suffix:
+            map (variant: "lib/libfftw3${suffix}${variant}.la") [
+              ""
+              "_omp"
+              "_threads"
+            ]
+          )
+          [
+            ""
+            "f"
+            "l"
+            "q"
+          ];
+    })
     (outputs.shebangs {
       paths = [ "bin/fftw-wisdom-to-conf" ];
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
     (outputs.stripArchives { paths = [ "lib" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "Discrete Fourier transforms in four precisions";
