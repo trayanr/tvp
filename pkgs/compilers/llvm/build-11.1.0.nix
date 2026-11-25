@@ -310,26 +310,54 @@ in
     )
     {
       name = "llvm.wrap-target";
-      tools = [ helperPython grep sed ];
+      tools = [
+        coreutils
+        helperPython
+        grep
+        sed
+      ];
       run = ''
         # LLVM 11 and 14 discover GCC through its toolchain root. The
         # wrapper installer creates that root alongside the empty sysroot.
         test "$(grep -cF -- '--gcc-install-dir=@gccInstallDir@' ${./native/clang-wrapper.sh})" = 1
-        sed 's|--gcc-install-dir=@gccInstallDir@|--gcc-toolchain=@emptyRoot@/../gcc|' \
+        # Linked programs still find shared libgcc in the selected provider.
+        sed -e 's|--gcc-install-dir=@gccInstallDir@|--gcc-toolchain=@emptyRoot@/../gcc|' \
+          -e 's|@gccRuntime@/lib|${final.runtime.target.gccRuntime}/lib|g' \
           ${./native/clang-wrapper.sh} > clang-wrapper.sh
-        ${helperPython}/bin/python3 -B ${./native/install-wrapper.py} "$out" clang-wrapper.sh ${
-        lib.escapeShellArg (
-          builtins.toJSON {
-            bash = "${final.runtime.shell}/bin/bash";
-            gcc = toString final.runtime.target.rawGCC;
-            gccRuntime = toString final.runtime.target.gccRuntime;
-            cxxRuntime = toString final.runtime.target.cxxRuntime;
-            libc = toString final.runtime.target.libc;
-            bintools = toString final.runtime.target.targetBinutils;
-            loader = final.runtime.loader;
-          }
-        )
-      }'';
+        gcc_runtime=${lib.escapeShellArg (toString final.runtime.target.gccRuntime)}
+        if [[ ! -f "$gcc_runtime/lib/libgcc.a" ]]; then
+          # GCC 13 installs static libgcc and startup objects in its private
+          # compiler directory. Keep the selected shared libgcc alongside them.
+          gcc=${final.runtime.target.rawGCC}/bin/gcc
+          internal="$gcc_runtime/lib/gcc/$("$gcc" -dumpmachine)/$("$gcc" -dumpfullversion)"
+          view="$out/nix-support/gcc-runtime"
+          mkdir -p "$view/lib"
+          for file in libgcc.a libgcc_eh.a crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o; do
+            test -f "$internal/$file"
+            ln -s "$internal/$file" "$view/lib/$file"
+          done
+          for file in libgcc_s.so libgcc_s.so.1; do
+            test -f "$gcc_runtime/lib/$file"
+            ln -s "$gcc_runtime/lib/$file" "$view/lib/$file"
+          done
+          gcc_runtime="$view"
+        fi
+        configuration=${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              bash = "${final.runtime.shell}/bin/bash";
+              gcc = toString final.runtime.target.rawGCC;
+              gccRuntime = "@runtime@";
+              cxxRuntime = toString final.runtime.target.cxxRuntime;
+              libc = toString final.runtime.target.libc;
+              bintools = toString final.runtime.target.targetBinutils;
+              loader = final.runtime.loader;
+            }
+          )
+        }
+        ${helperPython}/bin/python3 -B ${./native/install-wrapper.py} "$out" clang-wrapper.sh \
+          "''${configuration/@runtime@/$gcc_runtime}"
+      '';
     }
     (outputs.checkPaths {
       python = helperPython;
