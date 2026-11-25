@@ -7,8 +7,9 @@ let
         builder = ./build.nix;
         deps = {
           inherit (tvp.packages) bison;
-          # Flex 2.7.3 mismatches Doxygen's scanner type declarations (westes/flex#895).
-          flex = tvp.packages.flex_2_6_4;
+          flex = tvp.lib.packages.withConstraint {
+            reason = "Flex 2.7.3 generates incompatible yyscan_t types for Doxygen 1.18.0's reentrant scanners (westes/flex#895).";
+          } tvp.packages.flex_2_6_4;
           python = tvp.packages.python-build_3;
         };
       };
