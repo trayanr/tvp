@@ -3,6 +3,8 @@
 let
   inherit (pkgs) lib;
   family = import ../../pkgs/libraries/expat { inherit pkgs tvp; };
+  inherit (family.recipes.expat) versionTable;
+  releases = builtins.attrValues versionTable;
   p = family.canonical.expat_2_9_0;
   prior = (import ../../bases/source-gnu { }).tools;
   marker = builtins.derivation {
@@ -69,10 +71,12 @@ let
   historical = import ../../pkgs/libraries/expat/tests/construction-callers.nix { inherit pkgs tvp; };
   rejects = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   results = {
-    wholeFamily = builtins.attrNames family.recipes.expat.versionTable == [ "2.9.0" ];
-    oneProcedure =
-      builtins.baseNameOf family.recipes.expat.versionTable."2.9.0".def.builder == "build.nix";
-    implicitNoLibraryDependencies = family.recipes.expat.versionTable."2.9.0".def.deps == { };
+    wholeFamily = builtins.attrNames versionTable == [
+      "2.11.0"
+      "2.9.0"
+    ];
+    oneProcedure = builtins.all (release: builtins.baseNameOf release.def.builder == "build.nix") releases;
+    implicitNoLibraryDependencies = builtins.all (release: release.def.deps == { }) releases;
     oneSplit = builtins.length (builtins.filter (s: (s.kind or "") == "split") p.buildSteps) == 1;
     productionHasNoTests =
       !(builtins.any (s: s.name == "expat.check" || s.name == "expat.build-upstream") p.buildSteps)
