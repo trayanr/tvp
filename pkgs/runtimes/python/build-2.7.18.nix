@@ -95,7 +95,10 @@ in
     shell = runtimeBash;
   };
   plan = [
-    (steps.unpack { src = final.src; compression = "xz"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "xz";
+    })
     (steps.prepareAutotools { name = "python.autotools"; })
     (command "python.prepare" ''
       test "$(grep -Fxc 'disabled_module_list = []' setup.py)" -eq 1
@@ -132,14 +135,50 @@ in
     }
     (outputs.shebangs {
       paths = [ "bin" ];
-      names = [ "python" "python2" "python2.7" ];
+      names = [
+        "python"
+        "python2"
+        "python2.7"
+      ];
       selfInterpreter = "bin/${final.installedInterface.executable}";
     })
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
     (outputs.stripArchives { paths = [ "lib" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
+    {
+      name = "python.self-runtime";
+      tools = [
+        tools.binutils
+        tools.patchelf
+        tools.python
+      ];
+      # The interpreter and its extension modules link the installed libpython.
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            paths = [
+              "bin/${final.installedInterface.executable}"
+              "lib/python2.7/lib-dynload"
+            ];
+            directories = [ "lib" ];
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
+    }
     (outputs.development { libraries = [ final.libxcrypt ]; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "CPython interpreter and development interfaces";
