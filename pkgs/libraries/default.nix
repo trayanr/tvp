@@ -31,6 +31,7 @@ tvp.lib.packages.mergeNamespaces {
   libwebp = import ./libwebp { inherit pkgs tvp; };
   brotli = import ./brotli { inherit pkgs tvp; };
   highway = import ./highway { inherit pkgs tvp; };
+  libultrahdr = import ./libultrahdr { inherit pkgs tvp; };
   openldap = import ./openldap { inherit pkgs tvp; };
   sqliteodbc = import ./sqliteodbc { inherit pkgs tvp; };
   unixodbc = import ./unixodbc { inherit pkgs tvp; };
