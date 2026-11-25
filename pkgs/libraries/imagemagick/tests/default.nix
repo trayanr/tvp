@@ -102,7 +102,10 @@ context.mkSuite {
   }
   // lib.optionalAttrs (delegates != [ ] || buildFeatures.openmp || buildFeatures.x11) {
     delegates = {
-      tools = [ binutils grep ];
+      tools = [
+        binutils
+        grep
+      ];
       script = ''
         ${lib.optionalString (builtins.elem "xml" delegates) ''
           cat > shape.svg <<'SVG'

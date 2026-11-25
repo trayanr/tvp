@@ -4,7 +4,11 @@ let
 in
 context.mkSuite {
   inherit package;
-  tools = [ tools.pkg-config tools.grep tools.sed ];
+  tools = [
+    tools.pkg-config
+    tools.grep
+    tools.sed
+  ];
   libraries = [ package ];
   tests = {
     config = {

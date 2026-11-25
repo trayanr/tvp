@@ -25,7 +25,10 @@ in
   ];
   runtime.libraries = [ ];
   plan = [
-    (steps.unpack { src = final.src; compression = "xz"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "xz";
+    })
     (steps.prepareAutotools { name = "libuuid.prepare"; })
     (command "libuuid.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -47,7 +50,10 @@ in
     (outputs.libtool { paths = [ "lib" ]; })
     (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })
     (outputs.strip { inherit paths; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+    })
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {

@@ -17,16 +17,20 @@ let
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   cryptoEnabled = final.libgcrypt != null;
   bindingPython = final.libxml2.specification.bindingPython or null;
-  pythonEnabled = final.withPython && lib.versionAtLeast final.version "1.1.35" && bindingPython != null;
+  pythonEnabled =
+    final.withPython && lib.versionAtLeast final.version "1.1.35" && bindingPython != null;
   legacyPythonProbe = lib.versionOlder final.version "1.1.36";
   pythonLayout = "lib/python${lib.versions.majorMinor bindingPython.version}/site-packages";
   pythonMakeFlags = lib.optionalString pythonEnabled (
     " " + ''pythondir="$out/${pythonLayout}" pyexecdir="$out/${pythonLayout}" am__py_compile=:''
   );
   pythonFlag =
-    if !pythonEnabled then "--without-python"
-    else if legacyPythonProbe then "--with-python=${bindingPython}/bin/python3"
-    else "--with-python";
+    if !pythonEnabled then
+      "--without-python"
+    else if legacyPythonProbe then
+      "--with-python=${bindingPython}/bin/python3"
+    else
+      "--with-python";
   paths = [
     "bin"
     "lib"
@@ -55,22 +59,31 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
-    ] ++ lib.optional cryptoEnabled final.libgcrypt ++ lib.optional pythonEnabled bindingPython;
-    libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt ++ lib.optional pythonEnabled bindingPython;
+    ]
+    ++ lib.optional cryptoEnabled final.libgcrypt
+    ++ lib.optional pythonEnabled bindingPython;
+    libraries = [
+      final.libxml2
+    ]
+    ++ lib.optional cryptoEnabled final.libgcrypt
+    ++ lib.optional pythonEnabled bindingPython;
   };
   runtime = {
     # Older configure scripts use xml2-config --libs and link its compression
     # providers directly. Include those providers when finalizing their ELF files.
-    libraries =
-      [ final.libxml2 ]
-      ++ lib.optionals final.linkLibxml2Compression final.libxml2.specification.runtime.libraries
-      ++ lib.optional cryptoEnabled final.libgcrypt;
+    libraries = [
+      final.libxml2
+    ]
+    ++ lib.optionals final.linkLibxml2Compression final.libxml2.specification.runtime.libraries
+    ++ lib.optional cryptoEnabled final.libgcrypt;
     shell = tools.bash;
   };
   installedInterface.pkgconfig = true;
-  development = output: lib.optionalAttrs pythonEnabled {
-    pythonModuleDirectory = "${output}/${pythonLayout}";
-  };
+  development =
+    output:
+    lib.optionalAttrs pythonEnabled {
+      pythonModuleDirectory = "${output}/${pythonLayout}";
+    };
   tvp.features = {
     crypto = cryptoEnabled;
     python = pythonEnabled;
@@ -100,7 +113,9 @@ in
         export PYTHON=${bindingPython}/bin/python3
         export PYTHONPATH=${final.libxml2.development.pythonModuleDirectory}
       ''}
-      ./configure --prefix="$out" ${lib.escapeShellArg pythonFlag} ${if cryptoEnabled then "--with-crypto" else "--without-crypto"} --disable-static
+      ./configure --prefix="$out" ${lib.escapeShellArg pythonFlag} ${
+        if cryptoEnabled then "--with-crypto" else "--without-crypto"
+      } --disable-static
       ${lib.optionalString cryptoEnabled "grep -Fxq '#define HAVE_GCRYPT 1' config.h"}
     '')
     (command "libxslt.build" "${make}${pythonMakeFlags}")
@@ -131,7 +146,9 @@ in
       inherit paths;
       libraries = final.runtime.libraries;
     })
-    (outputs.development { libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt; })
+    (outputs.development {
+      libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt;
+    })
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {

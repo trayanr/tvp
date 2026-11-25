@@ -4,7 +4,10 @@ let
 in
 context.mkSuite {
   inherit package;
-  tools = [ tools.pkg-config tools.diffutils ];
+  tools = [
+    tools.pkg-config
+    tools.diffutils
+  ];
   libraries = [ package ];
   tests = {
     pkg-config = {

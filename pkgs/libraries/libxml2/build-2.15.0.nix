@@ -59,10 +59,13 @@ in
   configureFlags = [
     (if pythonEnabled then "--with-python" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
-  ] ++ lib.optional (final.icu != null) "--with-icu";
-  development = output: lib.optionalAttrs pythonEnabled {
-    pythonModuleDirectory = "${output}/${pythonLayout}";
-  };
+  ]
+  ++ lib.optional (final.icu != null) "--with-icu";
+  development =
+    output:
+    lib.optionalAttrs pythonEnabled {
+      pythonModuleDirectory = "${output}/${pythonLayout}";
+    };
   environment = {
     tools = [
       tools.gnumake
@@ -78,7 +81,11 @@ in
       final.doxygen
     ]
     ++ lib.optional (final.icu != null) final.icu;
-    libraries = [ final.zlib ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
+    libraries = [
+      final.zlib
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
     overrides.values.CFLAGS = "-O2 -std=${final.cStandard} ${lib.concatStringsSep " " final.cFlags}";
   };
   runtime = {
@@ -102,10 +109,13 @@ in
     '')
     (command "build" (
       "${make} libxml2.la xmllint xmlcatalog"
-      + lib.optionalString pythonEnabled ("\n" + ''
-        ${make} -C doc html.stamp
-        ${make} -C python${pythonMakeFlags}
-      '')
+      + lib.optionalString pythonEnabled (
+        "\n"
+        + ''
+          ${make} -C doc html.stamp
+          ${make} -C python${pythonMakeFlags}
+        ''
+      )
     ))
     (command "install" ''
       # The root install target in 2.10 also generates testapi.c. Enter the

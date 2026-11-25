@@ -13,23 +13,45 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
-  paths = [ "bin" "lib" ];
-  libraries = [ final.jpeg final.libtiff final.zlib ];
+  paths = [
+    "bin"
+    "lib"
+  ];
+  libraries = [
+    final.jpeg
+    final.libtiff
+    final.zlib
+  ];
 in
 {
   pname = "lcms2";
   artifactName = "${final.pname}-${final.version}";
-  inherit base src version jpeg libtiff zlib;
+  inherit
+    base
+    src
+    version
+    jpeg
+    libtiff
+    zlib
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
-      tools.gnumake tools.gawk tools.grep tools.sed tools.diffutils tools.findutils
+      tools.gnumake
+      tools.gawk
+      tools.grep
+      tools.sed
+      tools.diffutils
+      tools.findutils
     ];
     inherit libraries;
   };
   runtime.libraries = libraries;
   plan = [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (steps.prepareAutotools { name = "lcms2.prepare"; })
     (command "lcms2.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -51,9 +73,19 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT"'';
     }
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "Little CMS color management engine and profile utilities";

@@ -7,7 +7,12 @@ let
         builder = ./build.nix;
         deps = {
           jpeg = tvp.packages.libjpeg-turbo;
-          inherit (tvp.packages) zlib zstd xz libwebp;
+          inherit (tvp.packages)
+            zlib
+            zstd
+            xz
+            libwebp
+            ;
         };
       };
       releases."4.7.2" = "sha256-ZyvX0QruRgYXGvuGTzVwuDNA9qM+LBhtwFEvcUX/32o=";

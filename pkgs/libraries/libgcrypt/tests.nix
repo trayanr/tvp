@@ -4,8 +4,14 @@ let
 in
 context.mkSuite {
   inherit package;
-  tools = [ tools.pkg-config tools.sed ];
-  libraries = [ package package.tvp.deps.libgpg-error ];
+  tools = [
+    tools.pkg-config
+    tools.sed
+  ];
+  libraries = [
+    package
+    package.tvp.deps.libgpg-error
+  ];
   tests = {
     config = {
       script = ''

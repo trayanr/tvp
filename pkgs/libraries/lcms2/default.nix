@@ -16,16 +16,15 @@ let
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
     source = tvp.lib.sources.archive {
-      url = version: "https://github.com/mm2/Little-CMS/releases/download/lcms${version}/lcms2-${version}.tar.gz";
+      url =
+        version:
+        "https://github.com/mm2/Little-CMS/releases/download/lcms${version}/lcms2-${version}.tar.gz";
       discovery = {
         type = "git-tags";
         url = "https://github.com/mm2/Little-CMS";
         normalise =
           tag:
-          if builtins.match "lcms2(\\.[0-9]+)+" tag == null then
-            null
-          else
-            pkgs.lib.removePrefix "lcms" tag;
+          if builtins.match "lcms2(\\.[0-9]+)+" tag == null then null else pkgs.lib.removePrefix "lcms" tag;
       };
     };
     tests = import ./tests.nix;

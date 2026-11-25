@@ -104,7 +104,8 @@ in
       final.perl
       final.python
       final.tcl
-    ] ++ lib.optional needsXml2Config final.libxml2;
+    ]
+    ++ lib.optional needsXml2Config final.libxml2;
     libraries = buildLibraries;
   };
   runtime = {

@@ -14,28 +14,60 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   cmake = "${tools.cmake}/bin/cmake";
-  libraries = [ final.libpng final.libtiff final.lcms2 final.zlib ];
+  libraries = [
+    final.libpng
+    final.libtiff
+    final.lcms2
+    final.zlib
+  ];
   prefixPath = lib.concatStringsSep ";" (map toString libraries);
-  paths = [ "bin" "lib" ];
+  paths = [
+    "bin"
+    "lib"
+  ];
 in
 {
   pname = "openjpeg";
   artifactName = "${final.pname}-${final.version}";
-  inherit base src version libpng libtiff lcms2 zlib;
+  inherit
+    base
+    src
+    version
+    libpng
+    libtiff
+    lcms2
+    zlib
+    ;
   inherit (tools) bash coreutils;
   environment = {
-    tools = [ tools.cmake tools.ninja tools.pkg-config ];
+    tools = [
+      tools.cmake
+      tools.ninja
+      tools.pkg-config
+    ];
     inherit libraries;
   };
   runtime.libraries = libraries;
   plan = [
-    (steps.unpack { src = final.src; compression = "gzip"; })
-    (steps.command { environment.tools = [ tools.grep tools.sed ]; } "openjpeg.cli-scalar-math" ''
-      # The CLI's color-conversion loops use exp(). The selected libc does not
-      # expose the vector libm ABI emitted for these loops under fast-math.
-      test "$(grep -Ec '^[[:space:]]*set\(OPENJP2_COMPILE_OPTIONS .*:-ffast-math>' CMakeLists.txt)" -eq 1
-      sed -i '/^[[:space:]]*set(OPENJP2_COMPILE_OPTIONS /s/ "\$<\$<CONFIG:Release>:-ffast-math>"//' CMakeLists.txt
-    '')
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
+    (steps.command
+      {
+        environment.tools = [
+          tools.grep
+          tools.sed
+        ];
+      }
+      "openjpeg.cli-scalar-math"
+      ''
+        # The CLI's color-conversion loops use exp(). The selected libc does not
+        # expose the vector libm ABI emitted for these loops under fast-math.
+        test "$(grep -Ec '^[[:space:]]*set\(OPENJP2_COMPILE_OPTIONS .*:-ffast-math>' CMakeLists.txt)" -eq 1
+        sed -i '/^[[:space:]]*set(OPENJP2_COMPILE_OPTIONS /s/ "\$<\$<CONFIG:Release>:-ffast-math>"//' CMakeLists.txt
+      ''
+    )
     (command "openjpeg.configure" ''
       ${cmake} -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
@@ -57,9 +89,19 @@ in
       tools = [ tools.python ];
       run = ''${tools.python}/bin/python3 -B ${../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT"'';
     }
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "JPEG 2000 library and codec utilities";

@@ -18,7 +18,9 @@ let
     source = tvp.lib.sources.archive {
       url =
         version:
-        "https://github.com/doxygen/doxygen/releases/download/Release_${builtins.replaceStrings [ "." ] [ "_" ] version}/doxygen-${version}.src.tar.gz";
+        "https://github.com/doxygen/doxygen/releases/download/Release_${
+          builtins.replaceStrings [ "." ] [ "_" ] version
+        }/doxygen-${version}.src.tar.gz";
       discovery = {
         type = "git-tags";
         url = "https://github.com/doxygen/doxygen";

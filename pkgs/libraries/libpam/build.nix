@@ -56,7 +56,10 @@ in
     final.openssl
   ];
   plan = [
-    (steps.unpack { src = final.src; compression = "xz"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "xz";
+    })
     (steps.shebangs {
       name = "libpam.prepare-shell";
       paths = [ "aux" ];
@@ -91,17 +94,37 @@ in
       run = ''"${tools.python}/bin/python3" -B ${../jdk-support-relocate.py} "$out" "$TVP_ARTIFACT_ROOT"'';
     }
     (outputs.shebangs {
-      paths = [ "bin" "sbin" "share/pam" ];
-      names = [ "sh" "bash" ];
+      paths = [
+        "bin"
+        "sbin"
+        "share/pam"
+      ];
+      names = [
+        "sh"
+        "bash"
+      ];
       interpreter = "${tools.bash}/bin/bash";
     })
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "Linux Pluggable Authentication Modules and developer interfaces";
     homepage = "https://github.com/linux-pam/linux-pam";
-    license = [ lib.licenses.bsd3 lib.licenses.gpl2Plus ];
+    license = [
+      lib.licenses.bsd3
+      lib.licenses.gpl2Plus
+    ];
   };
 }

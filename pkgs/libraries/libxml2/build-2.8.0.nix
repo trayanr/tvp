@@ -62,10 +62,13 @@ in
     (if pythonEnabled then "--with-python=${final.bindingPython}/bin/python3" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
     "--with-lzma=${lib.getDev final.liblzma}"
-  ] ++ lib.optional (final.icu != null) "--with-icu";
-  development = output: lib.optionalAttrs pythonEnabled {
-    pythonModuleDirectory = "${output}/${pythonLayout}";
-  };
+  ]
+  ++ lib.optional (final.icu != null) "--with-icu";
+  development =
+    output:
+    lib.optionalAttrs pythonEnabled {
+      pythonModuleDirectory = "${output}/${pythonLayout}";
+    };
   environment = {
     tools = [
       tools.gnumake
@@ -75,18 +78,23 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
     libraries = [
       final.zlib
       final.liblzma
-    ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
     overrides.values.CFLAGS = "-O2 -std=${final.cStandard} ${lib.concatStringsSep " " final.cFlags}";
   };
   runtime = {
     libraries = [
       final.zlib
       final.liblzma
-    ] ++ lib.optional (final.icu != null) final.icu;
+    ]
+    ++ lib.optional (final.icu != null) final.icu;
     shell = tools.bash;
   };
   productionPlan = steps.sequence [
@@ -138,9 +146,12 @@ in
     '')
     (command "build" (
       "${make} libxml2.la xmllint xmlcatalog"
-      + lib.optionalString pythonEnabled ("\n" + ''
-        ${make} -C python${pythonMakeFlags}
-      '')
+      + lib.optionalString pythonEnabled (
+        "\n"
+        + ''
+          ${make} -C python${pythonMakeFlags}
+        ''
+      )
     ))
     (command "install" ''
       # The root install target in 2.10 also generates testapi.c. Enter the

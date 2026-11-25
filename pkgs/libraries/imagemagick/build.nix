@@ -34,7 +34,8 @@ let
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   isMagick7 = lib.versionAtLeast final.version "7";
   # The lower bounds are the first packaged releases with each configure probe.
-  atLeast = magick6: magick7: lib.versionAtLeast final.version (if isMagick7 then magick7 else magick6);
+  atLeast =
+    magick6: magick7: lib.versionAtLeast final.version (if isMagick7 then magick7 else magick6);
   delegates = {
     bzlib = final.bzip2;
     fontconfig = final.fontconfig;
@@ -47,20 +48,31 @@ let
   // lib.optionalAttrs (atLeast "6.6.8.10" "7.0.1.0") { webp = final.libwebp; }
   // lib.optionalAttrs (atLeast "6.8.8.10" "7.0.1.0") { openjp2 = final.openjpeg; }
   // lib.optionalAttrs (atLeast "6.9.10.13" "7.0.8.13") { zstd = final.zstd; }
-  // lib.optionalAttrs (isMagick7 && lib.versionAtLeast final.version "7.0.10.62") { zip = final.libzip; };
-  delegateFlag = name:
-    if name == "lcms" && lib.versionAtLeast final.version "6.6.2.10" && lib.versionOlder final.version "6.9.1.10"
-    then "lcms2"
-    else name;
-  delegateMacro = name: if name == "openjp2" then "LIBOPENJP2_DELEGATE" else "${lib.toUpper name}_DELEGATE";
+  // lib.optionalAttrs (isMagick7 && lib.versionAtLeast final.version "7.0.10.62") {
+    zip = final.libzip;
+  };
+  delegateFlag =
+    name:
+    if
+      name == "lcms"
+      && lib.versionAtLeast final.version "6.6.2.10"
+      && lib.versionOlder final.version "6.9.1.10"
+    then
+      "lcms2"
+    else
+      name;
+  delegateMacro =
+    name: if name == "openjp2" then "LIBOPENJP2_DELEGATE" else "${lib.toUpper name}_DELEGATE";
   enabledDelegates = lib.filterAttrs (_: provider: provider != null) delegates;
-  xLibraries = lib.optionals (final.libx11 != null) (lib.filter (provider: provider != null) [
-    final.libx11
-    final.libxext
-    final.libxt
-    final.libice
-    final.libsm
-  ]);
+  xLibraries = lib.optionals (final.libx11 != null) (
+    lib.filter (provider: provider != null) [
+      final.libx11
+      final.libxext
+      final.libxt
+      final.libice
+      final.libsm
+    ]
+  );
   enabledMacros =
     map delegateMacro (builtins.attrNames enabledDelegates)
     ++ lib.optional (xLibraries != [ ]) "X11_DELEGATE";
@@ -145,8 +157,7 @@ in
   sourceLayout.compression = sourceCompression;
   installedInterface = {
     cli = if isMagick7 then "magick" else "convert";
-    wandHeader =
-      if isMagick7 then "MagickWand/MagickWand.h" else "wand/MagickWand.h";
+    wandHeader = if isMagick7 then "MagickWand/MagickWand.h" else "wand/MagickWand.h";
     perlModuleDirectory = if final.perl != null then "lib/perl5" else null;
     delegates = builtins.attrNames enabledDelegates;
   };
@@ -181,28 +192,31 @@ in
       name = "imagemagick.jpeg-compatibility";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./jpeg-compat.py}'';
+      run = "${tools.python}/bin/python3 -B ${./jpeg-compat.py}";
     })
     (lib.optional needsSourceFixes {
       name = "imagemagick.source-compatibility";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./source-compat.py} ${lib.escapeShellArg final.version}'';
+      run = "${tools.python}/bin/python3 -B ${./source-compat.py} ${lib.escapeShellArg final.version}";
     })
     (lib.optional needsCompileRepair {
       name = "imagemagick.compile-repair";
       cwd = "source";
       tools = [ tools.python ];
-      run = ''${tools.python}/bin/python3 -B ${./compile-compat.py} ${lib.escapeShellArg final.version}'';
+      run = "${tools.python}/bin/python3 -B ${./compile-compat.py} ${lib.escapeShellArg final.version}";
     })
-    (lib.optional (lib.versionAtLeast final.version "6.5.6.10" && lib.versionOlder final.version "6.6.2.10") (
-      command "imagemagick.remap-dither" ''
-        # Match the 6.6.2 fix and assign the flag to the dither member.
-        file=Magick++/lib/Magick++/STL.h
-        test "$(grep -Fc 'quantizeInfo = dither_' "$file")" = 1
-        sed -i 's/quantizeInfo = dither_/quantizeInfo.dither = dither_/' "$file"
-      ''
-    ))
+    (lib.optional
+      (lib.versionAtLeast final.version "6.5.6.10" && lib.versionOlder final.version "6.6.2.10")
+      (
+        command "imagemagick.remap-dither" ''
+          # Match the 6.6.2 fix and assign the flag to the dither member.
+          file=Magick++/lib/Magick++/STL.h
+          test "$(grep -Fc 'quantizeInfo = dither_' "$file")" = 1
+          sed -i 's/quantizeInfo = dither_/quantizeInfo.dither = dither_/' "$file"
+        ''
+      )
+    )
     (lib.optional (final.version == "6.7.0.10") (
       command "imagemagick.png-filter" ''
         # The 6.7.1 branch makes these libpng filter choices exclusive.
@@ -214,9 +228,13 @@ in
     (steps.prepareAutotools { name = "imagemagick.prepare"; })
     (command "imagemagick.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
-      set -- ${lib.escapeShellArgs (lib.mapAttrsToList (
-        name: provider: "--${if provider != null then "with" else "without"}-${delegateFlag name}"
-      ) delegates)}
+      set -- ${
+        lib.escapeShellArgs (
+          lib.mapAttrsToList (
+            name: provider: "--${if provider != null then "with" else "without"}-${delegateFlag name}"
+          ) delegates
+        )
+      }
       ${lib.optionalString isMagick7 ''
         if grep -Fq -- '  --enable-legacy-support ' configure; then
           set -- "$@" --enable-legacy-support
@@ -231,7 +249,9 @@ in
       ''}
       ${lib.optionalString needsOpenclDisabled "ax_cv_check_cl_libcl=no "}./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static \
         ${toggle "openmp" final.buildFeatures.openmp}${lib.optionalString needsOpenclDisabled " --disable-opencl"} \
-        ${lib.optionalString (xLibraries == [ ]) "--without-x"} ${lib.optionalString (final.perl == null) "--without-perl"} \
+        ${lib.optionalString (xLibraries == [ ]) "--without-x"} ${
+          lib.optionalString (final.perl == null) "--without-perl"
+        } \
         --with-quantum-depth=${toString final.buildFeatures.quantumDepth} \
         ${toggle "hdri" final.buildFeatures.hdri} --without-modules \
         ${if final.buildFeatures.jpeg then "--with-jpeg" else "--without-jpeg"} \
@@ -284,7 +304,10 @@ in
     })
     (lib.optional (final.perl != null) {
       name = "imagemagick.perl-runtime";
-      tools = [ tools.patchelf tools.grep ];
+      tools = [
+        tools.patchelf
+        tools.grep
+      ];
       run = ''
         perlArchlib=$(${final.perl}/bin/perl -MConfig -e 'print $Config{archlibexp}')
         shopt -s globstar nullglob

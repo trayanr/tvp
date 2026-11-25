@@ -12,12 +12,21 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
-  paths = [ "bin" "lib" ];
+  paths = [
+    "bin"
+    "lib"
+  ];
 in
 {
   pname = "libgcrypt";
   artifactName = "${final.pname}-${final.version}";
-  inherit base src version libgpg-error texinfo;
+  inherit
+    base
+    src
+    version
+    libgpg-error
+    texinfo
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
@@ -35,7 +44,10 @@ in
   };
   runtime.libraries = [ final.libgpg-error ];
   plan = [
-    (steps.unpack { src = final.src; compression = "bzip2"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "bzip2";
+    })
     (steps.prepareAutotools { name = "libgcrypt.prepare"; })
     (command "libgcrypt.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
@@ -65,14 +77,27 @@ in
       names = [ "sh" ];
       interpreter = "${tools.bash}/bin/bash";
     })
-    (outputs.strip { inherit paths; elfKinds = [ "runtime" ]; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; elfKinds = [ "runtime" ]; })
+    (outputs.strip {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+      elfKinds = [ "runtime" ];
+    })
     (outputs.development { libraries = final.runtime.libraries; })
-    (outputs.checkPaths { inherit paths; elfKinds = [ "runtime" ]; })
+    (outputs.checkPaths {
+      inherit paths;
+      elfKinds = [ "runtime" ];
+    })
   ];
   meta = {
     description = "General-purpose cryptographic library from the GnuPG project";
     homepage = "https://gnupg.org/software/libgcrypt/index.html";
-    license = [ lib.licenses.lgpl21Plus lib.licenses.gpl2Plus ];
+    license = [
+      lib.licenses.lgpl21Plus
+      lib.licenses.gpl2Plus
+    ];
   };
 }

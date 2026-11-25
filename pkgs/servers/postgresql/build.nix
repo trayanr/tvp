@@ -125,7 +125,10 @@ in
       final.python
       final.tcl
     ]
-    ++ lib.filter (tool: tool != null) [ final.bison final.flex ]
+    ++ lib.filter (tool: tool != null) [
+      final.bison
+      final.flex
+    ]
     ++ lib.optional withLLVM final.llvm;
     libraries = buildLibraries;
   };
@@ -163,7 +166,9 @@ in
         --enable-nls --with-ssl=openssl --with-gssapi --with-icu --with-libxml --with-libxslt \
         --with-ldap --with-pam --with-uuid=e2fs --with-perl --with-python \
         --with-tcl --with-tclconfig=${final.tcl}/lib \
-        --with-lz4${lib.optionalString (final.zstd != null) " --with-zstd"}${lib.optionalString withLLVM " --with-llvm"}${lib.optionalString withNUMA " --with-libnuma"} \
+        --with-lz4${
+          lib.optionalString (final.zstd != null) " --with-zstd"
+        }${lib.optionalString withLLVM " --with-llvm"}${lib.optionalString withNUMA " --with-libnuma"} \
         --with-system-tzdata=${final.tzdata}/share/zoneinfo
     '')
     (command "postgresql.build" "${make} world-bin")

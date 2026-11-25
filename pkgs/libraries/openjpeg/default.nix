@@ -5,7 +5,14 @@ let
     {
       def = {
         builder = ./build.nix;
-        deps = { inherit (tvp.packages) libpng libtiff lcms2 zlib; };
+        deps = {
+          inherit (tvp.packages)
+            libpng
+            libtiff
+            lcms2
+            zlib
+            ;
+        };
       };
       releases."2.5.4" = "sha256-ppX74ZwBZfKVqFMbHk6FXNlNCHXS+I7EthCAZ34nGIo=";
     }

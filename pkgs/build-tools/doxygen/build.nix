@@ -18,12 +18,28 @@ let
 in
 {
   pname = "doxygen";
-  inherit base src version bison flex python;
+  inherit
+    base
+    src
+    version
+    bison
+    flex
+    python
+    ;
   inherit (tools) bash coreutils;
-  environment.tools = [ tools.cmake tools.ninja final.bison final.flex final.python ];
+  environment.tools = [
+    tools.cmake
+    tools.ninja
+    final.bison
+    final.flex
+    final.python
+  ];
   runtime.libraries = [ ];
   plan = [
-    (steps.unpack { src = final.src; compression = "gzip"; })
+    (steps.unpack {
+      src = final.src;
+      compression = "gzip";
+    })
     (command "doxygen.configure" ''
       ${cmake} -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$out" \
@@ -43,7 +59,10 @@ in
     (steps.split "doxygen.finalize")
     (outputs.copyArtifacts { })
     (outputs.strip { inherit paths; })
-    (outputs.rpaths { inherit paths; libraries = final.runtime.libraries; })
+    (outputs.rpaths {
+      inherit paths;
+      libraries = final.runtime.libraries;
+    })
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {

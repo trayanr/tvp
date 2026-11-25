@@ -36,7 +36,8 @@ let
     "bin/xmllint"
     "bin/xmlcatalog"
     "lib/libxml2.so.16.1.4"
-  ] ++ lib.optional pythonEnabled "${pythonLayout}/libxml2mod.so";
+  ]
+  ++ lib.optional pythonEnabled "${pythonLayout}/libxml2mod.so";
 in
 {
   pname = "libxml2";
@@ -56,10 +57,13 @@ in
   configureFlags = [
     (if pythonEnabled then "--with-python" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
-  ] ++ lib.optional (final.icu != null) "--with-icu";
-  development = output: lib.optionalAttrs pythonEnabled {
-    pythonModuleDirectory = "${output}/${pythonLayout}";
-  };
+  ]
+  ++ lib.optional (final.icu != null) "--with-icu";
+  development =
+    output:
+    lib.optionalAttrs pythonEnabled {
+      pythonModuleDirectory = "${output}/${pythonLayout}";
+    };
   environment = {
     tools = [
       tools.gnumake
@@ -75,7 +79,11 @@ in
       final.doxygen
     ]
     ++ lib.optional (final.icu != null) final.icu;
-    libraries = [ final.zlib ] ++ lib.optional (final.icu != null) final.icu ++ lib.optional pythonEnabled final.bindingPython;
+    libraries = [
+      final.zlib
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
 
   };
   runtime = {

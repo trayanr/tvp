@@ -51,14 +51,18 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
-    ] ++ lib.optional cryptoEnabled final.libgcrypt;
+    ]
+    ++ lib.optional cryptoEnabled final.libgcrypt;
     libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt;
     overrides.values.CFLAGS = "-O2 -std=gnu17 -fcommon";
   };
   runtime = {
     # xml2-config --libs links the selected libxml2 compression providers directly.
-    libraries = [ final.libxml2 ] ++ final.libxml2.specification.runtime.libraries
-      ++ lib.optional cryptoEnabled final.libgcrypt;
+    libraries = [
+      final.libxml2
+    ]
+    ++ final.libxml2.specification.runtime.libraries
+    ++ lib.optional cryptoEnabled final.libgcrypt;
     shell = tools.bash;
   };
   installedInterface = { inherit pkgconfig; };
@@ -149,7 +153,9 @@ in
       inherit paths;
       libraries = final.runtime.libraries;
     })
-    (outputs.development { libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt; })
+    (outputs.development {
+      libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt;
+    })
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {
