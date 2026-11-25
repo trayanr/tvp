@@ -217,6 +217,11 @@ in
       set -- ${lib.escapeShellArgs (lib.mapAttrsToList (
         name: provider: "--${if provider != null then "with" else "without"}-${delegateFlag name}"
       ) delegates)}
+      ${lib.optionalString isMagick7 ''
+        if grep -Fq -- '  --enable-legacy-support ' configure; then
+          set -- "$@" --enable-legacy-support
+        fi
+      ''}
       ${lib.optionalString (xLibraries != [ ]) ''
         set -- "$@" --with-x --x-includes=${final.libx11}/include --x-libraries=${final.libx11}/lib
       ''}
@@ -238,6 +243,8 @@ in
     (command "imagemagick.build" make)
     (command "imagemagick.install" ''
       ${make} install
+      test -x "$out/bin/convert"
+      test -x "$out/bin/identify"
       ${lib.optionalString (final.perl != null) ''
         test -n "$(find "$out/${final.installedInterface.perlModuleDirectory}" -path '*/Image/Magick.pm' -print -quit)"
       ''}

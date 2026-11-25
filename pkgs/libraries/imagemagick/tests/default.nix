@@ -70,6 +70,36 @@ context.mkSuite {
       expected = "wand-ok";
     };
   }
+  // lib.optionalAttrs (buildFeatures.png && builtins.elem "xml" delegates) {
+    application-formats = {
+      tools = [ package.specification.base.tools.diffutils ];
+      script = ''
+        cat > rectangle.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+          <rect width="16" height="16" fill="red"/>
+        </svg>
+        SVG
+        convert rectangle.svg raster.png
+        test "$(identify -format '%m %wx%h' raster.png)" = 'PNG 16x16'
+        convert raster.png variant.jpg
+        test "$(identify -format '%m %wx%h' variant.jpg)" = 'JPEG 16x16'
+        convert raster.png variant.bmp
+        case "$(identify -format '%m %wx%h' variant.bmp)" in 'BMP 16x16'|'BMP2 16x16'|'BMP3 16x16') ;; *) exit 1 ;; esac
+        convert raster.png variant.ico
+        test "$(identify -format '%m %wx%h' variant.ico)" = 'ICO 16x16'
+        convert -delay 8 raster.png -size 16x16 xc:blue -loop 0 animated.gif
+        test "$(identify -format '%m %wx%h\n' animated.gif)" = "$(printf '%s\n' 'GIF 16x16' 'GIF 16x16')"
+        convert 'animated.gif[0]' -depth 8 RGB:first.rgb
+        convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+        test -s first.rgb && test -s second.rgb
+        status=0
+        cmp -s first.rgb second.rgb || status=$?
+        test "$status" -eq 1
+        printf 'formats-ok'
+      '';
+      expected = "formats-ok";
+    };
+  }
   // lib.optionalAttrs (delegates != [ ] || buildFeatures.openmp || buildFeatures.x11) {
     delegates = {
       tools = [ binutils grep ];
