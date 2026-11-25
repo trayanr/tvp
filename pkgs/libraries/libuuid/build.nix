@@ -50,7 +50,12 @@ in
     (steps.split "libuuid.finalize")
     (outputs.copyArtifacts { })
     (outputs.libtool { paths = [ "lib" ]; })
-    (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })
+    (outputs.relocateText {
+      paths = [
+        "lib/libuuid.la"
+        "lib/pkgconfig"
+      ];
+    })
     (outputs.strip { inherit paths; })
     (outputs.rpaths {
       inherit paths;

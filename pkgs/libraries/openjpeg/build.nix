@@ -98,6 +98,25 @@ in
       libraries = final.runtime.libraries;
       elfKinds = [ "runtime" ];
     })
+    {
+      name = "openjpeg.self-runtime";
+      tools = [
+        tools.binutils
+        tools.patchelf
+        tools.python
+      ];
+      # The codec tools load the shared OpenJPEG library from this output.
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            paths = [ "bin" ];
+            directories = [ "lib" ];
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
+    }
     (outputs.checkPaths {
       inherit paths;
       elfKinds = [ "runtime" ];
