@@ -37,7 +37,7 @@ let
     "bin/xmlcatalog"
     "lib/libxml2.so.16.1.4"
   ]
-  ++ lib.optional pythonEnabled "${pythonLayout}/libxml2mod.so";
+  ++ lib.optional pythonEnabled pythonLayout;
 in
 {
   pname = "libxml2";
@@ -101,8 +101,9 @@ in
     (command "install" ''
       ${make} install${pythonMakeFlags}
       ${lib.optionalString pythonEnabled ''
+        extension_suffix=$(${final.bindingPython}/bin/python3 -B -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
         test -f "$out/${pythonLayout}/libxml2.py"
-        test -f "$out/${pythonLayout}/libxml2mod.so"
+        test -f "$out/${pythonLayout}/libxml2mod$extension_suffix"
       ''}mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
