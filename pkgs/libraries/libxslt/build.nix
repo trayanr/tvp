@@ -20,7 +20,8 @@ let
   pythonEnabled =
     final.withPython && lib.versionAtLeast final.version "1.1.35" && bindingPython != null;
   legacyPythonProbe = lib.versionOlder final.version "1.1.36";
-  pythonLayout = "lib/python${lib.versions.majorMinor bindingPython.version}/site-packages";
+  pythonVersion = lib.versions.majorMinor bindingPython.version;
+  pythonLayout = "lib/python${pythonVersion}/site-packages";
   pythonMakeFlags = lib.optionalString pythonEnabled (
     " " + ''pythondir="$out/${pythonLayout}" pyexecdir="$out/${pythonLayout}" am__py_compile=:''
   );
@@ -75,7 +76,11 @@ in
       final.libxml2
     ]
     ++ lib.optionals final.linkLibxml2Compression final.libxml2.specification.runtime.libraries
-    ++ lib.optional cryptoEnabled final.libgcrypt;
+    # libgcrypt-config also links libgpg-error into the EXSLT crypto consumers.
+    ++ lib.optionals cryptoEnabled [
+      final.libgcrypt
+      final.libgcrypt.specification.libgpg-error
+    ];
     shell = tools.bash;
   };
   installedInterface.pkgconfig = true;
@@ -112,6 +117,9 @@ in
       ${lib.optionalString pythonEnabled ''
         export PYTHON=${bindingPython}/bin/python3
         export PYTHONPATH=${final.libxml2.development.pythonModuleDirectory}
+      '' + lib.optionalString (pythonEnabled && final.version == "1.1.36") ''
+        # The shipped Automake probe truncates Python 3.11 to 3.1.
+        export am_cv_python_version=${pythonVersion}
       ''}
       ./configure --prefix="$out" ${lib.escapeShellArg pythonFlag} ${
         if cryptoEnabled then "--with-crypto" else "--without-crypto"

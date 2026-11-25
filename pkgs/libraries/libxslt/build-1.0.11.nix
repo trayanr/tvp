@@ -62,7 +62,11 @@ in
       final.libxml2
     ]
     ++ final.libxml2.specification.runtime.libraries
-    ++ lib.optional cryptoEnabled final.libgcrypt;
+    # libgcrypt-config also links libgpg-error into the EXSLT crypto consumers.
+    ++ lib.optionals cryptoEnabled [
+      final.libgcrypt
+      final.libgcrypt.specification.libgpg-error
+    ];
     shell = tools.bash;
   };
   installedInterface = { inherit pkgconfig; };

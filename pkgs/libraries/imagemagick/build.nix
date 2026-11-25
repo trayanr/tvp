@@ -64,6 +64,7 @@ let
   delegateMacro =
     name: if name == "openjp2" then "LIBOPENJP2_DELEGATE" else "${lib.toUpper name}_DELEGATE";
   enabledDelegates = lib.filterAttrs (_: provider: provider != null) delegates;
+  xmlIcu = enabledDelegates.xml.specification.icu or null;
   xLibraries = lib.optionals (final.libx11 != null) (
     lib.filter (provider: provider != null) [
       final.libx11
@@ -182,7 +183,15 @@ in
     ++ builtins.attrValues enabledDelegates
     ++ xLibraries;
   };
-  runtime.libraries = final.environment.libraries;
+  # The XML and X11 delegate link flags also add their providers' libraries.
+  runtime.libraries =
+    final.environment.libraries
+    ++ lib.optional (xmlIcu != null) xmlIcu
+    ++ lib.optionals (final.libx11 != null) [
+      final.libx11.specification.libxcb
+      final.libx11.specification.libxau
+      final.libx11.specification.libxdmcp
+    ];
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -206,6 +215,56 @@ in
       tools = [ tools.python ];
       run = "${tools.python}/bin/python3 -B ${./compile-compat.py} ${lib.escapeShellArg final.version}";
     })
+    (lib.optional
+      (
+        final.lcms2 != null
+        && lib.versionAtLeast final.version "6.6.2.10"
+        && lib.versionOlder final.version "6.8.9.10"
+      )
+      (
+        command "imagemagick.lcms-context" ''
+          # Backport the 6.8.9 LCMS context casts for the error callback's image.
+          file=magick/profile.c
+          test "$(grep -Fc 'cmsCreateTransformTHR(image,' "$file")" = 1
+          test "$(grep -Fc 'cmsOpenProfileFromMemTHR(image,' "$file")" = 2
+          sed -i -e 's/cmsCreateTransformTHR(image,/cmsCreateTransformTHR((cmsContext) image,/' \
+            -e 's/cmsOpenProfileFromMemTHR(image,/cmsOpenProfileFromMemTHR((cmsContext) image,/' "$file"
+        ''
+      )
+    )
+    (lib.optional (final.perl != null && final.version == "6.9.12.94") (
+      command "imagemagick.perl-morphology-cast" ''
+        # The generated PerlMagick XS template has an extra parenthesis.
+        file=PerlMagick/quantum/quantum.xs.in
+        test "$(grep -Fc 'method=(MorphologyMethod)) argument_list[2].integer_reference;' "$file")" = 1
+        sed -i 's/method=(MorphologyMethod)) /method=(MorphologyMethod) /' "$file"
+      ''
+    ))
+    (lib.optional (final.perl != null && final.version == "6.9.12.6") (
+      command "imagemagick.perl-makefile-syntax" ''
+        # Restore the missing terminator, as in the next upstream release.
+        file=PerlMagick/default/Makefile.PL.in
+        test "$(grep -c '^my [$]LIBS_magick = .*[^;]$' "$file")" = 1
+        sed -i '/^my [$]LIBS_magick = /s/$/;/' "$file"
+      ''
+    ))
+    (lib.optional (final.perl != null && final.version == "7.0.5.3") (
+      command "imagemagick.perl-module-install-order" ''
+        # The default subdirectory installs the generated Image::Magick module.
+        # Keep the top-level XS build from writing a second copy to the same path.
+        file=PerlMagick/Makefile.PL.in
+        test -f PerlMagick/default/Magick.pm.in
+        test "$(grep -Fxc '   # Module description' "$file")" = 1
+        sed -i '/^   # Module description$/i\   PM => {},' "$file"
+      ''
+    ))
+    (lib.optional (enabledDelegates ? webp && final.version == "6.8.3.10") (
+      command "imagemagick.webp-probe" ''
+        # Backport the next release's probe for the symbol exported by libwebp.
+        test "$(grep -ow WebPPictureInit configure | wc -l)" = 4
+        sed -i 's/WebPPictureInit/WebPPictureInitInternal/g' configure
+      ''
+    ))
     (lib.optional
       (lib.versionAtLeast final.version "6.5.6.10" && lib.versionOlder final.version "6.6.2.10")
       (
