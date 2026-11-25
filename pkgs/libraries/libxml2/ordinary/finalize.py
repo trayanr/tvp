@@ -109,7 +109,20 @@ def finalize(root, artifact, readelf, patchelf):
                 raise ValueError(('invalid public frontend',alias))
         if data.startswith(b'#!'):
             text(data,name)
-            if roles != {'script'}:
+            # Historical Automake builds install Python test sources as
+            # non-executable documentation examples using install -m 644.
+            python_example = (
+                not p.stat().st_mode & 0o111
+                and all(re.fullmatch(
+                    r'share/doc/(?:libxml2/python|libxml2-python-[0-9.]+)/examples/[^/]+\.py',
+                    alias,
+                ) for alias in group)
+                and re.fullmatch(
+                    rb'#!(?:/usr/bin/python(?: -u)?|/usr/bin/env python3?)',
+                    data.split(b'\n', 1)[0],
+                )
+            )
+            if roles != {'script'} and not python_example:
                 raise ValueError(('unexpected installed script frontend', group))
         if 'script' in roles:
             text(data,name)

@@ -12,6 +12,7 @@
   cStandard ? "gnu89",
   cFlags ? [ ],
   patches ? [ ],
+  sourceLayout ? { },
   installedInterface ? {
     sonameMajor = "2";
   },
@@ -56,6 +57,13 @@ in
     installedInterface
     doCheck
     ;
+  sourceLayout = {
+    icuConfigLinkFlags = false;
+    icuTrueArgument = null;
+    pythonFileDescriptorCheck = false;
+    pythonTypeCheckConditions = false;
+  }
+  // sourceLayout;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
   configureFlags = [
@@ -127,17 +135,48 @@ in
           ];
       }
     )
-    (lib.optional (pythonEnabled && lib.versionOlder final.version "2.9.8") (
+    (lib.optional (pythonEnabled && final.sourceLayout.pythonFileDescriptorCheck) (
       command "python-fd-compatibility" ''
         test "$(grep -Fxc '    if (!_PyVerify_fd(fd))' python/types.c)" = 1
         sed -i 's/if (!_PyVerify_fd(fd))/if (fd < 0)/' python/types.c
       ''
     ))
-    (lib.optional (final.icu != null) (
-      command "icu-boolean-compatibility" ''
-        # ICU no longer exports the TRUE macro used by these converters.
-        sed -i 's/0, TRUE, \&err);/0, 1, \&err);/' encoding.c
+    (lib.optional (pythonEnabled && final.sourceLayout.pythonTypeCheckConditions) (
+      command "python-type-check-conditions" ''
+        # Python 3.11's type checks do not supply parentheses around the if condition.
+        test "$(grep -Fc 'else if PyUnicode_Check (ret) {' python/libxml.c)" = 2
+        sed -i 's/else if PyUnicode_Check (ret) {/else if (PyUnicode_Check(ret)) {/' python/libxml.c
+        type_checks='if (Py(Float|Long|Bool|Bytes|Unicode|List)_Check)[[:space:]]*\(obj\) \{'
+        test "$(grep -Ec "$type_checks" python/types.c)" = 6
+        sed -Ei "s/$type_checks/if (\1(obj)) {/" python/types.c
       ''
+    ))
+    (lib.optional (final.icu != null && final.sourceLayout.icuConfigLinkFlags) (
+      command "icu-link-flags" ''
+        # These configure scripts use icu-config's rpath flags through old libtool.
+        # Use the ICU provider's pkg-config link flags and let finalization set RPATH.
+        icu_assignment='^\([[:space:]]*\)ICU_LIBS=`.* --ldflags`$'
+        test "$(grep -c "$icu_assignment" configure)" = 1
+        ${tools.pkg-config}/bin/pkg-config --exists icu-i18n
+        sed -i "s|$icu_assignment|\1ICU_LIBS=\"\$(${tools.pkg-config}/bin/pkg-config --libs icu-i18n)\"|" configure
+      ''
+    ))
+    (lib.optional (final.icu != null && final.sourceLayout.icuTrueArgument != null) (
+      command "icu-boolean-compatibility" (
+        # ICU no longer exports the TRUE macro used by these converters.
+        if final.sourceLayout.icuTrueArgument == "with-error" then
+          ''
+            test "$(grep -Fc '0, TRUE, &err);' encoding.c)" = 2
+            sed -i 's/0, TRUE, \&err);/0, 1, \&err);/' encoding.c
+          ''
+        else if final.sourceLayout.icuTrueArgument == "standalone" then
+          ''
+            test "$(grep -c '^[[:space:]]*TRUE);$' encoding.c)" = 1
+            sed -i '/^[[:space:]]*TRUE);$/s/TRUE/1/' encoding.c
+          ''
+        else
+          throw "Unsupported ICU TRUE argument layout for libxml2 ${final.version}"
+      )
     ))
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash

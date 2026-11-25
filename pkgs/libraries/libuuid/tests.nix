@@ -13,14 +13,22 @@ context.mkSuite {
         #include <stdio.h>
         #include <uuid/uuid.h>
 
-        int main(void) {
-          uuid_t generated, parsed;
+        static int roundtrip(const uuid_t generated, int type) {
+          uuid_t parsed;
           char text[37];
-          uuid_generate_random(generated);
           uuid_unparse_lower(generated, text);
           if (uuid_parse(text, parsed) != 0 || uuid_compare(generated, parsed) != 0)
+            return 0;
+          return uuid_type(parsed) == type && !uuid_is_null(parsed);
+        }
+
+        int main(void) {
+          uuid_t generated;
+          uuid_generate_random(generated);
+          if (!roundtrip(generated, UUID_TYPE_DCE_RANDOM))
             return 1;
-          if (uuid_type(parsed) != UUID_TYPE_DCE_RANDOM || uuid_is_null(parsed))
+          uuid_generate_time(generated);
+          if (!roundtrip(generated, UUID_TYPE_DCE_TIME))
             return 1;
           puts("UUID round trip");
           return 0;

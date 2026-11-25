@@ -32,7 +32,9 @@ in
     (steps.prepareAutotools { name = "libuuid.prepare"; })
     (command "libuuid.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash
+      # libuuid embeds its clock state paths in the shared library.
       "$CONFIG_SHELL" ./configure --prefix="$out" --libdir="$out/lib" \
+        --localstatedir=/var --runstatedir=/run \
         --disable-all-programs --enable-libuuid --disable-static --disable-asciidoc \
         --disable-nls --without-python --without-systemd
     '')

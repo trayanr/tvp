@@ -11,6 +11,7 @@
   liblzma,
   cStandard ? "gnu17",
   cFlags ? [ ],
+  sourceLayout ? { },
   installedInterface ? {
     sonameMajor = "2";
   },
@@ -29,7 +30,13 @@ let
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libxml2-build-tree";
   pythonEnabled = final.bindingPython != null;
-  pythonLayout = "lib/python${lib.versions.majorMinor final.bindingPython.version}/site-packages";
+  pythonVersion = lib.versions.majorMinor final.bindingPython.version;
+  pythonLayout = "lib/python${pythonVersion}/site-packages";
+  pythonConfigureEnvironment =
+    lib.optionalString pythonEnabled "export PYTHON=${final.bindingPython}/bin/python3\n"
+    + lib.optionalString (
+      pythonEnabled && final.sourceLayout.truncatesPythonVersion
+    ) "export am_cv_python_version=${pythonVersion}\n";
   # Automake's bytecode rules otherwise embed the temporary install prefix.
   pythonMakeFlags = lib.optionalString pythonEnabled (
     " " + ''pythondir="$out/${pythonLayout}" pyexecdir="$out/${pythonLayout}" am__py_compile=:''
@@ -56,6 +63,10 @@ in
     ;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
+  sourceLayout = {
+    truncatesPythonVersion = false;
+  }
+  // sourceLayout;
   configureFlags = [
     (if pythonEnabled then "--with-python" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
@@ -108,7 +119,7 @@ in
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
-      ${lib.optionalString pythonEnabled "export PYTHON=${final.bindingPython}/bin/python3\n"}./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+      ${pythonConfigureEnvironment}./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
     (command "build" (
       "${make} libxml2.la xmllint xmlcatalog"
