@@ -3,7 +3,13 @@ let
   pname = "redis";
   versionTable = tvp.lib.packages.mkTable [
     {
-      def.builder = ./build-8.10.3.nix;
+      def = {
+        builder = ./build-8.10.3.nix;
+        deps = {
+          openssl = tvp.packages.openssl_3;
+          zstd = tvp.packages.zstd_1;
+        };
+      };
       releases = {
         "8.10.3" = "sha256-7d53j2ve51geQvwTnKngfigiISCS91AfmZiWVuNinQI=";
         "8.12.0" = "sha256-sBAKh5stRdyX2P2pQRJ2CdZI+JEwCNsbZaL3KorjbIs=";
