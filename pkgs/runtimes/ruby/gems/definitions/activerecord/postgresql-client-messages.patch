@@ -1,0 +1,10 @@
+--- a/lib/active_record/connection_adapters/postgresql_adapter.rb
++++ b/lib/active_record/connection_adapters/postgresql_adapter.rb
+@@ -382,6 +382,6 @@
+       # Enable standard-conforming strings if available.
+       def set_standard_conforming_strings
+-        old, self.client_min_messages = client_min_messages, 'panic'
++        old, self.client_min_messages = client_min_messages, 'error'
+         execute('SET standard_conforming_strings = on', 'SCHEMA') rescue nil
+       ensure
+         self.client_min_messages = old
