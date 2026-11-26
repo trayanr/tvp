@@ -13,7 +13,7 @@ let
     perl = 10;
     jdk = 1;
     jdk-bootstrap = 1;
-    nodejs = 120;
+    nodejs = 124;
     glibc = 1;
   };
   selected = lib.foldl' (out: name: out // modules.${name}.canonical) { } (
@@ -41,6 +41,11 @@ let
         };
       };
       base = p.edit (spec: spec // { base = changedBase; });
+      expectedCompiler =
+        if p.pname == "nodejs" && lib.versions.major p.version == "14" then
+          tvp.bases.gcc_9.full.compiler
+        else
+          tvp.bases.gcc_16.full.compiler;
     in
     {
       owned = !(p ? overrideAttrs);
@@ -50,7 +55,7 @@ let
       sourceChangesA = source.artifact.drvPath != p.artifact.drvPath;
       suffixReusesA = suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
       baseCoreutilsRebinds = base.specification.coreutils.outPath == changedBase.coreutils.outPath;
-      hostCompiler = s.base.compiler.drvPath == tvp.bases.gcc_16.full.compiler.drvPath;
+      hostCompiler = s.base.compiler.drvPath == expectedCompiler.drvPath;
       versionTest = p.tests ? version;
       reboundTest = suffix.tests.version.package.drvPath == suffix.drvPath;
     };
