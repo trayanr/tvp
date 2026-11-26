@@ -8,6 +8,7 @@ let
   specification = package.specification;
   deps = package.tvp.deps;
   features = package.tvp.features;
+  bindingPython = specification.bindingPython or null;
   tools = specification.base.tools;
   pkg-config = tools.pkg-config;
   gzip = tools.gzip;
@@ -102,6 +103,36 @@ mkSuite {
       '';
       expected = package.version;
       extraInputs = [ pkg-config ];
+    };
+  }
+
+  // lib.optionalAttrs (features.python or false) {
+    python = {
+      script = ''
+        export PYTHONPATH=${package.development.pythonModuleDirectory}
+        ${bindingPython}/bin/python3 -B - <<'PYTHON'
+        import libxml2
+
+        doc = libxml2.parseDoc("<package version='1.2.3'/>")
+        assert doc.getRootElement().prop("version") == "1.2.3"
+        doc.freeDoc()
+        print("python-libxml2")
+        PYTHON
+      '';
+      expected = "python-libxml2";
+      extraInputs = [ bindingPython ];
+    };
+  }
+
+  // lib.optionalAttrs (features.icu or false) {
+    icu = {
+      script = ''
+        LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/xmllint > libraries
+        test "$(awk '/^[[:space:]]*libicuuc\.so\./ { print $3 }' libraries)" = \
+          "${lib.getLib specification.icu}/lib/libicuuc.so.${lib.versions.major specification.icu.version}"
+        printf icu
+      '';
+      expected = "icu";
     };
   }
 

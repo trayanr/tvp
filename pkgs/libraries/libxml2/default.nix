@@ -20,17 +20,72 @@ let
         builder = ./build-2.8.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
         };
-        # The released libxml-2.0.pc template omits the configured LZMA_LIBS.
-        opts.installedInterface = {
-          sonameMajor = "2";
-          repairPrivateLzma = true;
+        opts = {
+          sourceLayout = {
+            icuConfigLinkFlags = true;
+            icuTrueArgument = "with-error";
+          };
+          # The released libxml-2.0.pc template omits the configured LZMA and ICU flags.
+          installedInterface = {
+            sonameMajor = "2";
+            repairPrivateLzma = true;
+            repairPrivateIcu = true;
+          };
+        };
+      };
+      releases."2.8.0" = "sha256-fhQlyPwedRR3FEdXTTgAFLafHWLkL4POJSw+tMfT+lQ=";
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+        };
+        opts = {
+          sourceLayout = {
+            icuConfigLinkFlags = true;
+            icuTrueArgument = "with-error";
+          };
+          # The released libxml-2.0.pc template omits the configured LZMA_LIBS.
+          installedInterface = {
+            sonameMajor = "2";
+            repairPrivateLzma = true;
+          };
+        };
+      };
+      releases."2.9.0" = "sha256-l9PZq84toO2pt6WLP9a0pt4BLTIjVRUedpOw1+2YxjQ=";
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+        opts = {
+          sourceLayout = {
+            icuConfigLinkFlags = true;
+            icuTrueArgument = "with-error";
+            pythonFileDescriptorCheck = true;
+            pythonTypeCheckConditions = true;
+          };
+          # The released libxml-2.0.pc template omits the configured LZMA_LIBS.
+          installedInterface = {
+            sonameMajor = "2";
+            repairPrivateLzma = true;
+          };
         };
       };
       releases = {
-        "2.8.0" = "sha256-fhQlyPwedRR3FEdXTTgAFLafHWLkL4POJSw+tMfT+lQ=";
-        "2.9.0" = "sha256-l9PZq84toO2pt6WLP9a0pt4BLTIjVRUedpOw1+2YxjQ=";
         "2.9.1" = "sha256-AijfriZkdUFTOBPy1Y2ROMORDyulfp5oPYHIgEuPrnw=";
       };
     }
@@ -40,7 +95,9 @@ let
         builder = ./build-2.8.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
         };
         patches = [
           {
@@ -48,6 +105,12 @@ let
             reason = "Backport 2.9.3's lzma.h check after successful pkg-config detection so that 2.9.2 actually compiles its XZ reader.";
           }
         ];
+        opts.sourceLayout = {
+          icuConfigLinkFlags = true;
+          icuTrueArgument = "with-error";
+          pythonFileDescriptorCheck = true;
+          pythonTypeCheckConditions = true;
+        };
       };
       releases = {
         "2.9.2" = "sha256-7dei/tLrgyoJSZKuxh8cQRZ6CV3Yzn8+KdtCxTnrT/I=";
@@ -59,13 +122,60 @@ let
         builder = ./build-2.8.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+        opts.sourceLayout = {
+          icuConfigLinkFlags = true;
+          icuTrueArgument = "with-error";
+          pythonFileDescriptorCheck = true;
+          pythonTypeCheckConditions = true;
+        };
+      };
+      releases."2.9.3" = "sha256-h5BiryYmkq/e5WPjUfbnJedx1XwYXn3cYkfrMyivTSA=";
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+        opts.sourceLayout = {
+          icuTrueArgument = "with-error";
+          pythonFileDescriptorCheck = true;
+          pythonTypeCheckConditions = true;
+        };
+      };
+      releases."2.9.4" = "sha256-IbKCT5zlanIpb2eBA+7VqERkF8B+kE5hdIr/ojDskHI=";
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+        opts = {
+          cStandard = "gnu17";
+          sourceLayout = {
+            icuTrueArgument = "with-error";
+            pythonFileDescriptorCheck = true;
+            pythonTypeCheckConditions = true;
+          };
         };
       };
       releases = {
-        "2.9.3" = "sha256-h5BiryYmkq/e5WPjUfbnJedx1XwYXn3cYkfrMyivTSA=";
-        "2.9.4" = "sha256-IbKCT5zlanIpb2eBA+7VqERkF8B+kE5hdIr/ojDskHI=";
-
+        "2.9.5" = "sha256-qRnfd49eUp+GHMSPsbuMWyZfkmFxO2xuaVS8OfTmy+o=";
+        "2.9.6" = "sha256-rBw+EcojcbhPo7hMRSFaXeK++UkVbNexZzLLM5E81E0=";
+        "2.9.7" = "sha256-ZDeFXzMy/MD8JTI8XwaQHgInfhIypmK2IdyI/eNyWaw=";
       };
     }
 
@@ -74,17 +184,37 @@ let
         builder = ./build-2.8.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+        opts = {
+          cStandard = "gnu17";
+          sourceLayout = {
+            icuTrueArgument = "standalone";
+            pythonTypeCheckConditions = true;
+          };
+        };
+      };
+      releases = {
+        "2.9.8" = "sha256-3Moh1iS7vglPzBBOHxXy6s+2WuzQ447SIK7KVrYsgeI=";
+        "2.9.9" = "sha256-WKXAWilR+LR2VrZ2zhAXkhop9rFBnEXjuu0NZDW6A/U=";
+        "2.9.10" = "sha256-WTt7dR3RjC1qvNDEvLKe/CA9C0Nzpt+Y46RV6nSuKBM=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-2.8.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
         };
         opts.cStandard = "gnu17";
       };
       releases = {
-        "2.9.5" = "sha256-qRnfd49eUp+GHMSPsbuMWyZfkmFxO2xuaVS8OfTmy+o=";
-        "2.9.6" = "sha256-rBw+EcojcbhPo7hMRSFaXeK++UkVbNexZzLLM5E81E0=";
-        "2.9.7" = "sha256-ZDeFXzMy/MD8JTI8XwaQHgInfhIypmK2IdyI/eNyWaw=";
-        "2.9.8" = "sha256-3Moh1iS7vglPzBBOHxXy6s+2WuzQ447SIK7KVrYsgeI=";
-        "2.9.9" = "sha256-WKXAWilR+LR2VrZ2zhAXkhop9rFBnEXjuu0NZDW6A/U=";
-        "2.9.10" = "sha256-WTt7dR3RjC1qvNDEvLKe/CA9C0Nzpt+Y46RV6nSuKBM=";
         "2.9.11" = "sha256-pKWUQcjcHdgspoV/otZAr/Lhq2XuSAyqDTDjYmFnogQ=";
         "2.9.12" = "sha256-KKkvarHzEaz15HhWTEkIjvCsdwkNnHGbvF1Rjx/mLrk=";
         "2.9.13" = "sha256-J2EwYC0S/khOzANEfuXnWdBGVVj7yda9FE43RTBuvw4=";
@@ -97,12 +227,30 @@ let
         builder = ./build-2.10.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
         };
+        # The shipped AM_PATH_PYTHON derives Python 3.1 from 3.11.
+        opts.sourceLayout.truncatesPythonVersion = true;
       };
       releases = {
         "2.10.0" = "sha256-LdMxEOp3hnbeFL6kmZ7hFzxMpV1f8UUryiJOBvAVJZU=";
         "2.10.1" = "sha256-IanhPMfEcXpsNiaNCST5LD9noezmt/+dWIlYptufudg=";
+      };
+    }
+
+    {
+      def = {
+        builder = ./build-2.10.0.nix;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
+        };
+      };
+      releases = {
         "2.10.2" = "sha256-0kCr5tqcZcsZAN2b86NQHM+Is8Khy5gxfQPyct2lsmU=";
         "2.10.3" = "sha256-XSzD14vsPb4hKp1/pimtolp9qSivQyyTBg/1wX7iipw=";
         "2.10.4" = "sha256-7QyRxYRQCPGTZznk7uIDVTHByUdCxlQfRO5m2IWUjUU=";
@@ -135,7 +283,9 @@ let
         builder = ./build-2.13.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
         };
       };
       releases = {
@@ -157,7 +307,9 @@ let
         builder = ./build-2.13.0.nix;
         deps = {
           zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
           liblzma = tvp.packages.xz_5;
+          bindingPython = tvp.packages.python_3_11;
         };
         opts.installedInterface.sonameMajor = "16";
       };
@@ -175,7 +327,12 @@ let
     {
       def = {
         builder = ./build-2.15.0.nix;
-        deps.zlib = tvp.packages.zlib_1;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          bindingPython = tvp.packages.python_3_11;
+          doxygen = tvp.packages.doxygen;
+        };
       };
       releases = {
         "2.15.0" = "sha256-Wrx2ZJfFsdbZkjH2YuMMmUAqkNA7BsZ7YtbBF53t1WE=";
@@ -188,7 +345,12 @@ let
     {
       def = {
         builder = ./build-native-2.15.4.nix;
-        deps.zlib = tvp.packages.zlib_1;
+        deps = {
+          zlib = tvp.packages.zlib_1;
+          icu = tvp.packages.icu;
+          bindingPython = tvp.packages.python_3_11;
+          doxygen = tvp.packages.doxygen;
+        };
       };
       releases = {
         "2.15.4" = "sha256-mAh/0YHZBwck8/vGXHN32wMDjrkr2II3Ta/0SUATiCE=";

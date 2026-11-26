@@ -56,7 +56,19 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          bzip2 = tvp.packages.bzip2;
+          fontconfig = tvp.packages.fontconfig;
+          freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
+          lcms2 = tvp.packages.lcms2;
+          libice = tvp.packages.libice;
+          libsm = tvp.packages.libsm;
+          libtiff = tvp.packages.libtiff;
+          libx11 = tvp.packages.libx11;
+          libxext = tvp.packages.libxext;
+          libxml2 = tvp.packages.libxml2_2;
+          libxt = tvp.packages.libxt;
+          perl = tvp.packages.perl_5;
           zlib = tvp.packages.zlib_1;
         };
       };
@@ -75,9 +87,26 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          bzip2 = tvp.packages.bzip2;
+          fontconfig = tvp.packages.fontconfig;
+          freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
+          lcms2 = tvp.packages.lcms2;
+          libice = tvp.packages.libice;
+          libsm = tvp.packages.libsm;
+          libtiff = tvp.packages.libtiff;
+          libwebp = tvp.packages.libwebp;
+          libx11 = tvp.packages.libx11;
+          libxext = tvp.packages.libxext;
+          libxml2 = tvp.packages.libxml2_2;
+          libxt = tvp.packages.libxt;
+          libzip = tvp.packages.libzip;
+          openjpeg = tvp.packages.openjpeg;
+          perl = tvp.packages.perl_5;
           png = tvp.packages.libpng_1;
+          xz = tvp.packages.xz_5;
           zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
         };
       };
       releases = {
@@ -129,9 +158,26 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          bzip2 = tvp.packages.bzip2;
+          fontconfig = tvp.packages.fontconfig;
+          freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
+          lcms2 = tvp.packages.lcms2;
+          libice = tvp.packages.libice;
+          libsm = tvp.packages.libsm;
+          libtiff = tvp.packages.libtiff;
+          libwebp = tvp.packages.libwebp;
+          libx11 = tvp.packages.libx11;
+          libxext = tvp.packages.libxext;
+          libxml2 = tvp.packages.libxml2_2;
+          libxt = tvp.packages.libxt;
+          libzip = tvp.packages.libzip;
+          openjpeg = tvp.packages.openjpeg;
+          perl = tvp.packages.perl_5;
           png = tvp.packages.libpng_1;
+          xz = tvp.packages.xz_5;
           zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
         };
         source = tagSource;
         opts.sourceCompression = "gzip";
