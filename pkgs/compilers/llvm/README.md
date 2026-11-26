@@ -11,8 +11,10 @@ The historical procedure enables FFI, zlib, and libxml2. LLVM did not
 introduce optional Zstandard support until 15. Libedit, libpfm,
 and Z3 need source-owned providers for the corresponding features.
 The released LLVM sources have known GCC 13 header-compatibility gaps,
-so they use the source-owned GCC 9.5 construction base. The installed
-Clang selects its independent GCC 13 target runtime through the
+so they use the source-owned GCC 9.5 construction base. They use a
+libxml2 variant without ICU because the standard ICU provider requires
+libstdc++ symbols newer than GCC 9 provides. The installed Clang
+selects its independent GCC 13 target runtime through the
 explicit GCC toolchain layout.
 For shared-library consumers, `llvm-config --ldflags` supplies the installed
 `libLLVM` dependency directories as link-time search paths. GNU ld needs

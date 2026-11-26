@@ -4,7 +4,14 @@
   context,
 }:
 let
-  inherit (package.specification.installedInterface) cli wandHeader;
+  inherit (package.specification.installedInterface)
+    cli
+    delegates
+    perlModuleDirectory
+    wandHeader
+    ;
+  inherit (package.specification) buildFeatures;
+  inherit (package.specification.base.tools) binutils grep;
   imageFormat = if package.specification.buildFeatures.png then "PNG" else "PPM";
   imageExtension = lib.toLower imageFormat;
   # These releases identify PPM by the enclosing PNM family name.
@@ -12,6 +19,15 @@ let
   reportedImageFormat = if reportsPnm then "PNM" else imageFormat;
   parts = lib.splitString "." package.version;
   upstreamVersion = lib.concatStringsSep "." (lib.take 3 parts) + "-" + lib.last parts;
+  traceDelegates = builtins.elem package.version [
+    "6.9.9.5"
+    "7.0.6.5"
+    "7.0.7.12"
+    "7.0.7.13"
+    "7.0.7.14"
+    "7.0.7.15"
+    "7.0.8.13"
+  ];
 in
 context.mkSuite {
   inherit package;
@@ -49,6 +65,7 @@ context.mkSuite {
               || !MagickNewImage(wand, 3, 2, pixel)
               || MagickGetImageWidth(wand) != 3 || MagickGetImageHeight(wand) != 2)
             return 1;
+          ${lib.optionalString buildFeatures.hdri "if (!((Quantum) -0.5 < 0)) return 2;"}
           DestroyPixelWand(pixel);
           DestroyMagickWand(wand);
           MagickWandTerminus();
@@ -60,6 +77,99 @@ context.mkSuite {
         printf wand-ok
       '';
       expected = "wand-ok";
+    };
+  }
+  // lib.optionalAttrs (buildFeatures.png && builtins.elem "xml" delegates) {
+    application-formats = {
+      tools = [ package.specification.base.tools.diffutils ];
+      script = ''
+        cat > rectangle.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+          <rect width="16" height="16" fill="red"/>
+        </svg>
+        SVG
+        convert rectangle.svg raster.png
+        test "$(identify -format '%m %wx%h' raster.png)" = 'PNG 16x16'
+        convert raster.png variant.jpg
+        test "$(identify -format '%m %wx%h' variant.jpg)" = 'JPEG 16x16'
+        convert raster.png variant.bmp
+        case "$(identify -format '%m %wx%h' variant.bmp)" in 'BMP 16x16'|'BMP2 16x16'|'BMP3 16x16') ;; *) exit 1 ;; esac
+        convert raster.png variant.ico
+        test "$(identify -format '%m %wx%h' variant.ico)" = 'ICO 16x16'
+        convert -delay 8 raster.png -size 16x16 xc:blue -loop 0 animated.gif
+        test "$(identify -format '%m %wx%h\n' animated.gif)" = "$(printf '%s\n' 'GIF 16x16' 'GIF 16x16')"
+        ${lib.removeSuffix "\n" (if builtins.elem package.version [ "6.9.4.7" "7.0.1.9" ] then ''
+          # These readers accept the animation as a whole but treat [n] as part
+          # of the filename. Decode both scenes in one invocation.
+          convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
+          mv frame-0.rgb first.rgb
+          mv frame-1.rgb second.rgb
+        '' else ''
+          convert 'animated.gif[0]' -depth 8 RGB:first.rgb
+          convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+        '')}
+        test -s first.rgb && test -s second.rgb
+        status=0
+        cmp -s first.rgb second.rgb || status=$?
+        test "$status" -eq 1
+        printf 'formats-ok'
+      '';
+      expected = "formats-ok";
+    };
+  }
+  // lib.optionalAttrs (delegates != [ ] || buildFeatures.openmp || buildFeatures.x11) {
+    delegates = {
+      tools = [
+        binutils
+        grep
+      ];
+      # Preserve the failing command and its arguments for historical codec failures.
+      script = lib.optionalString traceDelegates "set -x\n" + ''
+        ${lib.optionalString (builtins.elem "xml" delegates) ''
+          cat > shape.svg <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="3" height="2">
+            <rect x="0" y="0" width="3" height="2" fill="red"/>
+          </svg>
+          SVG
+          ${cli} shape.svg shape.miff
+          test "$(identify -format '%wx%h' shape.miff)" = 3x2
+        ''}
+        ${lib.optionalString (builtins.elem "tiff" delegates) ''
+          ${cli} -size 8x8 xc:red shape.tiff
+          test "$(identify -format '%m %wx%h' shape.tiff)" = 'TIFF 8x8'
+        ''}
+        ${lib.optionalString (builtins.elem "webp" delegates) ''
+          ${cli} -size 8x8 xc:red shape.webp
+          test "$(identify -format '%m %wx%h' shape.webp)" = 'WEBP 8x8'
+        ''}
+        ${lib.optionalString (builtins.elem "openjp2" delegates) ''
+          ${cli} -size 128x128 xc:red shape.jp2
+          test "$(identify -format '%m %wx%h' shape.jp2)" = 'JP2 128x128'
+        ''}
+        ${lib.optionalString (buildFeatures.openmp || buildFeatures.x11) ''
+          readelf -d "${package}"/lib/libMagickCore*.so > needed
+          ${lib.optionalString buildFeatures.openmp "grep -F 'Shared library: [libgomp.so.1]' needed >&2"}
+          ${lib.optionalString buildFeatures.x11 "grep -F 'Shared library: [libX11.so.6]' needed >&2"}
+        ''}
+        printf delegates-ok
+      '';
+      expected = "delegates-ok";
+    };
+  }
+  // lib.optionalAttrs (perlModuleDirectory != null) {
+    perl = {
+      tools = [ package.specification.perl ];
+      script = ''
+        export PERL5LIB="${package}/${perlModuleDirectory}"
+        perl -MImage::Magick -e '
+          my $image = Image::Magick->new(size => "3x2");
+          my $error = $image->Read("xc:red");
+          die $error if $error;
+          die "unexpected dimensions" unless $image->Get("width") == 3 && $image->Get("height") == 2;
+          print "perl-ok";
+        '
+      '';
+      expected = "perl-ok";
     };
   };
 }

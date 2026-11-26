@@ -47,6 +47,7 @@ let
       environment = final.environment;
     } "gettext.${name}";
   make = "${final.tools.gnumake}/bin/make SHELL=${final.bash}/bin/bash";
+  xmlIcu = final.providers.libxml2.specification.icu or null;
   elfPaths = [
     "bin"
     "lib"
@@ -137,7 +138,8 @@ in
   };
   runtime = {
     inherit perl jdk;
-    libraries = builtins.attrValues final.providers;
+    # The link flags from libxml2 include ICU for msgfmt, xgettext and spit.
+    libraries = builtins.attrValues final.providers ++ lib.optional (xmlIcu != null) xmlIcu;
     tools = [
       final.coreutils
       final.tools.sed
