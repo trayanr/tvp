@@ -66,6 +66,17 @@ lock.specs.each do |locked|
   next unless package
   raise "Gemset version differs from lockfile for #{locked.name}" unless package.fetch("version") == locked.version.to_s
   source = locked.source
+  if (expected_git_source = package["gitSource"])
+    unless source.is_a?(Bundler::Source::Git)
+      raise "Gemset source type differs from lockfile for #{locked.name}: expected Git"
+    end
+    unless source.uri.to_s == expected_git_source.fetch("url")
+      raise "Gemset Git URL differs from lockfile for #{locked.name}; regenerate gemset.nix or use an explicit source override"
+    end
+    unless source.revision.to_s.downcase == expected_git_source.fetch("rev").downcase
+      raise "Gemset Git revision differs from lockfile for #{locked.name}; regenerate gemset.nix or use an explicit source override"
+    end
+  end
   next unless source.is_a?(Bundler::Source::Path)
   git_source = source.is_a?(Bundler::Source::Git)
   target = if git_source

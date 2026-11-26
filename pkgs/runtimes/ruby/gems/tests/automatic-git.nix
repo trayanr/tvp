@@ -78,6 +78,61 @@ let
       tvp-test = ./fixtures/git;
     };
   };
+  configured = bundle.override {
+    gemset = builtins.mapAttrs (_: entry: entry // { source.type = "git"; }) entries;
+    gemConfig = {
+      tvp-pure.src = ./fixtures/git;
+      tvp-test.src = ./fixtures/git;
+    };
+  };
+  assemblyScript = candidate: label: ''
+    cat > ${label}.sh <<'TVP_GIT_BUNDLE_ASSEMBLY'
+    ${(builtins.head candidate.specification.plan).run}
+    TVP_GIT_BUNDLE_ASSEMBLY
+  '';
+  sourceChecks =
+    label: ruby: bundler:
+    let
+      matching = bundle.override {
+        inherit ruby bundler;
+        lockfile = builtins.toFile "Gemfile-${label}.lock" (
+          builtins.replaceStrings
+            [ "BUNDLED WITH\n   ${bundle.bundler.version}\n" ]
+            [ "BUNDLED WITH\n   ${bundler.version}\n" ]
+            (builtins.readFile bundle.specification.lockfile)
+        );
+      };
+      replaceSource =
+        before: after:
+        matching.override {
+          gemfile = builtins.toFile "Git-source-Gemfile" (
+            builtins.replaceStrings [ before ] [ after ] (builtins.readFile matching.specification.gemfile)
+          );
+          lockfile = builtins.toFile "Git-source-Gemfile.lock" (
+            builtins.replaceStrings [ before ] [ after ] (builtins.readFile matching.specification.lockfile)
+          );
+        };
+      changedRevision = replaceSource rev "1111111111111111111111111111111111111111";
+      changedUrl = replaceSource url "https://invalid.example/another-repository.git";
+      changedType = matching.override {
+        lockfile = builtins.toFile "Path-source-Gemfile.lock" (
+          builtins.replaceStrings
+            [ "GIT\n  remote: ${url}\n  revision: ${rev}\n  ref: ${rev}\n" ]
+            [ "PATH\n  remote: vendor/shared\n" ]
+            (builtins.readFile matching.specification.lockfile)
+        );
+      };
+    in
+    ''
+      ${assemblyScript matching "${label}-matching"}
+      ${assemblyScript changedRevision "${label}-revision"}
+      ${assemblyScript changedUrl "${label}-url"}
+      ${assemblyScript changedType "${label}-type"}
+      assemble_into "$PWD/${label}-matching.sh" ${label}-matching >&2
+      reject_assembly "$PWD/${label}-revision.sh" ${label}-revision 'Git revision differs from lockfile for tvp-pure'
+      reject_assembly "$PWD/${label}-url.sh" ${label}-url 'Git URL differs from lockfile for tvp-pure'
+      reject_assembly "$PWD/${label}-type.sh" ${label}-type 'source type differs from lockfile for tvp-pure'
+    '';
 in
 assert !(builtins.tryEval missingRevision.drvPath).success;
 assert !(builtins.tryEval missingHash.drvPath).success;
@@ -88,6 +143,10 @@ assert
 ruby.testContext.mkTest {
   package = bundle;
   name = "git-manifest";
+  tools = [
+    ruby.specification.base.tools.diffutils
+    ruby.specification.base.tools.grep
+  ];
   script = ''
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
@@ -102,8 +161,32 @@ ruby.testContext.mkTest {
     ${overridden}/bin/bundle check >&2
     ${overridden}/bin/bundle exec ruby -rtvp_pure -rtvp_test -e '
       abort "Explicit source overrides did not take precedence" unless TvpPure::ANSWER == 42 && TvpTest::ANSWER == 43
-      print "automatic-git-ok"
     '
+    ${configured}/bin/bundle check >&2
+    ${configured}/bin/bundle exec ruby -rtvp_pure -rtvp_test -e '
+      abort "Per-gem source overrides did not take precedence" unless TvpPure::ANSWER == 42 && TvpTest::ANSWER == 43
+    '
+
+    assemble_into() (
+      assembly_script="$1"
+      directory="$2"
+      mkdir -p "$directory"
+      cd "$directory"
+      env out="$PWD/output" TVP_SOURCE_ROOT="$PWD" \
+        ${ruby.specification.base.shell}/bin/bash -e "$assembly_script"
+    )
+    reject_assembly() {
+      if assemble_into "$1" "$2" > "$2.log" 2>&1; then
+        echo "Mismatched Git source was accepted: $2" >&2
+        exit 1
+      fi
+      grep -F "$3" "$2.log" >&2
+    }
+    ${sourceChecks "legacy" ruby bundler}
+    ${sourceChecks "modern" tvp.canonical.ruby_3_3_12 tvp.canonical.bundler_2_5_20}
+    cmp ${bundle.specification.gemfile} ${bundle}/project/Gemfile
+    cmp ${bundle.specification.lockfile} ${bundle}/project/Gemfile.lock
+    printf automatic-git-ok
   '';
   expected = "automatic-git-ok";
 }

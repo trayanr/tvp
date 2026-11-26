@@ -89,6 +89,11 @@ and build overrides. The helper installs the locked dependencies and validates t
 result without changing the input lockfile. Runtime and dependency updates remain
 explicit downstream actions.
 
+For automatically fetched Git gems, assembly checks that the manifest's URL and
+full revision match `Gemfile.lock`. A stale manifest fails even when the gem
+version is unchanged. `sourceOverrides` and explicit `gemConfig.<name>.src`
+choices deliberately replace the source and bypass this comparison.
+
 ## Unified gem definitions
 
 Each supported native gem owns a definition under `definitions/<name>/`: named

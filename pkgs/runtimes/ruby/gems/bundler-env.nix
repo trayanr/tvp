@@ -150,13 +150,27 @@ let
         bundlerVersion = selectedBundler.version;
         shell = "${tools.bash}/bin/bash";
         inherit excludedGroups;
-        packages = lib.mapAttrsToList (gemName: package: {
-          name = gemName;
-          inherit (package) version;
-          home = "${package}/${package.gemPath}";
-          directory = "${package}/${package.gemPath}/gems/${package.fullName}";
-          specification = "${package}/${package.gemSpecPath}";
-        }) final.gems;
+        packages = lib.mapAttrsToList (
+          gemName: package:
+          let
+            source = entries.${gemName}.source or { };
+            configuration = final.gemConfig.${gemName} or { };
+            automaticGitSource =
+              (source.type or "gem") == "git"
+              && !(builtins.hasAttr gemName final.sourceOverrides)
+              && !(configuration ? src);
+          in
+          {
+            name = gemName;
+            inherit (package) version;
+            home = "${package}/${package.gemPath}";
+            directory = "${package}/${package.gemPath}/gems/${package.fullName}";
+            specification = "${package}/${package.gemSpecPath}";
+          }
+          // lib.optionalAttrs automaticGitSource {
+            gitSource = { inherit (source) url rev; };
+          }
+        ) final.gems;
       };
     in
     {
