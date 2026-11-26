@@ -414,6 +414,14 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/postgresql";
+      cpe = {
+        vendor = "postgresql";
+        product = "postgresql";
+      };
+    };
     source = tvp.lib.sources.archive {
       url = archiveURL;
       fetch =
