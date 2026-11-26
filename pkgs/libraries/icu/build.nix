@@ -95,7 +95,8 @@ in
   meta = {
     description = "Unicode and globalization libraries and tools for C and C++";
     homepage = "https://icu.unicode.org/";
-    license = lib.licenses.unicode-30;
+    license =
+      if lib.versionOlder version "74" then lib.licenses.unicode-dfs-2016 else lib.licenses.unicode-30;
     platforms = [ "x86_64-linux" ];
   };
 }
