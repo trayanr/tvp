@@ -291,11 +291,17 @@ rec {
 
         selectedSource = recipe.source or source;
         sourceDescriptor = builtins.isAttrs selectedSource && (selectedSource.__tvpSource or false);
+        # Exact upstream release tags are metadata, resolved independently of build inputs.
+        packageMetadata =
+          packageMeta
+          // lib.optionalAttrs (packageMeta ? security && builtins.isFunction packageMeta.security) {
+            security = packageMeta.security { inherit version; };
+          };
         sourceMetadata =
           assert
             !(sourceDescriptor && selectedSource.discovery != null && packageMeta ? upstream)
             || throw "TVP: ${attr} declares discovery in both its source and packageMeta.upstream";
-          packageMeta
+          packageMetadata
           // lib.optionalAttrs sourceDescriptor {
             source = selectedSource.describe {
               inherit version;
