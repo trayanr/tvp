@@ -57,6 +57,7 @@ let
       inherit run;
     };
   sourceCommand = name: run: (command name run) // { cwd = "source"; };
+  libpython = "libpython${lib.versions.majorMinor final.version}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
   mutableOutput =
     record:
@@ -171,6 +172,8 @@ in
     '')
     (sourceCommand "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
+      # The finalizer relocates this installed-library path with the interpreter.
+      export LDFLAGS="$LDFLAGS -Wl,-rpath,$out/lib"
       ${final.bash}/bin/bash ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
       # Raw configure evidence belongs in the private build log, never installed.
       printf '\nTVP_CONFIG_LOG_BEGIN\n' >&2
@@ -182,6 +185,11 @@ in
     '')
     (sourceCommand "install" ''
       ${make} "COMPILEALL_OPTS=-j$NIX_BUILD_CORES" install
+      test -f "$out/lib/${libpython}.so"
+      # Shared builds install the static archive in the config directory.
+      configDir=$("$out/bin/python3" -I -c 'import sysconfig; print(sysconfig.get_config_var("LIBPL"))')
+      test -f "$configDir/${libpython}.a"
+      ln -sr "$configDir/${libpython}.a" "$out/lib/${libpython}.a"
       mkdir -p "$out/share/licenses/python"
       cp LICENSE "$out/share/licenses/python/"
     '')
@@ -250,6 +258,7 @@ in
     '')
   ];
   configureFlags = [
+    "--enable-shared"
     "--with-ensurepip=install"
     "--with-dbmliborder=gdbm"
     "--with-pkg-config=yes"

@@ -24,6 +24,11 @@ ensurepip installs the release's own Pip and Setuptools wheels offline.
 The Tk, NIS and Berkeley DB extensions need additional TVP providers.
 The default `python` alias selects Python 3.
 
+The general-purpose Python 3 builds install shared `libpython` in the same
+output as the interpreter, headers and developer metadata. The interpreter and
+embedding consumers use that release's shared library. The static archive
+remains available for consumers that explicitly link it.
+
 `python-minimal/build.nix` and `python-build/build.nix` are complete independent
 public reduced-profile procedures. The direct `python-build/owned` bootstrap
 provider remains an explicit earlier generation; duplicate old public builders

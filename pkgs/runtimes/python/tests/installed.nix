@@ -21,6 +21,15 @@ let
   testLinker = import ./native-linker.nix {
     inherit package context;
   };
+  embedding = source: flags: {
+    script = ''
+      "$CC" ${source} $(python3-config --cflags ${flags} --ldflags) -o embed
+      env -u LD_LIBRARY_PATH LD_TRACE_LOADED_OBJECTS=1 ./embed > linked
+      grep -F '=> ${package}/lib/libpython${lib.versions.majorMinor package.version}' linked >&2
+      env -u LD_LIBRARY_PATH ./embed
+    '';
+    expected = "42";
+  };
   linkage = dependency: soname: modules: {
     script = ''
       python3 ${./native-linkage.py} ${lib.escapeShellArg "${lib.getLib dependency}/lib"} \
@@ -194,16 +203,10 @@ context.mkSuite {
     crypt-linkage = linkage deps.libxcrypt "libcrypt\\.so" [ "_crypt" ];
   }
   // lib.optionalAttrs (!package.tvp.features.embedFlag && package.tvp.features.finalizeEx) {
-    embed-legacy = {
-      script = ''"$CC" ${./fixtures/embed.c} $(python3-config --cflags --ldflags) -o embed; ./embed'';
-      expected = "42";
-    };
+    embed-legacy = embedding ./fixtures/embed.c "";
   }
   // lib.optionalAttrs (!package.tvp.features.finalizeEx) {
-    embed-finalize = {
-      script = ''"$CC" ${./fixtures/embed-legacy.c} $(python3-config --cflags --ldflags) -o embed; ./embed'';
-      expected = "42";
-    };
+    embed-finalize = embedding ./fixtures/embed-legacy.c "";
   }
   // lib.optionalAttrs package.tvp.features.linkUnwinder {
     thread-unwinder = {
@@ -217,10 +220,7 @@ context.mkSuite {
     };
   }
   // lib.optionalAttrs package.tvp.features.embedFlag {
-    embed = {
-      script = ''"$CC" ${./fixtures/embed.c} $(python3-config --cflags --embed --ldflags) -o embed; ./embed'';
-      expected = "42";
-    };
+    embed = embedding ./fixtures/embed.c "--embed";
   }
   // lib.optionalAttrs package.tvp.features.textSubprocess {
     subprocess = {

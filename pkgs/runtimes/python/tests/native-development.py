@@ -1,4 +1,4 @@
-"""Build/load extensions and static embeddings from three installed APIs."""
+"""Build and load extensions and an embedding from installed APIs."""
 from pathlib import Path
 import importlib
 import os
@@ -23,7 +23,7 @@ suffix = sysconfig.get_config_var('EXT_SUFFIX')
 run(shlex.split(sysconfig.get_config_var('LDSHARED')) + ['-fPIC', '-I'+sysconfig.get_path('include'), answer, '-o', 'answer'+suffix])
 assert importlib.import_module('answer').answer()==42
 Path('answer'+suffix).unlink()
-# pkg-config's public extension and static embed recipes, independently.
+# pkg-config's public extension and embedding recipes, independently.
 os.environ['PKG_CONFIG_LIBDIR'] = sys.prefix+'/lib/pkgconfig'
 for mode, source, flags, target in [
     ('module', answer, ['--cflags','python-3.15'], 'answer'+suffix),
