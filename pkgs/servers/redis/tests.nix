@@ -54,7 +54,14 @@ context.mkSuite {
         package.specification.base.tools.python
       ];
       script = ''
-        openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+        cat > openssl.cnf <<'CONF'
+        [req]
+        distinguished_name = dn
+        prompt = no
+        [dn]
+        CN = localhost
+        CONF
+        openssl req -config openssl.cnf -x509 -newkey rsa:2048 -nodes -days 1 \
           -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
           -keyout key.pem -out cert.pem > cert.log 2>&1 || {
             cat cert.log >&2
