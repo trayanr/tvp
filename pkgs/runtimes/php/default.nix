@@ -863,6 +863,20 @@ let
   pname = "php";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = { version }: {
+      schema = 1;
+      forVersion = version;
+      purl = "pkg:generic/php";
+      cpe = {
+        vendor = "php";
+        product = "php";
+      };
+      osv = {
+        ecosystem = "GIT";
+        name = "https://github.com/php/php-src";
+        version = "php-${version}";
+      };
+    };
     source = tvp.lib.sources.archive {
       url =
         version:

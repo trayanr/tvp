@@ -16,15 +16,19 @@ Consumers do not maintain package identity maps.
 - Normalize components by exact derivation/output, retaining aliases and use sites.
   Return versioned JSON with the TVP revision, selected attribute, coverage,
   backend/database evidence, advisory IDs, severity, links and upstream fixes.
-- Implement Grype and OSV as experimental adapters behind `--backend`. Keep both
-  candidates available without choosing a default. Exercise adapters with offline
+- Implement Grype and OSV as adapters behind `--backend`. Keep both
+  candidates available and choose the default from recorded live evidence. Exercise adapters with offline
   public fixtures and failure cases before live evaluation.
 - Mark matches as applicability unassessed. Missing mappings, missing data and
   scanner errors must never become a clean security result. The initial scope is
   declared TVP selections; undeclared transitive dependencies, language locks,
   non-TVP packages and application reachability are explicitly excluded.
 
-## Candidate evaluation — next
+## Candidate evaluation
+
+The [first live evaluation](SECURITY-EVALUATION.md) selects Grype as the default
+for the current TVP package scope; OSV remains available for explicit comparison.
+Repeat and extend the public controls as identity and advisory coverage changes.
 
 Run both adapters against the same frozen, public component matrix and record the
 actual scanner versions, query identities, advisory data timestamps/digests and
@@ -44,7 +48,7 @@ offline operation, startup time and maintenance cost. OSV and Grype have differe
 coverage; retain a complementary adapter if the evidence warrants it. Package the
 selected scanner through TVP before making it a default runtime dependency.
 
-## Daily security CI
+## Future daily security CI — outside the current implementation scope
 
 Add a separate scheduled job in **tvp-infra** after evaluating the candidates.
 Run it every day even when the consumer's flake lock is unchanged: new advisories

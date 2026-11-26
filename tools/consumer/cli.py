@@ -32,7 +32,7 @@ def parser():
     compare.add_argument("before", type=Path, help="baseline lockfile")
     compare.add_argument("after", nargs="?", type=Path, help="candidate (default: flake.lock)")
     update.add_argument("--preview", required=True, action="store_true", help="leave flake.lock untouched")
-    security.add_argument("--backend", required=True, choices=("grype", "osv"), help="candidate scanner; no default is chosen yet")
+    security.add_argument("--backend", default="grype", choices=("grype", "osv"), help="scanner (default: grype; osv is available for comparison)")
     security.add_argument("--lock", type=Path, help="evaluate against an alternate lockfile")
     security.add_argument("--offline", action="store_true", help="use cached advisory data without updating it")
     security.add_argument("--cache-dir", type=Path, help="backend advisory cache directory")

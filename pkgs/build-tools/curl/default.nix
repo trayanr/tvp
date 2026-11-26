@@ -37,10 +37,16 @@ let
     packageMeta.security = {
       schema = 1;
       purl = "pkg:generic/curl";
-      cpe = {
-        vendor = "haxx";
-        product = "curl";
-      };
+      cpes = [
+        {
+          vendor = "haxx";
+          product = "curl";
+        }
+        {
+          vendor = "haxx";
+          product = "libcurl";
+        }
+      ];
       # Query identity documented at https://google.github.io/osv.dev/post-v1-query/.
       osv = {
         ecosystem = "GIT";

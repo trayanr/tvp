@@ -31,7 +31,12 @@ def _identity(component):
         return None, "package has no usable version"
     if not isinstance(identity, dict):
         return None, "package has no Grype identity"
+    version = identity.get("version", version)
+    if not _text(version):
+        return None, "package has no usable upstream version"
     selected = {}
+    if "version" in identity:
+        selected["version"] = version
     if "purl" in identity:
         purl = identity["purl"]
         if not _text(purl) or not re.fullmatch(r"pkg:[a-z][a-z0-9.+-]*/[^\s]+", purl):
@@ -40,8 +45,13 @@ def _identity(component):
         if "@" not in path or unquote(path.rsplit("@", 1)[1]) != version:
             return None, "package URL does not identify the selected version"
         selected["purl"] = purl
-    if "cpe" in identity:
-        cpe = identity["cpe"]
+    cpes = identity.get("cpes", [])
+    if not isinstance(cpes, list) or ("cpes" in identity and not cpes):
+        return None, "CPE identities must be a nonempty list"
+    cpes = [*cpes, *([identity["cpe"]] if "cpe" in identity else [])]
+    if any(not isinstance(cpe, str) for cpe in cpes) or len(set(cpes)) != len(cpes):
+        return None, "CPE identities must be distinct strings"
+    for cpe in cpes:
         if not _text(cpe) or any(c.isspace() for c in cpe):
             return None, "CPE is invalid"
         fields = re.split(r"(?<!\\):", cpe)
@@ -50,8 +60,9 @@ def _identity(component):
                 or any(value in ("", "*", "-") for value in fields[3:6])
                 or re.sub(r"\\(.)", r"\1", fields[5]) != version):
             return None, "CPE does not identify the selected product and version"
-        selected["cpe"] = cpe
-    if not selected:
+    if cpes:
+        selected["cpes"] = cpes
+    if "purl" not in selected and "cpes" not in selected:
         return None, "package has no versioned CPE or package URL for Grype"
     return selected, None
 
@@ -75,14 +86,14 @@ def _matched_components(artifact, components):
     cpes = _strings(artifact.get("cpes", []), "artifact CPEs")
     matches = []
     for component, identity in components:
-        if component["version"] != artifact["version"]:
+        if identity.get("version", component["version"]) != artifact["version"]:
             continue
         if "purl" in identity:
             equal = identity["purl"] == purl
         else:
-            equal = component["name"] == artifact["name"] and identity["cpe"] in cpes
-        if "cpe" in identity:
-            equal = equal and identity["cpe"] in cpes
+            equal = component["name"] == artifact["name"]
+        if "cpes" in identity:
+            equal = equal and bool(set(identity["cpes"]) & set(cpes))
         if equal:
             matches.append(component["id"])
     if not matches:
@@ -158,9 +169,11 @@ def _report(document, selected, results, offline):
             or not _text(descriptor.get("version"))):
         raise ValueError("Grype response has no scanner version metadata")
     database = descriptor.get("db")
-    if (not isinstance(database, dict) or not database.get("schemaVersion")
-            or not _text(database.get("built")) or database.get("valid") is not True
-            or database.get("error")):
+    status = database.get("status", database) if isinstance(database, dict) else None
+    providers = database.get("providers", {}) if isinstance(database, dict) else None
+    if (not isinstance(status, dict) or not status.get("schemaVersion")
+            or not _text(status.get("built")) or status.get("valid") is not True
+            or status.get("error") or not isinstance(providers, dict)):
         raise ValueError("Grype response has no valid database metadata")
     artifacts = {}
     for match in document["matches"]:
@@ -180,8 +193,10 @@ def _report(document, selected, results, offline):
     return {
         "backend": {"name": "grype", "version": descriptor["version"]},
         "database": {
-            "descriptor": database,
-            "descriptorSha256": hashlib.sha256(json.dumps(database, sort_keys=True).encode()).hexdigest(),
+            "descriptor": status,
+            "providers": providers,
+            "descriptorSha256": hashlib.sha256(json.dumps(status, sort_keys=True).encode()).hexdigest(),
+            "responseSha256": hashlib.sha256(json.dumps(database, sort_keys=True).encode()).hexdigest(),
             "offline": offline,
         },
         "results": list(results.values()),
@@ -212,14 +227,22 @@ def scan(components, *, offline=False, cache_dir=None):
     if executable is None:
         raise RuntimeError("Grype is not available on PATH; install it before selecting the grype backend")
     executable = os.path.abspath(executable)
-    sbom = {
-        "bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
-        "components": [
-            {"type": "library", "bom-ref": component["id"], "name": component["name"],
-             "version": component["version"], **identity}
-            for component, identity in selected
-        ],
-    }
+    sbom_components = []
+    for component, identity in selected:
+        # CycloneDX permits one CPE per component. A TVP output can contain
+        # several upstream products, such as Curl's CLI and libcurl library.
+        cpes = identity.get("cpes", [None])
+        for index, cpe in enumerate(cpes):
+            reference = component["id"] if len(cpes) == 1 else f"{component['id']}-cpe-{index}"
+            row = {"type": "library", "bom-ref": reference, "name": component["name"],
+                   "version": identity.get("version", component["version"])}
+            if "purl" in identity:
+                row["purl"] = identity["purl"]
+            if cpe is not None:
+                row["cpe"] = cpe
+            sbom_components.append(row)
+    sbom = {"bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
+            "components": sbom_components}
     # An explicit config and sanitized backend environment prevent user-level
     # ignore rules, VEX documents or fix filters from hiding audit findings.
     configuration = {

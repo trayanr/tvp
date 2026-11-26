@@ -23,18 +23,35 @@ def package_identity(profile, version):
         return {}
     if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] != 1:
         raise ValueError("Unsupported TVP security profile; expected schema = 1")
+    version_specific = "upstreamVersion" in profile or (
+        isinstance(profile.get("osv"), dict) and "version" in profile["osv"]
+    )
+    if version_specific and "forVersion" not in profile:
+        raise ValueError("Version-specific TVP security identities must declare forVersion")
+    if "forVersion" in profile:
+        if (not isinstance(profile["forVersion"], str) or not profile["forVersion"]
+                or any(not char.isprintable() or char.isspace() for char in profile["forVersion"])):
+            raise ValueError("TVP security forVersion must identify the declared release")
+        if profile["forVersion"] != version:
+            return {}
     identity = {}
     if not isinstance(version, str) or not version:
         return identity
     if any(not char.isprintable() or char.isspace() for char in version):
         raise ValueError("TVP security versions must not contain whitespace or control characters")
+    if "upstreamVersion" in profile:
+        upstream = profile["upstreamVersion"]
+        if (not isinstance(upstream, str) or not upstream
+                or any(not char.isprintable() or char.isspace() for char in upstream)):
+            raise ValueError("TVP security upstreamVersion must be a nonempty upstream release")
+        identity["version"] = version = upstream
     if "purl" in profile:
         purl = profile["purl"]
         if not isinstance(purl, str) or not re.fullmatch(r"pkg:[a-z][a-z0-9.+-]*/[^@?#\s]+", purl):
             raise ValueError("TVP security purl must be an unversioned package URL")
         identity["purl"] = f"{purl}@{quote(version, safe='')}"
-    if "cpe" in profile:
-        cpe = profile["cpe"]
+
+    def cpe_identity(cpe):
         if not isinstance(cpe, dict) or not all(
             isinstance(cpe.get(key), str) and re.fullmatch(r"[a-z0-9_.-]+", cpe[key])
             for key in ("vendor", "product")
@@ -43,7 +60,20 @@ def package_identity(profile, version):
         # Escape CPE formatted-string punctuation; wildcard versions are never inferred.
         escaped = "".join(char if char.isascii() and (char.isalnum() or char in "._-")
                           else "\\" + char for char in version)
-        identity["cpe"] = f"cpe:2.3:{cpe.get('part', 'a')}:{cpe['vendor']}:{cpe['product']}:{escaped}:*:*:*:*:*:*:*"
+        return f"cpe:2.3:{cpe.get('part', 'a')}:{cpe['vendor']}:{cpe['product']}:{escaped}:*:*:*:*:*:*:*"
+
+    if "cpe" in profile and "cpes" in profile:
+        raise ValueError("TVP security profile must choose cpe or cpes")
+    if "cpe" in profile:
+        identity["cpe"] = cpe_identity(profile["cpe"])
+    if "cpes" in profile:
+        cpes = profile["cpes"]
+        if not isinstance(cpes, list) or not cpes:
+            raise ValueError("TVP security cpes must be a nonempty list")
+        values = [cpe_identity(cpe) for cpe in cpes]
+        if len(set(values)) != len(values):
+            raise ValueError("TVP security cpes must be distinct")
+        identity["cpes"] = values
     if "osv" in profile:
         osv = profile["osv"]
         if not isinstance(osv, dict) or not all(
@@ -152,7 +182,7 @@ def format_audit(result):
     coverage = result["coverage"]
     version = result["backend"].get("version") or "not invoked"
     lines = [result["attribute"], f'{result["input"]["name"]}  {revision}',
-             f'Experimental backend: {result["backend"]["name"]} ({version})',
+             f'Scanner: {result["backend"]["name"]} ({version})',
              f'Coverage: {coverage["scanned"]}/{coverage["total"]} TVP components scanned; {coverage["unsupported"]} unsupported.']
     database = result["database"]
     if not coverage["scanned"]:

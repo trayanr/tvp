@@ -8,8 +8,9 @@ setup, wrapper hooks or compiler. Text manifests use `builtins.toFile`.
 
 The four shell commands retain `errexit`, `nounset` and `pipefail`, and prepend
 their declared tools in order to the caller's PATH. The Python entrypoints exec
-TVP Python, forward every argument, and set `TVP_DEPENDENCIES_SYSTEM` or
-`TVP_TEST_SYSTEM` from the selected native platform. They leave PATH alone.
+TVP Python, forward every argument, and set their system variable from the
+selected native platform. The `tvp` command prepends TVP's Grype to PATH; other
+Python entrypoints leave PATH alone.
 The helper supports these scripts only; it is not a general packaging API.
 
 Explicit runtime utilities and interpreters, including jq, are TVP packages.
@@ -123,20 +124,23 @@ The offline integration check runs with `python3 -B tools/consumer/test_consumer
 
 ## Experimental security audit
 
-`tvp audit` reads the same resolved TVP selections as `tvp used`. Choose a
-candidate backend explicitly while Grype and OSV are being evaluated:
+`tvp audit` reads the same resolved TVP selections as `tvp used`. Grype is the
+default after the [live candidate comparison](consumer/SECURITY-EVALUATION.md).
+OSV remains available explicitly:
 
 ```sh
+nix run .#tvp -- audit
+nix run .#tvp -- audit --attr packages.x86_64-linux.example --json
 nix run .#tvp -- audit --backend osv
-nix run .#tvp -- audit --backend grype --attr packages.x86_64-linux.example --json
 nix run .#tvp -- audit --backend osv --offline --require-coverage
 ```
 
-Grype currently needs to be on the caller's PATH. OSV uses its HTTPS API and
+TVP builds Grype from source and includes it with the command. OSV uses its HTTPS API and
 caches exact query responses for 24 hours; `--offline` requires cached responses
 for mapped components and labels their age. Neither backend uploads application
 source. No packages are built to read the inventory. An initial set of TVP-owned
-identity profiles covers Bundler, Curl, Ruby, OpenSSL and PostgreSQL; support
+identity profiles covers Bundler, Curl/libcurl, Ruby, PHP, OpenSSL, PostgreSQL,
+ImageMagick, libffi, libxml2, libxslt and zlib; support
 differs by backend, and missing profiles remain explicitly unscanned.
 
 Reports include the TVP pin, output, scanner/data evidence, coverage and advisory

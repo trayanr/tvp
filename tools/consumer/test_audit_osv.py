@@ -177,6 +177,14 @@ class OSVAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid OSV query version"):
             self.scan([selected])
 
+    def test_upstream_release_spelling_is_used_for_ecosystem_version_queries(self):
+        selected = component(version="1.0.0.0")
+        selected["identity"]["version"] = "1.0.0"
+        with self.fetch_advisory() as request:
+            result = self.scan([selected])
+        self.assertEqual(request.call_args_list[0].args[1]["queries"][0]["version"], "1.0.0")
+        self.assertEqual(result["results"][0]["status"], "scanned")
+
     def test_withdrawn_record_and_missing_package_metadata(self):
         record = advisory()
         record["affected"] = [{"ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": "1.1.0"}]}]}]

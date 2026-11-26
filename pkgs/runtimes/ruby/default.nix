@@ -656,14 +656,24 @@ let
   pname = "ruby";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
-    packageMeta.security = {
-      schema = 1;
-      purl = "pkg:generic/ruby";
-      cpe = {
-        vendor = "ruby-lang";
-        product = "ruby";
+    packageMeta.security =
+      { version }:
+      {
+        schema = 1;
+        forVersion = version;
+        purl = "pkg:generic/ruby";
+        cpe = {
+          vendor = "ruby-lang";
+          product = "ruby";
+        };
+      }
+      // pkgs.lib.optionalAttrs (builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null) {
+        osv = {
+          ecosystem = "GIT";
+          name = "https://github.com/ruby/ruby";
+          version = "v${builtins.replaceStrings [ "." ] [ "_" ] version}";
+        };
       };
-    };
 
     testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
       category = "artifact";

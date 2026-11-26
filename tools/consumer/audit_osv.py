@@ -63,7 +63,7 @@ def _query(component):
     version = component.get("version")
     if not isinstance(version, str) or not version.strip():
         return None, "Package version is unavailable"
-    query_version = identity.get("version", version)
+    query_version = identity.get("version", declared.get("version", version))
     if not isinstance(query_version, str) or not query_version.strip():
         raise ValueError(f"Invalid OSV query version for {component['id']}")
     return {

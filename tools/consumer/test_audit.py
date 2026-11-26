@@ -51,8 +51,19 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(resolved[0]["identity"]["purl"], "pkg:gem/example@1.0.0")
         self.assertIn("usedBy", resolved[0]["selections"][0])
 
+    def test_upstream_release_spelling_is_explicit_and_does_not_change_tvp_version(self):
+        profile = {"schema": 1, "forVersion": "1.0.0", "upstreamVersion": "1.0-0",
+                   "purl": "pkg:generic/example", "cpe": {"vendor": "example", "product": "example"}}
+        selected = components(inventory(selection(profile=profile)))[0]
+        self.assertEqual(selected["version"], "1.0.0")
+        self.assertEqual(selected["identity"]["version"], "1.0-0")
+        self.assertEqual(selected["identity"]["purl"], "pkg:generic/example@1.0-0")
+        self.assertIn(":1.0-0:", selected["identity"]["cpe"])
+
     def test_profile_validation_and_conflicting_aliases(self):
         bad = [True, {"schema": True}, {"schema": 2}, {"schema": 1, "purl": "pkg:gem/example@1"},
+               {"schema": 1, "upstreamVersion": "1.0-0"},
+               {"schema": 1, "osv": {"ecosystem": "GIT", "name": "https://example.invalid/repo", "version": "v1"}},
                {"schema": 1, "cpe": {"vendor": "*", "product": "example"}},
                {"schema": 1, "osv": {"name": "example"}}]
         for profile in bad:
@@ -64,6 +75,35 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(package_identity(PROFILE, None), {})
         profile = {"schema": 1, "cpe": {"vendor": "example", "product": "example"}}
         self.assertIn(":1.0\\+patched:", package_identity(profile, "1.0+patched")["cpe"])
+
+    def test_version_bound_profile_cannot_reuse_an_osv_tag_for_an_override(self):
+        profile = {**PROFILE, "forVersion": "1.0.0",
+                   "osv": {"ecosystem": "GIT", "name": "https://example.invalid/project", "version": "v1_0_0"}}
+        identity = package_identity(profile, "1.0.0")
+        self.assertEqual(identity["osv"]["version"], "v1_0_0")
+        self.assertEqual(package_identity(profile, "1.0.1"), {})
+        for value in (None, "", True, " ", "1.0\n0"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "forVersion"):
+                package_identity({**profile, "forVersion": value}, "1.0.0")
+
+    def test_multiple_cpe_product_identities_are_explicit_and_distinct(self):
+        profile = {"schema": 1, "cpes": [
+            {"vendor": "example", "product": "tool"},
+            {"vendor": "example", "product": "library"},
+        ]}
+        identity = package_identity(profile, "1.0.0")
+        self.assertEqual(identity["cpes"], [
+            "cpe:2.3:a:example:tool:1.0.0:*:*:*:*:*:*:*",
+            "cpe:2.3:a:example:library:1.0.0:*:*:*:*:*:*:*",
+        ])
+        self.assertNotIn("cpe", identity)
+        for values in (None, [], {}, [None], [profile["cpes"][0]] * 2,
+                       [{"vendor": "example", "product": "tool"},
+                        {"part": "a", "vendor": "example", "product": "tool"}]):
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                package_identity({"schema": 1, "cpes": values}, "1.0.0")
+        with self.assertRaisesRegex(ValueError, "choose cpe or cpes"):
+            package_identity({**profile, "cpe": profile["cpes"][0]}, "1.0.0")
 
     def test_findings_remain_unassessed_and_ci_policy_is_explicit(self):
         def results(values):

@@ -1,7 +1,12 @@
-{ ownedCLI, python3 }:
+{
+  ownedCLI,
+  python3,
+  grype,
+}:
 ownedCLI.python {
   name = "tvp";
   inherit python3;
+  runtimeInputs = [ grype ];
   files = {
     "cli.py" = ./cli.py;
     "report.py" = ./report.py;

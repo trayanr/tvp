@@ -86,6 +86,37 @@ class GrypeAdapterTests(unittest.TestCase):
         self.assertEqual(finding["severity"], "unknown")
         self.assertEqual(finding["fixedVersions"], [])
 
+    def test_current_database_status_and_provider_provenance_are_retained(self):
+        document = copy.deepcopy(DOCUMENT)
+        status = document["descriptor"]["db"]
+        providers = {"nvd": {"captured": "2026-11-26T00:00:00Z", "input": "test-digest"}}
+        document["descriptor"]["db"] = {"status": status, "providers": providers}
+        result, _, _ = self.invoke(document)
+        self.assertEqual(result["database"]["descriptor"], status)
+        self.assertEqual(result["database"]["providers"], providers)
+        self.assertEqual(len(result["database"]["responseSha256"]), 64)
+
+    def test_package_cpe_aliases_scan_cli_and_library_without_duplicate_findings(self):
+        component = copy.deepcopy(COMPONENT)
+        library = "cpe:2.3:a:haxx:libcurl:8.0.0:*:*:*:*:*:*:*"
+        component["identity"] = {"purl": COMPONENT["identity"]["purl"],
+                                 "cpes": [COMPONENT["identity"]["cpe"], library]}
+        document = copy.deepcopy(DOCUMENT)
+        document["matches"][0]["artifact"]["cpes"] = [library]
+        result, captured, _ = self.invoke(document, [component])
+        self.assertEqual([row["cpe"] for row in captured["sbom"]["components"]], component["identity"]["cpes"])
+        self.assertEqual(len({row["bom-ref"] for row in captured["sbom"]["components"]}), 2)
+        self.assertEqual(len(result["results"][0]["vulnerabilities"]), 1)
+
+    def test_declared_upstream_version_is_used_without_relabelling_the_tvp_component(self):
+        component = copy.deepcopy(COMPONENT)
+        component["version"] = "8.0.0.0"
+        component["identity"]["version"] = "8.0.0"
+        result, captured, _ = self.invoke(components=[component])
+        self.assertEqual(captured["sbom"]["components"][0]["version"], "8.0.0")
+        self.assertEqual(result["results"][0]["component"], component["id"])
+        self.assertEqual(result["results"][0]["status"], "scanned")
+
     def test_backend_environment_and_config_cannot_hide_results(self):
         inherited = {"GRYPE_ONLY_FIXED": "true", "GRYPE_CONFIG": "/host/ignore.yaml",
                      "GRYPE_VEX_DOCUMENTS": "/host/vex.json", "GRYPE_FILE": "/host/report.json",
