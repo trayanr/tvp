@@ -26,38 +26,40 @@ let
         "tvp-test"
       ]
   );
+  gemfileText = ''
+    source 'https://invalid.example'
+    gem 'tvp-pure', '= 1.0.0', :git => '${url}', :ref => '${rev}'
+    gem 'tvp-test', '= 1.0.0', :git => '${url}', :ref => '${rev}'
+  '';
+  lockfileText = bundlerVersion: ''
+    GIT
+      remote: ${url}
+      revision: ${rev}
+      ref: ${rev}
+      specs:
+        tvp-pure (1.0.0)
+        tvp-test (1.0.0)
+
+    GEM
+      remote: https://invalid.example/
+      specs:
+
+    PLATFORMS
+      ruby
+
+    DEPENDENCIES
+      tvp-pure (= 1.0.0)!
+      tvp-test (= 1.0.0)!
+
+    BUNDLED WITH
+       ${bundlerVersion}
+  '';
   bundle = tvp.lib.ruby.bundlerEnv {
     inherit tvp ruby bundler;
     name = "synthetic-automatic-git";
     gemset = entries;
-    gemfile = builtins.toFile "Gemfile-automatic-git" ''
-      source 'https://invalid.example'
-      gem 'tvp-pure', '= 1.0.0', :git => '${url}', :ref => '${rev}'
-      gem 'tvp-test', '= 1.0.0', :git => '${url}', :ref => '${rev}'
-    '';
-    lockfile = builtins.toFile "Gemfile-automatic-git.lock" ''
-      GIT
-        remote: ${url}
-        revision: ${rev}
-        ref: ${rev}
-        specs:
-          tvp-pure (1.0.0)
-          tvp-test (1.0.0)
-
-      GEM
-        remote: https://invalid.example/
-        specs:
-
-      PLATFORMS
-        ruby
-
-      DEPENDENCIES
-        tvp-pure (= 1.0.0)!
-        tvp-test (= 1.0.0)!
-
-      BUNDLED WITH
-         ${bundler.version}
-    '';
+    gemfile = builtins.toFile "Gemfile-automatic-git" gemfileText;
+    lockfile = builtins.toFile "Gemfile-automatic-git.lock" (lockfileText bundler.version);
   };
   invalidSource =
     changed:
@@ -95,21 +97,16 @@ let
     let
       matching = bundle.override {
         inherit ruby bundler;
-        lockfile = builtins.toFile "Gemfile-${label}.lock" (
-          builtins.replaceStrings
-            [ "BUNDLED WITH\n   ${bundle.bundler.version}\n" ]
-            [ "BUNDLED WITH\n   ${bundler.version}\n" ]
-            (builtins.readFile bundle.specification.lockfile)
-        );
+        lockfile = builtins.toFile "Gemfile-${label}.lock" (lockfileText bundler.version);
       };
       replaceSource =
         before: after:
         matching.override {
           gemfile = builtins.toFile "Git-source-Gemfile" (
-            builtins.replaceStrings [ before ] [ after ] (builtins.readFile matching.specification.gemfile)
+            builtins.replaceStrings [ before ] [ after ] gemfileText
           );
           lockfile = builtins.toFile "Git-source-Gemfile.lock" (
-            builtins.replaceStrings [ before ] [ after ] (builtins.readFile matching.specification.lockfile)
+            builtins.replaceStrings [ before ] [ after ] (lockfileText bundler.version)
           );
         };
       changedRevision = replaceSource rev "1111111111111111111111111111111111111111";
@@ -119,7 +116,7 @@ let
           builtins.replaceStrings
             [ "GIT\n  remote: ${url}\n  revision: ${rev}\n  ref: ${rev}\n" ]
             [ "PATH\n  remote: vendor/shared\n" ]
-            (builtins.readFile matching.specification.lockfile)
+            (lockfileText bundler.version)
         );
       };
     in
