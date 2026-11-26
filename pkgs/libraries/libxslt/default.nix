@@ -588,6 +588,14 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/libxslt";
+      cpe = {
+        vendor = "xmlsoft";
+        product = "libxslt";
+      };
+    };
     source = tvp.lib.sources.archive {
       url =
         version:

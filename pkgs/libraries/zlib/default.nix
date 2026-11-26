@@ -352,6 +352,14 @@ let
   pname = "zlib";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/zlib";
+      cpe = {
+        vendor = "zlib";
+        product = "zlib";
+      };
+    };
 
     source = tvp.lib.sources.directory {
       url = "https://zlib.net/fossils/";

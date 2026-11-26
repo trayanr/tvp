@@ -174,6 +174,14 @@ let
       ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/libffi";
+      cpe = {
+        vendor = "libffi_project";
+        product = "libffi";
+      };
+    };
 
     source = tvp.lib.sources.archive {
       url = version: builtins.head (sourceUrls version);
