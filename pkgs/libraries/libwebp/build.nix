@@ -33,7 +33,8 @@ in
       final.png
     ];
   };
-  runtime.libraries = final.environment.libraries;
+  # The PNG command-line tools link zlib directly through CMake's PNG target.
+  runtime.libraries = final.environment.libraries ++ [ final.png.specification.zlib ];
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
