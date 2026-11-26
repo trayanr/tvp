@@ -1,0 +1,8 @@
+source 'https://invalid.example'
+
+gem 'tvp-pure', '= 1.0.0'
+gem 'tvp-native', '= 1.0.0'
+
+group :test do
+  gem 'tvp-test', '= 1.0.0'
+end
