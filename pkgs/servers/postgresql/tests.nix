@@ -8,6 +8,8 @@ let
   bin = "${package}/bin";
   inherit (package.specification.base) tools;
   inherit (package.tvp) features;
+  # PostgreSQL 19 disables JIT by default, so exercise the provider explicitly.
+  enableJit = lib.optionalString (lib.versionAtLeast package.version "19") "SET jit = on;\n";
 in
 context.mkSuite {
   inherit package;
@@ -74,7 +76,7 @@ context.mkSuite {
           SELECT pg_column_compression(value) FROM lz4_data;
         ''}
         ${lib.optionalString features.jit ''
-          SELECT pg_jit_available();
+          ${enableJit}SELECT pg_jit_available();
         ''}
         SQL
       '';

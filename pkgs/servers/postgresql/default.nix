@@ -13,6 +13,9 @@ let
           pkgs.lib.versions.major version;
     in
     "${archivePool}/postgresql-${series}/postgresql-${series}_${version}.orig.tar.bz2";
+  ldapWithOpenSSL11 = tvp.lib.packages.withConstraint {
+    reason = "PostgreSQL 10–14 link OpenSSL 1.1, so their LDAP client must use the same TLS ABI.";
+  } (tvp.packages.openldap.override { openssl = tvp.packages.openssl_1_1; });
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
@@ -31,7 +34,7 @@ let
             reason = "PostgreSQL and its XSLT module must link the same libxml2 ABI.";
           } (tvp.packages.libxslt_1_1_34.override { libxml2 = tvp.packages.libxml2_2_11_9; });
           # These source lines support the OpenSSL 1.1 interface.
-          openldap = tvp.packages.openldap;
+          openldap = ldapWithOpenSSL11;
           openssl = tvp.packages.openssl_1_1;
           perl = tvp.packages.perl;
           python = tvp.lib.packages.withConstraint {
@@ -138,7 +141,7 @@ let
           libxml2 = tvp.packages.libxml2_2;
           libxslt = tvp.packages.libxslt;
           # These source lines support the OpenSSL 1.1 interface.
-          openldap = tvp.packages.openldap;
+          openldap = ldapWithOpenSSL11;
           openssl = tvp.packages.openssl_1_1;
           perl = tvp.packages.perl;
           python = tvp.lib.packages.withConstraint {
@@ -187,7 +190,7 @@ let
           # These source lines support the OpenSSL 1.1 interface.
           llvm = tvp.packages.llvm_23;
           lz4 = tvp.packages.lz4;
-          openldap = tvp.packages.openldap;
+          openldap = ldapWithOpenSSL11;
           openssl = tvp.packages.openssl_1_1;
           perl = tvp.packages.perl;
           python = tvp.lib.packages.withConstraint {
@@ -228,7 +231,7 @@ let
           # These source lines support the OpenSSL 1.1 interface.
           llvm = tvp.packages.llvm_23;
           lz4 = tvp.packages.lz4;
-          openldap = tvp.packages.openldap;
+          openldap = ldapWithOpenSSL11;
           openssl = tvp.packages.openssl_1_1;
           perl = tvp.packages.perl;
           python = tvp.lib.packages.withConstraint {
