@@ -6,10 +6,13 @@
   src,
   version,
   zlib,
+  icu ? null,
+  bindingPython ? null,
   liblzma,
   cStandard ? "gnu89",
   cFlags ? [ ],
   patches ? [ ],
+  sourceLayout ? { },
   installedInterface ? {
     sonameMajor = "2";
   },
@@ -27,6 +30,12 @@ let
     } "libxml2.${name}";
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
   checkpoint = "nix-support/libxml2-build-tree";
+  pythonEnabled = final.bindingPython != null;
+  pythonLayout = "lib/python${lib.versions.majorMinor final.bindingPython.version}/site-packages";
+  # Automake's bytecode rules otherwise embed the temporary install prefix.
+  pythonMakeFlags = lib.optionalString pythonEnabled (
+    " " + ''pythondir="$out/${pythonLayout}" pyexecdir="$out/${pythonLayout}" am__py_compile=:''
+  );
   elfPaths = [
     "bin"
     "lib"
@@ -39,6 +48,8 @@ in
     src
     version
     zlib
+    icu
+    bindingPython
     liblzma
     cStandard
     cFlags
@@ -46,13 +57,26 @@ in
     installedInterface
     doCheck
     ;
+  sourceLayout = {
+    icuConfigLinkFlags = false;
+    icuTrueArgument = null;
+    pythonFileDescriptorCheck = false;
+    pythonTypeCheckConditions = false;
+  }
+  // sourceLayout;
   inherit (tools) bash coreutils;
   artifactName = "${final.pname}-${final.version}";
   configureFlags = [
-    "--without-python"
+    (if pythonEnabled then "--with-python=${final.bindingPython}/bin/python3" else "--without-python")
     "--with-zlib=${lib.getDev final.zlib}"
     "--with-lzma=${lib.getDev final.liblzma}"
-  ];
+  ]
+  ++ lib.optional (final.icu != null) "--with-icu";
+  development =
+    output:
+    lib.optionalAttrs pythonEnabled {
+      pythonModuleDirectory = "${output}/${pythonLayout}";
+    };
   environment = {
     tools = [
       tools.gnumake
@@ -62,18 +86,23 @@ in
       tools.diffutils
       tools.findutils
       tools.pkg-config
-    ];
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
     libraries = [
       final.zlib
       final.liblzma
-    ];
+    ]
+    ++ lib.optional (final.icu != null) final.icu
+    ++ lib.optional pythonEnabled final.bindingPython;
     overrides.values.CFLAGS = "-O2 -std=${final.cStandard} ${lib.concatStringsSep " " final.cFlags}";
   };
   runtime = {
     libraries = [
       final.zlib
       final.liblzma
-    ];
+    ]
+    ++ lib.optional (final.icu != null) final.icu;
     shell = tools.bash;
   };
   productionPlan = steps.sequence [
@@ -106,18 +135,72 @@ in
           ];
       }
     )
+    (lib.optional (pythonEnabled && final.sourceLayout.pythonFileDescriptorCheck) (
+      command "python-fd-compatibility" ''
+        test "$(grep -Fxc '    if (!_PyVerify_fd(fd))' python/types.c)" = 1
+        sed -i 's/if (!_PyVerify_fd(fd))/if (fd < 0)/' python/types.c
+      ''
+    ))
+    (lib.optional (pythonEnabled && final.sourceLayout.pythonTypeCheckConditions) (
+      command "python-type-check-conditions" ''
+        # Python 3.11's type checks do not supply parentheses around the if condition.
+        test "$(grep -Fc 'else if PyUnicode_Check (ret) {' python/libxml.c)" = 2
+        sed -i 's/else if PyUnicode_Check (ret) {/else if (PyUnicode_Check(ret)) {/' python/libxml.c
+        type_checks='if (Py(Float|Long|Bool|Bytes|Unicode|List)_Check)[[:space:]]*\(obj\) \{'
+        test "$(grep -Ec "$type_checks" python/types.c)" = 6
+        sed -Ei "s/$type_checks/if (\1(obj)) {/" python/types.c
+      ''
+    ))
+    (lib.optional (final.icu != null && final.sourceLayout.icuConfigLinkFlags) (
+      command "icu-link-flags" ''
+        # These configure scripts use icu-config's rpath flags through old libtool.
+        # Use the ICU provider's pkg-config link flags and let finalization set RPATH.
+        icu_assignment='^\([[:space:]]*\)ICU_LIBS=`.* --ldflags`$'
+        test "$(grep -c "$icu_assignment" configure)" = 1
+        ${tools.pkg-config}/bin/pkg-config --exists icu-i18n
+        sed -i "s|$icu_assignment|\1ICU_LIBS=\"\$(${tools.pkg-config}/bin/pkg-config --libs icu-i18n)\"|" configure
+      ''
+    ))
+    (lib.optional (final.icu != null && final.sourceLayout.icuTrueArgument != null) (
+      command "icu-boolean-compatibility" (
+        # ICU no longer exports the TRUE macro used by these converters.
+        if final.sourceLayout.icuTrueArgument == "with-error" then
+          ''
+            test "$(grep -Fc '0, TRUE, &err);' encoding.c)" = 2
+            sed -i 's/0, TRUE, \&err);/0, 1, \&err);/' encoding.c
+          ''
+        else if final.sourceLayout.icuTrueArgument == "standalone" then
+          ''
+            test "$(grep -c '^[[:space:]]*TRUE);$' encoding.c)" = 1
+            sed -i '/^[[:space:]]*TRUE);$/s/TRUE/1/' encoding.c
+          ''
+        else
+          throw "Unsupported ICU TRUE argument layout for libxml2 ${final.version}"
+      )
+    ))
     (command "configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
-      ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
+      ${lib.optionalString pythonEnabled "export PYTHON=${final.bindingPython}/bin/python3\n"}./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
     '')
-    (command "build" "${make} libxml2.la xmllint xmlcatalog")
+    (command "build" (
+      "${make} libxml2.la xmllint xmlcatalog"
+      + lib.optionalString pythonEnabled (
+        "\n"
+        + ''
+          ${make} -C python${pythonMakeFlags}
+        ''
+      )
+    ))
     (command "install" ''
       # The root install target in 2.10 also generates testapi.c. Enter the
       # generated recursive installer directly; retain all installed directories.
       # Noninstalled programs/libraries are test/example targets, restored for U.
-      ${make} noinst_PROGRAMS= noinst_LTLIBRARIES= install-recursive
-      mkdir -p "$out/nix-support"
+      ${make} noinst_PROGRAMS= noinst_LTLIBRARIES= install-recursive${pythonMakeFlags}
+      ${lib.optionalString pythonEnabled ''
+        test -f "$out/${pythonLayout}/libxml2.py"
+        test -f "$out/${pythonLayout}/libxml2mod.so"
+      ''}mkdir -p "$out/nix-support"
       cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
     '')
     (
@@ -196,6 +279,22 @@ in
         sed -i "/^Libs\\.private:/s|$| $lzma_libs|" "$pc"
       '';
     }
+    {
+      name = "libxml2.repair-static-icu-pkg-config";
+      enabled = (final.installedInterface.repairPrivateIcu or false) && final.icu != null;
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        pc="$out/lib/pkgconfig/libxml-2.0.pc"
+        test "$(grep -c '^Libs\.private:' "$pc")" = 1
+        test "$(grep -c '^Libs\.private:.*[[:space:]]-licu' "$pc" || true)" = 0
+        icu_libs="$(sed -n 's/^LDFLAGS = *//p' "$TVP_ARTIFACT_ROOT/${checkpoint}/source/Makefile")"
+        test "$icu_libs" = ${lib.escapeShellArg "-L${lib.getLib final.icu}/lib -licui18n -licuuc -licudata"}
+        sed -i "/^Libs\\.private:/s|$| $icu_libs|" "$pc"
+      '';
+    }
     (outputs.shebangs {
       paths = [ "bin/xml2-config" ];
       names = [
@@ -233,8 +332,8 @@ in
     lzma = true;
     shared = true;
     static = true;
-    python = false;
-    icu = false;
+    python = pythonEnabled;
+    icu = final.icu != null;
     iconv = true;
     http = true;
   };

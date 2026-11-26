@@ -27,11 +27,13 @@ def relocate_utility_links(root, artifact):
 def fix_wand_requires(root):
     # Upstream corrected this delimiter in the next release.
     pkgconfig = root / "lib" / "pkgconfig"
-    if not (pkgconfig / "MagickCore-6.Q16.pc").is_file():
-        raise ValueError("Expected the installed MagickCore-6.Q16 module")
-    before = b"\nRequires: MagickCore.6.Q16\n"
-    after = b"\nRequires: MagickCore-6.Q16\n"
-    for name in ("MagickWand.pc", "MagickWand-6.Q16.pc"):
+    cores = list(pkgconfig.glob("MagickCore-6.Q*.pc"))
+    if len(cores) != 1 or not cores[0].is_file():
+        raise ValueError("Expected one installed MagickCore quantum module")
+    suffix = cores[0].stem.removeprefix("MagickCore-")
+    before = f"\nRequires: MagickCore.{suffix}\n".encode()
+    after = f"\nRequires: MagickCore-{suffix}\n".encode()
+    for name in ("MagickWand.pc", f"MagickWand-{suffix}.pc"):
         path = pkgconfig / name
         contents = path.read_bytes()
         if contents.count(before) != 1:
