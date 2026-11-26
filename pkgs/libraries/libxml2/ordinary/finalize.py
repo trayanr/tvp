@@ -108,9 +108,29 @@ def finalize(root, artifact, readelf, patchelf):
             if public and not data.startswith((b'\x7fELF',b'#!')):
                 raise ValueError(('invalid public frontend',alias))
         if data.startswith(b'#!'):
-            text(data,name)
-            if roles != {'script'}:
+            # Historical Automake builds install Python test sources as
+            # non-executable documentation examples using install -m 644.
+            python_example = (
+                not p.stat().st_mode & 0o111
+                and all(re.fullmatch(
+                    r'share/doc/(?:libxml2/python|libxml2-python-[0-9.]+)/examples/[^/]+\.py',
+                    alias,
+                ) for alias in group)
+                and re.fullmatch(
+                    rb'#!(?:/usr/bin/python(?: -u)?|/usr/bin/env python3?)',
+                    data.split(b'\n', 1)[0],
+                )
+            )
+            if roles != {'script'} and not python_example:
                 raise ValueError(('unexpected installed script frontend', group))
+            # The archived indexes.py and reader.py examples declare ISO-8859-1.
+            latin1_example = (
+                python_example
+                and all(Path(alias).name in {'indexes.py', 'reader.py'} for alias in group)
+                and data.split(b'\n', 2)[1:2] == [b'# -*- coding: ISO-8859-1 -*-']
+            )
+            # Validate without rewriting the declared source encoding.
+            text(data.decode('iso-8859-1').encode('utf-8') if latin1_example else data, name)
         if 'script' in roles:
             text(data,name)
             if not re.match(rb'#!\s*(?:/bin/sh|/nix/store/[^/]+/bin/bash)\n',data):
