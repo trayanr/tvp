@@ -84,12 +84,12 @@ in
     openldap
     openssl
     perl
+    python
     readline
     tcl
     tzdata
     zlib
     ;
-  python = import ./shared-python.nix { inherit lib python; };
   inherit (tools) bash coreutils;
   environment = {
     tools = [
