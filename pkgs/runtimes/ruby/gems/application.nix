@@ -120,16 +120,21 @@ let
             '';
           }
         ];
-      passthru = package: {
-        inherit (final) bundle;
-        inherit (final.bundle)
-          ruby
-          bundler
-          gems
-          groups
-          ;
-        applicationDirectory = "${package}/share/${final.pname}";
-      };
+      passthru =
+        package:
+        {
+          inherit (final) bundle;
+          inherit (final.bundle)
+            ruby
+            bundler
+            gems
+            groups
+            ;
+          applicationDirectory = "${package}/share/${final.pname}";
+        }
+        // lib.optionalAttrs (final.bundle ? tvpInventory) {
+          inherit (final.bundle) tvpInventory;
+        };
     };
 in
 tvp.builder {

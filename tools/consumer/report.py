@@ -26,6 +26,30 @@ let
   managed = role: location: package:
     if isPackage package && package ? __tvpSelection
     then [ (record role location package) ] else [ ];
+  inventoryError = location: message:
+    throw "TVP inventory at ${location}: ${message}";
+  inventoryReferences = location: references:
+    if isPackage references then
+      if references ? tvpInventory
+      then inventoryContract "${location}.tvpInventory" references.tvpInventory
+      else managed "package" location references
+    else if builtins.isAttrs references then
+      builtins.concatMap (name:
+        inventoryReferences "${location}.${name}" references.${name}
+      ) (builtins.attrNames references)
+    else if builtins.isList references then
+      builtins.concatLists (builtins.genList (index:
+        inventoryReferences "${location}[${toString index}]" (builtins.elemAt references index)
+      ) (builtins.length references))
+    else inventoryError location "expected a package reference, attribute set or list";
+  inventoryContract = location: contract:
+    if !builtins.isAttrs contract then
+      inventoryError location "tvpInventory must be an attribute set"
+    else if !(contract ? schema) || !builtins.isInt contract.schema || contract.schema != 1 then
+      inventoryError location "unsupported tvpInventory schema; expected schema = 1"
+    else if !(contract ? packages) || !builtins.isAttrs contract.packages || isPackage contract.packages then
+      inventoryError location "tvpInventory.packages must be an attribute set"
+    else inventoryReferences "${location}.packages" contract.packages;
   observeGem = location: gem:
     let
       gemName = gem.gemName or (gem.pname or gem.name);
@@ -36,6 +60,8 @@ let
     ) (builtins.attrNames providers);
   observe = location: package:
     if !isPackage package then [ ]
+    else if package ? tvpInventory then
+      inventoryContract "${location}.tvpInventory" package.tvpInventory
     else if (package.tvp.kind or null) == "ruby-application" && package ? bundle then
       observe "${location}.bundle" package.bundle
     else if (package.tvp.kind or null) == "ruby-bundle"
@@ -53,11 +79,9 @@ let
       ++ observeGem location package
     else if (package.tvp.kind or null) == "php-runtime"
         && package ? unwrapped && package ? enabledExtensions then
-      [ (record "php-runtime" location package)
-        (record "php-engine" ("${location}.unwrapped") package.unwrapped)
-      ]
-      ++ map (extension:
-        record "php-extension" ("${location}.enabledExtensions.${extension.extensionName}") extension
+      managed "php-engine" "${location}.unwrapped" package.unwrapped
+      ++ builtins.concatMap (extension:
+        managed "php-extension" "${location}.enabledExtensions.${extension.extensionName}" extension
       ) package.enabledExtensions
     else if package ? __tvpSelection then [ (record "package" location package) ]
     else [ ];
@@ -72,9 +96,9 @@ let
 in
 if !isPackage subject then throw "TVP inventory expects a package or dev shell derivation"
 else observe "output" subject
-  ++ builtins.concatMap observeInputs [
+  ++ (if subject ? tvpInventory then [ ] else builtins.concatMap observeInputs [
     "buildInputs" "nativeBuildInputs" "propagatedBuildInputs" "propagatedNativeBuildInputs"
-  ]
+  ])
 """
 
 
@@ -137,7 +161,9 @@ def managed_packages(observed):
         for name in ("gemName", "providerName"):
             if name in package:
                 usage[name] = package.pop(name)
-        if package["role"] in ("ruby-engine", "ruby-manager", "ruby-native-package"):
+        if package["role"] in (
+            "ruby-engine", "ruby-manager", "ruby-native-package", "php-engine", "php-extension",
+        ):
             package["role"] = "package"
         identity = tuple(
             package[name] for name in

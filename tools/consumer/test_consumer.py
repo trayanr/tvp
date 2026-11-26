@@ -100,6 +100,7 @@ UPSTREAM = """{
         extensionName = "redis";
         modulePath = "lib/php/extensions/redis.so";
         loader = "extension";
+        __tvpSelection = { namespace = "packages"; selector = "php-redis"; kind = "exact"; };
       };
       phpWithExtensions = (builtins.derivation {
         inherit system php redis;
@@ -161,6 +162,84 @@ PROJECT = """{
 }
 """
 
+CONTRACT_UPSTREAM = """{
+  outputs = { self }:
+    let
+      system = "x86_64-linux";
+      package = selector: pname: version: recipe:
+        (builtins.derivation {
+          inherit system pname version recipe;
+          name = "${pname}-${version}";
+          builder = "/bin/false";
+        }) // {
+          __tvpSelection = { namespace = "packages"; kind = "exact"; inherit selector; };
+        };
+      runtime = package "future_1" "future-runtime" "@VERSION@" "same";
+      newerRuntime = package "future_1" "future-runtime" "2.0.0" "same";
+      manager = (package "future-manager" "future-manager" "1.0.0" "same") // {
+        tvp.kind = "ruby-application";
+        bundle = throw "contract package references must not invoke legacy readers";
+      };
+      native = package "native_1" "native-library" "1.0.0" "same";
+      alias = native // { __tvpSelection = native.__tvpSelection // { selector = "native_exact"; }; };
+      variant = package "native_1" "native-library" "1.0.0" "alternate";
+      hidden = package "build-only" "undeclared-build-tool" "1.0.0" "same";
+      external = builtins.removeAttrs native [ "__tvpSelection" ];
+      nested = (package "nested" "nested-container" "1.0.0" "same") // {
+        tvpInventory = { schema = 1; packages = { dependency = native; }; };
+      };
+      environment = args@{ runtime, primary ? native }:
+        (package "future-env" "consumer-environment" "1.0.0" "same") // {
+          buildInputs = [ hidden ];
+          tvpInventory = {
+            schema = 1;
+            packages = {
+              inherit runtime manager nested;
+              native = { inherit primary; shared = [ native alias variant external ]; };
+            };
+          };
+          override = changes: environment (args // changes);
+          edit = update: environment (update args);
+        };
+      original = environment { inherit runtime; };
+      malformed = value: original // { tvpInventory = value; };
+    in {
+      packages.${system} = {
+        future = original;
+        overridden = original.override { runtime = newerRuntime; };
+        edited = original.edit (args: args // { primary = variant; });
+        legacyConflict = original // {
+          tvp.kind = "ruby-application";
+          bundle = throw "legacy reader must not inspect a declared contract";
+        };
+        empty = malformed { schema = 1; packages = { }; };
+        unsupported = malformed { schema = 2; packages = { }; };
+        missingSchema = malformed { packages = { }; };
+        invalidContract = malformed "not an attribute set";
+        missingPackages = malformed { schema = 1; };
+        invalidPackages = malformed { schema = 1; packages = [ runtime ]; };
+        invalidPackageTree = malformed { schema = 1; packages = runtime; };
+        invalidReference = malformed { schema = 1; packages = { nested = [ runtime "not a package" ]; }; };
+      };
+      devShells.${system}.default = builtins.derivation {
+        inherit system;
+        name = "future-shell";
+        builder = "/bin/false";
+        buildInputs = [ original runtime ];
+      };
+    };
+}
+"""
+
+CONTRACT_PROJECT = """{
+  inputs.tvp.url = @URL@;
+  outputs = { self, tvp }: {
+    packages.x86_64-linux = tvp.packages.x86_64-linux;
+    devShells.x86_64-linux.default = tvp.devShells.x86_64-linux.default;
+  };
+}
+"""
+
 
 class ConsumerIntegrationTests(unittest.TestCase):
     def setUp(self):
@@ -192,6 +271,7 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self, php_version, redis_version, recipe,
         gem_version="1.0.0", manager_version="1.17.3",
         native_version="16.16", application_version="1.0.0", extra_native=False,
+        inventory_contract=False,
     ):
         source = (UPSTREAM.replace("@PHP@", php_version)
                   .replace("@REDIS@", redis_version).replace("@RECIPE@", recipe)
@@ -199,6 +279,37 @@ class ConsumerIntegrationTests(unittest.TestCase):
                   .replace("@NATIVE@", native_version)
                   .replace("@APPLICATION@", application_version)
                   .replace("@EXTRA@", '{ another-native = native // { gemName = "another-native"; }; }' if extra_native else "{ }"))
+        if inventory_contract:
+            source = (source.replace(
+                'tvp.kind = "ruby-gem";',
+                '''tvp.kind = "ruby-gem";
+          tvpInventory = {
+            schema = 1;
+            packages = {
+              runtime = ruby;
+              native = if gemName != "tvp-pure" then { inherit postgresql externalLibrary; } else { };
+            };
+          };''',
+            ).replace(
+                'tvp.kind = "ruby-bundle";',
+                '''tvp.kind = "ruby-bundle";
+        tvpInventory = {
+          schema = 1;
+          packages = {
+            runtime = ruby;
+            manager = boundBundler;
+            native = builtins.mapAttrs (_: gem: gem.nativeProviders) { inherit pure native other; };
+          };
+        };''',
+            ).replace(
+                'tvp.kind = "ruby-application";',
+                '''tvp.kind = "ruby-application";
+        tvpInventory = rubyBundle.tvpInventory;''',
+            ).replace(
+                'tvp.kind = "php-runtime";',
+                '''tvp.kind = "php-runtime";
+        tvpInventory = { schema = 1; packages = { runtime = php; extensions = [ redis ]; }; };''',
+            ))
         (self.upstream / "flake.nix").write_text(source)
         self.command("git", "add", "flake.nix", cwd=self.upstream)
         self.command(
@@ -213,13 +324,125 @@ class ConsumerIntegrationTests(unittest.TestCase):
             "--attr", attribute or f"devShells.{SYSTEM}.default", "--json", cwd=self.root,
         ))
 
+    def contract_upstream(self, version):
+        (self.upstream / "flake.nix").write_text(CONTRACT_UPSTREAM.replace("@VERSION@", version))
+        self.command("git", "add", "flake.nix", cwd=self.upstream)
+        self.command(
+            "git", "-c", "user.name=TVP test", "-c", "user.email=tvp@example.invalid",
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", version,
+            cwd=self.upstream,
+        )
+
+    def prepare_contract_project(self):
+        self.contract_upstream("1.0.0")
+        url = "git+" + self.upstream.as_uri()
+        (self.project / "flake.nix").write_text(CONTRACT_PROJECT.replace("@URL@", json.dumps(url)))
+        self.command("nix", "flake", "update", "tvp", cwd=self.project)
+        self.original_lock = self.lock.read_bytes()
+
+    def test_language_independent_contract_and_resolved_overrides(self):
+        self.prepare_contract_project()
+        attribute = f"packages.{SYSTEM}.future"
+        observed = self.tvp("used", attribute=attribute)
+        packages = observed["packages"]
+        self.assertEqual(len(packages), 5)
+        self.assertEqual({row["pname"] for row in packages}, {
+            "future-runtime", "future-manager", "native-library",
+        })
+        native = [row for row in packages if row["pname"] == "native-library"]
+        self.assertEqual(len(native), 3)
+        self.assertEqual({row["selector"] for row in native}, {"native_1", "native_exact"})
+        self.assertEqual(len({row["drvPath"] for row in native}), 2)
+        shared = next(row for row in native if len(row["usedBy"]) == 3)
+        self.assertTrue(all("tvpInventory.packages" in use["location"] for use in shared["usedBy"]))
+        self.assertTrue(all("gemName" not in use for row in packages for use in row["usedBy"]))
+
+        shell = self.tvp("used")
+        self.assertEqual(len(shell["packages"]), 5)
+        runtime = next(row for row in shell["packages"] if row["pname"] == "future-runtime")
+        self.assertEqual(len(runtime["usedBy"]), 2)
+        overridden = self.tvp("used", attribute=f"packages.{SYSTEM}.overridden")
+        runtime = next(row for row in overridden["packages"] if row["pname"] == "future-runtime")
+        self.assertEqual(runtime["version"], "2.0.0")
+        edited = self.tvp("used", attribute=f"packages.{SYSTEM}.edited")
+        primary = next(row for row in edited["packages"] if any(
+            use["location"].endswith(".native.primary") for use in row["usedBy"]
+        ))
+        variant = next(row for row in native if row["drvPath"] != shared["drvPath"])
+        self.assertEqual(primary["drvPath"], variant["drvPath"])
+        self.assertEqual(self.tvp("used", attribute=f"packages.{SYSTEM}.legacyConflict")["packages"], packages)
+        self.assertEqual(self.tvp("used", attribute=f"packages.{SYSTEM}.empty")["packages"], [])
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+    def test_contract_preview_reports_only_managed_package_changes(self):
+        self.prepare_contract_project()
+        self.contract_upstream("1.1.0")
+        preview = self.tvp("update", "--preview", attribute=f"packages.{SYSTEM}.future")
+        self.assertEqual(len(preview["changes"]), 1)
+        change = preview["changes"][0]
+        self.assertEqual(change["after"]["pname"], "future-runtime")
+        self.assertEqual(change["before"]["version"], "1.0.0")
+        self.assertEqual(change["after"]["version"], "1.1.0")
+        self.assertTrue(change["versionChanged"])
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+    def test_inventory_contract_validation(self):
+        self.prepare_contract_project()
+        cases = {
+            "unsupported": "unsupported tvpInventory schema",
+            "missingSchema": "unsupported tvpInventory schema",
+            "invalidContract": "tvpInventory must be an attribute set",
+            "missingPackages": "tvpInventory.packages must be an attribute set",
+            "invalidPackages": "tvpInventory.packages must be an attribute set",
+            "invalidPackageTree": "tvpInventory.packages must be an attribute set",
+            "invalidReference": "expected a package reference, attribute set or list",
+        }
+        for name, error in cases.items():
+            with self.subTest(name=name):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(CLI), "used", "--flake", str(self.project),
+                     "--attr", f"packages.{SYSTEM}.{name}", "--json"],
+                    cwd=self.root, env=self.env, text=True, capture_output=True,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(error, result.stderr)
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+    def test_metadata_contract_migration_keeps_legacy_package_selections(self):
+        attributes = [
+            f"packages.{SYSTEM}.rubyBundle", f"packages.{SYSTEM}.rubyApplication",
+            f"packages.{SYSTEM}.rubyGem", f"devShells.{SYSTEM}.default",
+        ]
+        before = {attribute: self.tvp("used", attribute=attribute) for attribute in attributes}
+        self.commit_upstream("8.2.1", "6.2.0", "original", inventory_contract=True)
+        for attribute in attributes:
+            with self.subTest(attribute=attribute):
+                preview = self.tvp("update", "--preview", attribute=attribute)
+                self.assertEqual(preview["changes"], [])
+                self.assertNotEqual(preview["beforeInput"], preview["afterInput"])
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+        self.command("nix", "flake", "update", "tvp", cwd=self.project)
+        def identities(report):
+            return sorted(json.dumps({
+                key: value for key, value in row.items() if key not in ("location", "usedBy")
+            }, sort_keys=True) for row in report["packages"])
+
+        for attribute in attributes:
+            with self.subTest(attribute=attribute):
+                after = self.tvp("used", attribute=attribute)
+                self.assertEqual(identities(before[attribute]), identities(after))
+                self.assertTrue(any(
+                    "tvpInventory.packages" in use["location"]
+                    for row in after["packages"] for use in row["usedBy"]
+                ))
+
     def test_preview_matches_lockfile_diff_and_preserves_the_worktree(self):
         inventory = self.tvp("used")
         packages = {row["pname"]: (row["selector"], row["version"]) for row in inventory["packages"]}
         self.assertEqual(packages, {
-            "php-with-extensions": (None, "8.2.1"),
             "php": ("php_8_2", "8.2.1"),
-            "php-redis": (None, "6.2.0"),
+            "php-redis": ("php-redis", "6.2.0"),
             "ruby": ("ruby_2_7_0", "2.7.0"),
         })
         self.assertEqual(self.tvp("update", "--preview")["changes"], [])
@@ -265,7 +488,7 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertIn("consumer fixture requires --impure", pure.stderr)
 
         observed = self.tvp("used", "--impure")
-        php = next(row for row in observed["packages"] if row["role"] == "php-engine")
+        php = next(row for row in observed["packages"] if row["pname"] == "php")
         self.assertEqual(php["version"], "8.2.1")
         self.assertEqual(self.tvp("diff", str(self.lock), "--impure")["changes"], [])
 

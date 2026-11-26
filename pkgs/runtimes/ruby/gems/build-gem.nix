@@ -198,6 +198,13 @@ in
       })
     ];
   passthru = {
+    tvpInventory = {
+      schema = 1;
+      packages = {
+        runtime = final.ruby;
+        native = final.libraries;
+      };
+    };
     ruby = final.ruby;
     gemName = final.gemName;
     gemPath = final.ruby.gemPath;

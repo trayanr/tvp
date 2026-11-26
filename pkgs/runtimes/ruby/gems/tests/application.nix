@@ -35,6 +35,9 @@ let
   badExecutable = tvp.lib.ruby.application (arguments // { commands.answer = [ "../ruby" ]; });
   badEnvironment = tvp.lib.ruby.application (arguments // { environment."INVALID-NAME" = "x"; });
 in
+assert application.tvpInventory.schema == 1;
+assert application.tvpInventory.packages.runtime.drvPath == bundle.ruby.drvPath;
+assert application.tvpInventory.packages.manager.drvPath == bundle.bundler.drvPath;
 assert !(builtins.tryEval badName.drvPath).success;
 assert !(builtins.tryEval badExecutable.drvPath).success;
 assert !(builtins.tryEval badEnvironment.drvPath).success;

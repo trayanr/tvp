@@ -181,8 +181,17 @@ assert hasProvider secondProvider edited.specification.libraries;
 assert hasProvider secondProvider edited.specification.tools;
 assert hasProvider secondProvider edited.specification.runtime.libraries;
 assert edited.tvp.declaredDependencies.postgresql.drvPath == secondProvider.drvPath;
+assert edited.tvpInventory.schema == 1;
+assert edited.tvpInventory.packages.runtime.drvPath == ruby.drvPath;
+assert hasProvider firstProvider first.tvpInventory.packages.native;
+assert hasProvider secondProvider edited.tvpInventory.packages.native;
 assert !(builtins.tryEval unknown.drvPath).success;
 assert changedBundle.gems.pg.drvPath == explicit.drvPath;
+assert changedBundle.tvpInventory.schema == 1;
+assert changedBundle.tvpInventory.packages.runtime.drvPath == ruby.drvPath;
+assert changedBundle.tvpInventory.packages.manager.drvPath == changedBundle.bundler.drvPath;
+assert hasProvider firstProvider bundle.tvpInventory.packages.native.pg;
+assert hasProvider secondProvider changedBundle.tvpInventory.packages.native.pg;
 assert
   (builtins.head changedBundle.gems.tvp-pg-client.specification.dependencies).drvPath
   == changedBundle.gems.pg.drvPath;

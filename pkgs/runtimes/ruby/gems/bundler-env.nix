@@ -208,6 +208,16 @@ let
           }
         ];
       passthru = {
+        tvpInventory = {
+          schema = 1;
+          packages = {
+            runtime = final.ruby;
+            manager = selectedBundler;
+            native = lib.mapAttrs (
+              _: gem: gem.tvpInventory.packages.native or (builtins.attrValues (gem.nativeProviders or { }))
+            ) final.gems;
+          };
+        };
         inherit (final) ruby gems groups;
         bundler = selectedBundler;
         rubyDevelopment.gemDirectories = [ final.ruby.gemPath ];

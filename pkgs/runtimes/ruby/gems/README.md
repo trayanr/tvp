@@ -139,6 +139,13 @@ The five native-library definitions expose a small installed probe through
 TVP dependency provenance. Inventory and diffs report the TVP-managed packages;
 gem and provider names are retained as usage references, not package entries.
 
+The helpers publish `tvpInventory` schema 1 automatically. A gem exposes its Ruby
+and resolved native libraries; a bundle collects those libraries with its Ruby
+and bound Bundler; an application forwards its bundle's inventory. The metadata
+uses final package references, so `.override`, `.edit` and group selection are
+reflected without any project-side inventory declarations. See the shared
+[inventory contract](../../../../tools/README.md#inventory-contract).
+
 ## Validation policy
 
 Follow the repository's [testing policy](../../../../TESTING.md). Build the named
