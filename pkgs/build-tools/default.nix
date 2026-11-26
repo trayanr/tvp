@@ -3,6 +3,7 @@ tvp.lib.packages.mergeNamespaces {
   doxygen = import ./doxygen { inherit pkgs tvp; };
   gettext = import ./gettext { inherit pkgs tvp; };
   gradle = import ./gradle { inherit pkgs tvp; };
+  grype = import ./grype { inherit pkgs tvp; };
   git = import ./git { inherit pkgs tvp; };
   curl = import ./curl { inherit pkgs tvp; };
   gn = import ./gn { inherit pkgs tvp; };
