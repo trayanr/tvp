@@ -72,6 +72,7 @@ in
       files,
       entrypoint,
       systemVariable,
+      runtimeInputs ? [ ],
     }:
     build {
       inherit name command;
@@ -80,6 +81,9 @@ in
         #!${bash}/bin/bash
         set -o errexit
         export ${systemVariable}=${lib.escapeShellArg platform.system}
+        ${lib.optionalString (runtimeInputs != [ ]) ''
+          export PATH=${lib.escapeShellArg (lib.makeBinPath runtimeInputs)}:"$PATH"
+        ''}
         exec ${python3}/bin/python3 ${builtins.placeholder "out"}/libexec/${command}/${entrypoint} "$@"
       '';
     };
