@@ -100,7 +100,6 @@ in
     numactl
     openldap
     openssl
-    python
     readline
     tcl
     tzdata
@@ -110,6 +109,7 @@ in
     flex
     perl
     ;
+  python = import ./shared-python.nix { inherit lib python; };
   inherit (tools) bash coreutils;
   environment = {
     tools = [

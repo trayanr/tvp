@@ -258,9 +258,12 @@ in
       (final.perl != null && lib.elem final.version [ "6.9.10.0" "6.9.10.1" "6.9.10.2" ])
       (command "imagemagick.perl-numeric-version" ''
         # Backport 6.9.10-3's numeric version to both the XS build and loader.
+        # Keep the shipped configure current with respect to its version.sh prerequisite.
         test "$(grep -Fxc "PACKAGE_PERL_VERSION='6.9A'" version.sh)" = 1
         test "$(grep -Fxc "\$VERSION = '6.9A';" PerlMagick/Magick.pm)" = 1
+        touch -r version.sh "$TMPDIR/imagemagick-version-mtime"
         sed -i "s/^PACKAGE_PERL_VERSION='6[.]9A'$/PACKAGE_PERL_VERSION='6.9.10'/" version.sh
+        touch -r "$TMPDIR/imagemagick-version-mtime" version.sh
         sed -i "s/^\$VERSION = '6[.]9A';$/\$VERSION = '6.9.10';/" PerlMagick/Magick.pm
       '')
     )
@@ -281,6 +284,16 @@ in
         sed -i 's/WebPPictureInit/WebPPictureInitInternal/g' configure
       ''
     ))
+    (lib.optional
+      (enabledDelegates ? webp && lib.elem final.version [ "6.9.9.5" "7.0.6.5" ])
+      (command "imagemagick.webp-decoder-output" ''
+        # The next releases keep the initialized pointer to configure.output.
+        file=coders/webp.c
+        test "$(grep -Fxc '    *magick_restrict webp_image = &configure.output;' "$file")" = 1
+        test "$(grep -Fxc '  webp_image=(WebPDecBuffer *) NULL;' "$file")" = 1
+        sed -i '/^  webp_image=(WebPDecBuffer [*]) NULL;$/d' "$file"
+      '')
+    )
     (lib.optional
       (lib.elem final.version [
         "6.6.7.10"
