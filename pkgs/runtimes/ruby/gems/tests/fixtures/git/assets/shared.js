@@ -1,0 +1,1 @@
+window.sharedAnswer = 42;

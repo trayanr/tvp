@@ -18,6 +18,27 @@
   registry = runtimeRegistry;
 })
 // {
+  consumer-audit =
+    let
+      python = tvp.packages.python_3;
+    in
+    python.testContext.mkTest {
+      package = python;
+      name = "consumer-audit";
+      script = ''
+        PYTHONPATH=${../tools/consumer} ${python}/bin/python3 -B -m unittest \
+          test_audit test_audit_grype test_audit_osv >&2
+        printf consumer-audit-ok
+      '';
+      expected = "consumer-audit-ok";
+    };
+
+  ruby-projects = tvp.lib.tests.compatibility.mkBatch {
+    inherit pkgs;
+    name = "ruby-projects";
+    suite = import ../pkgs/runtimes/ruby/gems/tests { inherit tvp; };
+  };
+
   build-concurrency = pkgs.writeText "tvp-build-concurrency-contracts" (
     builtins.toJSON (import ../lib/tests/build-concurrency.nix { inherit pkgs tvp; })
   );
