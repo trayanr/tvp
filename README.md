@@ -54,9 +54,8 @@ broken releases, and borrowed infrastructure have separate scopes.
 
 ## Contributing
 
-The [Ruby project helper roadmap](pkgs/runtimes/ruby/gems/README.md) covers
-building locked gem environments and application packages with a selected TVP
-Ruby and Bundler.
+The [Ruby project helpers](pkgs/runtimes/ruby/gems/README.md) build locked gem
+environments and application packages with a selected TVP Ruby and Bundler.
 
 Start with the [package authoring model](lib/NATIVE-RECIPES.md) for the agreed
 MPFR layout, version tables, builders, customization and test attachment.
