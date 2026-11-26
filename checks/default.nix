@@ -18,6 +18,12 @@
   registry = runtimeRegistry;
 })
 // {
+  ruby-projects = tvp.lib.tests.compatibility.mkBatch {
+    inherit pkgs;
+    name = "ruby-projects";
+    suite = import ../pkgs/runtimes/ruby/gems/tests { inherit tvp; };
+  };
+
   build-concurrency = pkgs.writeText "tvp-build-concurrency-contracts" (
     builtins.toJSON (import ../lib/tests/build-concurrency.nix { inherit pkgs tvp; })
   );

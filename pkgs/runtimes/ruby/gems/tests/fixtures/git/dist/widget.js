@@ -1,0 +1,1 @@
+var syntheticAnswer = 42;

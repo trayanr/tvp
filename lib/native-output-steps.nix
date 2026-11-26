@@ -45,8 +45,17 @@ let
     invoke output python "${./output-tools}/${name}.py"
       "${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output}";
   selectedRun =
-    output: python: name: config: kinds:
-    if kinds == null then
+    output: python: name: config: kinds: nativeOnly:
+    if nativeOnly then
+      invoke output python ./native-only-output.py
+        "${root output} ${
+          lib.escapeShellArg (
+            builtins.toJSON (config // lib.optionalAttrs (kinds != null) { inherit kinds; })
+          )
+        } ${./native-output} ${if kinds == null then script name else ./elf-output.py}${
+          lib.optionalString (kinds != null) " ${name}"
+        }"
+    else if kinds == null then
       run output python name config
     else
       invoke output python ./elf-output.py
@@ -64,6 +73,7 @@ in
       patchelf,
       paths,
       loader,
+      nativeOnly ? false,
     }:
     forOutput output {
       name = "output.interpreters";
@@ -72,11 +82,19 @@ in
         binutils
         patchelf
       ];
-      run = sdkOutputRun output python "interpreters" {
-        inherit paths loader;
-        readelf = "${binutils}/bin/readelf";
-        patchelf = "${patchelf}/bin/patchelf";
-      };
+      run =
+        let
+          config = {
+            inherit paths loader;
+            readelf = "${binutils}/bin/readelf";
+            patchelf = "${patchelf}/bin/patchelf";
+          };
+        in
+        if nativeOnly then
+          invoke output python ./native-only-output.py
+            "${root output} ${lib.escapeShellArg (builtins.toJSON config)} ${./native-output} ${./sdk-output}/interpreters.py ${./output-tools}"
+        else
+          sdkOutputRun output python "interpreters" config;
     };
   template =
     {
@@ -233,6 +251,7 @@ in
       binutils,
       paths,
       elfKinds ? null,
+      nativeOnly ? false,
       flags ? [
         "-S"
         "-p"
@@ -248,7 +267,7 @@ in
         inherit paths flags;
         readelf = "${binutils}/bin/readelf";
         strip = "${binutils}/bin/strip";
-      } elfKinds;
+      } elfKinds nativeOnly;
     };
   libtool =
     {
@@ -269,6 +288,7 @@ in
       patchelf,
       paths,
       elfKinds ? null,
+      nativeOnly ? false,
       dlopenDirectories ? [ ],
       forceRpath ? false,
       workspaceRoot ? null,
@@ -280,6 +300,7 @@ in
       || output == "out"
       || throw "TVP output.rpaths: workspaceRoot cannot select an installed output";
     assert workspaceRoot == null || (base == null && libraries == null && !forceRpath);
+    assert workspaceRoot == null || !nativeOnly;
     assert !forceRpath || (base != null && libraries != null && dlopenDirectories != [ ]);
     forOutput output {
       name = "output.rpaths";
@@ -305,40 +326,43 @@ in
             )
           } ${./native-output} ${./elf-output.py}''
         else if libraries != null then
-          invoke output python
-            (if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py)
-            "${root output} ${
-              lib.escapeShellArg (
-                builtins.toJSON {
-                  inherit paths dlopenDirectories elfKinds;
-                  libraries = lib.concatMap (
-                    p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
-                  ) libraries;
-                  baseDirectories =
-                    if base == null then
-                      [ ]
-                    else if base ? runtimeDirectories then
-                      assert builtins.isList base.runtimeDirectories;
-                      assert builtins.all (
-                        p: builtins.isString p && builtins.hasContext p && lib.hasPrefix "/nix/store/" p
-                      ) base.runtimeDirectories;
-                      base.runtimeDirectories
-                    else
-                      [
-                        "${base.stdenv.cc.libc}/lib"
-                        "${base.stdenv.cc.cc}/lib"
-                      ];
-                  readelf = "${binutils}/bin/readelf";
-                  patchelf = "${patchelf}/bin/patchelf";
-                }
-              )
-            } ${./native-output}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}"
+          let
+            program = if forceRpath then ./owned-output/dlopen-rpaths.py else ./owned-output/rpaths.py;
+            config = builtins.toJSON {
+              inherit paths dlopenDirectories elfKinds;
+              libraries = lib.concatMap (
+                p: (p.development or { }).libraryDirectories or [ "${lib.getLib p}/lib" ]
+              ) libraries;
+              baseDirectories =
+                if base == null then
+                  [ ]
+                else if base ? runtimeDirectories then
+                  assert builtins.isList base.runtimeDirectories;
+                  assert builtins.all (
+                    p: builtins.isString p && builtins.hasContext p && lib.hasPrefix "/nix/store/" p
+                  ) base.runtimeDirectories;
+                  base.runtimeDirectories
+                else
+                  [
+                    "${base.stdenv.cc.libc}/lib"
+                    "${base.stdenv.cc.cc}/lib"
+                  ];
+              readelf = "${binutils}/bin/readelf";
+              patchelf = "${patchelf}/bin/patchelf";
+            };
+          in
+          if nativeOnly then
+            invoke output python ./native-only-output.py
+              "${root output} ${lib.escapeShellArg config} ${./native-output} ${program}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}"
+          else
+            invoke output python program
+              "${root output} ${lib.escapeShellArg config} ${./native-output}${lib.optionalString forceRpath " ${./owned-output/rpaths.py}"}"
         else
           selectedRun output python "rpaths" {
             inherit paths dlopenDirectories;
             readelf = "${binutils}/bin/readelf";
             patchelf = "${patchelf}/bin/patchelf";
-          } elfKinds;
+          } elfKinds nativeOnly;
     };
   development =
     {
@@ -416,6 +440,7 @@ in
       patchelf,
       paths,
       elfKinds ? null,
+      nativeOnly ? false,
     }:
     forOutput output {
       name = "output.check-paths";
@@ -428,6 +453,6 @@ in
         inherit paths;
         readelf = "${binutils}/bin/readelf";
         patchelf = "${patchelf}/bin/patchelf";
-      } elfKinds;
+      } elfKinds nativeOnly;
     };
 }

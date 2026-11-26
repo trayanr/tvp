@@ -60,13 +60,64 @@ Nix to update only the chosen input into a temporary lockfile, then uses the sam
 comparison. Use `nix flake update tvp` to apply an update. Use `--json` for CI
 reports. These commands evaluate derivations without building package outputs.
 
-Reports cover a selected package or direct inputs exposed by a selected shell.
-TVP selection metadata identifies observed packages, including the engine
-and modules of a directly selected TVP PHP composition. Version changes and
-same-version derivation changes are reported separately. Transitive dependencies
-and attribution among multiple TVP inputs are outside this inspection scope.
-For a PHP composition, the engine row describes the resolved engine. It may
-show a canonical engine even when the project chose a moving PHP alias.
+Add `--impure` when the selected output reads environment variables or local
+paths outside its flake source, for example a development shell that reads a
+separate application checkout. Set the required environment variables before
+running the command. The flag applies to both sides of a diff or update preview;
+evaluation remains pure unless it is explicitly supplied.
+
+## Inventory contract
+
+Reports cover TVP-managed selections exposed by a selected package or the direct
+inputs of a selected shell. TVP's environment helpers publish the same inventory
+contract for every supported language; consumers do not need to define reporting
+metadata. A helper exposes actual resolved package references through its
+derivation's passthru:
+
+```nix
+tvpInventory = {
+  schema = 1;
+  packages = {
+    runtime = ruby;
+    manager = bundler;
+    native = { pg = [ postgresql ]; };
+  };
+};
+```
+
+`packages` is an attribute set whose values are package references, nested
+attribute sets or lists. Its names describe usage; they have no language-specific
+meaning to the reader. TVP helpers derive these references from the final resolved
+arguments, including overrides and edits, rather than copying package versions.
+Only referenced packages carrying TVP selection metadata are reported. A
+referenced environment with its own contract contributes its declared packages.
+The contract defines the complete reporting scope for that environment: its own
+container and undeclared build inputs are omitted. Older pinned helpers remain
+supported through the Ruby and PHP shape readers.
+
+For a Ruby bundle or application, the reported selections are its Ruby, bound
+Bundler and TVP native-library providers. Gems remain
+independent build units, but their versions belong to Gemfile.lock and gemset.nix;
+their versions and rebuilds are not listed as TVP package updates. The consumer's
+bundle and application derivations are also omitted. A directly selected gem
+exposes its TVP Ruby and native providers, not a gem row. Native providers without
+TVP selection metadata, such as explicitly chosen Nixpkgs libraries, are excluded.
+
+Repeated references to the same package selection are collapsed. Distinct
+selectors and build variants remain separate, even when selectors resolve to the
+same derivation. JSON package rows retain `usedBy` references with their generic
+metadata locations. Legacy Ruby rows can also include `gemName`/`providerName`.
+The text report shows package selectors and versions. Changes to consumer
+references alone, including migration to the common contract, are not package
+updates.
+
+PHP reports retain the managed engine and extensions of a directly selected TVP
+PHP composition, and omit the composition itself. Its engine row describes the
+resolved engine and may show a
+canonical engine even when the project chose a moving PHP alias. Version changes
+and same-version derivation changes are reported separately. General derivation-
+graph traversal and attribution among multiple TVP inputs remain outside this
+inspection scope.
 
 The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
 

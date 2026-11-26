@@ -23,6 +23,7 @@ def parser():
         command.add_argument("--flake", type=Path, default=Path("."), help="local flake directory")
         command.add_argument("--attr", help="package or shell output (default: devShells.<system>.default)")
         command.add_argument("--input", default="tvp", help="top-level TVP input name")
+        command.add_argument("--impure", action="store_true", help="allow outputs to read environment variables and local paths")
         command.add_argument("--json", action="store_true", help="emit a machine-readable report")
 
     used.add_argument("--lock", type=Path, help="evaluate against an alternate lockfile")
@@ -33,7 +34,7 @@ def parser():
 
 
 def read_inventory(args, lock):
-    return inventory(args.flake, args.attr, lock.resolve(strict=True), args.input)
+    return inventory(args.flake, args.attr, lock.resolve(strict=True), args.input, impure=args.impure)
 
 
 def preview(args, current):
@@ -48,6 +49,7 @@ def preview(args, current):
                 "--flake", str(args.flake),
                 "--reference-lock-file", str(baseline),
                 "--output-lock-file", str(candidate),
+                *(["--impure"] if args.impure else []),
                 "--", args.input,
             ],
             stdout=sys.stderr,
@@ -63,7 +65,7 @@ def package_label(package):
     namespace = package["namespace"]
     if namespace and namespace != "packages":
         selector = f"{namespace}.{selector}"
-    return f'{package["location"]}  {selector}'
+    return selector
 
 
 def input_label(source):
