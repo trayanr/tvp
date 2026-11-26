@@ -34,6 +34,25 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/curl";
+      cpes = [
+        {
+          vendor = "haxx";
+          product = "curl";
+        }
+        {
+          vendor = "haxx";
+          product = "libcurl";
+        }
+      ];
+      # Query identity documented at https://google.github.io/osv.dev/post-v1-query/.
+      osv = {
+        ecosystem = "GIT";
+        name = "https://github.com/curl/curl.git";
+      };
+    };
     source = tvp.lib.sources.directory {
       url = "https://curl.se/download/";
       archive = "curl-{version}.tar.gz";

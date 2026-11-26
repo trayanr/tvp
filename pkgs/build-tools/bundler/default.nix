@@ -30,6 +30,14 @@ let
   pname = "bundler";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:gem/bundler";
+      osv = {
+        ecosystem = "RubyGems";
+        name = "bundler";
+      };
+    };
 
     source = tvp.lib.sources.directory {
       url = "https://rubygems.org/gems/";
