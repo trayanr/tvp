@@ -5,6 +5,7 @@
   src,
   version,
   libxml2,
+  libgcrypt ? null,
   gnu-config ? null,
   compression,
   configureOptions ? [ ],
@@ -18,6 +19,7 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${tools.bash}/bin/bash'';
+  cryptoEnabled = final.libgcrypt != null;
   paths = [
     "bin"
     "lib"
@@ -30,6 +32,7 @@ in
     src
     version
     libxml2
+    libgcrypt
     gnu-config
     compression
     configureOptions
@@ -48,16 +51,26 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
-    ];
-    libraries = [ final.libxml2 ];
+    ]
+    ++ lib.optional cryptoEnabled final.libgcrypt;
+    libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt;
     overrides.values.CFLAGS = "-O2 -std=gnu17 -fcommon";
   };
   runtime = {
     # xml2-config --libs links the selected libxml2 compression providers directly.
-    libraries = [ final.libxml2 ] ++ final.libxml2.specification.runtime.libraries;
+    libraries = [
+      final.libxml2
+    ]
+    ++ final.libxml2.specification.runtime.libraries
+    # libgcrypt-config also links libgpg-error into the EXSLT crypto consumers.
+    ++ lib.optionals cryptoEnabled [
+      final.libgcrypt
+      final.libgcrypt.specification.libgpg-error
+    ];
     shell = tools.bash;
   };
   installedInterface = { inherit pkgconfig; };
+  tvp.features.crypto = cryptoEnabled;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -91,11 +104,22 @@ in
         sed -i 's/^main(){return(0);}$/int main(void){return(0);}/' configure
       ''
     ))
+    (lib.optional cryptoEnabled (
+      command "libxslt.crypto-declaration" ''
+        # The gcrypt code uses the C string API.
+        if ! grep -Fqx '#include <string.h>' libexslt/crypto.c; then
+          sed -i '1i #include <string.h>' libexslt/crypto.c
+        fi
+      ''
+    ))
     (command "libxslt.configure" ''
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
       export lt_cv_deplibs_check_method=pass_all
       ./configure --prefix="$out" --with-libxml-prefix=${final.libxml2} --disable-static \
-        ${lib.escapeShellArgs final.configureOptions}
+        ${lib.escapeShellArgs (
+          final.configureOptions ++ lib.optional (cryptoEnabled && final.version != "1.1.8") "--with-crypto"
+        )}
+      ${lib.optionalString cryptoEnabled "grep -Fxq '#define HAVE_GCRYPT 1' config.h"}
     '')
     (command "libxslt.build" make)
     (command "libxslt.install" ''
@@ -133,7 +157,9 @@ in
       inherit paths;
       libraries = final.runtime.libraries;
     })
-    (outputs.development { libraries = [ final.libxml2 ]; })
+    (outputs.development {
+      libraries = [ final.libxml2 ] ++ lib.optional cryptoEnabled final.libgcrypt;
+    })
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {

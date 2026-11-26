@@ -13,7 +13,9 @@ let
           python = tvp.packages.python_3_11;
           zlib = tvp.packages.zlib_1;
           libffi = tvp.packages.libffi_3;
-          libxml2 = tvp.packages.libxml2_2;
+          libxml2 = tvp.lib.packages.withConstraint {
+            reason = "The standard ICU provider requires newer libstdc++ symbols than the GCC 9 host runtime provides.";
+          } (tvp.packages.libxml2_2.override { icu = null; });
           rawGCC = tvp.packages.gcc_13;
           cxxRuntime = tvp.packages.gcc_13;
           gccRuntime = tvp.packages.gcc_13;
