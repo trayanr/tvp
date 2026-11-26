@@ -137,24 +137,19 @@ def fix_magic_priority(contents):
 
 
 FIXES = {
-    "6.6.7.10": ("coders/png.c", fix_png_palette),
-    "6.6.8.10": ("coders/dcm.c", fix_dicom_bytes),
-    "6.7.6.10": ("wand/wand-view.c", fix_wand_cache_arguments),
-    "6.8.8.10": ("coders/jp2.c", fix_openjpeg_stream_api),
-    "6.9.8.7": ("coders/jp2.c", fix_openjpeg_ping),
-    "6.9.9.41": ("magick/draw.c", fix_svg_compliance),
-    "6.9.12.99": ("coders/bmp.c", fix_bmp_row_stride),
-    "7.0.5.8": ("coders/jp2.c", fix_openjpeg_ping),
-    "7.0.7.12": ("coders/webp.c", fix_webp_progress_context),
-    "7.0.7.13": ("coders/webp.c", fix_webp_progress_context),
-    "7.0.7.14": ("coders/webp.c", fix_webp_progress_context),
-    "7.0.7.15": ("coders/webp.c", fix_webp_progress_context),
-    "7.0.7.29": ("MagickCore/draw.c", fix_svg_compliance),
-    "7.0.8.13": ("MagickCore/magic.c", fix_magic_priority),
+    "png-palette": fix_png_palette,
+    "dicom-bytes": fix_dicom_bytes,
+    "wand-cache-arguments": fix_wand_cache_arguments,
+    "openjpeg-stream-api": fix_openjpeg_stream_api,
+    "openjpeg-ping": fix_openjpeg_ping,
+    "svg-compliance": fix_svg_compliance,
+    "bmp-row-stride": fix_bmp_row_stride,
+    "webp-progress-context": fix_webp_progress_context,
+    "magic-priority": fix_magic_priority,
 }
 
 
 if __name__ == "__main__":
-    name, fix = FIXES[sys.argv[1]]
+    _, repair, name = sys.argv
     path = Path(name)
-    path.write_bytes(fix(path.read_bytes()))
+    path.write_bytes(FIXES[repair](path.read_bytes()))

@@ -19,15 +19,6 @@ let
   reportedImageFormat = if reportsPnm then "PNM" else imageFormat;
   parts = lib.splitString "." package.version;
   upstreamVersion = lib.concatStringsSep "." (lib.take 3 parts) + "-" + lib.last parts;
-  traceDelegates = builtins.elem package.version [
-    "6.9.9.5"
-    "7.0.6.5"
-    "7.0.7.12"
-    "7.0.7.13"
-    "7.0.7.14"
-    "7.0.7.15"
-    "7.0.8.13"
-  ];
 in
 context.mkSuite {
   inherit package;
@@ -123,8 +114,7 @@ context.mkSuite {
         binutils
         grep
       ];
-      # Preserve the failing command and its arguments for historical codec failures.
-      script = lib.optionalString traceDelegates "set -x\n" + ''
+      script = ''
         ${lib.optionalString (builtins.elem "xml" delegates) ''
           cat > shape.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" width="3" height="2">

@@ -24,6 +24,7 @@
   perl ? null,
   xz ? null,
   zstd ? null,
+  historicalCoderRepair ? null,
   buildFeatures ? { },
   sourceCompression ? "xz",
 }:
@@ -295,29 +296,17 @@ in
       '')
     )
     (lib.optional
-      (lib.elem final.version [
-        "6.6.7.10"
-        "6.6.8.10"
-        "6.7.6.10"
-        "6.9.9.41"
-        "6.9.12.99"
-        "7.0.7.29"
-        "7.0.8.13"
-      ] || (enabledDelegates ? openjp2 && lib.elem final.version [
-        "6.8.8.10"
-        "6.9.8.7"
-        "7.0.5.8"
-      ]) || (enabledDelegates ? webp && lib.elem final.version [
-        "7.0.7.12"
-        "7.0.7.13"
-        "7.0.7.14"
-        "7.0.7.15"
-      ]))
+      (historicalCoderRepair != null
+        && (historicalCoderRepair.path != "coders/jp2.c" || enabledDelegates ? openjp2)
+        && (historicalCoderRepair.path != "coders/webp.c" || enabledDelegates ? webp))
       {
         name = "imagemagick.historical-coders";
         cwd = "source";
         tools = [ tools.python ];
-        run = "${tools.python}/bin/python3 -B ${./historical-coders.py} ${lib.escapeShellArg final.version}";
+        run = "${tools.python}/bin/python3 -B ${./historical-coders.py} ${lib.escapeShellArgs [
+          historicalCoderRepair.repair
+          historicalCoderRepair.path
+        ]}";
       }
     )
     (lib.optional

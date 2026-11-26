@@ -33,3 +33,12 @@ available in the user's runtime environment.
 
 TVP's package `.override` can select a narrower dependency set. For example,
 `imagemagick.override { perl = null; libx11 = null; }` omits PerlMagick and X11.
+
+## Historical source repairs
+
+The release table names the coder repair and source path for each affected
+archive. The helper checks the expected source before making a change.
+The existing backports include shipped defects in the SVG drawing parser
+(6.9.9-41 and 7.0.7-29), the BMP reader (6.9.12-99), and WebP format detection
+(7.0.8-13). These are distinct from changes needed to compile against the
+selected codec libraries, such as the OpenJPEG stream API change in 6.8.8-10.
