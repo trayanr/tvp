@@ -9,11 +9,14 @@ setup, wrapper hooks or compiler. Text manifests use `builtins.toFile`.
 The four shell commands retain `errexit`, `nounset` and `pipefail`, and prepend
 their declared tools in order to the caller's PATH. The Python entrypoints exec
 TVP Python, forward every argument, and set their system variable from the
-selected native platform. The `tvp` command prepends TVP's Grype to PATH; other
-Python entrypoints leave PATH alone.
+selected native platform. The `tvp` command prepends its declared Nixpkgs Grype
+tooling dependency to PATH; other Python entrypoints leave PATH alone.
 The helper supports these scripts only; it is not a general packaging API.
 
-Explicit runtime utilities and interpreters, including jq, are TVP packages.
+Explicit runtime utilities and interpreters, including jq, are TVP packages,
+except for Grype, which is an explicit Nixpkgs tooling dependency. The flake app
+selects `pkgs.grype` from its locked `nixpkgs` input; it is not a TVP catalogue
+family.
 Commands that query Nix use the caller's host Nix API.
 Inherited bootstrap closures and the test runner's external strace boundary
 remain separate from this packaging change. Ruby's extension tests retain an
@@ -161,8 +164,10 @@ nix run .#tvp -- audit --backend osv
 nix run .#tvp -- audit --backend osv --offline --require-coverage
 ```
 
-TVP builds Grype from source and includes it with the command. OSV uses its HTTPS API and
-caches exact query responses for 24 hours; `--offline` requires cached responses
+The command bundles Grype from TVP's locked `nixpkgs` input.
+Reports retain the actual scanner version and advisory database evidence.
+OSV uses its HTTPS API directly, without an OSV executable dependency, and caches
+exact query responses for 24 hours; `--offline` requires cached responses
 for mapped components and labels their age. Neither backend uploads application
 source. No packages are built to read the inventory. An initial set of TVP-owned
 identity profiles covers Bundler, Curl/libcurl, Ruby, PHP, OpenSSL, PostgreSQL,

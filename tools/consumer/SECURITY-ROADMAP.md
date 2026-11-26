@@ -30,6 +30,12 @@ The [first live evaluation](SECURITY-EVALUATION.md) selects Grype as the default
 for the current TVP package scope; OSV remains available for explicit comparison.
 Repeat and extend the public controls as identity and advisory coverage changes.
 
+Grype is an explicit tooling dependency bundled with the consumer command. The
+flake app selects `pkgs.grype` from its locked `nixpkgs` input; Grype is
+not a TVP catalogue family. OSV continues to use its public HTTPS API
+directly. Preserve the actual scanner version and database/provider evidence in
+every report, including after a tooling dependency update.
+
 Run both adapters against the same frozen, public component matrix and record the
 actual scanner versions, query identities, advisory data timestamps/digests and
 results. A live OSV API response digest identifies the captured response, not a
@@ -45,8 +51,10 @@ as ground truth. Private application source and fixtures stay outside public tes
 Choose based on verified detection, incorrect matches, missed advisories,
 explicit coverage gaps, version normalization, freshness, reproducibility,
 offline operation, startup time and maintenance cost. OSV and Grype have different
-coverage; retain a complementary adapter if the evidence warrants it. Package the
-selected scanner through TVP before making it a default runtime dependency.
+coverage; retain a complementary adapter if the evidence warrants it. Keep the
+selected scanner an explicit consumer-tool dependency rather than adding a TVP
+package family solely to support the command. The first recorded comparison used
+a source-built TVP Grype; its historical provenance and results remain unchanged.
 
 ## Future daily security CI — outside the current implementation scope
 

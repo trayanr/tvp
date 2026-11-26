@@ -4,6 +4,18 @@ On 2026-11-26, both adapters were run against the same 14 public controls: one
 upstream-affected and one upstream-fixed version for seven package families.
 Grype 0.122.1 was built from source with TVP Go 1.27.3. No CI job was added or run.
 
+That is the provenance of the historical run below. The current `tvp` command
+instead bundles `pkgs.grype` from TVP's locked `nixpkgs` input.
+Grype is no longer a TVP catalogue family. This dependency change does not alter
+the recorded comparison or imply that it was run with the currently selected
+scanner version. OSV still uses its public HTTPS API directly.
+
+After switching dependencies, Grype 0.122.0 from Nixpkgs revision
+`2786a2a72088ecf32aea5b3ec52099e6a7cff78f` replayed the same 14 controls offline
+against the retained database: all seven affected targets were detected and all
+seven fixed targets were absent. This compatibility replay does not replace the
+original two-candidate comparison or its provenance.
+
 **Grype is the default for the current TVP package scope.** OSV remains available
 with `--backend osv`. This small matrix establishes useful initial behavior;
 it is not a catalogue-wide coverage claim or an application exploitability test.
@@ -71,12 +83,15 @@ evidence and scores the target ID and its declared aliases. A backend failure or
 unsupported component cannot become a passing control.
 
 ```sh
-nix shell .#grype .#python_3 --command python3 -B \
+nix shell --inputs-from . nixpkgs#grype .#python_3 --command python3 -B \
   tools/consumer/evaluate_audit.py --tvp . \
   --output /absolute/new-evidence-directory --cache-dir /absolute/advisory-cache
 ```
 
-Use `--offline` and a new evidence directory to repeat using the retained cache.
+This command uses Grype from the current `nixpkgs` pin. Treat its output as
+a new comparison and retain its own scanner version, source snapshot and
+database/provider evidence. Use `--offline` and a new evidence directory to repeat
+using a compatible retained cache.
 The matrix digest for this run was
 `d6934a5a7557e5398ee9b31e66b38c396a7ea7db39a6f3d2d6a9f98a19ec85e4`.
 Grype reported DB schema `v6.1.10`, built `2026-11-26T06:22:34Z`; the OSV response

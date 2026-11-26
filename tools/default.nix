@@ -17,7 +17,7 @@ let
   tools = {
     consumer = pkgs.callPackage ./consumer {
       python3 = tvp.packages.python_3;
-      grype = tvp.packages.grype;
+      grype = pkgs.grype;
       inherit ownedCLI;
     };
     dependencies = pkgs.callPackage ./dependencies {
