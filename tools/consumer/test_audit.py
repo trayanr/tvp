@@ -176,6 +176,53 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(lines, ["EPSS CVE-2099-0001: 0.00%; percentile 0.00",
                                  "Grype risk: 0/100 (scanner prioritization)"])
 
+    def test_discovered_output_origins_survive_component_deduplication(self):
+        first = selection()
+        second = selection("alias")
+        first["usedBy"][0]["attribute"] = "devShells.x86_64-linux.default"
+        second["usedBy"][0]["attribute"] = "packages.x86_64-linux.example"
+        selected = inventory(first, second)
+        selected.update(attribute=None, scope="discovered", system="x86_64-linux",
+                        outputs=[{"attribute": name, "status": "evaluated"} for name in (
+                            "devShells.x86_64-linux.default", "packages.x86_64-linux.example")],
+                        skippedOutputs=[{"attribute": "apps", "reason": "app inventory requires an adapter"}],
+                        outputCoverage={"evaluated": 2, "failed": 0, "complete": True})
+        def results(values):
+            self.assertEqual(len(values), 1)
+            return [{"component": values[0]["id"], "status": "scanned", "vulnerabilities": [{
+                "id": "TEST-ADVISORY", "severity": "high",
+            }]}]
+        with self.provider(results):
+            report = audit(selected, "osv", offline=True)
+        self.assertEqual(report["coverage"]["total"], 1)
+        self.assertTrue(report["coverage"]["completeForInventory"])
+        self.assertEqual(report["outputs"], selected["outputs"])
+        self.assertEqual(report["skippedOutputs"], selected["skippedOutputs"])
+        self.assertEqual(report["outputCoverage"], selected["outputCoverage"])
+        text = format_audit(report)
+        self.assertIn("Outputs: devShells.x86_64-linux.default, packages.x86_64-linux.example", text)
+
+    def test_failed_output_keeps_partial_findings_and_causes_an_error_exit(self):
+        selected = inventory(selection())
+        selected["packages"][0]["usedBy"][0]["attribute"] = "packages.x86_64-linux.good"
+        selected.update(attribute=None, scope="discovered", system="x86_64-linux",
+                        outputs=[{"attribute": "packages.x86_64-linux.good", "status": "evaluated"},
+                                 {"attribute": "packages.x86_64-linux.broken", "status": "failed",
+                                  "error": "synthetic evaluation failure"}],
+                        skippedOutputs=[], outputCoverage={"evaluated": 1, "failed": 1, "complete": False})
+        def results(values):
+            return [{"component": values[0]["id"], "status": "scanned", "vulnerabilities": [{
+                "id": "TEST-ADVISORY", "severity": "critical",
+            }]}]
+        with self.provider(results):
+            report = audit(selected, "osv", offline=True)
+        self.assertEqual(len(report["findings"]), 1)
+        self.assertFalse(report["coverage"]["completeForInventory"])
+        self.assertEqual(exit_status(report), 1)
+        self.assertEqual(exit_status(report, fail_on="high"), 1)
+        self.assertEqual(exit_status(report, require_coverage=True), 1)
+        self.assertIn("synthetic evaluation failure", format_audit(report))
+
     def test_threat_scores_do_not_filter_findings_or_change_severity_gates(self):
         for severity, probability, risk, expected in (("high", 0, 0, 2), ("low", 1, 100, 0)):
             def results(values):

@@ -384,7 +384,8 @@ print(json.dumps({"matches": matches, "descriptor": {"name": "grype", "version":
         executable.chmod(0o755)
         environment = {**self.env, "PATH": str(self.root) + os.pathsep + self.env["PATH"]}
         command = [sys.executable, "-B", str(CLI), "audit", "--offline",
-                   "--flake", str(self.project), "--fail-on", "high", "--json"]
+                   "--flake", str(self.project), "--attr", f"devShells.{SYSTEM}.default",
+                   "--fail-on", "high", "--json"]
         result = subprocess.run(command, cwd=self.root, env=environment, text=True, capture_output=True)
         self.assertEqual(result.returncode, 2, result.stderr)
         report = json.loads(result.stdout)
@@ -567,7 +568,7 @@ print(json.dumps({"matches": matches, "descriptor": {"name": "grype", "version":
             cwd=self.root, env=self.env, text=True, capture_output=True,
         )
         self.assertNotEqual(pure.returncode, 0)
-        self.assertIn("consumer fixture requires --impure", pure.stderr)
+        self.assertIn("consumer fixture requires --impure", pure.stdout + pure.stderr)
 
         observed = self.tvp("used", "--impure")
         php = next(row for row in observed["packages"] if row["pname"] == "php")

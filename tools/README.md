@@ -45,21 +45,43 @@ establish neither fresh execution, source approval nor ABI compatibility.
 ## Downstream TVP selections
 
 Run the `tvp` app from the consumer flake directory after it has a `flake.lock`.
-It defaults to `devShells.x86_64-linux.default` and the top-level `tvp` input.
-Use `--attr` to select another shell or package output and `--input` if the
-input has a different name.
+Without `--attr`, all four consumer commands discover the current platform's
+`devShells`, `packages`, `checks` and `formatter` outputs. This evaluates their
+declared TVP inventory without building packages or running checks. The top-level
+input name defaults to `tvp`; use `--input` if it has a different name.
+
+`--attr` bypasses discovery and inspects exactly the requested derivation. It can
+select a shell, package or a derivation under a custom output namespace. These
+consumer commands require flakes and lockfiles; this does not restrict TVP's Nix
+packages and helpers to flake consumers.
 
 ```sh
 nix run github:trayanr/tvp#tvp -- used
+nix run github:trayanr/tvp#tvp -- used --attr devShells.x86_64-linux.default
 nix run github:trayanr/tvp#tvp -- diff /tmp/before.lock /tmp/after.lock
 nix run github:trayanr/tvp#tvp -- update --preview
 ```
 
-`diff` evaluates the same project output with both existing lockfiles. Its second
-argument defaults to the project's current `flake.lock`. `update --preview` asks
-Nix to update only the chosen input into a temporary lockfile, then uses the same
-comparison. Use `nix flake update tvp` to apply an update. Use `--json` for CI
-reports. These commands evaluate derivations without building package outputs.
+`diff` discovers outputs separately under both lockfiles and compares their
+inventories, including outputs added or removed between the pins. With `--attr`,
+it compares that same explicit output on both sides. Its second argument defaults
+to the project's current `flake.lock`. `update --preview` asks Nix to update only
+the chosen input into a temporary lockfile, then uses the same comparison. Use
+`nix flake update tvp` to apply an update. Use `--json` for machine-readable reports.
+
+Aggregate reports identify every inspected output and retain package origins in
+`usedBy[].attribute`. Shared selections are collapsed while distinct selectors
+and builds remain separate; security audits scan a shared derivation/output once.
+An output evaluation failure leaves successful results visible, marks
+`outputCoverage.complete` false and exits 1. Failed evaluations are not reported
+as package additions or removals in comparisons.
+
+The discovery scope is **all supported outputs for this platform**, not every
+possible flake value or a full runtime dependency closure. Other platforms and
+unsupported namespaces are listed as skipped. `apps`, NixOS/Home Manager
+configurations, modules and overlays require dedicated inventory adapters.
+`legacyPackages` is not recursively evaluated by default because it can expose a
+large or recursive package catalogue. Select a derivation there with `--attr`.
 
 Add `--impure` when the selected output reads environment variables or local
 paths outside its flake source, for example a development shell that reads a
@@ -69,8 +91,8 @@ evaluation remains pure unless it is explicitly supplied.
 
 ## Inventory contract
 
-Reports cover TVP-managed selections exposed by a selected package or the direct
-inputs of a selected shell. TVP's environment helpers publish the same inventory
+Reports cover TVP-managed selections exposed by discovered or explicitly selected
+derivations and their declared direct inputs. TVP's environment helpers publish the same inventory
 contract for every supported language; consumers do not need to define reporting
 metadata. A helper exposes actual resolved package references through its
 derivation's passthru:
@@ -121,10 +143,14 @@ graph traversal and attribution among multiple TVP inputs remain outside this
 inspection scope.
 
 The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
+Output discovery, partial failures and candidate lock graphs are covered by
+`python3 -B tools/consumer/test_discovery.py`; both use public local fixtures and
+build no packages.
 
 ## Experimental security audit
 
-`tvp audit` reads the same resolved TVP selections as `tvp used`. Grype is the
+`tvp audit` reads the same resolved TVP selections as `tvp used`, across discovered
+outputs by default or one explicit `--attr`. Grype is the
 default after the [live candidate comparison](consumer/SECURITY-EVALUATION.md).
 OSV remains available explicitly:
 
@@ -150,6 +176,8 @@ No matches among scanned components does not establish whole-environment safety.
 The default is report-only; `--fail-on high` exits 2 for matching advisories at
 that severity or above, and `--require-coverage` exits 3 for incomplete declared
 inventory coverage. Errors exit 1. Unknown severity remains visible.
+Output evaluation failures also exit 1 and make inventory coverage incomplete,
+even when advisory matching succeeded for every successfully observed component.
 Provider-supplied fix versions are advisory fix points; branch compatibility is
 not established by the audit.
 

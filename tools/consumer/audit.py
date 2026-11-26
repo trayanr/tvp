@@ -7,6 +7,8 @@ import json
 import re
 from urllib.parse import quote
 
+from report import format_output_scope
+
 
 SEVERITIES = ("unknown", "negligible", "low", "medium", "high", "critical")
 EXCLUDED_SCOPES = [
@@ -160,7 +162,7 @@ def audit(selected, backend, *, offline=False, cache_dir=None):
         if "reason" in row:
             component["reason"] = row["reason"]
     counts = Counter(component["status"] for component in resolved)
-    return {
+    report = {
         "schema": 1,
         "attribute": selected["attribute"],
         "input": selected["input"],
@@ -169,11 +171,16 @@ def audit(selected, backend, *, offline=False, cache_dir=None):
         "database": result["database"],
         "coverage": {
             "total": len(resolved), "scanned": counts["scanned"], "unsupported": counts["unsupported"],
-            "completeForInventory": bool(resolved) and counts["unsupported"] == 0,
+            "completeForInventory": bool(resolved) and counts["unsupported"] == 0
+                and selected.get("outputCoverage", {}).get("complete", True),
         },
         "components": resolved,
         "findings": findings,
     }
+    for field in ("system", "outputs", "skippedOutputs", "outputCoverage"):
+        if field in selected:
+            report[field] = selected[field]
+    return report
 
 
 def format_prioritization(finding):
@@ -204,9 +211,11 @@ def format_audit(result):
     revision = source.get("rev") or source.get("narHash") or "unknown revision"
     coverage = result["coverage"]
     version = result["backend"].get("version") or "not invoked"
-    lines = [result["attribute"], f'{result["input"]["name"]}  {revision}',
+    scope = format_output_scope(result)
+    lines = [scope[0], f'{result["input"]["name"]}  {revision}',
              f'Scanner: {result["backend"]["name"]} ({version})',
              f'Coverage: {coverage["scanned"]}/{coverage["total"]} TVP components scanned; {coverage["unsupported"]} unsupported.']
+    lines.extend(scope[1:])
     database = result["database"]
     if not coverage["scanned"]:
         lines.append("Advisory data: not queried.")
@@ -231,6 +240,10 @@ def format_audit(result):
             lines.append(f'  {component["name"]} {component["version"]}: not scanned — {component["reason"]}')
         elif matches:
             lines.append(f'  {component["name"]} {component["version"]}')
+            origins = sorted({usage["attribute"] for selection in component.get("selections", [])
+                              for usage in selection.get("usedBy", []) if "attribute" in usage})
+            if origins:
+                lines.append("    Outputs: " + ", ".join(origins))
             for finding in matches:
                 fixes = ", ".join(finding.get("fixedVersions", [])) or "not supplied"
                 lines.append(f'    {finding["severity"].upper()} {finding["id"]} — applicability unassessed; upstream fixes: {fixes}')
@@ -249,6 +262,8 @@ def format_audit(result):
 
 
 def exit_status(result, *, fail_on=None, require_coverage=False):
+    if not result.get("outputCoverage", {}).get("complete", True):
+        return 1
     if require_coverage and not result["coverage"]["completeForInventory"]:
         return 3
     if fail_on is not None and any(
