@@ -1,4 +1,7 @@
-{ lib }:
+{
+  lib,
+  fetchGit ? null,
+}:
 let
   genericRecipe = import ./build-gem.nix;
   genericArguments = builtins.functionArgs genericRecipe;
@@ -111,6 +114,6 @@ in
     };
 
   definitions = definitionsFor;
-  bundlerEnv = import ./bundler-env.nix { inherit lib; };
+  bundlerEnv = import ./bundler-env.nix { inherit lib fetchGit; };
   application = import ./application.nix { inherit lib; };
 }

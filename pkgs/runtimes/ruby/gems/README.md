@@ -1,8 +1,8 @@
 # Ruby project helper roadmap
 
 Build locked Ruby dependency environments with a selected TVP Ruby and Bundler.
-A private legacy Rails application provides acceptance coverage. Public tests use
-independently written synthetic gems and lockfiles.
+A private legacy Rails application provides acceptance coverage. Public checks
+use independently written synthetic projects and public registry native gems.
 
 ## First milestone
 
@@ -10,9 +10,9 @@ independently written synthetic gems and lockfiles.
 - [x] Build each gem independently with the selected Ruby and its compiler base.
 - [x] Accept gem archives and source directories or archives, with native library,
   tool, patch and build flag overrides.
-- [x] Consume the existing Bundix `gemset.nix` format. Fetch registry gem archives
-  with declared hashes and accept explicit Nix source overrides for Git and local
-  dependencies.
+- [x] Consume the existing Bundix `gemset.nix` format. Fetch registry archives and
+  revision-pinned Git checkouts with declared hashes; retain explicit source
+  overrides for local dependencies and custom fetching.
 - [x] Bind Bundler to the selected Ruby and assemble a frozen environment with
   explicit dependency groups, engine, manager and gem metadata.
 - [x] Keep gem compilation separate from environment assembly and application code.
@@ -166,15 +166,21 @@ in
     lockfile = ./Gemfile.lock;
     gemset = ./nix/gemset.nix;
     groups = [ "default" "test" ];
-    sourceOverrides = import ./nix/gem-sources.nix;
   }
 ```
 
 `gemset` accepts a Bundix attrset or a path to one. Registry entries use their
-`source.sha256` and first declared remote to fetch `.gem` files. Git and path
-entries require an explicit `sourceOverrides.<gem>` Nix source. That source can
-be a directory or an archive containing one top-level directory. Git checkouts
-use Bundler's normal gemspec glob and support several gems from one repository.
+`source.sha256` and first declared remote to fetch `.gem` files. Git entries are
+fetched automatically from `source.url`, a full commit hash in `source.rev`, and
+the recursive checkout hash in `source.sha256`; `source.fetchSubmodules` defaults
+to false. No separate source-mapping file is needed. TVP uses the package
+context's standard fixed-output Git fetcher, preserving existing checkout hashes,
+cache paths and the normal private repository access configuration.
+
+`sourceOverrides.<gem>` takes precedence over manifest fetching and can provide
+custom Git sources or local dependencies. An override can be a directory or an
+archive containing one top-level directory. Git checkouts use Bundler's normal
+gemspec glob and support several gems from one repository.
 Local paths must resolve inside the supplied project source. Set `src` to include
 additional files which the Gemfile evaluates, such as a gemspec or `.ruby-version`.
 When `src` contains a local gem, its installed files replace the matching source
@@ -260,7 +266,7 @@ nix build --no-link .#checks.x86_64-linux.ruby-projects
 nix build --no-link .#checks.x86_64-linux.ruby-projects.testSuite.ruby-bundle-legacy
 ```
 
-The same twelve named checks run as the `ruby-projects` smoke subject. Ruby 2.7.0
+These named checks also run as the `ruby-projects` smoke subject. Ruby 2.7.0
 with Bundler 1.17.3 and Ruby 3.3.12 with Bundler 2.5.20 cover gem archives,
 source directories and tarballs, native loading, dependency groups, direct gem
 executables, lockfile preservation, missing dependencies, Ruby ABI mismatches,
@@ -269,6 +275,11 @@ preservation of foreign binary payloads, local gem overlays in project sources,
 and multiple gems sharing one exported Git source. These are installed-result
 smoke checks. Public regressions cover generic fixes discovered during private
 acceptance.
+
+The automatic Git check fetches a small committed local repository without
+network access or import-from-derivation. It verifies shared source fetching,
+complete checkout contents including `export-ignore` files, immutable source
+metadata and explicit source-override precedence.
 
 The two application checks additionally build and read a transformed asset, run
 from an unrelated directory with a hostile interpreter on PATH, preserve literal

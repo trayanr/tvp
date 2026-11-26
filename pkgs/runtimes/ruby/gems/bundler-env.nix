@@ -1,5 +1,8 @@
 # Assemble project gem derivations with the selected Ruby and frozen Bundler.
-{ lib }:
+{
+  lib,
+  fetchGit ? null,
+}:
 {
   tvp,
   ruby,
@@ -15,6 +18,49 @@
 }:
 let
   fail = message: throw "TVP Ruby bundle: ${message}";
+  gitSource =
+    gemName: source:
+    let
+      url = source.url or (fail "missing Git URL for ${gemName}");
+      rev = source.rev or (fail "missing Git revision for ${gemName}");
+      sha256 = source.sha256 or (fail "missing Git source hash for ${gemName}");
+      fetchSubmodules = source.fetchSubmodules or false;
+      repository = builtins.baseNameOf (lib.removeSuffix ".git" url);
+      storeRepository = lib.removePrefix "file://" url;
+      immutableLocalRepository =
+        builtins.match "file:///nix/store/[a-z0-9]{32}-[A-Za-z0-9+._=-]+(/[A-Za-z0-9+._=-]+)*" url != null
+        && lib.all (part: part != "." && part != "..") (lib.splitString "/" storeRepository);
+      fetched = fetchGit {
+        name = "${repository}-${builtins.substring 0 7 rev}";
+        inherit
+          url
+          rev
+          sha256
+          fetchSubmodules
+          ;
+      };
+    in
+    assert builtins.isString url && url != "" || fail "invalid Git URL for ${gemName}";
+    assert
+      builtins.isString rev && builtins.match "([0-9a-fA-F]{40}|[0-9a-fA-F]{64})" rev != null
+      || fail "Git revision for ${gemName} must be a full commit hash";
+    assert builtins.isString sha256 && sha256 != "" || fail "missing Git source hash for ${gemName}";
+    assert builtins.isBool fetchSubmodules || fail "fetchSubmodules for ${gemName} must be a boolean";
+    assert
+      fetchGit != null
+      || fail "Git fetching is unavailable; use the full TVP package context or provide sourceOverrides.${gemName}";
+    if immutableLocalRepository then
+      # Build users do not own root-owned store inputs. Trust only this exact
+      # immutable repository. Git's local transport strips GIT_CONFIG_COUNT,
+      # so use an isolated config file inherited by the upload-pack process.
+      fetched.overrideAttrs (_: {
+        GIT_CONFIG_GLOBAL = builtins.toFile "ruby-git-store-source-config" ''
+          [safe]
+            directory = ${storeRepository}
+        '';
+      })
+    else
+      fetched;
   recipe =
     {
       base,
@@ -68,6 +114,8 @@ let
                   }.gem";
                   sha256 = source.sha256 or (fail "missing source hash for ${gemName}");
                 }
+              else if type == "git" then
+                gitSource gemName source
               else
                 fail "provide sourceOverrides.${gemName} for ${type} sources"
             );

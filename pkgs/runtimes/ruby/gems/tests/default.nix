@@ -429,5 +429,6 @@ in
 (makeChecks "legacy" tvp.canonical.ruby_2_7_0 tvp.canonical.bundler_1_17_3)
 // (makeChecks "modern" tvp.canonical.ruby_3_3_12 tvp.canonical.bundler_2_5_20)
 // {
+  ruby-bundle-git = import ./automatic-git.nix { inherit tvp; };
   ruby-native-providers = import ./native-providers.nix { inherit tvp; };
 }

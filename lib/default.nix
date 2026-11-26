@@ -1,5 +1,6 @@
 {
   lib,
+  fetchGit ? null,
   familyContext ? null,
 }:
 let
@@ -14,7 +15,7 @@ in
   recipeSplits = import ./recipe-splits.nix { inherit lib; };
   android = import ./android.nix { inherit lib; };
   php = import ./php.nix { inherit lib; };
-  ruby = import ./ruby.nix { inherit lib; };
+  ruby = import ./ruby.nix { inherit lib fetchGit; };
   provenance = import ./provenance.nix { inherit lib; };
   graph = import ./graph.nix { inherit lib; };
   bases = import ./bases.nix { inherit lib platforms; };
