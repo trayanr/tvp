@@ -1,0 +1,7 @@
+--- a/ext/pg_connection.c
++++ b/ext/pg_connection.c
+@@ -3688,2 +3688,3 @@
+-pgconn_set_client_encoding_async2( VALUE arg )
++pgconn_set_client_encoding_async2( VALUE arg, VALUE error )
+ {
++	UNUSED(error);

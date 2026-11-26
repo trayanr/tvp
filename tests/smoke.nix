@@ -25,6 +25,8 @@ let
     lib.nameValuePair "${phpName}--${name}" { inherit (extension.tests) load roundtrip; }
   ) compatibleFamilies;
   subjects = {
+    ruby-projects = import ../pkgs/runtimes/ruby/gems/tests { inherit tvp; };
+
     krb5_1_21_3 = {
       inherit (tvp.canonical.krb5_1_21_3.tests) gssapi sdk;
     };
