@@ -1,11 +1,10 @@
 # Each gem owns its named inputs, build defaults and installed checks together.
 {
   lib,
-  pkgs,
   helpers,
 }:
 let
-  call = path: import path { inherit lib pkgs helpers; };
+  call = path: import path { inherit lib helpers; };
 in
 {
   pg = call ./pg;

@@ -1,36 +1,11 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 let
-  library = import ../native-library.nix { inherit lib; };
   check = import ../test.nix { inherit lib; };
-  provider =
-    name:
-    if pkgs == null then
-      throw "TVP Ruby rmagick: provide ${name} explicitly or use the full TVP package context"
-    else
-      pkgs.${name};
 in
 {
-  inputs = {
-    imagemagick = _: provider "imagemagick7";
-    numactl = _: provider "numactl";
-    libc = _: provider "glibc";
-  };
+  inputs.imagemagick = args: args.tvp.packages.imagemagick_7;
   configure = final: {
-    libraries = [
-      (library final.imagemagick)
-      (library final.numactl)
-      # The ImageMagick provider needs libmvec from its libc, without mixing its
-      # libc headers into the selected Ruby compiler's own SDK.
-      (
-        final.libc
-        // {
-          development = {
-            includeDirectories = [ ];
-            libraryDirectories = [ "${lib.getLib final.libc}/lib" ];
-          };
-        }
-      )
-    ];
+    libraries = [ final.imagemagick ];
   };
   mkTests = package: {
     load = check package {

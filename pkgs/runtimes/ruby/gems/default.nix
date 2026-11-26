@@ -1,7 +1,4 @@
-{
-  lib,
-  pkgs ? null,
-}:
+{ lib }:
 let
   genericRecipe = import ./build-gem.nix;
   genericArguments = builtins.functionArgs genericRecipe;
@@ -18,7 +15,7 @@ let
   definitionsFor =
     tvp:
     import ./definitions {
-      inherit lib pkgs;
+      inherit lib;
       helpers.writePatch =
         final: name: text:
         tvp.builder {

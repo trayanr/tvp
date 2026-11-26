@@ -98,9 +98,17 @@ entry. The lockfile and source manifest continue to supply exact versions, sourc
 hashes and resolved gem dependencies.
 
 Current definitions cover `pg`, `ffi`, `ethon`, `rbtrace`, `activerecord`,
-`rmagick` and `nokogiri`. PostgreSQL, libffi and Curl defaults use TVP packages.
-ImageMagick and XML library defaults use the supplied package context through a
-declared native-library adapter; those choices are owned by the TVP definition.
+`rmagick` and `nokogiri`. Their native defaults use TVP packages, including
+PostgreSQL, libffi, Curl, ImageMagick, libxml2, libxslt and zlib. Native library
+paths and dependencies come from those packages' declared development interfaces;
+gem definitions do not import Nixpkgs native libraries.
+
+RMagick defaults to TVP's ImageMagick 7 family. Its image formats and HDRI support
+follow the selected ImageMagick package's `buildFeatures`. Nokogiri 1.15.7 uses
+libxslt 1.1.43 and its matching libxml2 2.12.10 to retain the XML API that this gem
+supports. Other Nokogiri versions default to the current TVP libxslt family.
+Unless explicitly overridden, Nokogiri's libxml2 follows the chosen libxslt
+provider, so overriding libxslt also selects its declared XML dependency.
 
 For example, given the desired provider packages:
 

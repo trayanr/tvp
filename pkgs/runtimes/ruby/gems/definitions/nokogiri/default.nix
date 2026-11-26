@@ -1,22 +1,23 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 let
-  library = import ../native-library.nix { inherit lib; };
   check = import ../test.nix { inherit lib; };
-  provider =
-    name:
-    if pkgs == null then
-      throw "TVP Ruby nokogiri: provide ${name} explicitly or use the full TVP package context"
+  defaultXslt =
+    args:
+    if args.version == "1.15.7" then
+      # This gem predates the libxml2 2.13 API removals. The selected libxslt
+      # declares its matching libxml2, preserving one XML provider in Ruby.
+      args.tvp.packages.libxslt_1_1_43
     else
-      pkgs.${name};
+      args.tvp.packages.libxslt;
 in
 {
   inputs = {
-    libxml2 = _: provider "libxml2";
-    libxslt = _: provider "libxslt";
-    zlib = _: provider "zlib";
+    libxml2 = args: (args.libxslt or (defaultXslt args)).specification.libxml2;
+    libxslt = defaultXslt;
+    zlib = args: args.tvp.packages.zlib_1;
   };
   configure = final: {
-    libraries = map library [
+    libraries = [
       final.libxml2
       final.libxslt
       final.zlib
