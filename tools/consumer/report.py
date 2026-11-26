@@ -103,9 +103,11 @@ def locked_input(lock_graph, input_name):
     return {"name": input_name, "locked": locked}
 
 
-def inventory(flake, attribute, lock=None, input_name="tvp"):
+def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False):
     flags = ["--json", "--no-write-lock-file", "--no-update-lock-file",
              "--option", "allow-import-from-derivation", "false"]
+    if impure:
+        flags.append("--impure")
     if lock is not None:
         flags += ["--reference-lock-file", str(Path(lock).resolve(strict=True))]
     metadata = nix_json(["flake", "metadata", *flags, flake])

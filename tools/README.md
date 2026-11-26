@@ -60,6 +60,12 @@ Nix to update only the chosen input into a temporary lockfile, then uses the sam
 comparison. Use `nix flake update tvp` to apply an update. Use `--json` for CI
 reports. These commands evaluate derivations without building package outputs.
 
+Add `--impure` when the selected output reads environment variables or local
+paths outside its flake source, for example a development shell that reads a
+separate application checkout. Set the required environment variables before
+running the command. The flag applies to both sides of a diff or update preview;
+evaluation remains pure unless it is explicitly supplied.
+
 Reports cover a selected package or direct inputs exposed by a selected shell.
 TVP selection metadata identifies observed packages, including the engine
 and modules of a directly selected TVP PHP composition, and the Ruby, bound

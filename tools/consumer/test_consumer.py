@@ -229,6 +229,35 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertFalse(changes["ruby"]["versionChanged"])
         self.assertTrue(changes["ruby"]["derivationChanged"])
 
+    def test_impure_outputs_require_explicit_flag(self):
+        project = self.project / "flake.nix"
+        project.write_text(project.read_text().replace(
+            'system = "x86_64-linux";',
+            '''system =
+              if builtins.getEnv "TVP_CONSUMER_TEST_IMPURE" == "enabled"
+              then "x86_64-linux"
+              else throw "consumer fixture requires --impure";''',
+        ))
+        self.env["TVP_CONSUMER_TEST_IMPURE"] = "enabled"
+        pure = subprocess.run(
+            [sys.executable, "-B", str(CLI), "used", "--flake", str(self.project), "--json"],
+            cwd=self.root, env=self.env, text=True, capture_output=True,
+        )
+        self.assertNotEqual(pure.returncode, 0)
+        self.assertIn("consumer fixture requires --impure", pure.stderr)
+
+        observed = self.tvp("used", "--impure")
+        php = next(row for row in observed["packages"] if row["role"] == "php-engine")
+        self.assertEqual(php["version"], "8.2.1")
+        self.assertEqual(self.tvp("diff", str(self.lock), "--impure")["changes"], [])
+
+        self.commit_upstream("8.2.2", "6.2.1", "revised")
+        preview = self.tvp("update", "--preview", "--impure")
+        changes = {row["after"]["pname"]: row for row in preview["changes"]}
+        self.assertEqual(changes["php"]["after"]["version"], "8.2.2")
+        self.assertEqual(changes["php-redis"]["after"]["version"], "6.2.1")
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
     def test_ruby_bundle_reports_bound_components_and_gem_changes(self):
         attribute = f"packages.{SYSTEM}.rubyBundle"
         inventory = self.tvp("used", attribute=attribute)
