@@ -109,6 +109,11 @@ let
     "6.8.3.10"
     "6.9.10.54"
   ];
+  perlVersionRepair = {
+    "6.9.5.7" = { old = "6.94"; new = "6.95"; };
+    "7.1.0.32" = { old = "7.0.12"; new = "7.1.0"; };
+    "7.1.0.39" = { old = "7.0.12"; new = "7.1.0"; };
+  }.${final.version} or null;
   elfPaths = [
     "bin"
     "lib"
@@ -243,11 +248,22 @@ in
     (lib.optional (final.perl != null && final.version == "6.9.12.6") (
       command "imagemagick.perl-makefile-syntax" ''
         # Restore the missing terminator, as in the next upstream release.
-        file=PerlMagick/default/Makefile.PL.in
-        test "$(grep -c '^my [$]LIBS_magick = .*[^;]$' "$file")" = 1
-        sed -i '/^my [$]LIBS_magick = /s/$/;/' "$file"
+        for file in PerlMagick/{default,quantum}/Makefile.PL.in; do
+          test "$(grep -c '^my [$]LIBS_magick = .*[^;]$' "$file")" = 1
+          sed -i '/^my [$]LIBS_magick = /s/$/;/' "$file"
+        done
       ''
     ))
+    (lib.optional
+      (final.perl != null && lib.elem final.version [ "6.9.10.0" "6.9.10.1" "6.9.10.2" ])
+      (command "imagemagick.perl-numeric-version" ''
+        # Backport 6.9.10-3's numeric version to both the XS build and loader.
+        test "$(grep -Fxc "PACKAGE_PERL_VERSION='6.9A'" version.sh)" = 1
+        test "$(grep -Fxc "\$VERSION = '6.9A';" PerlMagick/Magick.pm)" = 1
+        sed -i "s/^PACKAGE_PERL_VERSION='6[.]9A'$/PACKAGE_PERL_VERSION='6.9.10'/" version.sh
+        sed -i "s/^\$VERSION = '6[.]9A';$/\$VERSION = '6.9.10';/" PerlMagick/Magick.pm
+      '')
+    )
     (lib.optional (final.perl != null && final.version == "7.0.5.3") (
       command "imagemagick.perl-module-install-order" ''
         # The default subdirectory installs the generated Image::Magick module.
@@ -265,6 +281,32 @@ in
         sed -i 's/WebPPictureInit/WebPPictureInitInternal/g' configure
       ''
     ))
+    (lib.optional
+      (lib.elem final.version [
+        "6.6.7.10"
+        "6.6.8.10"
+        "6.7.6.10"
+        "6.9.9.41"
+        "6.9.12.99"
+        "7.0.7.29"
+        "7.0.8.13"
+      ] || (enabledDelegates ? openjp2 && lib.elem final.version [
+        "6.8.8.10"
+        "6.9.8.7"
+        "7.0.5.8"
+      ]) || (enabledDelegates ? webp && lib.elem final.version [
+        "7.0.7.12"
+        "7.0.7.13"
+        "7.0.7.14"
+        "7.0.7.15"
+      ]))
+      {
+        name = "imagemagick.historical-coders";
+        cwd = "source";
+        tools = [ tools.python ];
+        run = "${tools.python}/bin/python3 -B ${./historical-coders.py} ${lib.escapeShellArg final.version}";
+      }
+    )
     (lib.optional
       (lib.versionAtLeast final.version "6.5.6.10" && lib.versionOlder final.version "6.6.2.10")
       (
@@ -378,6 +420,23 @@ in
             ${tools.patchelf}/bin/patchelf --add-rpath "$perlArchlib/CORE" "$module"
           fi
         done
+      '';
+    })
+    (lib.optional (final.perl != null && perlVersionRepair != null) {
+      name = "imagemagick.perl-bootstrap-version";
+      tools = [
+        tools.grep
+        tools.sed
+      ];
+      run = ''
+        # The installed module carries a stale literal, while XS uses the release version.
+        shopt -s globstar nullglob
+        modules=("$out/${final.installedInterface.perlModuleDirectory}"/**/Image/Magick.pm)
+        test "''${#modules[@]}" = 1
+        module="''${modules[0]}"
+        test "$(grep -Fxc "\$VERSION = '${perlVersionRepair.old}';" "$module")" = 1
+        test "$(grep -c '^[$]VERSION = ' "$module")" = 1
+        sed -i "s/^[$]VERSION = .*;\$/\$VERSION = '${perlVersionRepair.new}';/" "$module"
       '';
     })
     (outputs.development { libraries = final.environment.libraries; })

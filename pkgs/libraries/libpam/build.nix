@@ -18,7 +18,6 @@ let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
   command = steps.command { environment = final.environment; };
   paths = [
-    "bin"
     "sbin"
     "lib"
   ];
@@ -95,7 +94,6 @@ in
     }
     (outputs.shebangs {
       paths = [
-        "bin"
         "sbin"
         "share/pam"
       ];

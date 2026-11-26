@@ -19,6 +19,15 @@ let
   reportedImageFormat = if reportsPnm then "PNM" else imageFormat;
   parts = lib.splitString "." package.version;
   upstreamVersion = lib.concatStringsSep "." (lib.take 3 parts) + "-" + lib.last parts;
+  traceDelegates = builtins.elem package.version [
+    "6.9.9.5"
+    "7.0.6.5"
+    "7.0.7.12"
+    "7.0.7.13"
+    "7.0.7.14"
+    "7.0.7.15"
+    "7.0.8.13"
+  ];
 in
 context.mkSuite {
   inherit package;
@@ -89,8 +98,16 @@ context.mkSuite {
         test "$(identify -format '%m %wx%h' variant.ico)" = 'ICO 16x16'
         convert -delay 8 raster.png -size 16x16 xc:blue -loop 0 animated.gif
         test "$(identify -format '%m %wx%h\n' animated.gif)" = "$(printf '%s\n' 'GIF 16x16' 'GIF 16x16')"
-        convert 'animated.gif[0]' -depth 8 RGB:first.rgb
-        convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+        ${lib.removeSuffix "\n" (if builtins.elem package.version [ "6.9.4.7" "7.0.1.9" ] then ''
+          # These readers accept the animation as a whole but treat [n] as part
+          # of the filename. Decode both scenes in one invocation.
+          convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
+          mv frame-0.rgb first.rgb
+          mv frame-1.rgb second.rgb
+        '' else ''
+          convert 'animated.gif[0]' -depth 8 RGB:first.rgb
+          convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+        '')}
         test -s first.rgb && test -s second.rgb
         status=0
         cmp -s first.rgb second.rgb || status=$?
@@ -106,7 +123,8 @@ context.mkSuite {
         binutils
         grep
       ];
-      script = ''
+      # Preserve the failing command and its arguments for historical codec failures.
+      script = lib.optionalString traceDelegates "set -x\n" + ''
         ${lib.optionalString (builtins.elem "xml" delegates) ''
           cat > shape.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" width="3" height="2">
