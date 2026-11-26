@@ -64,6 +64,8 @@ def _identity(component):
         selected["cpes"] = cpes
     if "purl" not in selected and "cpes" not in selected:
         return None, "package has no versioned CPE or package URL for Grype"
+    if not cpes and selected.get("purl", "").startswith("pkg:generic/"):
+        return None, "generic package URLs require declared CPE identities for native advisory matching"
     return selected, None
 
 

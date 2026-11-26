@@ -345,7 +345,10 @@ class ConsumerIntegrationTests(unittest.TestCase):
             'tvp = { status.level = "ok"; };',
             '''tvp = {
               status.level = "ok";
-              security = { schema = 1; purl = "pkg:generic/${pname}"; };
+              security = {
+                schema = 1; purl = "pkg:generic/${pname}";
+                cpe = { vendor = "fixture"; product = pname; };
+              };
             };''',
         )
         (self.upstream / "flake.nix").write_text(source)
@@ -364,7 +367,8 @@ matches = []
 for index, component in enumerate(sbom["components"]):
     matches.append({
         "artifact": {"id": "scanner-id-" + str(index), "name": component["name"],
-                     "version": component["version"], "purl": component["purl"], "cpes": []},
+                     "version": component["version"], "purl": component["purl"],
+                     "cpes": [component["cpe"]] if "cpe" in component else []},
         "vulnerability": {"id": "TEST-ADVISORY-CLI", "severity": "High",
                           "description": "Synthetic CLI advisory", "fix": {"versions": []}},
         "matchDetails": [{"type": "exact-direct-match", "matcher": "fixture-matcher"}],

@@ -141,6 +141,7 @@ class GrypeAdapterTests(unittest.TestCase):
             {**COMPONENT, "version": None},
             {**COMPONENT, "identity": {"purl": "pkg:generic/curl"}},
             {**COMPONENT, "identity": {"purl": "pkg:generic/curl@9.0.0"}},
+            {**COMPONENT, "identity": {"purl": "pkg:generic/curl@8.0.0"}},
             {**COMPONENT, "identity": {"cpe": "cpe:2.3:a:haxx:curl:*:*:*:*:*:*:*:*"}},
             {**COMPONENT, "identity": {}},
         ]

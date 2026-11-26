@@ -44,6 +44,10 @@ not claimed as existing TVP packages or realized builds.
 - Curl's output includes both the command and libcurl. Declaring only `haxx:curl`
   missed the target advisory on `haxx:libcurl`. TVP now declares both CPEs, and
   the adapter scans them without duplicating package findings.
+- A separate native-package coverage probe showed that a generic PURL without
+  a declared CPE could return no useful matches for known-affected Curl. That
+  incomplete identity is now reported as unsupported, rather than counted as
+  successful native advisory coverage.
 - OSV Git queries need release-specific identities. TVP owns exact Ruby,
   OpenSSL, PHP and libxml2 tag mappings. Profiles are bound to their declared
   version; an override cannot silently reuse a stale tag.
