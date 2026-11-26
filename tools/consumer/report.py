@@ -7,6 +7,7 @@ import subprocess
 
 
 INVENTORY = r"""
+includeSecurity:
 subject:
 let
   isPackage = value: builtins.isAttrs value && (value.type or null) == "derivation";
@@ -22,7 +23,9 @@ let
       version = package.version or (selection.version or null);
       inherit (package) drvPath;
       outputName = package.outputName or "out";
-    };
+    } // (if includeSecurity then {
+      security = package.tvp.security or null;
+    } else { });
   managed = role: location: package:
     if isPackage package && package ? __tvpSelection
     then [ (record role location package) ] else [ ];
@@ -133,7 +136,7 @@ def locked_input(lock_graph, input_name):
     return {"name": input_name, "locked": locked}
 
 
-def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False):
+def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False, include_security=False):
     flags = ["--json", "--no-write-lock-file", "--no-update-lock-file",
              "--option", "allow-import-from-derivation", "false"]
     if impure:
@@ -142,7 +145,8 @@ def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False):
         flags += ["--reference-lock-file", str(Path(lock).resolve(strict=True))]
     metadata = nix_json(["flake", "metadata", *flags, flake])
     selected = locked_input(metadata["locks"], input_name)
-    packages = managed_packages(nix_json(["eval", *flags, f"{flake}#{attribute}", "--apply", INVENTORY]))
+    expression = f"({INVENTORY}) {'true' if include_security else 'false'}"
+    packages = managed_packages(nix_json(["eval", *flags, f"{flake}#{attribute}", "--apply", expression]))
     return {
         "schema": 1,
         "attribute": attribute,
@@ -197,7 +201,10 @@ def index(inventory):
 
 
 def without_location(package):
-    return {name: value for name, value in package.items() if name not in ("location", "usedBy")}
+    return {
+        name: value for name, value in package.items()
+        if name not in ("location", "usedBy", "security")
+    }
 
 
 def unmatched(left, right):

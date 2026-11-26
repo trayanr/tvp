@@ -10,6 +10,7 @@ import sys
 import tempfile
 
 from report import diff, inventory
+from audit import SEVERITIES, audit, exit_status, format_audit
 
 
 def parser():
@@ -18,8 +19,9 @@ def parser():
     used = commands.add_parser("used", help="show the selected TVP packages")
     compare = commands.add_parser("diff", help="compare two existing lockfiles")
     update = commands.add_parser("update", help="preview a TVP input update")
+    security = commands.add_parser("audit", help="audit declared TVP packages with an experimental backend")
 
-    for command in (used, compare, update):
+    for command in (used, compare, update, security):
         command.add_argument("--flake", type=Path, default=Path("."), help="local flake directory")
         command.add_argument("--attr", help="package or shell output (default: devShells.<system>.default)")
         command.add_argument("--input", default="tvp", help="top-level TVP input name")
@@ -30,11 +32,18 @@ def parser():
     compare.add_argument("before", type=Path, help="baseline lockfile")
     compare.add_argument("after", nargs="?", type=Path, help="candidate (default: flake.lock)")
     update.add_argument("--preview", required=True, action="store_true", help="leave flake.lock untouched")
+    security.add_argument("--backend", required=True, choices=("grype", "osv"), help="candidate scanner; no default is chosen yet")
+    security.add_argument("--lock", type=Path, help="evaluate against an alternate lockfile")
+    security.add_argument("--offline", action="store_true", help="use cached advisory data without updating it")
+    security.add_argument("--cache-dir", type=Path, help="backend advisory cache directory")
+    security.add_argument("--fail-on", choices=SEVERITIES[1:], help="exit 2 for advisory matches at or above this severity")
+    security.add_argument("--require-coverage", action="store_true", help="exit 3 if declared TVP inventory coverage is incomplete")
     return command_parser
 
 
-def read_inventory(args, lock):
-    return inventory(args.flake, args.attr, lock.resolve(strict=True), args.input, impure=args.impure)
+def read_inventory(args, lock, *, include_security=False):
+    return inventory(args.flake, args.attr, lock.resolve(strict=True), args.input,
+                     impure=args.impure, include_security=include_security)
 
 
 def preview(args, current):
@@ -119,12 +128,20 @@ def main():
                 read_inventory(args, args.before),
                 read_inventory(args, args.after or current),
             )
+        elif args.command == "audit":
+            selected = read_inventory(args, args.lock or current, include_security=True)
+            cache = args.cache_dir or Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "tvp" / "audit" / args.backend
+            result = audit(selected, args.backend, offline=args.offline, cache_dir=cache)
         else:
             result = preview(args, current)
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
+        elif args.command == "audit":
+            print(format_audit(result))
         else:
             print(format_report(args, result))
+        if args.command == "audit":
+            return exit_status(result, fail_on=args.fail_on, require_coverage=args.require_coverage)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
         print(f"tvp: {error}", file=sys.stderr)
         return 1

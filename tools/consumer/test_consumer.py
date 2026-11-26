@@ -324,6 +324,70 @@ class ConsumerIntegrationTests(unittest.TestCase):
             "--attr", attribute or f"devShells.{SYSTEM}.default", "--json", cwd=self.root,
         ))
 
+    def test_audit_keeps_unmapped_inventory_visible_without_network(self):
+        report = self.tvp("audit", "--backend", "osv", "--offline")
+        self.assertEqual(report["coverage"], {
+            "total": 3, "scanned": 0, "unsupported": 3, "completeForInventory": False,
+        })
+        self.assertEqual(report["findings"], [])
+        self.assertFalse(report["scope"]["environmentComplete"])
+        self.assertEqual(self.lock.read_bytes(), self.original_lock)
+        result = subprocess.run(
+            [sys.executable, "-B", str(CLI), "audit", "--backend", "osv", "--offline",
+             "--flake", str(self.project), "--require-coverage", "--json"],
+            cwd=self.root, env=self.env, text=True, capture_output=True,
+        )
+        self.assertEqual(result.returncode, 3, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["coverage"]["scanned"], 0)
+
+    def test_audit_cli_reports_fixture_findings_and_policy_exit_codes(self):
+        source = (self.upstream / "flake.nix").read_text().replace(
+            'tvp = { status.level = "ok"; };',
+            '''tvp = {
+              status.level = "ok";
+              security = { schema = 1; purl = "pkg:generic/${pname}"; };
+            };''',
+        )
+        (self.upstream / "flake.nix").write_text(source)
+        self.command("git", "add", "flake.nix", cwd=self.upstream)
+        self.command("git", "-c", "user.name=TVP test", "-c", "user.email=tvp@example.invalid",
+                     "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "Audit identities",
+                     cwd=self.upstream)
+        self.command("nix", "flake", "update", "tvp", cwd=self.project)
+        current_lock = self.lock.read_bytes()
+        executable = self.root / "grype"
+        executable.write_text("#!" + sys.executable + "\n" + '''
+import json, sys
+from pathlib import Path
+sbom = json.loads(Path(sys.argv[1].removeprefix("sbom:")).read_text())
+matches = []
+for index, component in enumerate(sbom["components"]):
+    matches.append({
+        "artifact": {"id": "scanner-id-" + str(index), "name": component["name"],
+                     "version": component["version"], "purl": component["purl"], "cpes": []},
+        "vulnerability": {"id": "TEST-ADVISORY-CLI", "severity": "High",
+                          "description": "Synthetic CLI advisory", "fix": {"versions": []}},
+        "matchDetails": [{"type": "exact-direct-match", "matcher": "fixture-matcher"}],
+    })
+print(json.dumps({"matches": matches, "descriptor": {"name": "grype", "version": "fixture",
+    "db": {"schemaVersion": 6, "built": "2026-11-01T00:00:00Z", "valid": True}}}))
+''')
+        executable.chmod(0o755)
+        environment = {**self.env, "PATH": str(self.root) + os.pathsep + self.env["PATH"]}
+        command = [sys.executable, "-B", str(CLI), "audit", "--backend", "grype", "--offline",
+                   "--flake", str(self.project), "--fail-on", "high", "--json"]
+        result = subprocess.run(command, cwd=self.root, env=environment, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["coverage"]["scanned"], 2)
+        self.assertEqual(report["coverage"]["unsupported"], 1)
+        self.assertEqual(len(report["findings"]), 2)
+        self.assertTrue(all(finding["applicability"] == "unassessed" for finding in report["findings"]))
+        self.assertTrue(all("usedBy" in component["selections"][0] for component in report["components"]))
+        self.assertEqual(self.lock.read_bytes(), current_lock)
+        used = self.tvp("used")
+        self.assertTrue(all("security" not in package for package in used["packages"]))
+
     def contract_upstream(self, version):
         (self.upstream / "flake.nix").write_text(CONTRACT_UPSTREAM.replace("@VERSION@", version))
         self.command("git", "add", "flake.nix", cwd=self.upstream)

@@ -938,6 +938,14 @@ let
   pname = "openssl";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/openssl";
+      cpe = {
+        vendor = "openssl";
+        product = "openssl";
+      };
+    };
 
     source = tvp.lib.sources.archive {
       url =

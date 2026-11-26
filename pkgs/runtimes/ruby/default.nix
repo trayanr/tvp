@@ -656,6 +656,14 @@ let
   pname = "ruby";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = {
+      schema = 1;
+      purl = "pkg:generic/ruby";
+      cpe = {
+        vendor = "ruby-lang";
+        product = "ruby";
+      };
+    };
 
     testDeps.consumerCompiler = tvp.lib.packages.withConstraint {
       category = "artifact";

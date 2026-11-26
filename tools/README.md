@@ -121,6 +121,39 @@ inspection scope.
 
 The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
 
+## Experimental security audit
+
+`tvp audit` reads the same resolved TVP selections as `tvp used`. Choose a
+candidate backend explicitly while Grype and OSV are being evaluated:
+
+```sh
+nix run .#tvp -- audit --backend osv
+nix run .#tvp -- audit --backend grype --attr packages.x86_64-linux.example --json
+nix run .#tvp -- audit --backend osv --offline --require-coverage
+```
+
+Grype currently needs to be on the caller's PATH. OSV uses its HTTPS API and
+caches exact query responses for 24 hours; `--offline` requires cached responses
+for mapped components and labels their age. Neither backend uploads application
+source. No packages are built to read the inventory. An initial set of TVP-owned
+identity profiles covers Bundler, Curl, Ruby, OpenSSL and PostgreSQL; support
+differs by backend, and missing profiles remain explicitly unscanned.
+
+Reports include the TVP pin, output, scanner/data evidence, coverage and advisory
+matches with applicability unassessed. The scope excludes undeclared transitive
+dependencies, language lockfiles, non-TVP packages and application reachability.
+No matches among scanned components does not establish whole-environment safety.
+The default is report-only; `--fail-on high` exits 2 for matching advisories at
+that severity or above, and `--require-coverage` exits 3 for incomplete declared
+inventory coverage. Errors exit 1. Unknown severity remains visible.
+Provider-supplied fix versions are advisory fix points; branch compatibility is
+not established by the audit.
+
+The [security roadmap](consumer/SECURITY-ROADMAP.md) records candidate evaluation,
+daily CI on pinned environments, build assessments and later dependency scopes.
+Run the offline core/provider check with
+`nix build --no-link .#checks.x86_64-linux.consumer-audit`.
+
 ## Package reports
 
 `nix run .#status` reports declared package status, gaps and the locally measured
