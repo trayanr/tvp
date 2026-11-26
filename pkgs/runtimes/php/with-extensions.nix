@@ -110,6 +110,15 @@ let
         unwrapped = final.php;
         enabledExtensions = modules;
         inherit (final) settings;
+        tvpInventory =
+          assert valid;
+          {
+            schema = 1;
+            packages = {
+              runtime = final.php;
+              extensions = modules;
+            };
+          };
       };
       plan =
         assert valid;

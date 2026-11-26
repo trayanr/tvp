@@ -21,7 +21,7 @@ in
   inherit (compatibility) runCommand stdenv;
   tvpTestBatch = owned.mkBatch;
   closureInfo = pkgs.closureInfo.override {
-    inherit (compatibility) stdenv;
+    stdenvNoCC = compatibility.stdenv;
     inherit coreutils;
     inherit (tvp.packages) jq;
   };
