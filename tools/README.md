@@ -153,6 +153,27 @@ inventory coverage. Errors exit 1. Unknown severity remains visible.
 Provider-supplied fix versions are advisory fix points; branch compatibility is
 not established by the audit.
 
+Grype findings retain CISA KEV records, EPSS probabilities and Grype's risk score
+when supplied. Text output shows KEV listing dates and ransomware-use information,
+EPSS scoring dates and percentiles, and scanner prioritization scores. EPSS is a
+forecast of observed exploitation activity globally over the next 30 days; it
+does not know the application's layout or exposure. Missing metadata is unknown,
+and low scores never hide findings or relax `--fail-on` severity gates.
+
+The shared finding contract has three optional, additive JSON fields:
+
+- `knownExploited`: KEV records, retaining CVE, dates, required action, ransomware
+  association, notes and references supplied by the scanner.
+- `epss`: records containing `cve`, `epss` (probability from 0 to 1), and optional
+  `percentile` (0 to 1) and scoring `date`.
+- `risk`: `{ "source": "grype", "score": 74.5 }`, a scanner prioritization score
+  from 0 to 100. This is not an application risk assessment.
+
+These fields use Grype's existing database, including its retained KEV/EPSS
+provider capture timestamps and digests; no separate feed is downloaded.
+Backends without this metadata omit the fields. Absent or empty KEV metadata
+does not establish that a vulnerability has never been exploited.
+
 The [security roadmap](consumer/SECURITY-ROADMAP.md) records candidate evaluation,
 daily CI on pinned environments, build assessments and later dependency scopes.
 Run the offline core/provider check with

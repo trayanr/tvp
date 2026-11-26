@@ -370,7 +370,12 @@ for index, component in enumerate(sbom["components"]):
                      "version": component["version"], "purl": component["purl"],
                      "cpes": [component["cpe"]] if "cpe" in component else []},
         "vulnerability": {"id": "TEST-ADVISORY-CLI", "severity": "High",
-                          "description": "Synthetic CLI advisory", "fix": {"versions": []}},
+                          "description": "Synthetic CLI advisory", "fix": {"versions": []},
+                          "knownExploited": [{"cve": "CVE-2099-0001", "dateAdded": "2026-11-01",
+                                               "knownRansomwareCampaignUse": "known"}],
+                          "epss": [{"cve": "CVE-2099-0001", "epss": 0.125,
+                                    "percentile": 0.9, "date": "2026-11-25"}],
+                          "risk": 74.5},
         "matchDetails": [{"type": "exact-direct-match", "matcher": "fixture-matcher"}],
     })
 print(json.dumps({"matches": matches, "descriptor": {"name": "grype", "version": "fixture",
@@ -386,6 +391,15 @@ print(json.dumps({"matches": matches, "descriptor": {"name": "grype", "version":
         self.assertEqual(report["coverage"]["scanned"], 2)
         self.assertEqual(report["coverage"]["unsupported"], 1)
         self.assertEqual(len(report["findings"]), 2)
+        for finding in report["findings"]:
+            self.assertEqual(finding["knownExploited"][0]["cve"], "CVE-2099-0001")
+            self.assertEqual(finding["epss"][0]["epss"], 0.125)
+            self.assertEqual(finding["risk"], {"source": "grype", "score": 74.5})
+        text_result = subprocess.run(command[:-1], cwd=self.root, env=environment, text=True, capture_output=True)
+        self.assertEqual(text_result.returncode, 2, text_result.stderr)
+        self.assertIn("CISA KEV: CVE-2099-0001 listed", text_result.stdout)
+        self.assertIn("EPSS CVE-2099-0001: 12.50%", text_result.stdout)
+        self.assertIn("Grype risk: 74.5/100", text_result.stdout)
         self.assertTrue(all(finding["applicability"] == "unassessed" for finding in report["findings"]))
         self.assertTrue(all("usedBy" in component["selections"][0] for component in report["components"]))
         self.assertEqual(self.lock.read_bytes(), current_lock)

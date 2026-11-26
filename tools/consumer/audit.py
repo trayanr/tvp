@@ -176,6 +176,29 @@ def audit(selected, backend, *, offline=False, cache_dir=None):
     }
 
 
+def format_prioritization(finding):
+    """Describe upstream threat signals without assessing application exposure."""
+    lines = []
+    for record in finding.get("knownExploited", []):
+        details = [f'CISA KEV: {record["cve"]} listed']
+        if record.get("dateAdded"):
+            details.append(f'added {record["dateAdded"]}')
+        if record.get("knownRansomwareCampaignUse"):
+            details.append(f'ransomware use: {record["knownRansomwareCampaignUse"]}')
+        lines.append("; ".join(details))
+    for record in finding.get("epss", []):
+        details = [f'EPSS {record["cve"]}: {record["epss"]:.2%}']
+        if "percentile" in record:
+            details.append(f'percentile {record["percentile"] * 100:.2f}')
+        if record.get("date"):
+            details.append(f'scored {record["date"]}')
+        lines.append("; ".join(details))
+    if "risk" in finding:
+        risk = finding["risk"]
+        lines.append(f'{risk["source"].capitalize()} risk: {risk["score"]:g}/100 (scanner prioritization)')
+    return lines
+
+
 def format_audit(result):
     source = result["input"]["locked"]
     revision = source.get("rev") or source.get("narHash") or "unknown revision"
@@ -195,6 +218,10 @@ def format_audit(result):
         descriptor = database.get("descriptor", {})
         mode = "offline" if database.get("offline") else "update checked"
         lines.append(f'Advisory data: database built {descriptor.get("built", "unknown")}; {mode}.')
+    for name, label in (("kev", "CISA KEV"), ("epss", "EPSS")):
+        provider = database.get("providers", {}).get(name, {})
+        if provider.get("captured"):
+            lines.append(f'{label} data captured: {provider["captured"]}.')
     findings = {}
     for finding in result["findings"]:
         findings.setdefault(finding["component"], []).append(finding)
@@ -209,10 +236,14 @@ def format_audit(result):
                 lines.append(f'    {finding["severity"].upper()} {finding["id"]} — applicability unassessed; upstream fixes: {fixes}')
                 if finding.get("url"):
                     lines.append(f'      {finding["url"]}')
+                lines.extend(f"      {line}" for line in format_prioritization(finding))
     if not coverage["scanned"]:
         lines.append("No components were scanned; this is not a clean security result.")
     elif not result["findings"]:
         lines.append("No advisory matches among the scanned components.")
+    if any(any(field in finding for field in ("knownExploited", "epss", "risk"))
+           for finding in result["findings"]):
+        lines.append("Prioritization: KEV records known exploitation; EPSS forecasts global exploitation activity over the next 30 days. Missing threat data is unknown. These signals do not assess application exposure or change severity gates.")
     lines.append("Scope: declared TVP selections only. Transitive dependencies, language locks, non-TVP packages and application reachability are not assessed.")
     return "\n".join(lines)
 

@@ -96,6 +96,108 @@ class GrypeAdapterTests(unittest.TestCase):
         self.assertEqual(result["database"]["providers"], providers)
         self.assertEqual(len(result["database"]["responseSha256"]), 64)
 
+    def test_known_exploitation_and_epss_are_preserved_with_grype_risk(self):
+        document = copy.deepcopy(DOCUMENT)
+        signals = {
+            "knownExploited": [{
+                "cve": "CVE-2024-12345", "vendorProject": "Synthetic vendor", "product": "curl",
+                "dateAdded": "2026-11-20", "dueDate": "2026-12-11",
+                "requiredAction": "Apply the upstream fix.", "knownRansomwareCampaignUse": "known",
+                "notes": "Synthetic public fixture.", "urls": ["https://example.invalid/advisory"],
+                "cwes": ["CWE-20"],
+            }],
+            "epss": [{"cve": "CVE-2024-12345", "epss": 0.74, "percentile": 0.98, "date": "2026-11-25"}],
+            "risk": 94.5,
+        }
+        document["matches"][0]["vulnerability"].update(signals)
+        providers = {"kev": {"captured": "2026-11-26T00:22:41Z", "input": "synthetic-kev-digest"},
+                     "epss": {"captured": "2026-11-26T00:21:29Z", "input": "synthetic-epss-digest"}}
+        document["descriptor"]["db"] = {"status": document["descriptor"]["db"], "providers": providers}
+        result, _, _ = self.invoke(document)
+        finding = result["results"][0]["vulnerabilities"][0]
+        self.assertEqual(finding["knownExploited"], signals["knownExploited"])
+        self.assertEqual(finding["epss"], signals["epss"])
+        self.assertEqual(finding["risk"], {"source": "grype", "score": 94.5})
+        self.assertEqual(result["database"]["providers"], providers)
+
+    def test_absent_and_null_risk_metadata_is_optional(self):
+        for signals in ({}, {"knownExploited": None, "epss": None, "risk": None}):
+            with self.subTest(signals=signals):
+                document = copy.deepcopy(DOCUMENT)
+                document["matches"][0]["vulnerability"].update(signals)
+                result, _, _ = self.invoke(document)
+                finding = result["results"][0]["vulnerabilities"][0]
+                for field in ("knownExploited", "epss", "risk"):
+                    self.assertNotIn(field, finding)
+
+    def test_zero_scores_and_empty_signal_lists_are_retained(self):
+        document = copy.deepcopy(DOCUMENT)
+        document["matches"][0]["vulnerability"].update({
+            "knownExploited": [], "epss": [{"cve": "CVE-2024-12345", "epss": 0, "percentile": 0}],
+            "risk": 0,
+        })
+        result, _, _ = self.invoke(document)
+        finding = result["results"][0]["vulnerabilities"][0]
+        self.assertEqual(finding["knownExploited"], [])
+        self.assertEqual(finding["epss"][0]["epss"], 0)
+        self.assertEqual(finding["epss"][0]["percentile"], 0)
+        self.assertEqual(finding["risk"], {"source": "grype", "score": 0})
+        document["matches"][0]["vulnerability"]["epss"] = []
+        result, _, _ = self.invoke(document)
+        self.assertEqual(result["results"][0]["vulnerabilities"][0]["epss"], [])
+        probability_only = {"cve": "CVE-2024-12345", "epss": 0.25}
+        document["matches"][0]["vulnerability"]["epss"] = [probability_only]
+        result, _, _ = self.invoke(document)
+        self.assertEqual(result["results"][0]["vulnerabilities"][0]["epss"], [probability_only])
+
+    def test_malformed_signal_records_require_cve_identity(self):
+        for field in ("knownExploited", "epss"):
+            for value in ({}, "not a list", [None], [{}], [{"cve": ""}], [{"cve": 123}],
+                          [{"cve": "GHSA-example"}], [{"cve": "CVE-2024-12345\n"}]):
+                with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, field):
+                    document = copy.deepcopy(DOCUMENT)
+                    document["matches"][0]["vulnerability"][field] = value
+                    self.invoke(document)
+
+    def test_supplied_signal_dates_must_be_iso_calendar_dates(self):
+        cases = [("knownExploited", "dateAdded"), ("knownExploited", "dueDate"), ("epss", "date")]
+        for field, key in cases:
+            for value in ("2026-02-30", "20261125", "2026-11-25T00:00:00Z", "", None, 20261125):
+                with self.subTest(field=field, key=key, value=value), self.assertRaisesRegex(ValueError, key):
+                    document = copy.deepcopy(DOCUMENT)
+                    record = {"cve": "CVE-2024-12345", key: value}
+                    if field == "epss":
+                        record.update(epss=0.5, percentile=0.9)
+                    document["matches"][0]["vulnerability"][field] = [record]
+                    self.invoke(document)
+
+    def test_signal_scores_reject_nonfinite_out_of_range_and_boolean_values(self):
+        for field, maximum in (("risk", 100), ("epss", 1), ("percentile", 1)):
+            for value in (-0.1, maximum + 0.1, float("nan"), float("inf"), -float("inf"), True, "0.5", []):
+                with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, field):
+                    document = copy.deepcopy(DOCUMENT)
+                    vulnerability = document["matches"][0]["vulnerability"]
+                    if field == "risk":
+                        vulnerability["risk"] = value
+                    else:
+                        record = {"cve": "CVE-2024-12345", "epss": 0.5, "percentile": 0.9, field: value}
+                        vulnerability["epss"] = [record]
+                    self.invoke(document)
+        document = copy.deepcopy(DOCUMENT)
+        document["matches"][0]["vulnerability"]["epss"] = [{"cve": "CVE-2024-12345", "percentile": 0.9}]
+        with self.assertRaisesRegex(ValueError, "epss"):
+            self.invoke(document)
+
+    def test_known_exploitation_text_and_list_fields_have_valid_shapes(self):
+        for field, value in (("requiredAction", 12), ("knownRansomwareCampaignUse", True),
+                             ("notes", []), ("vendorProject", None), ("product", {}),
+                             ("urls", "https://example.invalid"), ("urls", [12]),
+                             ("cwes", None), ("cwes", [""])):
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, field):
+                document = copy.deepcopy(DOCUMENT)
+                document["matches"][0]["vulnerability"]["knownExploited"] = [{"cve": "CVE-2024-12345", field: value}]
+                self.invoke(document)
+
     def test_package_cpe_aliases_scan_cli_and_library_without_duplicate_findings(self):
         component = copy.deepcopy(COMPONENT)
         library = "cpe:2.3:a:haxx:libcurl:8.0.0:*:*:*:*:*:*:*"

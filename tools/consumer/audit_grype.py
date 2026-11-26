@@ -5,8 +5,10 @@ its own artifact IDs when decoding CycloneDX, so matches are correlated through
 the exact supplied identities rather than assuming bom-ref survives decoding.
 """
 
+from datetime import date
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -103,6 +105,59 @@ def _matched_components(artifact, components):
     return matches
 
 
+def _date(value, field):
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValueError(f"Invalid Grype {field}: expected a YYYY-MM-DD date")
+    try:
+        date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError(f"Invalid Grype {field}: expected a valid calendar date") from error
+
+
+def _score(value, field, maximum):
+    if type(value) not in (int, float) or not 0 <= value <= maximum or not math.isfinite(value):
+        raise ValueError(f"Invalid Grype {field}: expected a finite number between 0 and {maximum}")
+
+
+def _prioritization(vulnerability):
+    """Retain optional Grype risk signals without fetching another advisory feed."""
+    metadata = {}
+    for field in ("knownExploited", "epss"):
+        records = vulnerability.get(field)
+        if records is None:
+            continue
+        if not isinstance(records, list):
+            raise ValueError(f"Invalid Grype {field}: expected a list of records")
+        for record in records:
+            if (not isinstance(record, dict) or not isinstance(record.get("cve"), str)
+                    or not re.fullmatch(r"CVE-[0-9]{4}-[0-9]{4,}", record["cve"])):
+                raise ValueError(f"Invalid Grype {field} record: expected a usable CVE identity")
+            if field == "epss":
+                _score(record.get("epss"), f"{field}.epss", 1)
+                if "percentile" in record:
+                    _score(record["percentile"], f"{field}.percentile", 1)
+                if "date" in record:
+                    _date(record["date"], f"{field}.date")
+            else:
+                for key in ("dateAdded", "dueDate"):
+                    if key in record:
+                        _date(record[key], f"{field}.{key}")
+                for key in ("vendorProject", "product", "requiredAction", "knownRansomwareCampaignUse", "notes"):
+                    if key in record and not isinstance(record[key], str):
+                        raise ValueError(f"Invalid Grype {field}.{key}: expected a string")
+                for key in ("urls", "cwes"):
+                    if key in record:
+                        if not isinstance(record[key], list):
+                            raise ValueError(f"Invalid Grype {field}.{key}: expected a list of strings")
+                        _strings(record[key], f"{field}.{key}")
+        metadata[field] = records
+    risk = vulnerability.get("risk")
+    if risk is not None:
+        _score(risk, "risk", 100)
+        metadata["risk"] = {"source": "grype", "score": risk}
+    return metadata
+
+
 def _vulnerability(match):
     vulnerability = match.get("vulnerability")
     if not isinstance(vulnerability, dict) or not _text(vulnerability.get("id")):
@@ -157,6 +212,7 @@ def _vulnerability(match):
         "fixedVersions": sorted(set(fixed)),
         "match": ", ".join(sorted(set(methods))),
         "namespace": namespace,
+        **_prioritization(vulnerability),
     }
 
 

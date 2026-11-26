@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from audit import audit, components, exit_status, format_audit, package_identity
+from audit import audit, components, exit_status, format_audit, format_prioritization, package_identity
 
 
 PROFILE = {
@@ -33,10 +33,10 @@ def inventory(*packages):
 
 
 class AuditTests(unittest.TestCase):
-    def provider(self, callback):
+    def provider(self, callback, backend="osv"):
         def scan(values, **kwargs):
             return {
-                "backend": {"name": "osv", "version": "v1"},
+                "backend": {"name": backend, "version": "v1"},
                 "database": {"retrievedAt": "2026-01-01T00:00:00Z", "offline": True},
                 "results": callback(values),
             }
@@ -133,6 +133,62 @@ class AuditTests(unittest.TestCase):
                 self.assertEqual(exit_status(report, require_coverage=True), 3)
                 self.assertIn("No components were scanned", format_audit(report))
                 self.assertNotIn("No advisory matches", format_audit(report))
+
+    def test_prioritization_is_preserved_and_displayed_with_its_limits(self):
+        signals = {
+            "knownExploited": [{"cve": "CVE-2099-0001", "dateAdded": "2026-11-01",
+                                "knownRansomwareCampaignUse": "known",
+                                "requiredAction": "Apply the vendor fix", "dueDate": "2026-11-22"}],
+            "epss": [{"cve": "CVE-2099-0001", "epss": 0.125,
+                      "percentile": 0.9, "date": "2026-11-25"}],
+            "risk": {"source": "grype", "score": 74.5},
+        }
+        def results(values):
+            return [{"component": value["id"], "status": "scanned", "vulnerabilities": [{
+                "id": "TEST-ADVISORY", "severity": "high", **deepcopy(signals),
+            }]} for value in values]
+        with self.provider(results, backend="grype"):
+            report = audit(inventory(selection()), "grype", offline=True)
+        finding = report["findings"][0]
+        for key, expected in signals.items():
+            self.assertEqual(finding[key], expected)
+        report["database"]["providers"] = {
+            "kev": {"captured": "2026-11-26T00:22:41Z"},
+            "epss": {"captured": "2026-11-26T00:32:00Z"},
+        }
+        text = format_audit(report)
+        self.assertIn("CISA KEV: CVE-2099-0001 listed; added 2026-11-01; ransomware use: known", text)
+        self.assertIn("EPSS CVE-2099-0001: 12.50%; percentile 90.00; scored 2026-11-25", text)
+        self.assertIn("Grype risk: 74.5/100 (scanner prioritization)", text)
+        self.assertIn("CISA KEV data captured: 2026-11-26T00:22:41Z", text)
+        self.assertIn("EPSS data captured: 2026-11-26T00:32:00Z", text)
+        self.assertIn("global exploitation activity over the next 30 days", text)
+        self.assertIn("Missing threat data is unknown", text)
+        self.assertIn("applicability unassessed", text)
+
+    def test_zero_and_missing_prioritization_values_are_distinct(self):
+        self.assertEqual(format_prioritization({}), [])
+        self.assertEqual(format_prioritization({"knownExploited": [], "epss": []}), [])
+        lines = format_prioritization({
+            "epss": [{"cve": "CVE-2099-0001", "epss": 0, "percentile": 0}],
+            "risk": {"source": "grype", "score": 0},
+        })
+        self.assertEqual(lines, ["EPSS CVE-2099-0001: 0.00%; percentile 0.00",
+                                 "Grype risk: 0/100 (scanner prioritization)"])
+
+    def test_threat_scores_do_not_filter_findings_or_change_severity_gates(self):
+        for severity, probability, risk, expected in (("high", 0, 0, 2), ("low", 1, 100, 0)):
+            def results(values):
+                return [{"component": values[0]["id"], "status": "scanned", "vulnerabilities": [{
+                    "id": "TEST-ADVISORY", "severity": severity,
+                    "epss": [{"cve": "CVE-2099-0001", "epss": probability}],
+                    "risk": {"source": "grype", "score": risk},
+                }]}]
+            with self.subTest(severity=severity), self.provider(results, backend="grype"):
+                report = audit(inventory(selection()), "grype", offline=True)
+                self.assertEqual(len(report["findings"]), 1)
+                self.assertEqual(exit_status(report), 0)
+                self.assertEqual(exit_status(report, fail_on="high"), expected)
 
     def test_backend_cannot_silently_drop_components_or_unknown_severity(self):
         with self.provider(lambda _: []), self.assertRaisesRegex(ValueError, "omitted"):
