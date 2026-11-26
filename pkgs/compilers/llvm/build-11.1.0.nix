@@ -1,0 +1,419 @@
+# Complete LLVM 11–14 monorepo procedure for the earlier Clang driver and FFI probes.
+{
+  tvp,
+  lib,
+  base,
+  src,
+  version,
+  python,
+  perl,
+  zlib,
+  libffi,
+  libxml2,
+  rawGCC,
+  cxxRuntime,
+  gccRuntime,
+  libc,
+  targetBinutils,
+  dynamicLinker,
+}@args:
+final:
+let
+  inherit (final)
+    base
+    src
+    version
+    python
+    perl
+    zlib
+    libffi
+    libxml2
+    rawGCC
+    cxxRuntime
+    gccRuntime
+    libc
+    targetBinutils
+    dynamicLinker
+    ;
+  context = tvp.builder.forBase final.base;
+  inherit (context) steps outputs tools;
+  inherit (tools)
+    bash
+    coreutils
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    diffutils
+    patchelf
+    binutils
+    cmake
+    ninja
+    pkg-config
+    ;
+  helperPython = tools.python;
+
+  environment = base.environment final.environment;
+  command =
+    name: run:
+    environment
+    // {
+      name = "llvm.${name}";
+      inherit run;
+    };
+  elfPaths = [
+    "bin"
+    "lib"
+  ];
+in
+{
+  pname = "llvm";
+  artifactName = "${final.pname}-${final.version}";
+  finalizer = ./native/finalize.py;
+  rubyFinalizer = ../../runtimes/ruby/owned/finalize.py;
+  archiveFinalizer = ../../libraries/libxml2/ordinary/finalize.py;
+  archiveElfFinalizer = ../../libraries/libxml2/ordinary/elf.py;
+  elfFinalizer = ../../runtimes/perl/ordinary/elf-finalize.py;
+  inherit (args)
+    base
+    src
+    version
+    python
+    perl
+    zlib
+    libffi
+    libxml2
+    rawGCC
+    cxxRuntime
+    gccRuntime
+    libc
+    targetBinutils
+    dynamicLinker
+    ;
+  inherit
+    bash
+    coreutils
+    gnutar
+    xz
+    findutils
+    sed
+    grep
+    diffutils
+    patchelf
+    binutils
+    cmake
+    ninja
+    pkg-config
+    ;
+  helperPython = tools.python;
+
+  environment = {
+    tools = [
+      bash
+      coreutils
+      python
+      perl
+      cmake
+      ninja
+      pkg-config
+      sed
+      grep
+      diffutils
+    ];
+    libraries = [
+      zlib
+      libffi
+      libxml2
+    ];
+  };
+  # Build-tool runtime belongs to the base. The installed driver's target is
+  # independently selected: public raw GCC and its matching C++/libgcc output,
+  # public libc and Binutils. No build closure becomes runtime permission.
+  runtime = {
+    libraries = final.environment.libraries;
+    target = {
+      inherit
+        rawGCC
+        cxxRuntime
+        gccRuntime
+        libc
+        targetBinutils
+        ;
+    };
+    shell = bash;
+    python = python;
+    perl = perl;
+    loader = "${final.runtime.target.libc}/${dynamicLinker}";
+  };
+  cmakeFlags = [
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    "-DLLVM_ENABLE_PROJECTS=clang;lld"
+    "-DLLVM_TARGETS_TO_BUILD=all"
+    "-DLLVM_BUILD_LLVM_DYLIB=ON"
+    "-DLLVM_LINK_LLVM_DYLIB=ON"
+    "-DCLANG_LINK_CLANG_DYLIB=ON"
+    "-DLLVM_ENABLE_RTTI=ON"
+    "-DLLVM_ENABLE_ZLIB=FORCE_ON"
+    "-DLLVM_ENABLE_LIBXML2=FORCE_ON"
+    "-DLLVM_ENABLE_FFI=ON"
+    "-DLLVM_ENABLE_LIBEDIT=OFF"
+    "-DLLVM_ENABLE_LIBPFM=OFF"
+    "-DLLVM_ENABLE_Z3_SOLVER=OFF"
+    "-DLLVM_INCLUDE_DOCS=OFF"
+    "-DLLVM_INCLUDE_TESTS=OFF"
+    "-DLLVM_INCLUDE_BENCHMARKS=OFF"
+    "-DLLVM_INSTALL_UTILS=ON"
+    "-DCLANG_DEFAULT_CXX_STDLIB=libstdc++"
+    "-DCLANG_DEFAULT_RTLIB=libgcc"
+    "-DPython3_EXECUTABLE=${python}/bin/python3"
+    "-DZLIB_ROOT=${zlib}"
+    "-DLIBXML2_INCLUDE_DIR=${libxml2}/include/libxml2"
+    "-DLIBXML2_LIBRARY=${libxml2}/lib/libxml2.so"
+    "-DFFI_INCLUDE_DIR=${libffi}/include"
+    "-DFFI_LIBRARY_DIR=${libffi}/lib"
+  ];
+  upstreamCmakeFlags = builtins.filter (f: f != "-DLLVM_INCLUDE_TESTS=OFF") final.cmakeFlags ++ [
+    "-DLLVM_INCLUDE_TESTS=ON"
+  ];
+  # The validator owns its own source/build workspace. Test tools, execution and
+  # raw failures never participate in either installed-output producer.
+  upstreamPlan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit xz findutils;
+    })
+    (command "configure" ''
+      ${cmake}/bin/cmake -S source/llvm -B build -G Ninja \
+        -DCMAKE_MAKE_PROGRAM=${ninja}/bin/ninja -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_INSTALL_RPATH="$out/lib" \
+        -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" \
+        -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+        -DCMAKE_PREFIX_PATH=${
+          lib.escapeShellArg (
+            lib.concatStringsSep ";" (map (p: "${lib.getDev p}") final.environment.libraries)
+          )
+        } \
+        ${lib.escapeShellArgs final.upstreamCmakeFlags}
+    '')
+    (command "build" ''${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES"'')
+    (command "check" (
+      final.upstreamCheck
+      + ''
+        mkdir -p "$out"
+      ''
+    ))
+  ];
+  upstreamCheck = ''
+    ${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES" FileCheck not
+    ${python}/bin/python3 build/bin/llvm-lit -sv -j"$NIX_BUILD_CORES" source/llvm/test/Assembler source/llvm/test/Bitcode
+  '';
+  plan = steps.sequence [
+    (steps.unpack {
+      src = final.src;
+      tar = gnutar;
+      inherit xz findutils;
+    })
+    (command "configure" ''
+      ${cmake}/bin/cmake -S source/llvm -B build -G Ninja \
+        -DCMAKE_MAKE_PROGRAM=${ninja}/bin/ninja -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$out" -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_INSTALL_RPATH="$out/lib" \
+        -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" \
+        -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+        -DCMAKE_PREFIX_PATH=${
+          lib.escapeShellArg (
+            lib.concatStringsSep ";" (map (p: "${lib.getDev p}") final.environment.libraries)
+          )
+        } \
+        ${lib.escapeShellArgs final.cmakeFlags}
+    '')
+    (command "build" ''${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES"'')
+    (command "install" ''
+      ${ninja}/bin/ninja -C build -j"$NIX_BUILD_CORES" install
+      mkdir -p "$out/nix-support"
+      cp build/CMakeCache.txt "$out/nix-support/CMakeCache.txt"
+      cp "$TVP_SOURCE_ROOT/source-date-epoch" "$out/nix-support/source-date-epoch"
+    '')
+    (steps.split "llvm.finalize")
+    (outputs.copyArtifacts { inherit coreutils; })
+    {
+      name = "llvm.relocate-installed";
+      tools = [
+        coreutils
+        helperPython
+        binutils
+        patchelf
+      ];
+      run = ''
+        # Preserve the immutable original in the artifact. The final tree
+        # contains operational metadata only, never a rewritten raw cache.
+        rm -- "$out/nix-support/CMakeCache.txt"
+        ${helperPython}/bin/python3 -B ${final.finalizer} ${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              rubyFinalizer = final.rubyFinalizer;
+              archiveFinalizer = final.archiveFinalizer;
+              archiveElfFinalizer = final.archiveElfFinalizer;
+              readelf = "${binutils}/bin/readelf";
+              patchelf = "${patchelf}/bin/patchelf";
+              ar = "${binutils}/bin/ar";
+            }
+          )
+        } "$out" "$TVP_ARTIFACT_ROOT" ${final.elfFinalizer}
+      '';
+    }
+    (outputs.strip {
+      python = helperPython;
+      inherit binutils;
+      paths = elfPaths;
+    })
+    (outputs.rpaths {
+      python = helperPython;
+      inherit binutils patchelf;
+      base = final.base;
+      paths = elfPaths;
+      libraries = final.runtime.libraries;
+    })
+    {
+      name = "llvm.sdk-link-flags";
+      tools = [
+        coreutils
+        patchelf
+      ];
+      run = ''
+        # GNU ld prefixes shared-library RUNPATHs with the Clang sysroot.
+        # Export the actual libLLVM dependency paths as link-only flags.
+        link_paths=$(${patchelf}/bin/patchelf --print-rpath "$out/lib/libLLVM.so")
+        test -n "$link_paths"
+        IFS=: read -r -a directories <<< "$link_paths"
+        for directory in "''${directories[@]}"; do
+          [[ "$directory" == /nix/store/* && -d "$directory" ]]
+        done
+
+        config="$out/bin/llvm-config"
+        unwrapped="$out/bin/.llvm-config-unwrapped"
+        test -f "$config"
+        test ! -L "$config"
+        test ! -e "$unwrapped"
+        test ! -L "$unwrapped"
+        [[ "$("$config" --ldflags)" == "-L$out/lib "* ]]
+        mv -- "$config" "$unwrapped"
+        {
+          printf '#!%s\n' ${lib.escapeShellArg "${final.runtime.shell}/bin/bash"}
+          printf 'llvm_config=%q\n' "$unwrapped"
+          printf 'llvm_libdir=%q\n' "$out/lib"
+          printf 'llvm_link_flag=%q\n' "-Wl,-rpath-link,$link_paths"
+          cat ${./native/llvm-config-link-flags.sh}
+        } > "$config"
+        chmod +x "$config"
+      '';
+    }
+    (
+      (outputs.shebangs {
+        python = helperPython;
+        paths = [
+          "bin"
+          "libexec"
+        ];
+        names = [
+          "python"
+          "python3"
+        ];
+        interpreter = "${final.runtime.python}/bin/python3";
+      })
+      // {
+        name = "llvm.python-scripts";
+      }
+    )
+    (
+      (outputs.shebangs {
+        python = helperPython;
+        paths = [
+          "bin"
+          "libexec"
+        ];
+        names = [ "perl" ];
+        interpreter = "${final.runtime.perl}/bin/perl";
+      })
+      // {
+        name = "llvm.perl-scripts";
+      }
+    )
+    {
+      name = "llvm.wrap-target";
+      tools = [
+        coreutils
+        helperPython
+        grep
+        sed
+      ];
+      run = ''
+        # LLVM 11 and 14 discover GCC through its toolchain root. The
+        # wrapper installer creates that root alongside the empty sysroot.
+        test "$(grep -cF -- '--gcc-install-dir=@gccInstallDir@' ${./native/clang-wrapper.sh})" = 1
+        # Linked programs still find shared libgcc in the selected provider.
+        sed -e 's|--gcc-install-dir=@gccInstallDir@|--gcc-toolchain=@emptyRoot@/../gcc|' \
+          -e 's|@gccRuntime@/lib|${final.runtime.target.gccRuntime}/lib|g' \
+          ${./native/clang-wrapper.sh} > clang-wrapper.sh
+        gcc_runtime=${lib.escapeShellArg (toString final.runtime.target.gccRuntime)}
+        if [[ ! -f "$gcc_runtime/lib/libgcc.a" ]]; then
+          # GCC 13 installs static libgcc and startup objects in its private
+          # compiler directory. Keep the selected shared libgcc alongside them.
+          gcc=${final.runtime.target.rawGCC}/bin/gcc
+          internal="$gcc_runtime/lib/gcc/$("$gcc" -dumpmachine)/$("$gcc" -dumpfullversion)"
+          view="$out/nix-support/gcc-runtime"
+          mkdir -p "$view/lib"
+          for file in libgcc.a libgcc_eh.a crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o; do
+            test -f "$internal/$file"
+            ln -s "$internal/$file" "$view/lib/$file"
+          done
+          for file in libgcc_s.so libgcc_s.so.1; do
+            test -f "$gcc_runtime/lib/$file"
+            ln -s "$gcc_runtime/lib/$file" "$view/lib/$file"
+          done
+          gcc_runtime="$view"
+        fi
+        configuration=${
+          lib.escapeShellArg (
+            builtins.toJSON {
+              bash = "${final.runtime.shell}/bin/bash";
+              gcc = toString final.runtime.target.rawGCC;
+              gccRuntime = "@runtime@";
+              cxxRuntime = toString final.runtime.target.cxxRuntime;
+              libc = toString final.runtime.target.libc;
+              bintools = toString final.runtime.target.targetBinutils;
+              loader = final.runtime.loader;
+            }
+          )
+        }
+        ${helperPython}/bin/python3 -B ${./native/install-wrapper.py} "$out" clang-wrapper.sh \
+          "''${configuration/@runtime@/$gcc_runtime}"
+      '';
+    }
+    (outputs.checkPaths {
+      python = helperPython;
+      inherit binutils patchelf;
+      paths = elfPaths;
+    })
+  ];
+  installedInterface.orcV1 = lib.versionOlder final.version "12";
+  tvp.dynamicLinker = final.runtime.loader;
+  tvp.features = {
+    c = true;
+    cxx = true;
+    lld = true;
+    libedit = false;
+    perfCounters = false;
+    z3 = false;
+  };
+  meta = {
+    description = "LLVM tools, Clang C/C++ compiler and LLD linker";
+    homepage = "https://llvm.org/";
+    license = lib.licenses.asl20-llvm;
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "clang";
+  };
+}
