@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require 'tvp_pure'
+abort 'Locked bundle was not activated' unless defined?(Bundler) && Gem.loaded_specs['tvp-pure']
+puts TvpPure::ANSWER

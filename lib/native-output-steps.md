@@ -83,6 +83,17 @@ ownership of its output, without concurrent writers.
   are not implemented. Arbitrary embedded strings, including assertion source
   filenames, are not runtime lookup paths and are not scanned.
 
+`interpreters`, `strip`, `rpaths` and `checkPaths` accept `nativeOnly = true` for packages which
+carry foreign-architecture ELF payloads as data. This selects native ELF64
+little-endian x86_64 runtime files before invoking the existing strict operation.
+Foreign payload bytes survive unchanged, and selected host files retain structural
+and tool-error validation. Explicit `elfKinds` selection still handles native
+relocatable objects through its existing validator. The default remains strict
+classification of every selected ELF file. `nativeOnly` selects installed outputs
+and cannot be combined with `rpaths.workspaceRoot`.
+The interpreter operation changes host executable loaders to the declared loader.
+A selection containing no host runtime ELF files completes without an operation.
+
 The strip and Libtool controls draw on the correctness lessons of Nixpkgs'
 setup hooks; its MIT notice is retained in `bases/stdenv/COPYING`. These helpers
 implement no hook dispatcher or generic layout policy. Interpreter processing

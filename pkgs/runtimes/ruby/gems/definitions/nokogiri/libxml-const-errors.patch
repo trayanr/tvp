@@ -1,0 +1,125 @@
+--- a/ext/nokogiri/nokogiri.h
++++ b/ext/nokogiri/nokogiri.h
+@@ -227,9 +227,9 @@
+ void Nokogiri_structured_error_func_save_and_set(libxmlStructuredErrorHandlerState *handler_state, void *user_data,
+     xmlStructuredErrorFunc handler);
+ void Nokogiri_structured_error_func_restore(libxmlStructuredErrorHandlerState *handler_state);
+-VALUE Nokogiri_wrap_xml_syntax_error(xmlErrorPtr error);
+-void Nokogiri_error_array_pusher(void *ctx, xmlErrorPtr error);
+-NORETURN_DECL void Nokogiri_error_raise(void *ctx, xmlErrorPtr error);
++VALUE Nokogiri_wrap_xml_syntax_error(const xmlError *error);
++void Nokogiri_error_array_pusher(void *ctx, const xmlError *error);
++NORETURN_DECL void Nokogiri_error_raise(void *ctx, const xmlError *error);
+ void Nokogiri_marshal_xpath_funcall_and_return_values(xmlXPathParserContextPtr ctx, int nargs, VALUE handler,
+     const char *function_name) ;
+
+--- a/ext/nokogiri/test_global_handlers.c
++++ b/ext/nokogiri/test_global_handlers.c
+@@ -3,7 +3,7 @@
+ static VALUE foreign_error_handler_block = Qnil;
+
+ static void
+-foreign_error_handler(void *user_data, xmlErrorPtr c_error)
++foreign_error_handler(void *user_data, const xmlError *c_error)
+ {
+   rb_funcall(foreign_error_handler_block, rb_intern("call"), 0);
+ }
+--- a/ext/nokogiri/xml_document.c
++++ b/ext/nokogiri/xml_document.c
+@@ -337,7 +337,7 @@
+   xmlSetStructuredErrorFunc(NULL, NULL);
+
+   if (doc == NULL) {
+-    xmlErrorPtr error;
++    const xmlError *error;
+
+     xmlFreeDoc(doc);
+
+@@ -383,7 +383,7 @@
+   xmlSetStructuredErrorFunc(NULL, NULL);
+
+   if (doc == NULL) {
+-    xmlErrorPtr error;
++    const xmlError *error;
+
+     xmlFreeDoc(doc);
+
+@@ -537,7 +537,7 @@
+         );
+
+   if (NULL == ptr) {
+-    xmlErrorPtr error = xmlGetLastError();
++    const xmlError *error = xmlGetLastError();
+     if (error) {
+       rb_exc_raise(Nokogiri_wrap_xml_syntax_error(error));
+     } else {
+--- a/ext/nokogiri/xml_node.c
++++ b/ext/nokogiri/xml_node.c
+@@ -2144,7 +2144,7 @@
+   xmlSetStructuredErrorFunc(NULL, NULL);
+
+   if (rcode < 0) {
+-    xmlErrorPtr error;
++    const xmlError *error;
+
+     error = xmlGetLastError();
+     if (error) {
+--- a/ext/nokogiri/xml_reader.c
++++ b/ext/nokogiri/xml_reader.c
+@@ -554,7 +554,7 @@
+ read_more(VALUE self)
+ {
+   xmlTextReaderPtr reader;
+-  xmlErrorPtr error;
++  const xmlError *error;
+   VALUE error_list;
+   int ret;
+
+--- a/ext/nokogiri/xml_relax_ng.c
++++ b/ext/nokogiri/xml_relax_ng.c
+@@ -93,7 +93,7 @@
+   xmlRelaxNGFreeParserCtxt(c_parser_context);
+
+   if (NULL == c_schema) {
+-    xmlErrorPtr error = xmlGetLastError();
++    const xmlError *error = xmlGetLastError();
+     if (error) {
+       Nokogiri_error_raise(NULL, error);
+     } else {
+--- a/ext/nokogiri/xml_schema.c
++++ b/ext/nokogiri/xml_schema.c
+@@ -146,7 +146,7 @@
+   xmlSchemaFreeParserCtxt(c_parser_context);
+
+   if (NULL == c_schema) {
+-    xmlErrorPtr error = xmlGetLastError();
++    const xmlError *error = xmlGetLastError();
+     if (error) {
+       Nokogiri_error_raise(NULL, error);
+     } else {
+--- a/ext/nokogiri/xml_syntax_error.c
++++ b/ext/nokogiri/xml_syntax_error.c
+@@ -26,7 +26,7 @@
+ }
+
+ void
+-Nokogiri_error_array_pusher(void *ctx, xmlErrorPtr error)
++Nokogiri_error_array_pusher(void *ctx, const xmlError *error)
+ {
+   VALUE list = (VALUE)ctx;
+   Check_Type(list, T_ARRAY);
+@@ -34,12 +34,12 @@
+ }
+
+ void
+-Nokogiri_error_raise(void *ctx, xmlErrorPtr error)
++Nokogiri_error_raise(void *ctx, const xmlError *error)
+ {
+   rb_exc_raise(Nokogiri_wrap_xml_syntax_error(error));
+ }
+
+ VALUE
+-Nokogiri_wrap_xml_syntax_error(xmlErrorPtr error)
++Nokogiri_wrap_xml_syntax_error(const xmlError *error)
+ {
+   VALUE msg, e, klass;

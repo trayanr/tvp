@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "id": "ruby-affected", "name": "ruby", "version": "3.0.6", "selector": "ruby_3_0_6",
+      "origin": "tvp-metadata", "expectedAffected": true,
+      "advisory": {"id": "CVE-2024-27282", "aliases": [], "url": "https://www.ruby-lang.org/en/news/2024/04/23/arbitrary-memory-address-read-regexp-cve-2024-27282/"}
+    },
+    {
+      "id": "ruby-fixed", "name": "ruby", "version": "3.0.7", "selector": "ruby_3_0_7",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2024-27282", "aliases": [], "url": "https://www.ruby-lang.org/en/news/2024/04/23/arbitrary-memory-address-read-regexp-cve-2024-27282/"}
+    },
+    {
+      "id": "openssl-affected", "name": "openssl", "version": "3.0.5", "selector": "openssl_3_0_5",
+      "origin": "tvp-metadata", "expectedAffected": true,
+      "advisory": {"id": "CVE-2022-3602", "aliases": [], "url": "https://openssl-library.org/news/secadv/20221101.txt"}
+    },
+    {
+      "id": "openssl-fixed", "name": "openssl", "version": "3.0.7", "selector": "openssl_3_0_7",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2022-3602", "aliases": [], "url": "https://openssl-library.org/news/secadv/20221101.txt"}
+    },
+    {
+      "id": "postgresql-affected", "name": "postgresql", "version": "16.4", "selector": "postgresql_16_4",
+      "origin": "tvp-metadata", "expectedAffected": true, "conditions": "Upstream advisory requires PL/Perl; a package-version match does not establish that feature is enabled.",
+      "advisory": {"id": "CVE-2024-10979", "aliases": [], "url": "https://www.postgresql.org/support/security/CVE-2024-10979/"}
+    },
+    {
+      "id": "postgresql-fixed", "name": "postgresql", "version": "16.5", "selector": "postgresql_16_5",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2024-10979", "aliases": [], "url": "https://www.postgresql.org/support/security/CVE-2024-10979/"}
+    },
+    {
+      "id": "php-affected", "name": "php", "version": "8.2.17", "selector": "php_8_2_17",
+      "origin": "tvp-metadata", "expectedAffected": true,
+      "advisory": {"id": "CVE-2024-2756", "aliases": ["GHSA-wpj3-hf5j-x4v4"], "url": "https://github.com/php/php-src/security/advisories/GHSA-wpj3-hf5j-x4v4"}
+    },
+    {
+      "id": "php-fixed", "name": "php", "version": "8.2.18", "selector": "php_8_2_18",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2024-2756", "aliases": ["GHSA-wpj3-hf5j-x4v4"], "url": "https://github.com/php/php-src/security/advisories/GHSA-wpj3-hf5j-x4v4"}
+    },
+    {
+      "id": "bundler-affected", "name": "bundler", "version": "1.17.3", "selector": "bundler_1_17_3",
+      "origin": "tvp-metadata", "expectedAffected": true,
+      "advisory": {"id": "CVE-2021-43809", "aliases": ["GHSA-fj7f-vq84-fh43"], "url": "https://github.com/ruby/rubygems/security/advisories/GHSA-fj7f-vq84-fh43"}
+    },
+    {
+      "id": "bundler-fixed", "name": "bundler", "version": "2.5.11", "selector": "bundler_2_5_11",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2021-43809", "aliases": ["GHSA-fj7f-vq84-fh43"], "url": "https://github.com/ruby/rubygems/security/advisories/GHSA-fj7f-vq84-fh43"}
+    },
+    {
+      "id": "curl-affected", "name": "curl", "version": "8.3.0", "profileSelector": "curl_8_23_0",
+      "origin": "upstream-version-control", "expectedAffected": true,
+      "advisory": {"id": "CVE-2023-38545", "aliases": [], "url": "https://curl.se/docs/CVE-2023-38545.html"}
+    },
+    {
+      "id": "curl-fixed", "name": "curl", "version": "8.4.0", "profileSelector": "curl_8_23_0",
+      "origin": "upstream-version-control", "expectedAffected": false,
+      "advisory": {"id": "CVE-2023-38545", "aliases": [], "url": "https://curl.se/docs/CVE-2023-38545.html"}
+    },
+    {
+      "id": "libxml2-affected", "name": "libxml2", "version": "2.12.4", "selector": "libxml2_2_12_4",
+      "origin": "tvp-metadata", "expectedAffected": true, "conditions": "Upstream advisory requires XML Reader with DTD validation and XInclude.",
+      "advisory": {"id": "CVE-2024-25062", "aliases": [], "url": "https://discourse.gnome.org/t/libxml2-2-12-5-released/19337"}
+    },
+    {
+      "id": "libxml2-fixed", "name": "libxml2", "version": "2.12.5", "selector": "libxml2_2_12_5",
+      "origin": "tvp-metadata", "expectedAffected": false,
+      "advisory": {"id": "CVE-2024-25062", "aliases": [], "url": "https://discourse.gnome.org/t/libxml2-2-12-5-released/19337"}
+    }
+  ]
+}

@@ -360,6 +360,20 @@ let
   pname = "libxml2";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security = { version }: {
+      schema = 1;
+      forVersion = version;
+      purl = "pkg:generic/libxml2";
+      cpe = {
+        vendor = "xmlsoft";
+        product = "libxml2";
+      };
+      osv = {
+        ecosystem = "GIT";
+        name = "https://github.com/gnome/libxml2";
+        version = "v${version}";
+      };
+    };
     source = tvp.lib.sources.archive {
       url =
         version:

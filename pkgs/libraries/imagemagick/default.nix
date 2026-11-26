@@ -1051,6 +1051,18 @@ let
   ];
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable source;
+    packageMeta.security =
+      { version }:
+      {
+        schema = 1;
+        forVersion = version;
+        upstreamVersion = upstreamTag version;
+        purl = "pkg:generic/imagemagick";
+        cpe = {
+          vendor = "imagemagick";
+          product = "imagemagick";
+        };
+      };
     tests = import ./tests;
   };
   canonical = tvp.lib.packages.mkVersions family;
