@@ -30,20 +30,32 @@ UPSTREAM = """{
       php = mkPackage "packages" "php_8_2" "minor" "php" "@PHP@" "same";
       ruby = mkPackage "canonical" "ruby_2_7_0" "exact" "ruby" "2.7.0" "@RECIPE@";
       postgresql = mkPackage "packages" "postgresql_16" "major" "postgresql" "@NATIVE@" "same";
+      externalLibrary = builtins.derivation {
+        inherit system;
+        name = "external-library-1.0.0";
+        version = "1.0.0";
+        builder = "/bin/false";
+      };
       mkGem = gemName: version: recipe:
         (builtins.derivation {
           inherit system ruby gemName version recipe;
-          nativeInputs = if gemName == "tvp-native" then [ postgresql ] else [ ];
+          nativeInputs = if gemName != "tvp-pure" then [ postgresql externalLibrary ] else [ ];
           name = "ruby-${gemName}-${version}";
           pname = "ruby-${gemName}";
           builder = "/bin/false";
         }) // {
           inherit gemName ruby;
-          nativeProviders = if gemName == "tvp-native" then { inherit postgresql; } else { };
+          nativeProviders = if gemName != "tvp-pure" then { inherit postgresql externalLibrary; } else { };
+          tvp.kind = "ruby-gem";
           __tvpSelection.kind = "custom";
         };
       pure = mkGem "tvp-pure" "@GEM@" "same";
       native = mkGem "tvp-native" "1.0.0" "@RECIPE@";
+      other = mkGem "tvp-other" "1.0.0" "same";
+      postgresqlAlias = postgresql // {
+        __tvpSelection = postgresql.__tvpSelection // { namespace = "canonical"; selector = "postgresql_exact"; kind = "exact"; };
+      };
+      postgresqlVariant = mkPackage "packages" "postgresql_16" "override" "postgresql" "@NATIVE@" "alternate";
       boundBundler = (builtins.derivation {
         inherit system ruby;
         name = "bundler-@MANAGER@";
@@ -55,7 +67,7 @@ UPSTREAM = """{
         __tvpSelection.kind = "override";
       };
       rubyBundle = (builtins.derivation {
-        inherit system ruby pure native boundBundler;
+        inherit system ruby pure native other boundBundler;
         name = "synthetic-bundle-${ruby.version}";
         pname = "synthetic-bundle";
         version = ruby.version;
@@ -63,15 +75,15 @@ UPSTREAM = """{
       }) // {
         inherit ruby;
         bundler = boundBundler;
-        gems = { tvp-pure = pure; tvp-native = native; };
+        gems = { tvp-pure = pure; tvp-native = native; tvp-other = other; } // @EXTRA@;
         tvp.kind = "ruby-bundle";
         __tvpSelection.kind = "composition";
       };
       rubyApplication = (builtins.derivation {
         inherit system rubyBundle;
-        name = "synthetic-application-1.0.0";
+        name = "synthetic-application-@APPLICATION@";
         pname = "synthetic-application";
-        version = "1.0.0";
+        version = "@APPLICATION@";
         builder = "/bin/false";
       }) // {
         bundle = rubyBundle;
@@ -104,7 +116,10 @@ UPSTREAM = """{
     in {
       packages.${system} = {
         php_8_2 = php;
-        inherit phpWithExtensions rubyBundle rubyApplication;
+        inherit phpWithExtensions rubyBundle rubyApplication postgresql postgresqlAlias postgresqlVariant;
+        rubyGem = native;
+        rubyGemWithoutProviders = builtins.removeAttrs native [ "nativeProviders" ];
+        foreignRuntime = rubyBundle // { ruby = externalLibrary; bundler = externalLibrary; };
         bundler = mkPackage "packages" "bundler" "latest" "bundler" "4.0.0" "unbound";
       };
       legacyPackages.${system}.canonical.ruby_2_7_0 = ruby;
@@ -124,14 +139,15 @@ PROJECT = """{
       };
     in {
       packages.${system} = {
-        inherit (tvp.packages.${system}) rubyBundle rubyApplication;
+        inherit (tvp.packages.${system}) rubyBundle rubyApplication rubyGem rubyGemWithoutProviders foreignRuntime;
       };
       devShells.${system} = {
         ruby = builtins.derivation {
           inherit system;
           name = "ruby-consumer-shell";
           builder = "/bin/false";
-          buildInputs = [ tvp.packages.${system}.rubyBundle ];
+          buildInputs = [ tvp.packages.${system}.rubyBundle tvp.packages.${system}.postgresql ];
+          nativeBuildInputs = [ tvp.legacyPackages.${system}.canonical.ruby_2_7_0 ];
         };
         default = builtins.derivation {
           inherit system;
@@ -175,12 +191,14 @@ class ConsumerIntegrationTests(unittest.TestCase):
     def commit_upstream(
         self, php_version, redis_version, recipe,
         gem_version="1.0.0", manager_version="1.17.3",
-        native_version="16.16",
+        native_version="16.16", application_version="1.0.0", extra_native=False,
     ):
         source = (UPSTREAM.replace("@PHP@", php_version)
                   .replace("@REDIS@", redis_version).replace("@RECIPE@", recipe)
                   .replace("@GEM@", gem_version).replace("@MANAGER@", manager_version)
-                  .replace("@NATIVE@", native_version))
+                  .replace("@NATIVE@", native_version)
+                  .replace("@APPLICATION@", application_version)
+                  .replace("@EXTRA@", '{ another-native = native // { gemName = "another-native"; }; }' if extra_native else "{ }"))
         (self.upstream / "flake.nix").write_text(source)
         self.command("git", "add", "flake.nix", cwd=self.upstream)
         self.command(
@@ -258,79 +276,83 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertEqual(changes["php-redis"]["after"]["version"], "6.2.1")
         self.assertEqual(self.lock.read_bytes(), self.original_lock)
 
-    def test_ruby_bundle_reports_bound_components_and_gem_changes(self):
+    def test_ruby_reports_only_managed_packages_and_deduplicates_uses(self):
         attribute = f"packages.{SYSTEM}.rubyBundle"
         inventory = self.tvp("used", attribute=attribute)
-        components = {
-            row["role"]: row for row in inventory["packages"]
-            if row["role"] not in ("ruby-gem", "ruby-native-package")
-        }
-        self.assertEqual(set(components), {"ruby-bundle", "ruby-engine", "ruby-manager"})
-        self.assertEqual(components["ruby-engine"]["version"], "2.7.0")
-        self.assertEqual(components["ruby-manager"]["version"], "1.17.3")
-        self.assertEqual(components["ruby-manager"]["kind"], "override")
-        gems = {row["gemName"]: row for row in inventory["packages"] if row["role"] == "ruby-gem"}
-        self.assertEqual(set(gems), {"tvp-pure", "tvp-native"})
-        self.assertEqual(gems["tvp-pure"]["version"], "1.0.0")
-        native_packages = [row for row in inventory["packages"] if row["role"] == "ruby-native-package"]
-        self.assertEqual(len(native_packages), 1)
-        self.assertEqual(native_packages[0]["providerName"], "postgresql")
-        self.assertEqual(native_packages[0]["version"], "16.16")
-        shell_inventory = self.tvp("used", attribute=f"devShells.{SYSTEM}.ruby")
-        self.assertEqual(len(shell_inventory["packages"]), len(inventory["packages"]))
-        self.assertTrue(all(
-            row["location"].startswith("buildInputs[0]")
-            for row in shell_inventory["packages"]
-        ))
-        application_attribute = f"packages.{SYSTEM}.rubyApplication"
-        application_inventory = self.tvp("used", attribute=application_attribute)
-        self.assertEqual(len(application_inventory["packages"]), len(inventory["packages"]) + 1)
-        application = application_inventory["packages"][0]
-        self.assertEqual(application["role"], "ruby-application")
-        self.assertEqual(application["version"], "1.0.0")
+        packages = {row["pname"]: row for row in inventory["packages"]}
+        self.assertEqual(set(packages), {"ruby", "bundler", "postgresql"})
+        self.assertEqual({row["role"] for row in packages.values()}, {"package"})
+        self.assertEqual(packages["ruby"]["version"], "2.7.0")
+        self.assertEqual(packages["bundler"]["version"], "1.17.3")
+        self.assertEqual(packages["bundler"]["kind"], "override")
+        self.assertEqual(packages["postgresql"]["version"], "16.16")
         self.assertEqual(
-            {row["gemName"] for row in application_inventory["packages"] if row["role"] == "ruby-gem"},
-            set(gems),
+            {use["gemName"] for use in packages["postgresql"]["usedBy"]},
+            {"tvp-native", "tvp-other"},
         )
+        self.assertTrue(all(use["providerName"] == "postgresql" for use in packages["postgresql"]["usedBy"]))
+        self.assertTrue(all("gemName" not in row for row in inventory["packages"]))
+        self.assertNotIn("external-library", packages)
+
+        shell_inventory = self.tvp("used", attribute=f"devShells.{SYSTEM}.ruby")
+        shell = {row["pname"]: row for row in shell_inventory["packages"]}
+        self.assertEqual(set(shell), set(packages))
+        self.assertEqual(len(shell["postgresql"]["usedBy"]), 3)
+        self.assertEqual(len(shell["ruby"]["usedBy"]), 2)
+        application_inventory = self.tvp("used", attribute=f"packages.{SYSTEM}.rubyApplication")
+        self.assertEqual({row["pname"] for row in application_inventory["packages"]}, set(packages))
+        gem_inventory = self.tvp("used", attribute=f"packages.{SYSTEM}.rubyGem")
+        self.assertEqual({row["pname"] for row in gem_inventory["packages"]}, {"ruby", "postgresql"})
+        without_providers = self.tvp("used", attribute=f"packages.{SYSTEM}.rubyGemWithoutProviders")
+        self.assertEqual({row["pname"] for row in without_providers["packages"]}, {"ruby"})
+        foreign_runtime = self.tvp("used", attribute=f"packages.{SYSTEM}.foreignRuntime")
+        self.assertEqual({row["pname"] for row in foreign_runtime["packages"]}, {"postgresql"})
 
         self.commit_upstream(
             "8.2.1", "6.2.0", "revised",
-            gem_version="1.1.0", manager_version="2.1.2",
-            native_version="16.17",
+            gem_version="1.1.0", manager_version="2.1.2", native_version="16.17",
         )
         comparison = self.tvp("update", "--preview", attribute=attribute)
         self.assertEqual(self.lock.read_bytes(), self.original_lock)
         self.assertEqual({entry["change"] for entry in comparison["changes"]}, {"changed"})
-        changes = {
-            entry["after"]["role"]: entry for entry in comparison["changes"]
-            if entry["after"]["role"] != "ruby-gem"
-        }
-        self.assertTrue(changes["ruby-manager"]["versionChanged"])
-        self.assertEqual(changes["ruby-manager"]["after"]["version"], "2.1.2")
-        self.assertFalse(changes["ruby-engine"]["versionChanged"])
-        self.assertTrue(changes["ruby-native-package"]["versionChanged"])
-        self.assertEqual(changes["ruby-native-package"]["after"]["version"], "16.17")
-        gem_changes = {
-            entry["after"]["gemName"]: entry for entry in comparison["changes"]
-            if entry["after"]["role"] == "ruby-gem"
-        }
-        self.assertTrue(gem_changes["tvp-pure"]["versionChanged"])
-        self.assertEqual(gem_changes["tvp-pure"]["before"]["version"], "1.0.0")
-        self.assertEqual(gem_changes["tvp-pure"]["after"]["version"], "1.1.0")
-        self.assertFalse(gem_changes["tvp-native"]["versionChanged"])
-        self.assertTrue(gem_changes["tvp-native"]["derivationChanged"])
-        application_preview = self.tvp("update", "--preview", attribute=application_attribute)
-        application_change = next(
-            row for row in application_preview["changes"] if row["after"]["role"] == "ruby-application"
-        )
-        self.assertFalse(application_change["versionChanged"])
-        self.assertTrue(application_change["derivationChanged"])
-        self.assertEqual(
-            {row["after"]["gemName"] for row in application_preview["changes"]
-             if row["after"]["role"] == "ruby-gem"},
-            set(gem_changes),
-        )
+        changes = {row["after"]["pname"]: row for row in comparison["changes"]}
+        self.assertEqual(set(changes), {"ruby", "bundler", "postgresql"})
+        self.assertTrue(changes["bundler"]["versionChanged"])
+        self.assertEqual(changes["bundler"]["after"]["version"], "2.1.2")
+        self.assertFalse(changes["ruby"]["versionChanged"])
+        self.assertTrue(changes["ruby"]["derivationChanged"])
+        self.assertTrue(changes["postgresql"]["versionChanged"])
+        self.assertEqual(changes["postgresql"]["after"]["version"], "16.17")
+        application_preview = self.tvp("update", "--preview", attribute=f"packages.{SYSTEM}.rubyApplication")
+        self.assertEqual({row["after"]["pname"] for row in application_preview["changes"]}, set(changes))
         self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+    def test_gem_application_and_consumer_reference_changes_are_not_package_updates(self):
+        attributes = [f"packages.{SYSTEM}.rubyBundle", f"packages.{SYSTEM}.rubyApplication"]
+        for extra_native in (False, True):
+            self.commit_upstream(
+                "8.2.1", "6.2.0", "original", gem_version="1.1.0",
+                application_version="2.0.0", extra_native=extra_native,
+            )
+            for attribute in attributes:
+                with self.subTest(attribute=attribute, extra_native=extra_native):
+                    preview = self.tvp("update", "--preview", attribute=attribute)
+                    self.assertEqual(preview["changes"], [])
+                    self.assertNotEqual(preview["beforeInput"], preview["afterInput"])
+            self.assertEqual(self.lock.read_bytes(), self.original_lock)
+
+    def test_distinct_aliases_and_variants_are_preserved(self):
+        project = self.project / "flake.nix"
+        project.write_text(project.read_text().replace(
+            "tvp.packages.${system}.rubyBundle tvp.packages.${system}.postgresql",
+            "tvp.packages.${system}.rubyBundle tvp.packages.${system}.postgresql "
+            "tvp.packages.${system}.postgresqlAlias tvp.packages.${system}.postgresqlVariant",
+        ))
+        report = self.tvp("used", attribute=f"devShells.{SYSTEM}.ruby")
+        packages = [row for row in report["packages"] if row["pname"] == "postgresql"]
+        self.assertEqual(len(packages), 3)
+        self.assertEqual({row["selector"] for row in packages}, {"postgresql_16", "postgresql_exact"})
+        self.assertEqual(len({row["drvPath"] for row in packages}), 2)
 
 
 if __name__ == "__main__":

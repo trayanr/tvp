@@ -23,30 +23,34 @@ let
       inherit (package) drvPath;
       outputName = package.outputName or "out";
     };
+  managed = role: location: package:
+    if isPackage package && package ? __tvpSelection
+    then [ (record role location package) ] else [ ];
+  observeGem = location: gem:
+    let
+      gemName = gem.gemName or (gem.pname or gem.name);
+      providers = gem.nativeProviders or { };
+    in builtins.concatMap (providerName:
+      map (row: row // { inherit gemName providerName; })
+        (managed "ruby-native-package" "${location}.nativeProviders.${providerName}" providers.${providerName})
+    ) (builtins.attrNames providers);
   observe = location: package:
     if !isPackage package then [ ]
     else if (package.tvp.kind or null) == "ruby-application" && package ? bundle then
-      [ (record "ruby-application" location package) ]
-      ++ observe "${location}.bundle" package.bundle
+      observe "${location}.bundle" package.bundle
     else if (package.tvp.kind or null) == "ruby-bundle"
         && package ? ruby && package ? bundler && package ? gems then
-      [ (record "ruby-bundle" location package)
-        (record "ruby-engine" ("${location}.ruby") package.ruby)
-        (record "ruby-manager" ("${location}.bundler") package.bundler)
-      ]
+      managed "ruby-engine" "${location}.ruby" package.ruby
+      ++ managed "ruby-manager" "${location}.bundler" package.bundler
       ++ builtins.concatMap (name:
         let
           gem = package.gems.${name};
-          gemName = gem.gemName or name;
-          providers = gem.nativeProviders or { };
-          gemLocation = "${location}.gems.${name}";
-        in
-          [ ((record "ruby-gem" gemLocation gem) // { inherit gemName; }) ]
-          ++ map (providerName:
-            (record "ruby-native-package" "${gemLocation}.nativeProviders.${providerName}" providers.${providerName})
-            // { inherit gemName providerName; }
-          ) (builtins.attrNames providers)
+        in observeGem "${location}.gems.${name}" (gem // { gemName = gem.gemName or name; })
       ) (builtins.attrNames package.gems)
+    else if (package.tvp.kind or null) == "ruby-gem"
+        || (package ? gemName && package ? ruby && package ? nativeProviders) then
+      observeRuby location package
+      ++ observeGem location package
     else if (package.tvp.kind or null) == "php-runtime"
         && package ? unwrapped && package ? enabledExtensions then
       [ (record "php-runtime" location package)
@@ -57,6 +61,8 @@ let
       ) package.enabledExtensions
     else if package ? __tvpSelection then [ (record "package" location package) ]
     else [ ];
+  observeRuby = location: package:
+    if package ? ruby then managed "ruby-engine" "${location}.ruby" package.ruby else [ ];
   observeInputs = name:
     let values = subject.${name} or [ ];
     in if builtins.isList values then builtins.concatLists (builtins.genList
@@ -112,7 +118,7 @@ def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False):
         flags += ["--reference-lock-file", str(Path(lock).resolve(strict=True))]
     metadata = nix_json(["flake", "metadata", *flags, flake])
     selected = locked_input(metadata["locks"], input_name)
-    packages = nix_json(["eval", *flags, f"{flake}#{attribute}", "--apply", INVENTORY])
+    packages = managed_packages(nix_json(["eval", *flags, f"{flake}#{attribute}", "--apply", INVENTORY]))
     return {
         "schema": 1,
         "attribute": attribute,
@@ -122,11 +128,34 @@ def inventory(flake, attribute, lock=None, input_name="tvp", *, impure=False):
     }
 
 
+def managed_packages(observed):
+    """Collapse repeated package selections while retaining their consumers."""
+    packages = {}
+    for original in observed:
+        package = dict(original)
+        usage = {"location": package["location"], "role": package["role"]}
+        for name in ("gemName", "providerName"):
+            if name in package:
+                usage[name] = package.pop(name)
+        if package["role"] in ("ruby-engine", "ruby-manager", "ruby-native-package"):
+            package["role"] = "package"
+        identity = tuple(
+            package[name] for name in
+            ("role", "namespace", "selector", "kind", "pname", "version", "drvPath", "outputName")
+        )
+        if identity not in packages:
+            package["usedBy"] = []
+            packages[identity] = package
+        if usage not in packages[identity]["usedBy"]:
+            packages[identity]["usedBy"].append(usage)
+    return list(packages.values())
+
+
 def package_key(package):
     location = package["location"]
     if package["role"] == "package":
         # Reordering ordinary shell inputs does not change their selections.
-        location = location.split("[", 1)[0]
+        location = ""
         identity = [package["namespace"], package["selector"] or package["pname"]]
     else:
         # Runtime compositions retain their component roles across selector updates.
@@ -142,7 +171,7 @@ def index(inventory):
 
 
 def without_location(package):
-    return {name: value for name, value in package.items() if name != "location"}
+    return {name: value for name, value in package.items() if name not in ("location", "usedBy")}
 
 
 def unmatched(left, right):

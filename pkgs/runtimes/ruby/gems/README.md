@@ -24,7 +24,7 @@ use independently written synthetic projects and public registry native gems.
 - [x] Own native dependencies, compatibility patches and installed checks in
   unified TVP gem definitions, shared by direct and bundled builds.
 - [x] Expose named native inputs through normal `.override` and `.edit`, and
-  report their selected versions alongside locked gems.
+  report the selected TVP package versions independently of locked gems.
 
 ## Private acceptance
 
@@ -53,7 +53,7 @@ access and cache settings.
 
 ## Follow-up work
 
-- [x] Extend `tvp used` and `tvp diff` to inspect Ruby environments and gem changes.
+- [x] Extend `tvp used` and `tvp diff` to inspect TVP packages selected by Ruby environments.
 - [x] Confirm Bundix can generate the required source manifest without updating
   dependency versions. An additional TVP manifest command is unnecessary for the
   supported inputs.
@@ -69,8 +69,9 @@ bundles, manifests, compressed outputs and engine assets. The public application
 checks exercise the reusable build and launch contract using synthetic sources.
 
 These helpers follow TVP's rolling release model. Consumers pin the TVP flake
-revision and their dependency manifest; updates are reviewed through `tvp diff`
-or `tvp update --preview`. Gem, Ruby and Bundler versions change through explicit
+revision and their dependency manifest. TVP package updates are reviewed through
+`tvp diff` or `tvp update --preview`; gem updates belong to the application lock
+and generated gemset. Gem, Ruby and Bundler versions change through explicit
 consumer choices. Bundler must match the lockfile's `BUNDLED WITH` version;
 updating TVP does not select a new compatible manager automatically. Helper
 changes and their public smoke checks ship together on the normal project branch,
@@ -135,8 +136,8 @@ Explicit low-level lists such as `libraries` or `patches` replace their defaults
 
 The five native-library definitions expose a small installed probe through
 `gem.tests.load`. Native providers also appear in `gem.nativeProviders` and
-TVP dependency provenance. Inventory and diffs identify their gem owner, provider
-name, version and derivation.
+TVP dependency provenance. Inventory and diffs report the TVP-managed packages;
+gem and provider names are retained as usage references, not package entries.
 
 ## Validation policy
 
@@ -255,8 +256,9 @@ are build inputs; runtime commands use the selected bundle. Writable runtime
 state, external configuration and services remain explicit application concerns.
 
 The output exposes `applicationDirectory`, `bundle`, `ruby`, `bundler`, `gems`
-and `groups`. `tvp used`, `tvp diff` and update previews report the application
-alongside its locked bundle and components.
+and `groups`. `tvp used`, `tvp diff` and update previews inspect the application's
+bundle to report its TVP-managed runtime, Bundler and native packages. The
+application, bundle and individual gems are not separate TVP package entries.
 
 ## Focused public checks
 

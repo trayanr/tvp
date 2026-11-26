@@ -66,21 +66,27 @@ separate application checkout. Set the required environment variables before
 running the command. The flag applies to both sides of a diff or update preview;
 evaluation remains pure unless it is explicitly supplied.
 
-Reports cover a selected package or direct inputs exposed by a selected shell.
-TVP selection metadata identifies observed packages, including the engine
-and modules of a directly selected TVP PHP composition, and the Ruby, bound
-Bundler and locked gems of a directly selected TVP Ruby bundle or application.
-Application reports include their underlying bundle. Version changes and
-same-version derivation changes are reported separately. Dependencies exposed by
-these compositions are included. General derivation-graph traversal and attribution
-among multiple TVP inputs are outside this inspection scope.
-For a PHP composition, the engine row describes the resolved engine. It may
-show a canonical engine even when the project chose a moving PHP alias.
-Ruby gem rows include `gemName`, which preserves gem identity across version
-updates and rebuilds of a gem at the same version.
-Named native package rows include their owning `gemName` and `providerName`, so
-a changed PostgreSQL, Curl or ImageMagick provider is visible even when the gem
-version stays locked.
+Reports cover TVP-managed selections exposed by a selected package or the direct
+inputs of a selected shell. For a Ruby bundle or application, this means its
+selected Ruby, bound Bundler and TVP native-library providers. Gems remain
+independent build units, but their versions belong to Gemfile.lock and gemset.nix;
+their versions and rebuilds are not listed as TVP package updates. The consumer's
+bundle and application derivations are also omitted. A directly selected gem
+exposes its TVP Ruby and native providers, not a gem row. Native providers without
+TVP selection metadata, such as explicitly chosen Nixpkgs libraries, are excluded.
+
+Repeated references to the same package selection are collapsed. Distinct
+selectors and build variants remain separate, even when selectors resolve to the
+same derivation. JSON package rows retain `usedBy` references with their locations
+and any owning `gemName`/`providerName`; the text report shows package selectors
+and versions. Changes to consumer references alone are not package updates.
+
+PHP reports retain the engine and extensions of a directly selected TVP PHP
+composition. Its engine row describes the resolved engine and may show a
+canonical engine even when the project chose a moving PHP alias. Version changes
+and same-version derivation changes are reported separately. General derivation-
+graph traversal and attribution among multiple TVP inputs remain outside this
+inspection scope.
 
 The offline integration check runs with `python3 -B tools/consumer/test_consumer.py`.
 

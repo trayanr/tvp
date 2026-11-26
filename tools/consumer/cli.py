@@ -65,7 +65,7 @@ def package_label(package):
     namespace = package["namespace"]
     if namespace and namespace != "packages":
         selector = f"{namespace}.{selector}"
-    return f'{package["location"]}  {selector}'
+    return selector
 
 
 def input_label(source):
