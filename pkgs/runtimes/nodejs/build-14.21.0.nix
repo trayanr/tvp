@@ -113,6 +113,9 @@ in
         --shared-zlib-includes=${lib.getDev zlib}/include --shared-zlib-libpath=${lib.getLib zlib}/lib
     '')
     (command "build" ''
+      # Configure exports this Python alias through config.mk for Make.
+      # Direct Ninja invocations need the same path for inspector actions.
+      export PATH="$PWD/out/tools/bin:$PATH"
       ${ninja}/bin/ninja -C out/Release -j"$NIX_BUILD_CORES" node
     '')
     (command "install" ''
