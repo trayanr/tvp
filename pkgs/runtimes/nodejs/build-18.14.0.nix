@@ -63,6 +63,7 @@ let
 in
 {
   pname = "nodejs";
+  outputs = [ "out" ];
   inherit (args)
     base
     src
@@ -185,7 +186,10 @@ in
       PYTHON
     '')
     (steps.split "nodejs.finalize")
-    (outputs.copyArtifacts { inherit coreutils; })
+    (outputs.copyArtifacts {
+      inherit coreutils;
+      outputs = final.outputs;
+    })
     {
       name = "nodejs.relocate";
       tools = [ toolPython ];

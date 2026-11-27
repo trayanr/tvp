@@ -4,7 +4,7 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
-        builder = ./build-owned-18.14.0.nix;
+        builder = ./build-18.14.0.nix;
         # Keep this V8 era on the GCC 9 source profile.
         base = tvp.bases.gcc_9.full;
         deps = {
