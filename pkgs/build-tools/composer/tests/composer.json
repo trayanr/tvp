@@ -1,0 +1,25 @@
+{
+    "name": "tvp-fixture/project",
+    "require": {
+        "tvp-fixture/message": "^1.0"
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": [
+                {
+                    "name": "tvp-fixture/message",
+                    "version": "2.0.0",
+                    "dist": { "type": "zip", "url": "../fixture.zip" }
+                },
+                {
+                    "name": "tvp-fixture/message",
+                    "version": "1.2.0",
+                    "dist": { "type": "zip", "url": "../fixture.zip" },
+                    "autoload": { "psr-4": { "TvpFixture\\": "" } }
+                }
+            ]
+        },
+        { "packagist.org": false }
+    ]
+}

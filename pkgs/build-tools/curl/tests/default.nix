@@ -9,8 +9,22 @@ let
     package.specification.grep or package.specification.base.tools.grep
     package.specification.sed or package.specification.base.tools.sed
   ];
+  mkSuite =
+    args:
+    context.mkSuite (
+      if lib.versions.majorMinor package.version == "8.7" then
+        args
+        // {
+          tests = {
+            inherit (args.tests) http tls;
+            installed-provider = import ./installed-8.7.nix { inherit package lib tools; };
+          };
+        }
+      else
+        args
+    );
 in
-context.mkSuite {
+mkSuite {
   inherit package tools;
   libraries = [ package ];
   tests = {

@@ -5,6 +5,7 @@ tvp.lib.packages.mergeNamespaces {
   jdk-bootstrap = import ./jdk-bootstrap { inherit pkgs tvp; };
   jdk = import ./jdk { inherit pkgs tvp; };
   nodejs = import ./nodejs { inherit pkgs tvp; };
+  npm = import ./npm { inherit pkgs tvp; };
   bash = import ./bash { inherit pkgs tvp; };
   perl = import ./perl { inherit pkgs tvp; };
   python-minimal = import ./python-minimal { inherit pkgs tvp; };
