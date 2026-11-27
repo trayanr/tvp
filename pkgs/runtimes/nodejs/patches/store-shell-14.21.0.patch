@@ -11,9 +11,12 @@
    }
 --- a/deps/npm/node_modules/npm-lifecycle/index.js
 +++ b/deps/npm/node_modules/npm-lifecycle/index.js
-@@ -293,4 +293,4 @@
+@@ -291,7 +291,7 @@
+   const customShell = opts.scriptShell
+
 -  let sh = 'sh'
 +  let sh = '@TVP_SHELL@'
    let shFlag = '-c'
    if (customShell) {
      sh = customShell
+   } else if (isWindows || opts._TESTING_FAKE_WINDOWS_) {
