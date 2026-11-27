@@ -1,5 +1,6 @@
 { pkgs, tvp }:
 tvp.lib.packages.mergeNamespaces {
+  composer = import ./composer { inherit tvp; };
   doxygen = import ./doxygen { inherit pkgs tvp; };
   gettext = import ./gettext { inherit pkgs tvp; };
   gradle = import ./gradle { inherit pkgs tvp; };

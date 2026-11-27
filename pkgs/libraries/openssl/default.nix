@@ -938,6 +938,29 @@ let
   pname = "openssl";
   family = tvp.lib.packages.mkFamily {
     inherit pname versionTable;
+    packageMeta.security =
+      { version }:
+      {
+        schema = 1;
+        forVersion = version;
+        purl = "pkg:generic/openssl";
+        cpe = {
+          vendor = "openssl";
+          product = "openssl";
+        };
+      }
+      //
+        pkgs.lib.optionalAttrs
+          (
+            builtins.match "[0-9]+\\.[0-9]+\\.[0-9]+" version != null && pkgs.lib.versionAtLeast version "3.0.0"
+          )
+          {
+            osv = {
+              ecosystem = "GIT";
+              name = "https://github.com/openssl/openssl";
+              version = "openssl-${version}";
+            };
+          };
 
     source = tvp.lib.sources.archive {
       url =

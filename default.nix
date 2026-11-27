@@ -9,6 +9,7 @@ assert
 let
   tvpLib = import ./lib {
     inherit (pkgs) lib;
+    fetchGit = pkgs.fetchgit;
     familyContext = {
       base = bases.default;
       builder = tvp.builder;

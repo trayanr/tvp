@@ -169,8 +169,10 @@ tvp.packages.php_8_5.withExtensions {
 
 `php.extensions.mongodb` selects driver 2.5.7 on PHP 8.2 through 8.5.
 Use `php.extensions.mongodb_1` for Composer projects requiring `ext-mongodb ^1`.
-That selector provides driver 1.21.13 on PHP 8.1 through 8.5.
-It includes OpenSSL TLS and zlib compression. Snappy, Zstandard, Cyrus SASL,
+That selector provides driver 1.21.13 on PHP 8.1 through 8.5 and 1.19.4 on
+PHP 7.4 and 8.0. Use `php.extensions.mongodb_1_19_0` to pin 1.19.0.
+TVP packages driver 1.19.0 through 1.19.4 for PHP 7.4 through 8.4.
+The builds include OpenSSL TLS and zlib compression. Snappy, Zstandard, Cyrus SASL,
 and client-side field-level encryption are disabled. The smoke checks load
 the installed module, round-trip BSON, and construct a TLS client without a
 database connection.
