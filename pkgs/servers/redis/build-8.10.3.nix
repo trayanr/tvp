@@ -1,11 +1,12 @@
-# Redis core server and command-line tools. Optional search/JSON module builds,
-# jemalloc, TLS, systemd and replication compression are separate future profiles.
+# Redis core server and command-line tools with TLS and replication compression.
 {
   tvp,
   lib,
   base,
   src,
   version,
+  openssl,
+  zstd,
 }:
 final:
 let
@@ -25,14 +26,21 @@ let
   make = ''
     ${tools.gnumake}/bin/make -C src -j"$NIX_BUILD_CORES" \
       SHELL=${tools.bash}/bin/bash CC="$CC" CXX="$CXX" AR="$AR" RANLIB="$RANLIB" \
-      PYTHON=${tools.python}/bin/python3 MALLOC=libc BUILD_TLS=no \
-      BUILD_COMPRESSION=no USE_SYSTEMD=no OPTIMIZATION=-O2 ENABLE_LTO= \
+      PYTHON=${tools.python}/bin/python3 PKG_CONFIG=${tools.pkg-config}/bin/pkg-config \
+      OPENSSL_PREFIX=${final.openssl} MALLOC=libc BUILD_TLS=yes \
+      BUILD_COMPRESSION=yes USE_SYSTEMD=no OPTIMIZATION=-O2 ENABLE_LTO= \
       ${lib.escapeShellArgs binaries}
   '';
 in
 {
   pname = "redis";
-  inherit base src version;
+  inherit
+    base
+    src
+    version
+    openssl
+    zstd
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
@@ -42,10 +50,14 @@ in
       tools.gawk
       tools.findutils
       tools.python
+      tools.pkg-config
     ];
-    libraries = [ ];
+    libraries = [
+      final.openssl
+      final.zstd
+    ];
   };
-  runtime.libraries = [ ];
+  runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -89,11 +101,11 @@ in
   ];
   tvp.features = {
     core = true;
-    tls = false;
+    tls = true;
     systemd = false;
     search = false;
     json = false;
-    replicationCompression = false;
+    replicationCompression = true;
     libcAllocator = true;
     jemalloc = false;
   };

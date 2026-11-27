@@ -108,6 +108,19 @@ context.mkSuite {
         '';
         expected = "secret";
       };
+    }
+
+    // lib.optionalAttrs (features.defaultConfig or false) {
+      default-config = {
+        script = ''
+          unset OPENSSL_CONF
+          test -s ${openssl}/etc/ssl/openssl.cnf
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=tvp-default-config \
+            -keyout key.pem -out cert.pem
+          openssl x509 -in cert.pem -noout -subject -nameopt RFC2253
+        '';
+        expected = "subject=CN=tvp-default-config";
+      };
     };
 }
 

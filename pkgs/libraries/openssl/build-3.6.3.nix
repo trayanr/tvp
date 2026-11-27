@@ -200,6 +200,20 @@ in
       (steps.split "openssl.finalize")
       (outputs.copyArtifacts { })
       {
+        name = "openssl.install-config";
+        tools = [
+          tools.gnutar
+          tools.gzip
+        ];
+        # Upstream install_sw leaves the configuration to install_ssldirs.
+        run = ''
+          mkdir -p "$out/etc/ssl"
+          tar --extract --gzip --to-stdout --file=${final.src} \
+            openssl-${final.version}/apps/openssl.cnf > "$out/etc/ssl/openssl.cnf"
+          test -s "$out/etc/ssl/openssl.cnf"
+        '';
+      }
+      {
         name = "openssl.relocate";
         tools = [
           tools.python
@@ -286,6 +300,7 @@ in
     static = true;
   };
   installedInterface = {
+    defaultConfig = true;
     sha256 = true;
     pbkdf2 = true;
     providers = true;
