@@ -111,6 +111,34 @@ let
     }
     {
       def = {
+        builder = ./build-20.16.0.nix;
+        # Keep this V8 era on the GCC 13 source profile.
+        base = tvp.bases.gcc_13.full;
+        deps = {
+          # Configure accepts this Python release and GYP requires ctypes.
+          python = tvp.packages.python_3_12;
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
+        ];
+      };
+      releases."20.16.0" = "sha256-zWyPw/8mBqrbxxVdtvfnckfS0AZawY4vfwSQlVhLi0Y=";
+    }
+    {
+      def = {
         builder = ./build-owned-22.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
