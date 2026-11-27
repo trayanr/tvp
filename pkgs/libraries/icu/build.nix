@@ -4,6 +4,7 @@
   base,
   src,
   version,
+  python,
 }:
 final:
 let
@@ -22,7 +23,12 @@ let
 in
 {
   pname = "icu";
-  inherit base src version;
+  inherit
+    base
+    src
+    version
+    python
+    ;
   inherit (tools) bash coreutils;
   environment = {
     tools = [
@@ -32,7 +38,7 @@ in
       tools.gawk
       tools.diffutils
       tools.findutils
-      tools.python
+      final.python
     ];
     libraries = [ ];
   };
@@ -50,7 +56,7 @@ in
       # The shipped echo-character probe explicitly calls /bin/sh.
       sed -i 's|/bin/sh -c|${tools.bash}/bin/bash -c|g' configure
       export CONFIG_SHELL=${tools.bash}/bin/bash SHELL=${tools.bash}/bin/bash
-      export PYTHON=${tools.python}/bin/python3
+      export PYTHON=${final.python}/bin/python3
       export CXXFLAGS="''${CXXFLAGS:--O2} -std=c++17"
       ./configure --prefix="$out" --libdir="$out/lib" --enable-shared --disable-static \
         --with-data-packaging=library --enable-rpath --disable-tests --disable-samples
@@ -95,7 +101,8 @@ in
   meta = {
     description = "Unicode and globalization libraries and tools for C and C++";
     homepage = "https://icu.unicode.org/";
-    license = lib.licenses.unicode-30;
+    license =
+      if lib.versionOlder version "74" then lib.licenses.unicode-dfs-2016 else lib.licenses.unicode-30;
     platforms = [ "x86_64-linux" ];
   };
 }
