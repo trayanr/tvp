@@ -60,6 +60,12 @@ in
       src = final.src;
       compression = "xz";
     })
+    (steps.shebangs {
+      name = "glib.visibility-generator-shebang";
+      paths = [ "tools/gen-visibility-macros.py" ];
+      names = [ "python3" ];
+      interpreter = "${final.python}/bin/python3";
+    })
     (command "glib.configure" ''
       export NINJA=${final.ninja}/bin/ninja
       ${mesonCommand} setup build . --prefix="$out" --libdir=lib --libexecdir=libexec \

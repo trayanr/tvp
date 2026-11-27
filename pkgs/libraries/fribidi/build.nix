@@ -9,7 +9,7 @@
 final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
-  native = import ../../../lib/native-steps.nix { inherit lib; };
+  command = steps.command { environment = final.environment; };
   paths = [
     "bin"
     "lib"
@@ -25,23 +25,29 @@ in
     ;
   inherit (tools) bash coreutils;
   outputs = [ "out" ];
+  environment = {
+    tools = [
+      final.meson
+      tools.ninja
+      tools.pkg-config
+    ];
+    overrides.values = {
+      NINJA = "${tools.ninja}/bin/ninja";
+      PKG_CONFIG = "${tools.pkg-config}/bin/pkg-config";
+    };
+  };
   runtime.libraries = [ ];
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
       compression = "xz";
     })
-    (native.meson {
-      name = "fribidi";
-      inherit (final) meson;
-      inherit (tools) ninja pkg-config;
-      mesonFlags = [
-        "-Ddefault_library=shared"
-        "-Dtests=false"
-        "-Ddocs=false"
-      ];
-      doCheck = false;
-    })
+    (command "fribidi.configure" ''
+      meson setup build . --prefix="$out" --libdir=lib --buildtype=release --wrap-mode=nodownload \
+        -Dauto_features=enabled -Ddefault_library=shared -Dtests=false -Ddocs=false
+    '')
+    (command "fribidi.build" ''meson compile -C build -j "$NIX_BUILD_CORES"'')
+    (command "fribidi.install" "meson install -C build --no-rebuild")
     (steps.split "fribidi.finalize")
     (outputs.copyArtifacts { outputs = final.outputs; })
     (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })

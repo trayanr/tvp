@@ -12,7 +12,7 @@
 final:
 let
   inherit (tvp.builder.forBase final.base) steps outputs tools;
-  native = import ../../../lib/native-steps.nix { inherit lib; };
+  command = steps.command { environment = final.environment; };
   paths = [
     "bin"
     "lib"
@@ -31,38 +31,50 @@ in
     ;
   inherit (tools) bash coreutils;
   outputs = [ "out" ];
-  environment.libraries = [
-    final.freetype
-    final.glib
-    final.icu
-  ]
-  ++ final.freetype.specification.runtime.libraries
-  ++ final.glib.specification.runtime.libraries;
+  environment = {
+    tools = [
+      final.glib
+      final.meson
+      tools.ninja
+      tools.pkg-config
+    ];
+    libraries = [
+      final.freetype
+      final.glib
+      final.icu
+    ]
+    ++ final.freetype.specification.runtime.libraries
+    ++ final.glib.specification.runtime.libraries;
+    overrides.values = {
+      NINJA = "${tools.ninja}/bin/ninja";
+      PKG_CONFIG = "${tools.pkg-config}/bin/pkg-config";
+    };
+  };
   runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
       compression = "xz";
     })
-    (native.meson {
-      name = "harfbuzz";
-      inherit (final) meson;
-      inherit (tools) ninja pkg-config;
-      inherit (final.environment) libraries;
-      mesonFlags = [
-        "-Ddefault_library=shared"
-        "-Dglib=enabled"
-        "-Dgobject=enabled"
-        "-Dfreetype=enabled"
-        "-Dicu=enabled"
-        "-Dcairo=disabled"
-        "-Dchafa=disabled"
-        "-Ddocs=disabled"
-        "-Dintrospection=disabled"
-        "-Dtests=disabled"
+    (steps.shebangs {
+      name = "harfbuzz.generator-shebangs";
+      paths = [
+        "src/fix_get_types.py"
+        "src/gen-def.py"
+        "src/gen-harfbuzzcc.py"
+        "src/gen-hb-version.py"
       ];
-      doCheck = false;
+      names = [ "python3" ];
+      interpreter = "${tools.python}/bin/python3";
     })
+    (command "harfbuzz.configure" ''
+      meson setup build . --prefix="$out" --libdir=lib --buildtype=release --wrap-mode=nodownload \
+        -Dauto_features=enabled -Ddefault_library=shared \
+        -Dglib=enabled -Dgobject=enabled -Dfreetype=enabled -Dicu=enabled \
+        -Dcairo=disabled -Dchafa=disabled -Ddocs=disabled -Dintrospection=disabled -Dtests=disabled
+    '')
+    (command "harfbuzz.build" ''meson compile -C build -j "$NIX_BUILD_CORES"'')
+    (command "harfbuzz.install" "meson install -C build --no-rebuild")
     (steps.split "harfbuzz.finalize")
     (outputs.copyArtifacts { outputs = final.outputs; })
     (outputs.relocateText {

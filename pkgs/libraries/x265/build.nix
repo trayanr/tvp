@@ -19,6 +19,8 @@ let
     "bin"
     "lib"
   ];
+  # Upstream's compile-only fast-math probe succeeds even when the base lacks
+  # libmvec, which GCC uses for vector exp and log calls under -ffast-math.
   configure = lib.removeSuffix "\n" ''
     ${cmake} -S source/source -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_MAKE_PROGRAM=${tools.gnumake}/bin/make \
@@ -26,7 +28,7 @@ let
       -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
       -DNUMA_ROOT_DIR=${final.numa} -DNUMA_INCLUDE_DIR=${final.numa}/include \
       -DNUMA_LIBRARY=${final.numa}/lib/libnuma.so \
-      -DENABLE_ASSEMBLY=OFF
+      -DCC_HAS_FAST_MATH=OFF -DENABLE_ASSEMBLY=OFF
   '';
 in
 {

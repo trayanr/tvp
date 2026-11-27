@@ -12,6 +12,7 @@ context.mkSuite {
       script = ''
         cat > composite.c <<'C'
         #include <pixman.h>
+        #include <stddef.h>
         #include <stdint.h>
 
         int main(void) {

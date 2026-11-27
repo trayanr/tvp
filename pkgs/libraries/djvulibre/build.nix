@@ -59,8 +59,19 @@ in
     (command "djvulibre.install" "${make} install")
     (steps.split "djvulibre.finalize")
     (outputs.copyArtifacts { outputs = final.outputs; })
+    {
+      name = "djvulibre.relocate";
+      tools = [
+        tools.python
+        tools.patchelf
+      ];
+      # The library embeds the path to its installed message catalogues.
+      run = ''
+        ${tools.python}/bin/python3 -B ${../../../lib/relocate.py} "$out" "$TVP_ARTIFACT_ROOT" \
+          ${tools.patchelf}/bin/patchelf
+      '';
+    }
     (outputs.libtool { paths = [ "lib" ]; })
-    (outputs.relocateText { paths = [ "lib/pkgconfig" ]; })
     (outputs.shebangs {
       paths = [ "bin" ];
       names = [
