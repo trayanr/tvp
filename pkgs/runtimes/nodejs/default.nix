@@ -52,7 +52,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-20.16.0.nix;
+        builder = ./build-20.16.0.nix;
         # Keep this V8 era on the GCC 13 source profile.
         base = tvp.bases.gcc_13.full;
         deps = {
