@@ -47,7 +47,20 @@ establish neither fresh execution, source approval nor ABI compatibility.
 
 ## Downstream TVP selections
 
-Run the `tvp` app from the consumer flake directory after it has a `flake.lock`.
+Install the `tvp` command into your user profile:
+
+```sh
+nix profile add github:trayanr/tvp#tvp
+```
+
+Then run `tvp used`, `tvp audit`, `tvp diff` or `tvp update --preview` from a
+consumer flake directory that has a `flake.lock`. The same package is exported as
+`inputs.tvp.packages.${system}.tvp` for development shells, Home Manager's
+`home.packages` and NixOS's `environment.systemPackages`. Installing or upgrading
+the CLI does not update the consumer's TVP input.
+
+The existing `nix run` app remains available.
+
 Without `--attr`, all four consumer commands discover the current platform's
 `devShells`, `packages`, `checks` and `formatter` outputs. This evaluates their
 declared TVP inventory without building packages or running checks. The top-level

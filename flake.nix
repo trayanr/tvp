@@ -43,7 +43,10 @@
         testPkgs = pkgs // tvp.__testBuilders;
       in
       {
-        inherit (tvp) packages checks;
+        inherit (tvp) checks;
+        packages = tvp.packages // {
+          tvp = tvp.tools.consumer;
+        };
 
         # legacyPackages, not a bare output: `packages.<system>.<name>` must be
         # derivations and these are nested. Resolves as `.#canonical.<attr>` or
