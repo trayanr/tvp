@@ -57,7 +57,6 @@ in
         "-DOPENEXR_FORCE_INTERNAL_DEFLATE=ON"
         "-DOPENEXR_FORCE_INTERNAL_OPENJPH=ON"
         "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
-        "-DCMAKE_INSTALL_RPATH=$ORIGIN;$ORIGIN/../lib"
       ];
     })
     (steps.split "openexr.finalize")
@@ -73,6 +72,24 @@ in
       inherit paths;
       libraries = final.runtime.libraries;
     })
+    {
+      name = "openexr.bind-self-libraries";
+      tools = [
+        tools.binutils
+        tools.patchelf
+        tools.python
+      ];
+      run = ''${tools.python}/bin/python3 -B ${../../../lib/append-self-rpaths.py} "$out" ${
+        lib.escapeShellArg (
+          builtins.toJSON {
+            inherit paths;
+            directories = [ "lib" ];
+            readelf = "${tools.binutils}/bin/readelf";
+            patchelf = "${tools.patchelf}/bin/patchelf";
+          }
+        )
+      } ${../../../lib/native-output}'';
+    }
     (outputs.checkPaths { inherit paths; })
   ];
   meta = {

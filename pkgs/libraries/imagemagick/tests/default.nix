@@ -206,6 +206,46 @@ context.mkSuite {
       expected = "1";
     };
   }
+  // lib.optionalAttrs (builtins.elem "heic" delegates) {
+    heic = {
+      script = ''
+        ${cli} -size 64x64 gradient:black-white -colorspace sRGB -quality 90 image.heic
+        test "$(identify -format '%wx%h' image.heic)" = '64x64'
+        ${cli} image.heic -format '%[fx:p{32,8}.r < p{32,56}.r ? 1 : 0]' info:
+      '';
+      expected = "1";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "rsvg" delegates) {
+    rsvg = {
+      tools = [
+        binutils
+        grep
+      ];
+      script = ''
+        readelf -d "${package}"/lib/libMagickCore*.so > needed
+        grep -F 'Shared library: [librsvg-2.so.2]' needed >&2
+        grep -F 'Shared library: [libcairo.so.2]' needed >&2
+        cat > shape.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="12">
+          <rect width="16" height="12" fill="blue"/>
+          <rect width="8" height="12" fill="red"/>
+        </svg>
+        SVG
+        ${cli} RSVG:shape.svg -format '%wx%h %[fx:p{2,2}.r] %[fx:p{12,2}.b]' info:
+      '';
+      expected = "16x12 1 1";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "lqr" delegates) {
+    liquid-rescale = {
+      script = ''
+        ${cli} -size 16x16 gradient:red-blue -liquid-rescale '12x10!' resized.miff
+        identify -format '%wx%h %[fx:p{6,0}.r > p{6,9}.r ? 1 : 0]' resized.miff
+      '';
+      expected = "12x10 1";
+    };
+  }
   // lib.optionalAttrs (perlModuleDirectory != null) {
     perl = {
       tools = [ package.specification.perl ];

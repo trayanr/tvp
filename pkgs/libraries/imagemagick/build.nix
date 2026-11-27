@@ -13,7 +13,10 @@
   fontconfig ? null,
   freetype ? null,
   lcms2 ? null,
+  libheif ? null,
   libice ? null,
+  liblqr ? null,
+  librsvg ? null,
   libsm ? null,
   libtiff ? null,
   libwebp ? null,
@@ -52,7 +55,12 @@ let
   // lib.optionalAttrs (atLeast "6.6.0.10" "7.0.1.0") { lcms = final.lcms2; }
   // lib.optionalAttrs (atLeast "6.6.6.10" "7.0.1.0") { lzma = final.xz; }
   // lib.optionalAttrs (atLeast "6.6.8.10" "7.0.1.0") { webp = final.libwebp; }
-  // lib.optionalAttrs (atLeast "6.9.13.0" "7.1.1.42") { inherit (final) openexr; }
+  // lib.optionalAttrs (atLeast "6.9.13.0" "7.1.1.42") {
+    heic = final.libheif;
+    lqr = final.liblqr;
+    rsvg = final.librsvg;
+    inherit (final) openexr;
+  }
   // lib.optionalAttrs (atLeast "6.8.8.10" "7.0.1.0") { openjp2 = final.openjpeg; }
   // lib.optionalAttrs (atLeast "6.9.10.13" "7.0.8.13") { zstd = final.zstd; }
   // lib.optionalAttrs (isMagick7 && lib.versionAtLeast final.version "7.0.10.62") {
@@ -83,6 +91,7 @@ let
   );
   enabledMacros =
     map delegateMacro (builtins.attrNames enabledDelegates)
+    ++ lib.optional (enabledDelegates ? rsvg) "CAIRO_DELEGATE"
     ++ lib.optional (xLibraries != [ ]) "X11_DELEGATE";
   toggle = flag: enabled: "--${if enabled then "enable" else "disable"}-${flag}";
   # These are the first releases with the upstream libjpeg-turbo guards.
@@ -154,7 +163,10 @@ in
     fontconfig
     freetype
     lcms2
+    libheif
     libice
+    liblqr
+    librsvg
     libsm
     libtiff
     libwebp
@@ -207,6 +219,9 @@ in
     ]
     ++ lib.optional (final.png != null) final.png
     ++ builtins.attrValues enabledDelegates
+    ++ lib.optionals (enabledDelegates ? heic) final.libheif.specification.environment.libraries
+    ++ lib.optionals (enabledDelegates ? lqr) final.liblqr.specification.environment.libraries
+    ++ lib.optionals (enabledDelegates ? rsvg) final.librsvg.specification.environment.libraries
     ++ lib.optionals (enabledDelegates ? openexr) [
       final.openexr.specification.imath
       final.openexr.specification.zstd

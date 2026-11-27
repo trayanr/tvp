@@ -114,6 +114,9 @@ let
           libxml2 = tvp.packages.libxml2_2;
           libxt = tvp.packages.libxt;
           libzip = tvp.packages.libzip;
+          libheif = tvp.packages.libheif_1;
+          liblqr = tvp.packages.liblqr;
+          librsvg = tvp.packages.librsvg;
           openexr = tvp.packages.openexr;
           openjpeg = tvp.packages.openjpeg;
           perl = tvp.packages.perl_5;
@@ -196,6 +199,9 @@ let
           libxml2 = tvp.packages.libxml2_2;
           libxt = tvp.packages.libxt;
           libzip = tvp.packages.libzip;
+          libheif = tvp.packages.libheif_1;
+          liblqr = tvp.packages.liblqr;
+          librsvg = tvp.packages.librsvg;
           openexr = tvp.packages.openexr;
           openjpeg = tvp.packages.openjpeg;
           perl = tvp.packages.perl_5;
