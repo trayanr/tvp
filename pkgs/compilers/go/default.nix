@@ -24,7 +24,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-1.22.12.nix;
+        builder = ./build-1.22.0.nix;
         deps.bootstrap = tvp.lib.packages.withConstraint {
           category = "construction";
           reason = "Explicit source-built preceding Go release; each stage uses the current family procedure and the preceding canonical source compiler.";
@@ -48,7 +48,7 @@ let
     }
     {
       def = {
-        builder = ./build-owned-1.22.12.nix;
+        builder = ./build-1.22.0.nix;
         deps.bootstrap = tvp.lib.packages.withConstraint {
           category = "construction";
           reason = "Explicit source-built preceding Go release; each stage uses the current family procedure and the preceding canonical source compiler.";
