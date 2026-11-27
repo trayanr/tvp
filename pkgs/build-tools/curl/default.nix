@@ -4,6 +4,45 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
+        builder = ./build-8.7.0.nix;
+        deps = {
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
+          brotli = tvp.packages.brotli;
+          nghttp2 = tvp.packages.nghttp2_1;
+          openldap = tvp.packages.openldap;
+          krb5 = tvp.packages.krb5;
+          ca-certificates = tvp.packages.ca-certificates;
+        };
+        # The release tarball omitted libcurl manpage sources. Restore those
+        # from the commit tagged curl-8_7_0, keeping the release Autotools files.
+        opts.manualSources = import <nix/fetchurl.nix> {
+          name = "curl-8.7.0-manual-sources.tar.gz";
+          url = "https://codeload.github.com/curl/curl/tar.gz/72cf468d459d29e5366e416c014faaaf281dfa2d";
+          sha256 = "sha256-vjFALPcc1WzRj3CFkw++vKMb/olVd62eXhYab+7ZqAg=";
+        };
+      };
+      releases."8.7.0" = "sha256-Uj393nG/WxvV05sYnk7rbXxWAAB3b+kAYwyFbcGVQlk=";
+    }
+    {
+      def = {
+        builder = ./build-8.7.0.nix;
+        deps = {
+          openssl = tvp.packages.openssl_3;
+          zlib = tvp.packages.zlib_1;
+          zstd = tvp.packages.zstd_1;
+          brotli = tvp.packages.brotli;
+          nghttp2 = tvp.packages.nghttp2_1;
+          openldap = tvp.packages.openldap;
+          krb5 = tvp.packages.krb5;
+          ca-certificates = tvp.packages.ca-certificates;
+        };
+      };
+      releases."8.7.1" = "sha256-+RJJyH9o6gDPJ8RP36WnhCPkHnG31AjlkBqYltkFxJU=";
+    }
+    {
+      def = {
         builder = ./build-8.23.0-native.nix;
         deps = {
           openssl = tvp.packages.openssl;
