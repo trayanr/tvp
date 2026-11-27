@@ -6,6 +6,35 @@ let
       def = {
         builder = ./build.nix;
         deps = {
+          php = tvp.packages.php_8_4;
+          openssl = tvp.packages.openssl;
+          zlib = tvp.packages.zlib;
+        };
+        phpRequirements = {
+          min = "7.4.0";
+          max = "8.99.99";
+          reason = "MongoDB 1.19.0 through 1.19.4 declare PHP 7.4 through 8.x in package.xml.";
+          source = "https://pecl.php.net/get/mongodb-1.19.0.tgz";
+        };
+        # Upstream lists 1.19 through PHP 8.4. Its source still uses IS_INTERNED,
+        # which PHP 8.5 removed.
+        opts.phpCompatibility = {
+          min = "7.4";
+          before = "8.5";
+        };
+      };
+      releases = {
+        "1.19.0" = "sha256-K76JglGWZ26JMsh/BZWSLisbsYpvmC7l8369xEexTRA=";
+        "1.19.1" = "sha256-DKTiHbNmzscSzXB3r4uk+8jfzQMJl8BSowJ0wOVGjpo=";
+        "1.19.2" = "sha256-BKgsM3ENNr2lUVIvMwZ9M03SCUX022gMylSF0Q6Kpcc=";
+        "1.19.3" = "sha256-qeF7Aklxt4yJZBO0ZyJETlwNAE494nFJDJ09VeNCaOk=";
+        "1.19.4" = "sha256-V8Foskp9B/czZ+SxNOuRGtEXC6fSA7xHX27xuGDBZwE=";
+      };
+    }
+    {
+      def = {
+        builder = ./build.nix;
+        deps = {
           php = tvp.packages.php_8_5;
           openssl = tvp.packages.openssl;
           zlib = tvp.packages.zlib;
