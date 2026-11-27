@@ -25,6 +25,7 @@ tvp.lib.packages.mergeNamespaces {
   libjpeg-turbo = import ./libjpeg-turbo { inherit pkgs tvp; };
   libpng = import ./libpng { inherit pkgs tvp; };
   imagemagick = import ./imagemagick { inherit pkgs tvp; };
+  djvulibre = import ./djvulibre { inherit pkgs tvp; };
   fftw = import ./fftw { inherit pkgs tvp; };
   libraw = import ./libraw { inherit pkgs tvp; };
   libsodium = import ./libsodium { inherit pkgs tvp; };
@@ -58,6 +59,7 @@ tvp.lib.packages.mergeNamespaces {
   libxml2 = import ./libxml2 { inherit pkgs tvp; };
   libxslt = import ./libxslt { inherit pkgs tvp; };
   icu = import ./icu { inherit pkgs tvp; };
+  imath = import ./imath { inherit pkgs tvp; };
   libzip = import ./libzip { inherit pkgs tvp; };
   ncurses = import ./ncurses { inherit pkgs tvp; };
   readline = import ./readline { inherit pkgs tvp; };
@@ -72,6 +74,7 @@ tvp.lib.packages.mergeNamespaces {
   libgcrypt = import ./libgcrypt { inherit pkgs tvp; };
   libtiff = import ./libtiff { inherit pkgs tvp; };
   lcms2 = import ./lcms2 { inherit pkgs tvp; };
+  openexr = import ./openexr { inherit pkgs tvp; };
   openjpeg = import ./openjpeg { inherit pkgs tvp; };
   libpam = import ./libpam { inherit pkgs tvp; };
   libuuid = import ./libuuid { inherit pkgs tvp; };

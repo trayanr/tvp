@@ -10,6 +10,9 @@ Some integrations depend on the release's configure support:
 
 | Integration | First packaged release with the matching provider interface |
 | --- | --- |
+| FFTW | 6.5.4-10 and later packaged releases |
+| DjVuLibre | 6.9.4-0 or 7.0.1-0 |
+| OpenEXR | 6.9.13-0 or 7.1.1-42 |
 | LittleCMS 2 | 6.6.0-10 |
 | XZ | 6.6.6-10 |
 | WebP | 6.6.8-10 |
@@ -26,8 +29,8 @@ need LittleCMS 1 and JasPer respectively.
 Additional delegates need packaged providers and release-appropriate wiring.
 These include Ghostscript for PDF/PostScript, librsvg and Cairo for the alternate
 SVG renderer, Pango and libraqm for additional text rendering, and the format
-libraries for AVIF/HEIF, JPEG XL, Ultra HDR, camera RAW, OpenEXR, JBIG, DjVu,
-WMF, and FlashPix. FFTW, Graphviz, and OpenCL also need providers, including an
+libraries for AVIF/HEIF, JPEG XL, Ultra HDR, camera RAW, JBIG, WMF, and
+FlashPix. Liquid rescale needs liblqr and GLib. Graphviz and OpenCL also need providers, including an
 ICD loader and a runtime driver for OpenCL. Fontconfig discovery uses the fonts
 available in the user's runtime environment.
 

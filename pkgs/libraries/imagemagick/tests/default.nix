@@ -89,16 +89,26 @@ context.mkSuite {
         test "$(identify -format '%m %wx%h' variant.ico)" = 'ICO 16x16'
         convert -delay 8 raster.png -size 16x16 xc:blue -loop 0 animated.gif
         test "$(identify -format '%m %wx%h\n' animated.gif)" = "$(printf '%s\n' 'GIF 16x16' 'GIF 16x16')"
-        ${lib.removeSuffix "\n" (if builtins.elem package.version [ "6.9.4.7" "7.0.1.9" ] then ''
-          # These readers accept the animation as a whole but treat [n] as part
-          # of the filename. Decode both scenes in one invocation.
-          convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
-          mv frame-0.rgb first.rgb
-          mv frame-1.rgb second.rgb
-        '' else ''
-          convert 'animated.gif[0]' -depth 8 RGB:first.rgb
-          convert 'animated.gif[1]' -depth 8 RGB:second.rgb
-        '')}
+        ${lib.removeSuffix "\n" (
+          if
+            builtins.elem package.version [
+              "6.9.4.7"
+              "7.0.1.9"
+            ]
+          then
+            ''
+              # These readers accept the animation as a whole but treat [n] as part
+              # of the filename. Decode both scenes in one invocation.
+              convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
+              mv frame-0.rgb first.rgb
+              mv frame-1.rgb second.rgb
+            ''
+          else
+            ''
+              convert 'animated.gif[0]' -depth 8 RGB:first.rgb
+              convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+            ''
+        )}
         test -s first.rgb && test -s second.rgb
         status=0
         cmp -s first.rgb second.rgb || status=$?
@@ -144,6 +154,56 @@ context.mkSuite {
         printf delegates-ok
       '';
       expected = "delegates-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "fftw" delegates) {
+    fourier = {
+      tools = [
+        binutils
+        grep
+        package.specification.base.tools.gawk
+      ];
+      script = ''
+        readelf -d "${package}"/lib/libMagickCore*.so > needed
+        grep -F 'Shared library: [libfftw3.so.3]' needed >&2
+        ${cli} -size 8x8 gradient:black-white -colorspace Gray input.miff
+        ${cli} input.miff -fft spectrum.miff
+        test "$(identify -format '%wx%h\n' spectrum.miff)" = "$(printf '8x8\n8x8')"
+        ${cli} spectrum.miff -ift result.miff
+        test "$(identify -format '%wx%h' result.miff)" = '8x8'
+        error=$(${cli} input.miff result.miff -compose difference -composite -format '%[fx:mean]' info:)
+        awk -v error="$error" 'BEGIN { exit !(error ~ /^[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$/ && error < 0.004) }'
+        printf 'fourier-ok'
+      '';
+      expected = "fourier-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "djvu" delegates) {
+    djvu = {
+      tools = [
+        package.specification.djvulibre
+        package.specification.base.tools.diffutils
+      ];
+      script = ''
+        cjb2 ${../../djvulibre/tests/page.pbm} page.djvu
+        ${cli} page.djvu page.miff
+        test "$(identify -format '%wx%h' page.miff)" = '8x8'
+        ${cli} page.miff -depth 8 gray:decoded
+        ${cli} ${../../djvulibre/tests/page.pbm} -depth 8 gray:expected
+        cmp decoded expected
+        printf 'djvu-ok'
+      '';
+      expected = "djvu-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "openexr" delegates) {
+    exr = {
+      script = ''
+        ${cli} -size 8x8 gradient:black-white -colorspace RGB input.exr
+        test "$(identify -format '%m %wx%h' input.exr)" = 'EXR 8x8'
+        ${cli} input.exr -format '%[fx:p{0,0}.r < p{0,7}.r ? 1 : 0]' info:
+      '';
+      expected = "1";
     };
   }
   // lib.optionalAttrs (perlModuleDirectory != null) {

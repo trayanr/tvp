@@ -8,6 +8,8 @@
   png ? null,
   zlib,
   bzip2 ? null,
+  djvulibre ? null,
+  fftw ? null,
   fontconfig ? null,
   freetype ? null,
   lcms2 ? null,
@@ -20,6 +22,7 @@
   libxml2 ? null,
   libxt ? null,
   libzip ? null,
+  openexr ? null,
   openjpeg ? null,
   perl ? null,
   xz ? null,
@@ -39,14 +42,17 @@ let
     magick6: magick7: lib.versionAtLeast final.version (if isMagick7 then magick7 else magick6);
   delegates = {
     bzlib = final.bzip2;
+    fftw = final.fftw;
     fontconfig = final.fontconfig;
     freetype = final.freetype;
     tiff = final.libtiff;
     xml = final.libxml2;
   }
+  // lib.optionalAttrs (atLeast "6.9.4.0" "7.0.1.0") { djvu = final.djvulibre; }
   // lib.optionalAttrs (atLeast "6.6.0.10" "7.0.1.0") { lcms = final.lcms2; }
   // lib.optionalAttrs (atLeast "6.6.6.10" "7.0.1.0") { lzma = final.xz; }
   // lib.optionalAttrs (atLeast "6.6.8.10" "7.0.1.0") { webp = final.libwebp; }
+  // lib.optionalAttrs (atLeast "6.9.13.0" "7.1.1.42") { inherit (final) openexr; }
   // lib.optionalAttrs (atLeast "6.8.8.10" "7.0.1.0") { openjp2 = final.openjpeg; }
   // lib.optionalAttrs (atLeast "6.9.10.13" "7.0.8.13") { zstd = final.zstd; }
   // lib.optionalAttrs (isMagick7 && lib.versionAtLeast final.version "7.0.10.62") {
@@ -110,11 +116,22 @@ let
     "6.8.3.10"
     "6.9.10.54"
   ];
-  perlVersionRepair = {
-    "6.9.5.7" = { old = "6.94"; new = "6.95"; };
-    "7.1.0.32" = { old = "7.0.12"; new = "7.1.0"; };
-    "7.1.0.39" = { old = "7.0.12"; new = "7.1.0"; };
-  }.${final.version} or null;
+  perlVersionRepair =
+    {
+      "6.9.5.7" = {
+        old = "6.94";
+        new = "6.95";
+      };
+      "7.1.0.32" = {
+        old = "7.0.12";
+        new = "7.1.0";
+      };
+      "7.1.0.39" = {
+        old = "7.0.12";
+        new = "7.1.0";
+      };
+    }
+    .${final.version} or null;
   elfPaths = [
     "bin"
     "lib"
@@ -132,6 +149,8 @@ in
     png
     zlib
     bzip2
+    djvulibre
+    fftw
     fontconfig
     freetype
     lcms2
@@ -144,6 +163,7 @@ in
     libxml2
     libxt
     libzip
+    openexr
     openjpeg
     perl
     xz
@@ -187,6 +207,10 @@ in
     ]
     ++ lib.optional (final.png != null) final.png
     ++ builtins.attrValues enabledDelegates
+    ++ lib.optionals (enabledDelegates ? openexr) [
+      final.openexr.specification.imath
+      final.openexr.specification.zstd
+    ]
     ++ xLibraries;
   };
   # The XML and X11 delegate link flags also add their providers' libraries.
@@ -256,17 +280,26 @@ in
       ''
     ))
     (lib.optional
-      (final.perl != null && lib.elem final.version [ "6.9.10.0" "6.9.10.1" "6.9.10.2" ])
-      (command "imagemagick.perl-numeric-version" ''
-        # Backport 6.9.10-3's numeric version to both the XS build and loader.
-        # Keep the shipped configure current with respect to its version.sh prerequisite.
-        test "$(grep -Fxc "PACKAGE_PERL_VERSION='6.9A'" version.sh)" = 1
-        test "$(grep -Fxc "\$VERSION = '6.9A';" PerlMagick/Magick.pm)" = 1
-        touch -r version.sh "$TMPDIR/imagemagick-version-mtime"
-        sed -i "s/^PACKAGE_PERL_VERSION='6[.]9A'$/PACKAGE_PERL_VERSION='6.9.10'/" version.sh
-        touch -r "$TMPDIR/imagemagick-version-mtime" version.sh
-        sed -i "s/^\$VERSION = '6[.]9A';$/\$VERSION = '6.9.10';/" PerlMagick/Magick.pm
-      '')
+      (
+        final.perl != null
+        && lib.elem final.version [
+          "6.9.10.0"
+          "6.9.10.1"
+          "6.9.10.2"
+        ]
+      )
+      (
+        command "imagemagick.perl-numeric-version" ''
+          # Backport 6.9.10-3's numeric version to both the XS build and loader.
+          # Keep the shipped configure current with respect to its version.sh prerequisite.
+          test "$(grep -Fxc "PACKAGE_PERL_VERSION='6.9A'" version.sh)" = 1
+          test "$(grep -Fxc "\$VERSION = '6.9A';" PerlMagick/Magick.pm)" = 1
+          touch -r version.sh "$TMPDIR/imagemagick-version-mtime"
+          sed -i "s/^PACKAGE_PERL_VERSION='6[.]9A'$/PACKAGE_PERL_VERSION='6.9.10'/" version.sh
+          touch -r "$TMPDIR/imagemagick-version-mtime" version.sh
+          sed -i "s/^\$VERSION = '6[.]9A';$/\$VERSION = '6.9.10';/" PerlMagick/Magick.pm
+        ''
+      )
     )
     (lib.optional (final.perl != null && final.version == "7.0.5.3") (
       command "imagemagick.perl-module-install-order" ''
@@ -286,27 +319,39 @@ in
       ''
     ))
     (lib.optional
-      (enabledDelegates ? webp && lib.elem final.version [ "6.9.9.5" "7.0.6.5" ])
-      (command "imagemagick.webp-decoder-output" ''
-        # The next releases keep the initialized pointer to configure.output.
-        file=coders/webp.c
-        test "$(grep -Fxc '    *magick_restrict webp_image = &configure.output;' "$file")" = 1
-        test "$(grep -Fxc '  webp_image=(WebPDecBuffer *) NULL;' "$file")" = 1
-        sed -i '/^  webp_image=(WebPDecBuffer [*]) NULL;$/d' "$file"
-      '')
+      (
+        enabledDelegates ? webp
+        && lib.elem final.version [
+          "6.9.9.5"
+          "7.0.6.5"
+        ]
+      )
+      (
+        command "imagemagick.webp-decoder-output" ''
+          # The next releases keep the initialized pointer to configure.output.
+          file=coders/webp.c
+          test "$(grep -Fxc '    *magick_restrict webp_image = &configure.output;' "$file")" = 1
+          test "$(grep -Fxc '  webp_image=(WebPDecBuffer *) NULL;' "$file")" = 1
+          sed -i '/^  webp_image=(WebPDecBuffer [*]) NULL;$/d' "$file"
+        ''
+      )
     )
     (lib.optional
-      (historicalCoderRepair != null
+      (
+        historicalCoderRepair != null
         && (historicalCoderRepair.path != "coders/jp2.c" || enabledDelegates ? openjp2)
-        && (historicalCoderRepair.path != "coders/webp.c" || enabledDelegates ? webp))
+        && (historicalCoderRepair.path != "coders/webp.c" || enabledDelegates ? webp)
+      )
       {
         name = "imagemagick.historical-coders";
         cwd = "source";
         tools = [ tools.python ];
-        run = "${tools.python}/bin/python3 -B ${./historical-coders.py} ${lib.escapeShellArgs [
-          historicalCoderRepair.repair
-          historicalCoderRepair.path
-        ]}";
+        run = "${tools.python}/bin/python3 -B ${./historical-coders.py} ${
+          lib.escapeShellArgs [
+            historicalCoderRepair.repair
+            historicalCoderRepair.path
+          ]
+        }";
       }
     )
     (lib.optional
