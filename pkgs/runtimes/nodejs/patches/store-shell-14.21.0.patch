@@ -1,0 +1,20 @@
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -572,7 +572,7 @@
+       else if (process.platform === 'android')
+         file = '/system/bin/sh';
+       else
+-        file = '/bin/sh';
++        file = '@TVP_SHELL@';
+       args = ['-c', command];
+     }
+   }
+--- a/deps/npm/node_modules/npm-lifecycle/index.js
++++ b/deps/npm/node_modules/npm-lifecycle/index.js
+@@ -291,5 +291,5 @@
+   const customShell = opts.scriptShell
+
+-  let sh = 'sh'
++  let sh = '@TVP_SHELL@'
+   let shFlag = '-c'
+   if (customShell) {
