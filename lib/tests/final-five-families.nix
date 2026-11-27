@@ -23,6 +23,12 @@ let
     p:
     let
       s = p.specification;
+      defaultBase = tvp.bases.gcc_16.full;
+      selectedBase =
+        if p.pname == "nodejs" then
+          modules.nodejs.recipes.nodejs.versionTable.${p.version}.def.base or defaultBase
+        else
+          defaultBase;
       parts = tvp.builder.steps.partition p.buildSteps;
       source = p.override { src = builtins.toFile "final-five-source-control" "never build"; };
       suffix = p.editSteps (
@@ -50,7 +56,7 @@ let
       sourceChangesA = source.artifact.drvPath != p.artifact.drvPath;
       suffixReusesA = suffix.artifact.drvPath == p.artifact.drvPath && suffix.drvPath != p.drvPath;
       baseCoreutilsRebinds = base.specification.coreutils.outPath == changedBase.coreutils.outPath;
-      hostCompiler = s.base.compiler.drvPath == tvp.bases.gcc_16.full.compiler.drvPath;
+      hostCompiler = s.base.compiler.drvPath == selectedBase.compiler.drvPath;
       versionTest = p.tests ? version;
       reboundTest = suffix.tests.version.package.drvPath == suffix.drvPath;
     };
@@ -60,9 +66,12 @@ let
     let
       recipe = module.recipes.${name};
       versions = builtins.attrNames recipe.versionTable;
+      # Keep the migration-era Node.js count fixed while checking each new era below.
+      countedVersions =
+        if name == "nodejs" then builtins.filter (v: lib.versionAtLeast v "22") versions else versions;
     in
     {
-      count = builtins.length versions == expected.${name};
+      count = builtins.length countedVersions == expected.${name};
       ordinary = recipe.authoring.origin == "tvp.lib.packages.mkFamily";
       instantiate = builtins.all (
         v:

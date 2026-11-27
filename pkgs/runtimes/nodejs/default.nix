@@ -4,6 +4,65 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
+        builder = ./build-14.21.0.nix;
+        # Keep this V8 generation on an era-compatible GCC toolchain.
+        base = tvp.bases.gcc_9.full;
+        deps = {
+          # All four configure scripts accept Python 3.10.
+          python = tvp.packages.python_3_10;
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the compiler-free Node subprocess and npm lifecycle shell.";
+          } tvp.bases.gcc_16.full.shell;
+          openssl = tvp.lib.packages.withConstraint {
+            reason = "Node.js 14 uses the OpenSSL 1.1.1 API.";
+          } tvp.packages.openssl_1_1;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell-14.21.0.patch;
+            reason = "Bind Node subprocess and npm 6 lifecycle shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "14.21.0" = "sha256-O0vawbrMxUuu4uPbyre7Y1Ikxxbudu5Jqk9vVMKPeZE=";
+        "14.21.1" = "sha256-PbldbKcolXvwkLYwGnqdLYBxSyoG2Jih22XG5Csdp6w=";
+        "14.21.2" = "sha256-2PCaDxZ3OndhPDgXYG9tRVYkmS2cQ0Q6yhXpGAeh/wM=";
+        "14.21.3" = "sha256-RY7AkuYK1wDdzwectj1DXBXaTHuz0/mbmo5YqZ5UB14=";
+      };
+    }
+    {
+      def = {
+        builder = ./build-18.14.0.nix;
+        # Keep this V8 era on the GCC 9 source profile.
+        base = tvp.bases.gcc_9.full;
+        deps = {
+          # Configure accepts this Python release and GYP requires ctypes.
+          python = tvp.packages.python_3_11;
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "18.14.0" = "sha256-Qu+d0xmT1cjoKwqwlpE1CT5qKW76J7G+mvwErADwJno=";
+        "18.14.1" = "sha256-7sNTQ4Jm/QrvU6lEa+ELMu5udNCOMt1UVLOC/2eT2gQ=";
+        "18.14.2" = "sha256-+8Nk3SX+4srMDyAz2y2GEV/AdXUxDqDmRAi4Fw0JxoU=";
+      };
+    }
+    {
+      def = {
         builder = ./build-owned-22.0.0.nix;
         deps = {
           # GYP's Ninja generator imports ctypes; the base's small helper Python
@@ -49,6 +108,34 @@ let
         "22.1.0" = "sha256-nX1fQNnb1iYMmbXklLX5vHVejw/6xw4SGtzl+0QvI8s=";
         "22.2.0" = "sha256-iJkIqIKNFISRDX5lm2qlet6NUo/w45Dpp372WadihHQ=";
       };
+    }
+    {
+      def = {
+        builder = ./build-20.16.0.nix;
+        # Keep this V8 era on the GCC 13 source profile.
+        base = tvp.bases.gcc_13.full;
+        deps = {
+          # Configure accepts this Python release and GYP requires ctypes.
+          python = tvp.packages.python_3_12;
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the compiler-free Node subprocess/npm shell.";
+          } tvp.bases.gcc_16.full.shell;
+          openssl = tvp.packages.openssl_3_0;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell-24.0.0.patch;
+            reason = "Bind subprocess and npm shells to the explicitly selected Bash.";
+          }
+          {
+            file = ./patches/worker-inspector-stdint.patch;
+            reason = "Include the declaration of uint64_t used by the worker inspector, as in newer Node.js.";
+          }
+        ];
+      };
+      releases."20.16.0" = "sha256-zWyPw/8mBqrbxxVdtvfnckfS0AZawY4vfwSQlVhLi0Y=";
     }
     {
       def = {
