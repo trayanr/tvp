@@ -4,6 +4,37 @@ let
   versionTable = tvp.lib.packages.mkTable [
     {
       def = {
+        builder = ./build-14.21.0.nix;
+        # Keep this V8 generation on an era-compatible GCC toolchain.
+        base = tvp.bases.gcc_9.full;
+        deps = {
+          # All four configure scripts accept Python 3.10.
+          python = tvp.packages.python_3_10;
+          runtimeBash = tvp.lib.packages.withConstraint {
+            category = "construction";
+            reason = "Retained source-GNU Bash provides the compiler-free Node subprocess and npm lifecycle shell.";
+          } tvp.bases.gcc_16.full.shell;
+          openssl = tvp.lib.packages.withConstraint {
+            reason = "Node.js 14 uses the OpenSSL 1.1.1 API.";
+          } tvp.packages.openssl_1_1;
+          zlib = tvp.packages.zlib_1;
+        };
+        patches = [
+          {
+            file = ./patches/store-shell-14.21.0.patch;
+            reason = "Bind Node subprocess and npm 6 lifecycle shells to the explicitly selected Bash.";
+          }
+        ];
+      };
+      releases = {
+        "14.21.0" = "sha256-O0vawbrMxUuu4uPbyre7Y1Ikxxbudu5Jqk9vVMKPeZE=";
+        "14.21.1" = "sha256-PbldbKcolXvwkLYwGnqdLYBxSyoG2Jih22XG5Csdp6w=";
+        "14.21.2" = "sha256-2PCaDxZ3OndhPDgXYG9tRVYkmS2cQ0Q6yhXpGAeh/wM=";
+        "14.21.3" = "sha256-RY7AkuYK1wDdzwectj1DXBXaTHuz0/mbmo5YqZ5UB14=";
+      };
+    }
+    {
+      def = {
         builder = ./build-18.14.0.nix;
         # Keep this V8 era on the GCC 9 source profile.
         base = tvp.bases.gcc_9.full;
