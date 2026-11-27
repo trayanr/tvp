@@ -153,7 +153,14 @@ in
       expected = "v${package.version}";
     };
     runtime = {
-      script = "node${lib.optionalString package.tvp.features.sqliteRequiresFlag " --experimental-sqlite"} ${if package.tvp.features.temporal then ./fixtures/runtime.js else if package.tvp.features.sqlite then ./fixtures/runtime-without-temporal.js else ./fixtures/runtime-without-sqlite.js}";
+      script = "node${lib.optionalString package.tvp.features.sqliteRequiresFlag " --experimental-sqlite"} ${
+        if package.tvp.features.temporal then
+          ./fixtures/runtime.js
+        else if package.tvp.features.sqlite then
+          ./fixtures/runtime-without-temporal.js
+        else
+          ./fixtures/runtime-without-sqlite.js
+      }";
       expected = "runtime-ok";
     };
     shell = {
@@ -198,6 +205,23 @@ in
     };
   };
 })
+// lib.optionalAttrs ((package.specification.installedInterface or { }) ? bundledNpmVersion) (
+  context.mkSuite {
+    inherit package;
+    tests.npm-version = {
+      script = ''
+        npm_version=$("${package}/bin/npm" --version)
+        npx_version=$("${package}/bin/npx" --version)
+        printf '%s %s\n' "$npm_version" "$npx_version"
+      '';
+      expected =
+        let
+          version = package.specification.installedInterface.bundledNpmVersion;
+        in
+        "${version} ${version}";
+    };
+  }
+)
 // {
   build-python = import ./build-python.nix {
     inherit context;
