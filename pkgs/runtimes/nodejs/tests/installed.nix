@@ -6,6 +6,8 @@
 let
   pkgs = context.callerPackages;
   deps = package.tvp.deps;
+  assertStrictModule = package.tvp.features.assertStrictModule or true;
+  runtimeShell = "${package.specification.runtime.shell}/bin/bash";
   runtimeProvider =
     dependency:
     let
@@ -153,12 +155,19 @@ in
       expected = "v${package.version}";
     };
     runtime = {
-      script = "node${lib.optionalString package.tvp.features.sqliteRequiresFlag " --experimental-sqlite"} ${if package.tvp.features.temporal then ./fixtures/runtime.js else if package.tvp.features.sqlite then ./fixtures/runtime-without-temporal.js else ./fixtures/runtime-without-sqlite.js}";
+      script =
+        if assertStrictModule then
+          "node${lib.optionalString package.tvp.features.sqliteRequiresFlag " --experimental-sqlite"} ${
+            if package.tvp.features.temporal then
+              ./fixtures/runtime.js
+            else if package.tvp.features.sqlite then
+              ./fixtures/runtime-without-temporal.js
+            else
+              ./fixtures/runtime-without-sqlite.js
+          }"
+        else
+          "env -i ${package}/bin/node ${./fixtures/runtime-14.js} '${runtimeShell}'";
       expected = "runtime-ok";
-    };
-    shell = {
-      script = "env -i ${package}/bin/node ${./fixtures/shell.js} '${package.specification.runtime.shell}/bin/bash' ";
-      expected = "shell-ok";
     };
     addon = {
       script = ''
@@ -196,8 +205,31 @@ in
       '';
       expected = "owned";
     };
+  }
+  // lib.optionalAttrs assertStrictModule {
+    shell = {
+      script = "env -i ${package}/bin/node ${./fixtures/shell.js} '${runtimeShell}' ";
+      expected = "shell-ok";
+    };
   };
 })
+// lib.optionalAttrs ((package.specification.installedInterface or { }) ? bundledNpmVersion) (
+  context.mkSuite {
+    inherit package;
+    tests.npm-version = {
+      script = ''
+        npm_version=$("${package}/bin/npm" --version)
+        npx_version=$("${package}/bin/npx" --version)
+        printf '%s %s\n' "$npm_version" "$npx_version"
+      '';
+      expected =
+        let
+          version = package.specification.installedInterface.bundledNpmVersion;
+        in
+        "${version} ${version}";
+    };
+  }
+)
 // {
   build-python = import ./build-python.nix {
     inherit context;
