@@ -31,7 +31,12 @@ let
     before = "8.5";
   };
   mongodbPairs =
-    countEngines {
+    5
+    * countEngines {
+      min = "7.4";
+      before = "8.5";
+    }
+    + countEngines {
       min = "8.1";
       before = "8.6";
     }
@@ -43,6 +48,7 @@ let
     }
     + php82To85;
   mongodb = tvp.canonical.php_8_2_35.extensions.mongodb_1;
+  mongodb119 = tvp.canonical.php_8_2_35.extensions.mongodb_1_19_0;
   mysqlModules = [
     "mysqlnd"
     "mysqli"
@@ -161,6 +167,9 @@ let
       (row "redis" "7.4.33" "4.3.0").state == "gap"
       && (row "mongodb" "7.4.33" "1.21.13").state == "incompatible"
       && (row "mongodb" "8.2.35" "1.21.13").state == "packaged"
+      && (row "mongodb" "7.3.33" "1.19.0").state == "incompatible"
+      && (row "mongodb" "7.4.33" "1.19.0").state == "packaged"
+      && (row "mongodb" "8.5.12" "1.19.0").state == "gap"
       && (row "bcmath" "8.1.34" "8.1.34").state == "gap"
       && (row "bcmath" "8.2.35" "8.2.35").state == "packaged"
       && (row "gd" "8.1.34" "8.1.34").state == "gap"
@@ -245,7 +254,11 @@ let
     mongodbCompatibility =
       mongodb.php.drvPath == tvp.canonical.php_8_2_35.drvPath
       && mongodb.version == "1.21.13"
+      && mongodb119.php.drvPath == tvp.canonical.php_8_2_35.drvPath
+      && mongodb119.version == "1.19.0"
+      && tvp.canonical.php_7_4_33.extensions.mongodb.version == "1.19.4"
       && tvp.canonical.php_8_2_35.extensions.mongodb.version == "2.5.7"
+      && rejects (tvp.canonical.php_8_5_12.extensions.mongodb_1_19_0)
       && rejects (tvp.canonical.php_8_0_30.extensions.mongodb_1_21_13);
     extensionLibraryDeclarations = lib.all lib.id (
       lib.mapAttrsToList
@@ -744,6 +757,7 @@ let
       && tvp.php.extensionMatrix.php_8_5_12--igbinary_3_2_17RC1.package.drvPath == igbinary.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--apcu_5_1_28.package.drvPath == apcu.drvPath
       && tvp.php.extensionMatrix.php_8_2_35--mongodb_1_21_13.package.drvPath == mongodb.drvPath
+      && tvp.php.extensionMatrix.php_8_2_35--mongodb_1_19_0.package.drvPath == mongodb119.drvPath
       && tvp.php.extensionMatrix.php_8_5_12--pdo_dblib_8_5_12.package.drvPath == dblib.drvPath
       && tvp.php.metadata.families.igbinary.extensionVersions == [ "3.2.17RC1" ]
       && tvp.php.metadata.upstreamIncluded == false;
