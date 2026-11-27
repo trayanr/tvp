@@ -92,6 +92,12 @@ in
         done
       '';
     }
+    # Before 56, libicuuc embeds the default plug-in directory.
+    (lib.optional (lib.versionOlder final.version "56") {
+      name = "icu.relocate-plugin-directory";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./relocate-plugin-directory.py} "$out" "$TVP_ARTIFACT_ROOT"'';
+    })
     (outputs.strip { paths = elfPaths; })
     (outputs.rpaths {
       paths = elfPaths;

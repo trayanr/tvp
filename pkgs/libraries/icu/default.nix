@@ -37,9 +37,17 @@ let
       };
     }
     {
-      def.builder = ./build-50.1.2.nix;
+      def = {
+        builder = ./build-50.1.2.nix;
+        opts.repairSpoofOffset = true;
+      };
       releases = {
         "50.1.2" = "sha256-uj7Clzj6b6SCFXVcwP1gQTTePA39zl832BrcoJzZpso=";
+      };
+    }
+    {
+      def.builder = ./build-50.1.2.nix;
+      releases = {
         "51.2" = "sha256-699gK9lEwPtzrR0ex8DuCbzjniA/PL51pgMWYj5YCsE=";
         "52.1" = "sha256-DsbhA/Nl0QoIvAFO5NO/3NEJQHD7NBjyAnDqeQqUBM0=";
         "53.1" = "sha256-uMWE+kqKldQ4E2RuTNlAkfbX1/tl11cWjvTTIGhxTuw=";
@@ -71,14 +79,23 @@ let
       };
     }
     {
+      def = {
+        builder = ./build.nix;
+        # The configure-time data generator imports distutils.
+        deps.python = tvp.packages.python_3_11;
+      };
+      releases = {
+        "64.1" = "sha256-kvG3udUbOWZ5wX81ohEkIzYbjaPBud4AqpT9doriluY=";
+        "64.2" = "sha256-Yn1dhHjm2W/IyQ/tSFEjkHmlYaaoueSLCJLyToLTHWw=";
+      };
+    }
+    {
       def.builder = ./build.nix;
       releases = {
         "62.1" = "sha256-PdmGjWZjUN2mam4wXuzenUeftwsw1bVdeKHe/7l9WqM=";
         "62.2" = "sha256-9Rl25ok997COWU+nmBlvgM3wffiF/sEp9V96/ic7aQE=";
         "63.1" = "sha256-BcSQtpRU/OWGC36OKCEjFnSvChHX7y/r6poyUSmYy50=";
         "63.2" = "sha256-RnHphbXBElK/88I3SrhP1zxgnyYDu26yO4sVTGnqQhU=";
-        "64.1" = "sha256-kvG3udUbOWZ5wX81ohEkIzYbjaPBud4AqpT9doriluY=";
-        "64.2" = "sha256-Yn1dhHjm2W/IyQ/tSFEjkHmlYaaoueSLCJLyToLTHWw=";
         "65.1" = "sha256-U+N0ZrPW1tAerQKeNWfYc6Q6XRxmjtInjiU7aDE22Ug=";
         "66.1" = "sha256-UqPyIJq5VVnBzwoU8kM4AB84lhW/AOJYXvPbxD7PCi4=";
         "67.1" = "sha256-lKgM1vJRpTvSqZf28bWsZlP+eR36tm4esCJ3QPuG1dw=";

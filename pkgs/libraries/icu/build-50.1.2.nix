@@ -5,6 +5,7 @@
   src,
   version,
   needsLocaleHeader ? false,
+  repairSpoofOffset ? false,
 }:
 final:
 let
@@ -36,7 +37,7 @@ in
     ];
     libraries = [ ];
   };
-  buildFeatures = { inherit needsLocaleHeader; };
+  buildFeatures = { inherit needsLocaleHeader repairSpoofOffset; };
   # The upstream Git archive keeps ICU4C alongside ICU4J.
   sourceLayout.configureDirectory = "source/icu4c/source";
   runtime.libraries = [ ];
@@ -49,6 +50,13 @@ in
       name = "icu.prepare-configure";
       inherit cwd;
     })
+    (lib.optional final.buildFeatures.repairSpoofOffset (
+      command "icu.repair-spoof-offset" ''
+        # The optional output is a pointer to the UTF-8 offset.
+        test "$(grep -Fxc '        if (position > 0) {' i18n/uspoof.cpp)" = 1
+        sed -i 's/        if (position > 0) {/        if (position != NULL \&\& *position > 0) {/' i18n/uspoof.cpp
+      ''
+    ))
     (command "icu.configure" ''
       ${lib.optionalString final.buildFeatures.needsLocaleHeader ''
         # glibc 2.26 removed xlocale.h. Keep the strtod_l support.
@@ -97,6 +105,12 @@ in
         done
       '';
     }
+    # Before 56, libicuuc embeds the default plug-in directory.
+    (lib.optional (lib.versionOlder final.version "56") {
+      name = "icu.relocate-plugin-directory";
+      tools = [ tools.python ];
+      run = ''${tools.python}/bin/python3 -B ${./relocate-plugin-directory.py} "$out" "$TVP_ARTIFACT_ROOT"'';
+    })
     (outputs.strip { paths = elfPaths; })
     (outputs.rpaths {
       paths = elfPaths;
