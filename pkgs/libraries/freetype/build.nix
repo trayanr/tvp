@@ -6,6 +6,7 @@
   src,
   version,
   bzip2,
+  png ? null,
   pkg-config,
   zlib,
 }:
@@ -30,6 +31,7 @@ let
       '';
     };
   make = ''${tools.gnumake}/bin/make -j"$NIX_BUILD_CORES" SHELL=${final.bash}/bin/bash'';
+  withPng = final.png != null;
 in
 {
   pname = "freetype";
@@ -41,6 +43,7 @@ in
     pkg-config
     zlib
     bzip2
+    png
     ;
   inherit (tools) bash coreutils;
   outputs = [
@@ -62,12 +65,10 @@ in
     libraries = [
       final.zlib
       final.bzip2
-    ];
+    ]
+    ++ lib.optional withPng final.png;
   };
-  runtime.libraries = [
-    final.zlib
-    final.bzip2
-  ];
+  runtime.libraries = final.environment.libraries;
   plan = steps.sequence [
     (steps.unpack {
       src = final.src;
@@ -78,7 +79,9 @@ in
     })
     (command "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash SHELL=${final.bash}/bin/bash
-      ./configure --prefix="$out" --libdir="$out/lib" --with-zlib=yes --with-bzip2=yes --with-png=no --with-brotli=no --with-harfbuzz=no
+      ./configure --prefix="$out" --libdir="$out/lib" \
+        --with-zlib=yes --with-bzip2=yes --with-png=${if withPng then "yes" else "no"} \
+        --with-brotli=no --with-harfbuzz=no
     '')
     (command "build" make)
     (command "check-profile" ''
@@ -86,6 +89,9 @@ in
       # Validate the configured modules; installed compressed-font consumers run separately.
       ${tools.grep}/bin/grep '^#define FT_CONFIG_OPTION_SYSTEM_ZLIB' builds/unix/ftoption.h
       ${tools.grep}/bin/grep '^#define FT_CONFIG_OPTION_USE_BZIP2' builds/unix/ftoption.h
+      ${lib.optionalString withPng ''
+        ${tools.grep}/bin/grep '^#define FT_CONFIG_OPTION_USE_PNG' builds/unix/ftoption.h
+      ''}
     '')
     (command "install" "${make} install")
     (command "receipt" ''
@@ -122,10 +128,7 @@ in
       paths = [ "lib" ];
     })
     (outputs.development {
-      libraries = [
-        final.zlib
-        final.bzip2
-      ];
+      libraries = final.runtime.libraries;
     })
     (outputs.checkPaths {
       paths = [ "lib" ];
@@ -135,14 +138,14 @@ in
   tvp.features = {
     zlib = true;
     bzip2 = true;
-    png = false;
+    png = withPng;
     brotli = false;
     harfbuzz = false;
     shared = true;
     static = true;
   };
   meta = {
-    description = "Font rendering library with zlib and bzip2 compressed-font support";
+    description = "Font rendering library with compressed-font and embedded bitmap support";
     homepage = "https://freetype.org/";
     license = lib.licenses.ftl;
     platforms = [ "x86_64-linux" ];
