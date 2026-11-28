@@ -65,6 +65,38 @@ suite {
     };
   }
 
+  // lib.optionalAttrs (builtins.elem tcl.version [ "8.6.18" "9.1.0" ]) {
+    embedding = {
+      extraInputs = [ pkg-config tools.grep ];
+      script = ''
+        cat > embed.c <<'C'
+        #include <stdio.h>
+        #include <tcl.h>
+
+        int main(int argc, char **argv) {
+          Tcl_FindExecutable(argv[0]);
+          Tcl_Interp *interp = Tcl_CreateInterp();
+          int ok = Tcl_Init(interp) == TCL_OK
+                && Tcl_Eval(interp, "expr {6 * 7}") == TCL_OK;
+          if (ok)
+            puts(Tcl_GetStringResult(interp));
+          else
+            fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+          Tcl_DeleteInterp(interp);
+          Tcl_Finalize();
+          return ok ? 0 : 1;
+        }
+        C
+        export PKG_CONFIG_LIBDIR=${tcl}/lib/pkgconfig:${tcl}/share/pkgconfig
+        "$CC" embed.c $(pkg-config --cflags --libs tcl) -o embed
+        env -u LD_LIBRARY_PATH LD_TRACE_LOADED_OBJECTS=1 ./embed > linked
+        grep -F '=> ${tcl}/lib/libtcl' linked >&2
+        env -u LD_LIBRARY_PATH ./embed
+      '';
+      expected = "42";
+    };
+  }
+
   // lib.optionalAttrs (features.are or true) {
     # The advanced regexp engine, which replaced the 8.0 one at 8.1.
     regexp-are = {

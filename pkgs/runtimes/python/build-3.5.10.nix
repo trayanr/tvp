@@ -185,6 +185,8 @@ in
     '')
     (sourceCommand "configure" ''
       export CONFIG_SHELL=${final.bash}/bin/bash
+      # The installed interpreter loads libpython from its own prefix.
+      export LDFLAGS="$LDFLAGS -Wl,-rpath,$out/lib"
       ${final.bash}/bin/bash ./configure --prefix="$out" ${lib.escapeShellArgs final.configureFlags}
       # Raw configure evidence belongs in the private build log, never installed.
       printf '\nTVP_CONFIG_LOG_BEGIN\n' >&2
@@ -198,6 +200,21 @@ in
       ${make} "COMPILEALL_OPTS=-j$NIX_BUILD_CORES" install
       mkdir -p "$out/share/licenses/python"
       cp LICENSE "$out/share/licenses/python/"
+      "$out/bin/python3" -I - <<'PYTHON'
+      from pathlib import Path
+      import sys
+      import sysconfig
+
+      libdir = Path(sys.prefix) / 'lib'
+      library = sysconfig.get_config_var('LDLIBRARY')
+      assert library.startswith('libpython') and library.endswith('.so'), library
+      assert (libdir / library).is_file(), library
+
+      # Shared builds install the static archive only under LIBPL.
+      archive = Path(sysconfig.get_config_var('LIBPL')) / sysconfig.get_config_var('LIBRARY')
+      assert archive.is_file(), archive
+      (libdir / archive.name).symlink_to(str(archive.relative_to(libdir)))
+      PYTHON
     '')
     (steps.split "python.finalize")
     (outputs.copyArtifacts { })
@@ -264,6 +281,7 @@ in
     '')
   ];
   configureFlags = [
+    "--enable-shared"
     "--with-ensurepip=install"
     "--with-dbmliborder=gdbm"
   ]

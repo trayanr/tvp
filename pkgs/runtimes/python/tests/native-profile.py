@@ -25,11 +25,11 @@ actual = sorted(p.name.split('.')[0] for p in (root/'lib/python3.15/lib-dynload'
 assert actual == baseline['dynamicModules'], (set(actual)^set(baseline['dynamicModules']))
 for name in actual:
     importlib.import_module(name)
-assert config['PY_ENABLE_SHARED'] == 0
+assert config['PY_ENABLE_SHARED'] == 1
 assert config['PY_SQLITE_ENABLE_LOAD_EXTENSION'] == 0
 assert config['PY_SQLITE_HAVE_SERIALIZE'] == 1
 assert (root/'lib/libpython3.15.a').is_file()
-assert not list((root/'lib').glob('libpython*.so*'))
+assert (root/'lib'/config['LDLIBRARY']).is_file()
 assert (root/'include/python3.15/Python.h').is_file()
 assert (root/'lib/python3.15/test/test_ssl.py').is_file()
 assert (root/'lib/python3.15/ensurepip/_bundled').is_dir()
