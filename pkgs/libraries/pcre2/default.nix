@@ -4,7 +4,12 @@ let
     {
       def = {
         builder = ./build.nix;
-        deps.pkgConfig = tvp.packages.pkg-config;
+        deps = {
+          bzip2 = tvp.packages.bzip2_1;
+          pkgConfig = tvp.packages.pkg-config;
+          readline = tvp.packages.readline_8;
+          zlib = tvp.packages.zlib_1;
+        };
       };
       releases = {
         "10.44" = "sha256-008C4RPPcZOh6/J3DTrFJwiNSF1OBH7RDl0hfG713pY=";
@@ -25,7 +30,10 @@ let
       discovery = import ./upstream.nix;
     };
     tests = import ./tests/installed.nix;
-    testDeps.perl = tvp.packages.perl_5;
+    testDeps = {
+      gzip = tvp.packages.gzip;
+      perl = tvp.packages.perl_5;
+    };
   };
   canonical = tvp.lib.packages.mkVersions family;
 in
