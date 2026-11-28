@@ -232,7 +232,9 @@ in
         cp -a out/ReleaseX64/dart-sdk/. "$out/"
       '')
       (steps.split "dart.finalize")
-      (outputs.copyArtifacts { })
+      # The upstream SDK can contain hardlinks under bin. Give each installed
+      # file its own inode before the interpreter and ELF fixups.
+      (outputs.copyArtifacts { preserveHardlinks = false; })
       (outputs.interpreters {
 
         paths = [ "bin" ];
