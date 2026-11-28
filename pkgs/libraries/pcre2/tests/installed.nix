@@ -3,9 +3,17 @@
   lib,
   context,
 }:
+let
+  inherit (package.tvp) features;
+  hasCompressedInput = features.grepGzip || features.grepBzip2;
+in
 context.mkSuite {
   inherit package;
-  tools = package.specification.environment.tools ++ [ package.specification.base.compiler.bintools ];
+  tools =
+    package.specification.environment.tools
+    ++ [ package.specification.base.compiler.bintools ]
+    ++ lib.optional features.grepGzip package.tvp.declaredTestDependencies.gzip
+    ++ lib.optional features.grepBzip2 package.specification.bzip2;
   tests = {
     version = {
       script = ''
@@ -18,6 +26,34 @@ context.mkSuite {
         printf 'preserved-42\n' | ${package}/bin/pcre2grep -o '[a-z]+(?=-[0-9]+)'
       '';
       expected = "preserved";
+    };
+  }
+  // lib.optionalAttrs hasCompressedInput {
+    compressed-input = {
+      script = ''
+        printf 'ignored\nmessage-42\n' > plain
+      ''
+      + lib.optionalString features.grepGzip ''
+        gzip -c plain > input.gz
+        test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.gz)" = message-42
+      ''
+      + lib.optionalString features.grepBzip2 ''
+        bzip2 -c plain > input.bz2
+        test "$(${package}/bin/pcre2grep -o 'message-[0-9]+' input.bz2)" = message-42
+      ''
+      + "echo compressed-input";
+      expected = "compressed-input";
+    };
+  }
+  // lib.optionalAttrs features.testReadline {
+    readline = {
+      script = ''
+        ${package}/bin/pcre2test -C | grep -Fx '  pcre2test has libreadline support' >&2
+        LD_TRACE_LOADED_OBJECTS=1 ${package}/bin/pcre2test \
+          | grep -F '${package.specification.readline}/lib/libreadline.so' >&2
+        echo readline
+      '';
+      expected = "readline";
     };
   }
   // import ./installed-consumers.nix { inherit package lib context; }
