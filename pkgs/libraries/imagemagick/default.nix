@@ -50,6 +50,15 @@ let
       "https://codeload.github.com/ImageMagick/${repository}/tar.gz/refs/tags/${upstreamTag version}";
     inherit discovery;
   };
+  coderRepair = definition: version: repair: path: sha256: {
+    inherit sha256;
+    def = definition // {
+      name = version;
+      opts = (definition.opts or { }) // {
+        historicalCoderRepair = { inherit repair path; };
+      };
+    };
+  };
   versionTable = tvp.lib.packages.mkTable [
     # These releases use png_info fields that libpng 1.6 makes opaque.
     {
@@ -57,6 +66,8 @@ let
         builder = ./build.nix;
         deps = {
           bzip2 = tvp.packages.bzip2;
+          djvulibre = tvp.packages.djvulibre;
+          fftw = tvp.packages.fftw;
           fontconfig = tvp.packages.fontconfig;
           freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
@@ -83,11 +94,13 @@ let
         "6.6.0.10" = "sha256-yGVWjFGwxrF63/Za62UL69jsVpysogIcWtKaMGgwhsQ=";
       };
     }
-    {
+    rec {
       def = {
         builder = ./build.nix;
         deps = {
           bzip2 = tvp.packages.bzip2;
+          djvulibre = tvp.packages.djvulibre;
+          fftw = tvp.packages.fftw;
           fontconfig = tvp.packages.fontconfig;
           freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
@@ -101,6 +114,10 @@ let
           libxml2 = tvp.packages.libxml2_2;
           libxt = tvp.packages.libxt;
           libzip = tvp.packages.libzip;
+          libheif = tvp.packages.libheif_1;
+          liblqr = tvp.packages.liblqr;
+          librsvg = tvp.packages.librsvg;
+          openexr = tvp.packages.openexr;
           openjpeg = tvp.packages.openjpeg;
           perl = tvp.packages.perl_5;
           png = tvp.packages.libpng_1;
@@ -116,8 +133,12 @@ let
         "6.6.4.10" = "sha256-hkz4F0EcXnuI+GrBE6t5SffOEkslxpcZzkGjN6jTqVw=";
         "6.6.5.10" = "sha256-g+ZnyqkLZQftQXTF8iepXBQ0Uu43qWjYnNmFK4vkjNw=";
         "6.6.6.10" = "sha256-03GHrjBjAw2CYk5VSNtfeI3P2OXJ3j7cFcazbjLJPp4=";
-        "6.6.7.10" = "sha256-nnei+mSVay0i9L7ZXEazTDwnRfak/t/hQxm8DnbibC8=";
-        "6.6.8.10" = "sha256-umv4F8ADmXLcrHuMzsoHk5PVe2LnyaXXrkRaN+Jtcgo=";
+        "6.6.7.10" =
+          coderRepair def "6.6.7.10" "png-palette" "coders/png.c"
+            "sha256-nnei+mSVay0i9L7ZXEazTDwnRfak/t/hQxm8DnbibC8=";
+        "6.6.8.10" =
+          coderRepair def "6.6.8.10" "dicom-bytes" "coders/dcm.c"
+            "sha256-umv4F8ADmXLcrHuMzsoHk5PVe2LnyaXXrkRaN+Jtcgo=";
         "6.6.9.10" = "sha256-rMMWTdKQPeo+mMQSZDdOFve59Qwmoplj+NmB/0iaNWQ=";
         "6.7.0.10" = "sha256-jBDS8sOCwO/cEwdZGlqzu6v/pKAxJT1WsgdXZzbG+sk=";
         "6.7.1.10" = "sha256-v8bNB4mMQki6MU2YbUn73zb0jzAeuRwr47hcN6LBW8w=";
@@ -125,7 +146,9 @@ let
         "6.7.3.10" = "sha256-pO+QG1Ot7wlCWI3j+0Q4z3Dt1P1uIJd4lpRX+J9Ut/8=";
         "6.7.4.10" = "sha256-SuDmJ3eYPmRk/5YQjP6ciT5mfVJrGxd3lsLiiDw/6xU=";
         "6.7.5.10" = "sha256-UBbcx/bThtjlMh8lvQnO+FGdqFHoCb5vDLIyHXIYeQw=";
-        "6.7.6.10" = "sha256-yHKzkkk0hWEFkIRzSOXWqFAAr5TD/6rGAVdotNzWy5c=";
+        "6.7.6.10" =
+          coderRepair def "6.7.6.10" "wand-cache-arguments" "wand/wand-view.c"
+            "sha256-yHKzkkk0hWEFkIRzSOXWqFAAr5TD/6rGAVdotNzWy5c=";
         "6.7.7.10" = "sha256-hbD5r+EixSqCEAGXak9UrgEbs9lKh7l+MRLlFRhXMa0=";
         "6.7.8.10" = "sha256-K/wNvdysHPCOqrdt8b0yEx6X1QVErFptZi8diF4raBQ=";
         "6.7.9.10" = "sha256-NpfeZ0i5mbHtf5EyxL9pZnaSaWh3/dJAYtTL0L9J95A=";
@@ -137,7 +160,9 @@ let
         "6.8.5.10" = "sha256-oVcS5vt+Lovrck7FeKegOmzF6Lgodb/sMgroJZsFcog=";
         "6.8.6.10" = "sha256-6X1m/xRQbWts/o7jkgfONA3lm6Nh6cM0+ccpZu/5f8s=";
         "6.8.7.10" = "sha256-lcWIJLV8sXFfqwcsaQzpqnaerHMtvjXkWGhVsj8MgiQ=";
-        "6.8.8.10" = "sha256-8xx3ce0LgFCDconwx7VTAxcuMazABbDuDRIHJ+JXLTM=";
+        "6.8.8.10" =
+          coderRepair def "6.8.8.10" "openjpeg-stream-api" "coders/jp2.c"
+            "sha256-8xx3ce0LgFCDconwx7VTAxcuMazABbDuDRIHJ+JXLTM=";
         "6.8.9.10" = "sha256-ysXdoWWrYDovVhENr0GBEjPZPG/dhOlKhDDgVwQdjmg=";
         "6.9.0.0" = "sha256-EjMckExpHLEohl/cl+X4omVFdvmwMuJ0t03XYXqhubY=";
         "6.9.0.10" = "sha256-0fXc0yqTEw/rnpgKipdRfTosgUqLYI0TnUdWUWVIdIw=";
@@ -154,11 +179,13 @@ let
         "7.1.1.42" = "sha256-sCOkSCAY9DeRQ5Gw58p1t9WqkxjJp/UcqGSzuTxATBQ=";
       };
     }
-    {
+    rec {
       def = {
         builder = ./build.nix;
         deps = {
           bzip2 = tvp.packages.bzip2;
+          djvulibre = tvp.packages.djvulibre;
+          fftw = tvp.packages.fftw;
           fontconfig = tvp.packages.fontconfig;
           freetype = tvp.packages.freetype;
           jpeg = tvp.packages.libjpeg-turbo;
@@ -172,6 +199,10 @@ let
           libxml2 = tvp.packages.libxml2_2;
           libxt = tvp.packages.libxt;
           libzip = tvp.packages.libzip;
+          libheif = tvp.packages.libheif_1;
+          liblqr = tvp.packages.liblqr;
+          librsvg = tvp.packages.librsvg;
+          openexr = tvp.packages.openexr;
           openjpeg = tvp.packages.openjpeg;
           perl = tvp.packages.perl_5;
           png = tvp.packages.libpng_1;
@@ -229,7 +260,9 @@ let
         "6.9.8.4" = "sha256-Kr44wZQ3n99MHy7IesodrhY3a4EVEQxymvoPxZ0dcj0=";
         "6.9.8.5" = "sha256-FIxlPF4Gqy4jn/cMjoKqAlTAi6MitfsVyxTd3NYBvJI=";
         "6.9.8.6" = "sha256-/tQ3wQ2gafHzw5EYmdNMX15ECZrfzYOMhW8MZALGw3E=";
-        "6.9.8.7" = "sha256-OJCqwxO71fFy/Sja6knzSIm1eywDeqtwnjLDJHrWgpE=";
+        "6.9.8.7" =
+          coderRepair def "6.9.8.7" "openjpeg-ping" "coders/jp2.c"
+            "sha256-OJCqwxO71fFy/Sja6knzSIm1eywDeqtwnjLDJHrWgpE=";
         "6.9.8.8" = "sha256-I/MmAE7FkbgET88MUPvrWgii8m2P0/aGbpnGR6Jv/Nw=";
         "6.9.8.9" = "sha256-s3v3yEQGdDgOZanYgl04iPhxb1HoBbG2sQqlj8a2Vcw=";
         "6.9.8.10" = "sha256-W9To8v7tCrHvCVfpmFOApxXLusnzaxfWmansIWt0m6A=";
@@ -273,7 +306,9 @@ let
         "6.9.9.38" = "sha256-X5x6XMYoR7jN/s3Qt6WeC4/VfcdSoTDPKFmjheXi9eY=";
         "6.9.9.39" = "sha256-QZIrgrFMDPowfbJA93WZlG/MlSvSGBpdykh6FeZBIzM=";
         "6.9.9.40" = "sha256-Gv10uDkuQYuZiAyq/AD2/hOa+0pkYm0/j8+PP+XbyLo=";
-        "6.9.9.41" = "sha256-alzf2TE8Lxpn/KKnAqAYR1RdsykjCefGHBfeEIiTYu0=";
+        "6.9.9.41" =
+          coderRepair def "6.9.9.41" "svg-compliance" "magick/draw.c"
+            "sha256-alzf2TE8Lxpn/KKnAqAYR1RdsykjCefGHBfeEIiTYu0=";
         "6.9.9.42" = "sha256-Inawn3zOg6OMtRBHaogMfiuDHVyDOT39u4pyvhqSKhI=";
         "6.9.9.43" = "sha256-0fBtsE5t6l1+4hXgx9i0Elmp9Uxw4CBq/c9RZ+UgmH0=";
         "6.9.9.44" = "sha256-pxAzYXEbgSv6uPKe9OAPy5qSvxyfkU3sWPdA8Q39I28=";
@@ -539,7 +574,9 @@ let
         "6.9.12.96" = "sha256-YkxDqPDFeeXVlG89/VcCelo7CubUajY3d6aXKjM19WM=";
         "6.9.12.97" = "sha256-gI53KtLSMMOmh7xiyg3Rt5oP6DZYrgYzN1K6NA2NTvQ=";
         "6.9.12.98" = "sha256-az5i3Nv9ohoR3Ak+Rl66aFBj6UhMOojmtjgseLJzs3A=";
-        "6.9.12.99" = "sha256-l0zGcoOJ23ounso5gI6aE+ndAVsXvo8BlKmzlK06bgw=";
+        "6.9.12.99" =
+          coderRepair def "6.9.12.99" "bmp-row-stride" "coders/bmp.c"
+            "sha256-l0zGcoOJ23ounso5gI6aE+ndAVsXvo8BlKmzlK06bgw=";
         "6.9.13.0" = "sha256-KIXeSehGSBKt2BmJvUACMdr2aCX3Daa2F86lVLg7WV0=";
         "6.9.13.1" = "sha256-8uy341LGrL7LRDZuQVcBdm1U1RSZFgdzdCvxY3iKMbI=";
         "6.9.13.2" = "sha256-+GG/oIR2jAjjXg8olrWZmRqJQcyrkC6G7o8oTv8AxjE=";
@@ -652,7 +689,9 @@ let
         "7.0.5.5" = "sha256-Iwavsl98H61KOuoEmB5C5hEbmiVk920K/OQA1rVx/dI=";
         "7.0.5.6" = "sha256-4MKFfA0uO36pRUNDEulmHaXzyKy8VxtdgehiWezn4x0=";
         "7.0.5.7" = "sha256-XbAO5r39VAocTKGfjWlyFN6aiIJe/xCRmze8N2dT3U4=";
-        "7.0.5.8" = "sha256-qbrduy+/FZAS47uXnzhvF2D9Np5rjj/AsbT87shodXA=";
+        "7.0.5.8" =
+          coderRepair def "7.0.5.8" "openjpeg-ping" "coders/jp2.c"
+            "sha256-qbrduy+/FZAS47uXnzhvF2D9Np5rjj/AsbT87shodXA=";
         "7.0.5.9" = "sha256-uFsmng7RYo6I6EAFOCP4ozwxSyJx8Edi9D0z6dC00mQ=";
         "7.0.5.10" = "sha256-vZZdNqZcvNQg7HmlCaXODs3+8DZ3DNyH/NU3S57RXqc=";
         "7.0.6.0" = "sha256-OmshNS7Q65hL29CUNHHfhgW5eLUnElkh6X5bQE8r7jo=";
@@ -676,10 +715,18 @@ let
         "7.0.7.9" = "sha256-ezyimEs9PRJI8+1NCzOe5TkBYRJDryJ614FR6oLsrcI=";
         "7.0.7.10" = "sha256-kk0RYe0jmby3L5hBkHKzEwpGbgfZpvzkPSdFj/qQf/o=";
         "7.0.7.11" = "sha256-rxnyQPj6LDup41I4mEMyziRtm6jPRTXoVkYk9XJG5k0=";
-        "7.0.7.12" = "sha256-HyMDLgJyWcPlZZbEazisMIiPOhZiBLuBpSXyM3Go+VE=";
-        "7.0.7.13" = "sha256-dQdHI5//kZaau6lQg5iLylbxnjvN0e4mAVC4zhZRYuo=";
-        "7.0.7.14" = "sha256-V/xLGcCigbi63+KEd7R/1qfovhyzJIGbyHw1qh7Gw/8=";
-        "7.0.7.15" = "sha256-s25EMMxErP8tEfYNs4iTCfpJR1dkY4TapOH2X1ameSg=";
+        "7.0.7.12" =
+          coderRepair def "7.0.7.12" "webp-progress-context" "coders/webp.c"
+            "sha256-HyMDLgJyWcPlZZbEazisMIiPOhZiBLuBpSXyM3Go+VE=";
+        "7.0.7.13" =
+          coderRepair def "7.0.7.13" "webp-progress-context" "coders/webp.c"
+            "sha256-dQdHI5//kZaau6lQg5iLylbxnjvN0e4mAVC4zhZRYuo=";
+        "7.0.7.14" =
+          coderRepair def "7.0.7.14" "webp-progress-context" "coders/webp.c"
+            "sha256-V/xLGcCigbi63+KEd7R/1qfovhyzJIGbyHw1qh7Gw/8=";
+        "7.0.7.15" =
+          coderRepair def "7.0.7.15" "webp-progress-context" "coders/webp.c"
+            "sha256-s25EMMxErP8tEfYNs4iTCfpJR1dkY4TapOH2X1ameSg=";
         "7.0.7.16" = "sha256-vY11eZm1alW9G0+iVzWhWSEjHRz+fg7Jbr1y5/uGdDQ=";
         "7.0.7.17" = "sha256-psQ0CexU3t7AuKToydFrGQUoZFB8tBpbxqmva1jX84s=";
         "7.0.7.18" = "sha256-uKUwQn+v72FsWm5sQbsoTlFbd0AmU1NumGcpIizYPvI=";
@@ -693,7 +740,9 @@ let
         "7.0.7.26" = "sha256-IC1uAjfFIpp1FmEHSGUvDm3pvTWVMkAm4MPQ3t1lJBE=";
         "7.0.7.27" = "sha256-cjoo+cvFxhMPSWBl/AHIOQg+l78+STD5QKA8AVUEYXA=";
         "7.0.7.28" = "sha256-viw03q5wVLvV9lMldcC8syXsIEsnbRaCgVxcqpttu/c=";
-        "7.0.7.29" = "sha256-vhcdE+WLsZaFs2CA7fnTa5uVYzsDMfv35wtZl6NQHWU=";
+        "7.0.7.29" =
+          coderRepair def "7.0.7.29" "svg-compliance" "MagickCore/draw.c"
+            "sha256-vhcdE+WLsZaFs2CA7fnTa5uVYzsDMfv35wtZl6NQHWU=";
         "7.0.7.30" = "sha256-3ZjZ4bq2eLfoaykreQOy81fQGl7kkyiD2BbOvqXUPJQ=";
         "7.0.7.31" = "sha256-Igjra5NV/aQnntGGFSODCuwfmwo5v4wgcY0cj1rUJxA=";
         "7.0.7.32" = "sha256-8Xha34u/N4tH54nHTC/Z691ewcTeEuUzBvj261tV1lY=";
@@ -717,7 +766,9 @@ let
         "7.0.8.10" = "sha256-EZ+Z54SYBXQfvwp4kLrgsKZTD9qzXdPzkYWy3duicvg=";
         "7.0.8.11" = "sha256-leTaX6EJvItZteelTN/PGvMjAGfJWt9gj/IcCOyh3iA=";
         "7.0.8.12" = "sha256-zTolGD1DPzrU+O1jAcWuXfsJWcHwmwWazuRHuziBv5k=";
-        "7.0.8.13" = "sha256-EBnhTvzlIPpSh8lVz3w6mJ27o3VFSYZ3Z50k0QqWV5U=";
+        "7.0.8.13" =
+          coderRepair def "7.0.8.13" "magic-priority" "MagickCore/magic.c"
+            "sha256-EBnhTvzlIPpSh8lVz3w6mJ27o3VFSYZ3Z50k0QqWV5U=";
         "7.0.8.14" = "sha256-CBT1WZgFrH39b0bu/H6ljApA3sbrFrCn7g1JnTNI4sY=";
         "7.0.8.15" = "sha256-o+u2S4LQQs0ikNFxwW9IKnT/X4bFEjfaXfy3V1P8z7Q=";
         "7.0.8.16" = "sha256-uS+jl8WRWAx1IbBgsu08UGBFIqW9pjtwh93FPpHsOBw=";

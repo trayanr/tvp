@@ -10,6 +10,9 @@ Some integrations depend on the release's configure support:
 
 | Integration | First packaged release with the matching provider interface |
 | --- | --- |
+| FFTW | 6.5.4-10 and later packaged releases |
+| DjVuLibre | 6.9.4-0 or 7.0.1-0 |
+| OpenEXR, HEIC/HEIF, librsvg/Cairo, and Liquid Rescale | 6.9.13-0 or 7.1.1-42 |
 | LittleCMS 2 | 6.6.0-10 |
 | XZ | 6.6.6-10 |
 | WebP | 6.6.8-10 |
@@ -24,12 +27,21 @@ to enable PNG. The early releases that predate LittleCMS 2 and OpenJPEG also
 need LittleCMS 1 and JasPer respectively.
 
 Additional delegates need packaged providers and release-appropriate wiring.
-These include Ghostscript for PDF/PostScript, librsvg and Cairo for the alternate
-SVG renderer, Pango and libraqm for additional text rendering, and the format
-libraries for AVIF/HEIF, JPEG XL, Ultra HDR, camera RAW, OpenEXR, JBIG, DjVu,
-WMF, and FlashPix. FFTW, Graphviz, and OpenCL also need providers, including an
+These include Ghostscript for PDF/PostScript, Pango and libraqm for additional
+text rendering, and the format libraries for AVIF, JPEG XL, Ultra HDR, camera
+RAW, JBIG, WMF, and FlashPix. The HEIF provider encodes and decodes HEVC images.
+Graphviz and OpenCL also need providers, including an
 ICD loader and a runtime driver for OpenCL. Fontconfig discovery uses the fonts
 available in the user's runtime environment.
 
 TVP's package `.override` can select a narrower dependency set. For example,
 `imagemagick.override { perl = null; libx11 = null; }` omits PerlMagick and X11.
+
+## Historical source repairs
+
+The release table names the coder repair and source path for each affected
+archive. The helper checks the expected source before making a change.
+The existing backports include shipped defects in the SVG drawing parser
+(6.9.9-41 and 7.0.7-29), the BMP reader (6.9.12-99), and WebP format detection
+(7.0.8-13). These are distinct from changes needed to compile against the
+selected codec libraries, such as the OpenJPEG stream API change in 6.8.8-10.

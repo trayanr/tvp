@@ -19,15 +19,6 @@ let
   reportedImageFormat = if reportsPnm then "PNM" else imageFormat;
   parts = lib.splitString "." package.version;
   upstreamVersion = lib.concatStringsSep "." (lib.take 3 parts) + "-" + lib.last parts;
-  traceDelegates = builtins.elem package.version [
-    "6.9.9.5"
-    "7.0.6.5"
-    "7.0.7.12"
-    "7.0.7.13"
-    "7.0.7.14"
-    "7.0.7.15"
-    "7.0.8.13"
-  ];
 in
 context.mkSuite {
   inherit package;
@@ -98,16 +89,26 @@ context.mkSuite {
         test "$(identify -format '%m %wx%h' variant.ico)" = 'ICO 16x16'
         convert -delay 8 raster.png -size 16x16 xc:blue -loop 0 animated.gif
         test "$(identify -format '%m %wx%h\n' animated.gif)" = "$(printf '%s\n' 'GIF 16x16' 'GIF 16x16')"
-        ${lib.removeSuffix "\n" (if builtins.elem package.version [ "6.9.4.7" "7.0.1.9" ] then ''
-          # These readers accept the animation as a whole but treat [n] as part
-          # of the filename. Decode both scenes in one invocation.
-          convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
-          mv frame-0.rgb first.rgb
-          mv frame-1.rgb second.rgb
-        '' else ''
-          convert 'animated.gif[0]' -depth 8 RGB:first.rgb
-          convert 'animated.gif[1]' -depth 8 RGB:second.rgb
-        '')}
+        ${lib.removeSuffix "\n" (
+          if
+            builtins.elem package.version [
+              "6.9.4.7"
+              "7.0.1.9"
+            ]
+          then
+            ''
+              # These readers accept the animation as a whole but treat [n] as part
+              # of the filename. Decode both scenes in one invocation.
+              convert animated.gif -coalesce -depth 8 +adjoin 'RGB:frame-%d.rgb'
+              mv frame-0.rgb first.rgb
+              mv frame-1.rgb second.rgb
+            ''
+          else
+            ''
+              convert 'animated.gif[0]' -depth 8 RGB:first.rgb
+              convert 'animated.gif[1]' -depth 8 RGB:second.rgb
+            ''
+        )}
         test -s first.rgb && test -s second.rgb
         status=0
         cmp -s first.rgb second.rgb || status=$?
@@ -123,8 +124,7 @@ context.mkSuite {
         binutils
         grep
       ];
-      # Preserve the failing command and its arguments for historical codec failures.
-      script = lib.optionalString traceDelegates "set -x\n" + ''
+      script = ''
         ${lib.optionalString (builtins.elem "xml" delegates) ''
           cat > shape.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" width="3" height="2">
@@ -154,6 +154,96 @@ context.mkSuite {
         printf delegates-ok
       '';
       expected = "delegates-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "fftw" delegates) {
+    fourier = {
+      tools = [
+        binutils
+        grep
+        package.specification.base.tools.gawk
+      ];
+      script = ''
+        readelf -d "${package}"/lib/libMagickCore*.so > needed
+        grep -F 'Shared library: [libfftw3.so.3]' needed >&2
+        ${cli} -size 8x8 gradient:black-white -colorspace Gray input.miff
+        ${cli} input.miff -fft spectrum.miff
+        test "$(identify -format '%wx%h\n' spectrum.miff)" = "$(printf '8x8\n8x8')"
+        ${cli} spectrum.miff -ift result.miff
+        test "$(identify -format '%wx%h' result.miff)" = '8x8'
+        error=$(${cli} input.miff result.miff -compose difference -composite -format '%[fx:mean]' info:)
+        awk -v error="$error" 'BEGIN { exit !(error ~ /^[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$/ && error < 0.004) }'
+        printf 'fourier-ok'
+      '';
+      expected = "fourier-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "djvu" delegates) {
+    djvu = {
+      tools = [
+        package.specification.djvulibre
+        package.specification.base.tools.diffutils
+      ];
+      script = ''
+        cjb2 ${../../djvulibre/tests/page.pbm} page.djvu
+        ${cli} page.djvu page.miff
+        test "$(identify -format '%wx%h' page.miff)" = '8x8'
+        ${cli} page.miff -depth 8 gray:decoded
+        ${cli} ${../../djvulibre/tests/page.pbm} -depth 8 gray:expected
+        cmp decoded expected
+        printf 'djvu-ok'
+      '';
+      expected = "djvu-ok";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "openexr" delegates) {
+    exr = {
+      script = ''
+        ${cli} -size 8x8 gradient:black-white -colorspace RGB input.exr
+        test "$(identify -format '%m %wx%h' input.exr)" = 'EXR 8x8'
+        ${cli} input.exr -format '%[fx:p{0,0}.r < p{0,7}.r ? 1 : 0]' info:
+      '';
+      expected = "1";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "heic" delegates) {
+    heic = {
+      script = ''
+        ${cli} -size 64x64 gradient:black-white -colorspace sRGB -quality 90 image.heic
+        test "$(identify -format '%wx%h' image.heic)" = '64x64'
+        ${cli} image.heic -format '%[fx:p{32,8}.r < p{32,56}.r ? 1 : 0]' info:
+      '';
+      expected = "1";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "rsvg" delegates) {
+    rsvg = {
+      tools = [
+        binutils
+        grep
+      ];
+      script = ''
+        readelf -d "${package}"/lib/libMagickCore*.so > needed
+        grep -F 'Shared library: [librsvg-2.so.2]' needed >&2
+        grep -F 'Shared library: [libcairo.so.2]' needed >&2
+        cat > shape.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="12">
+          <rect width="16" height="12" fill="blue"/>
+          <rect width="8" height="12" fill="red"/>
+        </svg>
+        SVG
+        ${cli} RSVG:shape.svg -format '%wx%h %[fx:p{2,2}.r] %[fx:p{12,2}.b]' info:
+      '';
+      expected = "16x12 1 1";
+    };
+  }
+  // lib.optionalAttrs (builtins.elem "lqr" delegates) {
+    liquid-rescale = {
+      script = ''
+        ${cli} -size 16x16 gradient:red-blue -liquid-rescale '12x10!' resized.miff
+        identify -format '%wx%h %[fx:p{6,0}.r > p{6,9}.r ? 1 : 0]' resized.miff
+      '';
+      expected = "12x10 1";
     };
   }
   // lib.optionalAttrs (perlModuleDirectory != null) {
