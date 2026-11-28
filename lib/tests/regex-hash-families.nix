@@ -95,9 +95,15 @@ let
     noHashExtraDeps = builtins.all (e: e.def.deps == { }) (
       builtins.attrValues hash.recipes.gperf.versionTable
     );
-    explicitPkgConfigOnly = builtins.all (e: builtins.attrNames e.def.deps == [ "pkgConfig" ]) (
-      builtins.attrValues regex.recipes.pcre2.versionTable
-    );
+    explicitPcre2Providers = builtins.all (
+      e:
+      builtins.attrNames e.def.deps == [
+        "bzip2"
+        "pkgConfig"
+        "readline"
+        "zlib"
+      ]
+    ) (builtins.attrValues regex.recipes.pcre2.versionTable);
     effectiveDefaultCxxRuntime = g.specification.libstdcxx == null && g.runtime.libraries == [ ];
     cxxRuntimeOverrideReusesArtifact =
       cxx.artifact.drvPath == g.artifact.drvPath && cxx.drvPath != g.drvPath;
@@ -111,7 +117,13 @@ let
         32
       ];
     pcreFeatureProfile =
-      p.tvp.features.shared && p.tvp.features.jit && p.tvp.features.unicode && !p.tvp.features.static;
+      p.tvp.features.shared
+      && p.tvp.features.jit
+      && p.tvp.features.unicode
+      && !p.tvp.features.static
+      && p.tvp.features.grepGzip
+      && p.tvp.features.grepBzip2
+      && p.tvp.features.testReadline;
     coreutilsTestBinding = lib.hasInfix (text "${marker}/bin/echo") (
       text (builtins.head coreutilsEdit.specification.upstreamPreparation).run
     );

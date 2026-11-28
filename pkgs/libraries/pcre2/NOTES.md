@@ -9,8 +9,11 @@ observations below describe retained evidence, not qualification of this new
 A/F/U arrangement. Upstream runner preparation and the four echo callouts now
 belong only to independent U after compiled-tree restoration.
 
-The canonical native output remains shared-only: 8/16/32-bit engines, Unicode,
-JIT and the POSIX wrapper, plus pcre2grep/pcre2-config and four pkg-config modules.
+The canonical native output includes shared 8/16/32-bit engines, Unicode, JIT,
+and the POSIX wrapper. The installed `pcre2grep` reads gzip and Bzip2 files,
+and `pcre2test` uses Readline. The release also installs `pcre2-config` and
+four pkg-config modules. The corresponding library arguments can be set to
+`null` to select a reduced build.
 The declared `static` option builds a separate static companion for installed
 API consumers. Independent upstream checks bind the four `/bin/echo` callouts to the
 explicit Coreutils provider; historical procedures and fixtures remain intact.

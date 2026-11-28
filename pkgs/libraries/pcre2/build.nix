@@ -6,6 +6,9 @@
   src,
   version,
   pkgConfig,
+  bzip2 ? null,
+  readline ? null,
+  zlib ? null,
   doCheck ? true,
   static ? false,
 }:
@@ -14,6 +17,14 @@ let
   context = tvp.builder.forBase final.base;
   inherit (context) steps outputs tools;
   checkpoint = "nix-support/pcre2-build-tree";
+  libraries =
+    lib.filter (provider: provider != null) [
+      final.bzip2
+      final.readline
+      final.zlib
+    ]
+    # The configure link probe may need Readline's selected terminal library.
+    ++ lib.optional (final.readline != null) final.readline.tvp.deps.ncurses;
   command =
     name:
     steps.command {
@@ -28,6 +39,9 @@ in
     src
     version
     pkgConfig
+    bzip2
+    readline
+    zlib
     doCheck
     static
     ;
@@ -38,6 +52,9 @@ in
     unicode = true;
     shared = true;
     static = final.static;
+    grepGzip = final.zlib != null;
+    grepBzip2 = final.bzip2 != null;
+    testReadline = final.readline != null;
   };
   installedInterface.widths = [
     8
@@ -54,10 +71,10 @@ in
       tools.diffutils
       tools.findutils
     ];
-    libraries = [ ];
+    inherit libraries;
   };
   runtime = {
-    libraries = [ ];
+    inherit libraries;
     shell = tools.bash;
   };
   productionPlan = steps.sequence [
@@ -91,7 +108,10 @@ in
         ${lib.enableFeature final.buildFeatures.jit "jit"} \
         ${lib.enableFeature final.buildFeatures.unicode "unicode"} \
         ${lib.enableFeature final.buildFeatures.shared "shared"} \
-        ${lib.enableFeature final.buildFeatures.static "static"}
+        ${lib.enableFeature final.buildFeatures.static "static"} \
+        ${lib.enableFeature final.buildFeatures.grepGzip "pcre2grep-libz"} \
+        ${lib.enableFeature final.buildFeatures.grepBzip2 "pcre2grep-libbz2"} \
+        ${lib.enableFeature final.buildFeatures.testReadline "pcre2test-libreadline"}
     '')
     (command "build" ''
       # Installed libraries/CLIs only; noinst test programs belong to U.
